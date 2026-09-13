@@ -119,12 +119,20 @@ public static class SchemaGraphBuilder
                 AddEnum(enumType.Name, Qualify(file.Package, enumType.Name), file, nodes, isNested: false);
         }
 
-        // Pass 2 — field references between the types collected above.
+        // Pass 2 — field references between the types collected above, and
+        // the per-message field lists the detail panel reads.
         foreach (var (fullName, message) in messages)
         {
-            if (!nodes.ContainsKey(fullName)) continue;
+            if (!nodes.TryGetValue(fullName, out var node)) continue;
+
+            var fields = new List<SchemaField>(message.Field.Count);
             foreach (var field in message.Field)
+            {
                 AddFieldEdge(fullName, field, messages, nodes, edges);
+                fields.Add(DescribeField(field, messages));
+            }
+
+            nodes[fullName] = node with { Fields = fields };
         }
 
         // Pass 3 — methods, and the request / response types they name.
@@ -171,6 +179,9 @@ public static class SchemaGraphBuilder
             {
                 FieldCount = message.Field.Count,
                 IsNested = isNested,
+                // Built later, once every map entry in the file is known —
+                // a map field names its synthetic entry type, and resolving
+                // that to the value type needs the whole set collected.
             };
         }
 
@@ -232,6 +243,57 @@ public static class SchemaGraphBuilder
             IsMap = isMap,
         });
     }
+
+    /// <summary>
+    /// Describe one field for the detail panel. Unlike an edge, this covers
+    /// scalars too — a message whose fields are all strings has no edges at
+    /// all, and listing nothing for it would be wrong.
+    /// </summary>
+    private static SchemaField DescribeField(
+        FieldDescriptorProto field,
+        Dictionary<string, DescriptorProto> messages)
+    {
+        var repeated = field.Label == FieldDescriptorProto.Types.Label.Repeated;
+
+        if (field.Type is FieldDescriptorProto.Types.Type.Message or FieldDescriptorProto.Types.Type.Enum)
+        {
+            var target = Strip(field.TypeName);
+            if (messages.TryGetValue(target, out var entry) && IsMapEntry(entry))
+            {
+                var value = entry.Field.FirstOrDefault(f => f.Number == 2);
+                var valueType = value is null
+                    ? "?"
+                    : value.Type is FieldDescriptorProto.Types.Type.Message or FieldDescriptorProto.Types.Type.Enum
+                        ? Strip(value.TypeName)
+                        : ScalarName(value.Type);
+                return new SchemaField(field.Name, valueType, IsRepeated: false, IsMap: true);
+            }
+            return new SchemaField(field.Name, target, repeated);
+        }
+
+        return new SchemaField(field.Name, ScalarName(field.Type), repeated);
+    }
+
+    private static string ScalarName(FieldDescriptorProto.Types.Type type) => type switch
+    {
+        FieldDescriptorProto.Types.Type.Double => "double",
+        FieldDescriptorProto.Types.Type.Float => "float",
+        FieldDescriptorProto.Types.Type.Int64 => "int64",
+        FieldDescriptorProto.Types.Type.Uint64 => "uint64",
+        FieldDescriptorProto.Types.Type.Int32 => "int32",
+        FieldDescriptorProto.Types.Type.Fixed64 => "fixed64",
+        FieldDescriptorProto.Types.Type.Fixed32 => "fixed32",
+        FieldDescriptorProto.Types.Type.Bool => "bool",
+        FieldDescriptorProto.Types.Type.String => "string",
+        FieldDescriptorProto.Types.Type.Bytes => "bytes",
+        FieldDescriptorProto.Types.Type.Uint32 => "uint32",
+        FieldDescriptorProto.Types.Type.Sfixed32 => "sfixed32",
+        FieldDescriptorProto.Types.Type.Sfixed64 => "sfixed64",
+        FieldDescriptorProto.Types.Type.Sint32 => "sint32",
+        FieldDescriptorProto.Types.Type.Sint64 => "sint64",
+        FieldDescriptorProto.Types.Type.Group => "group",
+        _ => "unknown",
+    };
 
     private static void AddMethodEdge(
         string fromId,

@@ -121,6 +121,13 @@ public static class BowireSchemaDesignerEndpoints
                 fieldCount = n.FieldCount,
                 usageCount = n.UsageCount,
                 nested = n.IsNested,
+                fields = n.Fields.Select(static f => new
+                {
+                    name = f.Name,
+                    type = f.Type,
+                    repeated = f.IsRepeated,
+                    map = f.IsMap,
+                }).ToList(),
             }).ToList(),
             edges = graph.Edges.Select(static e => new
             {

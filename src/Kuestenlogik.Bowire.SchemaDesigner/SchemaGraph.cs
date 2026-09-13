@@ -30,6 +30,23 @@ public enum SchemaEdgeKind
 }
 
 /// <summary>
+/// One field of a message, as the detail panel lists it.
+/// </summary>
+/// <param name="Name">The field name as written in the schema.</param>
+/// <param name="Type">
+/// The scalar type name (<c>string</c>, <c>int32</c>, …) or, for a field that
+/// names another type, that type's fully-qualified name. Formatting the two
+/// into something readable is the reader's job, not the model's.
+/// </param>
+/// <param name="IsRepeated">True for a <c>repeated</c> field.</param>
+/// <param name="IsMap">True for a map field; <paramref name="Type"/> is then the value type.</param>
+public sealed record SchemaField(
+    string Name,
+    string Type,
+    bool IsRepeated = false,
+    bool IsMap = false);
+
+/// <summary>
 /// One type or method in the graph.
 /// </summary>
 /// <param name="Id">
@@ -54,6 +71,13 @@ public sealed record SchemaNode(
     /// How many fields the message declares. Zero for enums and methods.
     /// </summary>
     public int FieldCount { get; init; }
+
+    /// <summary>
+    /// Every field the message declares, scalars included — the graph's edges
+    /// only carry references, and a type whose fields are all scalar would
+    /// otherwise arrive with nothing to show. Empty for enums and methods.
+    /// </summary>
+    public IReadOnlyList<SchemaField> Fields { get; init; } = [];
 
     /// <summary>
     /// How many edges point AT this node — the "who uses this" count the

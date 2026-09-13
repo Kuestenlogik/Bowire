@@ -402,6 +402,12 @@
         g.addEventListener('mouseenter', function () { schemaApplyHighlight(g.ownerSVGElement, n.id); });
         g.addEventListener('mouseleave', function () { schemaApplyHighlight(g.ownerSVGElement, schemaSelectedId); });
         g.addEventListener('click', function () { schemaSelectNode(n.id); });
+        if (n.kind === 'method') {
+            // Double-click is the shortcut; the panel's button is the
+            // discoverable path. Neither fires on a single click, so
+            // exploring the graph never navigates away by accident.
+            g.addEventListener('dblclick', function () { schemaOpenMethod(n.id); });
+        }
         return g;
     }
 
@@ -659,18 +665,152 @@
             })
         ];
 
+        if (node.kind === 'method') {
+            // The click-through #247 asks for. Offered as a button rather
+            // than fired on selection: a stray click in a graph should not
+            // throw the operator out of it.
+            children.push(el('div', { style: 'padding:6px 10px' },
+                el('button', {
+                    className: 'bowire-btn-ghost',
+                    textContent: t('schema.openMethod'),
+                    onclick: function () { schemaOpenMethod(node.id); }
+                })
+            ));
+        } else if (node.fields && node.fields.length > 0) {
+            children.push(schemaFieldSection(node));
+        }
+
         children.push(schemaSection(t('schema.usedBy', { count: String(usedBy.length) }), usedBy, 'from'));
         children.push(schemaSection(t('schema.references', { count: String(references.length) }), references, 'to'));
+
+        if (node.kind !== 'method') {
+            var reachers = schemaMethodsReaching(node.id);
+            children.push(schemaMethodSection(reachers));
+        }
 
         return el('div', {}, ...children);
     }
 
-    function schemaSection(title, edges, endKey) {
-        var rows = [el('div', {
+    /// The type's own field list, scalars included. The graph's edges only
+    /// carry references, so a message of nothing but strings would otherwise
+    /// show an empty panel.
+    function schemaFieldSection(node) {
+        var rows = [schemaSectionHeading(t('schema.fields', { count: String(node.fields.length) }))];
+        for (var i = 0; i < node.fields.length; i++) {
+            var f = node.fields[i];
+            var shape = f.map ? 'map<' + schemaShortType(f.type) + '>'
+                : f.repeated ? schemaShortType(f.type) + '[]'
+                    : schemaShortType(f.type);
+            rows.push(el('div', { style: 'display:flex;gap:6px;padding:3px 10px;font-size:12px' },
+                el('span', {
+                    style: 'flex:1;font-family:var(--bowire-mono);overflow:hidden;text-overflow:ellipsis;white-space:nowrap',
+                    textContent: f.name
+                }),
+                el('span', {
+                    style: 'color:var(--bowire-text-tertiary);font-size:11px;font-family:var(--bowire-mono)',
+                    textContent: shape,
+                    title: f.type
+                })
+            ));
+        }
+        return el('div', {}, ...rows);
+    }
+
+    /// Every method from which this type is reachable — not only the ones
+    /// that name it directly. "Which type is consumed where" is the question
+    /// the rail exists for, and a type four levels down a request shape is
+    /// still consumed by that method.
+    function schemaMethodsReaching(id) {
+        var edges = (schemaGraph && schemaGraph.edges) || [];
+        var seen = Object.create(null);
+        var queue = [id];
+        var found = [];
+        seen[id] = true;
+        while (queue.length > 0) {
+            var current = queue.shift();
+            for (var i = 0; i < edges.length; i++) {
+                if (edges[i].to !== current) continue;
+                var from = edges[i].from;
+                if (seen[from]) continue;
+                seen[from] = true;
+                queue.push(from);
+                if (from.indexOf('/') >= 0) found.push(from);
+            }
+        }
+        found.sort();
+        return found;
+    }
+
+    function schemaMethodSection(methodIds) {
+        var rows = [schemaSectionHeading(t('schema.reachedFrom', { count: String(methodIds.length) }))];
+        for (var i = 0; i < methodIds.length; i++) {
+            rows.push(schemaMethodRow(methodIds[i]));
+        }
+        return el('div', {}, ...rows);
+    }
+
+    function schemaMethodRow(methodId) {
+        return el('div', {
+            style: 'display:flex;gap:6px;padding:4px 10px;font-size:12px;cursor:pointer',
+            onclick: function () { schemaSelectNode(methodId); }
+        },
+            el('span', {
+                style: 'flex:1;font-family:var(--bowire-mono);overflow:hidden;text-overflow:ellipsis;white-space:nowrap',
+                textContent: methodId,
+                title: methodId
+            }),
+            el('button', {
+                className: 'bowire-btn-ghost',
+                style: 'font-size:11px',
+                textContent: t('schema.open'),
+                onclick: function (ev) { ev.stopPropagation(); schemaOpenMethod(methodId); }
+            })
+        );
+    }
+
+    /// Hand the operator over to the request builder for this method. The
+    /// Discover rail owns no main pane of its own, so switching to it is what
+    /// puts the method-detail surface back in front.
+    function schemaOpenMethod(nodeId) {
+        var cut = nodeId.lastIndexOf('/');
+        if (cut < 0) return;
+        var serviceName = nodeId.slice(0, cut);
+        var methodName = nodeId.slice(cut + 1);
+
+        var svc = null;
+        for (var i = 0; i < (services || []).length; i++) {
+            if (services[i].name === serviceName) { svc = services[i]; break; }
+        }
+        if (!svc) return;
+
+        var method = null;
+        for (var m = 0; m < (svc.methods || []).length; m++) {
+            if (svc.methods[m].name === methodName) { method = svc.methods[m]; break; }
+        }
+        if (!method) return;
+
+        railMode = 'discover';
+        openTab(svc, method);
+        render();
+    }
+
+    function schemaSectionHeading(text) {
+        return el('div', {
             style: 'padding:6px 10px;font-size:11px;text-transform:uppercase;letter-spacing:.04em;'
                 + 'color:var(--bowire-text-tertiary)',
-            textContent: title
-        })];
+            textContent: text
+        });
+    }
+
+    /// Fully-qualified names are what the model carries, but a panel column
+    /// has no room for them — the full name stays on the row's title.
+    function schemaShortType(type) {
+        var cut = type.lastIndexOf('.');
+        return cut < 0 ? type : type.slice(cut + 1);
+    }
+
+    function schemaSection(title, edges, endKey) {
+        var rows = [schemaSectionHeading(title)];
         for (var i = 0; i < edges.length; i++) {
             rows.push(schemaEdgeRow(edges[i], endKey));
         }

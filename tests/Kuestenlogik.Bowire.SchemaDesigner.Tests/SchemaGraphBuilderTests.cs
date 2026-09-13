@@ -251,6 +251,70 @@ public sealed class SchemaGraphBuilderTests
         Assert.False(vessel.IsNested);
     }
 
+    [Fact]
+    public void FieldList_CoversScalarsTheEdgesCannotShow()
+    {
+        // A message whose fields are all scalar contributes no edges at all,
+        // so without the field list its detail panel would be blank.
+        var graph = SchemaGraphBuilder.Build([Set(File(
+            Message("Vessel", Scalar("imo", 1), Scalar("name", 2))))]);
+
+        var vessel = Node(graph, $"{Pkg}.Vessel");
+        Assert.Empty(graph.Edges);
+        Assert.Equal(["imo", "name"], vessel.Fields.Select(f => f.Name).ToArray());
+        Assert.All(vessel.Fields, f => Assert.Equal("string", f.Type));
+    }
+
+    [Fact]
+    public void FieldList_NamesReferencedTypesMapsAndRepeats()
+    {
+        var berths = Message("Port", MapField("byCode", 1, "Port.BerthsEntry"));
+        berths.NestedType.Add(MapEntry("BerthsEntry", valueType: $".{Pkg}.Berth"));
+        berths.Field.Add(Repeated("calls", 2, "PortCall"));
+        berths.Field.Add(Reference("primary", 3, "Berth"));
+        berths.Field.Add(Scalar("code", 4));
+
+        var graph = SchemaGraphBuilder.Build([Set(File(
+            Message("Berth", Scalar("name", 1)),
+            Message("PortCall", Scalar("id", 1)),
+            berths))]);
+
+        var port = Node(graph, $"{Pkg}.Port");
+        var byCode = port.Fields.First(f => f.Name == "byCode");
+        Assert.True(byCode.IsMap);
+        Assert.False(byCode.IsRepeated);
+        // The map names its value type, not protoc's synthetic entry.
+        Assert.Equal($"{Pkg}.Berth", byCode.Type);
+
+        var calls = port.Fields.First(f => f.Name == "calls");
+        Assert.True(calls.IsRepeated);
+        Assert.Equal($"{Pkg}.PortCall", calls.Type);
+
+        Assert.Equal($"{Pkg}.Berth", port.Fields.First(f => f.Name == "primary").Type);
+        Assert.Equal("string", port.Fields.First(f => f.Name == "code").Type);
+    }
+
+    [Fact]
+    public void FieldList_IsEmptyForEnumsAndMethods()
+    {
+        var file = File(Message("GetRequest", Scalar("id", 1)), Message("GetReply", Scalar("ok", 1)));
+        file.EnumType.Add(new EnumDescriptorProto
+        {
+            Name = "Status",
+            Value = { new EnumValueDescriptorProto { Name = "UNKNOWN", Number = 0 } },
+        });
+        file.Service.Add(new ServiceDescriptorProto
+        {
+            Name = "Svc",
+            Method = { new MethodDescriptorProto { Name = "Get", InputType = $".{Pkg}.GetRequest", OutputType = $".{Pkg}.GetReply" } },
+        });
+
+        var graph = SchemaGraphBuilder.Build([Set(file)]);
+
+        Assert.Empty(Node(graph, $"{Pkg}.Status").Fields);
+        Assert.Empty(Node(graph, $"{Pkg}.Svc/Get").Fields);
+    }
+
     // ---- descriptor construction helpers ----
 
     private static SchemaNode Node(SchemaGraph graph, string id) =>

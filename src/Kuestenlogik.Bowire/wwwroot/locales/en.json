@@ -3373,6 +3373,10 @@
   "schema.usedBy": "Used by ({count})",
   "schema.references": "References ({count})",
   "schema.back": "Back to list",
+  "schema.fields": "Fields ({count})",
+  "schema.reachedFrom": "Reached from ({count})",
+  "schema.openMethod": "Open in the request builder",
+  "schema.open": "Open",
   "rail.workspaces": "Workspaces",
   "rail.help": "Help",
 
