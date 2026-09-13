@@ -12,11 +12,12 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.8 — Localisation, layout and the test pillar: DE + EN catalogues, splits and shelf, contract testing *(due 2026-11-03)*
 
-**25/34 done** · 1 in progress · 8 backlog
+**25/35 done** · 2 in progress · 8 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [250](https://github.com/Kuestenlogik/Bowire/issues/250) | Bowire | [Unified Layout — within-tab split (Auto/drag/shortcut/per-tab) + cross-tab pane split with tab drag-and-drop](#issue-kuestenlogik-bowire-250) | 🟡 In progress | `area:workbench` |
+| [695](https://github.com/Kuestenlogik/Bowire/issues/695) | Bowire | [Request and response state lives in globals, so only one method can ever be live](#issue-kuestenlogik-bowire-695) | 🟡 In progress | `area:workbench` |
 | [216](https://github.com/Kuestenlogik/Bowire/issues/216) | Bowire | [Test infra: WebApplicationFactory fixture for InvokeEndpoints + UnaryReplayer coverage](#issue-kuestenlogik-bowire-216) | ⬜ Backlog | `area:workbench` |
 | [292](https://github.com/Kuestenlogik/Bowire/issues/292) | Bowire | [Request-builder: GraphQL layout (#291 Phase D follow-up)](#issue-kuestenlogik-bowire-292) | ⬜ Backlog | `area:workbench` |
 | [311](https://github.com/Kuestenlogik/Bowire/issues/311) | Bowire | [Pluggable workbench: extract remaining rails (Phase G continuation)](#issue-kuestenlogik-bowire-311) | ⬜ Backlog | `area:workbench` |
@@ -169,7 +170,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [666](https://github.com/Kuestenlogik/Bowire/issues/666) | Bowire | [plugin install suggests a re-run its own already-installed guard blocks](#issue-kuestenlogik-bowire-666) | ⬜ Backlog | `area:plugin-sdk` |
 | [689](https://github.com/Kuestenlogik/Bowire/issues/689) | Bowire | [Action-log entries store rendered English text instead of a key](#issue-kuestenlogik-bowire-689) | ⬜ Backlog | `area:workbench` |
 | [690](https://github.com/Kuestenlogik/Bowire/issues/690) | Bowire | [Translate the CLI help surface, or decide not to](#issue-kuestenlogik-bowire-690) | ⬜ Backlog | `area:cli` |
-| [695](https://github.com/Kuestenlogik/Bowire/issues/695) | Bowire | [Request and response state lives in globals, so only one method can ever be live](#issue-kuestenlogik-bowire-695) | ⬜ Backlog | `area:workbench` |
 
 ## Details
 
@@ -180,6 +180,12 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 > `area:workbench`
 
 #135 shipped in v2.0 as a **within-tab** request/response split (vertical ↔ horizontal toggle). That feature predates the workbench tab system (#123). Now that tabs are first-class, the "split" concept has TWO orthogonal axes that operators need at different times, and #135 only covers one of them. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/250)
+
+#### <a id="issue-kuestenlogik-bowire-695"></a>🟡 In progress · [#695](https://github.com/Kuestenlogik/Bowire/issues/695) Request and response state lives in globals, so only one method can ever be live
+
+> `area:workbench`
+
+The workbench holds **one method's request and response at a time**. Tab switching does not make a second set live — it swaps the one set out and back in: [[more]](https://github.com/Kuestenlogik/Bowire/issues/695)
 
 #### <a id="issue-kuestenlogik-bowire-216"></a>⬜ Backlog · [#216](https://github.com/Kuestenlogik/Bowire/issues/216) Test infra: WebApplicationFactory fixture for InvokeEndpoints + UnaryReplayer coverage
 
@@ -820,12 +826,6 @@ The Activity drawer renders text that was translated once, when the action happe
 > `area:cli`
 
 `bowire --help` is still English in every locale. The machinery it needs already exists — `BowireLocale` resolves `BOWIRE_LOCALE` / `LC_ALL` / `LANG` / the OS culture and reads the same catalogues the workbench does — but nothing in the help surface calls it yet. [[more]](https://github.com/Kuestenlogik/Bowire/issues/690)
-
-#### <a id="issue-kuestenlogik-bowire-695"></a>⬜ Backlog · [#695](https://github.com/Kuestenlogik/Bowire/issues/695) Request and response state lives in globals, so only one method can ever be live
-
-> `area:workbench`
-
-The workbench holds **one method's request and response at a time**. Tab switching does not make a second set live — it swaps the one set out and back in: [[more]](https://github.com/Kuestenlogik/Bowire/issues/695)
 
 ---
 
