@@ -270,8 +270,15 @@
             // 'split editor' chord most editors use.
             if ((e.ctrlKey || e.metaKey) && e.altKey && e.key === '\\') {
                 e.preventDefault();
-                splitMode = splitMode === 'horizontal' ? 'vertical' : 'horizontal';
-                try { localStorage.setItem('bowire_split_mode', splitMode); } catch { /* ignore */ }
+                // #250 — the chord flips between the two concrete
+                // layouts and deliberately skips Auto: a shortcut is for
+                // "show me the other one now", and Auto answers a
+                // different question. Auto is reachable from the button's
+                // cycle and its right-click menu. The write lands on the
+                // active tab, like every other way of changing it.
+                var chordFrom = (typeof currentSplitMode === 'function')
+                    ? currentSplitMode() : splitMode;
+                setCurrentSplitMode(chordFrom === 'horizontal' ? 'vertical' : 'horizontal');
                 render();
                 return;
             }
@@ -693,6 +700,16 @@
                     || (roPop && roPop.contains(e.target));
                 if (!roInside) {
                     railOverflowOpen = false;
+                    changed = true;
+                }
+            }
+            // #250 — split-mode picker. The button is inside the wrap
+            // alongside the menu, so testing the wrap covers both and a
+            // right-click on the button never closes what it just opened.
+            if (typeof splitModeMenuOpen !== 'undefined' && splitModeMenuOpen) {
+                var smWrap = document.querySelector('.bowire-split-mode-wrap');
+                if (!(smWrap && smWrap.contains(e.target))) {
+                    splitModeMenuOpen = false;
                     changed = true;
                 }
             }

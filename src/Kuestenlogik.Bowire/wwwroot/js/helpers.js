@@ -1327,9 +1327,39 @@
             return (p && p.getAttribute('data-split') === 'vertical')
                 ? 'vertical' : 'horizontal';
         }
+        // #250 — per-workspace, because the right request/response
+        // balance is a property of what you are looking at: a workspace
+        // full of large JSON responses wants a different divider than one
+        // driving a handful of scalar calls. Still orientation-scoped —
+        // the same divider drags two different ways and the two values
+        // are not interchangeable.
         function _storageKey() {
-            return 'bowire_pane_ratio:' + _orientation();
+            var base = 'bowire_pane_ratio:' + _orientation();
+            return (typeof wsKey === 'function') ? wsKey(base) : base;
         }
+        // One-time carry-over from the global key this used before it was
+        // workspace-scoped, so an operator's existing divider does not
+        // jump back to the default on upgrade. BOTH orientations move, not
+        // just the one showing now — otherwise flipping the split later
+        // would find the other value already deleted.
+        function _migrateGlobalRatio() {
+            if (typeof wsKey !== 'function') return;
+            ['vertical', 'horizontal'].forEach(function (orientation) {
+                var legacy = 'bowire_pane_ratio:' + orientation;
+                var scoped = wsKey(legacy);
+                ['', ':maxed'].forEach(function (suffix) {
+                    try {
+                        var old = localStorage.getItem(legacy + suffix);
+                        if (old === null) return;
+                        if (localStorage.getItem(scoped + suffix) === null) {
+                            localStorage.setItem(scoped + suffix, old);
+                        }
+                        localStorage.removeItem(legacy + suffix);
+                    } catch { /* ignore */ }
+                });
+            });
+        }
+        _migrateGlobalRatio();
         function _minSize() {
             return _orientation() === 'vertical' ? 120 : 200;
         }
@@ -4135,6 +4165,9 @@ var railName = opts.railLabel || t('prereq.thisRail');
             // horizontal mode, stacked pictogram for vertical mode.
             splitHorizontal: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="1"/><line x1="12" y1="4" x2="12" y2="20"/></svg>',
             splitVertical: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="1"/><line x1="3" y1="12" x2="21" y2="12"/></svg>',
+            // #250 — Auto. The frame with BOTH dividers dashed: the split
+            // exists, the workbench picks which way at render time.
+            splitAuto: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="1"/><line x1="12" y1="4" x2="12" y2="20" stroke-dasharray="3 2"/><line x1="3" y1="12" x2="21" y2="12" stroke-dasharray="3 2"/></svg>',
             beaker: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3v6l-5 9a2 2 0 0 0 1.7 3h12.6a2 2 0 0 0 1.7-3l-5-9V3"/><line x1="8" y1="3" x2="16" y2="3"/></svg>',
             server: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>',
             chart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>',

@@ -945,6 +945,24 @@
             window.morphdom(app, next, {
                 childrenOnly: true,
                 onBeforeElUpdated: function (fromEl, toEl) {
+                    // #250 — the pane divider is owned by initResizer once
+                    // mounted: it builds the two edge maximize toggles and
+                    // the ARIA chrome after the fact, while the render tree
+                    // always describes the bar as an empty div. Morphing it
+                    // stripped both straight back out on the very next
+                    // render — and because the wired flag is an expando
+                    // that survives the morph, initResizer's own guard then
+                    // refused to rebuild them. The bar stayed draggable and
+                    // lost every affordance that said so.
+                    //
+                    // Skipping the whole element is safe because the tree
+                    // gives it only an id and a class, and the id carries
+                    // the method key: switching methods changes the id, so
+                    // morphdom replaces the node outright and the fresh one
+                    // wires from scratch.
+                    if (fromEl.classList && fromEl.classList.contains('bowire-pane-divider')) {
+                        return false;
+                    }
                     // Fast-path: structurally identical subtree → skip.
                     // Big win for static toolbar/header regions that
                     // haven't changed across renders.
@@ -3288,20 +3306,38 @@
         // shows the CURRENT layout (state-pattern, matches how
         // browser-engine toggles work) — click flips. Reflowing the
         // content + persisting happens in the onClick.
+        // #250 — three states, not two: the click cycles
+        // vertical → horizontal → auto, and a right-click picks one
+        // directly for the operator who knows which they want. The mode
+        // belongs to the ACTIVE TAB, so the icon follows tab switches.
+        var activeSplit = (typeof currentSplitMode === 'function')
+            ? currentSplitMode() : splitMode;
         var splitBtn = el('button', {
             id: 'bowire-split-toggle-btn',
             className: 'bowire-theme-toggle-btn',
-            title: splitMode === 'vertical'
-                ? t('topbar.splitVertical')
-                : t('topbar.splitHorizontal'),
+            title: activeSplit === 'auto'
+                ? t('topbar.splitAuto')
+                : activeSplit === 'vertical'
+                    ? t('topbar.splitVertical')
+                    : t('topbar.splitHorizontal'),
             'aria-label': t('status.toggleSplit'),
             onClick: function () {
-                splitMode = splitMode === 'horizontal' ? 'vertical' : 'horizontal';
-                try { localStorage.setItem('bowire_split_mode', splitMode); } catch { /* ignore */ }
+                // Re-read at click time. The button carries a stable id, so
+                // morphdom preserves the node and with it THIS listener —
+                // a captured activeSplit would freeze at whatever the mode
+                // was on first render and the cycle would stick.
+                setCurrentSplitMode(nextSplitMode(currentSplitMode()));
+                render();
+            },
+            onContextMenu: function (ev) {
+                ev.preventDefault();
+                splitModeMenuOpen = !splitModeMenuOpen;
                 render();
             }
         }, el('span', {
-            innerHTML: svgIcon(splitMode === 'vertical' ? 'splitVertical' : 'splitHorizontal'),
+            innerHTML: svgIcon(activeSplit === 'auto'
+                ? 'splitAuto'
+                : activeSplit === 'vertical' ? 'splitVertical' : 'splitHorizontal'),
             style: 'width:14px;height:14px;display:flex'
         }));
         // Segmented view-switcher (B) — Request-full / Split / Response-
@@ -3356,8 +3392,41 @@
         // Group 2 — layout. The view-switcher (Request / Split /
         // Response) sits next to the orientation toggle; both are pane-
         // layout controls, isolated so they don't read as drawer buttons.
+        // #250 — the right-click picker. Wrapped with the button so the
+        // popover can anchor to it, and so the outside-click handler has
+        // one container to test against.
+        var splitWrap = el('div', { className: 'bowire-split-mode-wrap' }, splitBtn);
+        if (splitModeMenuOpen) {
+            var splitMenu = el('div', {
+                id: 'bowire-split-mode-menu',
+                className: 'bowire-split-mode-menu',
+                role: 'menu'
+            });
+            [
+                { mode: 'vertical', icon: 'splitVertical', label: t('topbar.splitPickVertical') },
+                { mode: 'horizontal', icon: 'splitHorizontal', label: t('topbar.splitPickHorizontal') },
+                { mode: 'auto', icon: 'splitAuto', label: t('topbar.splitPickAuto') }
+            ].forEach(function (opt) {
+                splitMenu.appendChild(el('button', {
+                    type: 'button',
+                    className: 'bowire-split-mode-menu-item' + (activeSplit === opt.mode ? ' active' : ''),
+                    onClick: function () {
+                        splitModeMenuOpen = false;
+                        setCurrentSplitMode(opt.mode);
+                        render();
+                    }
+                },
+                    el('span', {
+                        className: 'bowire-split-mode-menu-icon',
+                        innerHTML: svgIcon(opt.icon)
+                    }),
+                    el('span', { textContent: opt.label })
+                ));
+            });
+            splitWrap.appendChild(splitMenu);
+        }
         right.appendChild(el('div', { className: 'bowire-statusbar-group' },
-            paneViewSwitcher, splitBtn));
+            paneViewSwitcher, splitWrap));
         // Group 3 — system (watch + connection). Watch + connection
         // pill describe the live link to the server, distinct from the
         // local-state drawers and layout switches to their left.

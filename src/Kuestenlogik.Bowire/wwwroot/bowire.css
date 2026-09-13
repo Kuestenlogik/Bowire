@@ -1538,6 +1538,52 @@ but
     border-radius: var(--bowire-radius-md);
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
 }
+/* #250 — split-mode picker, opened by right-clicking the orientation
+   toggle. The toggle lives in the status bar at the bottom edge, so the
+   menu opens upward; anchoring is why the button is wrapped at all. */
+.bowire-split-mode-wrap {
+    position: relative;
+    display: inline-flex;
+}
+.bowire-split-mode-menu {
+    position: absolute;
+    right: 0;
+    bottom: calc(100% + 6px);
+    z-index: 60;
+    min-width: 160px;
+    padding: 4px;
+    background: var(--bowire-bg-elevated);
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius-md);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+.bowire-split-mode-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 6px 8px;
+    background: transparent;
+    border: 0;
+    border-radius: var(--bowire-radius-sm);
+    color: var(--bowire-text);
+    font-size: 12px;
+    text-align: left;
+    cursor: pointer;
+}
+.bowire-split-mode-menu-item:hover {
+    background: var(--bowire-bg-subtle);
+}
+.bowire-split-mode-menu-item.active {
+    color: var(--bowire-accent);
+}
+.bowire-split-mode-menu-icon {
+    display: flex;
+    width: 14px;
+    height: 14px;
+    flex: 0 0 14px;
+}
+
 /* #249 Phase 2 — "add a rail". Sits just above Settings and borrows the
    overflow popover's chrome, anchored lower because it is the lower
    button. Rendered only when something is addable, so there is no empty

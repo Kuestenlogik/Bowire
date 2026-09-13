@@ -724,6 +724,10 @@
     // out of vertical room, this one lists rails the operator has never
     // switched on. Same popover chrome, different question.
     let railAddOpen = false;
+    // #250 — the split-toggle's right-click picker. Separate from the
+    // click cycle: the cycle is for "next one please", this is for
+    // "that one".
+    let splitModeMenuOpen = false;
     let consoleHeight = 240;
     try {
         var _ch = parseInt(localStorage.getItem('bowire_console_height') || '', 10);
@@ -2021,34 +2025,53 @@
         return mode === 'vertical' ? 'vertical' : 'horizontal';
     }
 
-    // Cycle next-state for the split-toggle button click + the
-    // Ctrl/Cmd+Alt+\ keyboard shortcut. vertical → horizontal → auto →
-    // vertical.
+    // Cycle next-state for the split-toggle button click.
+    // vertical → horizontal → auto → vertical.
     function nextSplitMode(current) {
         if (current === 'vertical') return 'horizontal';
         if (current === 'horizontal') return 'auto';
         return 'vertical';
     }
 
-    // Per-workspace storage for the saved drag-handle position. When the
-    // operator manually resizes the request / response split, the px
-    // position lands here so a reload restores it. The key is split-mode
-    // scoped because the same divider drags two different ways (clientX
-    // in horizontal mode, clientY in vertical) so the saved values aren't
-    // interchangeable.
-    function getSplitDividerPosition(layout) {
-        try {
-            var raw = localStorage.getItem(wsKey('bowire_split_pos_' + layout));
-            var n = raw ? parseInt(raw, 10) : NaN;
-            return Number.isFinite(n) && n >= 100 ? n : null;
-        } catch { return null; }
+    // #250 — per-tab split mode. `splitMode` above is the DEFAULT a new
+    // tab inherits; the mode actually rendered belongs to the active tab,
+    // so comparing a wide JSON response side by side in one tab does not
+    // force that layout on every other open method.
+    //
+    // Reads go through currentSplitMode() rather than the bare variable,
+    // and writes through setCurrentSplitMode() so the tab record and the
+    // inherited default move together.
+    function activeTabRecord() {
+        if (typeof requestTabs === 'undefined' || !Array.isArray(requestTabs)) return null;
+        for (var i = 0; i < requestTabs.length; i++) {
+            if (requestTabs[i].id === activeTabId) return requestTabs[i];
+        }
+        return null;
     }
-    function setSplitDividerPosition(layout, px) {
-        try {
-            if (px == null) localStorage.removeItem(wsKey('bowire_split_pos_' + layout));
-            else localStorage.setItem(wsKey('bowire_split_pos_' + layout), String(px));
-        } catch { /* ignore */ }
+    function currentSplitMode() {
+        var tab = activeTabRecord();
+        var mode = tab && tab.splitMode;
+        return (mode === 'vertical' || mode === 'horizontal' || mode === 'auto') ? mode : splitMode;
     }
+    function setCurrentSplitMode(mode) {
+        if (mode !== 'vertical' && mode !== 'horizontal' && mode !== 'auto') return;
+        var tab = activeTabRecord();
+        if (tab) {
+            tab.splitMode = mode;
+            try { persistRequestTabs(); } catch { /* tab strip is session state */ }
+        }
+        // The last explicit choice also becomes what the NEXT tab opens
+        // with — an operator who works horizontally should not have to
+        // say so once per method.
+        splitMode = mode;
+        try { localStorage.setItem('bowire_split_mode', mode); } catch { /* ignore */ }
+    }
+
+    // #250 — the saved drag-handle position used to have a second home
+    // here (bowire_split_pos_<layout>), written by nothing and read by
+    // nothing, while initResizer persisted the real thing under its own
+    // key. The dead pair is gone; initResizer's key is now workspace-
+    // scoped, so there is one place the divider position lives.
 
     // #116 — Workspaces Phase 1. UI surface + naming only; actual
     // state isolation (per-workspace URLs / envs / collections /
@@ -5219,7 +5242,13 @@
         try {
             var data = {
                 tabs: requestTabs.map(function (tab) {
-                    return { id: tab.id, serviceKey: tab.serviceKey, methodKey: tab.methodKey, empty: tab.empty || undefined };
+                    return {
+                        id: tab.id, serviceKey: tab.serviceKey, methodKey: tab.methodKey,
+                        empty: tab.empty || undefined,
+                        // #250 — omitted when the tab never diverged from the
+                        // default, so an untouched strip stores what it did before.
+                        splitMode: tab.splitMode || undefined,
+                    };
                 }),
                 active: activeTabId,
             };
@@ -5267,7 +5296,10 @@
             // them as-is so a spawned-but-unfilled tab survives reload.
             if (tab.empty) {
                 seenIds[tab.id] = true;
-                requestTabs.push({ id: tab.id, empty: true, serviceKey: null, methodKey: null, service: null, method: null });
+                requestTabs.push({
+                    id: tab.id, empty: true, serviceKey: null, methodKey: null,
+                    service: null, method: null, splitMode: tab.splitMode,
+                });
                 continue;
             }
             var svc = services.find(function (s) { return s.name === tab.serviceKey; });
@@ -5281,6 +5313,7 @@
                 methodKey: tab.methodKey,
                 service: svc,
                 method: meth,
+                splitMode: tab.splitMode,
             });
         }
         if (requestTabs.length > 0) {

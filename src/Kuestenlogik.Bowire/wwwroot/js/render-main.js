@@ -471,7 +471,7 @@
         var splitContent = el('div', {
             className: 'bowire-content bowire-content-enter bowire-freeform-content',
             'data-split': (typeof resolveSplitMode === 'function')
-                ? resolveSplitMode(splitMode) : (splitMode || 'horizontal')
+                ? resolveSplitMode(currentSplitMode()) : (splitMode || 'horizontal')
         });
         var reqPane = el('div', { className: 'bowire-pane bowire-freeform-req-pane' });
         reqPane.appendChild(el('div', { className: 'bowire-pane-heading', textContent: t('main.request') }));
@@ -6443,7 +6443,7 @@
         // here so both the CSS attribute selector and the resizer
         // read the same literal axis ('horizontal' | 'vertical').
         var resolvedSplit = (typeof resolveSplitMode === 'function')
-            ? resolveSplitMode(splitMode) : (splitMode || 'horizontal');
+            ? resolveSplitMode(currentSplitMode()) : (splitMode || 'horizontal');
         const content = el('div', {
             id: 'bowire-content',
             className: 'bowire-content bowire-content-enter',
