@@ -3355,6 +3355,7 @@
   "rail.contracts": "Contracts",
   "rail.rollup": "Rollup",
   "rail.schema": "Schema Designer",
+  "form.notExpanded": "{type} is not expanded here — it refers back to a shape already on this path.",
   "schema.loading": "Building the graph…",
   "schema.empty": "No schema to draw. Discover a gRPC service first — the graph is built from the descriptors discovery captures.",
   "schema.loadFailed": "Could not build the graph ({status})",

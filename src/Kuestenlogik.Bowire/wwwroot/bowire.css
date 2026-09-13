@@ -13996,6 +13996,16 @@ textarea.bowire-form-input {
     transition: color var(--bowire-transition);
 }
 
+/* #694 — a nested shape discovery stopped at. Deliberately not a toggle:
+   there is nothing to expand, and offering one would be the very confusion
+   this replaces. */
+.bowire-form-nested-truncated {
+    padding: 4px 0;
+    font-size: 12px;
+    font-style: italic;
+    color: var(--bowire-text-tertiary);
+}
+
 .bowire-form-nested-toggle:hover {
     color: var(--bowire-text);
 }

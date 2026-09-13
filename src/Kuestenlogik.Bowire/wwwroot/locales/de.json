@@ -3355,6 +3355,7 @@
   "rail.contracts": "Verträge",
   "rail.rollup": "Zusammenfassung",
   "rail.schema": "Schema-Designer",
+  "form.notExpanded": "{type} wird hier nicht ausgeklappt — der Typ verweist auf eine Form, die in diesem Pfad schon vorkommt.",
   "schema.loading": "Graph wird aufgebaut …",
   "schema.empty": "Kein Schema zum Zeichnen. Ermittle zuerst einen gRPC-Dienst — der Graph entsteht aus den Deskriptoren, die die Ermittlung mitschneidet.",
   "schema.loadFailed": "Graph konnte nicht aufgebaut werden ({status})",

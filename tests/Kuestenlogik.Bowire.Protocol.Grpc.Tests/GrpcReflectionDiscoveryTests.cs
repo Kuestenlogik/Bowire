@@ -298,7 +298,141 @@ public sealed class GrpcReflectionDiscoveryTests
             s.Name.StartsWith("grpc.reflection", StringComparison.Ordinal));
     }
 
+    // ---- #694 — shared types must survive the walk ----
+
+    /// <summary>Mirrors the camelCase shape the discovery endpoint ships.</summary>
+    private static readonly System.Text.Json.JsonSerializerOptions WireJson =
+        new(System.Text.Json.JsonSerializerDefaults.Web);
+
+    [Fact]
+    public async Task DiscoverAsync_TwoFieldsOfTheSameType_ExpandsBoth()
+    {
+        // The defect in one shape: `Leg { Port origin = 1; Port destination = 2; }`.
+        // With a visited-set spanning the whole tree, `destination` came back
+        // with no fields and the request builder rendered no inputs for it.
+        await using var server = await ReflectionServer.StartAsync(BuildSharedTypeFileDescriptor());
+
+        var protocol = new BowireGrpcProtocol();
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        var services = await protocol.DiscoverAsync(server.BaseUrl, showInternalServices: false, cts.Token);
+
+        var method = Assert.Single(services).Methods.First(m => m.Name == "Plan");
+        var origin = method.InputType.Fields.First(f => f.Name == "origin");
+        var destination = method.InputType.Fields.First(f => f.Name == "destination");
+
+        Assert.NotNull(origin.MessageType);
+        Assert.NotNull(destination.MessageType);
+        // Both are the same type, so both must carry the same field list.
+        Assert.Equal("demo.Port", destination.MessageType!.FullName);
+        Assert.Equal(
+            origin.MessageType!.Fields.Select(f => f.Name).ToArray(),
+            destination.MessageType.Fields.Select(f => f.Name).ToArray());
+        Assert.Contains(destination.MessageType.Fields, f => f.Name == "code");
+        Assert.False(destination.MessageType.Truncated);
+    }
+
+    [Fact]
+    public async Task DiscoverAsync_RecursiveType_TerminatesAndMarksTheCut()
+    {
+        // `Node { string label = 1; Node parent = 2; }` — a genuine cycle,
+        // which is the one case the path-set still has to stop.
+        await using var server = await ReflectionServer.StartAsync(BuildRecursiveFileDescriptor());
+
+        var protocol = new BowireGrpcProtocol();
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        var services = await protocol.DiscoverAsync(server.BaseUrl, showInternalServices: false, cts.Token);
+
+        var method = Assert.Single(services).Methods.First(m => m.Name == "Walk");
+        // The request wraps Node, so the first Node expands in full and only
+        // the level that would close the cycle is cut.
+        var root = method.InputType.Fields.First(f => f.Name == "root");
+        Assert.NotNull(root.MessageType);
+        Assert.Contains(root.MessageType!.Fields, f => f.Name == "label");
+        Assert.False(root.MessageType.Truncated);
+
+        var parent = root.MessageType.Fields.First(f => f.Name == "parent");
+        Assert.NotNull(parent.MessageType);
+        Assert.True(parent.MessageType!.Truncated);
+        Assert.Empty(parent.MessageType.Fields);
+        // A cut shape is distinguishable from an empty one: the message the
+        // cycle points back at has fields, it just is not expanded here.
+        Assert.Equal("demo.Node", parent.MessageType.FullName);
+
+        // And the distinction has to survive the wire — that is where the
+        // request builder reads it. Marked where cut, absent everywhere else,
+        // so the common case costs no bytes.
+        var json = System.Text.Json.JsonSerializer.Serialize(method.InputType, WireJson);
+        Assert.Contains("\"truncated\":true", json, StringComparison.Ordinal);
+        Assert.DoesNotContain("\"truncated\":false", json, StringComparison.Ordinal);
+    }
+
     // ---- Synthetic descriptor builders ----
+
+    private static FileDescriptorProto BuildSharedTypeFileDescriptor()
+    {
+        var fd = new FileDescriptorProto { Name = "demo/shared.proto", Package = "demo", Syntax = "proto3" };
+        fd.MessageType.Add(new DescriptorProto
+        {
+            Name = "Port",
+            Field = { Scalar("code", 1), Scalar("name", 2) }
+        });
+        fd.MessageType.Add(new DescriptorProto
+        {
+            Name = "Leg",
+            Field = { Reference("origin", 1, ".demo.Port"), Reference("destination", 2, ".demo.Port") }
+        });
+        fd.MessageType.Add(new DescriptorProto { Name = "PlanReply", Field = { Scalar("id", 1) } });
+        fd.Service.Add(new ServiceDescriptorProto
+        {
+            Name = "PlanService",
+            Method = { new MethodDescriptorProto { Name = "Plan", InputType = ".demo.Leg", OutputType = ".demo.PlanReply" } }
+        });
+        return fd;
+    }
+
+    private static FileDescriptorProto BuildRecursiveFileDescriptor()
+    {
+        var fd = new FileDescriptorProto { Name = "demo/recursive.proto", Package = "demo", Syntax = "proto3" };
+        fd.MessageType.Add(new DescriptorProto
+        {
+            Name = "Node",
+            Field = { Scalar("label", 1), Reference("parent", 2, ".demo.Node") }
+        });
+        // Wrapped, so the cycle is one level in rather than at the root —
+        // otherwise the request type's own field closes it immediately and
+        // there is no expanded level to check.
+        fd.MessageType.Add(new DescriptorProto
+        {
+            Name = "WalkRequest",
+            Field = { Reference("root", 1, ".demo.Node") }
+        });
+        fd.MessageType.Add(new DescriptorProto { Name = "WalkReply", Field = { Scalar("ok", 1) } });
+        fd.Service.Add(new ServiceDescriptorProto
+        {
+            Name = "WalkService",
+            Method = { new MethodDescriptorProto { Name = "Walk", InputType = ".demo.WalkRequest", OutputType = ".demo.WalkReply" } }
+        });
+        return fd;
+    }
+
+    private static FieldDescriptorProto Scalar(string name, int number) => new()
+    {
+        Name = name,
+        Number = number,
+        Type = FieldDescriptorProto.Types.Type.String,
+        Label = FieldDescriptorProto.Types.Label.Optional,
+        JsonName = name,
+    };
+
+    private static FieldDescriptorProto Reference(string name, int number, string typeName) => new()
+    {
+        Name = name,
+        Number = number,
+        Type = FieldDescriptorProto.Types.Type.Message,
+        TypeName = typeName,
+        Label = FieldDescriptorProto.Types.Label.Optional,
+        JsonName = name,
+    };
 
     private static FileDescriptorProto BuildSimpleFileDescriptor(string fileTag, out FileDescriptorSet set)
     {

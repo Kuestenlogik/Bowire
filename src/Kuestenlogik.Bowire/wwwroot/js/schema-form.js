@@ -467,6 +467,18 @@
                     field.appendChild(mapContainer);
                 }
                 // Handle nested message
+                // #694 — a shape discovery deliberately stopped at (it closes
+                // a cycle, or sits past the depth cap) carries no fields but
+                // is NOT empty. An expander onto nothing reads as a bug; say
+                // what happened instead.
+                else if (f.type === 'message' && f.messageType && f.messageType.truncated) {
+                    field.appendChild(el('div', {
+                        className: 'bowire-form-nested-truncated',
+                        textContent: t('form.notExpanded', {
+                            type: f.messageType.fullName || f.messageType.name || ''
+                        })
+                    }));
+                }
                 else if (f.type === 'message' && f.messageType && d < 3) {
                     var nestedExpanded = formValues['__expanded__' + key] !== false;
                     var toggleEl = el('div', {

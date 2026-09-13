@@ -448,26 +448,85 @@ internal sealed class GrpcReflectionClient : IGrpcDescriptorSource
         return result;
     }
 
+    /// <summary>
+    /// How deep a single request / response shape is walked. A schema may
+    /// legitimately nest further; past this the shape is marked truncated
+    /// rather than expanded, so a deep-but-acyclic proto terminates without
+    /// the path-set having to be the thing that stops it.
+    /// </summary>
+    private const int MaxResolveDepth = 8;
+
+    /// <summary>
+    /// How many messages one shape may expand in total. The path-set stops a
+    /// type recurring on its OWN path, which is what breaks cycles — it does
+    /// not bound a wide DAG, where the same type is legitimately expanded at
+    /// many separate sites and the count multiplies out. This is the backstop
+    /// for that, and the reason per-path expansion cannot run away (#694).
+    /// </summary>
+    private const int MaxExpandedMessages = 2000;
+
+    /// <summary>Counts down the expansions one shape is allowed (#694).</summary>
+    private sealed class ExpansionBudget(int limit)
+    {
+        private int _remaining = limit;
+
+        public bool TryTake()
+        {
+            if (_remaining <= 0) return false;
+            _remaining--;
+            return true;
+        }
+    }
+
     private static BowireMessageInfo ResolveMessageType(
         string typeName, List<FileDescriptorProto> fileDescriptors)
     {
         // Strip leading dot from fully-qualified type name
         var name = typeName.TrimStart('.');
-        var visited = new HashSet<string>();
-        return ResolveMessageTypeRecursive(name, fileDescriptors, visited);
+        return ResolveMessageTypeRecursive(
+            name,
+            fileDescriptors,
+            new HashSet<string>(StringComparer.Ordinal),
+            depth: 0,
+            new ExpansionBudget(MaxExpandedMessages));
     }
 
+    /// <summary>
+    /// Expand one message shape, following its message-typed fields.
+    /// </summary>
+    /// <remarks>
+    /// <c>path</c> holds the types currently being expanded — the chain from
+    /// the root down to here, NOT every type seen so far. The distinction is
+    /// the whole point (#694): a set that spanned the tree and never unwound
+    /// marked a type's second appearance ANYWHERE as a repeat, so an ordinary
+    /// shared type — two fields of the same message type, or one type used by
+    /// two messages — came back with no fields, and the request builder
+    /// rendered no inputs for it. Entries are removed again on the way out,
+    /// so only a genuine cycle (a type reachable from itself) is cut.
+    /// </remarks>
     private static BowireMessageInfo ResolveMessageTypeRecursive(
-        string fullName, List<FileDescriptorProto> fileDescriptors, HashSet<string> visited)
+        string fullName,
+        List<FileDescriptorProto> fileDescriptors,
+        HashSet<string> path,
+        int depth,
+        ExpansionBudget budget)
     {
-        if (!visited.Add(fullName))
-            return new BowireMessageInfo(fullName.Split('.').Last(), fullName, []);
+        // Past the depth cap, or already on this path: not expanded here.
+        // Neither branch added to the path, so neither may remove from it.
+        if (depth >= MaxResolveDepth || !path.Add(fullName))
+            return TruncatedShape(fullName);
 
-        foreach (var fd in fileDescriptors)
+        try
         {
-            var msg = FindMessageInFile(fd.Package, fd.MessageType, fullName);
-            if (msg is not null)
+            foreach (var fd in fileDescriptors)
             {
+                var msg = FindMessageInFile(fd.Package, fd.MessageType, fullName);
+                if (msg is null)
+                    continue;
+
+                if (!budget.TryTake())
+                    return TruncatedShape(fullName);
+
                 var fields = new List<BowireFieldInfo>();
                 foreach (var field in msg.Field)
                 {
@@ -478,7 +537,7 @@ internal sealed class GrpcReflectionClient : IGrpcDescriptorSource
                     {
                         var nestedName = field.TypeName.TrimStart('.');
                         nestedMsg = ResolveMessageTypeRecursive(
-                            nestedName, fileDescriptors, visited);
+                            nestedName, fileDescriptors, path, depth + 1, budget);
                     }
                     else if (field.Type == FieldDescriptorProto.Types.Type.Enum)
                     {
@@ -507,9 +566,24 @@ internal sealed class GrpcReflectionClient : IGrpcDescriptorSource
                     Fields: fields);
             }
         }
+        finally
+        {
+            path.Remove(fullName);
+        }
 
-        // Type not found in descriptors - return stub
-        return new BowireMessageInfo(fullName.Split('.').Last(), fullName, []);
+        // The descriptor set does not carry this type at all. Left unmarked:
+        // it is genuinely unknown, not a shape we chose to stop at.
+        return new BowireMessageInfo(ShortTypeName(fullName), fullName, []);
+    }
+
+    /// <summary>A shape that exists but was deliberately not expanded here.</summary>
+    private static BowireMessageInfo TruncatedShape(string fullName) =>
+        new(ShortTypeName(fullName), fullName, []) { Truncated = true };
+
+    private static string ShortTypeName(string fullName)
+    {
+        var cut = fullName.LastIndexOf('.');
+        return cut < 0 ? fullName : fullName[(cut + 1)..];
     }
 
     private static DescriptorProto? FindMessageInFile(

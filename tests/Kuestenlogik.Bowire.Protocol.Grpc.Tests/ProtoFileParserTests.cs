@@ -470,4 +470,52 @@ public class ProtoFileParserTests
 
         Assert.Equal("reflection", service.Source);
     }
+
+    /// <summary>
+    /// #694 checked the uploaded-.proto path for the same defect as the
+    /// reflection path. It does not share it: this parser resolves references
+    /// against a flat dictionary of known messages, handing back the same
+    /// instance each time, so a type used twice is complete at both sites.
+    /// Pinned here so the two paths cannot drift apart unnoticed.
+    /// </summary>
+    [Fact]
+    public void Parse_TypeUsedByTwoFields_IsCompleteAtBothSites()
+    {
+        const string proto = """
+            syntax = "proto3";
+            package demo;
+
+            service PlanService {
+              rpc Plan (Leg) returns (PlanReply);
+            }
+
+            message Port {
+              string code = 1;
+              string name = 2;
+            }
+
+            message Leg {
+              Port origin = 1;
+              Port destination = 2;
+            }
+
+            message PlanReply {
+              string id = 1;
+            }
+            """;
+
+        var services = Kuestenlogik.Bowire.ProtoFileParser.Parse(proto);
+
+        var method = Assert.Single(services).Methods.First(m => m.Name == "Plan");
+        var origin = method.InputType.Fields.First(f => f.Name == "origin");
+        var destination = method.InputType.Fields.First(f => f.Name == "destination");
+
+        Assert.NotNull(origin.MessageType);
+        Assert.NotNull(destination.MessageType);
+        Assert.Contains(origin.MessageType!.Fields, f => f.Name == "code");
+        Assert.Contains(destination.MessageType!.Fields, f => f.Name == "code");
+        Assert.Equal(
+            origin.MessageType.Fields.Select(f => f.Name).ToArray(),
+            destination.MessageType.Fields.Select(f => f.Name).ToArray());
+    }
 }
