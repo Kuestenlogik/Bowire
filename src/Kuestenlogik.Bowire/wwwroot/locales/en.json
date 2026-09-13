@@ -3076,6 +3076,8 @@
   "main.tab.payload": "Payload",
   "main.copiedResponse": "Copied response",
   "sidebar.needWorkspaceRail": "Create a workspace first to use this rail",
+  "sidebar.addRail": "Add a rail",
+  "sidebar.addRailLede": "Rails you have not switched on yet.",
   "main.ws.hardDeleteAsk": "This workspace will be deleted IMMEDIATELY. Undo will work for the next ~200 actions, but it won’t be in the Trash. Continue?",
   "problem.configure": "Configure",
   "problem.openDocs": "Open docs",

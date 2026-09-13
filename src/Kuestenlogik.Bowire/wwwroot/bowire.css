@@ -1538,6 +1538,30 @@ but
     border-radius: var(--bowire-radius-md);
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
 }
+/* #249 Phase 2 — "add a rail". Sits just above Settings and borrows the
+   overflow popover's chrome, anchored lower because it is the lower
+   button. Rendered only when something is addable, so there is no empty
+   state to style. */
+.bowire-rail-add-popover {
+    bottom: 52px;
+}
+.bowire-rail-add-popover-head {
+    padding: 6px 10px 8px;
+    font-size: 11px;
+    line-height: 1.35;
+    color: var(--bowire-text-tertiary);
+    border-bottom: 1px solid var(--bowire-border);
+    margin-bottom: 4px;
+}
+/* The "+" reads as an offer, not as a peer of the mode buttons, so it
+   stays quiet until pointed at. */
+.bowire-rail-add {
+    opacity: 0.55;
+}
+.bowire-rail-add:hover,
+.bowire-rail-add.active {
+    opacity: 1;
+}
 .bowire-rail-overflow-popover-item {
     display: flex;
     align-items: center;

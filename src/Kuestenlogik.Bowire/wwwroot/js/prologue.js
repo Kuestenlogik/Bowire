@@ -719,6 +719,11 @@
     // Session-only; resetting on reload is fine because the menu is
     // ephemeral by nature.
     let railOverflowOpen = false;
+    // #249 Phase 2 — the "add a rail" picker at the bottom of the strip.
+    // Separate from railOverflowOpen: that one lists rails already on but
+    // out of vertical room, this one lists rails the operator has never
+    // switched on. Same popover chrome, different question.
+    let railAddOpen = false;
     let consoleHeight = 240;
     try {
         var _ch = parseInt(localStorage.getItem('bowire_console_height') || '', 10);
@@ -1714,6 +1719,19 @@
             return true;
         }
         return pref.indexOf(id) >= 0;
+    }
+    /// #249 Phase 2 — rails the operator could switch on but has not:
+    /// toggleable (neither always-on nor hidden from the strip) and
+    /// currently disabled. A default-off rail (#304) lands here on a fresh
+    /// install without ever having been touched, which is the whole reason
+    /// the rail needs an affordance of its own: Settings is not a place
+    /// people visit to discover what exists.
+    function addableRailModes() {
+        if (typeof _railModes === 'undefined' || !Array.isArray(_railModes)) return [];
+        return _railModes
+            .filter(function (m) { return !m.hideFromRail; })
+            .filter(function (m) { return ALWAYS_ON_RAIL_MODES.indexOf(m.id) < 0; })
+            .filter(function (m) { return !isRailEnabled(m.id); });
     }
     function _allToggleableRailIds() {
         // Lazy-evaluated against the live _railModes catalogue

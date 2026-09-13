@@ -1806,6 +1806,74 @@
             rail.appendChild(popover);
         }
 
+        // #249 Phase 2 — "add a rail". Rendered ONLY when something is
+        // actually addable: a "+" that opens an empty list is worse than
+        // no "+" at all. It exists because a default-off rail (#304, and
+        // #247's Schema Designer) is otherwise reachable only through
+        // Settings, and Settings is not where people go to find out what
+        // exists.
+        var addable = (typeof addableRailModes === 'function') ? addableRailModes() : [];
+        if (addable.length > 0) {
+            rail.appendChild(el('button', {
+                type: 'button',
+                id: 'bowire-rail-add-btn',
+                className: 'bowire-rail-btn bowire-rail-add' + (railAddOpen ? ' active' : ''),
+                title: t('sidebar.addRail'),
+                'aria-label': t('sidebar.addRail'),
+                'aria-expanded': railAddOpen ? 'true' : 'false',
+                onClick: function () {
+                    railAddOpen = !railAddOpen;
+                    railOverflowOpen = false;
+                    render();
+                }
+            },
+                el('span', { innerHTML: svgIcon('plus') })
+            ));
+
+            if (railAddOpen) {
+                var addPopover = el('div', {
+                    id: 'bowire-rail-add-popover',
+                    className: 'bowire-rail-overflow-popover bowire-rail-add-popover',
+                    role: 'menu'
+                });
+                addPopover.appendChild(el('div', {
+                    className: 'bowire-rail-add-popover-head',
+                    textContent: t('sidebar.addRailLede')
+                }));
+                addable.forEach(function (m) {
+                    var needsWorkspace = !!m.requiresWorkspace && !activeWorkspaceId;
+                    addPopover.appendChild(el('button', {
+                        type: 'button',
+                        className: 'bowire-rail-overflow-popover-item',
+                        title: needsWorkspace ? t('sidebar.needWorkspaceRail') : undefined,
+                        onClick: function () {
+                            railAddOpen = false;
+                            setRailEnabled(m.id, true);
+                            // Switching to what was just added is the obvious
+                            // intent — except when the rail needs a workspace
+                            // and there is none, where it would land on an
+                            // empty state instead of on the thing asked for.
+                            if (!needsWorkspace) {
+                                railMode = m.id;
+                                try { localStorage.setItem('bowire_rail_mode', m.id); } catch { /* ignore */ }
+                            }
+                            render();
+                        }
+                    },
+                        el('span', {
+                            className: 'bowire-rail-overflow-popover-icon',
+                            innerHTML: svgIcon(m.icon)
+                        }),
+                        el('span', {
+                            className: 'bowire-rail-overflow-popover-label',
+                            textContent: m.label
+                        })
+                    ));
+                });
+                rail.appendChild(addPopover);
+            }
+        }
+
         // Settings — anchored at the very bottom of the rail. Moved
         // out of the topbar ⋮ overflow into the rail per VS Code /
         // JetBrains convention; reachable from every mode without

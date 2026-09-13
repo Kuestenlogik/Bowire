@@ -3076,6 +3076,8 @@
   "main.tab.payload": "Nutzlast",
   "main.copiedResponse": "Die Antwort ist kopiert",
   "sidebar.needWorkspaceRail": "Legen Sie erst einen Arbeitsbereich an, um diese Schiene zu nutzen",
+  "sidebar.addRail": "Rail hinzufügen",
+  "sidebar.addRailLede": "Rails, die du noch nicht eingeschaltet hast.",
   "main.ws.hardDeleteAsk": "Dieser Arbeitsbereich wird SOFORT gelöscht. Zurücknehmen geht noch etwa 200 Aktionen lang, aber im Papierkorb liegt er nicht. Weiter?",
   "problem.configure": "Einrichten",
   "problem.openDocs": "Das Handbuch öffnen",

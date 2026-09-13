@@ -696,6 +696,20 @@
                     changed = true;
                 }
             }
+            // #249 Phase 2 — "add a rail" picker. Same outside-click rule
+            // as the overflow popover above; it is a separate popover
+            // because it answers a different question (what could be here)
+            // and so can never be open at the same time.
+            if (typeof railAddOpen !== 'undefined' && railAddOpen) {
+                var raBtn = document.getElementById('bowire-rail-add-btn');
+                var raPop = document.getElementById('bowire-rail-add-popover');
+                var raInside = (raBtn && raBtn.contains(e.target))
+                    || (raPop && raPop.contains(e.target));
+                if (!raInside) {
+                    railAddOpen = false;
+                    changed = true;
+                }
+            }
             // #297 — Topbar right-cluster overflow popover. Closes on
             // any outside click; the ⋮ button + popover are siblings
             // inside bowire-topbar-right, both checked so clicking
