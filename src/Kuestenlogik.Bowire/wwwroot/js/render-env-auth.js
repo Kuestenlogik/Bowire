@@ -838,12 +838,14 @@
         // case (Assistant + Activity open at once, &c.).
         var testsUsable = (typeof testsDrawerOpen !== 'undefined') && testsDrawerOpen;
         var activityUsable = (typeof activityDrawerOpen !== 'undefined') && activityDrawerOpen;
-        if (aiDrawerOpen || testsUsable || activityUsable) {
+        var shelfUsable = (typeof shelfDrawerOpen !== 'undefined') && shelfDrawerOpen;
+        if (aiDrawerOpen || testsUsable || activityUsable || shelfUsable) {
             body.classList.add('bowire-with-ai-drawer');
             body.appendChild(renderUnifiedRightDrawer({
                 assistant: aiDrawerOpen,
                 tests: testsUsable,
-                activity: activityUsable
+                activity: activityUsable,
+                shelf: shelfUsable
             }));
         }
 
@@ -2353,6 +2355,28 @@
         // assertion run for the active method; '?' when assertions
         // exist but haven't been run yet. No accessory when there are
         // no assertions configured.
+        if (open.shelf) {
+            // #251 — the count is the whole accessory: the shelf's only
+            // interesting state is how much is on it.
+            var shelfCnt = (typeof shelfItems !== 'undefined') ? shelfItems.length : 0;
+            tabs.push({
+                id: 'shelf',
+                label: t('drawer.shelf'),
+                accessory: shelfCnt > 0 ? el('span', {
+                    className: 'bowire-help-topic-count',
+                    textContent: String(shelfCnt)
+                }) : null,
+                closeTitle: t('topbar.closeShelf'),
+                onClose: function () {
+                    shelfDrawerOpen = false;
+                    try { localStorage.setItem('bowire_shelf_drawer_open', '0'); } catch { /* ignore */ }
+                    render();
+                },
+                renderContent: function () {
+                    return renderShelfPanel();
+                }
+            });
+        }
         if (open.tests) {
             var testsAcc = _testsTabAccessory();
             tabs.push({
@@ -3241,6 +3265,37 @@
         // of still-reversible actions; tooltip flips with the drawer
         // state so the operator can tell whether a click opens or
         // closes it.
+        // #251 — Shelf toggle. Sits with the other drawer buttons because
+        // it is one: a surface you open alongside your work, not a layout
+        // control. The count rides on the title rather than a badge — the
+        // drawer tab already carries the badge, and two of them would be
+        // the same number twice.
+        var shelfCount = (typeof shelfItems !== 'undefined') ? shelfItems.length : 0;
+        var shelfBtn = el('button', {
+            id: 'bowire-statusbar-shelf-btn',
+            className: 'bowire-theme-toggle-btn' + (shelfDrawerOpen ? ' active' : ''),
+            title: shelfDrawerOpen
+                ? t('topbar.hideShelf')
+                : (shelfCount > 0
+                    ? t('topbar.showShelfCount', { count: String(shelfCount) })
+                    : t('topbar.showShelf')),
+            'aria-label': t('status.toggleShelf'),
+            onClick: function () {
+                shelfDrawerOpen = !shelfDrawerOpen;
+                try { localStorage.setItem('bowire_shelf_drawer_open', shelfDrawerOpen ? '1' : '0'); }
+                catch { /* ignore */ }
+                if (shelfDrawerOpen) {
+                    rightDrawerActiveTab = 'shelf';
+                    try { localStorage.setItem('bowire_right_drawer_active_tab', 'shelf'); }
+                    catch { /* ignore */ }
+                }
+                render();
+            }
+        }, el('span', {
+            innerHTML: svgIcon('shelf'),
+            style: 'width:14px;height:14px;display:flex'
+        }));
+
         var availCount = (typeof availableActionCount === 'function')
             ? availableActionCount() : 0;
         var activityBtn = el('button', {
@@ -3388,7 +3443,7 @@
         // live streams running" before the operator scans the right-
         // hand chrome.
         right.appendChild(el('div', { className: 'bowire-statusbar-group' },
-            consoleBtn, activityBtn, testsBtn));
+            consoleBtn, shelfBtn, activityBtn, testsBtn));
         // Group 2 — layout. The view-switcher (Request / Split /
         // Response) sits next to the orientation toggle; both are pane-
         // layout controls, isolated so they don't read as drawer buttons.

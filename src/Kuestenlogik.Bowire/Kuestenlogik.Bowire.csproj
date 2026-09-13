@@ -182,6 +182,12 @@
          renders the Scripts tab + console output). -->
     <BowireJsFragment Include="wwwroot\js\scripts.js" />
     <BowireJsFragment Include="wwwroot\js\execute.js" />
+    <!-- #251 — the Shelf: a holding area for fragments carried between
+         surfaces, parallel to the OS clipboard. Must come BEFORE
+         render-env-auth.js, which mounts its drawer tab and its status-bar
+         toggle. Dependencies: wsKey / markSaveFailed from prologue.js,
+         el / svgIcon / toast from helpers.js. -->
+    <BowireJsFragment Include="wwwroot\js\shelf.js" />
     <BowireJsFragment Include="wwwroot\js\render-env-auth.js" />
     <!-- #131 Phase 1 — Benchmarks rail-mode renderer + spec-based
          runner. Must come before render-sidebar.js (which dispatches

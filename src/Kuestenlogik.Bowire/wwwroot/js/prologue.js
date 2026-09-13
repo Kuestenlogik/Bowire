@@ -701,7 +701,8 @@
         // value falls back to 'assistant'. Console lives as a bottom-
         // attached drawer per #164 v2 and was never a right-drawer
         // tab. Tests + Activity stay valid.
-        if (_rd === 'assistant' || _rd === 'tests' || _rd === 'activity') rightDrawerActiveTab = _rd;
+        // #251 — 'shelf' joins the valid set.
+        if (_rd === 'assistant' || _rd === 'tests' || _rd === 'activity' || _rd === 'shelf') rightDrawerActiveTab = _rd;
     } catch { /* ignore */ }
     // #164 — Tests drawer state. Mirrors aiDrawerOpen / helpDrawerOpen;
     // when on, Tests joins the unified right-drawer tab strip with its

@@ -64,6 +64,13 @@
         try { loadLocale(); }
         catch (e) { console.warn('[bowire] locale resolution failed', e); }
 
+        // #251 — the Shelf's document-level listeners (focus tracking and
+        // drop acceptance) plus its pinned items. Wrapped like its
+        // neighbours so a failure here cannot take the workbench down with
+        // it; the shelf is an accessory, not a prerequisite.
+        try { initShelf(); }
+        catch (e) { console.warn('[bowire] shelf init failed', e); }
+
         // Apply stored theme preference (or auto → OS) immediately so
         // the first paint is correct. Replaces the old
         // `setAttribute('data-theme', config.theme)` hard-wire, which
@@ -268,6 +275,17 @@
             // orientation (#135). Browser-style: '\' lives on the
             // same key as '|' on US/EU keyboards, mirrors the
             // 'split editor' chord most editors use.
+            // #251 — Ctrl/Cmd+Shift+C puts the focused field's value on the
+            // shelf. One chord away from the copy that still goes to the OS
+            // clipboard, and deliberately not overriding it: the shelf is
+            // additive, so the reflex every operator already has must keep
+            // working untouched.
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'C' || e.key === 'c')) {
+                e.preventDefault();
+                if (typeof shelfAddFromFocus === 'function') shelfAddFromFocus();
+                return;
+            }
+
             if ((e.ctrlKey || e.metaKey) && e.altKey && e.key === '\\') {
                 e.preventDefault();
                 // #250 — the chord flips between the two concrete

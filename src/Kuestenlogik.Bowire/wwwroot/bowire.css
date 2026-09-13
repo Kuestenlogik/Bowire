@@ -1538,6 +1538,106 @@ but
     border-radius: var(--bowire-radius-md);
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
 }
+/* #251 — the Shelf. Rows are draggable sources and clickable inserts at
+   once, so the whole row is the affordance and the per-row tools stay out
+   of the way until the row is hovered. */
+.bowire-shelf-list {
+    display: flex;
+    flex-direction: column;
+}
+.bowire-shelf-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 10px;
+    border-bottom: 1px solid var(--bowire-border);
+    cursor: pointer;
+    user-select: none;
+}
+.bowire-shelf-row:hover {
+    background: var(--bowire-bg-subtle);
+}
+.bowire-shelf-row-glyph {
+    display: flex;
+    width: 14px;
+    height: 14px;
+    flex: 0 0 14px;
+    color: var(--bowire-text-tertiary);
+}
+.bowire-shelf-row-body {
+    flex: 1;
+    min-width: 0;
+}
+.bowire-shelf-row-label {
+    font-size: 12px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.bowire-shelf-row-preview {
+    font-family: var(--bowire-mono);
+    font-size: 11px;
+    color: var(--bowire-text-tertiary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.bowire-shelf-row-tools {
+    display: flex;
+    gap: 2px;
+    flex: 0 0 auto;
+}
+/* Remove hides until hover; the pin keeps a reserved slot because it is a
+   state marker — a pinned row has to read as pinned without being pointed
+   at. Same rule the sidebar rows follow. */
+.bowire-shelf-row-remove {
+    display: none;
+}
+.bowire-shelf-row:hover .bowire-shelf-row-remove {
+    display: flex;
+}
+.bowire-shelf-row-pin {
+    visibility: hidden;
+}
+.bowire-shelf-row:hover .bowire-shelf-row-pin,
+.bowire-shelf-row-pin.active {
+    visibility: visible;
+}
+.bowire-shelf-row-pin.active {
+    color: var(--bowire-accent);
+}
+.bowire-shelf-row-pin,
+.bowire-shelf-row-remove {
+    width: 20px;
+    height: 20px;
+    padding: 3px;
+    background: transparent;
+    border: 0;
+    border-radius: var(--bowire-radius-sm);
+    color: var(--bowire-text-tertiary);
+    cursor: pointer;
+}
+.bowire-shelf-row-pin:hover,
+.bowire-shelf-row-remove:hover {
+    background: var(--bowire-bg-elevated);
+    color: var(--bowire-text);
+}
+/* Drop feedback. Refusal is shown rather than swallowed — a drop that
+   quietly does nothing reads as a broken feature. */
+.bowire-shelf-drop-ok {
+    outline: 2px solid var(--bowire-success, #16a34a);
+    outline-offset: 1px;
+}
+.bowire-shelf-drop-no {
+    outline: 2px solid var(--bowire-danger, #dc2626);
+    outline-offset: 1px;
+}
+.bowire-drawer-empty-hint {
+    font-size: 11px;
+    line-height: 1.5;
+    color: var(--bowire-text-tertiary);
+}
+
 /* #250 — split-mode picker, opened by right-clicking the orientation
    toggle. The toggle lives in the status bar at the bottom edge, so the
    menu opens upward; anchoring is why the button is wrapped at all. */
