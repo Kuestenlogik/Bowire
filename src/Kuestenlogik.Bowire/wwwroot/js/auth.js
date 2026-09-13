@@ -925,6 +925,7 @@
     }
 
     function replayHistoryEntry(entry) {
+        var S = activeState();
         // Find and select the matching service/method
         var foundSvc = null, foundMethod = null;
         for (const svc of services) {
@@ -958,7 +959,7 @@
         // intentionally do NOT switch tabs: the user clicked Replay
         // from the History view and would rather watch the response
         // come back there than be torn out to the Body editor.
-        requestMessages = replayMessages.slice();
+        S.requestMessages = replayMessages.slice();
 
         // Directly invoke the protocol so the wire matches the entry
         // verbatim — no DOM read, no script mutation, no environment

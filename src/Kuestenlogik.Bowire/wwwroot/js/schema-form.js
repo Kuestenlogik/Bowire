@@ -93,7 +93,7 @@
      * the same checks. Map / bytes fields are skipped (no clean validation
      * rule yet — they pass through to the server).
      */
-    function validateForm(messageInfo, prefix) {
+    function validateForm(S, messageInfo, prefix) {
         var errors = {};
         if (!messageInfo || !messageInfo.fields) return errors;
         prefix = prefix || '';
@@ -102,7 +102,7 @@
             var f = messageInfo.fields[i];
             var camelName = fieldJsonKey(f);
             var key = prefix ? prefix + '.' + camelName : camelName;
-            var value = formValues[key];
+            var value = S.formValues[key];
 
             // Required check — supports both REST f.required and the legacy
             // proto label === 'required' convention.
@@ -119,7 +119,7 @@
                 for (var ri = 0; ri < arr.length; ri++) {
                     var itemKey = key + '.' + ri;
                     if (f.type === 'message' && f.messageType) {
-                        var nested = validateForm(f.messageType, itemKey);
+                        var nested = validateForm(S, f.messageType, itemKey);
                         Object.assign(errors, nested);
                     } else if (isNumericType(f.type)) {
                         var ne = numericFieldError(f, arr[ri]);
@@ -134,9 +134,9 @@
 
             // Nested message — recurse
             if (f.type === 'message' && f.messageType) {
-                var nestedErrors = validateForm(f.messageType, key);
+                var nestedErrors = validateForm(S, f.messageType, key);
                 Object.assign(errors, nestedErrors);
-                if (isRequired && Object.keys(nestedErrors).length === 0 && !hasAnyNestedValue(f.messageType, key)) {
+                if (isRequired && Object.keys(nestedErrors).length === 0 && !hasAnyNestedValue(S, f.messageType, key)) {
                     errors[key] = f.name + ' is required';
                 }
                 continue;
@@ -173,29 +173,30 @@
     // True if any descendant of a nested message has a non-empty form value.
     // Used so that "required nested message" errors don't fire when the user
     // has filled in at least one inner field.
-    function hasAnyNestedValue(messageInfo, prefix) {
+    function hasAnyNestedValue(S, messageInfo, prefix) {
         if (!messageInfo || !messageInfo.fields) return false;
         for (var i = 0; i < messageInfo.fields.length; i++) {
             var f = messageInfo.fields[i];
             var key = prefix + '.' + fieldJsonKey(f);
-            var value = formValues[key];
+            var value = S.formValues[key];
             if (value !== undefined && value !== null && value !== '') return true;
-            if (f.type === 'message' && f.messageType && hasAnyNestedValue(f.messageType, key)) return true;
+            if (f.type === 'message' && f.messageType && hasAnyNestedValue(S, f.messageType, key)) return true;
         }
         return false;
     }
 
-    function getFormValue(prefix, fieldName) {
+    function getFormValue(S, prefix, fieldName) {
         var key = prefix ? prefix + '.' + fieldName : fieldName;
-        return formValues[key];
+        return S.formValues[key];
     }
 
-    function setFormValue(prefix, fieldName, value) {
+    function setFormValue(S, prefix, fieldName, value) {
         var key = prefix ? prefix + '.' + fieldName : fieldName;
-        formValues[key] = value;
+        S.formValues[key] = value;
     }
 
-    function syncFormToJson() {
+    function syncFormToJson(S) {
+        S = S || activeState();
         if (!selectedMethod || !selectedMethod.inputType) return;
         // Flush live DOM input values into formValues before
         // serialising. morphdom can replace input nodes between
@@ -208,28 +209,29 @@
             var fieldKey = inp.dataset && inp.dataset.fieldKey;
             if (fieldKey) {
                 if (inp.type === 'checkbox') {
-                    formValues[fieldKey] = inp.checked;
+                    S.formValues[fieldKey] = inp.checked;
                 } else {
-                    formValues[fieldKey] = inp.value;
+                    S.formValues[fieldKey] = inp.value;
                 }
             }
         }
-        var json = collectFormValuesFromState(selectedMethod.inputType, '');
-        requestMessages[0] = JSON.stringify(json, null, 2);
+        var json = collectFormValuesFromState(S, selectedMethod.inputType, '');
+        S.requestMessages[0] = JSON.stringify(json, null, 2);
     }
 
-    function syncJsonToForm() {
+    function syncJsonToForm(S) {
+        S = S || activeState();
         if (!selectedMethod || !selectedMethod.inputType) return;
         try {
-            var obj = JSON.parse(requestMessages[0] || '{}');
-            formValues = {};
-            populateFormValuesFromJson(selectedMethod.inputType, '', obj);
+            var obj = JSON.parse(S.requestMessages[0] || '{}');
+            S.formValues = {};
+            populateFormValuesFromJson(S, selectedMethod.inputType, '', obj);
         } catch (e) {
             // If JSON is invalid, keep current form values
         }
     }
 
-    function populateFormValuesFromJson(messageInfo, prefix, obj) {
+    function populateFormValuesFromJson(S, messageInfo, prefix, obj) {
         if (!messageInfo || !messageInfo.fields || !obj) return;
         for (var f of messageInfo.fields) {
             var camelName = fieldJsonKey(f);
@@ -237,18 +239,18 @@
             if (val === undefined || val === null) continue;
 
             if (f.isMap) {
-                setFormValue(prefix, camelName, val);
+                setFormValue(S, prefix, camelName, val);
             } else if (f.isRepeated) {
-                setFormValue(prefix, camelName, val);
+                setFormValue(S, prefix, camelName, val);
             } else if (f.type === 'message' && f.messageType) {
-                populateFormValuesFromJson(f.messageType, prefix ? prefix + '.' + camelName : camelName, val);
+                populateFormValuesFromJson(S, f.messageType, prefix ? prefix + '.' + camelName : camelName, val);
             } else {
-                setFormValue(prefix, camelName, val);
+                setFormValue(S, prefix, camelName, val);
             }
         }
     }
 
-    function collectFormValuesFromState(messageInfo, prefix) {
+    function collectFormValuesFromState(S, messageInfo, prefix) {
         if (!messageInfo || !messageInfo.fields) return {};
         var obj = {};
         for (var f of messageInfo.fields) {
@@ -256,51 +258,51 @@
             var key = prefix ? prefix + '.' + camelName : camelName;
 
             if (f.isMap) {
-                var mapVal = formValues[key];
+                var mapVal = S.formValues[key];
                 if (mapVal && typeof mapVal === 'object' && Object.keys(mapVal).length > 0) {
                     obj[camelName] = mapVal;
                 }
             } else if (f.isRepeated) {
-                var arrVal = formValues[key];
+                var arrVal = S.formValues[key];
                 if (Array.isArray(arrVal) && arrVal.length > 0) {
                     obj[camelName] = arrVal;
                 }
             } else if (f.type === 'message' && f.messageType) {
-                var nested = collectFormValuesFromState(f.messageType, key);
+                var nested = collectFormValuesFromState(S, f.messageType, key);
                 if (Object.keys(nested).length > 0) {
                     obj[camelName] = nested;
                 }
             } else if (f.type === 'bool') {
-                var bVal = formValues[key];
+                var bVal = S.formValues[key];
                 if (bVal === true) obj[camelName] = true;
                 // Omit false (proto3 default)
             } else if (isNumericType(f.type)) {
-                var nVal = formValues[key];
+                var nVal = S.formValues[key];
                 if (nVal !== undefined && nVal !== '' && nVal !== null) {
                     var num = Number(nVal);
                     if (!isNaN(num) && num !== 0) obj[camelName] = num;
                 }
             } else if (f.type === 'enum') {
-                var eVal = formValues[key];
+                var eVal = S.formValues[key];
                 if (eVal !== undefined && eVal !== '' && eVal !== null) {
                     // Omit the first enum value (proto3 default)
                     var firstEnum = (f.enumValues && f.enumValues.length > 0) ? f.enumValues[0].name : '';
                     if (eVal !== firstEnum) obj[camelName] = eVal;
                 }
             } else if (f.type === 'bytes') {
-                var bytesVal = formValues[key];
+                var bytesVal = S.formValues[key];
                 if (bytesVal && String(bytesVal).trim()) obj[camelName] = String(bytesVal);
             } else if (f.isBinary) {
                 // Multipart binary: pass the structured { filename, data }
                 // object straight through so RestInvoker decodes it back
                 // into a multipart StreamContent with the original filename.
-                var fileVal = formValues[key];
+                var fileVal = S.formValues[key];
                 if (fileVal && typeof fileVal === 'object' && fileVal.data) {
                     obj[camelName] = { filename: fileVal.filename || '', data: fileVal.data };
                 }
             } else {
                 // string
-                var sVal = formValues[key];
+                var sVal = S.formValues[key];
                 if (sVal !== undefined && sVal !== null && String(sVal) !== '') {
                     obj[camelName] = String(sVal);
                 }
@@ -309,7 +311,7 @@
         return obj;
     }
 
-    function renderFormFields(messageInfo, prefix, depth) {
+    function renderFormFields(S, messageInfo, prefix, depth) {
         if (!messageInfo || !messageInfo.fields) return el('div');
         var d = depth || 0;
         var container = el('div', { className: d > 0 ? 'bowire-form-nested' : 'bowire-form' });
@@ -348,8 +350,8 @@
 
                 // Handle repeated fields
                 if (f.isRepeated && !f.isMap) {
-                    var arr = formValues[key];
-                    if (!Array.isArray(arr)) { arr = []; formValues[key] = arr; }
+                    var arr = S.formValues[key];
+                    if (!Array.isArray(arr)) { arr = []; S.formValues[key] = arr; }
 
                     var listContainer = el('div', { className: 'bowire-form-repeated-list' });
 
@@ -366,7 +368,7 @@
                                 // We use a separate key pattern: key.{idx}.subfield
                                 var subPrefix = key + '.' + idx;
                                 if (typeof arr[idx] !== 'object' || arr[idx] === null) arr[idx] = {};
-                                var subFields = renderFormFieldsForRepeatedMessage(f.messageType, subPrefix, d + 1, arr, idx);
+                                var subFields = renderFormFieldsForRepeatedMessage(S, f.messageType, subPrefix, d + 1, arr, idx);
                                 nestedContainer.appendChild(subFields);
                                 itemRow.appendChild(nestedContainer);
                             } else {
@@ -404,8 +406,8 @@
                 }
                 // Handle map fields
                 else if (f.isMap) {
-                    var mapVal = formValues[key];
-                    if (!mapVal || typeof mapVal !== 'object') { mapVal = {}; formValues[key] = mapVal; }
+                    var mapVal = S.formValues[key];
+                    if (!mapVal || typeof mapVal !== 'object') { mapVal = {}; S.formValues[key] = mapVal; }
 
                     var mapEntries = Object.entries(mapVal);
                     var mapContainer = el('div', { className: 'bowire-form-repeated-list' });
@@ -420,13 +422,13 @@
                                 value: mapKey,
                                 style: 'flex:1',
                                 onInput: function () {
-                                    var entries = Object.entries(formValues[key]);
+                                    var entries = Object.entries(S.formValues[key]);
                                     var newMap = {};
                                     for (var ei = 0; ei < entries.length; ei++) {
                                         if (ei === midx) newMap[this.value] = entries[ei][1];
                                         else newMap[entries[ei][0]] = entries[ei][1];
                                     }
-                                    formValues[key] = newMap;
+                                    S.formValues[key] = newMap;
                                 }
                             });
                             var valInput = el('input', {
@@ -436,7 +438,7 @@
                                 value: String(mapValue),
                                 style: 'flex:1',
                                 onInput: function () {
-                                    formValues[key][mapKey] = this.value;
+                                    S.formValues[key][mapKey] = this.value;
                                 }
                             });
                             var removeBtn = el('button', {
@@ -444,7 +446,7 @@
                                 textContent: '\u00d7',
                                 title: t('schemaForm.removeEntry'),
                                 onClick: function () {
-                                    delete formValues[key][mapKey];
+                                    delete S.formValues[key][mapKey];
                                     render();
                                 }
                             });
@@ -459,7 +461,7 @@
                         className: 'bowire-form-repeated-add',
                         textContent: t('schemaForm.addEntry'),
                         onClick: function () {
-                            formValues[key][''] = '';
+                            S.formValues[key][''] = '';
                             render();
                         }
                     });
@@ -480,11 +482,11 @@
                     }));
                 }
                 else if (f.type === 'message' && f.messageType && d < 3) {
-                    var nestedExpanded = formValues['__expanded__' + key] !== false;
+                    var nestedExpanded = S.formValues['__expanded__' + key] !== false;
                     var toggleEl = el('div', {
                         className: 'bowire-form-nested-toggle',
                         onClick: function () {
-                            formValues['__expanded__' + key] = !nestedExpanded;
+                            S.formValues['__expanded__' + key] = !nestedExpanded;
                             render();
                         }
                     },
@@ -493,16 +495,16 @@
                     );
                     field.appendChild(toggleEl);
                     if (nestedExpanded) {
-                        field.appendChild(renderFormFields(f.messageType, key, d + 1));
+                        field.appendChild(renderFormFields(S, f.messageType, key, d + 1));
                     }
                 }
                 // Handle enum
                 else if (f.type === 'enum' && f.enumValues && f.enumValues.length > 0) {
-                    var currentEnumVal = formValues[key] !== undefined ? formValues[key] : f.enumValues[0].name;
+                    var currentEnumVal = S.formValues[key] !== undefined ? S.formValues[key] : f.enumValues[0].name;
                     var select = el('select', {
                         className: 'bowire-form-select',
                         dataset: { fieldKey: key },
-                        onChange: function () { formValues[key] = this.value; }
+                        onChange: function () { S.formValues[key] = this.value; }
                     });
                     for (var ei = 0; ei < f.enumValues.length; ei++) {
                         var opt = el('option', { value: f.enumValues[ei].name, textContent: f.enumValues[ei].name + ' (' + f.enumValues[ei].number + ')' });
@@ -513,12 +515,12 @@
                 }
                 // Handle bool
                 else if (f.type === 'bool') {
-                    var boolVal = formValues[key] === true;
+                    var boolVal = S.formValues[key] === true;
                     var toggle = el('div', { className: 'bowire-form-toggle' },
                         el('input', {
                             className: 'bowire-form-checkbox',
                             type: 'checkbox',
-                            onChange: function () { formValues[key] = this.checked; }
+                            onChange: function () { S.formValues[key] = this.checked; }
                         }),
                         el('span', { textContent: boolVal ? 'true' : 'false', style: 'font-size:12px;color:var(--bowire-text-secondary)' })
                     );
@@ -534,20 +536,20 @@
                 }
                 // Handle bytes
                 else if (f.type === 'bytes') {
-                    var bytesVal = formValues[key] !== undefined ? String(formValues[key]) : '';
+                    var bytesVal = S.formValues[key] !== undefined ? String(S.formValues[key]) : '';
                     var ta = el('textarea', {
                         className: 'bowire-form-input',
                         dataset: { fieldKey: key },
                         placeholder: t('schemaForm.bytesPlaceholder'),
                         style: 'height:60px;resize:vertical;padding:6px 10px',
-                        onInput: function () { formValues[key] = this.value; }
+                        onInput: function () { S.formValues[key] = this.value; }
                     });
                     ta.value = bytesVal;
                     field.appendChild(ta);
                 }
                 // Handle number types
                 else if (isNumericType(f.type)) {
-                    var numVal = formValues[key] !== undefined ? formValues[key] : '';
+                    var numVal = S.formValues[key] !== undefined ? S.formValues[key] : '';
                     var numInvalid = formValidationErrors[key] ? ' invalid' : '';
                     var numAttrs = {
                         className: 'bowire-form-input' + numInvalid,
@@ -555,7 +557,7 @@
                         type: 'number',
                         placeholder: f.type,
                         onInput: function () {
-                            formValues[key] = this.value;
+                            S.formValues[key] = this.value;
                             if (formValidationErrors[key]) {
                                 delete formValidationErrors[key];
                                 this.classList.remove('invalid');
@@ -576,7 +578,7 @@
                 // a real filename. Discovery flags REST fields with
                 // isBinary=true when the OpenAPI schema declared format=binary.
                 else if (f.isBinary) {
-                    var binVal = formValues[key];
+                    var binVal = S.formValues[key];
                     var binWrap = el('div', { className: 'bowire-form-file-wrap' });
                     var fileInput = el('input', {
                         className: 'bowire-form-file-input',
@@ -585,7 +587,7 @@
                         onChange: function () {
                             var file = this.files && this.files[0];
                             if (!file) {
-                                formValues[key] = null;
+                                S.formValues[key] = null;
                                 render();
                                 return;
                             }
@@ -597,7 +599,7 @@
                                 var raw = String(e.target.result || '');
                                 var commaIdx = raw.indexOf(',');
                                 var base64 = commaIdx >= 0 ? raw.substring(commaIdx + 1) : raw;
-                                formValues[key] = { filename: fname, data: base64, size: file.size };
+                                S.formValues[key] = { filename: fname, data: base64, size: file.size };
                                 render();
                             };
                             reader.readAsDataURL(file);
@@ -615,7 +617,7 @@
                 }
                 // Handle string (default)
                 else {
-                    var strVal = formValues[key] !== undefined ? String(formValues[key]) : '';
+                    var strVal = S.formValues[key] !== undefined ? String(S.formValues[key]) : '';
                     var strInvalid = formValidationErrors[key] ? ' invalid' : '';
                     var strInput = el('input', {
                         className: 'bowire-form-input' + strInvalid,
@@ -623,7 +625,7 @@
                         placeholder: f.type,
                         dataset: { fieldKey: key },
                         onInput: function () {
-                            formValues[key] = this.value;
+                            S.formValues[key] = this.value;
                             if (formValidationErrors[key]) {
                                 delete formValidationErrors[key];
                                 this.classList.remove('invalid');
@@ -653,7 +655,7 @@
         return container;
     }
 
-    function renderFormFieldsForRepeatedMessage(messageInfo, prefix, depth, arr, idx) {
+    function renderFormFieldsForRepeatedMessage(S, messageInfo, prefix, depth, arr, idx) {
         // For repeated messages stored in array, we read/write from arr[idx] directly
         if (!messageInfo || !messageInfo.fields) return el('div');
         var container = el('div', { className: 'bowire-form-nested' });

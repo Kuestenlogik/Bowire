@@ -4805,8 +4805,6 @@
     // sub-tab wins as the default ("query" for GraphQL).
     let activeBodySubTab = 'query';
     let activeResponseTab = 'response';
-    let isExecuting = false;
-    let sseSource = null;
 
     // Active-jobs tracking. Set of "service::method" keys that are
     // currently executing (unary in-flight, streaming, channel open).
@@ -4823,10 +4821,6 @@
     function isJobActive(svcName, methodName) {
         return activeJobs.has(svcName + '::' + methodName);
     }
-    let responseData = null;
-    let responseError = null;
-    let streamMessages = [];
-    let statusInfo = null;
     let sidebarCollapsed = false;
     try { sidebarCollapsed = localStorage.getItem('bowire_sidebar_collapsed') === '1'; }
     catch { /* ignore */ }
@@ -4846,7 +4840,6 @@
         setSidebarCollapsed(!sidebarCollapsed);
         render();
     }
-    let requestMessages = ['']; // Array of JSON strings, one per message
     // ---- Streaming UI state (Wireshark-style: list of messages + detail pane) ----
     let streamSelectedIndex = null;     // null = follow latest; otherwise index into streamMessages
     let streamAutoScroll = true;        // Auto-scroll list + auto-select latest while live
@@ -4880,57 +4873,114 @@
     let responseViewMode = 'tree';      // retained for any older code path; new render always uses the collapsible tree
     let showAllHistory = false; // Whether history tab shows all methods or filtered
 
-    // ---- Form Input State ----
-    let requestInputMode = 'form';  // 'form' or 'json'
-    let formValues = {};  // { fieldName: value } — current method only
-
-    // Per-method request state cache. Keyed by `${service}::${method}`,
-    // holds a snapshot of everything the user has typed so far:
-    // formValues, requestMessages, requestInputMode. Swapping methods
-    // saves the current snapshot and loads the target's, so a ping-pong
-    // between two methods doesn't clobber work in either one.
+    // ---- Per-tab request and response state (#695) ----
     //
-    // In-memory only (no localStorage) by design — request bodies can
-    // contain auth tokens and other secrets we don't want on disk.
-    // Cleared implicitly on page reload.
-    let methodStates = {};
+    // Everything the operator types into a method, and everything that
+    // came back, belongs to the tab that shows it. There is no module-
+    // level copy: a renderer reads the state of the tab it is drawing, an
+    // invocation writes to the state of the tab it started from, and
+    // switching tabs changes which state is on screen — nothing is swapped
+    // in or out. Two tabs can hold two live responses, or two open
+    // streams, at once; that is what the cross-tab pane split (#250)
+    // needs, and what the old save/restore around one set of globals could
+    // never give it.
+    //
+    // In-memory only, by design: request bodies carry tokens and other
+    // secrets that must not land on disk. A reload restores the tab strip
+    // (persistRequestTabs) with a fresh state per tab.
+    function newTabState(method) {
+        var input = method ? method.inputType : undefined;
+        return {
+            // request
+            formValues: {},                       // { dottedFieldKey: value }
+            requestMessages: [input !== undefined ? generateDefaultJson(input, 0) : ''],
+            requestInputMode: (input !== undefined && hasDeepNesting(input, 0)) ? 'json' : 'form',
+            // response
+            isExecuting: false,
+            sseSource: null,                      // server-streaming EventSource while live
+            responseData: null,
+            responseError: null,
+            streamMessages: [],
+            statusInfo: null,
+            // channel (duplex / client streaming)
+            duplexChannelId: null,
+            duplexConnected: false,
+            duplexSseSource: null,
+            sentCount: 0,
+            receivedCount: 0,
+            channelError: null,
+            // Client->server messages with their send-timestamp offset (ms
+            // since channelStartMs); mock replay paces the session with it.
+            sentMessages: [],
+            channelStartMs: 0
+        };
+    }
+    // Where reads and writes go when no tab is active: the landing page,
+    // a freeform request before Compose adopted it. Replaced whenever the
+    // last tab closes so nothing leaks into the next one opened.
+    let detachedTabState = newTabState();
+    function tabState(tab) {
+        if (!tab) return detachedTabState;
+        if (!tab.state) tab.state = newTabState(tab.method);
+        return tab.state;
+    }
+    function activeTab() {
+        if (activeTabId === null) return null;
+        for (var i = 0; i < requestTabs.length; i++) {
+            if (requestTabs[i].id === activeTabId) return requestTabs[i];
+        }
+        return null;
+    }
+    function activeState() { return tabState(activeTab()); }
     function methodStateKey(svcName, methodName) {
         return svcName + '::' + methodName;
     }
-    function saveCurrentMethodState() {
-        if (!selectedService || !selectedMethod) return;
-        var key = methodStateKey(selectedService.name, selectedMethod.name);
-        // Deep-clone so later edits to formValues don't mutate the
-        // saved snapshot. requestMessages is an array of strings →
-        // shallow slice is enough.
-        methodStates[key] = {
-            formValues: JSON.parse(JSON.stringify(formValues)),
-            requestMessages: requestMessages.slice(),
-            requestInputMode: requestInputMode
-        };
+    /// Whether a tab has something in flight that would be lost if the
+    /// tab were reused for another method: an open channel, a running
+    /// stream, a unary call still waiting.
+    function tabHasLiveWork(tab) {
+        var s = tab && tab.state;
+        return !!(s && (s.isExecuting || s.sseSource || s.duplexConnected || s.duplexSseSource));
     }
-    function loadMethodStateFor(svcName, methodName, fallbackMethodInput) {
-        var key = methodStateKey(svcName, methodName);
-        var saved = methodStates[key];
-        if (saved) {
-            formValues = JSON.parse(JSON.stringify(saved.formValues));
-            requestMessages = saved.requestMessages.slice();
-            requestInputMode = saved.requestInputMode;
-            return true;
+    /// Close whatever a tab's state keeps open. The tab is the stream's
+    /// home; when the tab goes, or is given to another method, there is
+    /// nowhere left to show what the stream sends.
+    function releaseTabState(tab) {
+        var s = tab && tab.state;
+        if (!s) return;
+        if (s.sseSource) { try { s.sseSource.close(); } catch { /* ignore */ } s.sseSource = null; }
+        if (s.duplexSseSource) { try { s.duplexSseSource.close(); } catch { /* ignore */ } s.duplexSseSource = null; }
+        if (s.duplexChannelId) {
+            try {
+                fetch(config.prefix + '/api/channel/' + s.duplexChannelId + '/close', { method: 'POST' })
+                    .catch(function () { /* fire-and-forget */ });
+            } catch { /* ignore */ }
+            s.duplexChannelId = null;
         }
-        // No saved state — reset to defaults. Caller provides the
-        // method's inputType so we can re-generate the default JSON
-        // payload if needed.
-        formValues = {};
-        if (fallbackMethodInput !== undefined) {
-            requestMessages = [generateDefaultJson(fallbackMethodInput, 0)];
-            requestInputMode = hasDeepNesting(fallbackMethodInput, 0) ? 'json' : 'form';
+        s.duplexConnected = false;
+        s.isExecuting = false;
+        if (tab.serviceKey && tab.methodKey) {
+            markJobDone(tab.serviceKey, tab.methodKey);
+            unregisterSubscription(tab.serviceKey, tab.methodKey);
         }
-        return false;
     }
-    function clearMethodState(svcName, methodName) {
-        var key = methodStateKey(svcName, methodName);
-        delete methodStates[key];
+    /// The view-level knobs that belong to "what is on screen" rather
+    /// than to a tab: stream selection, maximised panes, validation
+    /// marks, the diff view. Reset whenever another tab comes to the
+    /// front, as they always were.
+    function resetTabViewState() {
+        streamSelectedIndex = null;
+        streamSelectedIds = new Set();
+        streamSelectionAnchorIdx = null;
+        streamAutoScroll = true;
+        streamDetailMaximized = false;
+        widgetPaneMaximized = false;
+        widgetActiveTab = 'json';
+        formValidationErrors = {};
+        diffViewOpen = false;
+        diffSnapshotA = null;
+        diffSnapshotB = null;
+        showAllHistory = false;
     }
 
     // ---- Per-method Scripts (pre-request / post-response) ----
@@ -4971,7 +5021,7 @@
     // they touched last. Stored as { service, method } pairs in newest-
     // first order; capped at MAX_RECENT_METHODS. Persisted because the
     // identifiers themselves are not sensitive — unlike the per-method
-    // request bodies in methodStates.
+    // request bodies on the tab state (#695).
     const RECENT_METHODS_KEY = 'bowire_recent_methods';
     const MAX_RECENT_METHODS = 10;
     function getRecentMethods() {
@@ -4999,98 +5049,20 @@
     }
 
     // ---- Channel State (Duplex / Client Streaming) ----
-    // ---- Channel State ----
-    // Active channel for the currently selected method. The legacy
-    // global variables are kept for backward compatibility with the
-    // existing render/execute code — they always reflect whichever
-    // channel is associated with the current (service, method) pair.
-    let duplexChannelId = null;
-    let duplexConnected = false;
-    let duplexSseSource = null;
-    let sentCount = 0;
-    let receivedCount = 0;
-    let channelError = null;
-    // Collected client->server messages with their send-timestamp offset
-    // (ms since channelStartMs). Phase-2 mock replay needs this to pace
-    // the duplex session at its original cadence. streamMessages already
-    // carries the server->client frames with their server-side timestampMs.
-    let sentMessages = [];
-    let channelStartMs = 0;
-
-    // Multi-channel store: keyed by "service::method", holds the
-    // channel state for methods that have an open connection. When
-    // the user switches methods, the current channel is stashed
-    // here and the target method's channel (if any) is restored.
-    var openChannels = {};
-
+    // Lives on the tab (newTabState): duplexChannelId, duplexConnected,
+    // duplexSseSource, sentCount, receivedCount, channelError,
+    // sentMessages, channelStartMs. The subscription registry below is
+    // the cross-tab index of what is open.
     function channelStoreKey(svcName, methodName) {
         return svcName + '::' + methodName;
     }
 
-    function stashCurrentChannel() {
-        if (!duplexChannelId) return;
-        if (!selectedService || !selectedMethod) return;
-        var key = channelStoreKey(selectedService.name, selectedMethod.name);
-        openChannels[key] = {
-            channelId: duplexChannelId,
-            connected: duplexConnected,
-            sseSource: duplexSseSource,
-            sentCount: sentCount,
-            receivedCount: receivedCount,
-            channelError: channelError,
-            streamMessages: streamMessages.slice(),
-            sentMessages: sentMessages.slice(),
-            channelStartMs: channelStartMs
-        };
-    }
-
-    function restoreChannelFor(svcName, methodName) {
-        var key = channelStoreKey(svcName, methodName);
-        var saved = openChannels[key];
-        if (saved) {
-            duplexChannelId = saved.channelId;
-            duplexConnected = saved.connected;
-            duplexSseSource = saved.sseSource;
-            sentCount = saved.sentCount;
-            receivedCount = saved.receivedCount;
-            channelError = saved.channelError;
-            streamMessages = saved.streamMessages;
-            sentMessages = saved.sentMessages || [];
-            channelStartMs = saved.channelStartMs || 0;
-            return true;
-        }
-        // No saved channel — reset to defaults
-        duplexChannelId = null;
-        duplexConnected = false;
-        duplexSseSource = null;
-        sentCount = 0;
-        receivedCount = 0;
-        channelError = null;
-        sentMessages = [];
-        channelStartMs = 0;
-        return false;
-    }
-
-    function removeChannelFor(svcName, methodName) {
-        var key = channelStoreKey(svcName, methodName);
-        var saved = openChannels[key];
-        if (saved && saved.sseSource) {
-            try { saved.sseSource.close(); } catch {}
-        }
-        delete openChannels[key];
-        // The duplex/client-streaming twin entry in the subscription
-        // registry — keep both views in sync so the statusbar pill
-        // count doesn't outlive the channel.
-        delete subscriptionRegistry[key];
-        notifySubscriptionsChanged();
-    }
-
     // ---- Active Subscription Registry ----
     // Single source of truth for "what streams are open right now",
-    // keyed by service::method just like openChannels. Server-streaming
-    // SSE sources land here too — openChannels only ever tracked duplex
-    // / client-streaming channels, so the statusbar pill + per-pane
-    // state badge needed a registry that spans BOTH families. Entries:
+    // keyed by service::method. The sources themselves live on the tab
+    // state that opened them (#695); this is the cross-tab index the
+    // statusbar pill and the per-pane state badge read, spanning both
+    // the server-streaming and the channel families. Entries:
     //   { kind, service, method, sseSource, startedAt, lastFrameAt,
     //     receivedCount, sentCount, connected, channelError }
     var subscriptionRegistry = {};
@@ -5434,10 +5406,6 @@
         // Clear freeform mode if active — opening a tab exits freeform
         freeformRequest = null;
 
-        // Save outgoing method state before switching
-        stashCurrentChannel();
-        saveCurrentMethodState();
-
         // Browser/Hoppscotch-style tab semantics: by default, the
         // active tab adopts the new method (replacing what was open
         // there). A separate, explicit `inNewTab: true` opens a fresh
@@ -5445,31 +5413,38 @@
         // by Ctrl/Cmd+click on a method row, and by middle-click.
         // The previous behaviour ('every method click = new tab')
         // produced an ever-growing tab strip on normal navigation.
-        var activeTab = null;
-        if (!opts.inNewTab && activeTabId !== null) {
-            for (var j = 0; j < requestTabs.length; j++) {
-                if (requestTabs[j].id === activeTabId) { activeTab = requestTabs[j]; break; }
-            }
-        }
+        var current = (!opts.inNewTab && activeTabId !== null) ? activeTab() : null;
+        // #695 — a tab with something live is not reused. Its state is
+        // the stream's only home, so the new method opens beside it
+        // rather than over it.
+        if (current && tabHasLiveWork(current)) current = null;
         var tab;
-        if (activeTab) {
+        if (current) {
             // Repurpose the active tab. Keep the id stable so
             // persisted state + UI focus don't flicker. Clearing the
             // `empty` flag fills a placeholder tab in place (case a:
             // "empty tabs get filled on selection").
-            activeTab.serviceKey = svc.name;
-            activeTab.methodKey = method.name;
-            activeTab.service = svc;
-            activeTab.method = method;
-            activeTab.empty = false;
-            tab = activeTab;
+            var sameMethod = current.serviceKey === svc.name && current.methodKey === method.name;
+            current.serviceKey = svc.name;
+            current.methodKey = method.name;
+            current.service = svc;
+            current.method = method;
+            current.empty = false;
+            // Another method means another state; the same method
+            // clicked again keeps what was typed and what came back.
+            if (!sameMethod) {
+                releaseTabState(current);
+                current.state = newTabState(method);
+            }
+            tab = current;
         } else {
             tab = {
                 id: nextTabId(),
                 serviceKey: svc.name,
                 methodKey: method.name,
                 service: svc,
-                method: method
+                method: method,
+                state: newTabState(method)
             };
             requestTabs.push(tab);
         }
@@ -5479,28 +5454,7 @@
         // Apply the new selection
         selectedMethod = method;
         selectedService = svc;
-
-        // Restore channel state for the target method
-        var hadChannel = restoreChannelFor(svc.name, method.name);
-        if (!hadChannel) {
-            responseData = null;
-            responseError = null;
-            streamMessages = [];
-            statusInfo = null;
-        }
-        streamSelectedIndex = null;
-        streamSelectedIds = new Set();
-        streamSelectionAnchorIdx = null;
-        streamAutoScroll = true;
-        streamDetailMaximized = false;
-        widgetPaneMaximized = false;
-        widgetActiveTab = 'json';
-        formValidationErrors = {};
-        diffViewOpen = false;
-        diffSnapshotA = null;
-        diffSnapshotB = null;
-        showAllHistory = false;
-        loadMethodStateFor(svc.name, method.name, method.inputType);
+        resetTabViewState();
         addRecentMethod(svc.name, method.name);
         expandedServices.add(svc.name);
         persistExpandedServices();
@@ -5527,8 +5481,6 @@
      * and fill on demand. Case a of the Discover '+' behaviour.
      */
     function openEmptyTab() {
-        stashCurrentChannel();
-        saveCurrentMethodState();
         freeformRequest = null;
         var tab = {
             id: nextTabId(),
@@ -5536,16 +5488,14 @@
             serviceKey: null,
             methodKey: null,
             service: null,
-            method: null
+            method: null,
+            state: newTabState()
         };
         requestTabs.push(tab);
         activeTabId = tab.id;
         selectedMethod = null;
         selectedService = null;
-        responseData = null;
-        responseError = null;
-        streamMessages = [];
-        statusInfo = null;
+        resetTabViewState();
         persistRequestTabs();
         render();
     }
@@ -5596,8 +5546,8 @@
     }
 
     /**
-     * Switch to an existing tab by id. Stashes the current method
-     * state and restores the target tab's state.
+     * Switch to an existing tab by id. The target tab's own state comes
+     * to the front; the one being left keeps its state where it is.
      */
     function switchTab(tabId) {
         if (activeTabId === tabId && !freeformRequest) return;
@@ -5628,9 +5578,6 @@
         // against another method.
         freeformRequest = tab.freeform || null;
 
-        stashCurrentChannel();
-        saveCurrentMethodState();
-
         activeTabId = tab.id;
         persistRequestTabs();
         selectedMethod = tab.method;
@@ -5654,29 +5601,7 @@
             }
         }
 
-        // Empty placeholder tab — no method to restore; the render
-        // path shows the landing card (case a). Guard the method-only
-        // restores so tab.method (null) isn't dereferenced.
-        var hadChannel = tab.method ? restoreChannelFor(tab.serviceKey, tab.methodKey) : false;
-        if (!hadChannel) {
-            responseData = null;
-            responseError = null;
-            streamMessages = [];
-            statusInfo = null;
-        }
-        streamSelectedIndex = null;
-        streamSelectedIds = new Set();
-        streamSelectionAnchorIdx = null;
-        streamAutoScroll = true;
-        streamDetailMaximized = false;
-        widgetPaneMaximized = false;
-        widgetActiveTab = 'json';
-        formValidationErrors = {};
-        diffViewOpen = false;
-        diffSnapshotA = null;
-        diffSnapshotB = null;
-        showAllHistory = false;
-        if (tab.method) loadMethodStateFor(tab.serviceKey, tab.methodKey, tab.method.inputType);
+        resetTabViewState();
         render();
     }
 
@@ -5712,17 +5637,16 @@
 
         requestTabs.splice(idx, 1);
         persistRequestTabs();
+        // #695 — the tab was the home of whatever it had open; close it
+        // rather than leave a stream running into a state nobody shows.
+        releaseTabState(closed);
 
         if (activeTabId === tabId) {
             if (requestTabs.length === 0) {
                 activeTabId = null;
                 selectedMethod = null;
                 selectedService = null;
-                responseData = null;
-                responseError = null;
-                streamMessages = [];
-                statusInfo = null;
-                channelError = null;
+                detachedTabState = newTabState();
                 // Last tab closed → the freeform draft has no home
                 // anymore, clear it so the landing page renders
                 // instead of an orphaned builder.
@@ -5742,22 +5666,7 @@
                 // — the user expected the neighbor's original
                 // discovered-method pane.
                 freeformRequest = next.freeform || null;
-
-                var hadChannel = next.method ? restoreChannelFor(next.serviceKey, next.methodKey) : false;
-                if (!hadChannel) {
-                    responseData = null;
-                    responseError = null;
-                    streamMessages = [];
-                    statusInfo = null;
-                }
-                streamSelectedIndex = null;
-                streamSelectedIds = new Set();
-                streamSelectionAnchorIdx = null;
-                streamAutoScroll = true;
-                streamDetailMaximized = false;
-                formValidationErrors = {};
-                showAllHistory = false;
-                if (next.method) loadMethodStateFor(next.serviceKey, next.methodKey, next.method.inputType);
+                resetTabViewState();
             }
         }
         render();
@@ -6509,8 +6418,9 @@
     }
 
     function saveCurrentRequestToCollection(collectionId) {
+        var S = activeState();
         if (!selectedService || !selectedMethod) return;
-        var body = requestMessages[0] || '{}';
+        var body = S.requestMessages[0] || '{}';
         var meta = {};
         var metaRows = document.querySelectorAll('.bowire-metadata-row');
         for (var i = 0; i < metaRows.length; i++) {
@@ -6525,7 +6435,7 @@
             method: selectedMethod.name,
             methodType: selectedMethod.methodType || 'Unary',
             body: body,
-            messages: requestMessages.slice(),
+            messages: S.requestMessages.slice(),
             metadata: Object.keys(meta).length > 0 ? meta : null,
             serverUrl: (selectedService && selectedService.originUrl) || (serverUrls[0] || null)
         });
@@ -6725,15 +6635,16 @@
     }
 
     async function runBenchmark(n, concurrency) {
+        var S = activeState();
         if (!selectedMethod || !selectedService) return;
         if (benchmark.running) return;
 
         // Snapshot the current request body and metadata once. Each iteration
         // re-substitutes so ${now}/${uuid} change per call.
         var bodyTemplates;
-        if (requestInputMode === 'form' && selectedMethod && selectedMethod.inputType) {
+        if (S.requestInputMode === 'form' && selectedMethod && selectedMethod.inputType) {
             syncFormToJson();
-            bodyTemplates = [requestMessages[0] || '{}'];
+            bodyTemplates = [S.requestMessages[0] || '{}'];
         } else {
             var editors = $$('.bowire-message-editor');
             if (editors.length > 0) {

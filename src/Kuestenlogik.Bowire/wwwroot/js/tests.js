@@ -113,6 +113,7 @@
     // button lets the operator replay the assertions against the
     // last response after they've edited a definition.
     function renderTestResultsTab() {
+        var S = activeState();
         var body = el('div', { className: 'bowire-pane-body bowire-tests-body bowire-tests-results-body' });
         var tests = getTestsFor(selectedService.name, selectedMethod.name);
 
@@ -166,7 +167,7 @@
                 title: t('assertions.rerun.title'),
                 onClick: function () {
                     runAssertions(selectedService.name, selectedMethod.name,
-                        statusInfo ? statusInfo.status : 'OK',
+                        S.statusInfo ? S.statusInfo.status : 'OK',
                         lastResponseJson);
                     render();
                 }

@@ -25,8 +25,8 @@
     // sync, no migration story when the buckets churn.
     //
     // methodId canonical form follows the project convention
-    // (`<serviceName>::<methodName>` — same shape activeJobs,
-    // openChannels, transcodingKey, channelStoreKey all use) so the
+    // (`<serviceName>::<methodName>` — same shape
+    // activeJobs, transcodingKey, channelStoreKey all use) so the
     // ring buffer round-trips through .bww exports without ambiguity.
 
     var RUN_HISTORY_KEY        = 'bowire_run_history';
@@ -42,7 +42,7 @@
     }
 
     function methodIdFor(service, method) {
-        // Canonical id shared with activeJobs / openChannels /
+        // Canonical id shared with activeJobs / the subscription registry /
         // transcodingKey / channelStoreKey. Defensive against
         // undefined inputs so a runner that forgot to thread the
         // service through doesn't crash render() — the bogus

@@ -947,10 +947,9 @@
         // methods are not fuzz-eligible in v1 (one body per probe).
         var body = '{}';
         try {
-            if (typeof requestMessages !== 'undefined'
-                && requestMessages
-                && requestMessages.length > 0) {
-                body = requestMessages[0] || '{}';
+            var reqState = (typeof activeState === 'function') ? activeState() : null;
+            if (reqState && reqState.requestMessages && reqState.requestMessages.length > 0) {
+                body = reqState.requestMessages[0] || '{}';
             } else {
                 // Fallback: peek the visible editor textarea.
                 var ed = document.querySelector('.bowire-editor, .bowire-message-editor');
@@ -1044,8 +1043,9 @@
         var fieldType = 'string';
         var fieldExample = null;
         try {
-            var body = (typeof requestMessages !== 'undefined' && requestMessages && requestMessages.length > 0)
-                ? requestMessages[0]
+            var reqState2 = (typeof activeState === 'function') ? activeState() : null;
+            var body = (reqState2 && reqState2.requestMessages && reqState2.requestMessages.length > 0)
+                ? reqState2.requestMessages[0]
                 : (document.querySelector('.bowire-editor, .bowire-message-editor') || {}).value;
             if (body) {
                 var parsed = JSON.parse(body);
@@ -1248,8 +1248,9 @@ runBtn.textContent = t(pickedCount === 1 ? 'semantics.replayOne'
         // deterministic fuzz path so the replay rides the same wire.
         var liveBody = '{}';
         try {
-            if (typeof requestMessages !== 'undefined' && requestMessages && requestMessages.length > 0) {
-                liveBody = requestMessages[0] || '{}';
+            var reqState3 = (typeof activeState === 'function') ? activeState() : null;
+            if (reqState3 && reqState3.requestMessages && reqState3.requestMessages.length > 0) {
+                liveBody = reqState3.requestMessages[0] || '{}';
             } else {
                 var ed = document.querySelector('.bowire-editor, .bowire-message-editor');
                 if (ed && ed.value) liveBody = ed.value;

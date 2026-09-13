@@ -233,6 +233,7 @@
     // (which seeds from existing rows, see render-main.js:5534) picks
     // them up without needing a parallel "pending headers" state.
     function applyPresetToCurrentMethod(preset) {
+        var S = activeState();
         if (!preset || !preset.config) {
             if (typeof toast === 'function') toast(t('presets.toast.empty'), 'error');
             return false;
@@ -292,9 +293,9 @@
         }
 
         if (Array.isArray(c.messages) && c.messages.length > 0) {
-            requestMessages = c.messages.slice();
+            S.requestMessages = c.messages.slice();
         } else if (typeof c.body === 'string') {
-            requestMessages = [c.body];
+            S.requestMessages = [c.body];
         }
         // Push the new content into the live editor DOM BEFORE
         // render() runs. renderRequestPane() starts with a
@@ -306,13 +307,13 @@
             var multiEditors = document.querySelectorAll('.bowire-message-editor');
             if (multiEditors.length > 0) {
                 for (var mi = 0; mi < multiEditors.length; mi++) {
-                    multiEditors[mi].value = requestMessages[mi] || '';
+                    multiEditors[mi].value = S.requestMessages[mi] || '';
                 }
             } else {
                 var singleEd = document.querySelector('.bowire-editor');
-                if (singleEd) singleEd.value = requestMessages[0] || '';
+                if (singleEd) singleEd.value = S.requestMessages[0] || '';
             }
-        } catch { /* editor not mounted yet — render() will seed from requestMessages */ }
+        } catch { /* editor not mounted yet — render() will seed from S.requestMessages */ }
         // Form sub-tab — re-populate formValues from the new
         // requestMessages[0] so form inputs reflect the preset.
         // Without this the form keeps showing stale values (or the
@@ -397,6 +398,7 @@
     // rendered. Returning true on an empty/no-editor surface keeps
     // the loop from spinning forever on non-form methods.
     function _isPresetVisibleInDom(expectedBody) {
+        var S = activeState();
         // Form sub-tab — compare each rendered form-input to
         // formValues. formValues was populated by syncJsonToForm()
         // BEFORE render(); morphdom is what gets the value onto
@@ -404,11 +406,11 @@
         // render() in which all inputs equal their formValues is
         // the frame the form is visibly settled.
         var formInputs = document.querySelectorAll('.bowire-form-input[data-field-key]');
-        if (formInputs.length > 0 && typeof formValues !== 'undefined') {
+        if (formInputs.length > 0 && typeof S.formValues !== 'undefined') {
             var checkedAny = false;
             for (var i = 0; i < formInputs.length; i++) {
                 var key = formInputs[i].dataset.fieldKey;
-                var expected = formValues[key];
+                var expected = S.formValues[key];
                 if (expected === undefined || expected === null) {
                     // No expected value for this field — preset
                     // didn't carry it. Skip; we can't verify and we

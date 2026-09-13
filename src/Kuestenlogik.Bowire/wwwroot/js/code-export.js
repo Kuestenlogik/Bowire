@@ -56,23 +56,24 @@
     // render cycle. That destroyed preset apply state mid-render. We
     // assemble bodyJson read-only without mutating any global.
     function buildCodeExportContext() {
+        var S = activeState();
         var bodyJson = '{}';
         var bodyJsonRaw = '{}';
-        if (selectedMethod && selectedMethod.inputType && requestInputMode === 'form') {
+        if (selectedMethod && selectedMethod.inputType && S.requestInputMode === 'form') {
             // Read-only snapshot: prefer formValues for the current schema,
             // fall back to requestMessages[0] if formValues isn't initialised
             // yet. NEVER call syncFormToJson here — see note above.
             try {
                 var snap = (typeof collectFormValuesFromState === 'function')
-                    ? collectFormValuesFromState(selectedMethod.inputType, '')
+                    ? collectFormValuesFromState(activeState(), selectedMethod.inputType, '')
                     : null;
                 if (snap != null) {
                     bodyJson = JSON.stringify(snap, null, 2);
                 } else {
-                    bodyJson = (requestMessages && requestMessages[0]) || '{}';
+                    bodyJson = (S.requestMessages && S.requestMessages[0]) || '{}';
                 }
             } catch (e) {
-                bodyJson = (requestMessages && requestMessages[0]) || '{}';
+                bodyJson = (S.requestMessages && S.requestMessages[0]) || '{}';
             }
         } else {
             var ed = $('.bowire-editor') || $('.bowire-message-editor');
@@ -119,8 +120,8 @@
             protocolId: selectedService.source || 'rest',
             serverStreaming: !!(selectedMethod && selectedMethod.serverStreaming),
             clientStreaming: !!(selectedMethod && selectedMethod.clientStreaming),
-            messages: (typeof requestMessages !== 'undefined' && requestMessages)
-                ? requestMessages.slice() : [],
+            messages: (typeof S.requestMessages !== 'undefined' && S.requestMessages)
+                ? S.requestMessages.slice() : [],
             // The auth TYPE only. applyAuth is async and performs fetches
             // (session login, OAuth token endpoints, JWT signing), so no
             // exporter can call it from the render path — the CLI generator

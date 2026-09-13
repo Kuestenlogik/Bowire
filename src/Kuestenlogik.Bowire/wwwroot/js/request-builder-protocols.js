@@ -168,6 +168,7 @@
     }
 
     async function _executeGrpcRequest(fr) {
+        var S = activeState();
         if (!fr.serverUrl || !fr.serverUrl.trim()) {
             if (typeof toast === 'function') toast(t('rbGrpc.needsUrl'), 'error');
             return;
@@ -195,9 +196,9 @@
             : _kvToObject(ps.metadata || []);
         _applyHoppAuthToMetadata(fr, metadata);
 
-        isExecuting = true;
-        responseData = null;
-        responseError = null;
+        S.isExecuting = true;
+        S.responseData = null;
+        S.responseError = null;
         if (typeof markJobActive === 'function') markJobActive('request-builder', ps.service + '/' + ps.method);
         render();
 
@@ -227,16 +228,16 @@
             historyOutcome.durationMs = result && result.duration_ms != null
                 ? result.duration_ms : Math.round(performance.now() - historyStartMs);
             if (result.title) {
-                responseError = result;
+                S.responseError = result;
                 historyOutcome.status = result.status != null ? result.status : 'Error';  // i18n-exempt: status label, carried on the console entry and the run summary
                 historyOutcome.ok = false;
             } else {
-                responseData = result.response;
+                S.responseData = result.response;
                 historyOutcome.status = result.status || 'OK';
                 historyOutcome.ok = true;
             }
         } catch (e) {
-            responseError = e.message;
+            S.responseError = e.message;
             historyOutcome.status = 'NetworkError';  // i18n-exempt: status label, carried on the console entry and the run summary
             historyOutcome.ok = false;
             historyOutcome.durationMs = Math.round(performance.now() - historyStartMs);
@@ -245,7 +246,7 @@
         try { pushHoppHistoryEntry(fr, historyOutcome); }
         catch (e) { console.warn('[request-builder-history] gRPC push failed', e); }
 
-        isExecuting = false;
+        S.isExecuting = false;
         if (typeof markJobDone === 'function') markJobDone('request-builder', ps.service + '/' + ps.method);
         render();
     }
@@ -333,6 +334,7 @@
     }
 
     async function _executeMcpRequest(fr) {
+        var S = activeState();
         if (!fr.serverUrl || !fr.serverUrl.trim()) {
             if (typeof toast === 'function') toast(t('rbMcp.needsUrl'), 'error');
             return;
@@ -380,9 +382,9 @@
                 break;
         }
 
-        isExecuting = true;
-        responseData = null;
-        responseError = null;
+        S.isExecuting = true;
+        S.responseData = null;
+        S.responseError = null;
         if (typeof markJobActive === 'function') markJobActive('request-builder', mcpMethod);
         render();
 
@@ -411,16 +413,16 @@
             historyOutcome.durationMs = result && result.duration_ms != null
                 ? result.duration_ms : Math.round(performance.now() - historyStartMs);
             if (result.title) {
-                responseError = result;
+                S.responseError = result;
                 historyOutcome.status = result.status != null ? result.status : 'Error';  // i18n-exempt: status label, carried on the console entry and the run summary
                 historyOutcome.ok = false;
             } else {
-                responseData = result.response;
+                S.responseData = result.response;
                 historyOutcome.status = result.status || 'OK';
                 historyOutcome.ok = true;
             }
         } catch (e) {
-            responseError = e.message;
+            S.responseError = e.message;
             historyOutcome.status = 'NetworkError';  // i18n-exempt: status label, carried on the console entry and the run summary
             historyOutcome.ok = false;
             historyOutcome.durationMs = Math.round(performance.now() - historyStartMs);
@@ -429,7 +431,7 @@
         try { pushHoppHistoryEntry(fr, historyOutcome); }
         catch (e) { console.warn('[request-builder-history] MCP push failed', e); }
 
-        isExecuting = false;
+        S.isExecuting = false;
         if (typeof markJobDone === 'function') markJobDone('request-builder', mcpMethod);
         render();
     }
@@ -524,6 +526,7 @@
     }
 
     async function _executeMqttRequest(fr) {
+        var S = activeState();
         var ps = rbProtoState(fr);
         if (!fr.serverUrl || !fr.serverUrl.trim()) {
             if (typeof toast === 'function') toast(t('rbMqtt.needsBroker'), 'error');
@@ -606,9 +609,9 @@
         var payload = ps.payload || '';
         try { if (typeof substituteVars === 'function') payload = substituteVars(payload); } catch (_) {}
 
-        isExecuting = true;
-        responseData = null;
-        responseError = null;
+        S.isExecuting = true;
+        S.responseData = null;
+        S.responseError = null;
         if (typeof markJobActive === 'function') markJobActive('request-builder', 'mqtt-publish');
         render();
 
@@ -636,21 +639,21 @@
             historyOutcome.durationMs = result && result.duration_ms != null
                 ? result.duration_ms : Math.round(performance.now() - historyStartMs);
             if (result.title) {
-                responseError = result;
+                S.responseError = result;
                 historyOutcome.status = result.status != null ? result.status : 'Error';  // i18n-exempt: status label, carried on the console entry and the run summary
             } else {
-                responseData = result.response || '(published)';
+                S.responseData = result.response || '(published)';
                 historyOutcome.status = result.status || 'OK';
                 historyOutcome.ok = true;
             }
         } catch (e) {
-            responseError = e.message;
+            S.responseError = e.message;
             historyOutcome.status = 'NetworkError';  // i18n-exempt: status label, carried on the console entry and the run summary
             historyOutcome.durationMs = Math.round(performance.now() - historyStartMs);
         }
         try { pushHoppHistoryEntry(fr, historyOutcome); }
         catch (_) {}
-        isExecuting = false;
+        S.isExecuting = false;
         if (typeof markJobDone === 'function') markJobDone('request-builder', 'mqtt-publish');
         render();
     }
@@ -1069,6 +1072,7 @@
     }
 
     function _renderMqttFrameLog() {
+        var S = activeState();
         var pane = el('div', { className: 'bowire-request-builder-response is-streaming' });
         var head = el('div', { className: 'bowire-pane-heading' });
         head.appendChild(el('span', { textContent: t('rbMqtt.messages') }));
@@ -1085,19 +1089,19 @@
             }));
         }
         pane.appendChild(head);
-        if (responseError) {
+        if (S.responseError) {
             var errOut = el('div', { className: 'bowire-response-output error' });
-            errOut.textContent = (typeof responseError === 'string')
-                ? responseError : (responseError.title || 'Error');
+            errOut.textContent = (typeof S.responseError === 'string')
+                ? S.responseError : (S.responseError.title || 'Error');
             pane.appendChild(errOut);
         }
-        if (responseData && !rbConnState.mqttSubscribed) {
+        if (S.responseData && !rbConnState.mqttSubscribed) {
             // Publish-result path — show the published-ack body.
             var out = el('div', { className: 'bowire-response-output' });
-            out.textContent = String(responseData);
+            out.textContent = String(S.responseData);
             pane.appendChild(out);
         }
-        if (rbConnState.mqttFrames.length === 0 && !responseData && !responseError) {
+        if (rbConnState.mqttFrames.length === 0 && !S.responseData && !S.responseError) {
             pane.appendChild(el('div', {
                 className: 'bowire-response-empty',
                 textContent: rbConnState.mqttSubscribed

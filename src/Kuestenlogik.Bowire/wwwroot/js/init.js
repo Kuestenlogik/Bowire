@@ -541,12 +541,13 @@
                     }
                     return;
                 }
-                if (isExecuting && sseSource) {
+                var S = activeState();
+                if (S.isExecuting && S.sseSource) {
                     stopStreaming();
                     render();
                     return;
                 }
-                if (duplexConnected) {
+                if (S.duplexConnected) {
                     channelDisconnect();
                     return;
                 }
@@ -592,12 +593,13 @@
 
             if (e.key === 'f') {
                 e.preventDefault();
-                if (requestInputMode === 'form') {
-                    syncFormToJson();
-                    requestInputMode = 'json';
+                var S2 = activeState();
+                if (S2.requestInputMode === 'form') {
+                    syncFormToJson(S2);
+                    S2.requestInputMode = 'json';
                 } else {
-                    syncJsonToForm();
-                    requestInputMode = 'form';
+                    syncJsonToForm(S2);
+                    S2.requestInputMode = 'form';
                 }
                 render();
                 return;
@@ -628,7 +630,7 @@
 
         // Clean up open channels on page navigation
         window.addEventListener('beforeunload', function () {
-            if (duplexConnected) channelDisconnect();
+            if (activeState().duplexConnected) channelDisconnect();
         });
 
         // Global outside-click handler for popups that don't need to

@@ -11,31 +11,34 @@ The multi-channel manager lets you keep multiple persistent connections (WebSock
 
 Without multi-channel support, switching from one duplex method to another would disconnect the first channel. This makes it impossible to monitor two WebSocket streams at once or keep a SignalR hub connected while testing a gRPC streaming method.
 
-The multi-channel manager solves this with a **stash/restore pattern**: when you navigate away from a method that has an open channel, the connection state is stashed. When you navigate back, it is restored -- the connection is still live, messages are still flowing, and the UI picks up right where you left off.
+Bowire solves this by making the **tab** the home of a connection: every request tab carries its own channel state, and a tab that has something live is never reused for another method. Two tabs, two channels, both connected -- switching tabs changes which one is on screen, nothing is swapped in or out.
 
 ## How it works
 
-Bowire maintains an in-memory store of open channels, keyed by `service::method`. Each entry preserves:
+Each tab's state holds, alongside its request and response, the channel it opened:
 
 | Field | Description |
 |-------|-------------|
-| `channelId` | The server-side channel identifier |
-| `connected` | Whether the channel is currently connected |
-| `sseSource` | The active SSE event source for receiving messages |
+| `duplexChannelId` | The server-side channel identifier |
+| `duplexConnected` | Whether the channel is currently connected |
+| `duplexSseSource` | The active SSE event source for receiving messages |
 | `sentCount` | Number of messages sent on this channel |
 | `receivedCount` | Number of messages received on this channel |
 | `channelError` | Last error (if any) |
 | `streamMessages` | All messages received so far |
+| `sentMessages` | Messages sent, with their offset from `channelStartMs` |
 
-### Stash
+### Opening another method while a channel is live
 
-When you click a different method in the sidebar, `stashCurrentChannel()` saves the current channel's state into the store. The SSE source remains connected -- it is not closed.
+Clicking a method in the sidebar normally reuses the active tab (browser-style navigation). When the active tab has an open channel -- or a running stream, or a request still in flight -- it is **not** reused: the new method opens in a tab beside it. The channel stays connected in its own tab, and its messages keep arriving there while you work in the other one.
 
-### Restore
+### Switching tabs
 
-When you navigate to a method that has a stashed channel, `restoreChannelFor()` loads the saved state back into the active UI variables. The response pane shows the channel's messages, the sent/received counters are accurate, and the connect/disconnect button reflects the real connection state.
+Switching to a tab shows that tab's channel exactly as it is: the response pane lists its messages, the sent/received counters are its own, and the connect/disconnect button reflects the real connection state. Nothing is restored, because nothing was taken away.
 
-If the target method has no stashed channel, all channel state resets to defaults (disconnected, zero counters, empty message list).
+### Closing a tab
+
+The tab is the connection's only home. Closing a tab with a live channel closes the channel (and a running stream, or an in-flight request); the same happens when a tab with nothing live is given to another method.
 
 ## WebSocket example
 
@@ -44,11 +47,11 @@ Here is a typical multi-channel workflow:
 1. Navigate to **ChatService/Connect** (a WebSocket duplex method).
 2. Click **Connect**. The WebSocket opens, messages start arriving.
 3. Send a few messages. The sent/received counters update.
-4. Click **NotificationService/Subscribe** in the sidebar to switch methods.
-5. The WebSocket channel is stashed -- it stays connected in the background.
+4. Click **NotificationService/Subscribe** in the sidebar.
+5. Because the chat tab has a live channel, the notification method opens in a **second tab**. The chat channel stays connected in the first.
 6. Connect to the notification stream. Messages arrive on this channel too.
-7. Click **ChatService/Connect** again.
-8. The chat channel is **restored** -- all previous messages are visible, the counters show the accumulated totals (including messages received while you were on the other method), and the connection is still live.
+7. Click the **ChatService/Connect** tab.
+8. All previous messages are visible, the counters show the accumulated totals (including messages received while you were on the other tab), and the connection is still live.
 
 ## Active job indicators
 
@@ -64,33 +67,31 @@ The sidebar re-renders whenever you switch methods, so indicators stay current.
 
 ## Multiple protocols
 
-The stash/restore pattern is protocol-agnostic. You can have channels open across different protocols simultaneously:
+Tab-owned state is protocol-agnostic. You can have channels open across different protocols simultaneously, one per tab:
 
 - A **WebSocket** connection to a chat server
 - A **SignalR** hub connection for real-time notifications
 - A **gRPC duplex** stream for bidirectional messaging
 - An **MQTT** subscription to a topic
 
-Each channel is independent. Switching between them preserves all state.
+Each channel is independent. Switching tabs changes which one you see, not which ones are open.
 
 ## Cleanup
 
-When you explicitly **disconnect** a channel (via the disconnect button), its entry is removed from the store and the SSE source is closed. This frees server-side resources.
+When you explicitly **disconnect** a channel (via the disconnect button), or close its tab, the SSE source is closed and the server-side channel is released.
 
 Channels are also cleaned up when:
 
 - The browser tab is closed or refreshed (SSE sources close automatically)
 - The server drops the connection (the channel error state is preserved so you see the error when you return)
 
-## Method state preservation
+## Request state
 
-In addition to channel state, Bowire also preserves the **form/JSON editor state** for each method. When you switch away from a method, the current request body, form field values, and input mode (Form vs. JSON) are saved. Switching back restores them, so you never lose work when navigating between methods.
-
-This works independently of the channel stash -- even methods without open channels get their editor state preserved.
+The tab owns its request as well: the body, the form field values, and the input mode (Form vs. JSON) stay with the tab while you work in another one. Reusing a tab for a different method starts that method fresh; to keep what you typed, open the other method in a new tab (Ctrl/Cmd+click, middle-click, or the row's context menu).
 
 ## Memory considerations
 
-All stashed channels keep their message history in memory. If a channel receives a high volume of messages while stashed, memory usage grows. For long-running monitoring scenarios, consider periodically disconnecting and reconnecting to clear the message buffer.
+Every open channel keeps its message history in memory. If a channel receives a high volume of messages while its tab is in the background, memory usage grows. For long-running monitoring scenarios, consider periodically disconnecting and reconnecting to clear the message buffer.
 
 ## How it differs from the Recorder
 
@@ -98,7 +99,7 @@ The Recorder captures calls into a sequence for replay. The multi-channel manage
 
 ## Tips
 
-- Use multi-channel to **compare responses** from two endpoints side by side -- connect both, then switch back and forth to see their outputs.
+- Use multi-channel to **compare responses** from two endpoints -- connect both in their own tabs, then switch back and forth to see their outputs.
 - The sidebar's active job indicator tells you at a glance which methods have live connections, even when you are looking at a different method.
 - Multi-channel state is **in-memory only** -- it does not survive page reloads. After a refresh, all channels are disconnected and must be re-established.
 

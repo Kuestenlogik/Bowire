@@ -31,11 +31,12 @@
      * 'builder' (the Compose request-builder's response viewer).
      */
     function bowireLastCallSucceeded(surface) {
-        if (typeof isExecuting !== 'undefined' && isExecuting) return false;
-        if (typeof responseError !== 'undefined' && responseError) return false;
-        var hasBody = (typeof responseData !== 'undefined' && responseData !== null && responseData !== '')
-            || (typeof streamMessages !== 'undefined'
-                && Array.isArray(streamMessages) && streamMessages.length > 0);
+        var S = activeState();
+        if (typeof S.isExecuting !== 'undefined' && S.isExecuting) return false;
+        if (typeof S.responseError !== 'undefined' && S.responseError) return false;
+        var hasBody = (typeof S.responseData !== 'undefined' && S.responseData !== null && S.responseData !== '')
+            || (typeof S.streamMessages !== 'undefined'
+                && Array.isArray(S.streamMessages) && S.streamMessages.length > 0);
         if (!hasBody) return false;
         if (surface === 'builder') {
             // Both builder execute paths (executeFreeformRequest and
@@ -47,8 +48,8 @@
             // _renderHoppResponse uses to render the viewer at all.
             return true;
         }
-        if (typeof statusInfo === 'undefined' || !statusInfo) return false;
-        var st = String(statusInfo.status);
+        if (typeof S.statusInfo === 'undefined' || !S.statusInfo) return false;
+        var st = String(S.statusInfo.status);
         return st !== 'Error' && st !== 'NetworkError';
     }
 
@@ -58,6 +59,7 @@
      * symbol. Pure; called from the click path only, but safe anywhere.
      */
     function bowireHandoffOffers() {
+        var S = activeState();
         return {
             // Recordings package — same probe saveFreeformAsMockStep uses.
             mock: typeof isRecording === 'function' && typeof startRecording === 'function',
@@ -78,7 +80,7 @@
     /**
      * Snapshot the LIVE Discover request state.
      *
-     * MUTATOR — calls syncFormToJson(), which writes requestMessages.
+     * MUTATOR — calls syncFormToJson(), which writes S.requestMessages.
      * Call it ONLY from a click handler; calling it on the render path
      * would read stale form values and overwrite state the caller just
      * set. Lifted out of the "+ Add to…" header menu closure (#296) so
@@ -86,6 +88,7 @@
      * growing a second, divergent snapshot.
      */
     function bowireSnapshotDiscoverRequest() {
+        var S = activeState();
         var liveSvc = (typeof selectedService !== 'undefined') ? selectedService : null;
         var liveMth = (typeof selectedMethod !== 'undefined') ? selectedMethod : null;
         if (!liveSvc || !liveMth) return null;
@@ -96,12 +99,12 @@
         // that the editor started with.
         try {
             if (typeof syncFormToJson === 'function'
-                    && typeof requestInputMode !== 'undefined'
-                    && requestInputMode === 'form') {
+                    && typeof S.requestInputMode !== 'undefined'
+                    && S.requestInputMode === 'form') {
                 syncFormToJson();
             }
         } catch { /* schema-form not loaded */ }
-        var body = (Array.isArray(requestMessages) && requestMessages[0]) || '{}';
+        var body = (Array.isArray(S.requestMessages) && S.requestMessages[0]) || '{}';
         var meta = {};
         var metaRows = document.querySelectorAll('.bowire-metadata-row');
         for (var mi = 0; mi < metaRows.length; mi++) {
@@ -116,7 +119,7 @@
             methodType: liveMth.methodType || 'Unary',
             protocol: liveSvc.source || selectedProtocol || 'grpc',
             body: body,
-            messages: Array.isArray(requestMessages) ? requestMessages.slice() : [body],
+            messages: Array.isArray(S.requestMessages) ? S.requestMessages.slice() : [body],
             metadata: Object.keys(meta).length > 0 ? meta : null,
             serverUrl: liveSvc.originUrl || (Array.isArray(serverUrls) && serverUrls[0]) || null
         };
@@ -151,6 +154,7 @@
      * Returns null when there is nothing to hand off.
      */
     function bowireHandoffSnapshot(surface) {
+        var S = activeState();
         if (surface === 'builder') {
             var fr = (typeof freeformRequest !== 'undefined') ? freeformRequest : null;
             if (!fr) return null;
@@ -166,10 +170,10 @@
                 messages: [fr.body || '{}'],
                 metadata: (fr.metadata && Object.keys(fr.metadata).length > 0) ? fr.metadata : null,
                 serverUrl: fr.serverUrl || null,
-                response: (typeof responseData !== 'undefined') ? responseData : null,
+                response: (typeof S.responseData !== 'undefined') ? S.responseData : null,
                 status: rbMeta && rbMeta.status != null
                     ? rbMeta.status
-                    : ((typeof statusInfo !== 'undefined' && statusInfo) ? statusInfo.status : 'OK'),
+                    : ((typeof S.statusInfo !== 'undefined' && S.statusInfo) ? S.statusInfo.status : 'OK'),
                 durationMs: rbMeta && rbMeta.durationMs != null ? rbMeta.durationMs : 0,
                 httpPath: null,
                 httpVerb: null,
@@ -181,9 +185,9 @@
         snap.surface = 'discover';
         // Response-side fields mirror what api.js already feeds
         // bowireCaptureStep after a successful invoke, field for field.
-        snap.response = (typeof responseData !== 'undefined') ? responseData : null;
-        snap.status = (typeof statusInfo !== 'undefined' && statusInfo) ? statusInfo.status : 'OK';
-        snap.durationMs = (typeof statusInfo !== 'undefined' && statusInfo) ? statusInfo.durationMs : 0;
+        snap.response = (typeof S.responseData !== 'undefined') ? S.responseData : null;
+        snap.status = (typeof S.statusInfo !== 'undefined' && S.statusInfo) ? S.statusInfo.status : 'OK';
+        snap.durationMs = (typeof S.statusInfo !== 'undefined' && S.statusInfo) ? S.statusInfo.durationMs : 0;
         snap.httpPath = (typeof selectedMethod !== 'undefined' && selectedMethod)
             ? (selectedMethod.httpPath || null) : null;
         snap.httpVerb = (typeof selectedMethod !== 'undefined' && selectedMethod)

@@ -1,17 +1,18 @@
     // ---- Execute Handler ----
     async function handleExecute() {
+        var S = activeState();
         if (!selectedMethod || !selectedService) return;
 
         // If there's a leftover channel from a previous Duplex method
         // and the current method is NOT a channel type, disconnect it
         // so the Unary/Streaming path runs cleanly.
-        if (duplexConnected && !isChannelMethod()) {
+        if (S.duplexConnected && !isChannelMethod()) {
             channelDisconnect();
         }
 
         // Channel methods (Duplex / ClientStreaming) use the channel flow
         if (isChannelMethod()) {
-            if (duplexConnected) {
+            if (S.duplexConnected) {
                 // When connected, Ctrl+Enter sends a message
                 channelSend();
             } else {
@@ -20,7 +21,7 @@
             return;
         }
 
-        if (isExecuting && sseSource) {
+        if (S.isExecuting && S.sseSource) {
             stopStreaming();
             return;
         }
@@ -36,12 +37,12 @@
         }
 
         // Collect all message editor values into requestMessages
-        if (requestInputMode === 'form' && selectedMethod && selectedMethod.inputType) {
+        if (S.requestInputMode === 'form' && selectedMethod && selectedMethod.inputType) {
             // Validate the form before serialising — required fields, numeric
             // types, integer-vs-float. Block submission with a toast and
             // visible per-field error markers when anything fails so the
             // user gets immediate feedback instead of a 4xx/5xx round-trip.
-            var validationErrors = validateForm(selectedMethod.inputType, '');
+            var validationErrors = validateForm(S, selectedMethod.inputType, '');
             if (Object.keys(validationErrors).length > 0) {
                 formValidationErrors = validationErrors;
                 var count = Object.keys(validationErrors).length;
@@ -55,15 +56,15 @@
             // Validation passed — clear any leftover markers from a previous
             // failed attempt so the form looks clean again.
             formValidationErrors = {};
-            syncFormToJson();
+            syncFormToJson(S);
         } else {
             const editors = $$('.bowire-message-editor');
             if (editors.length > 0) {
-                requestMessages = editors.map(function (e) { return e.value || '{}'; });
+                S.requestMessages = editors.map(function (e) { return e.value || '{}'; });
             } else {
                 // Fallback: single editor mode
                 const editor = $('.bowire-editor');
-                requestMessages = [editor ? editor.value : '{}'];
+                S.requestMessages = [editor ? editor.value : '{}'];
             }
         }
         // #125 Phase 4 — prefetch ai.* refs from every template the
@@ -73,7 +74,7 @@
         // session cache that substituteVars reads from.
         if (typeof window.bowirePrefetchAiVars === 'function') {
             try {
-                var aiTemplates = requestMessages.slice();
+                var aiTemplates = S.requestMessages.slice();
                 // metadata values + URL also pass through substituteVars,
                 // so include them in the scan.
                 var mdRowsAi = $$('.bowire-metadata-row');
@@ -95,7 +96,7 @@
         // installed and a template actually references a keyring ref.
         if (typeof window.bowirePrefetchKeyringVars === 'function') {
             try {
-                var keyringTemplates = requestMessages.slice();
+                var keyringTemplates = S.requestMessages.slice();
                 var mdRowsKr = $$('.bowire-metadata-row');
                 for (var kri = 0; kri < mdRowsKr.length; kri++) {
                     var krInputs = mdRowsKr[kri].querySelectorAll('.bowire-metadata-input');
@@ -112,7 +113,7 @@
 
         // Substitute ${var} placeholders from active environment + globals
         let messages = substituteMessages(
-            requestMessages.map(function (m) { return m || '{}'; })
+            S.requestMessages.map(function (m) { return m || '{}'; })
         );
 
         // GraphQL: wrap variables + (auto-generated or user-edited) operation

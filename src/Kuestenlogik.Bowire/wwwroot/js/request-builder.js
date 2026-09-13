@@ -1656,23 +1656,24 @@
     }
 
     function _renderHoppResponse() {
+        var S = activeState();
         var fr = freeformRequest;
         var pane = el('div', { className: 'bowire-request-builder-response' });
         pane.appendChild(el('div', { className: 'bowire-pane-heading', textContent: t('rb.response.heading') }));
-        if (responseError) {
+        if (S.responseError) {
             var errOut = el('div', { className: 'bowire-response-output error' });
-            var prob = (typeof responseError === 'object' && typeof normalizeProblem === 'function')
-                ? normalizeProblem(responseError) : null;
+            var prob = (typeof S.responseError === 'object' && typeof normalizeProblem === 'function')
+                ? normalizeProblem(S.responseError) : null;
             if (prob && typeof renderProblem === 'function') renderProblem(prob, errOut);
-            else errOut.textContent = (typeof responseError === 'string')
-                ? responseError
+            else errOut.textContent = (typeof S.responseError === 'string')
+                ? S.responseError
                 : (typeof problemTitle === 'function'
-                    ? problemTitle(responseError, t('rb.response.failed'))
+                    ? problemTitle(S.responseError, t('rb.response.failed'))
                     : t('rb.response.failed'));
             pane.appendChild(errOut);
             return pane;
         }
-        if (!responseData) {
+        if (!S.responseData) {
             pane.appendChild(el('div', {
                 className: 'bowire-response-empty',
                 textContent: t('rb.response.empty')
@@ -1691,14 +1692,14 @@
         // ---- active tab body ----
         var body = el('div', { className: 'bowire-response-tab-body' });
         if (rv.tab === 'raw') {
-            body.appendChild(_renderResponseRawBody(responseData, rv));
+            body.appendChild(_renderResponseRawBody(S.responseData, rv));
         } else if (rv.tab === 'headers') {
             body.appendChild(renderHeaderList(headers));
         } else if (rv.tab === 'tests') {
             body.appendChild(_renderResponseTestsBody(fr));
         } else {
             // Default: JSON viewer.
-            body.appendChild(_renderResponseJsonBody(fr, rv, responseData));
+            body.appendChild(_renderResponseJsonBody(fr, rv, S.responseData));
         }
         pane.appendChild(body);
         // ---- breadcrumb under the JSON pane ----
@@ -1710,6 +1711,7 @@
     }
 
     function _renderResponseMetaStrip(fr, rv, meta) {
+        var S = activeState();
         var strip = el('div', { className: 'bowire-response-meta-strip' });
         var info = el('div', { className: 'bowire-response-meta-info' });
         if (meta && meta.status != null) {
@@ -1755,12 +1757,12 @@
             render();
         }));
         actions.appendChild(_metaActionBtn('collapse', t('rb.meta.collapse'), false, function () {
-            rv.togglesByPath = _allContainerPaths(responseData);
+            rv.togglesByPath = _allContainerPaths(S.responseData);
             render();
         }));
         actions.appendChild(_metaActionBtn('copy', t('rb.meta.copy'), false, function () {
             try {
-                var txt = typeof responseData === 'string' ? responseData : JSON.stringify(responseData, null, 2);
+                var txt = typeof S.responseData === 'string' ? S.responseData : JSON.stringify(S.responseData, null, 2);
                 navigator.clipboard.writeText(txt).then(
                     function () { if (typeof toast === 'function') toast(t('clipboard.responseCopied'), 'success'); },
                     function () { if (typeof toast === 'function') toast(t('clipboard.failed'), 'error'); }
@@ -2058,8 +2060,9 @@
     }
 
     function _downloadResponseBody(fr) {
+        var S = activeState();
         try {
-            var raw = responseData;
+            var raw = S.responseData;
             if (raw == null) {
                 if (typeof toast === 'function') toast(t('download.nothing'), 'info');
                 return;
@@ -2111,6 +2114,7 @@
     }
 
     function _triggerDownload(blob, filename) {
+        var S = activeState();
         var url = URL.createObjectURL(blob);
         var a = document.createElement('a');
         a.href = url;
@@ -2147,7 +2151,7 @@
         // Ctrl+F alone so they can still search inside the editor / URL bar.
         if (focusInEditable && !focusInsidePane) return;
         var fr = freeformRequest;
-        if (!fr || !responseData) return;
+        if (!fr || !activeState().responseData) return;
         var rv = _ensureResponseViewerState(fr);
         rv.searchOpen = true;
         e.preventDefault();
@@ -2363,6 +2367,7 @@
     }
 
     async function _executeRestRequest(fr) {
+        var S = activeState();
         if (!fr.serverUrl || !fr.serverUrl.trim()) {
             if (typeof toast === 'function') toast(t('rb.needsUrl'), 'error');
             return;
@@ -2476,9 +2481,9 @@
             }
         }
 
-        isExecuting = true;
-        responseData = null;
-        responseError = null;
+        S.isExecuting = true;
+        S.responseData = null;
+        S.responseError = null;
         // #302 — drop the previous response's meta so the strip doesn't
         // show stale status / duration / size during the new in-flight
         // request. Toggle state on the viewer survives (it's the
@@ -2537,7 +2542,7 @@
                     }
                 } catch (e) {
                     if (typeof toast === 'function') toast(t('rb.binaryReadFailed', { reason: e.message }), 'error');
-                    isExecuting = false;
+                    S.isExecuting = false;
                     if (typeof markJobDone === 'function') markJobDone('request-builder', verb);
                     render();
                     return;
@@ -2553,7 +2558,7 @@
                 ? result.duration_ms
                 : Math.round(performance.now() - historyStartMs);
             if (result.title) {
-                responseError = result;
+                S.responseError = result;
                 historyOutcome.status = (result.status != null ? result.status : 'Error');  // i18n-exempt: status label, carried on the console entry and the run summary
                 historyOutcome.ok = false;
                 if (typeof addConsoleEntry === 'function') {
@@ -2562,7 +2567,7 @@
                             ? richErrorDetail(result, 'Request failed') : (result.detail || result.title) });
                 }
             } else {
-                responseData = result.response;
+                S.responseData = result.response;
                 historyOutcome.status = result.status || 'OK';
                 historyOutcome.ok = true;
                 // #302 — stash status / duration / headers on the per-fr
@@ -2606,7 +2611,7 @@
                 }
             }
         } catch (e) {
-            responseError = e.message;
+            S.responseError = e.message;
             historyOutcome.status = 'NetworkError';  // i18n-exempt: status label, carried on the console entry and the run summary
             historyOutcome.ok = false;
             historyOutcome.durationMs = Math.round(performance.now() - historyStartMs);
@@ -2648,13 +2653,13 @@
                 startedAt: Date.now() - (historyOutcome.durationMs || 0),
                 durationMs: historyOutcome.durationMs || 0,
                 outcome: _composeOutcome,
-                errorMessage: (responseError && typeof responseError === 'object' && responseError.title)
-                    ? responseError.title
-                    : (typeof responseError === 'string' ? responseError : null)
+                errorMessage: (S.responseError && typeof S.responseError === 'object' && S.responseError.title)
+                    ? S.responseError.title
+                    : (typeof S.responseError === 'string' ? S.responseError : null)
             });
         }
 
-        isExecuting = false;
+        S.isExecuting = false;
         if (typeof markJobDone === 'function') markJobDone('request-builder', verb);
         render();
     }

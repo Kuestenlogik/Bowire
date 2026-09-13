@@ -36,6 +36,7 @@
     // discovered-method's header / content / action-bar instead of
     // being wrapped in an extra .bowire-main container.
     function _appendFreeformInto(pane) {
+        var S = activeState();
         var fr = freeformRequest;
 
         // ----- Protocol options + icon helpers (used by header) -----
@@ -602,18 +603,18 @@
         // empty hint.
         var resPane = el('div', { className: 'bowire-pane bowire-freeform-res-pane' });
         resPane.appendChild(el('div', { className: 'bowire-pane-heading', textContent: t('rb.response.heading') }));
-        if (responseError || responseData) {
-            if (responseError) {
+        if (S.responseError || S.responseData) {
+            if (S.responseError) {
                 var errOut = el('div', { className: 'bowire-response-output error' });
-                var prob = (typeof responseError === 'object') ? normalizeProblem(responseError) : null;
+                var prob = (typeof S.responseError === 'object') ? normalizeProblem(S.responseError) : null;
                 if (prob) renderProblem(prob, errOut);
-                else errOut.textContent = (typeof responseError === 'string')
-                    ? responseError
-                    : problemTitle(responseError, 'Request failed');
+                else errOut.textContent = (typeof S.responseError === 'string')
+                    ? S.responseError
+                    : problemTitle(S.responseError, 'Request failed');
                 resPane.appendChild(errOut);
-            } else if (responseData) {
+            } else if (S.responseData) {
                 var output = el('div', { className: 'bowire-response-output is-interactive' });
-                output.innerHTML = highlightJsonInteractive(responseData);
+                output.innerHTML = highlightJsonInteractive(S.responseData);
                 resPane.appendChild(output);
             }
         } else {
@@ -706,6 +707,7 @@
 
 
     async function executeFreeformRequest() {
+        var S = activeState();
         if (!freeformRequest) return;
         var fr = freeformRequest;
         // #256 — REST ad-hoc only needs URL + verb (no service / RPC
@@ -725,9 +727,9 @@
             return;
         }
 
-        isExecuting = true;
-        responseData = null;
-        responseError = null;
+        S.isExecuting = true;
+        S.responseData = null;
+        S.responseError = null;
         markJobActive(fr.service || 'adhoc', fr.method);
         render();
 
@@ -745,7 +747,7 @@
             || ['POST', 'PUT', 'PATCH', 'DELETE'].indexOf((fr.method || '').toUpperCase()) >= 0;
         addConsoleEntry({ type: 'request', method: fullName, body: verbHasBody ? bodyToSend : '' });
 
-        var statusInfo = null;
+        var runStatus = null;
         try {
             var url = config.prefix + '/api/invoke'
                 + (fr.serverUrl ? '?serverUrl=' + encodeURIComponent(fr.serverUrl) : '');
@@ -768,12 +770,12 @@
             });
             var result = await resp.json();
             if (result.title) {
-                responseError = result;
-                statusInfo = { status: 'Error', durationMs: result.duration_ms || 0 };  // i18n-exempt: status label, carried on the console entry and the run summary
+                S.responseError = result;
+                runStatus = { status: 'Error', durationMs: result.duration_ms || 0 };  // i18n-exempt: status label, carried on the console entry and the run summary
                 addConsoleEntry({ type: 'error', method: fullName, status: 'Error', body: richErrorDetail(result, 'Request failed') });  // i18n-exempt: the action log stores rendered text, see #689
             } else {
-                responseData = result.response;
-                statusInfo = { status: result.status, durationMs: result.duration_ms || 0 };
+                S.responseData = result.response;
+                runStatus = { status: result.status, durationMs: result.duration_ms || 0 };
                 if (result.response) captureResponse(result.response);
                 addConsoleEntry({ type: 'response', method: fullName, status: result.status, body: result.response });
 
@@ -792,16 +794,16 @@
                 captureFreeformRecordingStep(fr, {
                     response: result.response,
                     responseBinary: result.response_binary || null,
-                    status: statusInfo.status,
-                    durationMs: statusInfo.durationMs
+                    status: runStatus.status,
+                    durationMs: runStatus.durationMs
                 });
             }
         } catch (e) {
-            responseError = e.message;
+            S.responseError = e.message;
             addConsoleEntry({ type: 'error', method: fullName, status: 'NetworkError', body: e.message });  // i18n-exempt: the action log stores rendered text, see #689
         }
 
-        isExecuting = false;
+        S.isExecuting = false;
         markJobDone(fr.service, fr.method);
         render();
     }
@@ -812,13 +814,14 @@
     // next click is enough to build up a whole mock surface, no
     // record-start ceremony first.
     function saveFreeformAsMockStep() {
+        var S = activeState();
         if (!freeformRequest) return;
         var fr = freeformRequest;
         if (!fr.service || !fr.method) {
             toast(t('main.needsServiceMethod'), 'error');
             return;
         }
-        var responseText = fr.mockResponse || responseData || '';
+        var responseText = fr.mockResponse || S.responseData || '';
         if (!responseText) {
             toast(t('main.needsMockResponse'), 'error');
             freeformMockExpanded = true;
@@ -4698,6 +4701,7 @@
     // item am I on" question without doubling the chrome.
 
     function renderMain() {
+        var S = activeState();
         // #314 — give rail-owned renderers first crack at the main
         // pane. When a rail descriptor sets mainPaneRendererKey and
         // the rail's JS fragment has registered the function on
@@ -6040,9 +6044,9 @@
                         // know is broken. Require a successful last
                         // call (statusInfo present, no responseError)
                         // before letting the item open the picker.
-                        var lastCallOk = (typeof statusInfo !== 'undefined' && statusInfo)
-                            && (typeof responseError === 'undefined' || !responseError)
-                            && statusInfo.status !== 'Error';
+                        var lastCallOk = (typeof S.statusInfo !== 'undefined' && S.statusInfo)
+                            && (typeof S.responseError === 'undefined' || !S.responseError)
+                            && S.statusInfo.status !== 'Error';
                         menu.appendChild(el('button', {
                             className: 'bowire-header-addto-item'
                                 + (lastCallOk ? '' : ' bowire-header-addto-item-disabled'),
@@ -6450,14 +6454,15 @@
             className: 'bowire-content bowire-content-enter',
             'data-split': resolvedSplit,
         });
-        var reqPane = renderRequestPane();
-        var resPane = renderResponsePane();
+        var tab = activeTab();
+        var reqPane = renderRequestPane(tab);
+        var resPane = renderResponsePane(tab);
         // Divider id includes the method key so morphdom fully
         // replaces the bar when switching methods — that drops the
         // stale initResizer closure (which captured the OLD reqPane /
         // resPane refs) and the rAF below installs a fresh one against
         // the new panes.
-        var dividerMethodKey = (selectedService ? selectedService.name : '')
+        var dividerMethodKey = (tab ? tab.id + '-' : '') + (selectedService ? selectedService.name : '')
             + '-' + (selectedMethod ? selectedMethod.name : '');
         var dividerId = 'bowire-pane-divider-' + dividerMethodKey;
         var divider = el('div', {
@@ -6487,26 +6492,29 @@
         return main;
     }
 
-    function saveMessageEditors() {
+    function saveMessageEditors(S) {
         var editors = $$('.bowire-message-editor');
         if (editors.length > 0) {
-            requestMessages = editors.map(function (e) { return e.value; });
+            S.requestMessages = editors.map(function (e) { return e.value; });
         } else {
             var single = $('.bowire-editor');
             if (single && single.value.trim()) {
-                requestMessages = [single.value];
+                S.requestMessages = [single.value];
             }
         }
     }
 
-    function renderRequestPane() {
-        // Save current editor content before re-render
-        saveMessageEditors();
+    function renderRequestPane(tab) {
+        var S = tabState(tab);
+        // Save current editor content before re-render — the editors on
+        // screen belong to the active tab, so only its state may take
+        // what they hold.
+        if (S === activeState()) saveMessageEditors(S);
 
         // ID includes the selected method so morphdom fully replaces the
         // pane when switching methods instead of reusing stale DOM with
         // wrong closures/editors from the previous method.
-        var reqMethodKey = (selectedService ? selectedService.name : '')
+        var reqMethodKey = (tab ? tab.id + '-' : '') + (selectedService ? selectedService.name : '')
             + '-' + (selectedMethod ? selectedMethod.name : '');
         const pane = el('div', { id: 'bowire-request-pane-' + reqMethodKey, className: 'bowire-pane' });
 
@@ -6534,7 +6542,7 @@
         // nonsensical "Body > Body". Multi-message methods keep their
         // count-aware "Messages (N)" label.
         const bodyTabLabel = isMultiMessage
-    ? t('main.tab.messages', { count: requestMessages.length })
+    ? t('main.tab.messages', { count: S.requestMessages.length })
     : t('main.tab.payload');
         const bodyTab = el('div', {
             id: 'bowire-request-tab-body',
@@ -6611,23 +6619,23 @@
 
         // Channel status bar (Duplex / Client Streaming)
         if (isChannelMethod()) {
-            var statusClass = duplexConnected ? 'bowire-channel-connected' : 'bowire-channel-disconnected';
-            var dotClass = duplexConnected ? 'bowire-pulse-dot' : 'bowire-channel-dot-grey';
-            var statusText = duplexConnected ? t('main.stream.channelOpen') : (statusInfo && statusInfo.status === 'Completed'
+            var statusClass = S.duplexConnected ? 'bowire-channel-connected' : 'bowire-channel-disconnected';
+            var dotClass = S.duplexConnected ? 'bowire-pulse-dot' : 'bowire-channel-dot-grey';
+            var statusText = S.duplexConnected ? t('main.stream.channelOpen') : (S.statusInfo && S.statusInfo.status === 'Completed'
     ? t('main.stream.completed') : t('main.src.disconnected'));
             var channelStatus = el('div', { className: 'bowire-channel-status ' + statusClass },
                 el('span', { className: dotClass }),
                 el('span', { textContent: statusText })
             );
-            if (duplexConnected || sentCount > 0 || receivedCount > 0) {
+            if (S.duplexConnected || S.sentCount > 0 || S.receivedCount > 0) {
                 var counters = el('div', { className: 'bowire-channel-counters' },
                     el('div', { className: 'bowire-channel-counter' },
                         el('span', { textContent: t('main.sent') }),
-                        el('span', { className: 'bowire-counter-sent', textContent: String(sentCount) })
+                        el('span', { className: 'bowire-counter-sent', textContent: String(S.sentCount) })
                     ),
                     el('div', { className: 'bowire-channel-counter' },
                         el('span', { textContent: t('main.received') }),
-                        el('span', { className: 'bowire-counter-received', textContent: String(receivedCount) })
+                        el('span', { className: 'bowire-counter-received', textContent: String(S.receivedCount) })
                     )
                 );
                 channelStatus.appendChild(counters);
@@ -6711,7 +6719,7 @@
             // case anything still reads them); when those buttons are
             // dropped the mirror becomes one-way.
             if (activeBodySubTab === 'form' || activeBodySubTab === 'json') {
-                requestInputMode = activeBodySubTab;
+                S.requestInputMode = activeBodySubTab;
             }
         }
 
@@ -6744,7 +6752,7 @@
                             }
                             activeBodySubTab = tab.id;
                             if (tab.id === 'form' || tab.id === 'json') {
-                                requestInputMode = tab.id;
+                                S.requestInputMode = tab.id;
                             }
                             render();
                         }
@@ -6944,7 +6952,7 @@
                             var editors = $$('.bowire-message-editor');
                             for (var i = 0; i < editors.length; i++) {
                                 editors[i].value = formatJson(editors[i].value);
-                                requestMessages[i] = editors[i].value;
+                                S.requestMessages[i] = editors[i].value;
                             }
                         }
                     }),
@@ -6957,7 +6965,7 @@
                             var tmpl = selectedMethod ? generateDefaultJson(selectedMethod.inputType, 0) : '{}';
                             for (var i = 0; i < editors.length; i++) {
                                 editors[i].value = tmpl;
-                                requestMessages[i] = tmpl;
+                                S.requestMessages[i] = tmpl;
                             }
                         }
                     })
@@ -6968,7 +6976,7 @@
             // Message list container
             var messageList = el('div', { className: 'bowire-message-list' });
 
-            for (var idx = 0; idx < requestMessages.length; idx++) {
+            for (var idx = 0; idx < S.requestMessages.length; idx++) {
                 (function (i) {
                     var msgItem = el('div', { className: 'bowire-message-item' });
 
@@ -6976,15 +6984,15 @@
                     var msgHeader = el('div', { className: 'bowire-message-header' },
                         el('span', { textContent: t('main.messageNumber', { n: i + 1 }) })
                     );
-                    if (requestMessages.length > 1) {
+                    if (S.requestMessages.length > 1) {
                         msgHeader.appendChild(el('button', {
                             id: 'bowire-msg-remove-' + i,
                             className: 'bowire-message-remove',
                             textContent: '\u00d7',
                             title: t('main.removeMessage'),
                             onClick: function () {
-                                saveMessageEditors();
-                                requestMessages.splice(i, 1);
+                                saveMessageEditors(S);
+                                S.requestMessages.splice(i, 1);
                                 render();
                             }
                         }));
@@ -6997,9 +7005,9 @@
                         placeholder: t('main.jsonMessagePlaceholder'),
                         spellcheck: 'false'
                     });
-                    msgEditor.value = requestMessages[i] || '{}';
+                    msgEditor.value = S.requestMessages[i] || '{}';
                     msgEditor.addEventListener('input', function () {
-                        requestMessages[i] = this.value;
+                        S.requestMessages[i] = this.value;
                     });
                     msgEditor.addEventListener('keydown', function (e) {
                         if (e.key === 'Tab') {
@@ -7008,7 +7016,7 @@
                             var end = this.selectionEnd;
                             this.value = this.value.substring(0, start) + '  ' + this.value.substring(end);
                             this.selectionStart = this.selectionEnd = start + 2;
-                            requestMessages[i] = this.value;
+                            S.requestMessages[i] = this.value;
                         }
                         if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
                             e.preventDefault();
@@ -7036,9 +7044,9 @@
                 id: 'bowire-add-message-btn',
                 className: 'bowire-add-message',
                 onClick: function () {
-                    saveMessageEditors();
+                    saveMessageEditors(S);
                     var tmpl = selectedMethod ? generateDefaultJson(selectedMethod.inputType, 0) : '{}';
-                    requestMessages.push(tmpl);
+                    S.requestMessages.push(tmpl);
                     render();
                 }
             },
@@ -7047,7 +7055,7 @@
             ));
 
             bodyContent.appendChild(messageList);
-        } else if (requestInputMode === 'form' && hasInputFields) {
+        } else if (S.requestInputMode === 'form' && hasInputFields) {
             // Single-message mode: Form view
             const paneHeader = el('div', { className: 'bowire-pane-header' },
                 el('span', { className: 'bowire-pane-title', textContent: t('rb.body.form') }),
@@ -7057,13 +7065,7 @@
                         className: 'bowire-pane-btn',
                         textContent: t('main.reset'),
                         onClick: function () {
-                            // Drop both the live form values and the
-                            // cached per-method state so a return to
-                            // this method starts from a clean default.
-                            formValues = {};
-                            if (selectedService && selectedMethod) {
-                                clearMethodState(selectedService.name, selectedMethod.name);
-                            }
+                            S.formValues = {};
                             render();
                         }
                     })
@@ -7071,7 +7073,7 @@
             );
             bodyContent.appendChild(paneHeader);
             const body = el('div', { className: 'bowire-pane-body' });
-            body.appendChild(renderFormFields(selectedMethod.inputType, '', 0));
+            body.appendChild(renderFormFields(S, selectedMethod.inputType, '', 0));
             bodyContent.appendChild(body);
         } else {
             // Single-message mode: JSON editor (Unary / Server Streaming)
@@ -7093,7 +7095,7 @@
                         textContent: t('main.format'),
                         onClick: function () {
                             var ed = $('.bowire-editor');
-                            if (ed) { ed.value = formatJson(ed.value); requestMessages[0] = ed.value; }
+                            if (ed) { ed.value = formatJson(ed.value); S.requestMessages[0] = ed.value; }
                         }
                     }),
                     el('button', {
@@ -7104,7 +7106,7 @@
                             var ed = $('.bowire-editor');
                             if (ed && selectedMethod) {
                                 ed.value = generateDefaultJson(selectedMethod.inputType, 0);
-                                requestMessages[0] = ed.value;
+                                S.requestMessages[0] = ed.value;
                             }
                         }
                     }),
@@ -7125,7 +7127,7 @@
                                     var text = ev.target.result;
                                     try { text = JSON.stringify(JSON.parse(text), null, 2); } catch {}
                                     var ed = $('.bowire-editor');
-                                    if (ed) { ed.value = text; requestMessages[0] = text; }
+                                    if (ed) { ed.value = text; S.requestMessages[0] = text; }
                                     toast(t('main.imported', { name: file.name }), 'success');
                                 };
                                 reader.readAsText(file);
@@ -7169,9 +7171,9 @@
                 placeholder: t('main.jsonBodyPlaceholder2'),
                 spellcheck: 'false'
             });
-            editor.value = (requestMessages[0] && requestMessages[0].trim()) ? requestMessages[0] : defaultJson;
+            editor.value = (S.requestMessages[0] && S.requestMessages[0].trim()) ? S.requestMessages[0] : defaultJson;
             editor.addEventListener('input', function () {
-                requestMessages[0] = this.value;
+                S.requestMessages[0] = this.value;
             });
             editor.addEventListener('keydown', function (e) {
                 if (e.key === 'Tab') {
@@ -7180,7 +7182,7 @@
                     const end = this.selectionEnd;
                     this.value = this.value.substring(0, start) + '  ' + this.value.substring(end);
                     this.selectionStart = this.selectionEnd = start + 2;
-                    requestMessages[0] = this.value;
+                    S.requestMessages[0] = this.value;
                 }
                 if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
                     e.preventDefault();
@@ -7208,7 +7210,7 @@
                         var text = ev.target.result;
                         try { text = JSON.stringify(JSON.parse(text), null, 2); } catch {}
                         editor.value = text;
-                        requestMessages[0] = text;
+                        S.requestMessages[0] = text;
                         toast(t('main.imported', { name: file.name }), 'success');
                     };
                     reader.readAsText(file);
@@ -7511,11 +7513,11 @@
                                         openTab(svc, m);
                                         activeRequestTab = 'body';
                                         if (fresh.messages && fresh.messages.length > 0) {
-                                            requestMessages = fresh.messages.slice();
+                                            S.requestMessages = fresh.messages.slice();
                                         } else if (fresh.body && !fresh.body.startsWith('(channel:')) {
-                                            requestMessages = [fresh.body];
+                                            S.requestMessages = [fresh.body];
                                         }
-                                        requestInputMode = 'json';
+                                        S.requestInputMode = 'json';
                                         render();
                                         return;
                                     }
@@ -8234,11 +8236,11 @@
         return false;
     }
 
-    function streamEffectiveIndex() {
+    function streamEffectiveIndex(S) {
         // null/-1 means "follow latest"; resolve to the last message index.
-        if (streamSelectedIndex == null) return streamMessages.length - 1;
-        if (streamSelectedIndex < 0 || streamSelectedIndex >= streamMessages.length) {
-            return streamMessages.length - 1;
+        if (streamSelectedIndex == null) return S.streamMessages.length - 1;
+        if (streamSelectedIndex < 0 || streamSelectedIndex >= S.streamMessages.length) {
+            return S.streamMessages.length - 1;
         }
         return streamSelectedIndex;
     }
@@ -8669,7 +8671,8 @@
     //   ○ Idle        — connection up, no frame in last N seconds
     //   ○ Closed      — connection ended (stream completed or stopped)
     //   × Error       — channel reported an error
-    function renderSubscriptionBadge(svcName, methodName, frameCount) {
+    function renderSubscriptionBadge(svcName, methodName, frameCount, S) {
+        S = S || activeState();
         var entry = (svcName && methodName)
             ? findSubscription(svcName, methodName) : null;
         var state;
@@ -8689,7 +8692,7 @@
         } else if (frameCount > 0) {
             state = 'closed';
             label = 'Closed';
-        } else if (isExecuting) {
+        } else if (S.isExecuting) {
             // Active unary streaming (no registry entry — should be
             // rare now) or pre-registry init.
             state = 'subscribed';
@@ -8721,7 +8724,7 @@
         return pill;
     }
 
-    function renderStreamingOutput() {
+    function renderStreamingOutput(S) {
         // Outer container — referenced by appendStreamMessage / selectStreamMessage
         // / updateStreamDetail to find the live DOM nodes.
         var output = el('div', {
@@ -8741,7 +8744,7 @@
         var badge = renderSubscriptionBadge(
             selectedService && selectedService.name,
             selectedMethod && selectedMethod.name,
-            streamMessages.length);
+            S.streamMessages.length, S);
         toolbar.appendChild(badge);
         var hasFilter = (streamFilterQuery || '').trim().length > 0;
 
@@ -8857,12 +8860,12 @@
         // monotonic growth of the message count never reflows the
         // toolbar buttons. Shows "X / Y messages" while a filter
         // hides some rows.
-        var visibleCount = streamMessages.filter(streamMessageMatchesFilter).length;
+        var visibleCount = S.streamMessages.filter(streamMessageMatchesFilter).length;
         var countText;
         if (hasFilter) {
-            countText = visibleCount + ' / ' + streamMessages.length + ' messages';
+            countText = visibleCount + ' / ' + S.streamMessages.length + ' messages';
         } else {
-            countText = streamMessages.length + (streamMessages.length === 1 ? ' message' : ' messages');
+            countText = S.streamMessages.length + (S.streamMessages.length === 1 ? ' message' : ' messages');
         }
         output.appendChild(el('div', {
             className: 'bowire-stream-count-row',
@@ -8879,12 +8882,12 @@
             className: 'bowire-stream-list',
             id: 'bowire-stream-list'
         });
-        for (var i = 0; i < streamMessages.length; i++) {
+        for (var i = 0; i < S.streamMessages.length; i++) {
             // Skip messages that don't match the filter — the indices
             // stay absolute (used by selectStreamMessage), so the
             // detail pane and existing selection still work.
-            if (!streamMessageMatchesFilter(streamMessages[i])) continue;
-            list.appendChild(buildStreamListItem(streamMessages[i], i));
+            if (!streamMessageMatchesFilter(S.streamMessages[i])) continue;
+            list.appendChild(buildStreamListItem(S.streamMessages[i], i));
         }
         listPane.appendChild(list);
         output.appendChild(listPane);
@@ -8902,9 +8905,9 @@
             className: 'bowire-stream-detail-pane',
             id: 'bowire-stream-detail-pane'
         });
-        var effIdx = streamEffectiveIndex();
+        var effIdx = streamEffectiveIndex(S);
         if (effIdx >= 0) {
-            var built = buildStreamDetailContent(streamMessages[effIdx], effIdx);
+            var built = buildStreamDetailContent(S.streamMessages[effIdx], effIdx);
             detailPane.appendChild(built.header);
             detailPane.appendChild(built.body);
         }
@@ -8961,7 +8964,7 @@
         bowireWidgetUnmounts = [];
     }
 
-    function renderStreamingPaneWithWidgets() {
+    function renderStreamingPaneWithWidgets(S) {
         var fw = window.__bowireExtFramework;
         var layout = window.__bowireLayout;
 
@@ -8971,7 +8974,7 @@
         // happy path below.
         if (!fw || !layout || !selectedService || !selectedMethod) {
             disposeWidgetMounts();
-            return renderStreamingOutput();
+            return renderStreamingOutput(S);
         }
 
         // Synchronously decide whether the active method is split-
@@ -9003,7 +9006,7 @@
 
         if (!splitActive) {
             disposeWidgetMounts();
-            var streamingOut = renderStreamingOutput();
+            var streamingOut = renderStreamingOutput(S);
             // No registered viewer for a split-default kind → keep
             // the legacy "stream + placeholder card for Phase 3-R
             // install-discovery" wrapper. The placeholder slot folds
@@ -9053,7 +9056,7 @@
         bowireWidgetUnmounts.push(function () { pane.dispose(); });
 
         // Left slot: the streaming-frames pane (Wireshark list + detail).
-        pane.firstSlot.appendChild(renderStreamingOutput());
+        pane.firstSlot.appendChild(renderStreamingOutput(S));
 
         // Right slot: the widget pane with its own header (title +
         // layout toggle). The actual viewer DOM is attached
@@ -9857,7 +9860,8 @@
         setTimeout(function () { document.addEventListener('click', onClick); }, 0);
     }
 
-    function appendStreamMessage(parsed) {
+    function appendStreamMessage(S) {
+        S = S || activeState();
         // Fast-path called from sseSource.onmessage / channel onmessage AFTER
         // the message has been pushed onto streamMessages. Returns true when
         // the structure exists and the append succeeded; false means the
@@ -9868,8 +9872,8 @@
         var list = document.getElementById('bowire-stream-list');
         if (!list) return false;
 
-        var idx = streamMessages.length - 1;
-        var msg = streamMessages[idx];
+        var idx = S.streamMessages.length - 1;
+        var msg = S.streamMessages[idx];
         // Filtered out: skip the DOM append but still update the count
         // and (if auto-scroll is on) the detail pane — the user should
         // still see "X / Y" climb so they know the stream is alive.
@@ -9884,10 +9888,10 @@
         if (count) {
             var hasFilter = (streamFilterQuery || '').trim().length > 0;
             if (hasFilter) {
-                var visible = streamMessages.filter(streamMessageMatchesFilter).length;
-                count.textContent = visible + ' / ' + streamMessages.length + ' messages';
+                var visible = S.streamMessages.filter(streamMessageMatchesFilter).length;
+                count.textContent = visible + ' / ' + S.streamMessages.length + ' messages';
             } else {
-                count.textContent = streamMessages.length + (streamMessages.length === 1 ? ' message' : ' messages');
+                count.textContent = S.streamMessages.length + (S.streamMessages.length === 1 ? ' message' : ' messages');
             }
         }
         // Refresh the state badge so the operator sees "Receiving" /
@@ -9896,7 +9900,7 @@
         var badge = document.getElementById('bowire-stream-state-badge');
         if (badge && selectedService && selectedMethod) {
             var fresh = renderSubscriptionBadge(
-                selectedService.name, selectedMethod.name, streamMessages.length);
+                selectedService.name, selectedMethod.name, S.streamMessages.length);
             badge.replaceWith(fresh);
         }
         // Same surgical treatment for the action-bar message counter —
@@ -9904,9 +9908,9 @@
         // text nodes here or it stays frozen at the subscribe-time
         // count until the stream closes.
         var abCount = document.getElementById('bowire-actionbar-msg-count');
-        if (abCount) abCount.textContent = String(streamMessages.length);
+        if (abCount) abCount.textContent = String(S.streamMessages.length);
         var abLabel = document.getElementById('bowire-actionbar-msg-label');
-        if (abLabel) abLabel.textContent = streamMessages.length === 1 ? 'message' : 'messages';
+        if (abLabel) abLabel.textContent = S.streamMessages.length === 1 ? 'message' : 'messages';
 
         if (streamAutoScroll) {
             // Follow latest: shift selection forward and refresh the detail pane.
@@ -9919,7 +9923,8 @@
     }
 
     function selectStreamMessage(idx, fromUserClick) {
-        if (idx < 0 || idx >= streamMessages.length) return;
+        var S = activeState();
+        if (idx < 0 || idx >= S.streamMessages.length) return;
         streamSelectedIndex = idx;
         if (fromUserClick && streamAutoScroll) {
             // The user took control — stop following the latest.
@@ -9944,8 +9949,9 @@
     // (carrying the full N-snapshot) so widgets don't have to
     // accumulate state — see selection-stream wiring in extensions.js.
     function handleStreamFrameClick(idx, e) {
-        if (idx < 0 || idx >= streamMessages.length) return;
-        var msg = streamMessages[idx];
+        var S = activeState();
+        if (idx < 0 || idx >= S.streamMessages.length) return;
+        var msg = S.streamMessages[idx];
         var id = msg && msg.id;
 
         if (e && (e.ctrlKey || e.metaKey) && id != null) {
@@ -9969,7 +9975,7 @@
             var hi = Math.max(streamSelectionAnchorIdx, idx);
             streamSelectedIds = new Set();
             for (var i = lo; i <= hi; i++) {
-                var rid = streamMessages[i] && streamMessages[i].id;
+                var rid = S.streamMessages[i] && S.streamMessages[i].id;
                 if (rid != null) streamSelectedIds.add(rid);
             }
             selectStreamMessage(idx, true);
@@ -10027,18 +10033,20 @@
     }
 
     function updateStreamDetail() {
+        var S = activeState();
         var pane = document.getElementById('bowire-stream-detail-pane');
         if (!pane) return;
-        var idx = streamEffectiveIndex();
+        var idx = streamEffectiveIndex(S);
         if (idx < 0) return;
-        var built = buildStreamDetailContent(streamMessages[idx], idx);
+        var built = buildStreamDetailContent(S.streamMessages[idx], idx);
         pane.replaceChildren(built.header, built.body);
     }
 
     function updateStreamSelection() {
+        var S = activeState();
         var list = document.getElementById('bowire-stream-list');
         if (!list) return;
-        var sel = streamEffectiveIndex();
+        var sel = streamEffectiveIndex(S);
         // Single-point remove + single-point add. Avoids walking the entire
         // list on every message (O(N) → O(1) for long streams) and
         // guarantees only one node ever carries .selected at a time — no
@@ -10103,6 +10111,7 @@
     }
 
     function attachStreamSplitterDrag() {
+        var S = activeState();
         var splitter = document.getElementById('bowire-stream-splitter');
         var output = document.getElementById('bowire-stream-output');
         // Expando property, not a dataset attribute — see the sidebar
@@ -10168,16 +10177,17 @@
         var badge = document.getElementById('bowire-stream-state-badge');
         if (!badge) return;
         var fresh = renderSubscriptionBadge(
-            selectedService.name, selectedMethod.name, streamMessages.length);
+            selectedService.name, selectedMethod.name, activeState().streamMessages.length);
         badge.replaceWith(fresh);
     });
     ensureSubscriptionTicker();
 
-    function renderResponsePane() {
+    function renderResponsePane(tab) {
+        var S = tabState(tab);
         // ID includes the selected method so morphdom fully replaces the
         // pane when switching methods instead of reusing stale DOM with
         // wrong closures from the previous method.
-        var resMethodKey = (selectedService ? selectedService.name : '')
+        var resMethodKey = (tab ? tab.id + '-' : '') + (selectedService ? selectedService.name : '')
             + '-' + (selectedMethod ? selectedMethod.name : '');
         const pane = el('div', { id: 'bowire-response-pane-' + resMethodKey, className: 'bowire-pane' });
 
@@ -10287,7 +10297,7 @@
                 // there is no response body or we're in streaming
                 // mode (the stream pane has its own controls).
                 (function () {
-                    if (!responseData || streamMessages.length > 0) return el('span');
+                    if (!S.responseData || S.streamMessages.length > 0) return el('span');
                     return el('button', {
                         id: 'bowire-response-tree-expand-btn',
                         className: 'bowire-pane-btn bowire-pane-btn-icon',
@@ -10301,7 +10311,7 @@
                     });
                 })(),
                 (function () {
-                    if (!responseData || streamMessages.length > 0) return el('span');
+                    if (!S.responseData || S.streamMessages.length > 0) return el('span');
                     return el('button', {
                         id: 'bowire-response-tree-collapse-btn',
                         className: 'bowire-pane-btn bowire-pane-btn-icon',
@@ -10328,16 +10338,16 @@
                     var wrapper = el('div', { id: 'bowire-response-copy-split', className: 'bowire-split-btn-wrap' });
 
                     function copyRawResponse() {
-                        if (streamMessages.length > 0) {
-                            var idx = streamEffectiveIndex();
-                            var text = idx >= 0 ? streamMessageRaw(streamMessages[idx]) : '';
+                        if (S.streamMessages.length > 0) {
+                            var idx = streamEffectiveIndex(S);
+                            var text = idx >= 0 ? streamMessageRaw(S.streamMessages[idx]) : '';
                             navigator.clipboard.writeText(text).then(function () {
                                 toast(idx >= 0 ? t('main.copiedMessage', { n: idx + 1 })
     : t('main.copiedResponse'), 'success');
                             });
                             return;
                         }
-                        var text = responseData || '';
+                        var text = S.responseData || '';
                         navigator.clipboard.writeText(text).then(function () {
                             toast(t('main.copiedToClipboard'), 'success');
                         });
@@ -10366,13 +10376,13 @@
 
                     var menu = el('div', { className: 'bowire-dropdown-menu', role: 'menu' });
 
-                    if (streamMessages.length > 0) {
+                    if (S.streamMessages.length > 0) {
                         menu.appendChild(el('div', {
                             className: 'bowire-dropdown-item',
                             textContent: t('main.copySelectedMessage'),
                             onClick: function () {
-                                var idx = streamEffectiveIndex();
-                                var text = idx >= 0 ? streamMessageRaw(streamMessages[idx]) : '';
+                                var idx = streamEffectiveIndex(S);
+                                var text = idx >= 0 ? streamMessageRaw(S.streamMessages[idx]) : '';
                                 navigator.clipboard.writeText(text).then(function () {
                                     toast(t('main.copiedMessage', { n: idx + 1 }), 'success');
                                 });
@@ -10383,11 +10393,11 @@
                             className: 'bowire-dropdown-item',
                             textContent: t('main.copyAllMessages'),
                             onClick: function () {
-                                var text = streamMessages.map(function (m) {
+                                var text = S.streamMessages.map(function (m) {
                                     return streamMessageRaw(m);
                                 }).join('\n');
                                 navigator.clipboard.writeText(text).then(function () {
-                                    toast(t('main.copiedMessages', { count: streamMessages.length }), 'success');
+                                    toast(t('main.copiedMessages', { count: S.streamMessages.length }), 'success');
                                 });
                                 menu.classList.remove('visible');
                             }
@@ -10514,7 +10524,7 @@
 
         const respBody = el('div', { className: 'bowire-pane-body' });
 
-        if (isExecuting && streamMessages.length === 0) {
+        if (S.isExecuting && S.streamMessages.length === 0) {
             // Server-streaming methods that haven't yet emitted a frame
             // get the subscription-shaped loader so the operator sees
             // "Subscribed — 0 msgs" instead of the generic "Executing…"
@@ -10526,7 +10536,7 @@
                 loadingPane.appendChild(renderSubscriptionBadge(
                     selectedService && selectedService.name,
                     selectedMethod && selectedMethod.name,
-                    0));
+                    0, S));
                 loadingPane.appendChild(el('span', {
                     className: 'bowire-loading-text',
                     textContent: t('main.waitingFirst')
@@ -10538,23 +10548,23 @@
                     el('span', { className: 'bowire-loading-text', textContent: t('main.executing') })
                 ));
             }
-        } else if (responseError) {
+        } else if (S.responseError) {
             // #91 — render structured problem+json when the upstream
             // returned one; fall back to plain text for legacy
             // strings and exception messages.
             const output = el('div', { className: 'bowire-response-output error' });
-            var prob = (typeof responseError === 'object')
-                ? normalizeProblem(responseError)
+            var prob = (typeof S.responseError === 'object')
+                ? normalizeProblem(S.responseError)
                 : null;
             if (prob) {
                 renderProblem(prob, output);
             } else {
-                output.textContent = (typeof responseError === 'string')
-                    ? responseError
-                    : (problemTitle(responseError, 'Request failed'));
+                output.textContent = (typeof S.responseError === 'string')
+                    ? S.responseError
+                    : (problemTitle(S.responseError, 'Request failed'));
             }
             respBody.appendChild(output);
-        } else if (streamMessages.length > 0) {
+        } else if (S.streamMessages.length > 0) {
             // Wireshark-style: append-only list + selectable detail pane.
             // The full DOM is built once per render() (start / done / error);
             // new in-flight messages take the appendStreamMessage() fast path
@@ -10569,16 +10579,16 @@
             // the original
             // single-pane render when no such widget is mountable —
             // identical behaviour for every other method.
-            respBody.appendChild(renderStreamingPaneWithWidgets());
+            respBody.appendChild(renderStreamingPaneWithWidgets(S));
         } else if (diffViewOpen && getResponseSnapshots().length >= 2) {
             // Multi-snapshot diff view — replaces the normal response body
             // with snapshot selectors and a line-by-line comparison.
             respBody.appendChild(renderResponseDiff());
-        } else if (responseData) {
+        } else if (S.responseData) {
             // GraphQL: surface a non-empty `errors` array as a banner above
             // the body so the user doesn't have to scan the JSON. The body
             // itself still renders verbatim — we don't drop the data field.
-            var gqlErrors = detectGraphQLErrors(responseData);
+            var gqlErrors = detectGraphQLErrors(S.responseData);
             if (gqlErrors) {
                 var banner = el('div', { className: 'bowire-graphql-errors-banner' },
                     el('div', { className: 'bowire-graphql-errors-title', textContent:
@@ -10595,7 +10605,7 @@
             // Show the concatenated text payload by default with a toggle to
             // see the raw envelope. Resources / prompts and any non-content
             // shape fall through to the raw view automatically.
-            var mcpContent = detectMcpContent(responseData);
+            var mcpContent = detectMcpContent(S.responseData);
             if (mcpContent && !mcpRawEnvelope) {
                 var header = el('div', { className: 'bowire-mcp-content-header' },
                     el('span', { className: 'bowire-mcp-content-title', textContent:
@@ -10653,15 +10663,15 @@ t(mcpContent.count === 1 ? 'main.mcp.itemOne' : 'main.mcp.itemMany',
                 // the toolbar lives at the top of the output and
                 // moves with it through the split/tab/single-pane
                 // wrapping `renderResponseWithWidgets` does below.
-                var unaryViewer = renderJsonViewer(responseData, { wrap: false });
-                var ctMeta = (selectedService && selectedMethod && responseData)
+                var unaryViewer = renderJsonViewer(S.responseData, { wrap: false });
+                var ctMeta = (selectedService && selectedMethod && S.responseData)
                     ? 'application/json'  // i18n-exempt: a MIME type
                     : '';
                 var methodName = (selectedMethod && selectedMethod.name)
                     ? selectedMethod.name.replace(/[^A-Za-z0-9_-]+/g, '-')
                     : 'response';
                 output.appendChild(bowireRenderJsonViewerWithToolbar(unaryViewer, {
-                    raw: responseData,
+                    raw: S.responseData,
                     downloadName: methodName,
                     contentType: ctMeta
                 }));
@@ -10718,8 +10728,8 @@ t(mcpContent.count === 1 ? 'main.mcp.itemOne' : 'main.mcp.itemMany',
         const headersContent = el('div', { className: `bowire-tab-content ${activeResponseTab === 'headers' ? 'active' : ''}` });
         const headersBody = el('div', { className: 'bowire-pane-body' });
 
-        if (statusInfo && statusInfo.metadata && Object.keys(statusInfo.metadata).length > 0) {
-            var metaEntries = Object.entries(statusInfo.metadata).sort(function (a, b) {
+        if (S.statusInfo && S.statusInfo.metadata && Object.keys(S.statusInfo.metadata).length > 0) {
+            var metaEntries = Object.entries(S.statusInfo.metadata).sort(function (a, b) {
                 return String(a[0]).toLowerCase().localeCompare(String(b[0]).toLowerCase());
             });
             // Raw-text serialisation (`Header: Value\n…`) is still

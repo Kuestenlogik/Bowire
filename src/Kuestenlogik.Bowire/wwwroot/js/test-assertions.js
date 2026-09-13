@@ -172,12 +172,13 @@
      *   }
      */
     function buildTestCollection(service, method, tests) {
+        var S = activeState();
         var primaryUrl = (service && service.originUrl) || getPrimaryServerUrl() || '';
         // Snapshot the current request body so the exported collection is runnable
         var bodyTemplate;
-        if (requestInputMode === 'form' && method && method.inputType) {
+        if (S.requestInputMode === 'form' && method && method.inputType) {
             try { syncFormToJson(); } catch {}
-            bodyTemplate = requestMessages[0] || '{}';
+            bodyTemplate = S.requestMessages[0] || '{}';
         } else {
             var editor = document.querySelector('.bowire-editor') || document.querySelector('.bowire-message-editor');
             bodyTemplate = editor ? editor.value || '{}' : '{}';

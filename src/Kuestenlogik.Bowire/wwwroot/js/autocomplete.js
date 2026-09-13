@@ -8,6 +8,7 @@
      * @param {object|null} schema           The inputType schema ({ fields: [...] }).
      */
     function attachBodyAutocomplete(textarea, schema) {
+        var S = activeState();
         if (!textarea || !schema || !schema.fields || schema.fields.length === 0) return;
 
         var popup = null;       // the dropdown element, created lazily
@@ -212,7 +213,7 @@
             textarea.value = before + chosen + '": ' + after;
             var newCaret = triggerStart + 1 + chosen.length + 3; // after `: `
             textarea.selectionStart = textarea.selectionEnd = newCaret;
-            requestMessages[0] = textarea.value;
+            S.requestMessages[0] = textarea.value;
             destroyPopup();
             // Fire input event so other listeners (e.g. JSON validator) stay in sync
             textarea.dispatchEvent(new Event('input', { bubbles: true }));

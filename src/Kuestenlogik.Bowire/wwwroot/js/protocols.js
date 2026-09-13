@@ -356,18 +356,26 @@
     }
 
     async function channelConnect() {
+        var S = activeState();
         if (!selectedMethod || !selectedService) return;
-        if (duplexConnected) return;
+        if (S.duplexConnected) return;
+        // The handlers below run long after this returns, possibly with
+        // another tab in front. They belong to the method that opened
+        // the channel, so read it once here rather than off the globals
+        // at event time.
+        var chanSvc = selectedService.name;
+        var chanMethod = selectedMethod.name;
+        var chanMethodType = selectedMethod.methodType;
 
-        channelError = null;
-        streamMessages = [];
+        S.channelError = null;
+        S.streamMessages = [];
         // Reset stream UI state for the channel run.
         streamSelectedIndex = null;
         streamAutoScroll = true;
         streamDetailMaximized = false;
-        responseData = null;
-        responseError = null;
-        statusInfo = null;
+        S.responseData = null;
+        S.responseError = null;
+        S.statusInfo = null;
 
         // Collect metadata from the metadata tab + apply auth helper from active env
         var metadataRows = $$('.bowire-metadata-row');
@@ -420,15 +428,15 @@
             var result = await resp.json();
             if (result.title) {
                 var msg = problemTitle(result);
-                channelError = msg;
+                S.channelError = msg;
                 addConsoleEntry({ type: 'error', method: fullName, status: 'Channel open failed', body: msg });  // i18n-exempt: the action log stores rendered text, see #689
                 toast(t('channel.openFailed', { reason: msg }), 'error');
                 render();
                 return;
             }
 
-            duplexChannelId = result.channelId;
-            duplexConnected = true;
+            S.duplexChannelId = result.channelId;
+            S.duplexConnected = true;
             // Preserve the negotiated sub-protocol (WebSocket only; the
             // other channel protocols return null) under a reserved
             // metadata key. The mock's WebSocket replayer reads this
@@ -438,46 +446,47 @@
             if (result.subProtocol) {
                 channelMetadata = Object.assign({}, channelMetadata, { _subprotocol: result.subProtocol });
             }
-            markJobActive(selectedService.name, selectedMethod.name);
-            sentCount = 0;
-            receivedCount = 0;
-            streamMessages = [];
-            sentMessages = [];
-            channelStartMs = (typeof performance !== 'undefined' && performance.now)
+            markJobActive(chanSvc, chanMethod);
+            S.sentCount = 0;
+            S.receivedCount = 0;
+            S.streamMessages = [];
+            S.sentMessages = [];
+            S.channelStartMs = (typeof performance !== 'undefined' && performance.now)
                 ? performance.now() : Date.now();
-            statusInfo = { status: 'Connected', durationMs: 0 };  // i18n-exempt: status label, carried on the console entry and the run summary
+            S.statusInfo = { status: 'Connected', durationMs: 0 };  // i18n-exempt: status label, carried on the console entry and the run summary
             addConsoleEntry({ type: 'channel', method: fullName, status: 'Connected', body: 'Channel opened' });  // i18n-exempt: the action log stores rendered text, see #689
 
             // Start SSE listener for responses
-            var sseUrl = config.prefix + '/api/channel/' + duplexChannelId + '/responses';
-            duplexSseSource = new EventSource(sseUrl);
+            var sseUrl = config.prefix + '/api/channel/' + S.duplexChannelId + '/responses';
+            // A local for the handlers: S.duplexSseSource may be another
+            // source, or null, by the time they run.
+            var es = new EventSource(sseUrl);
+            S.duplexSseSource = es;
             // Mirror into the cross-method subscription registry so the
             // statusbar pill counts duplex / client-streaming channels
             // alongside server-streaming SSE subscriptions.
-            registerSubscription(selectedService.name, selectedMethod.name,
+            registerSubscription(chanSvc, chanMethod,
                 selectedMethod.methodType === 'Duplex' ? 'duplex' : 'client',
-                duplexSseSource);
+                es);
 
-            duplexSseSource.onmessage = function (event) {
+            es.onmessage = function (event) {
                 try {
                     var parsed = JSON.parse(event.data);
                     // Phase 3.1 — mint the same `${service}/${method}#${index}`
                     // frame id the unary streaming path produces so a
                     // duplex channel's frames can be selected and the
                     // map widget reacts identically.
-                    var frameIndex = (typeof parsed.index === 'number') ? parsed.index : streamMessages.length;
+                    var frameIndex = (typeof parsed.index === 'number') ? parsed.index : S.streamMessages.length;
                     if (parsed.id === undefined) {
                         parsed.id = (selectedService ? selectedService.name : 'duplex')
                             + '/' + (selectedMethod ? selectedMethod.name : 'channel')
                             + '#' + frameIndex;
                     }
-                    streamMessages.push(parsed);
+                    S.streamMessages.push(parsed);
                     if (parsed && parsed.data !== undefined) captureResponse(parsed.data);
                     addConsoleEntry({ type: 'stream', method: fullName, body: parsed.data || event.data });
-                    receivedCount++;
-                    if (selectedService && selectedMethod) {
-                        markSubscriptionFrame(selectedService.name, selectedMethod.name);
-                    }
+                    S.receivedCount++;
+                    markSubscriptionFrame(chanSvc, chanMethod);
                     if (window.__bowireExtFramework) {
                         window.__bowireExtFramework.dispatchStreamMessage(parsed);
                     }
@@ -485,9 +494,7 @@
                     // instead of a full app re-render per message. Falls back
                     // to render() for the first message (container not built
                     // yet) and on first messages after channel reconnects.
-                    if (!window.bowireAppendStreamMessage || !window.bowireAppendStreamMessage()) {
-                        render();
-                    }
+                    streamFrameArrived(S);
                     // Flash received counter
                     // #696 — stays on a frame: restarts a CSS flash, forced reflow and all.
                     requestAnimationFrame(function () {
@@ -499,41 +506,37 @@
                         }
                     });
                 } catch (e) {
-                    var fbIdx = streamMessages.length;
-                    streamMessages.push({
+                    var fbIdx = S.streamMessages.length;
+                    S.streamMessages.push({
                         index: fbIdx,
                         id: (selectedService ? selectedService.name : 'duplex')
                             + '/' + (selectedMethod ? selectedMethod.name : 'channel')
                             + '#' + fbIdx,
                         data: event.data
                     });
-                    receivedCount++;
-                    if (!window.bowireAppendStreamMessage || !window.bowireAppendStreamMessage()) {
-                        render();
-                    }
+                    S.receivedCount++;
+                    streamFrameArrived(S);
                 }
             };
 
-            duplexSseSource.addEventListener('done', function (event) {
+            es.addEventListener('done', function (event) {
                 var doneData = {};
                 try { doneData = JSON.parse(event.data); } catch (e) {}
-                statusInfo = {
+                S.statusInfo = {
                     status: 'Completed',  // i18n-exempt: status label, carried on the console entry and the run summary
                     durationMs: doneData.durationMs || 0
                 };
-                duplexConnected = false;
-                duplexSseSource.close();
-                duplexSseSource = null;
-                if (selectedService && selectedMethod) {
-                    unregisterSubscription(selectedService.name, selectedMethod.name);
-                }
-                addConsoleEntry({ type: 'channel', method: fullName, status: 'Completed', durationMs: doneData.durationMs || 0, body: '(' + sentCount + ' sent, ' + receivedCount + ' received)' });  // i18n-exempt: the action log stores rendered text, see #689
+                S.duplexConnected = false;
+                es.close();
+                if (S.duplexSseSource === es) S.duplexSseSource = null;
+                unregisterSubscription(chanSvc, chanMethod);
+                addConsoleEntry({ type: 'channel', method: fullName, status: 'Completed', durationMs: doneData.durationMs || 0, body: '(' + S.sentCount + ' sent, ' + S.receivedCount + ' received)' });  // i18n-exempt: the action log stores rendered text, see #689
 
                 addHistory({
-                    service: selectedService.name,
-                    method: selectedMethod.name,
-                    methodType: selectedMethod.methodType,
-                    body: '(channel: ' + sentCount + ' sent, ' + receivedCount + ' received)',  // i18n-exempt: the action log stores rendered text, see #689
+                    service: chanSvc,
+                    method: chanMethod,
+                    methodType: chanMethodType,
+                    body: '(channel: ' + S.sentCount + ' sent, ' + S.receivedCount + ' received)',  // i18n-exempt: the action log stores rendered text, see #689
                     messages: [],
                     status: 'OK',
                     durationMs: doneData.durationMs || 0
@@ -551,14 +554,14 @@
                     method: selectedMethod.name,
                     methodType: selectedMethod.methodType,
                     serverUrl: _sentInvocationUrl,
-                    body: '(channel: ' + sentCount + ' sent, ' + receivedCount + ' received)',  // i18n-exempt: the action log stores rendered text, see #689
+                    body: '(channel: ' + S.sentCount + ' sent, ' + S.receivedCount + ' received)',  // i18n-exempt: the action log stores rendered text, see #689
                     messages: [],
                     metadata: (channelMetadata && Object.keys(channelMetadata).length > 0) ? channelMetadata : null,
                     status: 'OK',
                     durationMs: doneData.durationMs || 0,
                     response: null,
-                    sentMessages: sentMessages.slice(),
-                    receivedMessages: streamMessages.slice(),
+                    sentMessages: S.sentMessages.slice(),
+                    receivedMessages: S.streamMessages.slice(),
                     // Populated for WebSocket (path + GET) so the Phase-2e
                     // mock-server matcher can pair incoming upgrade requests
                     // with the recorded channel step. Other duplex protocols
@@ -571,21 +574,17 @@
                 render();
             });
 
-            duplexSseSource.addEventListener('error', function () {
-                if (duplexSseSource && duplexSseSource.readyState === EventSource.CLOSED) return;
-                channelError = 'Channel stream error.';
-                statusInfo = { status: 'Error', durationMs: 0 };  // i18n-exempt: status label, carried on the console entry and the run summary
-                duplexConnected = false;
-                if (selectedService && selectedMethod) {
-                    markSubscriptionError(selectedService.name, selectedMethod.name, 'Channel stream error');
+            es.addEventListener('error', function () {
+                if (es.readyState === EventSource.CLOSED) return;
+                S.channelError = 'Channel stream error.';
+                S.statusInfo = { status: 'Error', durationMs: 0 };  // i18n-exempt: status label, carried on the console entry and the run summary
+                S.duplexConnected = false;
+                markSubscriptionError(chanSvc, chanMethod, 'Channel stream error');
+                if (S.duplexSseSource === es) {
+                    es.close();
+                    S.duplexSseSource = null;
                 }
-                if (duplexSseSource) {
-                    duplexSseSource.close();
-                    duplexSseSource = null;
-                }
-                if (selectedService && selectedMethod) {
-                    unregisterSubscription(selectedService.name, selectedMethod.name);
-                }
+                unregisterSubscription(chanSvc, chanMethod);
                 addConsoleEntry({ type: 'error', method: fullName, status: 'Error', body: 'Channel stream error' });  // i18n-exempt: the action log stores rendered text, see #689
                 render();
             });
@@ -593,7 +592,7 @@
             render();
             toast(t('channel.opened'), 'success');
         } catch (e) {
-            channelError = e.message;
+            S.channelError = e.message;
             addConsoleEntry({ type: 'error', method: (selectedService.name + '/' + selectedMethod.name), status: 'Channel open failed', body: e.message });  // i18n-exempt: the action log stores rendered text, see #689
             toast(t('channel.openFailed', { reason: e.message }), 'error');
             render();
@@ -601,14 +600,15 @@
     }
 
     async function channelSend() {
-        if (!duplexConnected || !duplexChannelId) return;
+        var S = activeState();
+        if (!S.duplexConnected || !S.duplexChannelId) return;
 
         // Get the current message from the editor or form
         var message;
-        if (requestInputMode === 'form' && selectedMethod && selectedMethod.inputType) {
+        if (S.requestInputMode === 'form' && selectedMethod && selectedMethod.inputType) {
             // Same validation as the unary path so duplex/client-streaming
             // sends don't fire half-built messages at the channel.
-            var channelErrors = validateForm(selectedMethod.inputType, '');
+            var channelErrors = validateForm(activeState(), selectedMethod.inputType, '');
             if (Object.keys(channelErrors).length > 0) {
                 formValidationErrors = channelErrors;
                 var n = Object.keys(channelErrors).length;
@@ -619,8 +619,8 @@ toast(t(n === 1 ? 'rb.validationErrorsOne' : 'rb.validationErrorsMany',
                 return;
             }
             formValidationErrors = {};
-            syncFormToJson();
-            message = requestMessages[0] || '{}';
+            syncFormToJson(S);
+            message = S.requestMessages[0] || '{}';
         } else {
             var editor = $('.bowire-editor') || $('.bowire-message-editor');
             message = editor ? editor.value || '{}' : '{}';
@@ -651,7 +651,7 @@ toast(t(n === 1 ? 'rb.validationErrorsOne' : 'rb.validationErrorsMany',
             // The form mode wraps the value as { "data": "..." } — unpack so
             // the user gets the literal text frame they typed instead of a
             // JSON-encoded blob.
-            if (requestInputMode === 'form') {
+            if (S.requestInputMode === 'form') {
                 try {
                     var parsed = JSON.parse(message);
                     if (parsed && typeof parsed === 'object' && typeof parsed.data === 'string') raw = parsed.data;
@@ -669,10 +669,10 @@ toast(t(n === 1 ? 'rb.validationErrorsOne' : 'rb.validationErrorsMany',
         // sequence number; the body and exact client-side timing are ours.
         var now = (typeof performance !== 'undefined' && performance.now)
             ? performance.now() : Date.now();
-        var offsetMs = Math.round(now - channelStartMs);
+        var offsetMs = Math.round(now - S.channelStartMs);
 
         try {
-            var resp = await fetch(config.prefix + '/api/channel/' + duplexChannelId + '/send', {
+            var resp = await fetch(config.prefix + '/api/channel/' + S.duplexChannelId + '/send', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ message: message })
@@ -686,8 +686,8 @@ toast(t(n === 1 ? 'rb.validationErrorsOne' : 'rb.validationErrorsMany',
                 return;
             }
 
-            sentCount = result.sequence;
-            sentMessages.push({ index: sentCount - 1, timestampMs: offsetMs, body: message });
+            S.sentCount = result.sequence;
+            S.sentMessages.push({ index: S.sentCount - 1, timestampMs: offsetMs, body: message });
             if (selectedService && selectedMethod) {
                 markSubscriptionFrame(selectedService.name, selectedMethod.name, 'sent');
             }
@@ -709,10 +709,11 @@ toast(t(n === 1 ? 'rb.validationErrorsOne' : 'rb.validationErrorsMany',
     }
 
     async function channelClose() {
-        if (!duplexChannelId) return;
+        var S = activeState();
+        if (!S.duplexChannelId) return;
 
         try {
-            await fetch(config.prefix + '/api/channel/' + duplexChannelId + '/close', {
+            await fetch(config.prefix + '/api/channel/' + S.duplexChannelId + '/close', {
                 method: 'POST'
             });
         } catch (e) {
@@ -723,23 +724,23 @@ toast(t(n === 1 ? 'rb.validationErrorsOne' : 'rb.validationErrorsMany',
     }
 
     function channelDisconnect() {
-        if (duplexSseSource) {
-            duplexSseSource.close();
-            duplexSseSource = null;
+        var S = activeState();
+        if (S.duplexSseSource) {
+            S.duplexSseSource.close();
+            S.duplexSseSource = null;
         }
-        if (duplexChannelId) {
+        if (S.duplexChannelId) {
             // Fire-and-forget close
-            fetch(config.prefix + '/api/channel/' + duplexChannelId + '/close', { method: 'POST' }).catch(function () {});
+            fetch(config.prefix + '/api/channel/' + S.duplexChannelId + '/close', { method: 'POST' }).catch(function () {});
         }
-        duplexConnected = false;
+        S.duplexConnected = false;
         if (selectedService && selectedMethod) {
             markJobDone(selectedService.name, selectedMethod.name);
-            removeChannelFor(selectedService.name, selectedMethod.name);
             unregisterSubscription(selectedService.name, selectedMethod.name);
         }
-        duplexChannelId = null;
-        if (!statusInfo || statusInfo.status === 'Connected') {
-            statusInfo = { status: 'Disconnected', durationMs: 0 };  // i18n-exempt: status label, carried on the console entry and the run summary
+        S.duplexChannelId = null;
+        if (!S.statusInfo || S.statusInfo.status === 'Connected') {
+            S.statusInfo = { status: 'Disconnected', durationMs: 0 };  // i18n-exempt: status label, carried on the console entry and the run summary
         }
         render();
     }

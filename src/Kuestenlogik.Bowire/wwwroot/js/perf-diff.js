@@ -492,6 +492,7 @@
     }
 
     function renderActionBar() {
+        var S = activeState();
         // ID encodes the method identity + channel-mode so morphdom fully
         // replaces the bar when switching between channel and standard
         // methods instead of reusing stale DOM with wrong closures.
@@ -512,7 +513,7 @@
 
         if (isChannelMethod()) {
             // ---- Channel Action Bar (Duplex / Client Streaming) ----
-            if (!duplexConnected) {
+            if (!S.duplexConnected) {
                 // Not connected: show Connect button
                 var connectBtn = el('button', {
                     id: 'bowire-channel-connect-btn',
@@ -567,40 +568,40 @@
             // Status
             var statusBar = el('div', { className: 'bowire-status-bar' });
 
-            if (statusInfo) {
-                if (statusInfo.status === 'Connected') {
+            if (S.statusInfo) {
+                if (S.statusInfo.status === 'Connected') {
                     statusBar.appendChild(el('div', { className: 'bowire-status-item bowire-streaming-indicator' },
                         el('span', { className: 'bowire-pulse-dot' }),
                         el('span', { textContent: t('channel.connected') })
                     ));
                 } else {
-                    var statusDot = grpcStatusClass(statusInfo.status);
+                    var statusDot = grpcStatusClass(S.statusInfo.status);
                     statusBar.appendChild(el('div', { className: 'bowire-status-item' },
                         el('span', { className: 'bowire-status-dot ' + statusDot }),
-                        el('span', { textContent: grpcStatusLabel(statusInfo.status) })
+                        el('span', { textContent: grpcStatusLabel(S.statusInfo.status) })
                     ));
                 }
-                if (statusInfo.durationMs > 0) {
+                if (S.statusInfo.durationMs > 0) {
                     statusBar.appendChild(el('div', { className: 'bowire-status-item' },
                         el('span', { innerHTML: svgIcon('clock'), style: 'width:12px;height:12px;display:flex;opacity:0.6' }),
-                        el('span', { textContent: statusInfo.durationMs + 'ms' })
+                        el('span', { textContent: S.statusInfo.durationMs + 'ms' })
                     ));
                 }
-                if (statusInfo.requestSize > 0 || statusInfo.responseSize > 0) {
+                if (S.statusInfo.requestSize > 0 || S.statusInfo.responseSize > 0) {
                     var sizeText = '';
-                    if (statusInfo.requestSize > 0) sizeText += '\u2191 ' + formatBytes(statusInfo.requestSize);
-                    if (statusInfo.requestSize > 0 && statusInfo.responseSize > 0) sizeText += '  ';
-                    if (statusInfo.responseSize > 0) sizeText += '\u2193 ' + formatBytes(statusInfo.responseSize);
+                    if (S.statusInfo.requestSize > 0) sizeText += '\u2191 ' + formatBytes(S.statusInfo.requestSize);
+                    if (S.statusInfo.requestSize > 0 && S.statusInfo.responseSize > 0) sizeText += '  ';
+                    if (S.statusInfo.responseSize > 0) sizeText += '\u2193 ' + formatBytes(S.statusInfo.responseSize);
                     statusBar.appendChild(el('div', { className: 'bowire-status-item', style: 'font-family:var(--bowire-font-mono);font-size:11px' },
                         el('span', { textContent: sizeText })
                     ));
                 }
             }
 
-            if (channelError) {
+            if (S.channelError) {
                 statusBar.appendChild(el('div', { className: 'bowire-status-item' },
                     el('span', { className: 'bowire-status-dot error' }),
-                    el('span', { textContent: channelError })
+                    el('span', { textContent: S.channelError })
                 ));
             }
 
@@ -609,7 +610,7 @@
             bar.appendChild(el('div', {
                 className: 'bowire-status-item',
                 style: 'opacity: 0.5',
-                textContent: duplexConnected ? t('perf.ctrlEnterSend') : t('perf.ctrlEnterConnect')
+                textContent: S.duplexConnected ? t('perf.ctrlEnterSend') : t('perf.ctrlEnterConnect')
             }));
 
             // Console button was here — retired, the statusbar console
@@ -640,9 +641,9 @@
                 btnClass = 'bowire-execute-btn bowire-subscribe-btn';
             }
         } else {
-            btnText = (isExecuting) ? t('bench.stop') : t('main.execute');
-            btnIcon = (isExecuting) ? svgIcon('stop') : svgIcon('play');
-            btnClass = (isExecuting) ? 'bowire-execute-btn streaming-active' : 'bowire-execute-btn';
+            btnText = (S.isExecuting) ? t('bench.stop') : t('main.execute');
+            btnIcon = (S.isExecuting) ? svgIcon('stop') : svgIcon('play');
+            btnClass = (S.isExecuting) ? 'bowire-execute-btn streaming-active' : 'bowire-execute-btn';
         }
 
         // Execute as a split button: primary = Execute (or Stop
@@ -670,7 +671,7 @@
             : handleExecute;
         const btn = el('button', {
             id: (isStreaming && streamSubLive) ? 'bowire-action-stop-btn'
-                : (isExecuting && isStreaming ? 'bowire-action-stop-btn' : 'bowire-action-execute-btn'),
+                : (S.isExecuting && isStreaming ? 'bowire-action-stop-btn' : 'bowire-action-execute-btn'),
             className: btnClass + ' bowire-split-btn-main',
             title: (isStreaming && !streamSubLive)
                 ? t('perf.subscribeTitle')
@@ -680,7 +681,7 @@
             el('span', { innerHTML: btnIcon, style: 'width:14px;height:14px;display:flex' }),
             el('span', { textContent: btnText })
         );
-        if (isExecuting && !isStreaming) btn.disabled = true;
+        if (S.isExecuting && !isStreaming) btn.disabled = true;
         splitWrap.appendChild(btn);
         const caret = el('button', {
             id: 'bowire-action-execute-caret-btn',
@@ -784,9 +785,9 @@
                         // edits are captured, not the schema default.
                         var bodyText = '{}';
                         try {
-                            if (typeof requestMessages !== 'undefined'
-                                && Array.isArray(requestMessages) && requestMessages.length > 0) {
-                                bodyText = String(requestMessages[0] || '{}');
+                            if (typeof S.requestMessages !== 'undefined'
+                                && Array.isArray(S.requestMessages) && S.requestMessages.length > 0) {
+                                bodyText = String(S.requestMessages[0] || '{}');
                             }
                         } catch { /* ignore */ }
                         var metaCopy = {};
@@ -911,23 +912,23 @@
         // Status
         var statusBar = el('div', { className: 'bowire-status-bar' });
 
-        if (statusInfo) {
-            if (statusInfo.status === 'Streaming') {
+        if (S.statusInfo) {
+            if (S.statusInfo.status === 'Streaming') {
                 statusBar.appendChild(el('div', { className: 'bowire-status-item bowire-streaming-indicator' },
                     el('span', { className: 'bowire-pulse-dot' }),
                     el('span', { textContent: t('channel.streaming') })
                 ));
             } else {
-                const statusDot = grpcStatusClass(statusInfo.status);
+                const statusDot = grpcStatusClass(S.statusInfo.status);
                 statusBar.appendChild(el('div', { className: 'bowire-status-item' },
                     el('span', { className: `bowire-status-dot ${statusDot}` }),
-                    el('span', { textContent: grpcStatusLabel(statusInfo.status) })
+                    el('span', { textContent: grpcStatusLabel(S.statusInfo.status) })
                 ));
             }
-            if (statusInfo.durationMs > 0) {
+            if (S.statusInfo.durationMs > 0) {
                 statusBar.appendChild(el('div', { className: 'bowire-status-item' },
                     el('span', { innerHTML: svgIcon('clock'), style: 'width:12px;height:12px;display:flex;opacity:0.6' }),
-                    el('span', { textContent: `${statusInfo.durationMs}ms` })
+                    el('span', { textContent: `${S.statusInfo.durationMs}ms` })
                 ));
             }
             // Rendered whenever a stream is live OR messages exist, and
@@ -936,10 +937,10 @@
             // bumps these text nodes directly. Without the ids the bar
             // froze at whatever count the last full render saw (usually
             // "1 message") until the stream closed.
-            if (streamMessages.length > 0 || statusInfo.status === 'Streaming') {
+            if (S.streamMessages.length > 0 || S.statusInfo.status === 'Streaming') {
                 statusBar.appendChild(el('div', { className: 'bowire-status-item' },
-                    el('span', { className: 'bowire-stream-badge', id: 'bowire-actionbar-msg-count', textContent: String(streamMessages.length) }),
-                    el('span', { id: 'bowire-actionbar-msg-label', textContent: `message${streamMessages.length !== 1 ? 's' : ''}` })
+                    el('span', { className: 'bowire-stream-badge', id: 'bowire-actionbar-msg-count', textContent: String(S.streamMessages.length) }),
+                    el('span', { id: 'bowire-actionbar-msg-label', textContent: `message${S.streamMessages.length !== 1 ? 's' : ''}` })
                 ));
             }
         }

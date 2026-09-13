@@ -763,6 +763,7 @@
     }
 
     async function invokeUnary(service, method, messages, metadata) {
+        var S = activeState();
         metadata = _mergeUrlHeaders(selectedService, metadata);
         // #253 — snapshot the resolved (substituted) invocation URL AT FIRE
         // time. The recorder step runs after the await, by when the operator
@@ -771,12 +772,12 @@
         var _sentInvocationUrl = (typeof invocationUrlFor === 'function'
             ? invocationUrlFor(selectedService, selectedMethod)
             : (selectedService && selectedService.originUrl)) || (serverUrls[0] || null);
-        isExecuting = true;
+        S.isExecuting = true;
         markJobActive(service, method);
-        responseData = null;
-        responseError = null;
-        streamMessages = [];
-        statusInfo = null;
+        S.responseData = null;
+        S.responseError = null;
+        S.streamMessages = [];
+        S.statusInfo = null;
         render();
 
         var fullName = service + '/' + method;
@@ -821,11 +822,11 @@
 
             const result = await resp.json();
             if (result.title) {
-                responseError = result;
-                statusInfo = { status: 'Error', durationMs: 0, responseSize: 0 };  // i18n-exempt: status label, carried on the console entry and the run summary
+                S.responseError = result;
+                S.statusInfo = { status: 'Error', durationMs: 0, responseSize: 0 };  // i18n-exempt: status label, carried on the console entry and the run summary
                 addConsoleEntry({ type: 'error', method: fullName, status: 'Error', body: richErrorDetail(result, 'Request failed') });  // i18n-exempt: the action log stores rendered text, see #689
             } else {
-                responseData = result.response;
+                S.responseData = result.response;
                 captureResponse(result.response); // for ${response.X} chaining
                 captureResponseForDiff(service, method, result.response, result.status, result.duration_ms);
 
@@ -853,7 +854,7 @@
                     window.__bowireExtFramework.dispatchStreamMessage(unaryFrame);
                 }
                 var reqSize = new Blob([JSON.stringify({ service: service, method: method, messages: messages })]).size;
-                statusInfo = {
+                S.statusInfo = {
                     status: result.status,
                     durationMs: result.duration_ms,
                     metadata: result.metadata,
@@ -890,8 +891,8 @@
                 body: messages[0] || '{}',
                 messages: messages.slice(),
                 metadata: metadata || null,
-                status: statusInfo?.status || 'Error',
-                durationMs: statusInfo?.durationMs || 0
+                status: S.statusInfo?.status || 'Error',
+                durationMs: S.statusInfo?.durationMs || 0
             });
 
             // Recorder hook — also push the captured invocation onto the active
@@ -910,9 +911,9 @@
                 body: messages[0] || '{}',
                 messages: messages.slice(),
                 metadata: metadata || null,
-                status: statusInfo?.status || 'Error',
-                durationMs: statusInfo?.durationMs || 0,
-                response: responseData,
+                status: S.statusInfo?.status || 'Error',
+                durationMs: S.statusInfo?.durationMs || 0,
+                response: S.responseData,
                 // Protocols with a binary wire form distinct from their JSON
                 // response body (gRPC today) populate this base64 field so
                 // the Phase-1b mock server can re-emit the wire bytes 1:1.
@@ -940,8 +941,8 @@
                 scripts: _captureRecordingScripts(service, method)
             });
         } catch (e) {
-            responseError = e.message;
-            statusInfo = { status: 'NetworkError', durationMs: 0 };  // i18n-exempt: status label, carried on the console entry and the run summary
+            S.responseError = e.message;
+            S.statusInfo = { status: 'NetworkError', durationMs: 0 };  // i18n-exempt: status label, carried on the console entry and the run summary
             addConsoleEntry({ type: 'error', method: fullName, status: 'NetworkError', body: e.message });  // i18n-exempt: the action log stores rendered text, see #689
         }
 
@@ -955,17 +956,17 @@
         // early (channel methods) — _invokeStartMs is the only signal.
         if (typeof safeRecordMethodRun === 'function') {
             var _outcome;
-            if (responseError && typeof responseError === 'string') _outcome = 'error';
-            else if (responseError) _outcome = 'fail';
+            if (S.responseError && typeof S.responseError === 'string') _outcome = 'error';
+            else if (S.responseError) _outcome = 'fail';
             else _outcome = (typeof isHistoryEntryOk === 'function'
-                ? (isHistoryEntryOk({ status: statusInfo && statusInfo.status }) ? 'ok' : 'fail')
+                ? (isHistoryEntryOk({ status: S.statusInfo && S.statusInfo.status }) ? 'ok' : 'fail')
                 : 'ok');
-            var _durMs = statusInfo && statusInfo.durationMs
-                ? statusInfo.durationMs
+            var _durMs = S.statusInfo && S.statusInfo.durationMs
+                ? S.statusInfo.durationMs
                 : Math.round(((typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now()) - _invokeStartMs);
             var _errMsg = null;
-            if (typeof responseError === 'string') _errMsg = responseError;
-            else if (responseError && responseError.title) _errMsg = responseError.title;
+            if (typeof S.responseError === 'string') _errMsg = S.responseError;
+            else if (S.responseError && S.responseError.title) _errMsg = S.responseError.title;
             safeRecordMethodRun({
                 service: service,
                 method: method,
@@ -976,29 +977,30 @@
                 errorMessage: _errMsg
             });
         }
-        isExecuting = false;
+        S.isExecuting = false;
         markJobDone(service, method);
         render();
     }
 
     function invokeStreaming(service, method, messages, metadata) {
+        var S = activeState();
         metadata = _mergeUrlHeaders(selectedService, metadata);
         // #253 — snapshot the invocation URL at fire time; a server-stream's
         // 'done' handler can run long after the operator switched methods.
         var _sentInvocationUrl = (typeof invocationUrlFor === 'function'
             ? invocationUrlFor(selectedService, selectedMethod)
             : (selectedService && selectedService.originUrl)) || (serverUrls[0] || null);
-        isExecuting = true;
+        S.isExecuting = true;
         markJobActive(service, method);
-        responseData = null;
-        responseError = null;
-        streamMessages = [];
+        S.responseData = null;
+        S.responseError = null;
+        S.streamMessages = [];
         // Reset stream UI state so each new stream starts at the defaults
         // (auto-scroll on, follow latest, detail pane not maximized).
         streamSelectedIndex = null;
         streamAutoScroll = true;
         streamDetailMaximized = false;
-        statusInfo = { status: 'Streaming', durationMs: 0 };  // i18n-exempt: status label, carried on the console entry and the run summary
+        S.statusInfo = { status: 'Streaming', durationMs: 0 };  // i18n-exempt: status label, carried on the console entry and the run summary
         render();
 
         const startTime = performance.now();
@@ -1017,15 +1019,19 @@
         var fullName = service + '/' + method;
         addConsoleEntry({ type: 'request', method: fullName, status: 'Streaming', body: messages[0] || '{}' });  // i18n-exempt: the action log stores rendered text, see #689
 
-        sseSource = new EventSource(url);
+        // Held in a local as well: the handlers below belong to THIS
+        // source, and S.sseSource may already be another one, or null,
+        // by the time they run.
+        var es = new EventSource(url);
+        S.sseSource = es;
         // Track the SSE subscription so the statusbar pill + per-pane
         // state badge can answer "is this method still live?" without
         // poking at the legacy globals. The registry replaces nothing —
         // it's a parallel view that survives tab switching, which the
         // global `sseSource` does not (every tab share the same slot).
-        registerSubscription(service, method, 'server', sseSource);
+        registerSubscription(service, method, 'server', es);
 
-        sseSource.onmessage = function (event) {
+        es.onmessage = function (event) {
             // Record wall-clock arrival so recordings persist the real
             // client-side cadence of the stream — needed for Phase-2 mock
             // replay timing. Server-side offset lives inside `parsed` as
@@ -1043,9 +1049,9 @@
                 // `bowire:stream-message` event so widgets can correlate
                 // selection-snapshot ids with frame events without
                 // having to reach into method-state.
-                var frameIndex = (typeof parsed.index === 'number') ? parsed.index : streamMessages.length;
+                var frameIndex = (typeof parsed.index === 'number') ? parsed.index : S.streamMessages.length;
                 if (parsed.id === undefined) parsed.id = service + '/' + method + '#' + frameIndex;
-                streamMessages.push(parsed);
+                S.streamMessages.push(parsed);
                 markSubscriptionFrame(service, method);
                 // Chaining: capture the inner data payload (last message wins)
                 if (parsed && parsed.data !== undefined) captureResponse(parsed.data);
@@ -1068,9 +1074,7 @@
                 // the frame went nowhere. Map pins stayed off-screen until
                 // a SECOND frame arrived, which the streaming-only
                 // TacticalAPI sample never produced.
-                if (!window.bowireAppendStreamMessage || !window.bowireAppendStreamMessage()) {
-                    render();
-                }
+                streamFrameArrived(S);
                 // Frame-semantics extension framework — forward the
                 // parsed frame to any viewer mounted against the active
                 // method's annotations (Phase 3). Safe to call now that
@@ -1080,34 +1084,32 @@
                     window.__bowireExtFramework.dispatchStreamMessage(parsed);
                 }
             } catch {
-                var fbIdx = streamMessages.length;
+                var fbIdx = S.streamMessages.length;
                 const fallback = {
                     index: fbIdx,
                     id: service + '/' + method + '#' + fbIdx,
                     data: event.data,
                     _clientReceivedAtMs: receivedAt
                 };
-                streamMessages.push(fallback);
+                S.streamMessages.push(fallback);
                 markSubscriptionFrame(service, method);
                 addConsoleEntry({ type: 'stream', method: fullName, body: event.data });
                 // Same render-before-dispatch ordering as the JSON path
                 // above — see the long comment there.
-                if (!window.bowireAppendStreamMessage || !window.bowireAppendStreamMessage()) {
-                    render();
-                }
+                streamFrameArrived(S);
                 if (window.__bowireExtFramework) {
                     window.__bowireExtFramework.dispatchStreamMessage(fallback);
                 }
             }
         };
 
-        sseSource.addEventListener('done', function () {
+        es.addEventListener('done', function () {
             const elapsed = Math.round(performance.now() - startTime);
-            statusInfo = { status: 'OK', durationMs: elapsed };
-            isExecuting = false;
+            S.statusInfo = { status: 'OK', durationMs: elapsed };
+            S.isExecuting = false;
             markJobDone(service, method);
-            sseSource.close();
-            sseSource = null;
+            es.close();
+            if (S.sseSource === es) S.sseSource = null;
             unregisterSubscription(service, method);
 
             // v2.2 T3 — server-streaming run completed cleanly.
@@ -1120,7 +1122,7 @@
             addConsoleEntry({ type: 'response', method: fullName, status: 'Completed', durationMs: elapsed });  // i18n-exempt: the action log stores rendered text, see #689
 
             // ---- Post-response script (streaming) ----
-            var streamResponseObj = streamMessages.length > 0 ? streamMessages[streamMessages.length - 1] : null;
+            var streamResponseObj = S.streamMessages.length > 0 ? S.streamMessages[S.streamMessages.length - 1] : null;
             if (streamResponseObj && streamResponseObj.data !== undefined) {
                 try { streamResponseObj = JSON.parse(streamResponseObj.data); } catch {}
             }
@@ -1156,8 +1158,8 @@
                 metadata: metadata || null,
                 status: 'OK',
                 durationMs: elapsed,
-                response: streamMessages.length > 0 ? streamMessages[streamMessages.length - 1] : null,
-                receivedMessages: streamMessages.map(function (m, i) {
+                response: S.streamMessages.length > 0 ? S.streamMessages[S.streamMessages.length - 1] : null,
+                receivedMessages: S.streamMessages.map(function (m, i) {
                     return {
                         index: (m && typeof m.index === 'number') ? m.index : i,
                         timestampMs: (m && typeof m.timestampMs === 'number') ? m.timestampMs : null,
@@ -1185,16 +1187,16 @@
             render();
         });
 
-        sseSource.addEventListener('error', function (e) {
-            if (sseSource.readyState === EventSource.CLOSED) return;
+        es.addEventListener('error', function (e) {
+            if (es.readyState === EventSource.CLOSED) return;
             const elapsed = Math.round(performance.now() - startTime);
-            responseError = 'Stream error occurred.';
-            statusInfo = { status: 'Error', durationMs: elapsed };  // i18n-exempt: status label, carried on the console entry and the run summary
-            isExecuting = false;
+            S.responseError = 'Stream error occurred.';
+            S.statusInfo = { status: 'Error', durationMs: elapsed };  // i18n-exempt: status label, carried on the console entry and the run summary
+            S.isExecuting = false;
             markJobDone(service, method);
             markSubscriptionError(service, method, 'Stream error');
-            sseSource.close();
-            sseSource = null;
+            es.close();
+            if (S.sseSource === es) S.sseSource = null;
             unregisterSubscription(service, method);
             // v2.2 T3 — stream errored out. Bucket as 'error' (server
             // never sent its 'done' event).
@@ -1211,16 +1213,17 @@
     }
 
     function stopStreaming() {
-        if (sseSource) {
-            sseSource.close();
-            sseSource = null;
+        var S = activeState();
+        if (S.sseSource) {
+            S.sseSource.close();
+            S.sseSource = null;
         }
-        isExecuting = false;
+        S.isExecuting = false;
         if (selectedService && selectedMethod) {
             markJobDone(selectedService.name, selectedMethod.name);
             unregisterSubscription(selectedService.name, selectedMethod.name);
         }
-        if (statusInfo) statusInfo.status = 'Cancelled';  // i18n-exempt: status label, carried on the console entry and the run summary
+        if (S.statusInfo) S.statusInfo.status = 'Cancelled';  // i18n-exempt: status label, carried on the console entry and the run summary
         render();
     }
 
@@ -1234,29 +1237,41 @@
         if (!svcName || !methodName) return;
         var entry = findSubscription(svcName, methodName);
         if (!entry) return;
-        // If this is the active method's stream, also clear the legacy
-        // globals so re-render doesn't pick up a stale "isExecuting".
-        if (selectedService && selectedMethod
-            && selectedService.name === svcName
-            && selectedMethod.name === methodName) {
-            if (sseSource) { try { sseSource.close(); } catch {} sseSource = null; }
+        // #695 — the stream lives on the state of the tab that started
+        // it, which need not be the active one. Every tab on this method
+        // is closed down; the registry entry is what the dropdown showed.
+        var states = [];
+        for (var i = 0; i < requestTabs.length; i++) {
+            var tb = requestTabs[i];
+            if (tb.serviceKey === svcName && tb.methodKey === methodName && tb.state) states.push(tb.state);
+        }
+        if (states.length === 0) states.push(activeState());
+        states.forEach(function (S) {
+            if (S.sseSource) { try { S.sseSource.close(); } catch { /* ignore */ } S.sseSource = null; }
             if (entry.kind === 'duplex' || entry.kind === 'client') {
-                if (duplexSseSource) { try { duplexSseSource.close(); } catch {} duplexSseSource = null; }
-                duplexConnected = false;
+                if (S.duplexSseSource) { try { S.duplexSseSource.close(); } catch { /* ignore */ } S.duplexSseSource = null; }
+                S.duplexConnected = false;
             }
-            isExecuting = false;
-            if (statusInfo) statusInfo.status = 'Cancelled';  // i18n-exempt: status label, carried on the console entry and the run summary
-        } else if (entry.sseSource) {
-            try { entry.sseSource.close(); } catch {}
+            S.isExecuting = false;
+            if (S.statusInfo) S.statusInfo.status = 'Cancelled';  // i18n-exempt: status label, carried on the console entry and the run summary
+        });
+        if (entry.sseSource) {
+            try { entry.sseSource.close(); } catch { /* ignore */ }
         }
         markJobDone(svcName, methodName);
         unregisterSubscription(svcName, methodName);
-        // Duplex/client streams keep their own state in openChannels —
-        // wipe that too so a future tab switch doesn't try to restore
-        // a SSE source we just closed.
-        var key = channelStoreKey(svcName, methodName);
-        if (openChannels[key]) delete openChannels[key];
         render();
+    }
+
+    /// A frame landed in `S.streamMessages`. If that state is the one on
+    /// screen, append it to the list in place (the fast path) or fall
+    /// back to a render; if it belongs to a tab in the background, the
+    /// data is where it needs to be and the DOM has nothing to show yet.
+    function streamFrameArrived(S) {
+        if (S !== activeState()) return;
+        if (!window.bowireAppendStreamMessage || !window.bowireAppendStreamMessage(S)) {
+            render();
+        }
     }
 
     // ---- Channel Operations (Duplex / Client Streaming) ----

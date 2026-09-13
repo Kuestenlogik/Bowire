@@ -143,12 +143,13 @@
     }
 
     function downloadResponse(format) {
+        var S = activeState();
         var methodName = selectedMethod ? selectedMethod.name : 'response';
         var text, filename, mimeType;
 
         if (format === 'proto') {
             // Proto binary: fetch raw bytes from server
-            if (!responseData && streamMessages.length === 0) { toast(t('download.noResponse'), 'info'); return; }
+            if (!S.responseData && S.streamMessages.length === 0) { toast(t('download.noResponse'), 'info'); return; }
             // For proto binary, we'd need the raw bytes from the server.
             // Since we only have JSON, convert back (best effort).
             toast(t('download.protoUnsupported'), 'info');
@@ -156,14 +157,14 @@
         }
 
         // JSON format
-        if (streamMessages.length > 0) {
-            var msgs = streamMessages.map(function (m) {
+        if (S.streamMessages.length > 0) {
+            var msgs = S.streamMessages.map(function (m) {
                 try { return JSON.parse(m.data || '{}'); } catch { return m.data; }
             });
             text = JSON.stringify(msgs, null, 2);
             filename = methodName + '-responses.json';
-        } else if (responseData) {
-            try { text = JSON.stringify(JSON.parse(responseData), null, 2); } catch { text = responseData; }
+        } else if (S.responseData) {
+            try { text = JSON.stringify(JSON.parse(S.responseData), null, 2); } catch { text = S.responseData; }
             filename = methodName + '.json';
         } else {
             toast(t('download.noResponse'), 'info');
