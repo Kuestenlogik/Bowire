@@ -1018,6 +1018,15 @@
             while (next.firstChild) app.appendChild(next.firstChild);
         }
 
+        // #706 — the {{var}} chip overlay is a sibling the render tree
+        // does not describe, so the morph just discarded it. The field
+        // it belonged to survived; if that field is the one being typed
+        // in, put its overlay back now rather than on a focus event that
+        // will not come while it stays focused.
+        if (window.__bowireVarsChips && document.activeElement) {
+            try { window.__bowireVarsChips.attach(document.activeElement); } catch { /* ignore */ }
+        }
+
         // Wire the sidebar-splitter drag handler. Idempotent via
         // data-dragHooked, so repeated render() calls don't stack
         // listeners on the same node.
