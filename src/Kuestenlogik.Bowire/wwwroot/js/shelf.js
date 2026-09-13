@@ -132,7 +132,10 @@
                 type: 'value',
                 label: path || t('shelf.untitled'),
                 payload: text,
-                hint: path ? 'response:' + path : ''
+                // A provenance scheme, not prose: these name WHERE an item came
+                // from, the way a URL scheme does. Translating one would break
+                // the only thing it is for.
+                hint: path ? 'response:' + path : ''  // i18n-exempt: provenance scheme
             };
         }
 
@@ -155,7 +158,10 @@
                 type: 'value',
                 label: name || t('shelf.untitled'),
                 payload: value,
-                hint: name ? 'header:' + name : ''
+                // A provenance scheme, not prose: these name WHERE an item came
+                // from, the way a URL scheme does. Translating one would break
+                // the only thing it is for.
+                hint: name ? 'header:' + name : ''  // i18n-exempt: provenance scheme
             };
         }
 
@@ -171,7 +177,10 @@
                 type: 'value',
                 label: vname || t('shelf.untitled'),
                 payload: vvalue,
-                hint: vname ? 'var:' + vname : ''
+                // A provenance scheme, not prose: these name WHERE an item came
+                // from, the way a URL scheme does. Translating one would break
+                // the only thing it is for.
+                hint: vname ? 'var:' + vname : ''  // i18n-exempt: provenance scheme
             };
         }
 

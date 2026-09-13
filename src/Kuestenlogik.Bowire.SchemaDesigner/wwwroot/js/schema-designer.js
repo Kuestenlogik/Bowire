@@ -339,7 +339,9 @@
         }));
         if (edge.label) {
             var title = schemaSvgEl('title');
-            title.textContent = edge.label + (edge.map ? ' (map)' : edge.repeated ? ' (repeated)' : '');
+            var shape = edge.map ? t('schema.edge.map')
+                : edge.repeated ? t('schema.edge.repeated') : '';
+            title.textContent = shape ? edge.label + ' ' + shape : edge.label;
             g.appendChild(title);
         }
         return g;
@@ -698,7 +700,10 @@
         var rows = [schemaSectionHeading(t('schema.fields', { count: String(node.fields.length) }))];
         for (var i = 0; i < node.fields.length; i++) {
             var f = node.fields[i];
-            var shape = f.map ? 'map<' + schemaShortType(f.type) + '>'
+            // i18n-exempt: protobuf type syntax, not prose — map<…> and […]
+            // read the same in every language and a translated one would be
+            // wrong rather than merely foreign.
+            var shape = f.map ? 'map<' + schemaShortType(f.type) + '>'  // i18n-exempt: protobuf type syntax
                 : f.repeated ? schemaShortType(f.type) + '[]'
                     : schemaShortType(f.type);
             rows.push(el('div', { style: 'display:flex;gap:6px;padding:3px 10px;font-size:12px' },

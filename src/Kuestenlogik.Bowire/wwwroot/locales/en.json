@@ -3387,6 +3387,8 @@
   "schema.loadFailedShort": "Could not build the graph",
   "schema.searchPlaceholder": "Search type, field or method",
   "schema.allFiles": "All files",
+  "schema.edge.map": "(map)",
+  "schema.edge.repeated": "(repeated)",
   "schema.anyUsage": "Any number of uses",
   "schema.minUsage": "Used {count} times or more",
   "schema.wellKnown": "Well-known types",

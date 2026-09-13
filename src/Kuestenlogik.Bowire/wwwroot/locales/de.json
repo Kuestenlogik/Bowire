@@ -3387,6 +3387,8 @@
   "schema.loadFailedShort": "Graph konnte nicht aufgebaut werden",
   "schema.searchPlaceholder": "Typ, Feld oder Methode suchen",
   "schema.allFiles": "Alle Dateien",
+  "schema.edge.map": "(Abbildung)",
+  "schema.edge.repeated": "(wiederholt)",
   "schema.anyUsage": "Beliebig viele Verwendungen",
   "schema.minUsage": "Mindestens {count}-mal verwendet",
   "schema.wellKnown": "Well-Known-Typen",
