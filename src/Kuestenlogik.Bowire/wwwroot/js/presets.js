@@ -370,6 +370,7 @@
                     toast(t('presets.toast.applyFailed'), 'error');
                     return;
                 }
+                // #696 — stays on a frame: a per-frame tick; running it off-frame would defeat the point.
                 window.requestAnimationFrame(tick);
             };
             if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {

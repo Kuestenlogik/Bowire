@@ -978,7 +978,7 @@
                         // frame to settle before execute reads the
                         // DOM. applyPresetToCurrentMethod already
                         // re-renders, so we wait one rAF.
-                        requestAnimationFrame(function () {
+                        afterRender(function () {
                             if (typeof handleExecute === 'function') handleExecute();
                         });
                     }

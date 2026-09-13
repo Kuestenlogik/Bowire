@@ -489,6 +489,7 @@
                         render();
                     }
                     // Flash received counter
+                    // #696 — stays on a frame: restarts a CSS flash, forced reflow and all.
                     requestAnimationFrame(function () {
                         var el = document.querySelector('.bowire-counter-received');
                         if (el) {
@@ -693,6 +694,7 @@ toast(t(n === 1 ? 'rb.validationErrorsOne' : 'rb.validationErrorsMany',
             render();
 
             // Flash sent counter
+            // #696 — stays on a frame: restarts a CSS flash, forced reflow and all.
             requestAnimationFrame(function () {
                 var el = document.querySelector('.bowire-counter-sent');
                 if (el) {

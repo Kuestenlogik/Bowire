@@ -493,7 +493,7 @@
         // Overflow popover — three tabs rarely overflow today, but the
         // request pane gets narrowed via the splitter and we want the
         // same affordance everywhere a horizontal tab strip lives.
-        requestAnimationFrame(function () {
+        afterRender(function () {
             var live = document.getElementById('bowire-freeform-request-tabs');
             if (live && typeof bowireWireTabOverflow === 'function') {
                 bowireWireTabOverflow(live, { tabSelector: '.bowire-tab', label: t('main.moreTabs') });
@@ -637,7 +637,7 @@
         splitContent.appendChild(divider);
         splitContent.appendChild(resPane);
         pane.appendChild(splitContent);
-        requestAnimationFrame(function () {
+        afterRender(function () {
             var d = document.getElementById('bowire-freeform-pane-divider');
             var l = document.getElementById('bowire-freeform-req-pane');
             var r = document.getElementById('bowire-freeform-res-pane');
@@ -1371,6 +1371,7 @@
                 }
             }));
             targetTable.appendChild(row);
+            // #696 — stays on a frame: auto-sizes a textarea from its scrollHeight.
             requestAnimationFrame(autoResize);
         }
 
@@ -4469,7 +4470,7 @@
         if (typeof gotoComposeAndSpawn === 'function') {
             card('send', t('main.card.fire'), t('main.card.fireHint'), function () {
                 gotoComposeAndSpawn();
-                requestAnimationFrame(function () {
+                afterRender(function () {
                     var inp = document.querySelector('.bowire-request-builder-url-input');
                     if (inp) inp.focus();
                 });
@@ -6349,7 +6350,7 @@
             // (collapsing the strip to 0 height). requestTabs.length gates
             // it so the '+' stays visible in the empty Discover state.
             if (requestTabs.length > 0) {
-                requestAnimationFrame(function () {
+                afterRender(function () {
                     var live = document.querySelector('#bowire-request-tabs .bowire-request-tabs-scroll');
                     if (live && typeof bowireWireTabOverflow === 'function') {
                         bowireWireTabOverflow(live, {
@@ -6473,7 +6474,7 @@
         // doesn't leave us holding a detached reference.
         var reqPaneId = reqPane.id;
         var resPaneId = resPane.id;
-        requestAnimationFrame(function () {
+        afterRender(function () {
             var d = document.getElementById(dividerId);
             var l = document.getElementById(reqPaneId);
             var r = document.getElementById(resPaneId);
@@ -6601,7 +6602,7 @@
         // and the seven tabs no longer fit, trailing tabs collapse into
         // a "▾ N" chevron rather than getting clipped off. Deferred so
         // morphdom has mounted the strip into the live tree.
-        requestAnimationFrame(function () {
+        afterRender(function () {
             var live = document.getElementById('bowire-request-tabs');
             if (live && typeof bowireWireTabOverflow === 'function') {
                 bowireWireTabOverflow(live, { tabSelector: '.bowire-tab', label: t('main.moreTabs') });
@@ -6754,7 +6755,7 @@
             // Overflow popover — body sub-tab strip (Form / JSON /
             // Selection set / Query / Variables / Headers / …). Mounted
             // on each render; helper is idempotent.
-            requestAnimationFrame(function () {
+            afterRender(function () {
                 var live = document.getElementById('bowire-body-subtabs');
                 if (live && typeof bowireWireTabOverflow === 'function') {
                     bowireWireTabOverflow(live, { tabSelector: '.bowire-sub-tab', label: t('common.more') });
@@ -7320,7 +7321,7 @@
                 // diff-free rerender. We re-focus to prevent the cursor jump.
                 var pos = this.selectionStart;
                 render();
-                requestAnimationFrame(function () {
+                afterRender(function () {
                     var fresh = document.querySelector('.bowire-history-search-input');
                     if (fresh) {
                         fresh.focus();
@@ -8913,7 +8914,7 @@
         // Selection class on the active item; auto-scroll to bottom; splitter
         // drag handler; auto-scroll abandon detection. All run after the DOM
         // is attached so getElementById finds the freshly inserted nodes.
-        requestAnimationFrame(function () {
+        afterRender(function () {
             updateStreamSelection();
             if (streamAutoScroll) scrollStreamListToBottom();
             attachStreamScrollListener();
@@ -9122,7 +9123,7 @@
         // unary twin below).
         var mountService = selectedService.name;
         var mountMethod = selectedMethod.name;
-        requestAnimationFrame(function () {
+        afterRender(function () {
             var liveBody = document.querySelector(
                 '#bowire-response-widget-host-split .bowire-widget-pane-body');
             // childElementCount guard: two renders can race their rAF
@@ -9292,7 +9293,7 @@
         // pattern as renderStreamingOutput's post-mount wiring.
         var mountService = selectedService.name;
         var mountMethod = selectedMethod.name;
-        requestAnimationFrame(function () {
+        afterRender(function () {
             var liveBody = document.querySelector(
                 '#bowire-response-widget-host-split .bowire-widget-pane-body');
             // childElementCount guard: two renders can race their rAF
@@ -9455,7 +9456,7 @@
         // the childElementCount guard against racing renders.
         var mountService = selectedService.name;
         var mountMethod = selectedMethod.name;
-        requestAnimationFrame(function () {
+        afterRender(function () {
             var liveBody = document.querySelector(
                 '#bowire-response-widget-host .bowire-widget-tab-body[data-widget-tab="widget"]');
             if (!liveBody || liveBody.childElementCount > 0) return;
@@ -10238,7 +10239,7 @@
         pane.appendChild(tabs);
         // Overflow popover — Response / Response Metadata / Test results
         // crowd a narrow pane. Same affordance as the request side.
-        requestAnimationFrame(function () {
+        afterRender(function () {
             var live = document.getElementById('bowire-response-tabs');
             if (live && typeof bowireWireTabOverflow === 'function') {
                 bowireWireTabOverflow(live, { tabSelector: '.bowire-tab', label: t('main.moreTabs') });

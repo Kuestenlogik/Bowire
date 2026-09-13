@@ -133,7 +133,7 @@
                         serverUrls.push('');
                         render();
                         // Focus the new (empty) input
-                        requestAnimationFrame(function () {
+                        afterRender(function () {
                             var inputs = $$('.bowire-url-input');
                             if (inputs.length > 0) inputs[inputs.length - 1].focus();
                         });

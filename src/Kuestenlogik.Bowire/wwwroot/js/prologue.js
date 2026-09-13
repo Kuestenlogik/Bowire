@@ -719,6 +719,33 @@
     // the vertical rail (e.g. console drawer eats half the height).
     // Session-only; resetting on reload is fine because the menu is
     // ephemeral by nature.
+    /// #696 — run `fn` after the current task, for POST-MOUNT WIRING: code
+    /// that re-resolves nodes by id and attaches behaviour to them.
+    ///
+    /// A frame is the right moment when there is going to be one. A hidden
+    /// tab has none — browsers do not service requestAnimationFrame while
+    /// `document.visibilityState === "hidden"` — and every callback queued
+    /// there simply never runs. Measured in a running workbench: 7
+    /// scheduled, 0 run. So a workbench restored into a background tab used
+    /// to mount with its wiring absent, and anything that latched a flag
+    /// before scheduling stayed latched for the rest of the session.
+    ///
+    /// Callers that MEASURE (offsetWidth, getBoundingClientRect, scroll
+    /// positions) or animate must keep calling requestAnimationFrame
+    /// directly: a hidden tab reports zero-sized boxes, so running them
+    /// early would compute a wrong layout rather than no layout. Those sites
+    /// carry a one-line note saying so.
+    function afterRender(fn) {
+        if (typeof requestAnimationFrame !== 'function') { setTimeout(fn, 16); return; }
+        try {
+            if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
+                setTimeout(fn, 0);
+                return;
+            }
+        } catch { /* no document — fall through to the frame */ }
+        requestAnimationFrame(fn);
+    }
+
     let railOverflowOpen = false;
     // #249 Phase 2 — the "add a rail" picker at the bottom of the strip.
     // Separate from railOverflowOpen: that one lists rails already on but
@@ -3060,9 +3087,9 @@
                     _fsWatchToast = null;
                     return;
                 }
-                requestAnimationFrame(_watchDismissed);
+                afterRender(_watchDismissed);
             };
-            requestAnimationFrame(_watchDismissed);
+            afterRender(_watchDismissed);
         };
         _fsWatchSource.onerror = function () {
             // 501 from an embedded host without AddBowireGitWorkspace,

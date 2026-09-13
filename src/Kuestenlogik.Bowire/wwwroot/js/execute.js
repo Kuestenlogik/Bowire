@@ -391,6 +391,7 @@
         // user hasn't scrolled up to read history (or has
         // explicitly toggled off the pin in the toolbar).
         if (consoleAutoScroll) {
+            // #696 — stays on a frame: scrolls to the bottom — a scroll position is meaningless in a hidden tab.
             requestAnimationFrame(function () {
                 body.scrollTop = body.scrollHeight;
             });
@@ -934,6 +935,7 @@
         var existing = document.querySelector('.bowire-console-panel');
         if (existing) existing.remove();
         if (consoleOpen && autoScroll && consoleAutoScroll) {
+            // #696 — stays on a frame: scrolls the console to the bottom — same.
             requestAnimationFrame(function () {
                 var body = document.querySelector('.bowire-console-drawer-body');
                 if (body) body.scrollTop = body.scrollHeight;

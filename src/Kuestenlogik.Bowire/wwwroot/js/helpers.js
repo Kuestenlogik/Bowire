@@ -3111,6 +3111,7 @@ var railName = opts.railLabel || t('prereq.thisRail');
 
         // Initial layout pass on the next frame so the strip has settled
         // into its flex slot.
+        // #696 — stays on a frame: measures tab widths; a hidden tab reports zero boxes.
         requestAnimationFrame(function () { _bowireOverflowRelayout(stripEl); });
     }
 

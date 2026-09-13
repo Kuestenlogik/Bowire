@@ -182,6 +182,7 @@
         // The render() the navigate hook (likely) triggered is async w.r.t.
         // morphdom's commit. Defer the target-resolve to the next two frames
         // so the new DOM is in place before we measure.
+        // #696 — stays on a frame: the guided tour measures a target to position its overlay, and only means anything on screen.
         requestAnimationFrame(function () {
             requestAnimationFrame(function () {
                 if (!_tourState.running) return;
@@ -230,6 +231,7 @@
             _detachReflowListeners();
             return;
         }
+        // #696 — stays on a frame: same — resolves and paints over a live target.
         requestAnimationFrame(function () {
             if (!_tourState.running) return;
             var target = _resolveStepTarget(step.target);
@@ -519,6 +521,7 @@
             try { target.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' }); }
             catch { target.scrollIntoView(); }
             // Re-read after the scroll has had a frame to settle.
+            // #696 — stays on a frame: same — an overlay repaint.
             requestAnimationFrame(function () {
                 if (!_tourState.running) return;
                 var r2 = target.getBoundingClientRect();
@@ -1063,6 +1066,7 @@
     function _scheduleReflow() {
         if (!_tourState.running) return;
         if (_tourState.rafHandle) return;
+        // #696 — stays on a frame: same — a scroll/resize repaint of the overlay.
         _tourState.rafHandle = requestAnimationFrame(function () {
             _tourState.rafHandle = null;
             if (!_tourState.running) return;

@@ -243,7 +243,7 @@
                 searchSuggestionsOpen = true;
                 searchSuggestionIndex = 0;
                 render();
-                requestAnimationFrame(function () {
+                afterRender(function () {
                     var input = document.getElementById('bowire-command-palette-input');
                     if (input) {
                         input.focus();
@@ -424,7 +424,7 @@
                 gotoComposeAndSpawn();
                 // Defer focus to the next frame so the freshly-rendered
                 // input is in the DOM by the time we reach for it.
-                requestAnimationFrame(function () {
+                afterRender(function () {
                     var inp = document.querySelector('.bowire-request-builder-url-input');
                     if (inp) inp.focus();
                 });
@@ -990,7 +990,7 @@
             // overlay lives in the static HTML so it's visible from
             // the very first paint — no FOUC. We remove it after a
             // short transition so the spinner doesn't linger.
-            requestAnimationFrame(function () {
+            afterRender(function () {
                 var appEl = document.getElementById('bowire-app');
                 if (appEl) appEl.classList.add('bowire-app-ready');
                 var loading = document.getElementById('bowire-loading');

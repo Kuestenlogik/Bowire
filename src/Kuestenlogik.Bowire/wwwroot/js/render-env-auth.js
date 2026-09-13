@@ -372,7 +372,7 @@
             className: 'bowire-app-drawer-item',
             onClick: function () {
                 closeDrawer();
-                requestAnimationFrame(function () {
+                afterRender(function () {
                     var s = document.querySelector('.bowire-topbar-palette input, .bowire-topbar-palette-input');
                     if (s) { try { s.focus(); s.select && s.select(); } catch {} }
                 });
@@ -566,7 +566,7 @@
         // user clicking first. We do this in rAF so the node is in
         // the DOM before we touch focus.
         if (appDrawerOpen) {
-            requestAnimationFrame(function () {
+            afterRender(function () {
                 var p = document.querySelector('.bowire-app-drawer-panel');
                 if (p && document.activeElement !== p) {
                     try { p.focus({ preventScroll: true }); } catch { /* older browsers */ }
@@ -586,14 +586,17 @@
     // callers all over the tree render and then read the DOM back; making
     // that asynchronous everywhere would break them in ways a test would
     // not catch. This is the opt-in for the hot paths.
+    // #696 — afterRender, not a bare frame, and the reason is the latch.
+    // In a hidden tab the frame never comes, so `_renderScheduled` stayed
+    // true for ever and EVERY later scheduleRender() returned early — a
+    // streaming method left running while the operator was in another
+    // browser tab froze, and stayed frozen after they came back. The latch
+    // only clears in the callback, so the callback has to run.
     var _renderScheduled = false;
     function scheduleRender() {
         if (_renderScheduled) return;
         _renderScheduled = true;
-        var frame = (typeof requestAnimationFrame === 'function')
-            ? requestAnimationFrame
-            : function (fn) { return setTimeout(fn, 16); };
-        frame(function () {
+        afterRender(function () {
             _renderScheduled = false;
             render();
         });
@@ -999,7 +1002,7 @@
                             if (tag !== 'SELECT' && typeof fromEl.selectionStart === 'number') {
                                 var s = fromEl.selectionStart;
                                 var e = fromEl.selectionEnd;
-                                requestAnimationFrame(function () {
+                                afterRender(function () {
                                     try { fromEl.setSelectionRange(s, e); } catch { /* ignore */ }
                                 });
                             }
@@ -1027,6 +1030,7 @@
         // ResizeObserver hook below catches geometry changes that
         // don't go through render().
         if (typeof _layoutActivityRail === 'function') {
+            // #696 — stays on a frame: measures the rail to decide what overflows.
             requestAnimationFrame(_layoutActivityRail);
         }
         if (typeof _attachActivityRailObserver === 'function') {
@@ -1041,6 +1045,7 @@
         // ResizeObserver below catches viewport resizes that don't
         // bounce through render().
         if (typeof _layoutTopbarRight === 'function') {
+            // #696 — stays on a frame: measures the topbar to decide what overflows.
             requestAnimationFrame(_layoutTopbarRight);
         }
         if (typeof _attachTopbarRightObserver === 'function') {
@@ -3792,7 +3797,7 @@
                 searchSuggestionsOpen = true;
                 searchSuggestionIndex = 0;
                 render();
-                requestAnimationFrame(function () {
+                afterRender(function () {
                     var input = document.getElementById('bowire-command-palette-input');
                     if (input) { input.focus(); input.select(); }
                 });
