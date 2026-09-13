@@ -12,12 +12,12 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.8 — Localisation, layout and the test pillar: DE + EN catalogues, splits and shelf, contract testing *(due 2026-11-03)*
 
-**21/32 done** · 11 backlog
+**21/32 done** · 1 in progress · 10 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
+| [249](https://github.com/Kuestenlogik/Bowire/issues/249) | Bowire | [Optional rail modules — Phase 2: Schema Designer ships as the first default-off opt-in module](#issue-kuestenlogik-bowire-249) | 🟡 In progress | `area:workbench` |
 | [216](https://github.com/Kuestenlogik/Bowire/issues/216) | Bowire | [Test infra: WebApplicationFactory fixture for InvokeEndpoints + UnaryReplayer coverage](#issue-kuestenlogik-bowire-216) | ⬜ Backlog | `area:workbench` |
-| [249](https://github.com/Kuestenlogik/Bowire/issues/249) | Bowire | [Optional rail modules — Phase 2: Schema Designer ships as the first default-off opt-in module](#issue-kuestenlogik-bowire-249) | ⬜ Backlog | `area:workbench` |
 | [250](https://github.com/Kuestenlogik/Bowire/issues/250) | Bowire | [Unified Layout — within-tab split (Auto/drag/shortcut/per-tab) + cross-tab pane split with tab drag-and-drop](#issue-kuestenlogik-bowire-250) | ⬜ Backlog | `area:workbench` |
 | [251](https://github.com/Kuestenlogik/Bowire/issues/251) | Bowire | [Visual shelf — drag-and-drop holding area for cross-surface fragments (parallel to OS clipboard)](#issue-kuestenlogik-bowire-251) | ⬜ Backlog | `area:workbench` |
 | [292](https://github.com/Kuestenlogik/Bowire/issues/292) | Bowire | [Request-builder: GraphQL layout (#291 Phase D follow-up)](#issue-kuestenlogik-bowire-292) | ⬜ Backlog | `area:workbench` |
@@ -172,17 +172,17 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.8 — Localisation, layout and the test pillar: DE + EN catalogues, splits and shelf, contract testing *(due 2026-11-03)*
 
+#### <a id="issue-kuestenlogik-bowire-249"></a>🟡 In progress · [#249](https://github.com/Kuestenlogik/Bowire/issues/249) Optional rail modules — Phase 2: Schema Designer ships as the first default-off opt-in module
+
+> `area:workbench`
+
+Phase 2 of the optional-rail-modules effort (Phase 1 in #248 lands the plumbing in v2.1). After the toggle mechanic exists, v2.4 uses it for its FIRST real default-off rail module: the Schema Designer (#247). [[more]](https://github.com/Kuestenlogik/Bowire/issues/249)
+
 #### <a id="issue-kuestenlogik-bowire-216"></a>⬜ Backlog · [#216](https://github.com/Kuestenlogik/Bowire/issues/216) Test infra: WebApplicationFactory fixture for InvokeEndpoints + UnaryReplayer coverage
 
 > `area:workbench`
 
 `Mock.Replay.UnaryReplayer` (~226 uncovered lines) and `Endpoints.BowireInvokeEndpoints` (~58 uncovered lines) together carry the largest single coverage hole in the repo. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/216)
-
-#### <a id="issue-kuestenlogik-bowire-249"></a>⬜ Backlog · [#249](https://github.com/Kuestenlogik/Bowire/issues/249) Optional rail modules — Phase 2: Schema Designer ships as the first default-off opt-in module
-
-> `area:workbench`
-
-Phase 2 of the optional-rail-modules effort (Phase 1 in #248 lands the plumbing in v2.1). After the toggle mechanic exists, v2.4 uses it for its FIRST real default-off rail module: the Schema Designer (#247). [[more]](https://github.com/Kuestenlogik/Bowire/issues/249)
 
 #### <a id="issue-kuestenlogik-bowire-250"></a>⬜ Backlog · [#250](https://github.com/Kuestenlogik/Bowire/issues/250) Unified Layout — within-tab split (Auto/drag/shortcut/per-tab) + cross-tab pane split with tab drag-and-drop
 
