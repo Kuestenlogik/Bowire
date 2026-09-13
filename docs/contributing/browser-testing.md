@@ -41,15 +41,28 @@ focused *after* it was attached, so a field focused by autofocus, or before
 init ran, is invisible to it. The shelf (#251) hit exactly this; it now captures
 the target on `mousedown`, before the click moves focus.
 
-## 3. Real pointer gestures are not available
+## 3. Drag-and-drop is testable, but only if you build the DataTransfer
 
-HTML5 drag-and-drop needs a genuine pointer sequence. Synthesised
-`dragstart` / `drop` events do not carry a working `dataTransfer` in the way
-the real ones do, so drag paths cannot be verified by the automated pass at
-all — regardless of visibility.
+A real drag needs a real pointer sequence, so the *browser's own* drag session
+cannot be started from script. The handlers can still be driven directly, and
+this does work:
 
-Verify those by hand, and say so plainly in the ticket rather than ticking the
-box.
+```js
+const dt = new DataTransfer();
+dt.setData('text/plain', 'value');
+source.dispatchEvent(new DragEvent('dragstart', { bubbles: true, dataTransfer: dt }));
+target.dispatchEvent(new DragEvent('dragover',  { bubbles: true, cancelable: true, dataTransfer: dt }));
+target.dispatchEvent(new DragEvent('drop',      { bubbles: true, cancelable: true, dataTransfer: dt }));
+```
+
+That is enough to verify a drop target, a compatibility check and a highlight.
+What it does not give you is the browser's drag image, its cursor feedback, or
+`dropEffect` behaving exactly as a user would see it — check those by hand.
+
+**Fire `dragend` between runs.** A drag started and never ended leaves the
+source's module state pointing at the previous item, and the next drop is
+then evaluated against the wrong thing. That looked exactly like a broken
+compatibility check once already; it was leftover state from the run before.
 
 ## Practical consequences
 

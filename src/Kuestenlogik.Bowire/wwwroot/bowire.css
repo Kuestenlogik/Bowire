@@ -1541,6 +1541,17 @@ but
 /* #251 — the Shelf. Rows are draggable sources and clickable inserts at
    once, so the whole row is the affordance and the per-row tools stay out
    of the way until the row is hovered. */
+.bowire-shelf-panel {
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+}
+/* The whole panel accepts a drop, so the whole panel says so. */
+.bowire-shelf-panel-over {
+    outline: 2px dashed var(--bowire-accent);
+    outline-offset: -4px;
+    background: var(--bowire-bg-subtle);
+}
 .bowire-shelf-list {
     display: flex;
     flex-direction: column;

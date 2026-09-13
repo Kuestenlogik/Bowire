@@ -473,6 +473,12 @@
             // protocol-color stripe on the group's left
             // edge for the two-axis read.
             'data-direction': methodDirection(m),
+            // #251 — the row names its own service so a delegated handler
+            // can resolve the method without walking back up to whichever
+            // group happens to contain it. The shelf's "Send to shelf"
+            // reads it; anything else delegating over these rows can too.
+            'data-service': svc.name,
+            'data-method': m.name,
             draggable: 'true',
             onDragstart: function (e) {
                 // #362 — enrich the drag payload so a drop
@@ -575,6 +581,22 @@
                     items.push({
                         label: t('sidebar.method.benchmark'),
                         onClick: function () { _benchmarkMethod(svc, m); }
+                    });
+                }
+                // #251 — the shelf joins THIS menu rather than raising a
+                // rival one. A row with two context menus racing to be the
+                // one that shows is not a feature, and the sidebar's menu is
+                // already where everything else about a method lives.
+                if (typeof shelfAdd === 'function') {
+                    items.push({
+                        label: t('shelf.sendTo'),
+                        onClick: function () {
+                            shelfAdd('request', m.name,
+                                { service: svc.name, method: m.name },
+                                svc.name + '/' + m.name);
+                            toast(t('shelf.added', { label: m.name }), 'success');
+                            render();
+                        }
                     });
                 }
                 showContextMenu(e.clientX, e.clientY, items);

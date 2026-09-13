@@ -74,29 +74,22 @@
             target.classList.remove('bowire-shelf-drop-ok', 'bowire-shelf-drop-no');
         });
 
-        // "Send to shelf" on a response JSON node. Delegated, because the
-        // response tree is rebuilt on every invocation and the nodes are
-        // built as HTML strings rather than elements — there is nowhere to
-        // hang a per-node handler even if we wanted one.
-        //
-        // This is the access path that matters most: Ctrl/Cmd+Shift+C only
-        // reaches request fields, and the whole point of the shelf is
-        // carrying a value OUT of a response and into the next request.
+        // "Send to shelf", delegated for every source at once. Delegation
+        // rather than per-element handlers because these surfaces are
+        // rebuilt constantly — and the response tree is built as HTML
+        // strings, so there is nowhere to hang a handler even if we wanted
+        // one. A new source is a clause in shelfSourceAt, not another
+        // listener.
         document.addEventListener('contextmenu', function (e) {
-            var node = e.target && e.target.closest
-                ? e.target.closest('.bowire-json-pickable')
-                : null;
-            if (!node) return;
-            var path = node.getAttribute('data-json-path') || '';
-            var text = (node.textContent || '').replace(/^"|"$/g, '');
-            if (!text) return;
+            var source = shelfSourceAt(e.target);
+            if (!source) return;
             e.preventDefault();
             showContextMenu(e.clientX, e.clientY, [{
                 label: t('shelf.sendTo'),
                 icon: svgIcon('shelf'),
                 onClick: function () {
-                    shelfAdd('value', path || t('shelf.untitled'), text, path ? 'response:' + path : '');
-                    toast(t('shelf.added', { label: shelfTruncate(path || text, 30) }), 'success');
+                    shelfAdd(source.type, source.label, source.payload, source.hint);
+                    toast(t('shelf.added', { label: shelfTruncate(source.label, 30) }), 'success');
                     render();
                 }
             }]);
@@ -115,6 +108,81 @@
             // fragment you still needed costs another hunt for its source.
             if (!item.pinned && !e.altKey) { /* kept — see above */ }
         });
+    }
+
+    /// What, if anything, the operator right-clicked that the shelf can
+    /// hold. Returns `{ type, label, payload, hint }` or null.
+    ///
+    /// Order matters: the most specific shape wins. A response JSON node
+    /// sits inside panes that match nothing else, but an env-var row
+    /// contains inputs, and an input inside a header row would otherwise
+    /// match the row twice over.
+    function shelfSourceAt(target) {
+        if (!target || !target.closest) return null;
+
+        // A value in the response tree. The one that matters most: the
+        // chord only reaches request fields, and the point of the shelf is
+        // carrying a value OUT of a response and into the next request.
+        var json = target.closest('.bowire-json-pickable');
+        if (json) {
+            var path = json.getAttribute('data-json-path') || '';
+            var text = (json.textContent || '').replace(/^"|"$/g, '');
+            if (!text) return null;
+            return {
+                type: 'value',
+                label: path || t('shelf.untitled'),
+                payload: text,
+                hint: path ? 'response:' + path : ''
+            };
+        }
+
+        // A request header. Two shapes, because the workbench has two
+        // header editors: the URL builder's own row, and the metadata
+        // editor the protocol request panes use. Both are a key input and
+        // a value input side by side, so one clause reads both.
+        //
+        // The item holds the VALUE and is labelled with the name: a header
+        // is a pair, but what you paste elsewhere is the value, and the
+        // name is what tells you which value it was.
+        var headerRow = target.closest('.bowire-url-header-row, .bowire-metadata-row');
+        if (headerRow) {
+            var pair = headerRow.querySelectorAll(
+                '.bowire-url-header-key, .bowire-url-header-val, .bowire-url-header-value, .bowire-metadata-input');
+            var name = pair[0] ? pair[0].value : '';
+            var value = pair[1] ? pair[1].value : '';
+            if (!name && !value) return null;
+            return {
+                type: 'value',
+                label: name || t('shelf.untitled'),
+                payload: value,
+                hint: name ? 'header:' + name : ''
+            };
+        }
+
+        // An environment variable.
+        var varRow = target.closest('.bowire-env-editor-row');
+        if (varRow) {
+            var vk = varRow.querySelector('.bowire-env-editor-key');
+            var vv = varRow.querySelector('.bowire-env-editor-val');
+            var vname = vk ? vk.value : '';
+            var vvalue = vv ? vv.value : '';
+            if (!vname && !vvalue) return null;
+            return {
+                type: 'value',
+                label: vname || t('shelf.untitled'),
+                payload: vvalue,
+                hint: vname ? 'var:' + vname : ''
+            };
+        }
+
+        // A discovered method is NOT resolved here. That row already has a
+        // context menu of its own, built in render-sidebar.js, and the
+        // shelf adds an entry to it instead — two menus racing to be the
+        // one that shows is not a feature. The row still carries
+        // data-service / data-method so anything else delegating over
+        // these rows can resolve it without walking up the tree.
+
+        return null;
     }
 
     /// Ctrl/Cmd+Shift+C — one chord away from the copy that still goes to
@@ -266,18 +334,80 @@
     // ---- drawer panel ----
 
     function renderShelfPanel() {
+        var body;
         if (shelfItems.length === 0) {
-            return el('div', { className: 'bowire-shelf-empty bowire-main-pad' },
+            body = el('div', { className: 'bowire-shelf-empty bowire-main-pad' },
                 el('p', { className: 'bowire-drawer-empty', textContent: t('shelf.empty') }),
                 el('p', { className: 'bowire-drawer-empty-hint', textContent: t('shelf.emptyHint') })
             );
+        } else {
+            body = el('div', { className: 'bowire-shelf-list' });
+            shelfItems.forEach(function (item) {
+                body.appendChild(shelfRow(item));
+            });
         }
 
-        var list = el('div', { className: 'bowire-shelf-list' });
-        shelfItems.forEach(function (item) {
-            list.appendChild(shelfRow(item));
-        });
-        return list;
+        // The whole panel is the drop zone, empty or not — aiming at a
+        // narrow strip while dragging is a needless second task, and an
+        // empty shelf is exactly when someone is trying to put the first
+        // thing on it.
+        return el('div', {
+            className: 'bowire-shelf-panel',
+            onDragover: function (ev) {
+                // Never accept the shelf's own rows: dropping one back on
+                // the shelf would read as "moved" and do nothing.
+                if (shelfDragItemId) return;
+                ev.preventDefault();
+                try { ev.dataTransfer.dropEffect = 'copy'; } catch { /* ignore */ }
+                ev.currentTarget.classList.add('bowire-shelf-panel-over');
+            },
+            onDragleave: function (ev) {
+                ev.currentTarget.classList.remove('bowire-shelf-panel-over');
+            },
+            onDrop: function (ev) {
+                ev.currentTarget.classList.remove('bowire-shelf-panel-over');
+                if (shelfDragItemId) return;
+                ev.preventDefault();
+                var added = shelfAddFromDrop(ev);
+                if (added) {
+                    toast(t('shelf.added', { label: shelfTruncate(added.label, 30) }), 'success');
+                    render();
+                }
+            }
+        }, body);
+    }
+
+    /// Turn a drop onto the shelf into an item. Two shapes arrive: the
+    /// sidebar's own method drag, which already carries a structured
+    /// payload, and plain text from anywhere else.
+    function shelfAddFromDrop(ev) {
+        var dt = ev.dataTransfer;
+        if (!dt) return null;
+
+        var raw = '';
+        try { raw = dt.getData('application/x-bowire-method') || ''; } catch { /* ignore */ }
+        if (raw) {
+            try {
+                var payload = JSON.parse(raw);
+                return shelfAdd('request', payload.method || t('shelf.untitled'), payload,
+                    payload.service ? payload.service + '/' + payload.method : '');
+            } catch { /* fall through to text */ }
+        }
+
+        var text = '';
+        try { text = dt.getData('text/plain') || ''; } catch { /* ignore */ }
+        text = text.trim();
+        if (!text) return null;
+
+        // Text that parses as an object or array is held as JSON, so it
+        // keeps its shape and the drop-target check can refuse to squeeze
+        // it into a single-line field later.
+        if (/^[[{]/.test(text)) {
+            try {
+                return shelfAdd('json', shelfTruncate(text, 24), JSON.parse(text), 'drop');
+            } catch { /* not JSON after all — hold it as text */ }
+        }
+        return shelfAdd('value', shelfTruncate(text, 24), text, 'drop');
     }
 
     function shelfRow(item) {
