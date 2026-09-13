@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.8 — Localisation, layout and the test pillar: DE + EN catalogues, splits and shelf, contract testing *(due 2026-11-03)*
 
-**19/31 done** · 1 in progress · 11 backlog
+**20/32 done** · 1 in progress · 11 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -47,6 +47,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [686](https://github.com/Kuestenlogik/Bowire/issues/686) | Bowire | [el() turns a false boolean attribute into a set attribute, so disabled: false disables the control](#issue-kuestenlogik-bowire-686) | ✅ Done | `area:workbench` |
 | [692](https://github.com/Kuestenlogik/Bowire/issues/692) | Bowire | [A sidecar manifest cannot name an interpreter: the executable never resolves through PATH](#issue-kuestenlogik-bowire-692) | ✅ Done | `area:plugin-sdk` |
 | [693](https://github.com/Kuestenlogik/Bowire/issues/693) | Bowire | [A sidecar's settings() reaches nothing: the host never reads them](#issue-kuestenlogik-bowire-693) | ✅ Done | `area:plugin-sdk` |
+| [694](https://github.com/Kuestenlogik/Bowire/issues/694) | Bowire | [Discovery drops every repeated type reference: the gRPC visited-set is per-tree, not per-path](#issue-kuestenlogik-bowire-694) | ✅ Done | `area:plugin-sdk` |
 
 ### v2.9 — MCP completion + agent hub *(due 2026-11-24)*
 
@@ -356,6 +357,12 @@ A sidecar manifest cannot name an interpreter. `SidecarJsonRpcTransport.Start` r
 > `area:plugin-sdk`
 
 A sidecar plugin can describe its settings, and nothing receives them. [[more]](https://github.com/Kuestenlogik/Bowire/issues/693)
+
+#### <a id="issue-kuestenlogik-bowire-694"></a>✅ Done · [#694](https://github.com/Kuestenlogik/Bowire/issues/694) Discovery drops every repeated type reference: the gRPC visited-set is per-tree, not per-path
+
+> `area:plugin-sdk`
+
+`GrpcReflectionClient.ResolveMessageType` builds each method's request and response shape by walking the descriptors recursively, carrying a `visited` set to stop it looping. The set is added to but **never unwound**: [[more]](https://github.com/Kuestenlogik/Bowire/issues/694)
 
 ### v2.9 — MCP completion + agent hub *(due 2026-11-24)*
 
@@ -801,4 +808,4 @@ The Activity drawer renders text that was translated once, when the action happe
 
 ---
 
-*Generated 2026-09-12 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
+*Generated 2026-09-13 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
