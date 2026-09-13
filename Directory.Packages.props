@@ -25,8 +25,8 @@
          across a spring-forward gap is exactly the kind of thing a
          maintained library gets right and a hand-rolled parser does not. -->
     <PackageVersion Include="Cronos" Version="0.13.0" />
-    <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.11" />
-    <PackageVersion Include="Microsoft.AspNetCore.TestHost" Version="10.0.11" />
+    <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.12" />
+    <PackageVersion Include="Microsoft.AspNetCore.TestHost" Version="10.0.12" />
     <PackageVersion Include="Grpc.AspNetCore" Version="2.83.0" />
     <PackageVersion Include="Grpc.Tools" Version="2.83.0" />
     <!-- Kuestenlogik.Bowire.Protocol.TacticalApi — Rheinmetall TacticalAPI
@@ -37,7 +37,7 @@
          stays here so downstream consumers that DO opt in still get a
          known-good version. -->
     <PackageVersion Include="Kuestenlogik.Bowire.Protocol.TacticalApi" Version="1.0.4" />
-    <PackageVersion Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.11" />
+    <PackageVersion Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.12" />
     <PackageVersion Include="Microsoft.Identity.Web" Version="4.14.2" />
     <!-- Held at 3.8.0. The original reason (CS0200 in the code the
          Microsoft.AspNetCore.OpenApi XML-comment source generator emits)
@@ -148,7 +148,7 @@
          line above; kept on the 15.1.x floor for the same CVE reason. -->
     <PackageVersion Include="HotChocolate.Subscriptions.InMemory" Version="16.6.6" />
     <PackageVersion Include="SocketIOClient" Version="4.0.5" />
-    <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.11" />
+    <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.12" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.10.0" />
     <PackageVersion Include="xunit.v3" Version="4.0.1" />
     <PackageVersion Include="Microsoft.Testing.Extensions.CodeCoverage" Version="18.11.0" />
@@ -209,11 +209,11 @@
          implements IChatClient against the local Ollama HTTP API
          (auto-detect on 127.0.0.1:11434). Cloud providers slot in via
          the same abstraction once Phase 3 wires Microsoft.Extensions.AI.OpenAI. -->
-    <PackageVersion Include="Microsoft.Extensions.AI" Version="10.9.0" />
+    <PackageVersion Include="Microsoft.Extensions.AI" Version="10.10.0" />
     <!-- Microsoft.Extensions.AI.OpenAI: IChatClient for OpenAI + any
          OpenAI-compatible endpoint (OpenRouter, Azure OpenAI, &c.).
          Phase 3 of #25 routes cloud BYOK through this. -->
-    <PackageVersion Include="Microsoft.Extensions.AI.OpenAI" Version="10.9.0" />
+    <PackageVersion Include="Microsoft.Extensions.AI.OpenAI" Version="10.10.0" />
     <!-- Anthropic.SDK: community-maintained SDK with first-class
          Microsoft.Extensions.AI integration (the AnthropicClient().Messages
          property returns IChatClient directly). Phase 3 of #25 uses this
