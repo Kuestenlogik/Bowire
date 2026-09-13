@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.8 — Localisation, layout and the test pillar: DE + EN catalogues, splits and shelf, contract testing *(due 2026-11-03)*
 
-**24/33 done** · 1 in progress · 8 backlog
+**25/34 done** · 1 in progress · 8 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -49,6 +49,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [693](https://github.com/Kuestenlogik/Bowire/issues/693) | Bowire | [A sidecar's settings() reaches nothing: the host never reads them](#issue-kuestenlogik-bowire-693) | ✅ Done | `area:plugin-sdk` |
 | [694](https://github.com/Kuestenlogik/Bowire/issues/694) | Bowire | [Discovery drops every repeated type reference: the gRPC visited-set is per-tree, not per-path](#issue-kuestenlogik-bowire-694) | ✅ Done | `area:plugin-sdk` |
 | [696](https://github.com/Kuestenlogik/Bowire/issues/696) | Bowire | [Post-mount wiring is scheduled with requestAnimationFrame, so a hidden tab never wires it](#issue-kuestenlogik-bowire-696) | ✅ Done | `area:workbench` |
+| [706](https://github.com/Kuestenlogik/Bowire/issues/706) | Bowire | [The first click into any text field is lost: the chip overlay re-parents the field on focus](#issue-kuestenlogik-bowire-706) | ✅ Done | `area:workbench` |
 
 ### v2.9 — MCP completion + agent hub *(due 2026-11-24)*
 
@@ -371,6 +372,12 @@ A sidecar plugin can describe its settings, and nothing receives them. [[more]](
 > `area:workbench`
 
 Post-mount wiring across the workbench is scheduled with `requestAnimationFrame` — the pattern is "render the tree, then on the next frame re-resolve the nodes by id and attach behaviour to them": [[more]](https://github.com/Kuestenlogik/Bowire/issues/696)
+
+#### <a id="issue-kuestenlogik-bowire-706"></a>✅ Done · [#706](https://github.com/Kuestenlogik/Bowire/issues/706) The first click into any text field is lost: the chip overlay re-parents the field on focus
+
+> `area:workbench`
+
+Click into a text field or textarea that has never been focused before, start typing — nothing lands. `document.activeElement` is `<body>`. The second click works. [[more]](https://github.com/Kuestenlogik/Bowire/issues/706)
 
 ### v2.9 — MCP completion + agent hub *(due 2026-11-24)*
 
