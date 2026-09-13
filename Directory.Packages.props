@@ -141,7 +141,7 @@
          HotChocolate.Language affects >= 15.0.0, < 15.1.14; the fix
          ships in 15.1.14. Earlier 15.1.x (e.g. 15.1.10) still trips the
          NuGet audit. -->
-    <PackageVersion Include="HotChocolate.AspNetCore" Version="16.6.4" />
+    <PackageVersion Include="HotChocolate.AspNetCore" Version="16.6.6" />
     <!-- HotChocolate.Subscriptions.InMemory — the in-process pub/sub
          backend behind the GraphQL sample's bookAdded subscription
          (Kuestenlogik.Bowire.Sample.GraphQL). Sample-only, same as the
