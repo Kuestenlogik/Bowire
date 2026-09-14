@@ -575,6 +575,58 @@
     }
 
     /**
+     * Colours for the panels that float over the map — the trajectory
+     * toggle, the tracks legend, the playback bar. They sit on
+     * whatever the basemap is (satellite imagery, OSM, the blank
+     * offline style) and follow the workbench theme the host hands in
+     * as `ctx.theme.mode`. MapLibre paints a control group white; the
+     * legend used to be a white card on a dark workbench, and the
+     * playback bar a dark strip on a light one.
+     *
+     * Inline for the same reason as everything else in this widget:
+     * an extension renders against any host and cannot rely on
+     * bowire.css. `colorScheme` is what makes the native checkbox,
+     * select and text input inside the panels take the same side.
+     */
+    function bowireMapOverlayPalette(theme) {
+        var light = theme && theme.mode === 'light';
+        return light
+            ? {
+                scheme: 'light',
+                bg: 'rgba(255,255,255,0.9)',
+                fg: '#1c1f26',
+                border: 'rgba(0,0,0,0.12)',
+                controlBg: 'rgba(0,0,0,0.04)',
+                controlBorder: 'rgba(0,0,0,0.22)'
+            }
+            : {
+                scheme: 'dark',
+                bg: 'rgba(20,22,30,0.86)',
+                fg: '#e8eaf0',
+                border: 'rgba(255,255,255,0.14)',
+                controlBg: 'rgba(255,255,255,0.08)',
+                controlBorder: 'rgba(255,255,255,0.25)'
+            };
+    }
+
+    /** Paint one floating panel with the palette. */
+    function bowireMapThemePanel(elm, palette) {
+        elm.style.background = palette.bg;
+        elm.style.color = palette.fg;
+        elm.style.colorScheme = palette.scheme;
+        elm.style.backdropFilter = 'blur(2px)';
+    }
+
+    /** Paint a native select / text input inside a panel. */
+    function bowireMapThemeField(elm, palette) {
+        elm.style.background = palette.controlBg;
+        elm.style.color = 'inherit';
+        elm.style.border = '1px solid ' + palette.controlBorder;
+        elm.style.borderRadius = '3px';
+        elm.style.padding = '2px 4px';
+    }
+
+    /**
      * Sprite name a pin's SIDC resolves to. The symbol layer asks for
      * this name first and falls back to the affinity shape while it is
      * not (or never) registered — see the `coalesce` in the layer's
@@ -685,6 +737,8 @@
         }, function (e) {
             console.warn('[bowire-map] milsymbol unavailable, pins keep the affinity shapes:', e);
         });
+
+        var overlay = bowireMapOverlayPalette(ctx.theme);
 
         var basemap = bowireMapBasemapSpec();
         var style;
@@ -1710,6 +1764,7 @@
                 // theme and must not depend on bowire.css being loaded.
                 wrap.style.padding = '4px 8px';
                 wrap.style.font = '12px system-ui, sans-serif';
+                bowireMapThemePanel(wrap, overlay);
 
                 var label = document.createElement('label');
                 label.style.display = 'flex';
@@ -1971,11 +2026,9 @@
                 display: 'none', alignItems: 'center', gap: '8px',
                 padding: '6px 10px',
                 font: '12px system-ui, sans-serif',
-                background: 'rgba(20,22,30,0.82)',
-                color: '#e8eaf0',
-                backdropFilter: 'blur(2px)',
                 zIndex: '5'
             });
+            bowireMapThemePanel(bar, overlay);
             // The map's own drag/zoom handlers live on the canvas
             // container; without this a drag that starts on the scrubber
             // also pans the map underneath it.
@@ -1991,8 +2044,8 @@
                 Object.assign(b.style, {
                     font: 'inherit', cursor: 'pointer', minWidth: '28px',
                     padding: '2px 6px', borderRadius: '3px',
-                    border: '1px solid rgba(255,255,255,0.25)',
-                    background: 'rgba(255,255,255,0.08)', color: 'inherit'
+                    border: '1px solid ' + overlay.controlBorder,
+                    background: overlay.controlBg, color: 'inherit'
                 });
                 return b;
             }
@@ -2347,6 +2400,7 @@
                 wrap.style.font = '12px system-ui, sans-serif';
                 wrap.style.minWidth = '210px';
                 wrap.style.maxWidth = '260px';
+                bowireMapThemePanel(wrap, overlay);
 
                 var head = document.createElement('div');
                 head.style.display = 'flex';
@@ -2385,6 +2439,7 @@
                 trackPathSelect = document.createElement('select');
                 trackPathSelect.style.width = '100%';
                 trackPathSelect.style.font = 'inherit';
+                bowireMapThemeField(trackPathSelect, overlay);
                 trackPathSelect.addEventListener('change', function () {
                     setTrackIdPath(trackPathSelect.value);
                 });
@@ -2397,6 +2452,7 @@
                 custom.style.font = 'inherit';
                 custom.style.marginTop = '4px';
                 custom.style.boxSizing = 'border-box';
+                bowireMapThemeField(custom, overlay);
                 // Committed on Enter or blur, not per keystroke: every
                 // change re-keys every pin on the map, and doing that
                 // for each character of a half-typed path would regroup
