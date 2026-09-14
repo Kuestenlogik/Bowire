@@ -127,7 +127,7 @@ The `Kuestenlogik.Bowire.Protocol.TacticalApi` plugin is not part of `Bundle.Wor
 
 ![Map widget maximised over the western Baltic — the TacticalAPI sample's thirteen tracks drawn as MIL-2525C symbols: friendly ground units and a UAV over Schleswig-Holstein, three surface contacts (friend, hostile, neutral) circling off Wismar, two convoys and an engagement closing head-on](../images/screenshots/map-widget-pins.png)
 
-Captured against the TacticalAPI sample (`Bowire.Protocol.TacticalApi/samples`, `Situation.SubscribeSituationObjectEvents`) with the ESRI satellite basemap and the map pane maximised. Every pin is a milsymbol sprite; the surface contacts without a function id show the bare frame — circle, diamond, square — which is what the standard draws for them.
+Captured by `scripts/screenshots/capture-tacticalapi-screenshot.js` against the TacticalAPI sample (`Bowire.Protocol.TacticalApi/samples`, `Situation.SubscribeSituationObjectEvents`) with the ESRI satellite basemap and the map pane maximised; the same run re-shoots the workbench pair the site's protocol popup uses. Every pin is a milsymbol sprite; the surface contacts without a function id show the bare frame — circle, diamond, square — which is what the standard draws for them.
 
 ## Edge cases
 
