@@ -107,7 +107,7 @@ public sealed class BowirePulsarProtocol : IBowireProtocol, IDisposable
         if (route is null || route.Op != "produce")
         {
             return new InvokeResult(null, 0,
-                "Unknown Pulsar route '" + method + "' — expected pulsar/topic/<name>/produce", new());
+                "Unknown Pulsar route '" + method + "' — send the method name 'produce' with the topic as the service, or the full route pulsar/topic/<topic>/produce", new());
         }
 
         var topic = ResolveTopic(route.Topic, metadata);
@@ -226,6 +226,24 @@ public sealed class BowirePulsarProtocol : IBowireProtocol, IDisposable
     /// Returns null for hand-typed method names that don't match this
     /// shape so the invoke can surface a helpful error.
     /// </summary>
+    /// <summary>
+    /// #664 — discovery names the methods <c>produce</c> / <c>subscribe</c>
+    /// and puts the topic on the service; the invoke paths read the route
+    /// <c>pulsar/topic/&lt;topic&gt;/&lt;op&gt;</c> from the FullName. Both
+    /// forms are accepted: a bare op is joined with the service's topic
+    /// (a short topic name is completed in the first configured
+    /// namespace, the way discovery shortened it), a route passes through.
+    /// </summary>
+    public string ResolveMethodName(string service, string method)
+    {
+        if (string.IsNullOrEmpty(method) || ParseRoute(method) is not null) return method;
+        if (method is not ("produce" or "subscribe") || string.IsNullOrEmpty(service)) return method;
+        var topic = service.Contains("://", StringComparison.Ordinal)
+            ? service
+            : "persistent://" + (ParseNamespaces(GetSetting("namespaces", "public/default")).FirstOrDefault() ?? "public/default") + "/" + service;
+        return "pulsar/topic/" + topic + "/" + method;
+    }
+
     internal static PulsarRoute? ParseRoute(string method)
     {
         if (string.IsNullOrEmpty(method)) return null;

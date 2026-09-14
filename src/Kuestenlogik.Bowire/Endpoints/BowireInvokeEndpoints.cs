@@ -200,6 +200,10 @@ internal static class BowireInvokeEndpoints
             // dashboards can break down by any of them -- the operator
             // can drop the high-cardinality dims via the privacy
             // switch (--telemetry-strip-method-labels).
+            // #664 — `method` is the discovery name; a fullName is accepted
+            // and reduced to what this plugin reads before it sees it.
+            body = body with { Method = protocol.ResolveMethodName(body.Service, body.Method) };
+
             using var activity = BowireTelemetry.ActivitySource.StartActivity(
                 "bowire.invoke", ActivityKind.Client);
             activity?.SetTag("protocol", body.Protocol);
@@ -370,6 +374,10 @@ internal static class BowireInvokeEndpoints
                 await ctx.Response.WriteAsync($"event: error\ndata: {errorData}\n\n", ctx.RequestAborted);
                 return;
             }
+
+            // #664 — same contract as the unary path: the name, or a
+            // fullName reduced to what this plugin reads.
+            method = protocol.ResolveMethodName(service, method);
 
             try
             {

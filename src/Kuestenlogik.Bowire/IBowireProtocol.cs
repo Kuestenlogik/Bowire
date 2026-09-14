@@ -75,6 +75,37 @@ public interface IBowireProtocol
         IReadOnlyDictionary<string, string>? metadata, CancellationToken ct = default)
         => DiscoverAsync(serverUrl, showInternalServices, ct);
 
+    /// <summary>
+    /// The form of <c>method</c> that <see cref="InvokeAsync"/>,
+    /// <see cref="InvokeStreamAsync"/> and <see cref="OpenChannelAsync"/>
+    /// expect, given what a caller sent (#664).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The contract on <c>/api/invoke</c> is the method's discovery
+    /// <c>name</c>. A caller that sends the <c>fullName</c> instead — the
+    /// other field the discovery response carries, and the obvious one to
+    /// reach for — is met halfway: the endpoints run the identifier
+    /// through this before dispatch, so the plugin only ever sees the
+    /// form it reads.
+    /// </para>
+    /// <para>
+    /// The default reduces the common <c>&lt;service&gt;/&lt;name&gt;</c>
+    /// shape to the name and passes anything else through untouched. A
+    /// plugin whose <c>FullName</c> encodes a route rather than a
+    /// service-qualified name (a topic, a subject) overrides this to
+    /// accept both its name and its route.
+    /// </para>
+    /// </remarks>
+    string ResolveMethodName(string service, string method)
+    {
+        if (string.IsNullOrEmpty(method) || string.IsNullOrEmpty(service)) return method;
+        var prefix = service + "/";
+        return method.Length > prefix.Length && method.StartsWith(prefix, StringComparison.Ordinal)
+            ? method[prefix.Length..]
+            : method;
+    }
+
     /// <summary>Invoke a unary or client-streaming call.</summary>
     Task<InvokeResult> InvokeAsync(string serverUrl, string service, string method,
         List<string> jsonMessages, bool showInternalServices,

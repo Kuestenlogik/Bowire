@@ -162,6 +162,35 @@ public sealed class BowireInvokeDispatchTests : IDisposable
     }
 
     [Fact]
+    public async Task A_FullName_Is_Reduced_To_The_Name_Before_The_Plugin_Sees_It()
+    {
+        // #664 — the contract is the discovery `name`; a caller that reads
+        // the other obvious field off the discovery response and sends
+        // `fullName` reaches the same method. The seam runs every plugin's
+        // ResolveMethodName; the stub inherits the default, which reduces
+        // "<service>/<name>" to the name.
+        using var host = await BuildHost();
+
+        var (status, _) = await Invoke(host,
+            """{"protocol":"stub","service":"orders.v1.OrderService","method":"orders.v1.OrderService/GetOrder","messages":["{}"]}""",
+            "https://api.example.com");
+
+        Assert.Equal(HttpStatusCode.OK, status);
+        Assert.Equal("GetOrder", _plugin.Method);
+    }
+
+    [Fact]
+    public async Task The_Stream_Path_Reduces_A_FullName_The_Same_Way()
+    {
+        using var host = await BuildHost();
+        _plugin.Frames.Add("""{"n":1}""");
+
+        await Stream(host, "service=S&method=S%2FM&serverUrl=https%3A%2F%2Fapi.example.com");
+
+        Assert.Equal("M", _plugin.Method);
+    }
+
+    [Fact]
     public async Task The_Response_Carries_The_Fields_The_Workbench_Renders()
     {
         // Response body, duration and status are three separate panes in the

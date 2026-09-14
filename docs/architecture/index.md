@@ -88,6 +88,15 @@ All endpoints are prefixed with the configured `RoutePrefix`. The standalone CLI
 | `GET /{prefix}/mcp/sse` | MCP SSE transport |
 | `POST /{prefix}/mcp/message` | MCP JSON-RPC message endpoint |
 
+### Naming the method on `/api/invoke`
+
+The invoke, stream and channel endpoints take `service` and `method`, and the contract is the same for every plugin: **`method` is the method's `name` from the discovery response**, with `service` the service's `name`. The other identifier discovery carries, `fullName`, is accepted as well — a caller that reads that field instead reaches the same method — because each plugin reduces it to the form its invoke path reads before the call is dispatched (`IBowireProtocol.ResolveMethodName`). `service/name` shapes (gRPC, MCP, JSON-RPC, GraphQL) drop the service prefix; route shapes (Pulsar's `pulsar/topic/<topic>/produce`, MQTT's `mqtt/<topic>/publish`) map onto the topic-and-op the plugin reads. Where a plugin cannot make sense of what it was sent, its error names the form it accepts.
+
+```json
+POST /api/invoke
+{ "protocol": "grpc", "service": "demo.Greeter", "method": "SayHello", "messages": ["{}"] }
+```
+
 ## Embedded vs. standalone
 
 - **Embedded** &mdash; `MapBowire()` adds Bowire to an existing ASP.NET app. Plugins receive the host's `IServiceProvider`, so endpoint-metadata-based discovery (SignalR, REST via `IApiDescriptionGroupCollectionProvider`, SSE attributes) works out of the box.

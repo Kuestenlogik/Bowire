@@ -100,6 +100,25 @@ public sealed class BowireMqttProtocol : IBowireProtocol
         }
     }
 
+    /// <summary>
+    /// #664 — discovery names a method by its topic and gives the FullName
+    /// the route <c>mqtt/&lt;topic&gt;/publish|subscribe</c>; the invoke
+    /// paths read the topic. Both forms are accepted: the route is reduced
+    /// to its topic, a topic passes through.
+    /// </summary>
+    public string ResolveMethodName(string service, string method)
+    {
+        const string prefix = "mqtt/";
+        if (string.IsNullOrEmpty(method) || !method.StartsWith(prefix, StringComparison.Ordinal)) return method;
+        var rest = method[prefix.Length..];
+        foreach (var op in new[] { "/publish", "/subscribe" })
+        {
+            if (rest.EndsWith(op, StringComparison.Ordinal) && rest.Length > op.Length)
+                return rest[..^op.Length];
+        }
+        return method;
+    }
+
     public async Task<InvokeResult> InvokeAsync(
         string serverUrl, string service, string method,
         List<string> jsonMessages, bool showInternalServices,
