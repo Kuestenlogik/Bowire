@@ -12,12 +12,11 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.8 — Localisation, layout and the test pillar: DE + EN catalogues, splits and shelf, contract testing *(due 2026-11-03)*
 
-**25/35 done** · 2 in progress · 8 backlog
+**26/35 done** · 1 in progress · 8 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [250](https://github.com/Kuestenlogik/Bowire/issues/250) | Bowire | [Unified Layout — within-tab split (Auto/drag/shortcut/per-tab) + cross-tab pane split with tab drag-and-drop](#issue-kuestenlogik-bowire-250) | 🟡 In progress | `area:workbench` |
-| [695](https://github.com/Kuestenlogik/Bowire/issues/695) | Bowire | [Request and response state lives in globals, so only one method can ever be live](#issue-kuestenlogik-bowire-695) | 🟡 In progress | `area:workbench` |
 | [216](https://github.com/Kuestenlogik/Bowire/issues/216) | Bowire | [Test infra: WebApplicationFactory fixture for InvokeEndpoints + UnaryReplayer coverage](#issue-kuestenlogik-bowire-216) | ⬜ Backlog | `area:workbench` |
 | [292](https://github.com/Kuestenlogik/Bowire/issues/292) | Bowire | [Request-builder: GraphQL layout (#291 Phase D follow-up)](#issue-kuestenlogik-bowire-292) | ⬜ Backlog | `area:workbench` |
 | [311](https://github.com/Kuestenlogik/Bowire/issues/311) | Bowire | [Pluggable workbench: extract remaining rails (Phase G continuation)](#issue-kuestenlogik-bowire-311) | ⬜ Backlog | `area:workbench` |
@@ -49,6 +48,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [692](https://github.com/Kuestenlogik/Bowire/issues/692) | Bowire | [A sidecar manifest cannot name an interpreter: the executable never resolves through PATH](#issue-kuestenlogik-bowire-692) | ✅ Done | `area:plugin-sdk` |
 | [693](https://github.com/Kuestenlogik/Bowire/issues/693) | Bowire | [A sidecar's settings() reaches nothing: the host never reads them](#issue-kuestenlogik-bowire-693) | ✅ Done | `area:plugin-sdk` |
 | [694](https://github.com/Kuestenlogik/Bowire/issues/694) | Bowire | [Discovery drops every repeated type reference: the gRPC visited-set is per-tree, not per-path](#issue-kuestenlogik-bowire-694) | ✅ Done | `area:plugin-sdk` |
+| [695](https://github.com/Kuestenlogik/Bowire/issues/695) | Bowire | [Request and response state lives in globals, so only one method can ever be live](#issue-kuestenlogik-bowire-695) | ✅ Done | `area:workbench` |
 | [696](https://github.com/Kuestenlogik/Bowire/issues/696) | Bowire | [Post-mount wiring is scheduled with requestAnimationFrame, so a hidden tab never wires it](#issue-kuestenlogik-bowire-696) | ✅ Done | `area:workbench` |
 | [706](https://github.com/Kuestenlogik/Bowire/issues/706) | Bowire | [The first click into any text field is lost: the chip overlay re-parents the field on focus](#issue-kuestenlogik-bowire-706) | ✅ Done | `area:workbench` |
 
@@ -176,12 +176,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 > `area:workbench`
 
 #135 shipped in v2.0 as a **within-tab** request/response split (vertical ↔ horizontal toggle). That feature predates the workbench tab system (#123). Now that tabs are first-class, the "split" concept has TWO orthogonal axes that operators need at different times, and #135 only covers one of them. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/250)
-
-#### <a id="issue-kuestenlogik-bowire-695"></a>🟡 In progress · [#695](https://github.com/Kuestenlogik/Bowire/issues/695) Request and response state lives in globals, so only one method can ever be live
-
-> `area:workbench`
-
-The workbench holds **one method's request and response at a time**. Tab switching does not make a second set live — it swaps the one set out and back in: [[more]](https://github.com/Kuestenlogik/Bowire/issues/695)
 
 #### <a id="issue-kuestenlogik-bowire-216"></a>⬜ Backlog · [#216](https://github.com/Kuestenlogik/Bowire/issues/216) Test infra: WebApplicationFactory fixture for InvokeEndpoints + UnaryReplayer coverage
 
@@ -368,6 +362,12 @@ A sidecar plugin can describe its settings, and nothing receives them. [[more]](
 > `area:plugin-sdk`
 
 `GrpcReflectionClient.ResolveMessageType` builds each method's request and response shape by walking the descriptors recursively, carrying a `visited` set to stop it looping. The set is added to but **never unwound**: [[more]](https://github.com/Kuestenlogik/Bowire/issues/694)
+
+#### <a id="issue-kuestenlogik-bowire-695"></a>✅ Done · [#695](https://github.com/Kuestenlogik/Bowire/issues/695) Request and response state lives in globals, so only one method can ever be live
+
+> `area:workbench`
+
+The workbench holds **one method's request and response at a time**. Tab switching does not make a second set live — it swaps the one set out and back in: [[more]](https://github.com/Kuestenlogik/Bowire/issues/695)
 
 #### <a id="issue-kuestenlogik-bowire-696"></a>✅ Done · [#696](https://github.com/Kuestenlogik/Bowire/issues/696) Post-mount wiring is scheduled with requestAnimationFrame, so a hidden tab never wires it
 
