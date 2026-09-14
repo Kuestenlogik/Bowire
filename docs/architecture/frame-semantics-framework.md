@@ -807,7 +807,10 @@ window.BowireExtensions.register({
       //                     it, and never by writing the field onto the
       //                     host's object — that object is shared with
       //                     every other widget on the page.
-      // returns: () => void   — unmount cleanup
+      // returns: () => void   — unmount cleanup. A mount that has to
+      //                     wait for something (a renderer to load) may
+      //                     be `async` and return Promise<() => void>;
+      //                     the host awaits it before tearing down.
     }
   },
 

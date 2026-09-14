@@ -837,9 +837,50 @@
      * `paneContainer`. Returns a cleanup function the caller invokes
      * before re-mounting (tab switch, method change).
      */
+    /**
+     * Call what a viewer's mount() handed back. The contract says
+     * `() => void`, but a mount that has to wait for its renderer — the
+     * map widget loads MapLibre before it can draw — is `async`, and an
+     * async function returns a Promise of that cleanup, not the cleanup.
+     * Until #707 the teardown checked `typeof unmount === 'function'`,
+     * saw a Promise, and skipped it: the widget stayed registered, kept
+     * its frames$ consumer and its map, and the next render mounted a
+     * second one beside it. Both shapes are honoured here; anything
+     * else (a mount that returned nothing) is nothing to do.
+     */
+    function bowireRunUnmount(unmount) {
+        if (typeof unmount === 'function') { unmount(); return; }
+        if (unmount && typeof unmount.then === 'function') {
+            unmount.then(function (fn) {
+                if (typeof fn === 'function') fn();
+            }, function () { /* a mount that failed has nothing to tear down */ });
+        }
+    }
+
+    /**
+     * Keep a rejected async mount from surfacing as an unhandled
+     * rejection, and say which extension it was. Returns the value
+     * unchanged so the cleanup still sees the original Promise.
+     */
+    function bowireNoteMountFailure(ext, unmount) {
+        if (unmount && typeof unmount.then === 'function') {
+            unmount.then(null, function (e) {
+                console.error('[bowire-ext] viewer.mount rejected for ' + ext.id, e);
+            });
+        }
+        return unmount;
+    }
+
     function bowireMountWidgetsForMethod(serviceId, methodId, paneContainer) {
         var cleanups = [];
+        // Set once the caller has torn this mount down. The annotation
+        // fetch below is asynchronous, so a teardown can arrive before
+        // it resolves — a tab switch right after execute does exactly
+        // that — and a mount that then went ahead would have nobody
+        // left to unmount it.
+        var disposed = false;
         function unmountAll() {
+            disposed = true;
             for (var i = 0; i < cleanups.length; i++) {
                 try { cleanups[i](); } catch (e) { console.error('[bowire-ext]', e); }
             }
@@ -847,6 +888,7 @@
         }
 
         bowireFetchEffective(serviceId, methodId).then(function (data) {
+            if (disposed) return;
             var annotations = (data && data.annotations) || [];
             if (annotations.length === 0) return;
 
@@ -979,7 +1021,7 @@
 
                     var unmount;
                     try {
-                        unmount = ext.viewer.mount(slot, ctxBundle.ctx);
+                        unmount = bowireNoteMountFailure(ext, ext.viewer.mount(slot, ctxBundle.ctx));
                     } catch (e) {
                         console.error('[bowire-ext] viewer.mount threw for ' + ext.id, e);
                         unmount = null;
@@ -987,7 +1029,7 @@
 
                     cleanups.push((function (slot, ctxBundle, unmount) {
                         return function () {
-                            try { if (typeof unmount === 'function') unmount(); }
+                            try { bowireRunUnmount(unmount); }
                             catch (e) { console.error('[bowire-ext]', e); }
                             ctxBundle.cleanup();
                             if (slot.parentNode) slot.parentNode.removeChild(slot);
@@ -1021,7 +1063,7 @@
 
                     var unmount;
                     try {
-                        unmount = ext.viewer.mount(slot, ctxBundle.ctx);
+                        unmount = bowireNoteMountFailure(ext, ext.viewer.mount(slot, ctxBundle.ctx));
                     } catch (e) {
                         console.error('[bowire-ext] viewer.mount threw for ' + ext.id, e);
                         unmount = null;
@@ -1029,7 +1071,7 @@
 
                     cleanups.push((function (slot, ctxBundle, unmount) {
                         return function () {
-                            try { if (typeof unmount === 'function') unmount(); }
+                            try { bowireRunUnmount(unmount); }
                             catch (e) { console.error('[bowire-ext]', e); }
                             ctxBundle.cleanup();
                             if (slot.parentNode) slot.parentNode.removeChild(slot);
