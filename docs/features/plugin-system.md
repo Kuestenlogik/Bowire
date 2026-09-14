@@ -132,6 +132,19 @@ bowire plugin install MyCompany.Plugin \
 
 Retyping `--source` on the CLI replaces the appsettings list entirely — same semantics as `--url` in the browser UI.
 
+### Installing from a file, and incomplete installs
+
+`bowire plugin install --file <pkg>.nupkg` installs a package without a feed. Its runtime dependencies are pulled from whatever `--source` feeds you pass; without any, the package lands on disk and the install reports the dependencies it could not resolve:
+
+```console
+  Installed Kuestenlogik.Bowire.Protocol.Nats 2.7.0 (1 file(s), 1 package(s)) -> …
+
+  warning: the package has runtime dependencies that weren't installed:
+    - NATS.Net >= 2.5.0
+```
+
+Such an install is **incomplete**: the plugin will not load until the dependencies are there, `plugin.json` records them under `unmetDependencies`, and `bowire plugin list` marks the entry `INCOMPLETE — missing: …`. To finish it, run the same install again with `--source` pointing at a feed that has the dependencies — an incomplete install is replaced, not refused — or install each dependency separately via `--file`. Only a *complete* install is protected by the "already installed" guard.
+
 ## Configuring the Plugin Path
 
 The plugin directory is resolved from a standard .NET configuration stack (highest priority wins):

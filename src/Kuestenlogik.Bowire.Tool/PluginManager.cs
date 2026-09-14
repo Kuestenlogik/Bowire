@@ -81,7 +81,7 @@ internal static class PluginManager
         Directory.CreateDirectory(dir);
         var pluginSubDir = Path.Combine(dir, packageId);
 
-        if (Directory.Exists(pluginSubDir))
+        if (Directory.Exists(pluginSubDir) && !ReplaceIfIncomplete(pluginSubDir, packageId, io))
         {
             io.OutLine($"  Plugin '{packageId}' is already installed. Use 'bowire plugin uninstall {packageId}' first.");
             return 1;
@@ -202,7 +202,7 @@ internal static class PluginManager
         }
 
         var pluginSubDir = Path.Combine(dir, peekedId);
-        if (Directory.Exists(pluginSubDir))
+        if (Directory.Exists(pluginSubDir) && !ReplaceIfIncomplete(pluginSubDir, peekedId, io))
         {
             io.OutLine($"  Plugin '{peekedId}' is already installed. Use 'bowire plugin uninstall {peekedId}' first.");
             return 1;
@@ -236,26 +236,17 @@ internal static class PluginManager
                         : new[] { Path.GetFullPath(nupkgPath) },
                     files = Directory.GetFiles(result.TargetDir)
                         .Select(Path.GetFileName)
-                        .ToArray()
+                        .ToArray(),
+                    // #666 — recorded so `plugin list` can tell an install
+                    // with missing dependencies from a complete one, and so
+                    // the next install may replace it instead of refusing.
+                    unmetDependencies = result.UnmetDependencies
                 }, IndentedJson), ct);
 
             io.OutLine(
                 $"  Installed {result.PackageId} {result.ResolvedVersion} " +
                 $"({result.FilesWritten} file(s), {result.PackagesResolved} package(s)) -> {result.TargetDir}");
-
-            if (result.UnmetDependencies.Count > 0)
-            {
-                io.OutLine();
-                io.OutLine("  warning: the package has runtime dependencies that weren't installed:");
-                foreach (var dep in result.UnmetDependencies)
-                {
-                    io.OutLine($"    - {dep}");
-                }
-                io.OutLine();
-                io.OutLine("  Re-run with --source pointing at a feed that has them, or install");
-                io.OutLine("  each dep separately via 'bowire plugin install --file <dep.nupkg>'.");
-            }
-
+            WarnUnmetDependencies(result.UnmetDependencies, result.PackageId, io);
             return 0;
         }
         // NuGet local install: archive extract + manifest probe — any
@@ -274,6 +265,49 @@ internal static class PluginManager
             io.OutLine($"  Failed to install from {nupkgPath}: {ex.Message}");
             return 1;
         }
+    }
+
+    /// <summary>
+    /// #666 — an install that left runtime dependencies unresolved is
+    /// recorded as such in its <c>plugin.json</c>. A second install of
+    /// the same package replaces it rather than being refused: the
+    /// remedy the warning names ("run the install again with --source")
+    /// must not be blocked by the guard that protects complete installs.
+    /// Returns <c>true</c> when the existing directory was incomplete and
+    /// has been removed to make room.
+    /// </summary>
+    private static bool ReplaceIfIncomplete(string pluginSubDir, string packageId, PluginIo io)
+    {
+        var missing = ReadPluginMetadata(pluginSubDir).UnmetDependencies;
+        if (missing.Count == 0) return false;
+        io.OutLine($"  Replacing the incomplete install of {packageId} (missing: {string.Join(", ", missing)}).");
+        try
+        {
+            Directory.Delete(pluginSubDir, recursive: true);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            io.OutLine($"  Could not remove the incomplete install: {ex.Message}");
+            return false;
+        }
+        return true;
+    }
+
+    private static void WarnUnmetDependencies(IReadOnlyList<string> unmet, string packageId, PluginIo io)
+    {
+        if (unmet.Count == 0) return;
+        io.OutLine();
+        io.OutLine("  warning: the package has runtime dependencies that weren't installed:");
+        foreach (var dep in unmet)
+        {
+            io.OutLine($"    - {dep}");
+        }
+        io.OutLine();
+        io.OutLine("  Until they are, the plugin will not load. Run the same install again with");
+        io.OutLine("  --source pointing at a feed that has them — an install with missing");
+        io.OutLine("  dependencies is replaced, not refused — or install each dependency");
+        io.OutLine("  separately via 'bowire plugin install --file <dep.nupkg>'.");
+        io.OutLine($"  'bowire plugin list' shows {packageId} as incomplete until then.");
     }
 
     /// <summary>
@@ -588,14 +622,19 @@ internal static class PluginManager
 
             var meta = ReadPluginMetadata(pluginPath);
             var dllCount = Directory.GetFiles(pluginPath, "*.dll").Length;
+            // #666 — an install whose dependencies never arrived is not a
+            // normal install; say so on the one line everyone reads.
+            var incomplete = meta.UnmetDependencies.Count > 0
+                ? $"  INCOMPLETE — missing: {string.Join(", ", meta.UnmetDependencies)}"
+                : "";
 
             if (!verbose)
             {
-                io.OutLine($"    {name}  v{meta.DisplayVersion}  [nuget: {dllCount} files]");
+                io.OutLine($"    {name}  v{meta.DisplayVersion}  [nuget: {dllCount} files]{incomplete}");
                 continue;
             }
 
-            io.OutLine($"    {name}  v{meta.DisplayVersion}  [nuget]");
+            io.OutLine($"    {name}  v{meta.DisplayVersion}  [nuget]{incomplete}");
             if (!string.IsNullOrEmpty(meta.ResolvedVersion) &&
                 !string.Equals(meta.ResolvedVersion, meta.RequestedVersion, StringComparison.Ordinal))
             {
@@ -641,7 +680,8 @@ internal static class PluginManager
         string? RequestedVersion,
         string? ResolvedVersion,
         string? InstalledAt,
-        IReadOnlyList<string> Sources)
+        IReadOnlyList<string> Sources,
+        IReadOnlyList<string> UnmetDependencies)
     {
         public string DisplayVersion =>
             !string.IsNullOrEmpty(ResolvedVersion) ? ResolvedVersion
@@ -653,7 +693,7 @@ internal static class PluginManager
     {
         var metadataFile = Path.Combine(pluginPath, "plugin.json");
         if (!File.Exists(metadataFile))
-            return new PluginMetadata(null, null, null, Array.Empty<string>());
+            return new PluginMetadata(null, null, null, Array.Empty<string>(), Array.Empty<string>());
 
         try
         {
@@ -679,11 +719,24 @@ internal static class PluginManager
                 }
             }
 
-            return new PluginMetadata(requested, resolved, installedAt, sources);
+            var unmet = new List<string>();
+            if (root.TryGetProperty("unmetDependencies", out var ud) && ud.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var el in ud.EnumerateArray())
+                {
+                    if (el.ValueKind == JsonValueKind.String &&
+                        el.GetString() is { Length: > 0 } u)
+                    {
+                        unmet.Add(u);
+                    }
+                }
+            }
+
+            return new PluginMetadata(requested, resolved, installedAt, sources, unmet);
         }
         catch
         {
-            return new PluginMetadata(null, null, null, Array.Empty<string>());
+            return new PluginMetadata(null, null, null, Array.Empty<string>(), Array.Empty<string>());
         }
     }
 
