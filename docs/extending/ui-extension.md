@@ -74,9 +74,13 @@ public sealed class MapLibreExtension : IBowireUiExtension
     [
         "wwwroot/maplibre/maplibre-gl.js",
         "wwwroot/maplibre/LICENSE",
+        "wwwroot/milsymbol/milsymbol.js",
+        "wwwroot/milsymbol/milsymbol.LICENSE",
     ];
 }
 ```
+
+Two vendor libraries, two licence files — and the second one is not called `LICENSE`, because the asset endpoint resolves by leaf filename and that name is already taken. A bundle that ships more than one third-party library gives each licence file a distinct leaf.
 
 The `wwwroot/js/widgets/map.js` bundle is shipped as an `<EmbeddedResource>` on the `Kuestenlogik.Bowire.Map` assembly. At first mount, the workbench's extension loader dynamic-imports it from `/api/ui/extensions/kuestenlogik.maplibre/map.js`; the bundle then calls `window.BowireExtensions.register({...})` to declare its mount / unmount callbacks.
 

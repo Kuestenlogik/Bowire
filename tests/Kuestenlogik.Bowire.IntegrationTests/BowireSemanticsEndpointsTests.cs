@@ -277,6 +277,34 @@ public sealed class BowireSemanticsEndpointsTests
         }
     }
 
+    [Fact]
+    public async Task UiExtensions_Asset_Endpoint_Serves_MilSymbol_And_Its_License()
+    {
+        // The map bundle fetches `<base>/milsymbol.js` on first mount;
+        // the MIT text ships next to it under its own leaf name.
+        var app = await BuildAppAsync();
+        await using (app)
+        {
+            Kuestenlogik.Bowire.Endpoints.BowireSemanticsEndpoints.ResetCachedRegistryForTests();
+
+            var client = app.GetTestClient();
+            var js = await client.GetAsync(
+                new Uri("/bowire/api/ui/extensions/kuestenlogik.maplibre/milsymbol.js", UriKind.Relative),
+                TestContext.Current.CancellationToken);
+            Assert.Equal(HttpStatusCode.OK, js.StatusCode);
+            Assert.Contains("javascript", js.Content.Headers.ContentType?.MediaType, StringComparison.OrdinalIgnoreCase);
+            var body = await js.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+            Assert.Contains("milsymbol", body, StringComparison.Ordinal);
+
+            var license = await client.GetAsync(
+                new Uri("/bowire/api/ui/extensions/kuestenlogik.maplibre/milsymbol.LICENSE", UriKind.Relative),
+                TestContext.Current.CancellationToken);
+            Assert.Equal(HttpStatusCode.OK, license.StatusCode);
+            var text = await license.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+            Assert.Contains("MIT License", text, StringComparison.Ordinal);
+        }
+    }
+
     // ----------------------------------------------------------------
     // Phase 4 — POST/DELETE /api/semantics/annotation
     // ----------------------------------------------------------------

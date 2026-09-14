@@ -34,5 +34,18 @@
                       LogicalName="Kuestenlogik.Bowire.Map.wwwroot.maplibre.maplibre-gl.css" />
     <EmbeddedResource Include="wwwroot\maplibre\LICENSE"
                       LogicalName="Kuestenlogik.Bowire.Map.wwwroot.maplibre.LICENSE" />
+    <!--
+      milsymbol (MIT) — renders a MIL-STD-2525 / APP-6 SIDC into the
+      standard's own symbol frame + icon. Loaded lazily next to
+      maplibre-gl.js when the first map widget mounts; a failed load
+      leaves the widget on its four built-in affinity sprites. The
+      licence file carries the library's name in its leaf because the
+      asset endpoint resolves by leaf and `LICENSE` is already taken by
+      MapLibre's.
+    -->
+    <EmbeddedResource Include="wwwroot\milsymbol\milsymbol.js"
+                      LogicalName="Kuestenlogik.Bowire.Map.wwwroot.milsymbol.milsymbol.js" />
+    <EmbeddedResource Include="wwwroot\milsymbol\milsymbol.LICENSE"
+                      LogicalName="Kuestenlogik.Bowire.Map.wwwroot.milsymbol.milsymbol.LICENSE" />
   </ItemGroup>
 </Project>
