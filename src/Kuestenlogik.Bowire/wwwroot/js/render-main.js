@@ -10692,6 +10692,15 @@
 
         const respBody = el('div', { className: 'bowire-pane-body' });
 
+        // Whatever the previous render mounted into this body is gone
+        // once morphdom has swapped it — the branches below that carry
+        // a widget mount their own fresh one (and dispose first
+        // themselves); the ones that do not (loading, error, the empty
+        // state after switching to a method without a response) used
+        // to leave the old widget registered with its frame consumer
+        // running (#707). One teardown here covers every branch.
+        disposeWidgetMounts();
+
         if (S.isExecuting && S.streamMessages.length === 0) {
             // Server-streaming methods that haven't yet emitted a frame
             // get the subscription-shaped loader so the operator sees
