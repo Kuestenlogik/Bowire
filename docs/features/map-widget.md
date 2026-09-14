@@ -115,19 +115,19 @@ docker run --rm -v ~/.bowire:/home/app/.bowire \
 
 `Bundle.Workbench` references the package transitively in v2.1, so the standalone Tool already ships the widget — the explicit install is only needed for embedded hosts that drop the bundle.
 
-## Demo against TacticalApi.RadarSweep
+## Demo against the TacticalAPI sample
 
-The `TacticalApi.RadarSweep` sample server hosts Rheinmetall's `Situation` gRPC service with three MIL-2525C contacts orbiting a radar centre at 54.00°N / 11.50°E (off the German Baltic coast) so subscriptions feel live. It lives in the [`Bowire.Samples`](https://github.com/Kuestenlogik/Bowire.Samples) repo (`protocols/TacticalApi.RadarSweep`) and fetches the upstream `.proto` at build time, so it stays free of a dependency back on the plugin package. The TacticalAPI payload uses the `{latitudeCoordinate, longitudeCoordinate}` shape, which the detector matches out of the box.
+The TacticalAPI plugin repo ships a sample server — thirteen MIL-2525C tracks in five groups (three surface contacts circling a radar centre at 54.00°N / 11.50°E off Wismar, two convoys, a UAV orbiting the Bay of Lübeck, an engagement closing head-on), four blue forces and the host's own pose, broadcast every two seconds. It lives in [`Bowire.Protocol.TacticalApi`](https://github.com/Kuestenlogik/Bowire.Protocol.TacticalApi) under `samples/Kuestenlogik.Bowire.Protocol.TacticalApi.Sample` and reuses the plugin's own generated bindings, so it needs no separate `.proto` fetch. The payload uses the `{latitudeCoordinate, longitudeCoordinate}` shape, which the detector matches out of the box, and every track carries a 2525C SIDC under `symbol.symbolIdentifier`.
 
-Run it from a `Bowire.Samples` checkout (`dotnet run --project protocols/TacticalApi.RadarSweep`), point Bowire at `http://localhost:5191`, invoke `Situation.GetSituationObjects` — you'll see three pins, one per contact. Subscribe to `Situation.SubscribeSituationObjectEvents` and the pins move in real time as the server pushes fresh snapshots.
+Run it from a checkout (`dotnet run --project samples/Kuestenlogik.Bowire.Protocol.TacticalApi.Sample`), point Bowire at `tacticalapi@http://localhost:5192` (the h2c gRPC port; `:5191` serves gRPC-Web and the sample's own embedded workbench), invoke `Situation.GetSituationObjects` — thirteen pins, one per track, each drawn as its symbol. Subscribe to `Situation.SubscribeSituationObjectEvents` and they move as the server pushes fresh snapshots; every snapshot carries all thirteen in one frame, so set *Group by* to `uuid` in the Tracks panel to tell them apart.
 
-`Bundle.Workbench` ships the `Kuestenlogik.Bowire.Protocol.TacticalApi` plugin so the gRPC method names + descriptors resolve without separate proto uploads.
+The `Kuestenlogik.Bowire.Protocol.TacticalApi` plugin is not part of `Bundle.Workbench` — install it first (`bowire plugin install Kuestenlogik.Bowire.Protocol.TacticalApi`); it carries the generated bindings, so the method names and descriptors resolve without a proto upload.
 
 ## Screenshot
 
-![Map widget — TacticalApi contacts rendered on MapLibre](../images/screenshots/map-widget-pins.png)
+![Map widget maximised over the western Baltic — the TacticalAPI sample's thirteen tracks drawn as MIL-2525C symbols: friendly ground units and a UAV over Schleswig-Holstein, three surface contacts (friend, hostile, neutral) circling off Wismar, two convoys and an engagement closing head-on](../images/screenshots/map-widget-pins.png)
 
-<!-- TODO: capture map-widget screenshot — capture against the Bowire.Samples TacticalApi.RadarSweep server (http://localhost:5191) via the gRPC-Web shim. -->
+Captured against the TacticalAPI sample (`Bowire.Protocol.TacticalApi/samples`, `Situation.SubscribeSituationObjectEvents`) with the ESRI satellite basemap and the map pane maximised. Every pin is a milsymbol sprite; the surface contacts without a function id show the bare frame — circle, diamond, square — which is what the standard draws for them.
 
 ## Edge cases
 
