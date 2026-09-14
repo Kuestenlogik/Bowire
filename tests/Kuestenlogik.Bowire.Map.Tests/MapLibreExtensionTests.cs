@@ -62,6 +62,33 @@ public sealed class MapLibreExtensionTests
         Assert.Contains("wwwroot/maplibre/maplibre-gl.js", ext.AdditionalAssetNames);
         Assert.Contains("wwwroot/maplibre/LICENSE", ext.AdditionalAssetNames);
     }
+
+    [Fact]
+    public void MilSymbol_Js_And_License_Listed_As_Additional_Assets()
+    {
+        // The symbol renderer rides next to MapLibre: the bundle fetches
+        // it lazily by leaf name, and the asset endpoint resolves by
+        // leaf — so the MIT licence file cannot be called LICENSE, that
+        // name already belongs to MapLibre's.
+        var ext = new MapLibreExtension();
+        Assert.Contains("wwwroot/milsymbol/milsymbol.js", ext.AdditionalAssetNames);
+        Assert.Contains("wwwroot/milsymbol/milsymbol.LICENSE", ext.AdditionalAssetNames);
+        var leaves = ext.AdditionalAssetNames.Select(Path.GetFileName).ToList();
+        Assert.Equal(leaves.Count, leaves.Distinct(StringComparer.Ordinal).Count());
+    }
+
+    [Fact]
+    public void MilSymbol_Assets_Are_Embedded()
+    {
+        var asm = typeof(MapLibreExtension).Assembly;
+        var ext = new MapLibreExtension();
+        foreach (var name in new[] { "wwwroot/milsymbol/milsymbol.js", "wwwroot/milsymbol/milsymbol.LICENSE" })
+        {
+            using var stream = EmbeddedExtensionAsset.OpenRead(asm, ext, name);
+            Assert.NotNull(stream);
+            Assert.True(stream!.Length > 0, name);
+        }
+    }
 }
 
 /// <summary>

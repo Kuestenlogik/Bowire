@@ -77,11 +77,15 @@ public sealed class MapLibreExtension : IBowireUiExtension
     /// first time a map widget is mounted, so the cost of the 800 KB
     /// renderer doesn't fall on every Bowire page load. The
     /// <c>LICENSE</c> file ships next to it to satisfy the BSD-3-Clause
-    /// terms.
+    /// terms. milsymbol (MIT) rides the same way: fetched on first
+    /// mount, it draws each pin's MIL-STD-2525 / APP-6 symbol from its
+    /// SIDC; without it the widget falls back to four affinity shapes.
     /// </summary>
     public IReadOnlyList<string> AdditionalAssetNames { get; } =
     [
         "wwwroot/maplibre/maplibre-gl.js",
         "wwwroot/maplibre/LICENSE",
+        "wwwroot/milsymbol/milsymbol.js",
+        "wwwroot/milsymbol/milsymbol.LICENSE",
     ];
 }

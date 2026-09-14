@@ -61,6 +61,19 @@ A right-side gutter hint surfaces the semantic kind on hover (e.g. `wgs84 coordi
 
 The gestures were stabilised after operator review in v2.1 to feel like a real map application, not a JSON viewer that happens to draw pins.
 
+## Tactical symbols (MIL-STD-2525)
+
+A pin whose entity carries a symbol identification code is drawn as that symbol. The widget looks for the SIDC next to the coordinate — walking up from the `{lat, lon}` node to the nearest ancestor whose subtree holds one, so a frame with many entities gives every pin its own code — and hands it to [milsymbol](https://github.com/spatialillusions/milsymbol) (MIT, vendored next to MapLibre and served from the same extension endpoint; no CDN). Both string forms are read:
+
+| Standard | Shape | Example |
+|---|---|---|
+| MIL-STD-2525C / APP-6B | 15 letters, affiliation at position 2 | `SFSPCLCC-------` (friend, surface, cruiser) |
+| MIL-STD-2525D / APP-6D | 20 digits (30 with country code), affiliation at position 4 | `10031000001211000000` (friend, land unit) |
+
+milsymbol tells the two apart from the string alone, so no translation happens in the widget. One sprite is rendered per distinct code and reused by every pin that carries it.
+
+Until the library has loaded — or if it could not be — the pin shows a plain affiliation shape instead: cyan rectangle for friend (incl. assumed friend, exercise friend), red diamond for hostile (incl. suspect), green square for neutral, yellow circle for unknown / pending. The same shapes serve as the fallback for a code milsymbol cannot draw. A pin without any code (GPS trace, AIS without symbol, weather buoy) keeps the yellow circle.
+
 ## Basemap
 
 The widget bundles MapLibre GL JS + a default basemap. The default is OpenStreetMap raster tiles via the `osm` key; the basemap can be swapped:
@@ -137,7 +150,7 @@ window.BowireExtensions.register({
 });
 ```
 
-The .NET side is a thin shell — `PackageType=BowireExtension`, an embedded `wwwroot/js/widgets/map.js`, a discovery descriptor. Bowire serves the bundle from `/api/ui/extensions/map/bundle.js` and the workbench loads it on first use.
+The .NET side is a thin shell — `PackageType=BowireExtension`, an embedded `wwwroot/js/widgets/map.js` plus the vendored MapLibre GL JS (BSD-3-Clause) and milsymbol (MIT) bundles with their licence files, a discovery descriptor. Bowire serves the bundle from `/api/ui/extensions/map/bundle.js` and the workbench loads it on first use.
 
 See [Extensions](extensions.md) for the full extension-author contract and [frame-semantics-framework](../architecture/frame-semantics-framework.md) for the detector → annotation → viewer pipeline.
 

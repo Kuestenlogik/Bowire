@@ -96,6 +96,45 @@
     }
 
     /**
+     * milsymbol — MIL-STD-2525 / APP-6 symbol renderer (MIT), vendored
+     * under wwwroot/milsymbol/ and served by the same extension-asset
+     * endpoint as MapLibre. Shared across every map widget in the
+     * session the same way `window.maplibregl` is; the UMD bundle
+     * publishes itself as `window.ms`.
+     *
+     * Loaded alongside MapLibre rather than before it, and never
+     * awaited by the mount: a pin does not need the symbol library to
+     * be a pin. Until the script lands — or forever, if it does not —
+     * the symbol layer paints the four built-in affinity shapes, and
+     * the first frame after the load repaints with the standard's own
+     * symbols.
+     */
+    var bowireMilSymbolLoading = null;
+
+    function bowireLoadMilSymbol() {
+        if (window.ms && typeof window.ms.Symbol === 'function') {
+            return Promise.resolve(window.ms);
+        }
+        if (bowireMilSymbolLoading) return bowireMilSymbolLoading;
+
+        bowireMilSymbolLoading = new Promise(function (resolve, reject) {
+            var script = document.createElement('script');
+            script.src = bowireMapBundleUrl + '/milsymbol.js';
+            script.async = true;
+            script.onload = function () {
+                if (window.ms && typeof window.ms.Symbol === 'function') resolve(window.ms);
+                else reject(new Error('milsymbol loaded but window.ms is undefined'));
+            };
+            script.onerror = function () {
+                bowireMilSymbolLoading = null;
+                reject(new Error('Failed to load milsymbol from ' + script.src));
+            };
+            document.head.appendChild(script);
+        });
+        return bowireMilSymbolLoading;
+    }
+
+    /**
      * Blank-background style for the offline-default case. MapLibre still
      * renders pins on top of a solid background even when no tile source
      * is configured — exactly the behaviour the ADR's "Offline mode"
@@ -344,14 +383,19 @@
      * resolves once the image has been registered (or rejects if the
      * SVG fails to decode).
      */
-    function bowireRegisterMapIcon(map, name, svg) {
+    function bowireRegisterMapIcon(map, name, svg, opts) {
+        var width = (opts && opts.width) || 32;
+        var height = (opts && opts.height) || 32;
+        // Sprites rendered at 2x declare it, so MapLibre draws them at
+        // their intended size and hi-DPI screens get the extra pixels.
+        var addOpts = (opts && opts.pixelRatio) ? { pixelRatio: opts.pixelRatio } : undefined;
         return new Promise(function (resolve, reject) {
             // Bail early if the image is already present (re-mount path).
             if (map.hasImage(name)) { resolve(); return; }
-            var img = new Image(32, 32);
+            var img = new Image(width, height);
             img.onload = function () {
                 try {
-                    if (!map.hasImage(name)) map.addImage(name, img);
+                    if (!map.hasImage(name)) map.addImage(name, img, addOpts);
                     resolve();
                 } catch (e) { reject(e); }
             };
@@ -373,8 +417,31 @@
      * the 14-letter set listed in MIL-STD-2525C Appendix A; the regex
      * accepts both the live affinities (F/H/N/U/...) and the wildcard
      * `-`/`*` fillers seeded examples and real coalition feeds use.
+     *
+     * Position 4 is the status — present / anticipated, plus the
+     * 2525C additions (fully capable, damaged, destroyed, full to
+     * capacity) — and positions 5–10 are the function id, which can be
+     * any letter. An earlier form of this pattern checked the status
+     * set one position late, against the function id's first letter:
+     * `SFGPU…` passed by luck, a cruiser (`SFSPCLCC…`) did not, and a
+     * pin whose own code fell through picked up the nearest
+     * neighbour's colour from the scan of the whole frame.
      */
-    var BOWIRE_SIDC_RE = /^[A-Z][PUAFNSHGWMDLJK\-\*][A-Z\-\*][A-Z\-\*][PAUFM\-\*][A-Z\-\*]{10}$/;
+    var BOWIRE_SIDC_RE = /^[A-Z][PUAFNSHGWMDLJK\-\*][A-Z\-\*][PACDXF\-\*][A-Z\-\*]{11}$/;
+
+    /**
+     * MIL-2525D / APP-6D SIDC pattern. All digits: 20 for the base
+     * code, 30 with the optional country-code and originator block
+     * appended. Positions 1–2 are the version (`10` for 2525D, `11`
+     * for 2525E / APP-6E), which is what tells it apart from any other
+     * twenty-digit number that happens to sit next to a coordinate.
+     */
+    var BOWIRE_SIDC_D_RE = /^1[0-9]\d{18}(\d{10})?$/;
+
+    /** Either standard's SIDC shape. */
+    function bowireIsSidc(value) {
+        return BOWIRE_SIDC_RE.test(value) || BOWIRE_SIDC_D_RE.test(value);
+    }
 
     /**
      * Recursive depth-first scan for the first string in `value` that
@@ -388,7 +455,7 @@
     function bowireFindSidcInValue(value) {
         if (value == null) return null;
         if (typeof value === 'string') {
-            return BOWIRE_SIDC_RE.test(value) ? value : null;
+            return bowireIsSidc(value) ? value : null;
         }
         if (Array.isArray(value)) {
             for (var i = 0; i < value.length; i++) {
@@ -481,14 +548,67 @@
      *   N (Neutral), D (ExerciseNeutral)                       → neutral
      *   P (Pending), U (Unknown), G (ExercisePending),
      *   J (Joker), K (Faker), other/blank                      → unknown
+     *
+     * A 2525D code carries the same identity as one digit at
+     * position 4 (context — reality / exercise / simulation — sits
+     * at position 3 and does not change the colour):
+     *
+     *   2 (AssumedFriend), 3 (Friend)                          → friend
+     *   5 (Suspect), 6 (Hostile)                               → hostile
+     *   4 (Neutral)                                            → neutral
+     *   0 (Pending), 1 (Unknown), other                        → unknown
      */
     function bowireSidcAffinity(sidc) {
         if (!sidc || sidc.length < 2) return 'unknown';
+        if (BOWIRE_SIDC_D_RE.test(sidc)) {
+            var d = sidc.charAt(3);
+            if (d === '2' || d === '3') return 'friend';
+            if (d === '5' || d === '6') return 'hostile';
+            if (d === '4') return 'neutral';
+            return 'unknown';
+        }
         var c = sidc.charAt(1).toUpperCase();
         if (c === 'F' || c === 'A' || c === 'M' || c === 'W') return 'friend';
         if (c === 'H' || c === 'S' || c === 'L') return 'hostile';
         if (c === 'N' || c === 'D') return 'neutral';
         return 'unknown';
+    }
+
+    /**
+     * Sprite name a pin's SIDC resolves to. The symbol layer asks for
+     * this name first and falls back to the affinity shape while it is
+     * not (or never) registered — see the `coalesce` in the layer's
+     * `icon-image`.
+     */
+    function bowireSidcIconName(sidc) {
+        return 'bowire-sidc-' + sidc;
+    }
+
+    /**
+     * Draw one SIDC with milsymbol. Returns `{ svg, width, height }` in
+     * CSS pixels at 2x, or null when the library cannot make sense of
+     * the code (milsymbol reports that through `isValid`, not by
+     * throwing — but a throw is treated the same way).
+     *
+     * milsymbol takes both standards from the string alone — fifteen
+     * letters are 2525C, twenty digits are 2525D — so the widget does
+     * not translate between them. `size` is the L-frame height; 40 at
+     * pixelRatio 2 paints at the same 20 px the affinity shapes use.
+     */
+    function bowireRenderSidcSymbol(ms, sidc) {
+        try {
+            var sym = new ms.Symbol(sidc, { size: 40 });
+            if (typeof sym.isValid === 'function' && !sym.isValid()) return null;
+            var size = sym.getSize();
+            if (!size || !(size.width > 0) || !(size.height > 0)) return null;
+            return {
+                svg: sym.asSVG(),
+                width: Math.ceil(size.width),
+                height: Math.ceil(size.height)
+            };
+        } catch (e) {
+            return null;
+        }
     }
 
     /**
@@ -532,6 +652,24 @@
             return function () { if (notice.parentNode) notice.parentNode.removeChild(notice); };
         }
         if (disposed) return function () {};
+
+        // Symbol sprites, one per distinct SIDC seen on this map.
+        // 'waiting' until milsymbol has loaded, 'pending' while the SVG
+        // decodes, 'ok' once MapLibre has it, 'failed' when milsymbol
+        // or the decode rejected the code — the pin then keeps its
+        // affinity shape and the code is not retried on every frame.
+        var sidcIcons = new Map();
+        var milSymbol = null;
+        bowireLoadMilSymbol().then(function (ms) {
+            if (disposed) return;
+            milSymbol = ms;
+            // Pins that arrived before the library did.
+            sidcIcons.forEach(function (state, sidc) {
+                if (state === 'waiting') ensureSidcIcon(sidc);
+            });
+        }, function (e) {
+            console.warn('[bowire-map] milsymbol unavailable, pins keep the affinity shapes:', e);
+        });
 
         var basemap = bowireMapBasemapSpec();
         var style;
@@ -775,12 +913,22 @@
             type: 'symbol',
             source: 'bowire-points',
             layout: {
+                // The pin's own MIL-2525 symbol when its sprite is
+                // registered, the affinity shape until then. `image`
+                // resolves against the images the style has right now,
+                // so a sprite that lands later (milsymbol still loading,
+                // SVG still decoding) is picked up by the next setData
+                // without a layer rebuild.
                 'icon-image': [
-                    'match', ['get', 'affinity'],
-                    'friend', 'bowire-affinity-friend',
-                    'hostile', 'bowire-affinity-hostile',
-                    'neutral', 'bowire-affinity-neutral',
-                    /* default */ 'bowire-affinity-unknown'
+                    'coalesce',
+                    ['image', ['concat', 'bowire-sidc-', ['get', 'sidc']]],
+                    ['image', [
+                        'match', ['get', 'affinity'],
+                        'friend', 'bowire-affinity-friend',
+                        'hostile', 'bowire-affinity-hostile',
+                        'neutral', 'bowire-affinity-neutral',
+                        /* default */ 'bowire-affinity-unknown'
+                    ]]
                 ],
                 'icon-size': [
                     'match', ['get', 'selected'],
@@ -938,6 +1086,48 @@
             if (e && e.originalEvent) userMovedCamera = true;
         });
 
+        /**
+         * Make sure the sprite for `sidc` exists, or is on its way.
+         * Called for every pin that carries a code; the Map makes the
+         * repeat calls free. The repaint after registration is what
+         * turns the affinity shape into the symbol for pins already on
+         * the map: `coalesce` skipped the sprite while it was missing,
+         * so no tile ever asked for it, and MapLibre only re-lays-out
+         * tiles for images they asked for. The setData is the ask.
+         */
+        function ensureSidcIcon(sidc) {
+            if (!sidc) return;
+            var state = sidcIcons.get(sidc);
+            if (state && state !== 'waiting') return;
+            if (!milSymbol) { sidcIcons.set(sidc, 'waiting'); return; }
+            var name = bowireSidcIconName(sidc);
+            if (map.hasImage(name)) { sidcIcons.set(sidc, 'ok'); return; }
+            var drawn = bowireRenderSidcSymbol(milSymbol, sidc);
+            if (!drawn) { sidcIcons.set(sidc, 'failed'); return; }
+            sidcIcons.set(sidc, 'pending');
+            bowireRegisterMapIcon(map, name, drawn.svg, {
+                width: drawn.width, height: drawn.height, pixelRatio: 2
+            }).then(function () {
+                if (disposed) return;
+                sidcIcons.set(sidc, 'ok');
+                renderPoints();
+            }, function (e) {
+                sidcIcons.set(sidc, 'failed');
+                console.warn('[bowire-map] could not register symbol for ' + sidc + ':', e);
+            });
+        }
+
+        // A style swap drops every registered image; MapLibre asks for
+        // the ones its layers still reference, and the sprite registry
+        // answers by drawing them again.
+        map.on('styleimagemissing', function (e) {
+            var id = e && e.id;
+            if (typeof id !== 'string' || id.indexOf('bowire-sidc-') !== 0) return;
+            var sidc = id.slice('bowire-sidc-'.length);
+            sidcIcons.delete(sidc);
+            ensureSidcIcon(sidc);
+        });
+
         function addPin(frame) {
             // Aggregated mode (Phase 3.2+ multi-pairing fold) returns
             // every (lat, lon) the frame carries, single-pairing mode
@@ -976,6 +1166,7 @@
                       parentPath: coord.parentPath }, coord);
                 track.color = bowireMapDiscriminatorColor(track.key, paletteStore);
                 noteTrackSeen(track);
+                ensureSidcIcon(coord.sidc);
                 trackSourceByPin.set(pinSeq + 1, coord);
                 pointsSource.features.push({
                     type: 'Feature',
@@ -2571,6 +2762,14 @@
             trajectoryGeoJson: function () { return linesSource; },
             setTrackIdPath: setTrackIdPath,
             trackIdPath: function () { return trackIdPath; },
+            // Which SIDCs this map has drawn with milsymbol, and which
+            // it could not — the only way to ask a mounted widget
+            // without reaching into MapLibre's image manager.
+            symbolIcons: function () {
+                var out = {};
+                sidcIcons.forEach(function (state, sidc) { out[sidc] = state; });
+                return out;
+            },
             trackCandidates: function () { return trackCandidates.slice(); },
             tracks: function () {
                 var out = [];
