@@ -203,7 +203,7 @@
         // renders, and the new node's onInput listener may not
         // have fired yet for the last keystroke. Reading the DOM
         // directly ensures we never miss user input.
-        var liveInputs = document.querySelectorAll('.bowire-form-input');
+        var liveInputs = surfaceEl(paneForState(S)).querySelectorAll('.bowire-form-input');
         for (var li = 0; li < liveInputs.length; li++) {
             var inp = liveInputs[li];
             var fieldKey = inp.dataset && inp.dataset.fieldKey;

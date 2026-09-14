@@ -180,7 +180,7 @@
             try { syncFormToJson(); } catch {}
             bodyTemplate = S.requestMessages[0] || '{}';
         } else {
-            var editor = document.querySelector('.bowire-editor') || document.querySelector('.bowire-message-editor');
+            var editor = focusedSurfaceEl().querySelector('.bowire-editor') || focusedSurfaceEl().querySelector('.bowire-message-editor');
             bodyTemplate = editor ? editor.value || '{}' : '{}';
         }
         return {

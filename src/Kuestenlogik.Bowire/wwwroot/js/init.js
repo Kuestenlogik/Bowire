@@ -379,30 +379,42 @@
                 closeTab(activeTabId);
                 return;
             }
-            // Ctrl+Tab / Ctrl+Shift+Tab — cycle tabs.
+            // Ctrl+Tab / Ctrl+Shift+Tab — cycle the tabs of the focused
+            // pane (#250: the other pane's strip is its own ring).
+            var stripTabs = paneTabs(focusedPane());
             if (e.ctrlKey && !e.metaKey && !e.altKey && e.key === 'Tab'
-                && requestTabs.length >= 2) {
+                && stripTabs.length >= 2) {
                 e.preventDefault();
                 var idx = -1;
-                for (var ti = 0; ti < requestTabs.length; ti++) {
-                    if (requestTabs[ti].id === activeTabId) { idx = ti; break; }
+                for (var ti = 0; ti < stripTabs.length; ti++) {
+                    if (stripTabs[ti].id === activeTabId) { idx = ti; break; }
                 }
                 if (idx < 0) idx = 0;
                 var nextIdx = e.shiftKey
-                    ? (idx - 1 + requestTabs.length) % requestTabs.length
-                    : (idx + 1) % requestTabs.length;
-                switchTab(requestTabs[nextIdx].id);
+                    ? (idx - 1 + stripTabs.length) % stripTabs.length
+                    : (idx + 1) % stripTabs.length;
+                switchTab(stripTabs[nextIdx].id);
                 return;
             }
-            // Ctrl+1..9 — jump to the Nth tab.
+            // Ctrl+1..9 — jump to the Nth tab of the focused pane.
             if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey
                 && /^[1-9]$/.test(e.key) && !inText) {
                 var pos = parseInt(e.key, 10) - 1;
-                if (pos < requestTabs.length) {
+                if (pos < stripTabs.length) {
                     e.preventDefault();
-                    switchTab(requestTabs[pos].id);
+                    switchTab(stripTabs[pos].id);
                     return;
                 }
+            }
+            // #250 — Ctrl/Cmd+\ splits the active tab to the right (or
+            // moves it to the other pane when there already are two).
+            // Ctrl/Cmd+Alt+\ is the within-tab split cycle; this one has
+            // no Alt.
+            if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey
+                && e.key === '\\' && activeTabId !== null) {
+                e.preventDefault();
+                splitTabRight(activeTabId);
+                return;
             }
 
             // #289 / #293 — Ctrl/Cmd+L: open the Compose rail with a

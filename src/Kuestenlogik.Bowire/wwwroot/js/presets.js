@@ -304,13 +304,13 @@
         // this DOM patch that round-trip resurrects the user's
         // stale input and the preset apply has no visible effect.
         try {
-            var multiEditors = document.querySelectorAll('.bowire-message-editor');
+            var multiEditors = focusedSurfaceEl().querySelectorAll('.bowire-message-editor');
             if (multiEditors.length > 0) {
                 for (var mi = 0; mi < multiEditors.length; mi++) {
                     multiEditors[mi].value = S.requestMessages[mi] || '';
                 }
             } else {
-                var singleEd = document.querySelector('.bowire-editor');
+                var singleEd = focusedSurfaceEl().querySelector('.bowire-editor');
                 if (singleEd) singleEd.value = S.requestMessages[0] || '';
             }
         } catch { /* editor not mounted yet — render() will seed from S.requestMessages */ }
@@ -405,7 +405,7 @@
         // the live input.value property. The first frame after
         // render() in which all inputs equal their formValues is
         // the frame the form is visibly settled.
-        var formInputs = document.querySelectorAll('.bowire-form-input[data-field-key]');
+        var formInputs = focusedSurfaceEl().querySelectorAll('.bowire-form-input[data-field-key]');
         if (formInputs.length > 0 && typeof S.formValues !== 'undefined') {
             var checkedAny = false;
             for (var i = 0; i < formInputs.length; i++) {
@@ -436,7 +436,7 @@
         }
 
         // JSON / raw body sub-tab.
-        var editor = document.querySelector('.bowire-editor');
+        var editor = focusedSurfaceEl().querySelector('.bowire-editor');
         if (editor) {
             if (expectedBody == null) return true;
             if (editor.value === expectedBody) return true;
@@ -447,7 +447,7 @@
         }
 
         // Streaming (multi-message).
-        var multi = document.querySelectorAll('.bowire-message-editor');
+        var multi = focusedSurfaceEl().querySelectorAll('.bowire-message-editor');
         if (multi.length > 0) {
             if (expectedBody == null) return true;
             if (multi[0].value === expectedBody) return true;

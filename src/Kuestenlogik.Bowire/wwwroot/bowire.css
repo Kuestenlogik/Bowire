@@ -6563,6 +6563,84 @@ lives at the right of the
 }
 .bowire-request-tab-new svg { width: 14px; height: 14px; }
 
+/* #250 — "Split right" on the strip. Same footprint as the "+" so the
+   two read as one group of strip actions; solid rather than dashed
+   because it acts on the tab that is there, not on one to come. */
+.bowire-request-tab-split {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    margin: 4px 0 4px 4px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--bowire-radius-sm);
+    color: var(--bowire-text-tertiary);
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: color var(--bowire-transition), border-color var(--bowire-transition), background var(--bowire-transition);
+}
+.bowire-request-tab-split:hover:not(:disabled) {
+    color: var(--bowire-text);
+    border-color: var(--bowire-border);
+    background: var(--bowire-surface-hover);
+}
+.bowire-request-tab-split:disabled { opacity: 0.35; cursor: default; }
+.bowire-request-tab-split svg { width: 14px; height: 14px; }
+
+/* #250 — two panes side by side. The row fills the main area; each pane
+   is a column that lays out exactly like the single-pane main (strip,
+   header, content, action bar), its width a flex-basis percentage the
+   divider drags and setPaneWidth persists. The focused pane carries a
+   hairline in the accent along its strip so the operator can tell which
+   one the sidebar and the shortcuts address. */
+.bowire-panes {
+    flex: 1;
+    display: flex;
+    flex-direction: row;
+    min-height: 0;
+    min-width: 0;
+    overflow: hidden;
+}
+.bowire-tab-pane {
+    flex: 1 1 50%;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+}
+.bowire-tab-pane > .bowire-request-tabs {
+    box-shadow: inset 0 2px 0 transparent;
+}
+.bowire-tab-pane.focused > .bowire-request-tabs {
+    box-shadow: inset 0 2px 0 var(--bowire-accent);
+}
+.bowire-panes-divider {
+    flex: 0 0 1px;
+    align-self: stretch;
+    background: var(--bowire-border-subtle);
+    cursor: col-resize;
+    position: relative;
+    z-index: 3;
+}
+/* The hit area is wider than the hairline, like the pane divider. */
+.bowire-panes-divider::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -4px;
+    right: -4px;
+}
+.bowire-panes-divider:hover,
+body.bowire-panes-resizing .bowire-panes-divider {
+    background: var(--bowire-accent);
+}
+body.bowire-panes-resizing { cursor: col-resize; user-select: none; }
+body.bowire-panes-resizing iframe { pointer-events: none; }
+
 /* Tab proto chip — uses .bowire-method-badge for full pill shape +
    HTTP verb palette (same chip family as the tree). Only tweak the
    tab-specific sizing here so the verb chip fits inside the tab

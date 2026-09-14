@@ -1268,7 +1268,12 @@
     /// back to a render; if it belongs to a tab in the background, the
     /// data is where it needs to be and the DOM has nothing to show yet.
     function streamFrameArrived(S) {
-        if (S !== activeState()) return;
+        // #250 — on screen means "the active tab of some pane", not only
+        // the tab in front: a stream in the other pane draws too.
+        var tab = tabForState(S);
+        var pane = tab ? paneById(tab.paneId) : null;
+        var shown = pane ? paneActiveTab(pane) === tab : S === activeState();
+        if (!shown) return;
         if (!window.bowireAppendStreamMessage || !window.bowireAppendStreamMessage(S)) {
             render();
         }
@@ -1276,7 +1281,9 @@
 
     // ---- Channel Operations (Duplex / Client Streaming) ----
 
-    function isChannelMethod() {
-        return selectedMethod && (selectedMethod.methodType === 'Duplex' || selectedMethod.methodType === 'ClientStreaming');
+    /// `m` defaults to the method in front; a pane renderer passes its own.
+    function isChannelMethod(m) {
+        m = m || selectedMethod;
+        return m && (m.methodType === 'Duplex' || m.methodType === 'ClientStreaming');
     }
 

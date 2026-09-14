@@ -125,8 +125,9 @@
     }
 
     // ---- WebSocket helpers ----
-    function isWebSocketMethod() {
-        return selectedService && selectedService.source === 'websocket';
+    function isWebSocketMethod(service) {
+        service = service || selectedService;
+        return service && service.source === 'websocket';
     }
 
     // Inspect a stream message envelope and return its frame type ('text',
@@ -378,7 +379,7 @@
         S.statusInfo = null;
 
         // Collect metadata from the metadata tab + apply auth helper from active env
-        var metadataRows = $$('.bowire-metadata-row');
+        var metadataRows = $$('.bowire-metadata-row', focusedSurfaceEl());
         // #208 Phase 5 — prefetch async vars referenced in connect metadata
         // (e.g. Authorization: Bearer {{keyring.api/token}}) before the
         // substitution pass, mirroring the unary path in execute.js.
@@ -622,7 +623,7 @@ toast(t(n === 1 ? 'rb.validationErrorsOne' : 'rb.validationErrorsMany',
             syncFormToJson(S);
             message = S.requestMessages[0] || '{}';
         } else {
-            var editor = $('.bowire-editor') || $('.bowire-message-editor');
+            var editor = $('.bowire-editor', focusedSurfaceEl()) || $('.bowire-message-editor', focusedSurfaceEl());
             message = editor ? editor.value || '{}' : '{}';
         }
         // #208 Phase 5 — per-frame resolution for streaming sends. The

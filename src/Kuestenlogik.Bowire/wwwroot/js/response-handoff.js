@@ -106,7 +106,7 @@
         } catch { /* schema-form not loaded */ }
         var body = (Array.isArray(S.requestMessages) && S.requestMessages[0]) || '{}';
         var meta = {};
-        var metaRows = document.querySelectorAll('.bowire-metadata-row');
+        var metaRows = focusedSurfaceEl().querySelectorAll('.bowire-metadata-row');
         for (var mi = 0; mi < metaRows.length; mi++) {
             var inputs = metaRows[mi].querySelectorAll('.bowire-metadata-input');
             if (inputs.length === 2 && inputs[0].value.trim()) {

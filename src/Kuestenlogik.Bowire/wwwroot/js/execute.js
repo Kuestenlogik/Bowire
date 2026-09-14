@@ -58,12 +58,12 @@
             formValidationErrors = {};
             syncFormToJson(S);
         } else {
-            const editors = $$('.bowire-message-editor');
+            const editors = $$('.bowire-message-editor', focusedSurfaceEl());
             if (editors.length > 0) {
                 S.requestMessages = editors.map(function (e) { return e.value || '{}'; });
             } else {
                 // Fallback: single editor mode
-                const editor = $('.bowire-editor');
+                const editor = $('.bowire-editor', focusedSurfaceEl());
                 S.requestMessages = [editor ? editor.value : '{}'];
             }
         }
@@ -77,7 +77,7 @@
                 var aiTemplates = S.requestMessages.slice();
                 // metadata values + URL also pass through substituteVars,
                 // so include them in the scan.
-                var mdRowsAi = $$('.bowire-metadata-row');
+                var mdRowsAi = $$('.bowire-metadata-row', focusedSurfaceEl());
                 for (var mdi = 0; mdi < mdRowsAi.length; mdi++) {
                     var mdInputs = mdRowsAi[mdi].querySelectorAll('.bowire-metadata-input');
                     if (mdInputs.length === 2 && mdInputs[1].value) {
@@ -97,7 +97,7 @@
         if (typeof window.bowirePrefetchKeyringVars === 'function') {
             try {
                 var keyringTemplates = S.requestMessages.slice();
-                var mdRowsKr = $$('.bowire-metadata-row');
+                var mdRowsKr = $$('.bowire-metadata-row', focusedSurfaceEl());
                 for (var kri = 0; kri < mdRowsKr.length; kri++) {
                     var krInputs = mdRowsKr[kri].querySelectorAll('.bowire-metadata-input');
                     if (krInputs.length === 2 && krInputs[1].value) {
@@ -126,7 +126,7 @@
         }
 
         // Collect metadata (substitute values, leave keys literal)
-        const metadataRows = $$('.bowire-metadata-row');
+        const metadataRows = $$('.bowire-metadata-row', focusedSurfaceEl());
         let metadata = {};
         for (const row of metadataRows) {
             const inputs = row.querySelectorAll('.bowire-metadata-input');

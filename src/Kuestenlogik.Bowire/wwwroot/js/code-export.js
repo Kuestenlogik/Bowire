@@ -76,7 +76,7 @@
                 bodyJson = (S.requestMessages && S.requestMessages[0]) || '{}';
             }
         } else {
-            var ed = $('.bowire-editor') || $('.bowire-message-editor');
+            var ed = $('.bowire-editor', focusedSurfaceEl()) || $('.bowire-message-editor', focusedSurfaceEl());
             bodyJson = ed ? ed.value || '{}' : '{}';
         }
         // #538 — keep the UNSUBSTITUTED body alongside the substituted one.
@@ -90,7 +90,7 @@
 
         var meta = {};
         var metaRaw = {};
-        var rows = $$('.bowire-metadata-row');
+        var rows = $$('.bowire-metadata-row', focusedSurfaceEl());
         for (var i = 0; i < rows.length; i++) {
             var inputs = rows[i].querySelectorAll('.bowire-metadata-input');
             if (inputs.length === 2 && inputs[0].value.trim()) {

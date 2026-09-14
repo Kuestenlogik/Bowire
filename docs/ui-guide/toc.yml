@@ -6,6 +6,8 @@
   href: rail-strip.md
 - name: Sidebar
   href: sidebar.md
+- name: Tabs and Panes
+  href: tabs-and-panes.md
 - name: Request Pane
   href: request-pane.md
 - name: Response Pane

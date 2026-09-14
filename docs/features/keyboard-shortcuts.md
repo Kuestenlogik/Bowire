@@ -30,6 +30,18 @@ Press `Ctrl+Enter` from anywhere in the request editor to execute the current re
 
 Press `r` to replay the last request with the same parameters. This is useful when iterating on a service that you are actively developing.
 
+## Tabs and Panes
+
+| Shortcut | Action |
+|----------|--------|
+| `Ctrl/Cmd+W` | Close the active tab |
+| `Ctrl+Tab` / `Ctrl+Shift+Tab` | Next / previous tab in the focused pane |
+| `Ctrl/Cmd+1`…`9` | Jump to the Nth tab of the focused pane |
+| `Ctrl/Cmd+\` | Split the active tab to the right, or move it to the other pane |
+| `Ctrl/Cmd+Alt+\` | Cycle the request/response split of the active tab |
+
+See [Tabs and panes](../ui-guide/tabs-and-panes.md).
+
 ## Theme Toggle
 
 Press `t` to switch between dark and light themes. The preference is saved in localStorage and persists across sessions.

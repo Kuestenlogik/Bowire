@@ -491,8 +491,11 @@
         return wrap;
     }
 
-    function renderActionBar() {
-        var S = activeState();
+    function renderActionBar(tab) {
+        var S = tabState(tab);
+        var method = tab ? tab.method : null;
+        var svc = tab ? tab.service : null;
+        var pid = paneIdFn(tab ? paneById(tab.paneId) : null);
         // ID encodes the method identity + channel-mode so morphdom fully
         // replaces the bar when switching between channel and standard
         // methods instead of reusing stale DOM with wrong closures.
@@ -501,22 +504,22 @@
         // not — without it the old Subscribe button's closure handler
         // would survive across the change to "Stop".
         var _subStateKey = '';
-        if (selectedService && selectedMethod && selectedMethod.serverStreaming) {
-            var _entry = findSubscription(selectedService.name, selectedMethod.name);
+        if (svc && method && method.serverStreaming) {
+            var _entry = findSubscription(svc.name, method.name);
             _subStateKey = '-' + (_entry && _entry.connected ? 'live' : 'idle');
         }
-        var actionBarKey = (selectedService ? selectedService.name : '') + '-'
-            + (selectedMethod ? selectedMethod.name : '') + '-'
-            + (isChannelMethod() ? 'channel' : 'standard')
+        var actionBarKey = (svc ? svc.name : '') + '-'
+            + (method ? method.name : '') + '-'
+            + (isChannelMethod(method) ? 'channel' : 'standard')
             + _subStateKey;
-        const bar = el('div', { id: 'bowire-action-bar-' + actionBarKey, className: 'bowire-action-bar' });
+        const bar = el('div', { id: pid('bowire-action-bar-') + actionBarKey, className: 'bowire-action-bar' });
 
-        if (isChannelMethod()) {
+        if (isChannelMethod(method)) {
             // ---- Channel Action Bar (Duplex / Client Streaming) ----
             if (!S.duplexConnected) {
                 // Not connected: show Connect button
                 var connectBtn = el('button', {
-                    id: 'bowire-channel-connect-btn',
+                    id: pid('bowire-channel-connect-btn'),
                     className: 'bowire-execute-btn bowire-connect-btn',
                     title: t('channel.connectTitle'),
                     onClick: channelConnect
@@ -528,7 +531,7 @@
             } else {
                 // Connected: show Send button + Close/Disconnect
                 var sendBtn = el('button', {
-                    id: 'bowire-channel-send-btn',
+                    id: pid('bowire-channel-send-btn'),
                     className: 'bowire-execute-btn bowire-send-btn',
                     title: t('channel.sendTitle'),
                     onClick: channelSend
@@ -538,10 +541,10 @@
                 );
                 bar.appendChild(sendBtn);
 
-                if (selectedMethod.methodType === 'ClientStreaming') {
+                if (method.methodType === 'ClientStreaming') {
                     // Client streaming: "Close & Get Response" button
                     var closeBtn = el('button', {
-                        id: 'bowire-channel-close-btn',
+                        id: pid('bowire-channel-close-btn'),
                         className: 'bowire-execute-btn bowire-disconnect-btn',
                         onClick: channelClose,
                         style: 'margin-left: 8px'
@@ -553,7 +556,7 @@
                 } else {
                     // Duplex: "Disconnect" button
                     var disconnectBtn = el('button', {
-                        id: 'bowire-channel-disconnect-btn',
+                        id: pid('bowire-channel-disconnect-btn'),
                         className: 'bowire-execute-btn bowire-disconnect-btn',
                         onClick: channelDisconnect,
                         style: 'margin-left: 8px'
@@ -619,14 +622,14 @@
         }
 
         // ---- Standard Action Bar (Unary / Server Streaming) ----
-        const isStreaming = selectedMethod && selectedMethod.serverStreaming;
+        const isStreaming = method && method.serverStreaming;
         // Server-streaming methods get subscribe-shaped labels — the
         // operator feedback was that "Execute" hid the fact that this
         // is a long-lived subscription. The registry answers "is there
         // a live SSE for THIS method?" — that decides Subscribe vs Stop,
         // not the global `isExecuting` (which lies after a tab switch).
-        var streamSub = (isStreaming && selectedService && selectedMethod)
-            ? findSubscription(selectedService.name, selectedMethod.name)
+        var streamSub = (isStreaming && svc && method)
+            ? findSubscription(svc.name, method.name)
             : null;
         var streamSubLive = !!(streamSub && streamSub.connected);
         var btnText, btnIcon, btnClass;
@@ -654,7 +657,7 @@
         // they duplicated the "+ Add to…" menu in the method
         // header and the History tab.
         const lastCall = getHistory().find(function (h) {
-            return h.service === selectedService?.name && h.method === selectedMethod?.name;
+            return h.service === svc?.name && h.method === method?.name;
         });
         const splitWrap = el('div', { className: 'bowire-split-btn-wrap bowire-action-execute-split' });
         // Subscribed → Stop short-circuits handleExecute and routes
@@ -665,13 +668,13 @@
         // button the user clicked).
         var btnOnClick = (isStreaming && streamSubLive)
             ? function () {
-                if (!selectedService || !selectedMethod) return;
-                stopSubscriptionFor(selectedService.name, selectedMethod.name);
+                if (!svc || !method) return;
+                stopSubscriptionFor(svc.name, method.name);
             }
             : handleExecute;
         const btn = el('button', {
-            id: (isStreaming && streamSubLive) ? 'bowire-action-stop-btn'
-                : (S.isExecuting && isStreaming ? 'bowire-action-stop-btn' : 'bowire-action-execute-btn'),
+            id: pid((isStreaming && streamSubLive) ? 'bowire-action-stop-btn'
+                : (S.isExecuting && isStreaming ? 'bowire-action-stop-btn' : 'bowire-action-execute-btn')),
             className: btnClass + ' bowire-split-btn-main',
             title: (isStreaming && !streamSubLive)
                 ? t('perf.subscribeTitle')
@@ -684,7 +687,7 @@
         if (S.isExecuting && !isStreaming) btn.disabled = true;
         splitWrap.appendChild(btn);
         const caret = el('button', {
-            id: 'bowire-action-execute-caret-btn',
+            id: pid('bowire-action-execute-caret-btn'),
             className: 'bowire-execute-btn bowire-split-btn-caret',
             title: t('execute.moreOptions'),
             'aria-haspopup': 'menu',
@@ -727,8 +730,8 @@
                 var presetList = (typeof loadPresets === 'function')
                     ? loadPresets('discover').filter(function (p) {
                         return p && p.config
-                            && p.config.service === selectedService.name
-                            && p.config.method === selectedMethod.name;
+                            && p.config.service === svc.name
+                            && p.config.method === method.name;
                     })
                     : [];
                 var hasPresets = presetList.length > 0;
@@ -769,7 +772,7 @@
                 // want this in my saved set" — the user chose to keep
                 // those two flows separate.
                 var canClone = typeof startNewAdHocRequest === 'function'
-                    && selectedService && selectedMethod;
+                    && svc && method;
                 menu.appendChild(el('button', {
                     type: 'button',
                     className: 'bowire-action-execute-menu-item' + (canClone ? '' : ' is-disabled'),
@@ -798,18 +801,18 @@
                         } catch { /* fall through with empty meta */ }
                         var sourceServerUrl = '';
                         try {
-                            if (selectedService && selectedService.originUrl) {
-                                sourceServerUrl = selectedService.originUrl;
+                            if (svc && svc.originUrl) {
+                                sourceServerUrl = svc.originUrl;
                             } else if (typeof serverUrls !== 'undefined' && serverUrls.length > 0) {
                                 sourceServerUrl = serverUrls[0];
                             }
                         } catch { /* ignore */ }
                         startNewAdHocRequest({
-                            protocol: selectedService.source || selectedProtocol || 'rest',
+                            protocol: svc.source || selectedProtocol || 'rest',
                             serverUrl: sourceServerUrl,
-                            service: selectedService.name,
-                            method: selectedMethod.name,
-                            methodType: selectedMethod.methodType || 'Unary',
+                            service: svc.name,
+                            method: method.name,
+                            methodType: method.methodType || 'Unary',
                             body: bodyText,
                             metadata: metaCopy
                         });
@@ -822,10 +825,10 @@
                             if (freeformRequest) {
                                 freeformRequest._lineageHint = {
                                     kind: 'cloned-from-discovered',
-                                    sourceMethod: selectedService.name + '/' + selectedMethod.name
+                                    sourceMethod: svc.name + '/' + method.name
                                 };
                                 freeformRequest._defaultSaveName = 'cloned: '
-                                    + selectedService.name + '/' + selectedMethod.name;
+                                    + svc.name + '/' + method.name;
                             }
                         } catch { /* ignore */ }
                     }
@@ -870,28 +873,28 @@
         // it as the IInlineHttpInvoker provider). When REST isn't installed,
         // we still show the HTTP verb + path as a read-only info badge so the
         // user knows the transcoding endpoint exists.
-        if (methodSupportsTranscoding(selectedMethod)) {
+        if (methodSupportsTranscoding(method)) {
             if (isHttpInvocationAvailable()) {
-                var currentMode = getTranscodingMode(selectedService.name, selectedMethod.name);
+                var currentMode = getTranscodingMode(svc.name, method.name);
                 bar.appendChild(el('div', { className: 'bowire-toggle-group', style: 'margin-left:8px' },
                     el('button', {
-                        id: 'bowire-transcoding-grpc-btn',
+                        id: pid('bowire-transcoding-grpc-btn'),
                         className: 'bowire-toggle-btn' + (currentMode === 'grpc' ? ' is-active' : ''),
                         title: t('transcoding.grpcTitle'),
                         onClick: function () {
-                            setTranscodingMode(selectedService.name, selectedMethod.name, 'grpc');
+                            setTranscodingMode(svc.name, method.name, 'grpc');
                             render();
                         },
                         textContent: 'gRPC'
                     }),
                     el('button', {
-                        id: 'bowire-transcoding-http-btn',
+                        id: pid('bowire-transcoding-http-btn'),
                         className: 'bowire-toggle-btn' + (currentMode === 'http' ? ' is-active' : ''),
                         title: t('transcoding.httpTitle', {
-                            verb: selectedMethod.httpMethod, path: selectedMethod.httpPath
+                            verb: method.httpMethod, path: method.httpPath
                         }),
                         onClick: function () {
-                            setTranscodingMode(selectedService.name, selectedMethod.name, 'http');
+                            setTranscodingMode(svc.name, method.name, 'http');
                             render();
                         },
                         textContent: 'HTTP'
@@ -903,8 +906,8 @@
                     className: 'bowire-transcoding-info',
                     title: t('transcoding.needsRest')
                 },
-                    el('span', { className: 'bowire-transcoding-info-verb', textContent: selectedMethod.httpMethod }),
-                    el('span', { className: 'bowire-transcoding-info-path', textContent: selectedMethod.httpPath })
+                    el('span', { className: 'bowire-transcoding-info-verb', textContent: method.httpMethod }),
+                    el('span', { className: 'bowire-transcoding-info-path', textContent: method.httpPath })
                 ));
             }
         }
@@ -939,8 +942,8 @@
             // "1 message") until the stream closed.
             if (S.streamMessages.length > 0 || S.statusInfo.status === 'Streaming') {
                 statusBar.appendChild(el('div', { className: 'bowire-status-item' },
-                    el('span', { className: 'bowire-stream-badge', id: 'bowire-actionbar-msg-count', textContent: String(S.streamMessages.length) }),
-                    el('span', { id: 'bowire-actionbar-msg-label', textContent: `message${S.streamMessages.length !== 1 ? 's' : ''}` })
+                    el('span', { className: 'bowire-stream-badge', id: pid('bowire-actionbar-msg-count'), textContent: String(S.streamMessages.length) }),
+                    el('span', { id: pid('bowire-actionbar-msg-label'), textContent: `message${S.streamMessages.length !== 1 ? 's' : ''}` })
                 ));
             }
         }

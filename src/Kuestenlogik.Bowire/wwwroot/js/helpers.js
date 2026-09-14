@@ -1285,6 +1285,57 @@
      * attribute, because morphdom strips attributes the fresh tree does
      * not carry.
      */
+    // #250 — the divider between two panes. Horizontal only: panes sit
+    // side by side, and the width is a percentage of the row so a window
+    // resize keeps the proportion rather than one pane's pixel width.
+    // Persisted per workspace through setPaneWidth. Wired once per
+    // divider node; the id is stable across renders, and morphdom keeps
+    // the node, so the flag on it keeps the listeners from stacking.
+    function initPanesDivider(divider) {
+        if (!divider || divider.__bowirePanesWired) return;
+        divider.__bowirePanesWired = true;
+        var row = divider.parentNode;
+        if (!row) return;
+        var dragging = false;
+        var leading = null;
+        var onMove = function (e) {
+            if (!dragging || !leading) return;
+            var rect = row.getBoundingClientRect();
+            if (rect.width <= 0) return;
+            var pct = ((e.clientX - rect.left) / rect.width) * 100;
+            pct = Math.max(PANE_MIN_WIDTH_PCT, Math.min(100 - PANE_MIN_WIDTH_PCT, pct));
+            leading.style.flexBasis = pct + '%';
+            var trailing = divider.nextElementSibling;
+            if (trailing) trailing.style.flexBasis = (100 - pct) + '%';
+            divider.__bowirePanesPct = pct;
+        };
+        var onUp = function () {
+            if (!dragging) return;
+            dragging = false;
+            document.body.classList.remove('bowire-panes-resizing');
+            document.removeEventListener('mousemove', onMove);
+            document.removeEventListener('mouseup', onUp);
+            var paneId = leading && leading.dataset ? leading.dataset.paneId : null;
+            if (paneId && typeof divider.__bowirePanesPct === 'number') setPaneWidth(paneId, divider.__bowirePanesPct);
+        };
+        divider.addEventListener('mousedown', function (e) {
+            if (e.button !== 0) return;
+            e.preventDefault();
+            e.stopPropagation();
+            leading = divider.previousElementSibling;
+            dragging = true;
+            document.body.classList.add('bowire-panes-resizing');
+            document.addEventListener('mousemove', onMove);
+            document.addEventListener('mouseup', onUp);
+        });
+        // Double-click: back to an even split.
+        divider.addEventListener('dblclick', function () {
+            var lead = divider.previousElementSibling;
+            var paneId = lead && lead.dataset ? lead.dataset.paneId : null;
+            if (paneId) { setPaneWidth(paneId, 50); render(); }
+        });
+    }
+
     function initResizer(divider, leadingPane, trailingPane) {
         if (!divider || !leadingPane || !trailingPane) return;
         // Expando property, not a dataset attribute: morphdom keeps the
@@ -2273,6 +2324,7 @@
             { keys: ['F1'], action: 'Open the Help drawer (contextual)' },
             { keys: ['Ctrl/Cmd', 'Shift', 'A'], action: 'Toggle the Assistant drawer' },
             { keys: ['Ctrl/Cmd', 'Alt', '\\'], action: 'Toggle horizontal / vertical split' },
+            { keys: ['Ctrl/Cmd', '\\'], action: 'Split the active tab to the right (or move it to the other pane)' },
         ]},
         { group: 'System', binds: [
             { keys: ['Ctrl/Cmd', '/'], action: 'Show this shortcut sheet' },
@@ -4255,6 +4307,8 @@ var railName = opts.railLabel || t('prereq.thisRail');
             trafficLight: '<svg viewBox="0 0 32 32" fill="currentColor"><path d="M 10 4 L 10 7 L 7 7 L 7 8 C 7 9.886719 7.746094 11.207031 8.625 11.96875 C 9.066406 12.351563 9.535156 12.625 9.9375 12.78125 C 9.960938 12.789063 9.976563 12.773438 10 12.78125 L 10 13 L 7 13 L 7 14 C 7 15.886719 7.746094 17.207031 8.625 17.96875 C 9.066406 18.351563 9.535156 18.625 9.9375 18.78125 C 9.960938 18.789063 9.976563 18.773438 10 18.78125 L 10 19 L 7 19 L 7 20 C 7 21.886719 7.746094 23.207031 8.625 23.96875 C 9.066406 24.351563 9.535156 24.625 9.9375 24.78125 C 9.960938 24.789063 9.976563 24.773438 10 24.78125 L 10 28 L 22 28 L 22 24.78125 C 22.023438 24.773438 22.039063 24.789063 22.0625 24.78125 C 22.464844 24.625 22.933594 24.351563 23.375 23.96875 C 24.253906 23.207031 25 21.886719 25 20 L 25 19 L 22 19 L 22 18.78125 C 22.023438 18.773438 22.039063 18.789063 22.0625 18.78125 C 22.464844 18.625 22.933594 18.351563 23.375 17.96875 C 24.253906 17.207031 25 15.886719 25 14 L 25 13 L 22 13 L 22 12.78125 C 22.023438 12.773438 22.039063 12.789063 22.0625 12.78125 C 22.464844 12.625 22.933594 12.351563 23.375 11.96875 C 24.253906 11.207031 25 9.886719 25 8 L 25 7 L 22 7 L 22 4 Z M 12 6 L 20 6 L 20 9 L 22.8125 9 C 22.640625 9.671875 22.394531 10.183594 22.0625 10.46875 C 21.820313 10.679688 21.554688 10.824219 21.34375 10.90625 C 21.132813 10.988281 20.917969 11 21 11 L 20 11 L 20 15 L 22.8125 15 C 22.640625 15.671875 22.394531 16.183594 22.0625 16.46875 C 21.820313 16.679688 21.554688 16.824219 21.34375 16.90625 C 21.132813 16.988281 20.917969 17 21 17 L 20 17 L 20 21 L 22.8125 21 C 22.640625 21.671875 22.394531 22.183594 22.0625 22.46875 C 21.820313 22.679688 21.554688 22.824219 21.34375 22.90625 C 21.132813 22.988281 20.917969 23 21 23 L 20 23 L 20 26 L 12 26 L 12 23 L 11 23 C 11.082031 23 10.867188 22.988281 10.65625 22.90625 C 10.445313 22.824219 10.179688 22.679688 9.9375 22.46875 C 9.605469 22.183594 9.359375 21.671875 9.1875 21 L 12 21 L 12 17 L 11 17 C 11.082031 17 10.867188 16.988281 10.65625 16.90625 C 10.445313 16.824219 10.179688 16.679688 9.9375 16.46875 C 9.605469 16.183594 9.359375 15.671875 9.1875 15 L 12 15 L 12 11 L 11 11 C 11.082031 11 10.867188 10.988281 10.65625 10.90625 C 10.445313 10.824219 10.179688 10.679688 9.9375 10.46875 C 9.605469 10.183594 9.359375 9.671875 9.1875 9 L 12 9 Z M 16 8 C 14.894531 8 14 8.894531 14 10 C 14 11.105469 14.894531 12 16 12 C 17.105469 12 18 11.105469 18 10 C 18 8.894531 17.105469 8 16 8 Z M 16 14 C 14.894531 14 14 14.894531 14 16 C 14 17.105469 14.894531 18 16 18 C 17.105469 18 18 17.105469 18 16 C 18 14.894531 17.105469 14 16 14 Z M 16 20 C 14.894531 20 14 20.894531 14 22 C 14 23.105469 14.894531 24 16 24 C 17.105469 24 18 23.105469 18 22 C 18 20.894531 17.105469 20 16 20 Z"/></svg>',
             settings: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09a1.65 1.65 0 001.51-1 1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06a1.65 1.65 0 001.82.33h0a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51h0a1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82v0a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>',
             plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
+            // #250 — two columns: the split-right / move-to-other-pane action.
+            columns: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 3v18"/></svg>',
             trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>',
             pencil: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.85 0 0 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>',
             close: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',

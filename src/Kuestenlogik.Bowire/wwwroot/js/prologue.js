@@ -2076,8 +2076,8 @@
         }
         return null;
     }
-    function currentSplitMode() {
-        var tab = activeTabRecord();
+    function currentSplitMode(tab) {
+        tab = tab || activeTabRecord();
         var mode = tab && tab.splitMode;
         return (mode === 'vertical' || mode === 'horizontal' || mode === 'auto') ? mode : splitMode;
     }
@@ -5230,8 +5230,193 @@
     // The active tab drives selectedService/selectedMethod. When the
     // user clicks a sidebar method, openTab() either focuses an
     // existing tab or creates a new one.
-    let requestTabs = [];   // [{ id, serviceKey, methodKey, service, method }]
+    let requestTabs = [];   // [{ id, serviceKey, methodKey, service, method, paneId, state }]
     let activeTabId = null;
+
+    // ---- Panes (#250) ----
+    // The main area holds one or two panes side by side. Each pane has
+    // its own tab strip and its own active tab; a tab belongs to exactly
+    // one pane (`tab.paneId`), and `requestTabs` stays the single ordered
+    // registry — a pane's strip is the registry filtered by pane, in
+    // registry order. `activeTabId`, `selectedMethod` and
+    // `selectedService` keep meaning "the tab in front": with two panes
+    // that is the active tab of the FOCUSED pane, which is where a
+    // sidebar click lands, what Ctrl+Enter runs, and what the action bar
+    // of the other pane is not.
+    //
+    // Two panes at most. Three covers little the second does not, and
+    // the layout algebra of n panes (nesting, split down, drop targets on
+    // every edge) is exactly what this deliberately leaves out.
+    let requestPanes = [{ id: 'pane_1', activeTab: null, width: 50 }];
+    let focusedPaneId = 'pane_1';
+    var PANE_MAX = 2;
+    var PANE_MIN_WIDTH_PCT = 20;
+
+    function paneById(id) {
+        for (var i = 0; i < requestPanes.length; i++) {
+            if (requestPanes[i].id === id) return requestPanes[i];
+        }
+        return null;
+    }
+    function focusedPane() {
+        return paneById(focusedPaneId) || requestPanes[0];
+    }
+    /// The tabs of a pane, in strip order.
+    function paneTabs(pane) {
+        var out = [];
+        for (var i = 0; i < requestTabs.length; i++) {
+            if (requestTabs[i].paneId === pane.id) out.push(requestTabs[i]);
+        }
+        return out;
+    }
+    function paneActiveTab(pane) {
+        if (!pane || !pane.activeTab) return null;
+        for (var i = 0; i < requestTabs.length; i++) {
+            if (requestTabs[i].id === pane.activeTab && requestTabs[i].paneId === pane.id) return requestTabs[i];
+        }
+        return null;
+    }
+    function tabById(id) {
+        for (var i = 0; i < requestTabs.length; i++) {
+            if (requestTabs[i].id === id) return requestTabs[i];
+        }
+        return null;
+    }
+    function otherPane(pane) {
+        for (var i = 0; i < requestPanes.length; i++) {
+            if (requestPanes[i].id !== pane.id) return requestPanes[i];
+        }
+        return null;
+    }
+    function nextPaneId() {
+        var n = 0;
+        for (var i = 0; i < requestPanes.length; i++) {
+            var m = /^pane_(\d+)$/.exec(requestPanes[i].id);
+            if (m && +m[1] > n) n = +m[1];
+        }
+        return 'pane_' + (n + 1);
+    }
+    /// Make `pane` the focused pane and `tabId` (or its current active
+    /// tab) the tab in front. Every path that changes what is in front
+    /// funnels through here so `activeTabId` / `selectedMethod` /
+    /// `selectedService` cannot drift from the pane model.
+    function focusPaneTab(pane, tabId) {
+        if (!pane) return;
+        var tab = tabId ? tabById(tabId) : paneActiveTab(pane);
+        if (tab && tab.paneId !== pane.id) tab = null;
+        if (!tab) tab = paneTabs(pane)[0] || null;
+        pane.activeTab = tab ? tab.id : null;
+        focusedPaneId = pane.id;
+        activeTabId = tab ? tab.id : null;
+        selectedMethod = tab ? tab.method : null;
+        selectedService = tab ? tab.service : null;
+    }
+    function focusPane(paneId) {
+        var pane = paneById(paneId);
+        if (!pane || pane.id === focusedPaneId) return;
+        focusPaneTab(pane, null);
+        freeformRequest = paneActiveTab(pane) ? (paneActiveTab(pane).freeform || null) : null;
+        resetTabViewState();
+        persistRequestTabs();
+        render();
+    }
+    /// Move a tab into another pane (at the end of its strip). The pane
+    /// it leaves picks a neighbour as its active tab, or collapses when
+    /// that was its last tab and it is not the only pane.
+    function moveTabToPane(tabId, targetPaneId, opts) {
+        opts = opts || {};
+        var tab = tabById(tabId);
+        var target = paneById(targetPaneId);
+        if (!tab || !target || tab.paneId === target.id) return false;
+        var source = paneById(tab.paneId);
+        var sourceTabs = source ? paneTabs(source) : [];
+        var idxInSource = sourceTabs.indexOf(tab);
+        tab.paneId = target.id;
+        if (source && source.activeTab === tab.id) {
+            var remaining = paneTabs(source);
+            var neighbour = remaining[Math.min(idxInSource, remaining.length - 1)] || null;
+            source.activeTab = neighbour ? neighbour.id : null;
+        }
+        if (source && paneTabs(source).length === 0 && requestPanes.length > 1) {
+            removePane(source);
+        }
+        if (opts.activate !== false) {
+            focusPaneTab(target, tab.id);
+        } else if (!target.activeTab) {
+            target.activeTab = tab.id;
+        }
+        persistRequestTabs();
+        return true;
+    }
+    /// "Split right": a second pane opens beside the first, carrying the
+    /// tab. With two panes already, the tab moves to the other one — the
+    /// operator's intent is "this tab, over there", and there is exactly
+    /// one there.
+    function splitTabRight(tabId) {
+        var tab = tabById(tabId);
+        if (!tab) return;
+        var source = paneById(tab.paneId);
+        var target = source ? otherPane(source) : null;
+        if (!target) {
+            if (requestPanes.length >= PANE_MAX) return;
+            // A lone tab has nothing to split away from.
+            if (source && paneTabs(source).length < 2) return;
+            target = { id: nextPaneId(), activeTab: null, width: 50 };
+            requestPanes.push(target);
+            requestPanes.forEach(function (p) { p.width = 100 / requestPanes.length; });
+        }
+        moveTabToPane(tab.id, target.id);
+        resetTabViewState();
+        render();
+    }
+    function removePane(pane) {
+        var idx = requestPanes.indexOf(pane);
+        if (idx < 0 || requestPanes.length < 2) return;
+        requestPanes.splice(idx, 1);
+        // The survivor takes the whole width; a fresh split starts even.
+        requestPanes.forEach(function (p) { p.width = 100 / requestPanes.length; });
+        if (focusedPaneId === pane.id) focusedPaneId = requestPanes[0].id;
+    }
+    /// The tab whose state object is `S`, if any — the way a stream
+    /// callback or a DOM helper that only holds a state finds its pane.
+    function tabForState(S) {
+        for (var i = 0; i < requestTabs.length; i++) {
+            if (requestTabs[i].state === S) return requestTabs[i];
+        }
+        return null;
+    }
+    function paneForState(S) {
+        var tab = tabForState(S);
+        return tab ? paneById(tab.paneId) : null;
+    }
+    /// Element ids inside a pane's surface carry the pane as a suffix so
+    /// two panes never share one — morphdom keys on ids, and a shared id
+    /// would let it hand one pane the other's nodes. The first pane's
+    /// ids stay bare: it always exists, everything that only knows the
+    /// one-pane world (tests, older wiring) keeps working, and a
+    /// workbench that never splits renders exactly what it did before.
+    function paneIdFn(pane) {
+        var sfx = (pane && pane.id !== 'pane_1') ? '-' + pane.id : '';
+        return function (base) { return base + sfx; };
+    }
+    /// The DOM subtree a pane renders into — its column when the main
+    /// area is split, the document otherwise. Field queries on the
+    /// request surface (editors, metadata rows, form inputs) go through
+    /// here so the other pane's fields are never mistaken for this one's.
+    function surfaceEl(pane) {
+        if (!pane || requestPanes.length < 2) return document;
+        return document.getElementById('bowire-tab-pane-' + pane.id) || document;
+    }
+    function focusedSurfaceEl() { return surfaceEl(focusedPane()); }
+    function setPaneWidth(paneId, pct) {
+        var pane = paneById(paneId);
+        var other = pane ? otherPane(pane) : null;
+        if (!pane || !other) return;
+        pct = Math.max(PANE_MIN_WIDTH_PCT, Math.min(100 - PANE_MIN_WIDTH_PCT, pct));
+        pane.width = pct;
+        other.width = 100 - pct;
+        persistRequestTabs();
+    }
     // #123 — open-tab persistence. Save the (serviceKey, methodKey,
     // id) triplets to localStorage on every tab mutation; rehydrate
     // service/method object references lazily once discovery
@@ -5248,11 +5433,27 @@
                         // #250 — omitted when the tab never diverged from the
                         // default, so an untouched strip stores what it did before.
                         splitMode: tab.splitMode || undefined,
+                        // #250 — omitted for the first pane, so a strip that
+                        // was never split stores what it did before.
+                        pane: tab.paneId !== 'pane_1' ? tab.paneId : undefined,
                     };
                 }),
                 active: activeTabId,
             };
             localStorage.setItem(wsKey('bowire_request_tabs'), JSON.stringify(data));
+            // #250 — the panes themselves: which tab each shows, how wide
+            // each is, which one is focused. Kept apart from the tab list
+            // so a workbench without a split writes nothing new.
+            if (requestPanes.length > 1 || requestPanes[0].id !== 'pane_1') {
+                localStorage.setItem(wsKey('bowire_panes'), JSON.stringify({
+                    panes: requestPanes.map(function (p) {
+                        return { id: p.id, activeTab: p.activeTab, width: p.width };
+                    }),
+                    focused: focusedPaneId,
+                }));
+            } else {
+                localStorage.removeItem(wsKey('bowire_panes'));
+            }
             // Tabs are browser session state, not project content — the
             // localStorage write is just so the strip survives a reload.
             // No markSaved() because the "Saved tabs" toast that used
@@ -5268,6 +5469,11 @@
             if (!raw) return null;
             var data = JSON.parse(raw);
             if (!data || !Array.isArray(data.tabs)) return null;
+            try {
+                var rawPanes = localStorage.getItem(wsKey('bowire_panes'));
+                var panes = rawPanes ? JSON.parse(rawPanes) : null;
+                if (panes && Array.isArray(panes.panes)) data.panes = panes;
+            } catch { /* a broken pane record just means one pane */ }
             return data;
         } catch { return null; }
     }
@@ -5299,6 +5505,7 @@
                 requestTabs.push({
                     id: tab.id, empty: true, serviceKey: null, methodKey: null,
                     service: null, method: null, splitMode: tab.splitMode,
+                    paneId: tab.pane || 'pane_1',
                 });
                 continue;
             }
@@ -5314,21 +5521,55 @@
                 service: svc,
                 method: meth,
                 splitMode: tab.splitMode,
+                paneId: tab.pane || 'pane_1',
             });
         }
+        rehydratePanes(data.panes);
         if (requestTabs.length > 0) {
             // Pick the previously-active tab when it survived,
             // otherwise default to the first restored tab.
             var activeStillAround = requestTabs.find(function (x) { return x.id === data.active; });
             var firstTab = activeStillAround || requestTabs[0];
-            activeTabId = firstTab.id;
-            selectedMethod = firstTab.method;
-            selectedService = firstTab.service;
+            focusPaneTab(paneById(firstTab.paneId) || requestPanes[0], firstTab.id);
         }
         // Make sure the in-process counter starts above every
         // restored id so the next '+' / Ctrl-click / context-menu
         // tab can't collide with a tab we just rehydrated.
         bumpTabIdCounterPast(requestTabs);
+    }
+
+    /// Rebuild the pane list from storage around the tabs just restored.
+    /// A pane record that names no surviving tab is dropped; a tab whose
+    /// pane record is gone lands in the first pane. Whatever the record
+    /// said, the result is one or two panes that each hold at least one
+    /// tab — the invariant everything else relies on.
+    function rehydratePanes(saved) {
+        var panes = [];
+        var records = (saved && Array.isArray(saved.panes)) ? saved.panes : [];
+        for (var i = 0; i < records.length && panes.length < PANE_MAX; i++) {
+            var r = records[i];
+            if (!r || typeof r.id !== 'string') continue;
+            if (panes.some(function (p) { return p.id === r.id; })) continue;
+            panes.push({ id: r.id, activeTab: r.activeTab || null, width: (typeof r.width === 'number' && r.width > 0) ? r.width : 50 });
+        }
+        if (!panes.some(function (p) { return p.id === 'pane_1'; })) {
+            panes.unshift({ id: 'pane_1', activeTab: null, width: 50 });
+            if (panes.length > PANE_MAX) panes.length = PANE_MAX;
+        }
+        requestTabs.forEach(function (tab) {
+            if (!panes.some(function (p) { return p.id === tab.paneId; })) tab.paneId = 'pane_1';
+        });
+        requestPanes = panes.filter(function (p) { return p.id === 'pane_1' || paneTabs(p).length > 0; });
+        requestPanes.forEach(function (p) {
+            if (!paneActiveTab(p)) p.activeTab = (paneTabs(p)[0] || {}).id || null;
+            p.width = requestPanes.length > 1 ? p.width : 100;
+        });
+        if (requestPanes.length > 1) {
+            var total = requestPanes.reduce(function (a, p) { return a + p.width; }, 0);
+            if (total <= 0) total = 1;
+            requestPanes.forEach(function (p) { p.width = Math.max(PANE_MIN_WIDTH_PCT, p.width * 100 / total); });
+        }
+        focusedPaneId = (saved && paneById(saved.focused)) ? saved.focused : requestPanes[0].id;
     }
 
     let _tabIdCounter = 0;
@@ -5413,6 +5654,7 @@
         // by Ctrl/Cmd+click on a method row, and by middle-click.
         // The previous behaviour ('every method click = new tab')
         // produced an ever-growing tab strip on normal navigation.
+        var pane = focusedPane();
         var current = (!opts.inNewTab && activeTabId !== null) ? activeTab() : null;
         // #695 — a tab with something live is not reused. Its state is
         // the stream's only home, so the new method opens beside it
@@ -5444,16 +5686,13 @@
                 methodKey: method.name,
                 service: svc,
                 method: method,
+                paneId: pane.id,
                 state: newTabState(method)
             };
             requestTabs.push(tab);
         }
-        activeTabId = tab.id;
+        focusPaneTab(pane, tab.id);
         persistRequestTabs();
-
-        // Apply the new selection
-        selectedMethod = method;
-        selectedService = svc;
         resetTabViewState();
         addRecentMethod(svc.name, method.name);
         expandedServices.add(svc.name);
@@ -5482,6 +5721,7 @@
      */
     function openEmptyTab() {
         freeformRequest = null;
+        var pane = focusedPane();
         var tab = {
             id: nextTabId(),
             empty: true,
@@ -5489,12 +5729,11 @@
             methodKey: null,
             service: null,
             method: null,
+            paneId: pane.id,
             state: newTabState()
         };
         requestTabs.push(tab);
-        activeTabId = tab.id;
-        selectedMethod = null;
-        selectedService = null;
+        focusPaneTab(pane, tab.id);
         resetTabViewState();
         persistRequestTabs();
         render();
@@ -5578,10 +5817,8 @@
         // against another method.
         freeformRequest = tab.freeform || null;
 
-        activeTabId = tab.id;
+        focusPaneTab(paneById(tab.paneId) || focusedPane(), tab.id);
         persistRequestTabs();
-        selectedMethod = tab.method;
-        selectedService = tab.service;
 
         // Mirror the tab switch into the tree: expand the owning
         // service so the active method-row is visible (otherwise
@@ -5635,40 +5872,59 @@
             } catch { /* ignore */ }
         }
 
+        // #250 — the neighbour is picked within the tab's own pane:
+        // prefer right, fall back to left, in strip order.
+        var pane = paneById(closed.paneId) || requestPanes[0];
+        var stripBefore = paneTabs(pane);
+        var stripIdx = stripBefore.indexOf(closed);
         requestTabs.splice(idx, 1);
-        persistRequestTabs();
         // #695 — the tab was the home of whatever it had open; close it
         // rather than leave a stream running into a state nobody shows.
         releaseTabState(closed);
 
-        if (activeTabId === tabId) {
-            if (requestTabs.length === 0) {
-                activeTabId = null;
-                selectedMethod = null;
-                selectedService = null;
-                detachedTabState = newTabState();
-                // Last tab closed → the freeform draft has no home
-                // anymore, clear it so the landing page renders
-                // instead of an orphaned builder.
-                freeformRequest = null;
-            } else {
-                // Pick a neighbor: prefer right, fall back to left
-                var nextIdx = idx < requestTabs.length ? idx : requestTabs.length - 1;
-                var next = requestTabs[nextIdx];
-                activeTabId = next.id;
-                selectedMethod = next.method;
-                selectedService = next.service;
-                // Rehydrate the freeform draft from the neighbor's
-                // stash (set to null when the neighbor never spawned
-                // a 'As new request' clone). Without this, closing the
-                // freeform tab kept the module-scope freeformRequest
-                // alive and the next render kept showing the builder
-                // — the user expected the neighbor's original
-                // discovered-method pane.
-                freeformRequest = next.freeform || null;
+        var strip = paneTabs(pane);
+        var next = strip.length ? strip[Math.min(stripIdx, strip.length - 1)] : null;
+        var wasInFront = activeTabId === tabId;
+        var wasPaneActive = pane.activeTab === tabId;
+        if (strip.length === 0 && requestPanes.length > 1) {
+            // Last tab of a pane: the pane collapses and the other one
+            // takes the whole width — with its own active tab in front
+            // whenever the closed tab was the one there.
+            var survivor = otherPane(pane);
+            removePane(pane);
+            if (wasInFront) {
+                focusPaneTab(survivor, null);
+                var front = paneActiveTab(survivor);
+                freeformRequest = front ? (front.freeform || null) : null;
                 resetTabViewState();
             }
+        } else if (wasPaneActive) {
+            pane.activeTab = next ? next.id : null;
+            if (wasInFront) {
+                if (!next) {
+                    activeTabId = null;
+                    selectedMethod = null;
+                    selectedService = null;
+                    detachedTabState = newTabState();
+                    // Last tab closed → the freeform draft has no home
+                    // anymore, clear it so the landing page renders
+                    // instead of an orphaned builder.
+                    freeformRequest = null;
+                } else {
+                    focusPaneTab(pane, next.id);
+                    // Rehydrate the freeform draft from the neighbor's
+                    // stash (set to null when the neighbor never spawned
+                    // a 'As new request' clone). Without this, closing the
+                    // freeform tab kept the module-scope freeformRequest
+                    // alive and the next render kept showing the builder
+                    // — the user expected the neighbor's original
+                    // discovered-method pane.
+                    freeformRequest = next.freeform || null;
+                    resetTabViewState();
+                }
+            }
         }
+        persistRequestTabs();
         render();
     }
 
@@ -5701,7 +5957,10 @@
             methodKey: stub.methodKey,
             service: svc || stub.service || null,
             method: meth || stub.method || null,
-            freeform: stub.freeform || null
+            freeform: stub.freeform || null,
+            // #250 — back into the pane it left when that pane is still
+            // there; otherwise into the focused one.
+            paneId: paneById(stub.paneId) ? stub.paneId : focusedPane().id
         };
         var insertAt = Math.min(
             typeof tab.originalIdx === 'number' ? tab.originalIdx : requestTabs.length,
@@ -6422,7 +6681,7 @@
         if (!selectedService || !selectedMethod) return;
         var body = S.requestMessages[0] || '{}';
         var meta = {};
-        var metaRows = document.querySelectorAll('.bowire-metadata-row');
+        var metaRows = focusedSurfaceEl().querySelectorAll('.bowire-metadata-row');
         for (var i = 0; i < metaRows.length; i++) {
             var inputs = metaRows[i].querySelectorAll('.bowire-metadata-input');
             if (inputs.length === 2 && inputs[0].value.trim()) {
@@ -6646,18 +6905,18 @@
             syncFormToJson();
             bodyTemplates = [S.requestMessages[0] || '{}'];
         } else {
-            var editors = $$('.bowire-message-editor');
+            var editors = $$('.bowire-message-editor', focusedSurfaceEl());
             if (editors.length > 0) {
                 bodyTemplates = editors.map(function (e) { return e.value || '{}'; });
             } else {
-                var single = $('.bowire-editor');
+                var single = $('.bowire-editor', focusedSurfaceEl());
                 bodyTemplates = [single ? single.value : '{}'];
             }
         }
 
         // Snapshot metadata template (with raw values — substituted per call)
         var metadataTemplate = {};
-        var rows = $$('.bowire-metadata-row');
+        var rows = $$('.bowire-metadata-row', focusedSurfaceEl());
         for (var ri = 0; ri < rows.length; ri++) {
             var inputs = rows[ri].querySelectorAll('.bowire-metadata-input');
             if (inputs.length === 2 && inputs[0].value.trim()) {

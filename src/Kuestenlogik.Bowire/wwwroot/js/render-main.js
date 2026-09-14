@@ -5204,11 +5204,16 @@
                 : sidebarView === 'intercept'
                     ? 'intercept-' + (typeof interceptSubView !== 'undefined' ? interceptSubView : 'captured')  // i18n-exempt: a state key, not shown
                         + '-' + (typeof interceptedFlowSelectedId !== 'undefined' ? (interceptedFlowSelectedId || 'none') : 'none')
-                    : freeformRequest
-                        ? 'freeform'
-                        : selectedMethod
-                            ? (selectedService ? selectedService.name : '') + '-' + selectedMethod.name
-                            : 'landing';
+                    : requestPanes.length > 1
+                        // #250 — the split row is one stable surface; each
+                        // pane's own ids carry the tab, so switching a tab in
+                        // one pane leaves the other's DOM alone.
+                        ? 'panes'
+                        : freeformRequest
+                            ? 'freeform'
+                            : selectedMethod
+                                ? (selectedService ? selectedService.name : '') + '-' + selectedMethod.name
+                                : 'landing';
         const main = el('div', { id: 'bowire-main-' + mainViewKey, className: 'bowire-main' });
 
         // When the sidebar is in Environments view, the main pane
@@ -5236,19 +5241,70 @@
         // (interceptMain), resolved at the top of renderMain before this
         // sidebarView block is reached.
 
+        // #250 — one pane renders straight into main, as it always has;
+        // two render side by side in a row, each in its own column.
+        if (requestPanes.length < 2) {
+            renderTabSurface(requestPanes[0], main);
+            return main;
+        }
+        var row = el('div', { id: 'bowire-panes', className: 'bowire-panes' });
+        requestPanes.forEach(function (pane, pi) {
+            if (pi > 0) {
+                row.appendChild(el('div', {
+                    id: 'bowire-panes-divider',
+                    className: 'bowire-panes-divider',
+                    role: 'separator',
+                    'aria-orientation': 'vertical',
+                    title: t('main.panes.resize')
+                }));
+            }
+            var host = el('div', {
+                id: 'bowire-tab-pane-' + pane.id,
+                className: 'bowire-tab-pane' + (pane.id === focusedPaneId ? ' focused' : ''),
+                'data-pane-id': pane.id,
+                style: 'flex-basis:' + pane.width + '%',
+                // Focus follows the pointer: whatever the operator touches
+                // in a pane makes that pane the one Ctrl+Enter, the
+                // sidebar and the shortcuts address.
+                onMousedown: function () { focusPane(pane.id); }
+            });
+            renderTabSurface(pane, host);
+            row.appendChild(host);
+        });
+        main.appendChild(row);
+        afterRender(function () {
+            var d = document.getElementById('bowire-panes-divider');
+            if (d) initPanesDivider(d);
+        });
+        return main;
+    }
+
+    /**
+     * #250 — one pane's surface: its tab strip, the header of its
+     * active tab, the request/response content and the action bar,
+     * appended to `main`. With one pane `main` is the main element
+     * itself; with two it is the pane's column. Everything in here
+     * reads the pane's own tab — never the globals that mean "the
+     * tab in front", because with two panes one of them is not.
+     */
+    function renderTabSurface(pane, main) {
+        var tab = paneActiveTab(pane);
+        var method = tab ? tab.method : null;
+        var svc = tab ? tab.service : null;
+        var pid = paneIdFn(pane);
         // Header bar — the legacy Toggle-sidebar button used to live
         // here; retired in favour of the splitter chevron + Cmd/Ctrl+B
         // (#289). Two affordances for the same thing was clutter.
         const header = el('div', { className: 'bowire-header' });
 
-        if (selectedMethod) {
+        if (method) {
             // Breadcrumb: Protocol > Service. The method name is rendered
             // separately as headerName below (at a much larger size), so
             // leaving it out of the breadcrumb avoids the visual stutter
             // that used to put two `listen`s next to each other.
             var breadcrumb = el('div', { className: 'bowire-breadcrumb' });
-            if (selectedService && selectedService.source) {
-                var proto = protocols.find(function (p) { return p.id === selectedService.source; });
+            if (svc && svc.source) {
+                var proto = protocols.find(function (p) { return p.id === svc.source; });
                 if (proto) {
                     breadcrumb.appendChild(el('span', {
                         className: 'bowire-breadcrumb-item clickable',
@@ -5256,13 +5312,7 @@
                         onClick: function () {
                             // Close the active tab — goes back to landing
                             // if no tabs remain, or switches to an adjacent tab.
-                            if (activeTabId) {
-                                closeTab(activeTabId);
-                            } else {
-                                selectedMethod = null;
-                                selectedService = null;
-                                render();
-                            }
+                            if (tab) closeTab(tab.id);
                         }
                     }));
                     // BUG fix: this used to use 'bowire-breadcrumb-icon'
@@ -5273,7 +5323,7 @@
                     breadcrumb.appendChild(el('span', { className: 'bowire-breadcrumb-sep', textContent: '\u203A' }));
                 }
             }
-            if (selectedService) {
+            if (svc) {
                 // Service is the breadcrumb's terminal segment now \u2014 the
                 // method name is rendered separately as headerName below
                 // (and at a much larger size), so duplicating it inside
@@ -5284,7 +5334,7 @@
                 // Service names that *end* with a dotted token (e.g. `Socket.IO`,
                 // `Akka.Actor.Tap`) keep their full name — splitting them would
                 // produce nonsense like `Socket.IO` → `IO`.
-                var svcDisplayName = selectedService.name;
+                var svcDisplayName = svc.name;
                 if (svcDisplayName.includes('.')) {
                     var lastToken = svcDisplayName.split('.').pop();
                     if (lastToken.length >= 4) svcDisplayName = lastToken;
@@ -5296,32 +5346,27 @@
                 // doesn't read 'Socket.IO > Socket.IO'. Multi-service
                 // protocols like gRPC have per-call distinct names so this
                 // only kicks in for single-service plugins.
-                var protoForCheck = selectedService.source
-                    ? protocols.find(function (p) { return p.id === selectedService.source; })
+                var protoForCheck = svc.source
+                    ? protocols.find(function (p) { return p.id === svc.source; })
                     : null;
                 var skipServiceSegment = protoForCheck && protoForCheck.name === svcDisplayName;
 
                 if (!skipServiceSegment) breadcrumb.appendChild(el('span', {
                     className: 'bowire-breadcrumb-item current',
                     textContent: svcDisplayName,
-                    title: selectedService.name,
+                    title: svc.name,
                     onClick: function () {
                         // Expand this service in the sidebar, close active tab
-                        expandedServices.add(selectedService.name);
+                        expandedServices.add(svc.name);
                         persistExpandedServices();
-                        if (activeTabId) {
-                            closeTab(activeTabId);
-                        } else {
-                            selectedMethod = null;
-                            render();
-                        }
+                        if (tab) closeTab(tab.id);
                     }
                 }));
             }
 
-            var headerName = el('div', { className: 'bowire-header-method' + (selectedMethod.deprecated ? ' deprecated' : '') });
-            headerName.appendChild(document.createTextNode(selectedMethod.name));
-            if (selectedMethod.deprecated) {
+            var headerName = el('div', { className: 'bowire-header-method' + (method.deprecated ? ' deprecated' : '') });
+            headerName.appendChild(document.createTextNode(method.name));
+            if (method.deprecated) {
                 headerName.appendChild(el('span', { className: 'bowire-header-deprecated', textContent: 'DEPRECATED' }));
             }
 
@@ -5348,7 +5393,7 @@
             // verb chip on the right — REST verb + path read as
             // one address ("PUT /pet"), and the info column shrinks
             // to two lines (name + description) instead of three.
-            var pathLabel = selectedMethod.httpPath || selectedMethod.fullName || '';
+            var pathLabel = method.httpPath || method.fullName || '';
             const info = el('div', { className: 'bowire-header-info' },
                 headerName
             );
@@ -5360,7 +5405,7 @@
             // line opens a popup with the unabridged content so the
             // operator can read multi-paragraph descriptions
             // without leaving the header.
-            var summary = selectedMethod.summary || selectedMethod.description;
+            var summary = method.summary || method.description;
             if (summary) {
                 var fullText = String(summary).trim();
                 var firstLine = fullText.split('\n')[0].trim();
@@ -5396,7 +5441,7 @@
                                 var popup = el('div', { className: 'bowire-header-summary-popup', role: 'dialog' },
                                     el('div', { className: 'bowire-header-summary-popup-title',
                                         textContent: t('main.methodDescTitle',
-                                            { method: selectedMethod.name }) }),
+                                            { method: method.name }) }),
                                     el('div', { className: 'bowire-header-summary-popup-body', textContent: fullText }),
                                     el('button', {
                                         type: 'button',
@@ -5432,10 +5477,10 @@
             // the protocol plugin (same svg the sidebar's service
             // header uses) so the chip cluster carries the full
             // "protocol + verb" identity in one line.
-            if (selectedService && selectedService.source) {
-                var headerProto = protocols.find(function (p) { return p.id === selectedService.source; });
+            if (svc && svc.source) {
+                var headerProto = protocols.find(function (p) { return p.id === svc.source; });
                 if (headerProto && headerProto.icon) {
-                    var protoSource = selectedService.source;
+                    var protoSource = svc.source;
                     var protoBtn = el('button', {
                         type: 'button',
                         className: 'bowire-header-proto-icon bowire-header-proto-icon-clickable',
@@ -5553,8 +5598,8 @@
             }
             header.appendChild(el('span', {
                 className: 'bowire-header-badge',
-                dataset: { type: methodBadgeType(selectedMethod) },
-                textContent: selectedMethod.httpMethod || methodBadgeLabel(selectedMethod.methodType)
+                dataset: { type: methodBadgeType(method) },
+                textContent: method.httpMethod || methodBadgeLabel(method.methodType)
             }));
             // R3a — Discover method meta → Help transition (method-type).
             // Streaming method types map to features/streaming; Duplex
@@ -5563,7 +5608,7 @@
             // "no topic, no icon" path from the brief.
             if (typeof helpAvailable !== 'undefined' && helpAvailable
                 && typeof openHelpRail === 'function') {
-                var mt = (selectedMethod && selectedMethod.methodType) || '';
+                var mt = (method && method.methodType) || '';
                 var typeTopic = null;
                 if (mt === 'ServerStreaming' || mt === 'ClientStreaming') typeTopic = 'features/streaming';
                 else if (mt === 'Duplex') typeTopic = 'features/duplex-channels';
@@ -5589,10 +5634,10 @@
             // hunting through code-export.
             if (pathLabel) {
                 var fullMethodUrl = (function () {
-                    var base = (selectedService && selectedService.originUrl)
+                    var base = (svc && svc.originUrl)
                         || (typeof serverUrls !== 'undefined' && serverUrls[0])
                         || '';
-                    var path = selectedMethod.httpPath || '';
+                    var path = method.httpPath || '';
                     if (!path) return base || pathLabel;
                     // Discovery URLs that point at an OpenAPI / AsyncAPI
                     // doc need their last segment stripped — otherwise we'd
@@ -5622,8 +5667,8 @@
             // the same workspace-scoped store the Home page consumes.
             if (typeof isFavorite === 'function' && typeof toggleFavorite === 'function') {
                 try {
-                    var svcName = selectedService.name;
-                    var mthName = selectedMethod.name;
+                    var svcName = svc.name;
+                    var mthName = method.name;
                     var isStar = isFavorite(svcName, mthName);
                     header.appendChild(el('button', {
                         className: 'bowire-header-fav-btn' + (isStar ? ' active' : ''),
@@ -5649,8 +5694,8 @@
             // already store. Trigger sits next to the favorite star
             // so the cluster reads as "this method's saved state".
             try {
-                var presetSvc = selectedService.name;
-                var presetMth = selectedMethod.name;
+                var presetSvc = svc.name;
+                var presetMth = method.name;
                 var presetAll = (typeof loadPresets === 'function')
                     ? loadPresets('discover') : [];
                 var presetList = presetAll.filter(function (p) {
@@ -5666,7 +5711,7 @@
                     var presetWrap = el('div', { className: 'bowire-header-presets-wrap' });
                     var presetBtn = el('button', {
                         type: 'button',
-                        id: 'bowire-header-presets-btn',
+                        id: pid('bowire-header-presets-btn'),
                         className: 'bowire-header-presets-btn',
                         // #688 - one message, two shapes.
                         title: t(presetList.length === 1 ? 'main.presetsOne'
@@ -5685,8 +5730,8 @@
                             // loadPresets() here picks up the live list,
                             // including entries added by Save-as-preset
                             // since the last render.
-                            var liveSvc = selectedService ? selectedService.name : presetSvc;
-                            var liveMth = selectedMethod ? selectedMethod.name : presetMth;
+                            var liveSvc = svc ? svc.name : presetSvc;
+                            var liveMth = method ? method.name : presetMth;
                             var presetList = (typeof loadPresets === 'function'
                                     ? loadPresets('discover') : []).filter(function (p) {
                                 return p && p.config
@@ -5832,7 +5877,7 @@
                                     menu.remove();
                                     bowirePrompt(t('presets.save.promptMessage'), {
                                         title: t('rb.presetPromptTitle'),
-                                        placeholder: selectedMethod.name + ' preset',
+                                        placeholder: method.name + ' preset',
                                         confirmText: t('common.save')
                                     }).then(function (name) {
                                         if (!name) return;
@@ -5885,11 +5930,11 @@
             // preserves the dropdown node across renders so any captured
             // closure values would get stale.
             try {
-                var svcNameForMenu = selectedService.name;
-                var mthNameForMenu = selectedMethod.name;
+                var svcNameForMenu = svc.name;
+                var mthNameForMenu = method.name;
                 var addToWrap = el('div', { className: 'bowire-header-addto-wrap' });
                 addToWrap.appendChild(el('button', {
-                    id: 'bowire-header-addto-btn',
+                    id: pid('bowire-header-addto-btn'),
                     className: 'bowire-header-addto-btn' + (methodAddToMenuOpen ? ' active' : ''),
                     title: t('main.addMethodTo'),
                     'aria-label': t('main.addMethodTo'),
@@ -6044,9 +6089,9 @@
                         // know is broken. Require a successful last
                         // call (statusInfo present, no responseError)
                         // before letting the item open the picker.
-                        var lastCallOk = (typeof S.statusInfo !== 'undefined' && S.statusInfo)
-                            && (typeof S.responseError === 'undefined' || !S.responseError)
-                            && S.statusInfo.status !== 'Error';
+                        var lastCallOk = (tabState(tab).statusInfo)
+                            && !tabState(tab).responseError
+                            && tabState(tab).statusInfo.status !== 'Error';
                         menu.appendChild(el('button', {
                             className: 'bowire-header-addto-item'
                                 + (lastCallOk ? '' : ' bowire-header-addto-item-disabled'),
@@ -6141,17 +6186,17 @@
             // Copy invoke URL — useful in embedded mode where there's no
             // visible URL bar. Builds a curl-friendly URL from the method.
             header.appendChild(el('button', {
-                id: 'bowire-header-copy-url-btn',
+                id: pid('bowire-header-copy-url-btn'),
                 className: 'bowire-header-copy-url',
                 title: t('main.copyInvokeUrl'),
                 'aria-label': t('main.copyInvokeUrl'),
                 innerHTML: svgIcon('copy'),
                 onClick: function () {
-                    var base = (selectedService && selectedService.originUrl)
+                    var base = (svc && svc.originUrl)
                         || window.location.origin;
                     var invokeUrl = base + '/' + config.prefix + '/api/invoke'
-                        + '?service=' + encodeURIComponent(selectedService ? selectedService.name : '')
-                        + '&method=' + encodeURIComponent(selectedMethod.name);
+                        + '?service=' + encodeURIComponent(svc ? svc.name : '')
+                        + '&method=' + encodeURIComponent(method.name);
                     navigator.clipboard.writeText(invokeUrl).then(function () {
                         toast(t('main.copiedInvokeUrl'), 'success');
                     });
@@ -6178,18 +6223,22 @@
         // the new-tab picker even before anything is selected (Discover
         // '+' cases a + b). The freeform builder owns its own chrome, so
         // skip the strip while it's active.
-        if (!freeformRequest) {
-            var tabBar = el('div', { id: 'bowire-request-tabs', className: 'bowire-request-tabs' });
+        // #250 — the freeform draft is the focused tab's; another pane
+        // renders its own tab's method as usual.
+        var paneFreeform = pane.id === focusedPaneId ? freeformRequest : null;
+        if (!paneFreeform) {
+            var tabBar = el('div', { id: pid('bowire-request-tabs'), className: 'bowire-request-tabs' });
             var tabScroll = el('div', { className: 'bowire-request-tabs-scroll' });
-            for (var ti = 0; ti < requestTabs.length; ti++) {
+            var strip = paneTabs(pane);
+            for (var ti = 0; ti < strip.length; ti++) {
                 (function (tab) {
-                    var isActive = tab.id === activeTabId;
+                    var isActive = tab.id === pane.activeTab;
                     // Empty placeholder tab (case a) — no method to badge;
                     // render a lightweight "New tab" chip. Selecting a
                     // method while it's active fills it in place.
                     if (tab.empty || !tab.method) {
                         tabScroll.appendChild(el('div', {
-                            id: 'bowire-request-tab-' + tab.id,
+                            id: pid('bowire-request-tab-') + tab.id,
                             className: 'bowire-request-tab bowire-request-tab-empty' + (isActive ? ' active' : ''),
                             title: t('main.tabs.newTitle'),
                             'data-tab-id': tab.id,
@@ -6199,7 +6248,7 @@
                             }
                         },
                             el('span', { className: 'bowire-request-tab-name', textContent: t('main.tabs.new') }),
-                            requestTabs.length > 1 ? el('button', {
+                            (strip.length > 1 || requestPanes.length > 1) ? el('button', {
                                 className: 'bowire-request-tab-close',
                                 innerHTML: svgIcon('close'),
                                 title: t('main.tabs.close'),
@@ -6225,7 +6274,7 @@
                     // on tab C would fire `closeTab(B.id)` because the
                     // listener was attached when this slot rendered B.
                     var tabEl = el('div', {
-                        id: 'bowire-request-tab-' + tab.id,
+                        id: pid('bowire-request-tab-') + tab.id,
                         className: 'bowire-request-tab' + (isActive ? ' active' : ''),
                         title: tab.serviceKey + ' / ' + tab.methodKey,
                         'data-tab-id': tab.id,
@@ -6241,9 +6290,11 @@
                             if (typeof showContextMenu !== 'function') return;
                             var id = e.currentTarget.dataset.tabId;
                             if (!id) return;
-                            var idx = requestTabs.findIndex(function (tab) { return tab.id === id; });
-                            var hasOthers = requestTabs.length > 1;
-                            var hasRight = idx >= 0 && idx < requestTabs.length - 1;
+                            var stripNow = paneTabs(pane);
+                            var idx = stripNow.findIndex(function (tab) { return tab.id === id; });
+                            var hasOthers = stripNow.length > 1;
+                            var hasRight = idx >= 0 && idx < stripNow.length - 1;
+                            var canSplit = requestPanes.length < PANE_MAX ? stripNow.length > 1 : true;
                             showContextMenu(e.clientX, e.clientY, [
                                 {
                                     label: t('common.close'),
@@ -6259,7 +6310,7 @@
                                         // the right-clicked one is the active +
                                         // sole remaining tab.
                                         var keepId = id;
-                                        requestTabs.slice().forEach(function (tab) {
+                                        paneTabs(pane).forEach(function (tab) {
                                             if (tab.id !== keepId) closeTab(tab.id);
                                         });
                                         switchTab(keepId);
@@ -6269,12 +6320,24 @@
                                     label: t('main.tabs.closeRight'),
                                     disabled: !hasRight,
                                     onClick: function () {
-                                        var currentIdx = requestTabs.findIndex(function (tab) { return tab.id === id; });
+                                        var stripHere = paneTabs(pane);
+                                        var currentIdx = stripHere.findIndex(function (tab) { return tab.id === id; });
                                         if (currentIdx < 0) return;
-                                        requestTabs.slice(currentIdx + 1).forEach(function (tab) {
+                                        stripHere.slice(currentIdx + 1).forEach(function (tab) {
                                             closeTab(tab.id);
                                         });
                                     }
+                                },
+                                { separator: true },
+                                {
+                                    // #250 — a second pane beside this one, carrying
+                                    // the tab; with two panes already, the tab moves
+                                    // over. A lone tab has nothing to split from.
+                                    label: requestPanes.length > 1
+                                        ? t('main.tabs.moveToOtherPane') : t('main.tabs.splitRight'),
+                                    icon: 'columns',
+                                    disabled: !canSplit,
+                                    onClick: function () { splitTabRight(id); }
                                 }
                             ]);
                         }
@@ -6293,7 +6356,7 @@
                         // the affordance visible just invited dead clicks.
                         // Closure-free handler — reads the tab id at click
                         // time from data-tab-id on the parent tab.
-                        requestTabs.length > 1 ? el('button', {
+                        (strip.length > 1 || requestPanes.length > 1) ? el('button', {
                             className: 'bowire-request-tab-close',
                             innerHTML: svgIcon('close'),
                             title: t('main.tabs.close'),
@@ -6306,7 +6369,7 @@
                         }) : null
                     );
                     tabScroll.appendChild(tabEl);
-                })(requestTabs[ti]);
+                })(strip[ti]);
             }
             // "+" tab — pins the currently-selected method into a
             // fresh tab so the active tab stays free for ad-hoc
@@ -6316,9 +6379,23 @@
             // even when a method is selected, for users who want
             // the empty-tab path on demand.
             var hasUrl = typeof serverUrls !== 'undefined' && Array.isArray(serverUrls) && serverUrls.length > 0;
+            // #250 — "Split right" on the strip: the toolbar route to a
+            // second pane for operators who never open a tab's context
+            // menu. Disabled while there is nothing to split from.
+            var stripCanSplit = requestPanes.length < PANE_MAX ? strip.length > 1 : (tab && strip.length > 0);
+            if (tab) {
+                tabScroll.appendChild(el('button', {
+                    className: 'bowire-request-tab-split',
+                    title: requestPanes.length > 1 ? t('main.tabs.moveToOtherPane') : t('main.tabs.splitRight'),
+                    'aria-label': requestPanes.length > 1 ? t('main.tabs.moveToOtherPane') : t('main.tabs.splitRight'),
+                    disabled: stripCanSplit ? undefined : true,
+                    onClick: function () { if (tab) splitTabRight(tab.id); },
+                    innerHTML: svgIcon('columns')
+                }));
+            }
             tabScroll.appendChild(el('button', {
                 className: 'bowire-request-tab-new',
-                title: selectedMethod && selectedService
+                title: method && svc
                     ? t('main.tab.pinCurrent')
                     : (hasUrl ? t('main.tab.newPickMethod') : t('main.tab.new')),
                 onClick: function (e) {
@@ -6326,8 +6403,8 @@
                     // Primary: copy the active tab's method into a fresh
                     // tab (previous tab stays put). Shift forces an empty
                     // tab on demand even with a method selected.
-                    if (!forceEmpty && selectedMethod && selectedService) {
-                        openTab(selectedService, selectedMethod, { inNewTab: true });
+                    if (!forceEmpty && method && svc) {
+                        openTab(svc, method, { inNewTab: true });
                     } else if (!forceEmpty && hasUrl) {
                         // Case b — URL configured but nothing selected:
                         // offer a URL → service → method picker so a tab
@@ -6353,9 +6430,9 @@
             // card; running the relayout there needlessly hid the '+'
             // (collapsing the strip to 0 height). requestTabs.length gates
             // it so the '+' stays visible in the empty Discover state.
-            if (requestTabs.length > 0) {
+            if (strip.length > 0) {
                 afterRender(function () {
-                    var live = document.querySelector('#bowire-request-tabs .bowire-request-tabs-scroll');
+                    var live = document.querySelector('#' + pid('bowire-request-tabs') + ' .bowire-request-tabs-scroll');
                     if (live && typeof bowireWireTabOverflow === 'function') {
                         bowireWireTabOverflow(live, {
                             tabSelector: '.bowire-request-tab',
@@ -6372,14 +6449,14 @@
         // (no method selected) stays unattached so the landing card
         // doesn't sit under a gray strip with no content. Skip when
         // the freeform builder is active — that surface renders its
-        // OWN editable header below (selectedMethod is preserved so
+        // OWN editable header below (method is preserved so
         // peripheral handlers like the [+] tab still work, but the
         // discovered-method header would visually duplicate the
         // freeform builder's title strip).
-        if (header.firstChild && !freeformRequest) main.appendChild(header);
+        if (header.firstChild && !paneFreeform) main.appendChild(header);
 
         // Proto-only warning banner
-        if (selectedService && selectedService.source === 'proto') {
+        if (svc && svc.source === 'proto') {
             var protoBanner = el('div', { className: 'bowire-proto-banner' },
                 el('span', { innerHTML: svgIcon('info'), style: 'width:14px;height:14px;display:flex;flex-shrink:0' }),
                 el('span', { textContent: t('main.protoOnlyNote') })
@@ -6396,7 +6473,7 @@
         // its children land as direct siblings of header / banner /
         // content / action-bar exactly like a discovered method's
         // render order.
-        if (freeformRequest) {
+        if (paneFreeform) {
             // #293 — The Hoppscotch-style request-builder no longer
             // piggy-backs on Discover. A freeformRequest carrying the
             // `_requestBuilder` marker belongs in the Compose rail's tab
@@ -6430,7 +6507,7 @@
             return main;
         }
 
-        if (!selectedMethod) {
+        if (!method) {
             // Context-sensitive empty-state landing page — see landing.js for
             // the seven states (first-run / loading / discovery-failed /
             // editable-no-services / wrong-protocol-tab / multi-url-partial /
@@ -6448,13 +6525,12 @@
         // here so both the CSS attribute selector and the resizer
         // read the same literal axis ('horizontal' | 'vertical').
         var resolvedSplit = (typeof resolveSplitMode === 'function')
-            ? resolveSplitMode(currentSplitMode()) : (splitMode || 'horizontal');
+            ? resolveSplitMode(currentSplitMode(tab)) : (splitMode || 'horizontal');
         const content = el('div', {
-            id: 'bowire-content',
+            id: pid('bowire-content'),
             className: 'bowire-content bowire-content-enter',
             'data-split': resolvedSplit,
         });
-        var tab = activeTab();
         var reqPane = renderRequestPane(tab);
         var resPane = renderResponsePane(tab);
         // Divider id includes the method key so morphdom fully
@@ -6462,8 +6538,8 @@
         // stale initResizer closure (which captured the OLD reqPane /
         // resPane refs) and the rAF below installs a fresh one against
         // the new panes.
-        var dividerMethodKey = (tab ? tab.id + '-' : '') + (selectedService ? selectedService.name : '')
-            + '-' + (selectedMethod ? selectedMethod.name : '');
+        var dividerMethodKey = (tab ? tab.id + '-' : '') + (svc ? svc.name : '')
+            + '-' + (method ? method.name : '');
         var dividerId = 'bowire-pane-divider-' + dividerMethodKey;
         var divider = el('div', {
             id: dividerId,
@@ -6487,17 +6563,19 @@
         });
 
         // Action bar
-        main.appendChild(renderActionBar());
+        main.appendChild(renderActionBar(tab));
 
         return main;
     }
 
+
     function saveMessageEditors(S) {
-        var editors = $$('.bowire-message-editor');
+        var tab = tabForState(S);
+        var editors = $$('.bowire-message-editor', surfaceEl(tab ? paneById(tab.paneId) : null));
         if (editors.length > 0) {
             S.requestMessages = editors.map(function (e) { return e.value; });
         } else {
-            var single = $('.bowire-editor');
+            var single = $('.bowire-editor', surfaceEl(tab ? paneById(tab.paneId) : null));
             if (single && single.value.trim()) {
                 S.requestMessages = [single.value];
             }
@@ -6506,6 +6584,9 @@
 
     function renderRequestPane(tab) {
         var S = tabState(tab);
+        var method = tab ? tab.method : null;
+        var svc = tab ? tab.service : null;
+        var pid = paneIdFn(tab ? paneById(tab.paneId) : null);
         // Save current editor content before re-render — the editors on
         // screen belong to the active tab, so only its state may take
         // what they hold.
@@ -6514,12 +6595,12 @@
         // ID includes the selected method so morphdom fully replaces the
         // pane when switching methods instead of reusing stale DOM with
         // wrong closures/editors from the previous method.
-        var reqMethodKey = (tab ? tab.id + '-' : '') + (selectedService ? selectedService.name : '')
-            + '-' + (selectedMethod ? selectedMethod.name : '');
-        const pane = el('div', { id: 'bowire-request-pane-' + reqMethodKey, className: 'bowire-pane' });
+        var reqMethodKey = (tab ? tab.id + '-' : '') + (svc ? svc.name : '')
+            + '-' + (method ? method.name : '');
+        const pane = el('div', { id: pid('bowire-request-pane-') + reqMethodKey, className: 'bowire-pane' });
 
         // Channel methods use single-message mode (one message at a time)
-        const isMultiMessage = selectedMethod && (selectedMethod.clientStreaming === true) && !isChannelMethod();
+        const isMultiMessage = method && (method.clientStreaming === true) && !isChannelMethod(method);
 
         // Tabs — every tab button and its paired content pane get a
         // stable id so morphdom uses keyed matching across renders
@@ -6536,7 +6617,7 @@
         // label to know which side they're on. Tabs below can stay
         // terse (Body / Metadata / Schema / Tests / …).
         pane.appendChild(el('div', { className: 'bowire-pane-heading', textContent: t('main.request') }));
-        const tabs = el('div', { id: 'bowire-request-tabs', className: 'bowire-tabs' });
+        const tabs = el('div', { id: pid('bowire-request-tabs'), className: 'bowire-tabs' });
         // Top-tab label — "Payload" instead of "Body" so the REST/OData
         // sub-tab strip below ("Form / Body") doesn't read as the
         // nonsensical "Body > Body". Multi-message methods keep their
@@ -6545,19 +6626,19 @@
     ? t('main.tab.messages', { count: S.requestMessages.length })
     : t('main.tab.payload');
         const bodyTab = el('div', {
-            id: 'bowire-request-tab-body',
+            id: pid('bowire-request-tab-body'),
             className: `bowire-tab ${activeRequestTab === 'body' ? 'active' : ''}`,
             textContent: bodyTabLabel,
             onClick: function () { activeRequestTab = 'body'; render(); }
         });
         const metaTab = el('div', {
-            id: 'bowire-request-tab-metadata',
+            id: pid('bowire-request-tab-metadata'),
             className: `bowire-tab ${activeRequestTab === 'metadata' ? 'active' : ''}`,
             textContent: t('rb.tab.metadata'),
             onClick: function () { activeRequestTab = 'metadata'; render(); }
         });
         const schemaTab = el('div', {
-            id: 'bowire-request-tab-schema',
+            id: pid('bowire-request-tab-schema'),
             className: `bowire-tab ${activeRequestTab === 'schema' ? 'active' : ''}`,
             textContent: t('main.tab.schema'),
             onClick: function () { activeRequestTab = 'schema'; render(); }
@@ -6569,21 +6650,21 @@
         // it had no effect. Now it's part of the Body sub-tab strip
         // (#85), so the chrome only appears where it's actionable and
         // matches the GraphQL [Query/Variables/Selection set] pattern.
-        var hasInputFields = selectedMethod && selectedMethod.inputType && selectedMethod.inputType.fields && selectedMethod.inputType.fields.length > 0;
+        var hasInputFields = method && method.inputType && method.inputType.fields && method.inputType.fields.length > 0;
         const historyTab = el('div', {
-            id: 'bowire-request-tab-history',
+            id: pid('bowire-request-tab-history'),
             className: `bowire-tab ${activeRequestTab === 'history' ? 'active' : ''}`,
             textContent: t('main.tab.history'),
             onClick: function () { activeRequestTab = 'history'; render(); }
         });
         const codeTab = el('div', {
-            id: 'bowire-request-tab-code',
+            id: pid('bowire-request-tab-code'),
             className: `bowire-tab ${activeRequestTab === 'code' ? 'active' : ''}`,
             textContent: t('main.tab.code'),
             onClick: function () { activeRequestTab = 'code'; render(); }
         });
         const scriptsTab = el('div', {
-            id: 'bowire-request-tab-scripts',
+            id: pid('bowire-request-tab-scripts'),
             className: `bowire-tab ${activeRequestTab === 'scripts' ? 'active' : ''}`,
             textContent: t('main.tab.scripts'),
             onClick: function () { activeRequestTab = 'scripts'; render(); }
@@ -6593,7 +6674,7 @@
         // with collections / recordings / exports). Pass/fail results
         // surface in the response pane's "Test results" tab.
         const testsTab = el('div', {
-            id: 'bowire-request-tab-tests',
+            id: pid('bowire-request-tab-tests'),
             className: `bowire-tab ${activeRequestTab === 'tests' ? 'active' : ''}`,
             textContent: t('drawer.tests'),
             onClick: function () { activeRequestTab = 'tests'; render(); }
@@ -6611,14 +6692,14 @@
         // a "▾ N" chevron rather than getting clipped off. Deferred so
         // morphdom has mounted the strip into the live tree.
         afterRender(function () {
-            var live = document.getElementById('bowire-request-tabs');
+            var live = document.getElementById(pid('bowire-request-tabs'));
             if (live && typeof bowireWireTabOverflow === 'function') {
                 bowireWireTabOverflow(live, { tabSelector: '.bowire-tab', label: t('main.moreTabs') });
             }
         });
 
         // Channel status bar (Duplex / Client Streaming)
-        if (isChannelMethod()) {
+        if (isChannelMethod(method)) {
             var statusClass = S.duplexConnected ? 'bowire-channel-connected' : 'bowire-channel-disconnected';
             var dotClass = S.duplexConnected ? 'bowire-pulse-dot' : 'bowire-channel-dot-grey';
             var statusText = S.duplexConnected ? t('main.stream.channelOpen') : (S.statusInfo && S.statusInfo.status === 'Completed'
@@ -6646,13 +6727,13 @@
         // Body tab — stable id paired with #bowire-request-tab-body
         // so morphdom keyed-matches this pane and never swaps it with
         // another tab-content pane by position accidentally.
-        const bodyContent = el('div', { id: 'bowire-request-tab-body-content', className: `bowire-tab-content ${activeRequestTab === 'body' ? 'active' : ''}` });
+        const bodyContent = el('div', { id: pid('bowire-request-tab-body-content'), className: `bowire-tab-content ${activeRequestTab === 'body' ? 'active' : ''}` });
 
         // #253 — invocation-URL override disclosure, above the request body.
         // Collapsed by default (signals "we call the schema URL"); lets the
         // operator point this call at a Source or a custom host instead.
-        if (typeof renderInvocationUrlOverride === 'function' && selectedService && selectedMethod) {
-            var _invUrlBlock = renderInvocationUrlOverride(selectedService, selectedMethod);
+        if (typeof renderInvocationUrlOverride === 'function' && svc && method) {
+            var _invUrlBlock = renderInvocationUrlOverride(svc, method);
             if (_invUrlBlock) bodyContent.appendChild(_invUrlBlock);
         }
 
@@ -6666,11 +6747,11 @@
         // the active sub-tab id.
         var bodySubTabs = [];
         var isGqlMethod = isGraphQLMethod();
-        var hasGqlSelectionSet = isGqlMethod && selectedMethod && selectedMethod.outputType
-            && selectedMethod.outputType.fields && selectedMethod.outputType.fields.length > 0;
-        var hasGqlQuery = isGqlMethod && selectedMethod;
-        var hasInputFormFields = selectedMethod && selectedMethod.inputType
-            && selectedMethod.inputType.fields && selectedMethod.inputType.fields.length > 0;
+        var hasGqlSelectionSet = isGqlMethod && method && method.outputType
+            && method.outputType.fields && method.outputType.fields.length > 0;
+        var hasGqlQuery = isGqlMethod && method;
+        var hasInputFormFields = method && method.inputType
+            && method.inputType.fields && method.inputType.fields.length > 0;
 
         if (isGqlMethod) {
             // Order matters: Query first as the default sub-tab (it's
@@ -6679,7 +6760,7 @@
             if (hasGqlQuery) bodySubTabs.push({ id: 'query', label: t('main.subtab.query') });
             if (hasInputFormFields) bodySubTabs.push({ id: 'form', label: t('rb.tab.vars') });
             if (hasGqlSelectionSet) bodySubTabs.push({ id: 'selection', label: t('main.selectionSet') });
-        } else if (hasInputFormFields && !isMultiMessage && !isChannelMethod()) {
+        } else if (hasInputFormFields && !isMultiMessage && !isChannelMethod(method)) {
             // REST / gRPC unary / JSON-RPC / OData / SOAP — the existing
             // Form vs. JSON toggle that lived in the top-pane tab strip
             // (mode-buttons next to Body/Metadata/Schema). Surface it as
@@ -6696,7 +6777,7 @@
             // the generic "Form" / "Body" pair. JSON stays "JSON"
             // everywhere because it's the wire format, not a protocol
             // term.
-            var src = selectedService && selectedService.source;
+            var src = svc && svc.source;
             var formLabel, jsonLabel;
             if (src === 'grpc') {
                 formLabel = 'Message';
@@ -6732,11 +6813,11 @@
 
         // Render the sub-tab strip when ≥ 2 sub-tabs apply.
         if (bodySubTabs.length >= 2) {
-            var subTabBar = el('div', { id: 'bowire-body-subtabs', className: 'bowire-sub-tabs', role: 'tablist' });
+            var subTabBar = el('div', { id: pid('bowire-body-subtabs'), className: 'bowire-sub-tabs', role: 'tablist' });
             for (var sti = 0; sti < bodySubTabs.length; sti++) {
                 (function (tab) {
                     subTabBar.appendChild(el('button', {
-                        id: 'bowire-body-subtab-' + tab.id,
+                        id: pid('bowire-body-subtab-') + tab.id,
                         className: 'bowire-sub-tab' + (activeBodySubTab === tab.id ? ' active' : ''),
                         role: 'tab',
                         textContent: tab.label,
@@ -6764,7 +6845,7 @@
             // Selection set / Query / Variables / Headers / …). Mounted
             // on each render; helper is idempotent.
             afterRender(function () {
-                var live = document.getElementById('bowire-body-subtabs');
+                var live = document.getElementById(pid('bowire-body-subtabs'));
                 if (live && typeof bowireWireTabOverflow === 'function') {
                     bowireWireTabOverflow(live, { tabSelector: '.bowire-sub-tab', label: t('common.more') });
                 }
@@ -6795,12 +6876,12 @@
                 el('span', { className: 'bowire-pane-title', textContent: t('main.selectionSet') }),
                 el('div', { className: 'bowire-pane-actions' },
                     el('button', {
-                        id: 'bowire-graphql-select-all-btn',
+                        id: pid('bowire-graphql-select-all-btn'),
                         className: 'bowire-pane-btn',
                         textContent: t('main.selectAllTop'),
                         onClick: function () {
-                            for (var i = 0; i < selectedMethod.outputType.fields.length; i++) {
-                                var f = selectedMethod.outputType.fields[i];
+                            for (var i = 0; i < method.outputType.fields.length; i++) {
+                                var f = method.outputType.fields[i];
                                 setGraphQLSelection(f.name, true);
                             }
                             // Drop any user query override so the new
@@ -6810,7 +6891,7 @@
                         }
                     }),
                     el('button', {
-                        id: 'bowire-graphql-clear-btn',
+                        id: pid('bowire-graphql-clear-btn'),
                         className: 'bowire-pane-btn',
                         textContent: t('rb.history.clear'),
                         onClick: function () {
@@ -6822,7 +6903,7 @@
                 )
             );
 
-            var selTree = renderGraphQLSelectionTree(selectedMethod.outputType, '', sels, 0);
+            var selTree = renderGraphQLSelectionTree(method.outputType, '', sels, 0);
             var selBox = el('div', { className: 'bowire-graphql-selection-pane' }, selHeader, selTree);
             bodyContent.appendChild(selBox);
         }
@@ -6838,7 +6919,7 @@
                 el('span', { className: 'bowire-pane-title', textContent: t('main.graphqlQuery') }),
                 el('div', { className: 'bowire-pane-actions' },
                     el('button', {
-                        id: 'bowire-graphql-reset-query-btn',
+                        id: pid('bowire-graphql-reset-query-btn'),
                         className: 'bowire-pane-btn',
                         textContent: t('main.resetToDefault'),
                         onClick: function () {
@@ -6877,19 +6958,19 @@
         // WebSocket: outgoing frame type toggle + binary file upload. Sits
         // above the message editor so the user can pick text vs binary and
         // optionally drop a file in before clicking Send.
-        if (isWebSocketMethod() && isChannelMethod()) {
+        if (isWebSocketMethod(svc) && isChannelMethod(method)) {
             var wsHeader = el('div', { className: 'bowire-pane-header' },
                 el('span', { className: 'bowire-pane-title', textContent: t('main.frameType') }),
                 el('div', { className: 'bowire-pane-actions' },
                     el('div', { className: 'bowire-toggle-group' },
                         el('button', {
-                            id: 'bowire-ws-frame-text-btn',
+                            id: pid('bowire-ws-frame-text-btn'),
                             className: 'bowire-toggle-btn' + (websocketFrameType === 'text' ? ' is-active' : ''),
                             textContent: t('main.frameText'),
                             onClick: function () { websocketFrameType = 'text'; websocketPendingBinary = null; render(); }
                         }),
                         el('button', {
-                            id: 'bowire-ws-frame-binary-btn',
+                            id: pid('bowire-ws-frame-binary-btn'),
                             className: 'bowire-toggle-btn' + (websocketFrameType === 'binary' ? ' is-active' : ''),
                             textContent: t('rb.body.binary'),
                             onClick: function () { websocketFrameType = 'binary'; render(); }
@@ -6945,11 +7026,11 @@
                 el('span', { className: 'bowire-pane-title', textContent: t('main.jsonMessages') }),
                 el('div', { className: 'bowire-pane-actions' },
                     el('button', {
-                        id: 'bowire-multi-msg-format-all-btn',
+                        id: pid('bowire-multi-msg-format-all-btn'),
                         className: 'bowire-pane-btn',
                         textContent: t('main.formatAll'),
                         onClick: function () {
-                            var editors = $$('.bowire-message-editor');
+                            var editors = $$('.bowire-message-editor', surfaceEl(tab ? paneById(tab.paneId) : null));
                             for (var i = 0; i < editors.length; i++) {
                                 editors[i].value = formatJson(editors[i].value);
                                 S.requestMessages[i] = editors[i].value;
@@ -6957,12 +7038,12 @@
                         }
                     }),
                     el('button', {
-                        id: 'bowire-multi-msg-template-all-btn',
+                        id: pid('bowire-multi-msg-template-all-btn'),
                         className: 'bowire-pane-btn',
                         textContent: t('main.templateAll'),
                         onClick: function () {
-                            var editors = $$('.bowire-message-editor');
-                            var tmpl = selectedMethod ? generateDefaultJson(selectedMethod.inputType, 0) : '{}';
+                            var editors = $$('.bowire-message-editor', surfaceEl(tab ? paneById(tab.paneId) : null));
+                            var tmpl = method ? generateDefaultJson(method.inputType, 0) : '{}';
                             for (var i = 0; i < editors.length; i++) {
                                 editors[i].value = tmpl;
                                 S.requestMessages[i] = tmpl;
@@ -6986,7 +7067,7 @@
                     );
                     if (S.requestMessages.length > 1) {
                         msgHeader.appendChild(el('button', {
-                            id: 'bowire-msg-remove-' + i,
+                            id: pid('bowire-msg-remove-') + i,
                             className: 'bowire-message-remove',
                             textContent: '\u00d7',
                             title: t('main.removeMessage'),
@@ -7025,8 +7106,8 @@
                     });
                     msgItem.appendChild(msgEditor);
                     // Schema-based autocomplete for streaming message editors
-                    if (selectedMethod && selectedMethod.inputType) {
-                        attachBodyAutocomplete(msgEditor, selectedMethod.inputType);
+                    if (method && method.inputType) {
+                        attachBodyAutocomplete(msgEditor, method.inputType);
                     }
                     // Per-message validation status — same component as
                     // the single-editor variant so a multi-message
@@ -7041,11 +7122,11 @@
 
             // Add Message button
             messageList.appendChild(el('button', {
-                id: 'bowire-add-message-btn',
+                id: pid('bowire-add-message-btn'),
                 className: 'bowire-add-message',
                 onClick: function () {
                     saveMessageEditors(S);
-                    var tmpl = selectedMethod ? generateDefaultJson(selectedMethod.inputType, 0) : '{}';
+                    var tmpl = method ? generateDefaultJson(method.inputType, 0) : '{}';
                     S.requestMessages.push(tmpl);
                     render();
                 }
@@ -7061,7 +7142,7 @@
                 el('span', { className: 'bowire-pane-title', textContent: t('rb.body.form') }),
                 el('div', { className: 'bowire-pane-actions' },
                     el('button', {
-                        id: 'bowire-form-reset-btn',
+                        id: pid('bowire-form-reset-btn'),
                         className: 'bowire-pane-btn',
                         textContent: t('main.reset'),
                         onClick: function () {
@@ -7073,7 +7154,7 @@
             );
             bodyContent.appendChild(paneHeader);
             const body = el('div', { className: 'bowire-pane-body' });
-            body.appendChild(renderFormFields(S, selectedMethod.inputType, '', 0));
+            body.appendChild(renderFormFields(S, method.inputType, '', 0));
             bodyContent.appendChild(body);
         } else {
             // Single-message mode: JSON editor (Unary / Server Streaming)
@@ -7090,28 +7171,28 @@
                 jsonStatus,
                 el('div', { className: 'bowire-pane-actions' },
                     el('button', {
-                        id: 'bowire-json-format-btn',
+                        id: pid('bowire-json-format-btn'),
                         className: 'bowire-pane-btn',
                         textContent: t('main.format'),
                         onClick: function () {
-                            var ed = $('.bowire-editor');
+                            var ed = $('.bowire-editor', surfaceEl(tab ? paneById(tab.paneId) : null));
                             if (ed) { ed.value = formatJson(ed.value); S.requestMessages[0] = ed.value; }
                         }
                     }),
                     el('button', {
-                        id: 'bowire-json-template-btn',
+                        id: pid('bowire-json-template-btn'),
                         className: 'bowire-pane-btn',
                         textContent: t('main.template'),
                         onClick: function () {
-                            var ed = $('.bowire-editor');
-                            if (ed && selectedMethod) {
-                                ed.value = generateDefaultJson(selectedMethod.inputType, 0);
+                            var ed = $('.bowire-editor', surfaceEl(tab ? paneById(tab.paneId) : null));
+                            if (ed && method) {
+                                ed.value = generateDefaultJson(method.inputType, 0);
                                 S.requestMessages[0] = ed.value;
                             }
                         }
                     }),
                     el('button', {
-                        id: 'bowire-json-import-btn',
+                        id: pid('bowire-json-import-btn'),
                         className: 'bowire-pane-btn',
                         textContent: t('main.import'),
                         title: t('main.importJsonTitle'),
@@ -7126,7 +7207,7 @@
                                 reader.onload = function (ev) {
                                     var text = ev.target.result;
                                     try { text = JSON.stringify(JSON.parse(text), null, 2); } catch {}
-                                    var ed = $('.bowire-editor');
+                                    var ed = $('.bowire-editor', surfaceEl(tab ? paneById(tab.paneId) : null));
                                     if (ed) { ed.value = text; S.requestMessages[0] = text; }
                                     toast(t('main.imported', { name: file.name }), 'success');
                                 };
@@ -7146,12 +7227,12 @@
                         var cmdLang = cmdLangs.length ? cmdLangs[0] : null;
                         if (!cmdLang) return null;
                         return el('button', {
-                            id: 'bowire-json-copy-cmd-btn',
+                            id: pid('bowire-json-copy-cmd-btn'),
                             className: 'bowire-pane-btn',
                             textContent: cmdLang.label,
                             title: t('main.copyAsCommand', { language: cmdLang.label }),
                             onClick: function () {
-                                if (!selectedService || !selectedMethod) return;
+                                if (!svc || !method) return;
                                 var gen = CODE_EXPORT_GENERATORS[cmdLang.id];
                                 if (!gen) return;
                                 var cmd = gen(buildCodeExportContext());
@@ -7165,7 +7246,7 @@
             );
             bodyContent.appendChild(paneHeader);
             const body = el('div', { className: 'bowire-pane-body' });
-            const defaultJson = selectedMethod ? generateDefaultJson(selectedMethod.inputType, 0) : '{}';
+            const defaultJson = method ? generateDefaultJson(method.inputType, 0) : '{}';
             const editor = el('textarea', {
                 className: 'bowire-editor',
                 placeholder: t('main.jsonBodyPlaceholder2'),
@@ -7219,8 +7300,8 @@
 
             body.appendChild(editor);
             // Schema-based autocomplete for field names in the JSON editor
-            if (selectedMethod && selectedMethod.inputType) {
-                attachBodyAutocomplete(editor, selectedMethod.inputType);
+            if (method && method.inputType) {
+                attachBodyAutocomplete(editor, method.inputType);
             }
             // jsonStatus pill already mounted in the pane header above —
             // attach the validator now that the editor exists. Keeping
@@ -7232,11 +7313,11 @@
         pane.appendChild(bodyContent);
 
         // Metadata tab
-        const metaContent = el('div', { id: 'bowire-request-tab-metadata-content', className: `bowire-tab-content ${activeRequestTab === 'metadata' ? 'active' : ''}` });
+        const metaContent = el('div', { id: pid('bowire-request-tab-metadata-content'), className: `bowire-tab-content ${activeRequestTab === 'metadata' ? 'active' : ''}` });
         const metaEditor = el('div', { className: 'bowire-metadata-editor' });
 
         // Preserve existing metadata rows
-        const existingRows = $$('.bowire-metadata-row');
+        const existingRows = $$('.bowire-metadata-row', surfaceEl(tab ? paneById(tab.paneId) : null));
         if (existingRows.length > 0) {
             for (const row of existingRows) {
                 const inputs = row.querySelectorAll('.bowire-metadata-input');
@@ -7249,7 +7330,7 @@
         }
 
         metaEditor.appendChild(el('button', {
-            id: 'bowire-metadata-add-btn',
+            id: pid('bowire-metadata-add-btn'),
             className: 'bowire-metadata-add',
             textContent: t('main.src.addHeader'),
             onClick: function () {
@@ -7260,17 +7341,17 @@
         pane.appendChild(metaContent);
 
         // Schema tab
-        const schemaContent = el('div', { id: 'bowire-request-tab-schema-content', className: `bowire-tab-content ${activeRequestTab === 'schema' ? 'active' : ''}` });
+        const schemaContent = el('div', { id: pid('bowire-request-tab-schema-content'), className: `bowire-tab-content ${activeRequestTab === 'schema' ? 'active' : ''}` });
         const schemaDiv = el('div', { className: 'bowire-schema' });
 
-        if (selectedMethod) {
+        if (method) {
             // Input type
             const inputSection = el('div', { className: 'bowire-schema-section' });
             inputSection.appendChild(el('div', { className: 'bowire-schema-title' },
                 el('span', { textContent: t('main.schemaInput') }),
-                el('span', { className: 'bowire-schema-type-name', textContent: selectedMethod.inputType.fullName })
+                el('span', { className: 'bowire-schema-type-name', textContent: method.inputType.fullName })
             ));
-            const inputFields = renderSchemaFields(selectedMethod.inputType.fields, 0);
+            const inputFields = renderSchemaFields(method.inputType.fields, 0);
             if (inputFields) inputSection.appendChild(inputFields);
             else inputSection.appendChild(el('div', { className: 'bowire-schema-field', textContent: t('main.noFields') }));
             schemaDiv.appendChild(inputSection);
@@ -7279,9 +7360,9 @@
             const outputSection = el('div', { className: 'bowire-schema-section' });
             outputSection.appendChild(el('div', { className: 'bowire-schema-title' },
                 el('span', { textContent: t('main.schemaOutput') }),
-                el('span', { className: 'bowire-schema-type-name', textContent: selectedMethod.outputType.fullName })
+                el('span', { className: 'bowire-schema-type-name', textContent: method.outputType.fullName })
             ));
-            const outputFields = renderSchemaFields(selectedMethod.outputType.fields, 0);
+            const outputFields = renderSchemaFields(method.outputType.fields, 0);
             if (outputFields) outputSection.appendChild(outputFields);
             else outputSection.appendChild(el('div', { className: 'bowire-schema-field', textContent: t('main.noFields') }));
             schemaDiv.appendChild(outputSection);
@@ -7291,10 +7372,10 @@
         pane.appendChild(schemaContent);
 
         // History tab
-        const historyContent = el('div', { id: 'bowire-request-tab-history-content', className: `bowire-tab-content ${activeRequestTab === 'history' ? 'active' : ''}` });
+        const historyContent = el('div', { id: pid('bowire-request-tab-history-content'), className: `bowire-tab-content ${activeRequestTab === 'history' ? 'active' : ''}` });
         const allHistory = getHistory();
-        const methodFiltered = (selectedMethod && !showAllHistory)
-            ? allHistory.filter(function (h) { return h.service === selectedService.name && h.method === selectedMethod.name; })
+        const methodFiltered = (method && !showAllHistory)
+            ? allHistory.filter(function (h) { return h.service === svc.name && h.method === method.name; })
             : allHistory;
         const filtered = filterHistoryEntries(methodFiltered);
 
@@ -7342,7 +7423,7 @@
             for (var bi = 0; bi < buckets.length; bi++) {
                 (function (bucket) {
                     filterPills.appendChild(el('button', {
-                        id: 'bowire-history-filter-' + bucket.id,
+                        id: pid('bowire-history-filter-') + bucket.id,
                         className: 'bowire-history-filter-pill' + (historyStatusFilter === bucket.id ? ' active' : ''),
                         textContent: bucket.label,
                         onClick: function () {
@@ -7357,35 +7438,35 @@
             historyContent.appendChild(searchBar);
 
             // Filter info bar
-            if (selectedMethod && !showAllHistory) {
+            if (method && !showAllHistory) {
                 const filterInfo = el('div', { className: 'bowire-history-filter-info' },
                     // #688 - one message, two shapes.
                     el('span', {
                         textContent: t(filtered.length === 1 ? 'main.historyForOne'
                             : 'main.historyForMany', {
                             count: filtered.length,
-                            method: selectedMethod.name,
+                            method: method.name,
                             total: allHistory.length
                         })
                     }),
                     el('button', {
-                        id: 'bowire-history-show-all-btn',
+                        id: pid('bowire-history-show-all-btn'),
                         className: 'bowire-history-show-all',
                         textContent: t('main.showAll'),
                         onClick: function () { showAllHistory = true; render(); }
                     })
                 );
                 historyContent.appendChild(filterInfo);
-            } else if (showAllHistory && selectedMethod) {
+            } else if (showAllHistory && method) {
                 const filterInfo = el('div', { className: 'bowire-history-filter-info' },
                     el('span', {
                         textContent: t('main.historyTotal',
                             { count: allHistory.length })
                     }),
                     el('button', {
-                        id: 'bowire-history-filter-method-btn',
+                        id: pid('bowire-history-filter-method-btn'),
                         className: 'bowire-history-show-all',
-                        textContent: t('main.filterTo', { method: selectedMethod.name }),
+                        textContent: t('main.filterTo', { method: method.name }),
                         onClick: function () { showAllHistory = false; render(); }
                     })
                 );
@@ -7531,7 +7612,7 @@
             }
 
             historyContent.appendChild(el('button', {
-                id: 'bowire-history-clear-btn',
+                id: pid('bowire-history-clear-btn'),
                 className: 'bowire-history-clear',
                 textContent: t('rb.history.clearTitle'),
                 onClick: clearHistory
@@ -7541,8 +7622,8 @@
 
         // Code tab — generate request snippets in C# / Python / curl /
         // grpcurl / wscat / fetch based on the current method's protocol.
-        const codeContent = el('div', { id: 'bowire-request-tab-code-content', className: `bowire-tab-content ${activeRequestTab === 'code' ? 'active' : ''}` });
-        if (selectedMethod) {
+        const codeContent = el('div', { id: pid('bowire-request-tab-code-content'), className: `bowire-tab-content ${activeRequestTab === 'code' ? 'active' : ''}` });
+        if (method) {
             var availLangs = getCodeExportLanguages();
             var activeLang = resolveCodeExportLang();
             if (activeLang) codeExportLang = activeLang;
@@ -7551,7 +7632,7 @@
             for (var li = 0; li < availLangs.length; li++) {
                 (function (lang) {
                     langPills.appendChild(el('button', {
-                        id: 'bowire-code-lang-' + lang.id,
+                        id: pid('bowire-code-lang-') + lang.id,
                         className: 'bowire-code-lang-pill' + (codeExportLang === lang.id ? ' active' : ''),
                         textContent: lang.label,
                         onClick: function () { codeExportLang = lang.id; render(); }
@@ -7573,21 +7654,21 @@
                     ? cliExportShellFlavour() : 'posix';
                 cliOptionPills = el('div', { className: 'bowire-code-lang-pills' },
                     el('button', {
-                        id: 'bowire-cli-shell-posix',
+                        id: pid('bowire-cli-shell-posix'),
                         className: 'bowire-code-lang-pill' + (activeShell === 'posix' ? ' active' : ''),
                         textContent: t('main.cli.bash'),
                         title: t('main.cli.bashTitle'),
                         onClick: function () { cliExportShell = 'posix'; render(); }
                     }),
                     el('button', {
-                        id: 'bowire-cli-shell-powershell',
+                        id: pid('bowire-cli-shell-powershell'),
                         className: 'bowire-code-lang-pill' + (activeShell === 'powershell' ? ' active' : ''),
                         textContent: t('main.cli.powershell'),
                         title: t('main.cli.powershellTitle'),
                         onClick: function () { cliExportShell = 'powershell'; render(); }
                     }),
                     el('button', {
-                        id: 'bowire-cli-keepvars',
+                        id: pid('bowire-cli-keepvars'),
                         className: 'bowire-code-lang-pill' + (cliExportKeepVars ? ' active' : ''),
                         textContent: t('main.cli.keepVars'),
                         title: t('main.cli.keepVarsTitle'),
@@ -7637,9 +7718,9 @@
         // protocol-aware placeholders + inline lint warnings + a
         // per-phase Console panel + a "Generate from intent" AI
         // button round out the surface.
-        const scriptsContent = el('div', { id: 'bowire-request-tab-scripts-content', className: `bowire-tab-content ${activeRequestTab === 'scripts' ? 'active' : ''}` });
-        if (selectedMethod && selectedService) {
-            scriptsContent.appendChild(renderScriptsTab());
+        const scriptsContent = el('div', { id: pid('bowire-request-tab-scripts-content'), className: `bowire-tab-content ${activeRequestTab === 'scripts' ? 'active' : ''}` });
+        if (method && svc) {
+            scriptsContent.appendChild(renderScriptsTab(tab));
         }
         pane.appendChild(scriptsContent);
 
@@ -7647,10 +7728,10 @@
         // lets the operator manage the assertion list; results show
         // up in the response pane's "Test results" tab.
         const testsContent = el('div', {
-            id: 'bowire-request-tab-tests-content',
+            id: pid('bowire-request-tab-tests-content'),
             className: `bowire-tab-content ${activeRequestTab === 'tests' ? 'active' : ''}`
         });
-        if (selectedMethod) {
+        if (method) {
             testsContent.appendChild(typeof renderTestDefinitionsTab === 'function'
                 ? renderTestDefinitionsTab()
                 : el('div', { className: 'bowire-empty-state', textContent: t('main.testsUnavailable') }));
@@ -7671,13 +7752,16 @@
     // it's a per-session preference, not project content.
     var _scriptEditorCollapsed = { pre: false, post: false, console: false };
 
-    function renderScriptsTab() {
+    function renderScriptsTab(tab) {
+        var method = tab ? tab.method : null;
+        var svc = tab ? tab.service : null;
+        var pid = paneIdFn(tab ? paneById(tab.paneId) : null);
         var wrap = el('div', { className: 'bowire-scripts-wrap' });
-        var svc = selectedService.name;
-        var mth = selectedMethod.name;
+        var svc = svc.name;
+        var mth = method.name;
         var scriptsState = getMethodScripts(svc, mth);
         var shape = (typeof detectScriptProtocolShape === 'function')
-            ? detectScriptProtocolShape(selectedService.source, selectedProtocol)
+            ? detectScriptProtocolShape(svc.source, selectedProtocol)
             : 'rest';
 
         // Shape-aware placeholder + hint so the operator immediately
@@ -7705,7 +7789,8 @@
             value: scriptsState.preScript,
             shape: shape,
             svc: svc,
-            mth: mth
+            mth: mth,
+            pid: pid
         }));
         wrap.appendChild(_renderScriptEditorBlock({
             phase: 'post',
@@ -7714,6 +7799,7 @@
             placeholder: postExample,
             value: scriptsState.postScript,
             shape: shape,
+            pid: pid,
             svc: svc,
             mth: mth
         }));
@@ -7749,7 +7835,7 @@
 
         var hint = el('div', { className: 'bowire-script-hint', textContent: opts.hint });
         var area = el('textarea', {
-            id: 'bowire-script-' + opts.phase,
+            id: (opts.pid || function (x) { return x; })('bowire-script-' + opts.phase),
             className: 'bowire-script-editor',
             placeholder: opts.placeholder,
             value: opts.value || '',
@@ -8401,14 +8487,18 @@
         return meta.length > 0 ? meta.join(' · ') : disPdu.pduType;
     }
 
-    function buildStreamDetailContent(msg, idx) {
+    function buildStreamDetailContent(S, msg, idx) {
+        var tab = tabForState(S);
+        var method = tab ? tab.method : selectedMethod;
+        var svc = tab ? tab.service : selectedService;
+        var pid = paneIdFn(tab ? paneById(tab.paneId) : null);
         var raw = streamMessageRaw(msg);
         var wsType = detectWebSocketFrameType(raw);
         var bytes = streamMessageBytes(msg);
 
         var header = el('div', {
             className: 'bowire-stream-detail-header',
-            id: 'bowire-stream-detail-header'
+            id: pid('bowire-stream-detail-header')
         });
         header.appendChild(el('span', {
             className: 'bowire-stream-detail-title',
@@ -8511,15 +8601,15 @@
         // then collapses back when done inspecting.
         var maxBtn = el('button', {
             className: 'bowire-stream-toolbar-btn' + (streamDetailMaximized ? ' is-on' : ''),
-            id: 'bowire-stream-maximize-btn',
+            id: pid('bowire-stream-maximize-btn'),
             title: streamDetailMaximized
                 ? t('main.stream.showListTitle')
                 : t('main.stream.hideListTitle'),
             onClick: function () {
                 streamDetailMaximized = !streamDetailMaximized;
-                var out = document.getElementById('bowire-stream-output');
+                var out = document.getElementById(pid('bowire-stream-output'));
                 if (out) out.classList.toggle('is-maximized', streamDetailMaximized);
-                var btn = document.getElementById('bowire-stream-maximize-btn');
+                var btn = document.getElementById(pid('bowire-stream-maximize-btn'));
                 if (btn) {
                     btn.classList.toggle('is-on', streamDetailMaximized);
                     btn.title = streamDetailMaximized
@@ -8544,7 +8634,7 @@
         if (disPdu || udp) {
             var body = el('div', {
                 className: 'bowire-stream-detail-body bowire-stream-detail-body-bytes',
-                id: 'bowire-stream-detail-body'
+                id: pid('bowire-stream-detail-body')
             });
             var envelopePre = el('pre', { className: 'bowire-stream-detail-envelope' });
             envelopePre.innerHTML = highlightJson(raw);
@@ -8584,7 +8674,7 @@
         // nicht in einer extra reihe.'
         var body = el('div', {
             className: 'bowire-stream-detail-body',
-            id: 'bowire-stream-detail-body'
+            id: pid('bowire-stream-detail-body')
         });
         // JSON viewer + per-pane toolbar (Expand-all / Collapse-all /
         // Wrap / Search / Copy / Download). Toolbar is part of the
@@ -8602,15 +8692,15 @@
         // Same gesture wiring the unary response output gets — click
         // toggles via native <details>, dblclick copies the JSONPath,
         // right-click opens the unified context menu.
-        bowireWireResponseTreeGestures(body);
+        bowireWireResponseTreeGestures(S, body);
         if (typeof bowireDecorateResponseTreeForSemantics === 'function'
-            && selectedService && selectedMethod) {
+            && svc && method) {
             try {
                 bowireDecorateResponseTreeForSemantics(
-                    body, selectedService.name, selectedMethod.name);
+                    body, svc.name, method.name);
             } catch (e) { console.error('[bowire-semantics] decorate stream-detail', e); }
         }
-        if (selectedService && selectedMethod) {
+        if (svc && method) {
             try {
                 // Per-frame body so any extension that resolves
                 // values from the JSON (e.g. the map widget's
@@ -8620,7 +8710,7 @@
                 var parsedFrame = null;
                 try { parsedFrame = JSON.parse(raw); } catch { parsedFrame = null; }
                 bowireDecorateResponseTreeViaExtensions(
-                    body, selectedService.name, selectedMethod.name, parsedFrame);
+                    body, svc.name, method.name, parsedFrame);
             } catch (e) { console.error('[bowire-resp-tree] decorate stream-detail', e); }
         }
 
@@ -8673,6 +8763,7 @@
     //   × Error       — channel reported an error
     function renderSubscriptionBadge(svcName, methodName, frameCount, S) {
         S = S || activeState();
+        var pid = paneIdFn(S ? paneForState(S) : null);
         var entry = (svcName && methodName)
             ? findSubscription(svcName, methodName) : null;
         var state;
@@ -8703,7 +8794,7 @@
         }
         var pill = el('div', {
             className: 'bowire-stream-status-pill bowire-stream-state-' + state,
-            id: 'bowire-stream-state-badge',
+            id: pid('bowire-stream-state-badge'),
             'data-bowire-state': state,
             title: entry && entry.channelError
                 ? t('main.errorPrefix', { error: entry.channelError })
@@ -8725,11 +8816,15 @@
     }
 
     function renderStreamingOutput(S) {
+        var tab = tabForState(S);
+        var method = tab ? tab.method : selectedMethod;
+        var svc = tab ? tab.service : selectedService;
+        var pid = paneIdFn(tab ? paneById(tab.paneId) : null);
         // Outer container — referenced by appendStreamMessage / selectStreamMessage
         // / updateStreamDetail to find the live DOM nodes.
         var output = el('div', {
             className: 'bowire-response-output streaming' + (streamDetailMaximized ? ' is-maximized' : ''),
-            id: 'bowire-stream-output'
+            id: pid('bowire-stream-output')
         });
         output.style.setProperty('--bowire-stream-list-pct', streamListSizePct + '%');
 
@@ -8742,8 +8837,8 @@
         // ended" pair. The pill is built by the shared helper so the
         // statusbar dropdown can re-use the same layout primitives.
         var badge = renderSubscriptionBadge(
-            selectedService && selectedService.name,
-            selectedMethod && selectedMethod.name,
+            svc && svc.name,
+            method && method.name,
             S.streamMessages.length, S);
         toolbar.appendChild(badge);
         var hasFilter = (streamFilterQuery || '').trim().length > 0;
@@ -8759,7 +8854,7 @@
         // predicate.
         var filterToggle = el('button', {
             className: 'bowire-stream-toolbar-btn' + ((streamFilterPanelOpen || hasFilter) ? ' is-on' : ''),
-            id: 'bowire-stream-filter-toggle',
+            id: pid('bowire-stream-filter-toggle'),
             title: streamFilterPanelOpen
                 ? t('main.stream.hideFilter')
                 : (hasFilter ? t('main.stream.filterActive') : t('main.stream.openFilter')),
@@ -8767,7 +8862,7 @@
                 streamFilterPanelOpen = !streamFilterPanelOpen;
                 render();
                 if (streamFilterPanelOpen) {
-                    var inp = document.getElementById('bowire-stream-filter-input');
+                    var inp = document.getElementById(pid('bowire-stream-filter-input'));
                     if (inp) inp.focus();
                 }
             }
@@ -8786,7 +8881,7 @@
         // feature, but it also controls the detail pane.
         var autoBtn = el('button', {
             className: 'bowire-stream-toolbar-btn' + (streamAutoScroll ? ' is-on' : ''),
-            id: 'bowire-stream-autoscroll-btn',
+            id: pid('bowire-stream-autoscroll-btn'),
             title: streamAutoScroll
                 ? t('main.stream.followingTitle')
                 : t('main.stream.pinnedTitle'),
@@ -8803,7 +8898,7 @@
         // toggle on the widget pane header is enough \u2014 but once the
         // user has switched to tab there's no widget pane and we need
         // an alternate escape hatch).
-        var toolbarToggle = renderStreamingToolbarLayoutToggle();
+        var toolbarToggle = renderStreamingToolbarLayoutToggle(S);
         if (toolbarToggle) toolbar.appendChild(toolbarToggle);
 
         output.appendChild(toolbar);
@@ -8817,20 +8912,20 @@
         if (streamFilterPanelOpen) {
             var panel = el('div', {
                 className: 'bowire-stream-filter-panel',
-                id: 'bowire-stream-filter-panel'
+                id: pid('bowire-stream-filter-panel')
             });
             var basicRow = el('div', { className: 'bowire-stream-filter-row' });
             var filterInput = el('input', {
                 type: 'text',
                 className: 'bowire-stream-filter',
-                id: 'bowire-stream-filter-input',
+                id: pid('bowire-stream-filter-input'),
                 placeholder: t('main.filterMessages'),
                 value: streamFilterQuery,
                 spellcheck: 'false',
                 onInput: function (e) {
                     streamFilterQuery = e.target.value;
                     render();
-                    var inp = document.getElementById('bowire-stream-filter-input');
+                    var inp = document.getElementById(pid('bowire-stream-filter-input'));
                     if (inp) {
                         inp.focus();
                         inp.selectionStart = inp.selectionEnd = inp.value.length;
@@ -8869,18 +8964,18 @@
         }
         output.appendChild(el('div', {
             className: 'bowire-stream-count-row',
-            id: 'bowire-stream-count',
+            id: pid('bowire-stream-count'),
             textContent: countText
         }));
 
         // ---- List pane ----
         var listPane = el('div', {
             className: 'bowire-stream-list-pane',
-            id: 'bowire-stream-list-pane'
+            id: pid('bowire-stream-list-pane')
         });
         var list = el('div', {
             className: 'bowire-stream-list',
-            id: 'bowire-stream-list'
+            id: pid('bowire-stream-list')
         });
         for (var i = 0; i < S.streamMessages.length; i++) {
             // Skip messages that don't match the filter — the indices
@@ -8895,7 +8990,7 @@
         // ---- Splitter ----
         var splitter = el('div', {
             className: 'bowire-stream-splitter',
-            id: 'bowire-stream-splitter',
+            id: pid('bowire-stream-splitter'),
             title: t('main.dragResize')
         });
         output.appendChild(splitter);
@@ -8903,11 +8998,11 @@
         // ---- Detail pane ----
         var detailPane = el('div', {
             className: 'bowire-stream-detail-pane',
-            id: 'bowire-stream-detail-pane'
+            id: pid('bowire-stream-detail-pane')
         });
         var effIdx = streamEffectiveIndex(S);
         if (effIdx >= 0) {
-            var built = buildStreamDetailContent(S.streamMessages[effIdx], effIdx);
+            var built = buildStreamDetailContent(S, S.streamMessages[effIdx], effIdx);
             detailPane.appendChild(built.header);
             detailPane.appendChild(built.body);
         }
@@ -8965,6 +9060,10 @@
     }
 
     function renderStreamingPaneWithWidgets(S) {
+        var tab = tabForState(S);
+        var method = tab ? tab.method : selectedMethod;
+        var svc = tab ? tab.service : selectedService;
+        var pid = paneIdFn(tab ? paneById(tab.paneId) : null);
         var fw = window.__bowireExtFramework;
         var layout = window.__bowireLayout;
 
@@ -8972,7 +9071,7 @@
         // selected method, etc. — return the plain streaming output
         // unchanged. Anything that wants the split layout is on the
         // happy path below.
-        if (!fw || !layout || !selectedService || !selectedMethod) {
+        if (!fw || !layout || !svc || !method) {
             disposeWidgetMounts();
             return renderStreamingOutput(S);
         }
@@ -8995,10 +9094,10 @@
         // viewer with a split default is purely additive.
         var splitKindExt = (typeof fw.preferredSplitExtensionForMethod === 'function')
             ? fw.preferredSplitExtensionForMethod(
-                selectedService.name, selectedMethod.name)
+                svc.name, method.name)
             : null;
         var saved = splitKindExt
-            ? layout.loadWidgetLayout(selectedService.name, selectedMethod.name, splitKindExt.id, splitKindExt.kind)
+            ? layout.loadWidgetLayout(svc.name, method.name, splitKindExt.id, splitKindExt.kind)
             : null;
         var splitActive = !!(splitKindExt
             && saved
@@ -9017,7 +9116,7 @@
                 var placeholderSlot = el('div', { className: 'bowire-placeholder-slot' });
                 wrapper.appendChild(placeholderSlot);
                 var cleanup = fw.mountWidgetsForMethod(
-                    selectedService.name, selectedMethod.name, placeholderSlot);
+                    svc.name, method.name, placeholderSlot);
                 if (typeof cleanup === 'function') {
                     bowireWidgetUnmounts.push(cleanup);
                 }
@@ -9027,7 +9126,7 @@
             // Without this branch the Toggle (Split → Tab) used to
             // strand the map widget without a slot, so the user lost
             // the map entirely (Issue 1).
-            return renderResponseTabbedWithWidget(
+            return renderResponseTabbedWithWidget(S,
                 streamingOut, splitKindExt, saved);
         }
 
@@ -9045,7 +9144,7 @@
         // merge a leftSlot div with a tab strip and stranding live
         // onClick listeners on the wrong nodes (Bug 2).
         var host = el('div', {
-            id: 'bowire-response-widget-host-split',
+            id: pid('bowire-response-widget-host-split'),
             className: 'bowire-widget-split-host'
         });
         var pane = layout.createSplitPane(host, {
@@ -9103,7 +9202,7 @@
                 onClick: function () {
                     var current = saved.mode;
                     var nextMode = layout.cycleLayoutMode(current, splitKindExt.kind);
-                    layout.saveWidgetLayout(selectedService.name, selectedMethod.name, splitKindExt.id, {
+                    layout.saveWidgetLayout(svc.name, method.name, splitKindExt.id, {
                         mode: nextMode,
                         ratio: pane.getRatio()
                     });
@@ -9124,8 +9223,8 @@
         // detached `widgetBody` on every render after the first, so a
         // direct mount would land in an orphaned subtree (see the
         // unary twin below).
-        var mountService = selectedService.name;
-        var mountMethod = selectedMethod.name;
+        var mountService = svc.name;
+        var mountMethod = method.name;
         afterRender(function () {
             var liveBody = document.querySelector(
                 '#bowire-response-widget-host-split .bowire-widget-pane-body');
@@ -9166,10 +9265,14 @@
      * mount race (widget attaches after the dispatch fired — same
      * trick the streaming path uses).
      */
-    function renderResponseWithWidgets(outputElement) {
+    function renderResponseWithWidgets(S, outputElement) {
+        var tab = tabForState(S);
+        var method = tab ? tab.method : selectedMethod;
+        var svc = tab ? tab.service : selectedService;
+        var pid = paneIdFn(tab ? paneById(tab.paneId) : null);
         var fw = window.__bowireExtFramework;
         var layout = window.__bowireLayout;
-        if (!fw || !layout || !selectedService || !selectedMethod) {
+        if (!fw || !layout || !svc || !method) {
             disposeWidgetMounts();
             return outputElement;
         }
@@ -9179,10 +9282,10 @@
         // framework helper's contract.
         var splitKindExt = (typeof fw.preferredSplitExtensionForMethod === 'function')
             ? fw.preferredSplitExtensionForMethod(
-                selectedService.name, selectedMethod.name)
+                svc.name, method.name)
             : null;
         var saved = splitKindExt
-            ? layout.loadWidgetLayout(selectedService.name, selectedMethod.name, splitKindExt.id, splitKindExt.kind)
+            ? layout.loadWidgetLayout(svc.name, method.name, splitKindExt.id, splitKindExt.kind)
             : null;
         var splitActive = !!(splitKindExt
             && saved
@@ -9208,14 +9311,14 @@
                 var placeholderSlot = el('div', { className: 'bowire-placeholder-slot' });
                 wrapper.appendChild(placeholderSlot);
                 var cleanup = fw.mountWidgetsForMethod(
-                    selectedService.name, selectedMethod.name, placeholderSlot);
+                    svc.name, method.name, placeholderSlot);
                 if (typeof cleanup === 'function') {
                     bowireWidgetUnmounts.push(cleanup);
                 }
                 return wrapper;
             }
 
-            return renderResponseTabbedWithWidget(
+            return renderResponseTabbedWithWidget(S,
                 outputElement, splitKindExt, saved);
         }
 
@@ -9232,7 +9335,7 @@
         // merge a leftSlot div with a tab strip and stranding live
         // onClick listeners on the wrong nodes (Bug 2).
         var host = el('div', {
-            id: 'bowire-response-widget-host-split',
+            id: pid('bowire-response-widget-host-split'),
             className: 'bowire-widget-split-host'
         });
         var pane = layout.createSplitPane(host, {
@@ -9273,7 +9376,7 @@
                 title: t('main.toggleLayout'),
                 onClick: function () {
                     var nextMode = layout.cycleLayoutMode(saved.mode, splitKindExt.kind);
-                    layout.saveWidgetLayout(selectedService.name, selectedMethod.name, splitKindExt.id, {
+                    layout.saveWidgetLayout(svc.name, method.name, splitKindExt.id, {
                         mode: nextMode,
                         ratio: pane.getRatio()
                     });
@@ -9294,8 +9397,8 @@
         // this `widgetBody`; mounting into it would strand the viewer in
         // an orphaned subtree while the visible pane stays empty. Same
         // pattern as renderStreamingOutput's post-mount wiring.
-        var mountService = selectedService.name;
-        var mountMethod = selectedMethod.name;
+        var mountService = svc.name;
+        var mountMethod = method.name;
         afterRender(function () {
             var liveBody = document.querySelector(
                 '#bowire-response-widget-host-split .bowire-widget-pane-body');
@@ -9334,7 +9437,11 @@
      * in the first tab. The widget viewer mounts into the second
      * tab's body.
      */
-    function renderResponseTabbedWithWidget(outputElement, splitKindExt, saved) {
+    function renderResponseTabbedWithWidget(S, outputElement, splitKindExt, saved) {
+        var tab = tabForState(S);
+        var method = tab ? tab.method : selectedMethod;
+        var svc = tab ? tab.service : selectedService;
+        var pid = paneIdFn(tab ? paneById(tab.paneId) : null);
         var fw = window.__bowireExtFramework;
         var layout = window.__bowireLayout;
         var widgetLabel = (splitKindExt.viewer && splitKindExt.viewer.label)
@@ -9358,7 +9465,7 @@
         // to position-matched nodes (split's leftSlot div repurposed
         // as the tab strip), and tab clicks went nowhere.
         var host = el('div', {
-            id: 'bowire-response-widget-host',
+            id: pid('bowire-response-widget-host'),
             className: 'bowire-widget-tabbed'
         });
 
@@ -9418,7 +9525,7 @@
                 var nextMode = layout.cycleLayoutMode(
                     saved.mode, splitKindExt.kind);
                 layout.saveWidgetLayout(
-                    selectedService.name, selectedMethod.name,
+                    svc.name, method.name,
                     splitKindExt.id, {
                         mode: nextMode,
                         ratio: typeof saved.ratio === 'number' ? saved.ratio : 0.5
@@ -9457,8 +9564,8 @@
         // morphdom discards this detached subtree once the host id
         // exists in the page, so mount deferred + re-resolved, with
         // the childElementCount guard against racing renders.
-        var mountService = selectedService.name;
-        var mountMethod = selectedMethod.name;
+        var mountService = svc.name;
+        var mountMethod = method.name;
         afterRender(function () {
             var liveBody = document.querySelector(
                 '#bowire-response-widget-host .bowire-widget-tab-body[data-widget-tab="widget"]');
@@ -9481,17 +9588,21 @@
      * surface the toggle). Returns null in every other case so the
      * caller can skip appending.
      */
-    function renderStreamingToolbarLayoutToggle() {
+    function renderStreamingToolbarLayoutToggle(S) {
+        var tab = tabForState(S);
+        var method = tab ? tab.method : selectedMethod;
+        var svc = tab ? tab.service : selectedService;
+        var pid = paneIdFn(tab ? paneById(tab.paneId) : null);
         var fw = window.__bowireExtFramework;
         var layout = window.__bowireLayout;
-        if (!fw || !layout || !selectedService || !selectedMethod) return null;
+        if (!fw || !layout || !svc || !method) return null;
         var splitKindExt = (typeof fw.preferredSplitExtensionForMethod === 'function')
             ? fw.preferredSplitExtensionForMethod(
-                selectedService.name, selectedMethod.name)
+                svc.name, method.name)
             : null;
         if (!splitKindExt) return null;
         var saved = layout.loadWidgetLayout(
-            selectedService.name, selectedMethod.name, splitKindExt.id, splitKindExt.kind);
+            svc.name, method.name, splitKindExt.id, splitKindExt.kind);
         if (saved.mode !== 'tab') return null;
         return el('button', {
             className: 'bowire-widget-layout-toggle',
@@ -9499,7 +9610,7 @@
                 kind: (splitKindExt.viewer && splitKindExt.viewer.label) || splitKindExt.kind
             }),
             onClick: function () {
-                layout.saveWidgetLayout(selectedService.name, selectedMethod.name, splitKindExt.id, {
+                layout.saveWidgetLayout(svc.name, method.name, splitKindExt.id, {
                     mode: 'split-horizontal',
                     ratio: typeof saved.ratio === 'number' ? saved.ratio : 0.5
                 });
@@ -9677,7 +9788,11 @@
      * resolve against the wrong method's annotation set. Same
      * shape extension decorators use for hover delegation.
      */
-    function bowireWireResponseTreeGestures(treeRoot) {
+    function bowireWireResponseTreeGestures(S, treeRoot) {
+        var tab = tabForState(S);
+        var method = tab ? tab.method : selectedMethod;
+        var svc = tab ? tab.service : selectedService;
+        var pid = paneIdFn(tab ? paneById(tab.paneId) : null);
         if (!treeRoot || treeRoot.__bowireRespTreeGesturesMounted) return;
         treeRoot.__bowireRespTreeGesturesMounted = true;
 
@@ -9719,10 +9834,10 @@
             // (rather than capturing in the closure) keeps the menu
             // honest across method switches — see comment on
             // bowireWireResponseTreeGestures.
-            var svc = (typeof selectedService !== 'undefined' && selectedService)
-                ? selectedService.name : null;
-            var mth = (typeof selectedMethod !== 'undefined' && selectedMethod)
-                ? selectedMethod.name : null;
+            var svc = (typeof svc !== 'undefined' && svc)
+                ? svc.name : null;
+            var mth = (typeof method !== 'undefined' && method)
+                ? method.name : null;
             e.preventDefault();
             e.stopPropagation();
             bowireOpenResponseTreeContextMenu(e.clientX, e.clientY, {
@@ -9862,14 +9977,18 @@
 
     function appendStreamMessage(S) {
         S = S || activeState();
+        var tab = tabForState(S);
+        var method = tab ? tab.method : selectedMethod;
+        var svc = tab ? tab.service : selectedService;
+        var pid = paneIdFn(tab ? paneById(tab.paneId) : null);
         // Fast-path called from sseSource.onmessage / channel onmessage AFTER
         // the message has been pushed onto streamMessages. Returns true when
         // the structure exists and the append succeeded; false means the
         // caller should fall back to a full render() (typically the very
         // first message of a stream).
-        var output = document.getElementById('bowire-stream-output');
+        var output = document.getElementById(pid('bowire-stream-output'));
         if (!output) return false;
-        var list = document.getElementById('bowire-stream-list');
+        var list = document.getElementById(pid('bowire-stream-list'));
         if (!list) return false;
 
         var idx = S.streamMessages.length - 1;
@@ -9884,7 +10003,7 @@
         }
 
         // Update count badge — when a filter is active show "X / Y".
-        var count = document.getElementById('bowire-stream-count');
+        var count = document.getElementById(pid('bowire-stream-count'));
         if (count) {
             var hasFilter = (streamFilterQuery || '').trim().length > 0;
             if (hasFilter) {
@@ -9897,19 +10016,19 @@
         // Refresh the state badge so the operator sees "Receiving" /
         // "N msgs" climb without waiting for the 1 s ticker. Surgical
         // replace keeps the streaming pane DOM otherwise intact.
-        var badge = document.getElementById('bowire-stream-state-badge');
-        if (badge && selectedService && selectedMethod) {
+        var badge = document.getElementById(pid('bowire-stream-state-badge'));
+        if (badge && svc && method) {
             var fresh = renderSubscriptionBadge(
-                selectedService.name, selectedMethod.name, S.streamMessages.length);
+                svc.name, method.name, S.streamMessages.length, S);
             badge.replaceWith(fresh);
         }
         // Same surgical treatment for the action-bar message counter —
         // no full render() runs while a stream is live, so bump its
         // text nodes here or it stays frozen at the subscribe-time
         // count until the stream closes.
-        var abCount = document.getElementById('bowire-actionbar-msg-count');
+        var abCount = document.getElementById(pid('bowire-actionbar-msg-count'));
         if (abCount) abCount.textContent = String(S.streamMessages.length);
-        var abLabel = document.getElementById('bowire-actionbar-msg-label');
+        var abLabel = document.getElementById(pid('bowire-actionbar-msg-label'));
         if (abLabel) abLabel.textContent = S.streamMessages.length === 1 ? 'message' : 'messages';
 
         if (streamAutoScroll) {
@@ -9924,6 +10043,10 @@
 
     function selectStreamMessage(idx, fromUserClick) {
         var S = activeState();
+        var tab = tabForState(S);
+        var method = tab ? tab.method : selectedMethod;
+        var svc = tab ? tab.service : selectedService;
+        var pid = paneIdFn(tab ? paneById(tab.paneId) : null);
         if (idx < 0 || idx >= S.streamMessages.length) return;
         streamSelectedIndex = idx;
         if (fromUserClick && streamAutoScroll) {
@@ -9950,6 +10073,10 @@
     // accumulate state — see selection-stream wiring in extensions.js.
     function handleStreamFrameClick(idx, e) {
         var S = activeState();
+        var tab = tabForState(S);
+        var method = tab ? tab.method : selectedMethod;
+        var svc = tab ? tab.service : selectedService;
+        var pid = paneIdFn(tab ? paneById(tab.paneId) : null);
         if (idx < 0 || idx >= S.streamMessages.length) return;
         var msg = S.streamMessages[idx];
         var id = msg && msg.id;
@@ -10034,17 +10161,25 @@
 
     function updateStreamDetail() {
         var S = activeState();
-        var pane = document.getElementById('bowire-stream-detail-pane');
+        var tab = tabForState(S);
+        var method = tab ? tab.method : selectedMethod;
+        var svc = tab ? tab.service : selectedService;
+        var pid = paneIdFn(tab ? paneById(tab.paneId) : null);
+        var pane = document.getElementById(pid('bowire-stream-detail-pane'));
         if (!pane) return;
         var idx = streamEffectiveIndex(S);
         if (idx < 0) return;
-        var built = buildStreamDetailContent(S.streamMessages[idx], idx);
+        var built = buildStreamDetailContent(S, S.streamMessages[idx], idx);
         pane.replaceChildren(built.header, built.body);
     }
 
     function updateStreamSelection() {
         var S = activeState();
-        var list = document.getElementById('bowire-stream-list');
+        var tab = tabForState(S);
+        var method = tab ? tab.method : selectedMethod;
+        var svc = tab ? tab.service : selectedService;
+        var pid = paneIdFn(tab ? paneById(tab.paneId) : null);
+        var list = document.getElementById(pid('bowire-stream-list'));
         if (!list) return;
         var sel = streamEffectiveIndex(S);
         // Single-point remove + single-point add. Avoids walking the entire
@@ -10112,8 +10247,12 @@
 
     function attachStreamSplitterDrag() {
         var S = activeState();
-        var splitter = document.getElementById('bowire-stream-splitter');
-        var output = document.getElementById('bowire-stream-output');
+        var tab = tabForState(S);
+        var method = tab ? tab.method : selectedMethod;
+        var svc = tab ? tab.service : selectedService;
+        var pid = paneIdFn(tab ? paneById(tab.paneId) : null);
+        var splitter = document.getElementById(pid('bowire-stream-splitter'));
+        var output = document.getElementById(pid('bowire-stream-output'));
         // Expando property, not a dataset attribute — see the sidebar
         // splitter's twin. morphdom strips the attribute on every render,
         // so the guard never held and the mousedown handler stacked.
@@ -10151,7 +10290,7 @@
                 // user doesn't end up with a stale detail pane.
                 if (autoScrollBefore) {
                     streamAutoScroll = true;
-                    var btn = document.getElementById('bowire-stream-autoscroll-btn');
+                    var btn = document.getElementById(pid('bowire-stream-autoscroll-btn'));
                     if (btn) btn.classList.add('is-on');
                     streamSelectedIndex = null;
                     updateStreamDetail();
@@ -10173,38 +10312,45 @@
     // Idle without waiting on a frame. We only touch the badge in
     // place — the rest of the streaming pane is left alone.
     onSubscriptionsChanged(function () {
-        if (!selectedService || !selectedMethod) return;
-        var badge = document.getElementById('bowire-stream-state-badge');
-        if (!badge) return;
-        var fresh = renderSubscriptionBadge(
-            selectedService.name, selectedMethod.name, activeState().streamMessages.length);
-        badge.replaceWith(fresh);
+        // #250 — every pane's badge, each for its own tab.
+        requestPanes.forEach(function (pane) {
+            var tab = paneActiveTab(pane);
+            if (!tab || !tab.service || !tab.method) return;
+            var badge = document.getElementById(paneIdFn(pane)('bowire-stream-state-badge'));
+            if (!badge) return;
+            var fresh = renderSubscriptionBadge(
+                tab.service.name, tab.method.name, tabState(tab).streamMessages.length, tabState(tab));
+            badge.replaceWith(fresh);
+        });
     });
     ensureSubscriptionTicker();
 
     function renderResponsePane(tab) {
         var S = tabState(tab);
+        var method = tab ? tab.method : null;
+        var svc = tab ? tab.service : null;
+        var pid = paneIdFn(tab ? paneById(tab.paneId) : null);
         // ID includes the selected method so morphdom fully replaces the
         // pane when switching methods instead of reusing stale DOM with
         // wrong closures from the previous method.
-        var resMethodKey = (tab ? tab.id + '-' : '') + (selectedService ? selectedService.name : '')
-            + '-' + (selectedMethod ? selectedMethod.name : '');
-        const pane = el('div', { id: 'bowire-response-pane-' + resMethodKey, className: 'bowire-pane' });
+        var resMethodKey = (tab ? tab.id + '-' : '') + (svc ? svc.name : '')
+            + '-' + (method ? method.name : '');
+        const pane = el('div', { id: pid('bowire-response-pane-') + resMethodKey, className: 'bowire-pane' });
 
         // Pane heading — mirrors the "Request" label on the left so
         // the seam between the two halves reads at a glance.
         pane.appendChild(el('div', { className: 'bowire-pane-heading', textContent: t('rb.response.heading') }));
 
         // Tabs
-        const tabs = el('div', { id: 'bowire-response-tabs', className: 'bowire-tabs' });
+        const tabs = el('div', { id: pid('bowire-response-tabs'), className: 'bowire-tabs' });
         tabs.appendChild(el('div', {
-            id: 'bowire-response-tab-response',
+            id: pid('bowire-response-tab-response'),
             className: `bowire-tab ${activeResponseTab === 'response' ? 'active' : ''}`,
             textContent: t('rb.response.heading'),
             onClick: function () { activeResponseTab = 'response'; render(); }
         }));
         tabs.appendChild(el('div', {
-            id: 'bowire-response-tab-headers',
+            id: pid('bowire-response-tab-headers'),
             className: `bowire-tab ${activeResponseTab === 'headers' ? 'active' : ''}`,
             textContent: t('main.responseMetadata'),
             onClick: function () { activeResponseTab = 'headers'; render(); }
@@ -10216,13 +10362,13 @@
         // rail. Use "+ Add to… → Create benchmark" in the method
         // header — that path is gated on a successful last call so
         // only known-good requests become benchmark specs.
-        if (selectedMethod && selectedMethod.methodType === 'Unary') {
+        if (method && method.methodType === 'Unary') {
             // Test results tab \u2014 read-only pass/fail per assertion
             // against the most recent response. Definitions are
             // managed in the request pane's Tests sub-tab.
             var testsLabel = 'Test results';
-            var summary = selectedService && selectedMethod
-                ? getAssertionSummary(selectedService.name, selectedMethod.name)
+            var summary = svc && method
+                ? getAssertionSummary(svc.name, method.name)
                 : null;
             if (summary && summary.total > 0) {
                 // One key, three tallies: only the count inside the
@@ -10234,7 +10380,7 @@
                 testsLabel = t('main.testResults', { tally: tally });
             }
             tabs.appendChild(el('div', {
-                id: 'bowire-response-tab-tests',
+                id: pid('bowire-response-tab-tests'),
                 className: `bowire-tab bowire-tab-tests ${activeResponseTab === 'tests' ? 'active' : ''}`
                     + (summary && summary.failed > 0 ? ' has-failure' : '')
                     + (summary && summary.failed === 0 && summary.passed === summary.total && summary.total > 0 ? ' all-pass' : ''),
@@ -10250,7 +10396,7 @@
         // Overflow popover — Response / Response Metadata / Test results
         // crowd a narrow pane. Same affordance as the request side.
         afterRender(function () {
-            var live = document.getElementById('bowire-response-tabs');
+            var live = document.getElementById(pid('bowire-response-tabs'));
             if (live && typeof bowireWireTabOverflow === 'function') {
                 bowireWireTabOverflow(live, { tabSelector: '.bowire-tab', label: t('main.moreTabs') });
             }
@@ -10299,7 +10445,7 @@
                 (function () {
                     if (!S.responseData || S.streamMessages.length > 0) return el('span');
                     return el('button', {
-                        id: 'bowire-response-tree-expand-btn',
+                        id: pid('bowire-response-tree-expand-btn'),
                         className: 'bowire-pane-btn bowire-pane-btn-icon',
                         title: t('main.expandAll'),
                         'aria-label': t('main.expandAll'),
@@ -10313,7 +10459,7 @@
                 (function () {
                     if (!S.responseData || S.streamMessages.length > 0) return el('span');
                     return el('button', {
-                        id: 'bowire-response-tree-collapse-btn',
+                        id: pid('bowire-response-tree-collapse-btn'),
                         className: 'bowire-pane-btn bowire-pane-btn-icon',
                         title: t('main.collapseAll'),
                         'aria-label': t('main.collapseAll'),
@@ -10335,7 +10481,7 @@
                 // sourced from code-export.js. Streaming responses also
                 // get "selected / all messages" raw entries up top.
                 (function () {
-                    var wrapper = el('div', { id: 'bowire-response-copy-split', className: 'bowire-split-btn-wrap' });
+                    var wrapper = el('div', { id: pid('bowire-response-copy-split'), className: 'bowire-split-btn-wrap' });
 
                     function copyRawResponse() {
                         if (S.streamMessages.length > 0) {
@@ -10354,7 +10500,7 @@
                     }
 
                     var mainBtn = el('button', {
-                        id: 'bowire-response-copy-main-btn',
+                        id: pid('bowire-response-copy-main-btn'),
                         className: 'bowire-pane-btn bowire-split-btn-main bowire-pane-btn-icon',
                         title: t('main.copyRaw'),
                         'aria-label': t('main.copyRaw'),
@@ -10362,7 +10508,7 @@
                         onClick: function () { copyRawResponse(); }
                     });
                     var caretBtn = el('button', {
-                        id: 'bowire-response-copy-caret-btn',
+                        id: pid('bowire-response-copy-caret-btn'),
                         className: 'bowire-pane-btn bowire-split-btn-caret',
                         title: t('main.copyAsCode'),
                         'aria-haspopup': 'menu',
@@ -10453,15 +10599,15 @@
                     // id-prefixes so morphdom doesn't reuse a JSON-only
                     // protocol's items as Proto-Binary ones across a
                     // method swap.
-                    var src = (selectedService && selectedService.source) || 'rest';
+                    var src = (svc && svc.source) || 'rest';
                     var formats = [];
                     formats.push({ id: 'json', label: 'JSON' });
                     if (src === 'grpc' || src === 'proto') {
                         formats.push({ id: 'proto', label: t('main.protoBinary') });
                     }
-                    var wrapper = el('div', { id: 'bowire-response-download-wrap', className: 'bowire-dropdown-wrapper' });
+                    var wrapper = el('div', { id: pid('bowire-response-download-wrap'), className: 'bowire-dropdown-wrapper' });
                     var btn = el('button', {
-                        id: 'bowire-response-download-btn',
+                        id: pid('bowire-response-download-btn'),
                         className: 'bowire-pane-btn bowire-pane-btn-icon bowire-pane-btn-icon-caret',
                         title: t('main.downloadResponse'),
                         'aria-label': t('main.downloadResponse'),
@@ -10530,12 +10676,12 @@
             // "Subscribed — 0 msgs" instead of the generic "Executing…"
             // spinner. The badge re-uses the same state pill the
             // streaming pane uses once frames start arriving.
-            var isStreamingMethodLoading = selectedMethod && selectedMethod.serverStreaming;
+            var isStreamingMethodLoading = method && method.serverStreaming;
             if (isStreamingMethodLoading) {
                 var loadingPane = el('div', { className: 'bowire-loading bowire-loading-subscribed' });
                 loadingPane.appendChild(renderSubscriptionBadge(
-                    selectedService && selectedService.name,
-                    selectedMethod && selectedMethod.name,
+                    svc && svc.name,
+                    method && method.name,
                     0, S));
                 loadingPane.appendChild(el('span', {
                     className: 'bowire-loading-text',
@@ -10654,7 +10800,7 @@ t(mcpContent.count === 1 ? 'main.mcp.itemOne' : 'main.mcp.itemMany',
                     className: 'bowire-response-output is-interactive is-tree',
                     title: t('main.jsonNodeTitle')
                 });
-                bowireWireResponseTreeGestures(output);
+                bowireWireResponseTreeGestures(S, output);
                 // JSON viewer + per-pane toolbar (Expand-all /
                 // Collapse-all / Wrap / Search / Copy / Download).
                 // Wrapping the viewer inside the output keeps the
@@ -10664,11 +10810,11 @@ t(mcpContent.count === 1 ? 'main.mcp.itemOne' : 'main.mcp.itemMany',
                 // moves with it through the split/tab/single-pane
                 // wrapping `renderResponseWithWidgets` does below.
                 var unaryViewer = renderJsonViewer(S.responseData, { wrap: false });
-                var ctMeta = (selectedService && selectedMethod && S.responseData)
+                var ctMeta = (svc && method && S.responseData)
                     ? 'application/json'  // i18n-exempt: a MIME type
                     : '';
-                var methodName = (selectedMethod && selectedMethod.name)
-                    ? selectedMethod.name.replace(/[^A-Za-z0-9_-]+/g, '-')
+                var methodName = (method && method.name)
+                    ? method.name.replace(/[^A-Za-z0-9_-]+/g, '-')
                     : 'response';
                 output.appendChild(bowireRenderJsonViewerWithToolbar(unaryViewer, {
                     raw: S.responseData,
@@ -10686,7 +10832,7 @@ t(mcpContent.count === 1 ? 'main.mcp.itemOne' : 'main.mcp.itemMany',
                 // single-pane `output` element on the standard path
                 // (no registered widget / per-method layout = tab),
                 // so non-geo responses look exactly as before.
-                respBody.appendChild(renderResponseWithWidgets(output));
+                respBody.appendChild(renderResponseWithWidgets(S, output));
 
                 // Phase 4 — mount per-leaf semantic badges + right-click
                 // handlers. The decoration runs asynchronously (it
@@ -10695,13 +10841,13 @@ t(mcpContent.count === 1 ? 'main.mcp.itemOne' : 'main.mcp.itemMany',
                 // method). Failure is silent — the response tree is
                 // perfectly usable without the badges.
                 if (typeof bowireDecorateResponseTreeForSemantics === 'function'
-                    && selectedService && selectedMethod) {
+                    && svc && method) {
                     try {
                         bowireDecorateResponseTreeForSemantics(
-                            output, selectedService.name, selectedMethod.name);
+                            output, svc.name, method.name);
                     } catch (e) { console.error('[bowire-semantics] decorate', e); }
                 }
-                if (selectedService && selectedMethod) {
+                if (svc && method) {
                     try {
                         // Fan out the per-kind decoration hooks. The
                         // map widget registers a decorator that
@@ -10709,7 +10855,7 @@ t(mcpContent.count === 1 ? 'main.mcp.itemOne' : 'main.mcp.itemMany',
                         // hover sync; other extensions plug in the
                         // same way without touching core.
                         bowireDecorateResponseTreeViaExtensions(
-                            output, selectedService.name, selectedMethod.name);
+                            output, svc.name, method.name);
                     } catch (e) { console.error('[bowire-resp-tree] decorate', e); }
                 }
             }
@@ -10805,7 +10951,7 @@ t(mcpContent.count === 1 ? 'main.mcp.itemOne' : 'main.mcp.itemMany',
         // read-only pass/fail against the last response. Performance
         // moved to the Benchmarks rail (see the response-tab list
         // above).
-        if (selectedMethod && selectedMethod.methodType === 'Unary') {
+        if (method && method.methodType === 'Unary') {
             var testsContent = el('div', { className: 'bowire-tab-content ' + (activeResponseTab === 'tests' ? 'active' : '') });
             testsContent.appendChild(typeof renderTestResultsTab === 'function'
                 ? renderTestResultsTab()
