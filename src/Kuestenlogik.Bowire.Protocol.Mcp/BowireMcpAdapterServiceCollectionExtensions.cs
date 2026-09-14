@@ -587,12 +587,29 @@ public static class BowireMcpAdapterServiceCollectionExtensions
         {
             foreach (var field in method.InputType.Fields)
             {
-                properties[field.Name] = new JsonObject
+                // #665 — a repeated field is a JSON array of its element
+                // type, not the element type: a caller that builds its
+                // payload from this schema (which is what the schema is
+                // for) used to send `"args": "hello"` to a plugin that
+                // rejects anything but `["hello"]`. Maps are objects. The
+                // field's own description travels when it has one; the
+                // generated "<type> field #n" is the fallback, not the
+                // default.
+                var itemType = MapToJsonSchemaType(field.Type);
+                var prop = new JsonObject
                 {
-                    ["type"] = MapToJsonSchemaType(field.Type),
-                    ["description"] = $"{field.Type} field #{field.Number}",
+                    ["type"] = field.IsRepeated ? "array" : field.IsMap ? "object" : itemType,
+                    ["description"] = string.IsNullOrEmpty(field.Description)
+                        ? $"{(field.IsRepeated ? "repeated " : field.IsMap ? "map " : "")}{field.Type} field #{field.Number}"
+                        : field.Description,
                 };
+                if (field.IsRepeated)
+                {
+                    prop["items"] = new JsonObject { ["type"] = itemType };
+                }
+                properties[field.Name] = prop;
                 if (!string.Equals(field.Label, "optional", StringComparison.Ordinal)
+                    && !string.Equals(field.Label, "LABEL_OPTIONAL", StringComparison.Ordinal)
                     && !field.IsRepeated && !field.IsMap)
                 {
                     required.Add(field.Name);

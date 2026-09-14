@@ -116,6 +116,37 @@ public sealed class AdHocSignalRTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task Declared_Input_Schema_And_Accepted_Payload_Agree()
+    {
+        // #665 — the schema discovery hands out is what a form generator or
+        // an agent builds its payload from. Build the payload the way such
+        // a caller does (one entry per repeated field, a string per string
+        // field) and feed it to the parser: the two must not drift apart.
+        var protocol = new BowireSignalRProtocol();
+        var services = await protocol.DiscoverAsync($"{_baseUrl}/hub", showInternalServices: false, Pinned, TestContext.Current.CancellationToken);
+        var invoke = Assert.Single(services).Methods.Single(m => m.Name == "invoke");
+
+        var args = Assert.Single(invoke.InputType!.Fields, f => f.Name == "args");
+        Assert.True(args.IsRepeated, "args is a list of positional arguments");
+        Assert.Equal("LABEL_REPEATED", args.Label);
+        Assert.Equal("string", args.Type);
+
+        var payload = new System.Text.Json.Nodes.JsonObject();
+        foreach (var f in invoke.InputType.Fields)
+        {
+            payload[f.Name] = f.IsRepeated
+                ? new System.Text.Json.Nodes.JsonArray("hello")
+                : System.Text.Json.Nodes.JsonValue.Create("Echo");
+        }
+
+        var (hubMethod, parsedArgs, error) = BowireSignalRProtocol.ParseAdHocPayload([payload.ToJsonString()]);
+
+        Assert.Null(error);
+        Assert.Equal("Echo", hubMethod);
+        Assert.Equal(["hello"], parsedArgs);
+    }
+
+    [Fact]
     public async Task Discover_With_Marker_But_Non_Hub_Server_Returns_Empty()
     {
         var protocol = new BowireSignalRProtocol();

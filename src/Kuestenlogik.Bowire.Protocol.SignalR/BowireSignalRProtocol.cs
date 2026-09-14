@@ -169,7 +169,10 @@ public sealed class BowireSignalRProtocol : IBowireProtocol
                 Source = "body",
                 Description = "Hub method to call, e.g. SendMessage."
             },
-            new BowireFieldInfo("args", 2, "string", "LABEL_OPTIONAL", false, true, null, null)
+            // #665 — a repeated field carries the repeated label as well
+            // as the flag, the way ProtoFileParser writes it: a consumer
+            // that reads only the label must not take "args" for a scalar.
+            new BowireFieldInfo("args", 2, "string", "LABEL_REPEATED", false, true, null, null)
             {
                 Source = "body",
                 Description = "Positional arguments, one JSON value per entry: 42, \"text\", {\"x\":1}. Bare words are sent as strings."

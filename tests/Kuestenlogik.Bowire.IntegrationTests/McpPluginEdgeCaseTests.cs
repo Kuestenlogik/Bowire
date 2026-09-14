@@ -408,6 +408,13 @@ public sealed class McpPluginEdgeCaseTests
         // Optional field gets surfaced (vs required) — covers the
         // adapter's required-array-skip branch.
         Assert.Contains(fields!, f => f.Name == "name" && !f.Required);
+        // #665 — a repeated field crosses the wire as a JSON-Schema array
+        // of its element type and comes back as a repeated field OF that
+        // type, not as a scalar and not as a field of type "array".
+        var tags = Assert.Single(fields!, f => f.Name == "tags");
+        Assert.True(tags.IsRepeated);
+        Assert.Equal("string", tags.Type);
+        Assert.False(tags.Required);
     }
 
     // ----- fixtures ----------------------------------------------------

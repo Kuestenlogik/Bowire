@@ -565,6 +565,17 @@ public sealed class BowireMcpProtocol : IBowireProtocol, IBowireDiscoveryDiagnos
                 var type = prop.Value.TryGetProperty("type", out var t) ? t.GetString() ?? "string" : "string";
                 var description = prop.Value.TryGetProperty("description", out var d) ? d.GetString() : null;
                 var isRequired = required.Contains(prop.Name);
+                // #665 — an array is a repeated field OF its item type; the
+                // element type is what the form renders one entry of.
+                var isRepeated = type == "array";
+                if (isRepeated
+                    && prop.Value.TryGetProperty("items", out var items)
+                    && items.ValueKind == JsonValueKind.Object
+                    && items.TryGetProperty("type", out var it)
+                    && it.ValueKind == JsonValueKind.String)
+                {
+                    type = it.GetString() ?? "string";
+                }
 
                 fields.Add(new BowireFieldInfo(
                     Name: prop.Name,
@@ -572,7 +583,7 @@ public sealed class BowireMcpProtocol : IBowireProtocol, IBowireDiscoveryDiagnos
                     Type: type,
                     Label: isRequired ? "required" : "optional",
                     IsMap: false,
-                    IsRepeated: type == "array",
+                    IsRepeated: isRepeated,
                     MessageType: null,
                     EnumValues: null)
                 {
