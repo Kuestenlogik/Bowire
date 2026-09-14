@@ -255,6 +255,19 @@ describe('map widget — MIL-2525 symbols via milsymbol', { concurrency: 1 }, ()
         m.unmount();
     });
 
+    it('draws the frame for a function id milsymbol has no icon for, and nothing for a dimension it does not know', async () => {
+        // The sample carries `SFGPUCT` — friendly ground unit, function
+        // id without an icon. The frame alone is worth drawing. A code
+        // whose battle dimension milsymbol cannot place (`Z`) is not:
+        // that pin keeps the affinity shape.
+        const m = await mountMap({ interpretations: PATHS });
+        m.frames.push({ id: 'f1', situationObjects: [entity('a', 'SFGPUCT---*****', 54, 11), entity('b', 'SFZPUCA---*****', 54.1, 11)] });
+        await settle();
+        assert.deepEqual(m.handle.symbolIcons(), { 'SFGPUCT---*****': 'ok', 'SFZPUCA---*****': 'failed' });
+        assert.deepEqual(m.sidcImages(), ['bowire-sidc-SFGPUCT---*****']);
+        m.unmount();
+    });
+
     it('leaves a pin without a code on the affinity shape and registers nothing', async () => {
         const m = await mountMap({
             interpretations: { 'coordinate.latitude': '$.lat', 'coordinate.longitude': '$.lon' },

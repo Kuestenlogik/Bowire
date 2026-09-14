@@ -590,6 +590,13 @@
      * the code (milsymbol reports that through `isValid`, not by
      * throwing — but a throw is treated the same way).
      *
+     * "Make sense of" means the frame: affiliation and battle
+     * dimension known. A function id milsymbol has no icon for still
+     * gets its frame — the sample's `SFGPUCT` is one, and an empty
+     * friendly ground frame says more than the fallback rectangle
+     * would. The plain `isValid()` would refuse it, because it also
+     * demands the icon.
+     *
      * milsymbol takes both standards from the string alone — fifteen
      * letters are 2525C, twenty digits are 2525D — so the widget does
      * not translate between them. `size` is the L-frame height; 40 at
@@ -598,7 +605,15 @@
     function bowireRenderSidcSymbol(ms, sidc) {
         try {
             var sym = new ms.Symbol(sidc, { size: 40 });
-            if (typeof sym.isValid === 'function' && !sym.isValid()) return null;
+            if (typeof sym.isValid === 'function') {
+                var v = sym.isValid(true);
+                if (v && typeof v === 'object') {
+                    if (!v.affiliation || v.affiliation === 'undefined') return null;
+                    if (v.dimensionUnknown || !v.drawInstructions) return null;
+                } else if (!v) {
+                    return null;
+                }
+            }
             var size = sym.getSize();
             if (!size || !(size.width > 0) || !(size.height > 0)) return null;
             return {
