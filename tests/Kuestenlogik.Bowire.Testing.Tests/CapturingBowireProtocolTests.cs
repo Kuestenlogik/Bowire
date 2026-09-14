@@ -292,27 +292,47 @@ public sealed class CapturingBowireProtocolTests
     }
 
     [Fact]
-    public async Task InvokeStreamAsync_DoesNotMutateCaptureSurface()
+    public async Task InvokeStreamAsync_RecordsArgumentsLikeUnary()
     {
-        // The streaming default is a no-op for this fixture: it
-        // doesn't pretend to capture stream args, so Last* and
-        // InvokeCount must stay untouched after iterating it.
+        // The stream captures what it was asked for the same way the
+        // unary path does, so a resolver's subscribe mapping is
+        // testable through the same Last* surface.
         var sut = new CapturingBowireProtocol("p");
+        var messages = new List<string> { "x" };
+        var metadata = new Dictionary<string, string> { ["h"] = "1" };
 
         await foreach (var _ in sut.InvokeStreamAsync(
-            "u", "s", "m", new List<string> { "x" }, false,
-            new Dictionary<string, string> { ["h"] = "1" },
+            "u", "s", "m", messages, false, metadata,
             ct: TestContext.Current.CancellationToken))
         {
             // empty
         }
 
-        Assert.Null(sut.LastServerUrl);
-        Assert.Null(sut.LastService);
-        Assert.Null(sut.LastMethod);
-        Assert.Null(sut.LastJsonMessages);
-        Assert.Null(sut.LastMetadata);
-        Assert.Equal(0, sut.InvokeCount);
+        Assert.Equal("u", sut.LastServerUrl);
+        Assert.Equal("s", sut.LastService);
+        Assert.Equal("m", sut.LastMethod);
+        Assert.Same(messages, sut.LastJsonMessages);
+        Assert.Same(metadata, sut.LastMetadata);
+        Assert.Equal(1, sut.InvokeCount);
+    }
+
+    [Fact]
+    public async Task InvokeStreamAsync_YieldsConfiguredFrames()
+    {
+        // StreamFrames is the fixture's scripted stream: what a test
+        // puts in comes out in order.
+        var sut = new CapturingBowireProtocol("p");
+        sut.StreamFrames.AddRange(["a", "b"]);
+        var collected = new List<string>();
+
+        await foreach (var item in sut.InvokeStreamAsync(
+            "u", "s", "m", new List<string>(), false,
+            ct: TestContext.Current.CancellationToken))
+        {
+            collected.Add(item);
+        }
+
+        Assert.Equal(["a", "b"], collected);
     }
 
     // ─── OpenChannelAsync default ─────────────────────────────────

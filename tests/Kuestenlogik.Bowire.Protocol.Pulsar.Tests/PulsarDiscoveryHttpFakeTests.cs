@@ -323,7 +323,7 @@ public sealed class PulsarDiscoveryHttpFakeTests
         Assert.Equal(0, r.DurationMs);
         Assert.Empty(r.Metadata);
         Assert.Contains("Unknown Pulsar route", r.Status, StringComparison.Ordinal);
-        Assert.Contains("expected pulsar/topic/<name>/produce", r.Status, StringComparison.Ordinal);
+        Assert.Contains("pulsar/topic/<topic>/produce", r.Status, StringComparison.Ordinal);
     }
 
     [Fact]
