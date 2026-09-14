@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.8 — Localisation, layout and the test pillar: DE + EN catalogues, splits and shelf, contract testing *(due 2026-11-03)*
 
-**26/35 done** · 1 in progress · 8 backlog
+**30/39 done** · 1 in progress · 8 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -43,6 +43,10 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [539](https://github.com/Kuestenlogik/Bowire/issues/539) | Bowire | [Cross-protocol correlated timeline for recordings](#issue-kuestenlogik-bowire-539) | ✅ Done | `area:workbench` |
 | [547](https://github.com/Kuestenlogik/Bowire/issues/547) | Bowire | [Correlation scanner skips interpretation payloads — ScanStep claims every JSON surface and misses one](#issue-kuestenlogik-bowire-547) | ✅ Done | `area:workbench` |
 | [551](https://github.com/Kuestenlogik/Bowire/issues/551) | Bowire | [render() is a full-app rebuild with no coalescing, and costs three localStorage parses per method row](#issue-kuestenlogik-bowire-551) | ✅ Done | `area:workbench` |
+| [663](https://github.com/Kuestenlogik/Bowire/issues/663) | Bowire | [Lint's response-shape rules cannot fire on REST — discovery populates no output fields](#issue-kuestenlogik-bowire-663) | ✅ Done | `area:cli` |
+| [664](https://github.com/Kuestenlogik/Bowire/issues/664) | Bowire | [Method-name form on /api/invoke is not uniform across plugins](#issue-kuestenlogik-bowire-664) | ✅ Done | `area:workbench` |
+| [665](https://github.com/Kuestenlogik/Bowire/issues/665) | Bowire | [SignalR ad-hoc invoke declares args:string but requires a JSON array](#issue-kuestenlogik-bowire-665) | ✅ Done | `area:workbench` |
+| [666](https://github.com/Kuestenlogik/Bowire/issues/666) | Bowire | [plugin install suggests a re-run its own already-installed guard blocks](#issue-kuestenlogik-bowire-666) | ✅ Done | `area:plugin-sdk` |
 | [684](https://github.com/Kuestenlogik/Bowire/issues/684) | Bowire | [Starting Bowire on an occupied port crashes with an unhandled exception instead of opening the running workbench](#issue-kuestenlogik-bowire-684) | ✅ Done | `area:cli` |
 | [686](https://github.com/Kuestenlogik/Bowire/issues/686) | Bowire | [el() turns a false boolean attribute into a set attribute, so disabled: false disables the control](#issue-kuestenlogik-bowire-686) | ✅ Done | `area:workbench` |
 | [692](https://github.com/Kuestenlogik/Bowire/issues/692) | Bowire | [A sidecar manifest cannot name an interpreter: the executable never resolves through PATH](#issue-kuestenlogik-bowire-692) | ✅ Done | `area:plugin-sdk` |
@@ -90,7 +94,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v3.0 — Cleanups + breaking-change cuts *(due 2027-02-23)*
 
-**1/26 done** · 25 backlog
+**2/26 done** · 24 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -105,7 +109,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [283](https://github.com/Kuestenlogik/Bowire/issues/283) | Bowire | [Retire v1 .bww format migration shim (introduced in #282)](#issue-kuestenlogik-bowire-283) | ⬜ Backlog | `area:workbench` |
 | [288](https://github.com/Kuestenlogik/Bowire/issues/288) | Bowire | [IInlineSseSubscriber is an orphaned seam — give it a consumer or remove it](#issue-kuestenlogik-bowire-288) | ⬜ Backlog | `area:plugin-sdk` |
 | [355](https://github.com/Kuestenlogik/Bowire/issues/355) | Bowire | [Eliminate #pragma warning disable across the codebase — rewrite code so analyzer warnings don't fire](#issue-kuestenlogik-bowire-355) | ⬜ Backlog | `area:multi` |
-| [357](https://github.com/Kuestenlogik/Bowire/issues/357) | Bowire | [AsyncAPI binding resolvers are a facade — 8 resolvers throw NotImplementedException](#issue-kuestenlogik-bowire-357) | ⬜ Backlog | `area:plugin-sdk` |
 | [358](https://github.com/Kuestenlogik/Bowire/issues/358) | Bowire | [Rail packages ship without test projects — Benchmarking / Compose / Interceptor / Recordings / Security.Scanner / Workspaces](#issue-kuestenlogik-bowire-358) | ⬜ Backlog | `area:workbench` |
 | [359](https://github.com/Kuestenlogik/Bowire/issues/359) | Bowire | [v3.0: consolidate the duplicated runner/reporter pairs in Bowire.Tool](#issue-kuestenlogik-bowire-359) | ⬜ Backlog | `area:cli` |
 | [413](https://github.com/Kuestenlogik/Bowire/issues/413) | Bowire | [Site comparison: split into topic-specific tables (API-client / mocking / security), add WireMock + Mockito, broaden beyond top-5](#issue-kuestenlogik-bowire-413) | ⬜ Backlog | `area:site` |
@@ -120,6 +123,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [584](https://github.com/Kuestenlogik/Bowire/issues/584) | Bowire | [Secrets redaction: extend to HTML report, snapshot files, and recordings](#issue-kuestenlogik-bowire-584) | ⬜ Backlog |  |
 | [611](https://github.com/Kuestenlogik/Bowire/issues/611) | Bowire | [Sidecar: add gRPC as a third transport alongside stdio and HTTP](#issue-kuestenlogik-bowire-611) | ⬜ Backlog |  |
 | [215](https://github.com/Kuestenlogik/Bowire/issues/215) | Bowire | [Test infra: IProcessLauncher seam in PluginManager to cover dotnet-shell-out paths](#issue-kuestenlogik-bowire-215) | ✅ Done | `area:plugin-sdk` |
+| [357](https://github.com/Kuestenlogik/Bowire/issues/357) | Bowire | [AsyncAPI binding resolvers are a facade — 8 resolvers throw NotImplementedException](#issue-kuestenlogik-bowire-357) | ✅ Done | `area:plugin-sdk` |
 
 ### v3.1 — Interop and migration *(due 2027-03-30)*
 
@@ -328,6 +332,30 @@ Ship a "Correlated timeline" as a second tab inside the existing Recordings deta
 > `area:workbench`
 
 `render()` rebuilds the entire workbench tree off-screen and morphdom-diffs it. There is no debounce, no dirty flag, no coalescing â€” a grep for `scheduleRender` / `renderPending` / any batching wrapper across `wwwroot/js/` returns nothing, and there are ~685 `render()` call sites. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/551)
+
+#### <a id="issue-kuestenlogik-bowire-663"></a>✅ Done · [#663](https://github.com/Kuestenlogik/Bowire/issues/663) Lint's response-shape rules cannot fire on REST — discovery populates no output fields
+
+> `area:cli`
+
+`bowire lint` against a REST target reports "no findings" and exits 0. Against a gRPC target the same rules produce findings. The difference is not the APIs — it is that REST discovery populates request parameters but no response schemas, so the four response-shaped rules have nothing to inspect. [[more]](https://github.com/Kuestenlogik/Bowire/issues/663)
+
+#### <a id="issue-kuestenlogik-bowire-664"></a>✅ Done · [#664](https://github.com/Kuestenlogik/Bowire/issues/664) Method-name form on /api/invoke is not uniform across plugins
+
+> `area:workbench`
+
+`/api/invoke` takes a `method` field, and which form it accepts differs by plugin. A caller that reads a discovery response and uses the obvious field hits one or the other. [[more]](https://github.com/Kuestenlogik/Bowire/issues/664)
+
+#### <a id="issue-kuestenlogik-bowire-665"></a>✅ Done · [#665](https://github.com/Kuestenlogik/Bowire/issues/665) SignalR ad-hoc invoke declares args:string but requires a JSON array
+
+> `area:workbench`
+
+Discovery declares the SignalR ad-hoc `invoke` method's input as: [[more]](https://github.com/Kuestenlogik/Bowire/issues/665)
+
+#### <a id="issue-kuestenlogik-bowire-666"></a>✅ Done · [#666](https://github.com/Kuestenlogik/Bowire/issues/666) plugin install suggests a re-run its own already-installed guard blocks
+
+> `area:plugin-sdk`
+
+`bowire plugin install --file <pkg>.nupkg` installs a package whose runtime dependencies could not be resolved, reports the unmet ones as a warning, and tells the operator what to do: [[more]](https://github.com/Kuestenlogik/Bowire/issues/666)
 
 #### <a id="issue-kuestenlogik-bowire-684"></a>✅ Done · [#684](https://github.com/Kuestenlogik/Bowire/issues/684) Starting Bowire on an occupied port crashes with an unhandled exception instead of opening the running workbench
 
@@ -541,12 +569,6 @@ Once Bowire ships in multiple services across an org, "what's the state of our A
 
 111 files under src/ and tests/ carry `#pragma warning disable` blocks. Commit 6974da7e removed every suppression from the test-pillar files (TestRunner, FlowTestRunner, their tests) and establishes the patterns to reuse: [[more]](https://github.com/Kuestenlogik/Bowire/issues/355)
 
-#### <a id="issue-kuestenlogik-bowire-357"></a>⬜ Backlog · [#357](https://github.com/Kuestenlogik/Bowire/issues/357) AsyncAPI binding resolvers are a facade — 8 resolvers throw NotImplementedException
-
-> `area:plugin-sdk`
-
-2026-07-03 architecture audit: `Kuestenlogik.Bowire.AsyncApi` advertises binding support its resolvers don't implement. Eight of them are stubs that throw `NotImplementedException`: [[more]](https://github.com/Kuestenlogik/Bowire/issues/357)
-
 #### <a id="issue-kuestenlogik-bowire-358"></a>⬜ Backlog · [#358](https://github.com/Kuestenlogik/Bowire/issues/358) Rail packages ship without test projects — Benchmarking / Compose / Interceptor / Recordings / Security.Scanner / Workspaces
 
 > `area:workbench`
@@ -626,6 +648,12 @@ Sidecars speak JSON-RPC 2.0 over two transports today: `stdio` (NDJSON) and `htt
 > `area:plugin-sdk`
 
 > **Status:** obsolete, not done. The premise no longer holds — the body below records why; the original proposal is in the issue history. [[more]](https://github.com/Kuestenlogik/Bowire/issues/215)
+
+#### <a id="issue-kuestenlogik-bowire-357"></a>✅ Done · [#357](https://github.com/Kuestenlogik/Bowire/issues/357) AsyncAPI binding resolvers are a facade — 8 resolvers throw NotImplementedException
+
+> `area:plugin-sdk`
+
+2026-07-03 architecture audit: `Kuestenlogik.Bowire.AsyncApi` advertises binding support its resolvers don't implement. Eight of them are stubs that throw `NotImplementedException`: [[more]](https://github.com/Kuestenlogik/Bowire/issues/357)
 
 ### v3.1 — Interop and migration *(due 2027-03-30)*
 
