@@ -143,10 +143,11 @@ internal static class EmbeddedDiscovery
             Name: name + "Request",
             FullName: name + "Request",
             Fields: fields);
-        var outputType = new BowireMessageInfo(
-            Name: name + "Response",
-            FullName: name + "Response",
-            Fields: []);
+        // #663 — the response shape comes from the same metadata the OpenAPI
+        // generator reads. Without it every response-shaped lint rule had
+        // nothing to inspect on REST and reported a clean bill it never
+        // earned.
+        var outputType = BuildOutputType(name, api);
 
         return new BowireMethodInfo(
             Name: name,
@@ -315,6 +316,50 @@ internal static class EmbeddedDiscovery
     /// of complex types become repeated message fields. Recursion depth is
     /// capped at 4 to keep cyclic types from blowing up the field tree.
     /// </summary>
+    /// <summary>
+    /// The 2xx response's CLR type, flattened the way a body parameter is:
+    /// a complex type becomes one field per public property, a collection
+    /// becomes one repeated <c>items</c> field of its element type (so a
+    /// list endpoint reads as "returns a list" to the pagination rule), a
+    /// scalar becomes a single <c>value</c> field. An endpoint that declares
+    /// no typed response — a bare <c>Results.Ok(...)</c> without
+    /// <c>Produces&lt;T&gt;()</c> — keeps an empty output type, and the lint
+    /// report says so rather than passing it silently.
+    /// </summary>
+    private static BowireMessageInfo BuildOutputType(string name, ApiDescription api)
+    {
+        var responseName = name + "Response";
+        var success = api.SupportedResponseTypes?
+            .Where(r => r.StatusCode is >= 200 and < 300 || r.StatusCode == 0)
+            .OrderBy(r => r.StatusCode == 0 ? 1 : 0)
+            .ThenBy(r => r.StatusCode)
+            .FirstOrDefault(r => r.Type is not null && r.Type != typeof(void));
+        if (success?.Type is not { } type)
+        {
+            return new BowireMessageInfo(responseName, responseName, []);
+        }
+
+        var underlying = Nullable.GetUnderlyingType(type) ?? type;
+        if (underlying != typeof(string) && typeof(System.Collections.IEnumerable).IsAssignableFrom(underlying))
+        {
+            var field = BuildBodyField("items", underlying, 1, required: false);
+            return new BowireMessageInfo(responseName, responseName, [field]);
+        }
+        if (IsComplexType(underlying))
+        {
+            var fields = new List<BowireFieldInfo>();
+            var n = 1;
+            foreach (var prop in underlying.GetProperties(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance))
+            {
+                if (!prop.CanRead) continue;
+                fields.Add(BuildBodyField(prop.Name, prop.PropertyType, n++, required: false));
+            }
+            return new BowireMessageInfo(responseName, responseName, fields);
+        }
+        return new BowireMessageInfo(responseName, responseName,
+            [BuildBodyField("value", underlying, 1, required: false)]);
+    }
+
     private static BowireFieldInfo BuildBodyField(string name, Type clrType, int number, bool required, int depth = 0)
     {
         var camelName = ToCamelCase(name);

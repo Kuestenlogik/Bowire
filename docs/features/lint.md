@@ -37,27 +37,40 @@ from the URL scheme when unset.
 
 ## What lint can see, and what it cannot
 
-A rule can only inspect what discovery produced, and discovery is not equally
-deep for every protocol. This is the single most important thing to know
-before reading a lint result:
+A rule can only inspect what discovery produced. This is the single most
+important thing to know before reading a lint result:
 
 | Protocol | Request fields | Response fields | Rules that can fire |
 |----------|----------------|-----------------|---------------------|
 | gRPC (reflection or descriptor set) | yes | yes | all five |
-| REST (OpenAPI) | yes | **no** | versioning only |
+| REST (OpenAPI document) | yes | yes, where the operation declares a 2xx JSON response schema | all five |
+| REST (embedded, ApiExplorer) | yes | yes, where the endpoint declares its response type | all five |
 
 Against a gRPC target the descriptors carry full message types, so every rule
-evaluates. Against a REST target discovered from an OpenAPI document, Bowire
-currently populates request parameters but not response schemas — so the four
-response-shaped rules have nothing to read, and only the versioning rule can
-produce a finding.
+evaluates. Against a REST target, the response shape comes from the OpenAPI
+operation's 2xx `application/json` schema — a top-level array is read as one
+repeated `items` field of the element type, so a list endpoint reads as a
+list to the pagination rule — or, when Bowire runs inside the host, from the
+endpoint's declared response type. An endpoint that declares neither (a
+Minimal API handler returning a bare `Results.Ok(...)` with no `Produces<T>()`,
+an OpenAPI response with a description and no schema) has no response shape
+for the four response-shaped rules to read.
 
-**"no findings" against a REST API therefore does not mean "no personal data
-in your responses".** It means the rules that could evaluate did, and passed.
-Run the same check against a gRPC surface, or read the response-shape rules
-as not-yet-applicable, rather than as a clean bill of health.
+**Lint says so.** When any method has no response shape, the report carries a
+note under the summary rather than passing it silently:
 
-A worked example of the difference:
+```console
+no findings
+note: 3 of 16 methods declare no response schema; the response-shaped rules
+      (sensitive and PII fields, pagination, string timestamps) could not
+      evaluate those. For REST, annotate the endpoint's response type
+      (Produces<T>, or a response schema in the OpenAPI document).
+```
+
+The remedy is on the API side: declare the response type, and the rules
+evaluate it on the next run.
+
+A worked example against the gRPC sample:
 
 ```console
 $ bowire lint http://localhost:5183 --protocol grpc
@@ -69,15 +82,7 @@ $ bowire lint http://localhost:5183 --protocol grpc
 [LOW]    BWR-LINT-MISSING-VERSIONING   grpc.reflection.v1alpha.ServerReflection  (same)
 
 3 findings (1 medium, 2 low)
-
-$ bowire lint http://localhost:5181 --protocol rest
-
-no findings
 ```
-
-The REST run discovered five services and sixteen methods. It reported
-nothing because the sample's OpenAPI document declares `info.version`, which
-satisfies the one rule that could evaluate.
 
 ## Configuration
 

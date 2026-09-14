@@ -487,6 +487,22 @@ public static class OpenApiDiscovery
     private static BowireMessageInfo SchemaToMessage(string name, IOpenApiSchema schema)
     {
         var fields = new List<BowireFieldInfo>();
+        // #663 — a top-level array (the shape of every list endpoint) has
+        // no properties of its own; read it as one repeated `items` field
+        // of the element type, so the response keeps its fields and the
+        // pagination rule can see a list where there is one.
+        if (SchemaIsType(schema, JsonSchemaType.Array))
+        {
+            fields.Add(SchemaToField(
+                name: "items",
+                schema: schema,
+                source: "body",
+                number: 1,
+                required: false,
+                description: schema.Description,
+                parameterExample: null));
+            return new BowireMessageInfo(Name: name, FullName: name, Fields: fields);
+        }
         if (schema.Properties is not null)
         {
             var requiredSet = schema.Required ?? new HashSet<string>();

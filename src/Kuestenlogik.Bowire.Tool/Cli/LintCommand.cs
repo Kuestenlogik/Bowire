@@ -6,6 +6,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Kuestenlogik.Bowire.Linting;
+using Kuestenlogik.Bowire.Models;
 
 namespace Kuestenlogik.Bowire.App.Cli;
 
@@ -99,12 +100,13 @@ internal static class LintCommand
         if (services is null) return 1;
 
         var findings = BowireSchemaLinter.CreateWithDiscoveredRules().Lint(services, config);
+        var note = ResponseCoverageNote(services);
 
         var rendered = format?.ToUpperInvariant() switch
         {
             "JSON" => JsonSerializer.Serialize(findings, FindingsJson),
-            "MARKDOWN" => ToMarkdown(findings),
-            _ => ToText(findings),
+            "MARKDOWN" => ToMarkdown(findings, note),
+            _ => ToText(findings, note),
         };
         await WriteResultAsync(rendered, output, outW, ct).ConfigureAwait(false);
 
@@ -176,7 +178,26 @@ internal static class LintCommand
     // contract, and it is worth holding one directly rather than through a
     // command invocation that first has to resolve a schema from somewhere.
 
-    internal static string ToText(IReadOnlyList<BowireLintFinding> findings)
+    /// <summary>
+    /// #663 — four of the five rules read the response shape. A method that
+    /// declares no response schema cannot be evaluated by them, and a clean
+    /// result over such methods would read as "nothing to find" when it
+    /// means "nothing to look at". Returns the sentence the report carries
+    /// in that case, or null when every method has a response shape.
+    /// </summary>
+    internal static string? ResponseCoverageNote(IReadOnlyList<BowireServiceInfo> services)
+    {
+        var methods = services.SelectMany(s => s.Methods ?? []).ToList();
+        if (methods.Count == 0) return null;
+        var blind = methods.Count(m => m.OutputType?.Fields is not { Count: > 0 });
+        if (blind == 0) return null;
+        return $"{blind} of {methods.Count} method{(methods.Count == 1 ? "" : "s")} declare{(blind == 1 ? "s" : "")} no response schema; "
+             + "the response-shaped rules (sensitive and PII fields, pagination, string timestamps) could not evaluate "
+             + (blind == methods.Count ? "any of them" : "those")
+             + ". For REST, annotate the endpoint's response type (Produces<T>, or a response schema in the OpenAPI document).";
+    }
+
+    internal static string ToText(IReadOnlyList<BowireLintFinding> findings, string? note = null)
     {
         var sb = new StringBuilder();
         foreach (var f in findings)
@@ -188,13 +209,15 @@ internal static class LintCommand
         }
 
         sb.Append('\n').Append(Summary(findings));
+        if (note is not null) sb.Append("\nnote: ").Append(note);
         return sb.ToString();
     }
 
-    internal static string ToMarkdown(IReadOnlyList<BowireLintFinding> findings)
+    internal static string ToMarkdown(IReadOnlyList<BowireLintFinding> findings, string? note = null)
     {
         var sb = new StringBuilder();
         sb.Append("**Design-time lint:** ").Append(Summary(findings)).Append(".\n");
+        if (note is not null) sb.Append("\n> ").Append(note).Append('\n');
         foreach (var severity in new[] { BowireLintSeverity.High, BowireLintSeverity.Medium, BowireLintSeverity.Low, BowireLintSeverity.Info })
         {
             var group = findings.Where(f => f.Severity == severity).ToList();

@@ -59,6 +59,39 @@ public sealed class LintCommandTests
 
     // ---- text output ----
 
+    // ---- #663: what the report says when it could not look ----
+
+    private static Models.BowireServiceInfo Service(params (string Name, bool WithOutput)[] methods)
+        => new("svc", "pkg", methods.Select(m => new Models.BowireMethodInfo(
+            m.Name, "svc/" + m.Name, false, false,
+            new Models.BowireMessageInfo("In", "In", []),
+            new Models.BowireMessageInfo("Out", "Out", m.WithOutput
+                ? [new Models.BowireFieldInfo("id", 1, "string", "optional", false, false, null, null)]
+                : []),
+            "Unary")).ToList());
+
+    [Fact]
+    public void The_Report_Says_Which_Methods_The_Response_Rules_Could_Not_See()
+    {
+        var note = LintCommand.ResponseCoverageNote([Service(("ListUsers", false), ("GetUser", true), ("CreateUser", false))]);
+
+        Assert.NotNull(note);
+        Assert.StartsWith("2 of 3 methods declare no response schema", note, StringComparison.Ordinal);
+        Assert.Contains("could not evaluate those", note, StringComparison.Ordinal);
+
+        // It rides on both human-readable renderings, after the summary.
+        var text = LintCommand.ToText([], note);
+        Assert.Contains("no findings\nnote: 2 of 3 methods", text, StringComparison.Ordinal);
+        Assert.Contains("> 2 of 3 methods", LintCommand.ToMarkdown([], note), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Every_Method_With_A_Response_Shape_Means_No_Note()
+    {
+        Assert.Null(LintCommand.ResponseCoverageNote([Service(("GetUser", true))]));
+        Assert.DoesNotContain("note:", LintCommand.ToText([]), StringComparison.Ordinal);
+    }
+
     [Fact]
     public void Text_Output_Puts_Severity_Rule_Location_And_Message_On_One_Line()
     {
