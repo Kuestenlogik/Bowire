@@ -8615,12 +8615,22 @@
                     btn.title = streamDetailMaximized
                         ? t('main.stream.showListTitle')
                         : t('main.stream.hideListTitle');
-                    var label = btn.querySelector('span');
+                    var icon = btn.querySelector('.bowire-stream-toolbar-btn-icon');
+                    if (icon) icon.innerHTML = svgIcon(streamDetailMaximized ? 'listShow' : 'listHide');
+                    var label = btn.querySelector('.bowire-stream-toolbar-btn-label');
                     if (label) label.textContent = streamDetailMaximized ? t('main.stream.showList') : t('main.stream.hideList');
                 }
             }
         });
+        // Icon + label. The label is the part a narrow pane drops (see
+        // the container query on .bowire-stream-toolbar-btn in
+        // bowire.css); the icon and the title tooltip stay.
         maxBtn.appendChild(el('span', {
+            className: 'bowire-stream-toolbar-btn-icon',
+            innerHTML: svgIcon(streamDetailMaximized ? 'listShow' : 'listHide')
+        }));
+        maxBtn.appendChild(el('span', {
+            className: 'bowire-stream-toolbar-btn-label',
             textContent: streamDetailMaximized ? t('main.stream.showList') : t('main.stream.hideList')
         }));
         header.appendChild(maxBtn);
@@ -8868,6 +8878,11 @@
             }
         });
         filterToggle.appendChild(el('span', {
+            className: 'bowire-stream-toolbar-btn-icon',
+            innerHTML: svgIcon('filter')
+        }));
+        filterToggle.appendChild(el('span', {
+            className: 'bowire-stream-toolbar-btn-label',
             textContent: hasFilter
                 ? t('main.stream.filterOn')
                 : t('main.stream.filter')
@@ -8888,6 +8903,11 @@
             onClick: function () { setStreamAutoScroll(!streamAutoScroll); }
         });
         autoBtn.appendChild(el('span', {
+            className: 'bowire-stream-toolbar-btn-icon',
+            innerHTML: svgIcon(streamAutoScroll ? 'followLatest' : 'pin')
+        }));
+        autoBtn.appendChild(el('span', {
+            className: 'bowire-stream-toolbar-btn-label',
             textContent: streamAutoScroll ? t('main.stream.followLatest') : t('main.stream.pinned')
         }));
         toolbar.appendChild(autoBtn);
@@ -10211,7 +10231,9 @@
             btn.title = streamAutoScroll
                 ? t('main.stream.followingTitle')
                 : t('main.stream.pinnedTitle');
-            var label = btn.querySelector('span');
+            var icon = btn.querySelector('.bowire-stream-toolbar-btn-icon');
+            if (icon) icon.innerHTML = svgIcon(streamAutoScroll ? 'followLatest' : 'pin');
+            var label = btn.querySelector('.bowire-stream-toolbar-btn-label');
             if (label) label.textContent = streamAutoScroll ? t('main.stream.followLatest') : t('main.stream.pinned');
         }
         if (streamAutoScroll) {

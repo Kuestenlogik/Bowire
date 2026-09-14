@@ -8160,6 +8160,41 @@ multiple key:value rules) can append rows without
     cursor: pointer;
     transition: all var(--bowire-transition);
     font-family: var(--bowire-font-sans);
+    /* Icon + label on one line. Without nowrap a narrow response pane
+       (the map split) squeezed "Follow latest" into a column of
+       letters — the button grew tall instead of giving up the label. */
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.bowire-stream-toolbar-btn-icon {
+    display: inline-flex;
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+}
+.bowire-stream-toolbar-btn-icon svg {
+    width: 100%;
+    height: 100%;
+}
+
+/* The toolbar and the detail header are the containers the buttons
+   answer to. Below ~420px — the map split, a narrow drawer — the
+   labels go and the buttons become icon-only; the title tooltip still
+   says what each does, and the accent fill still says which is on. */
+.bowire-stream-toolbar,
+.bowire-stream-detail-header {
+    container-type: inline-size;
+}
+@container (max-width: 420px) {
+    .bowire-stream-toolbar-btn-label {
+        display: none;
+    }
+    .bowire-stream-toolbar-btn {
+        padding: 4px 7px;
+    }
 }
 
 .bowire-stream-toolbar-btn:hover {
