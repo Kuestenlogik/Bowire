@@ -41,20 +41,6 @@ internal sealed class KafkaBindingResolver : IAsyncApiBindingResolver
 
     public string BindingId => "kafka";
 
-    public BowireMethodInfo BuildMethod(AsyncApiChannelContext channel)
-    {
-        // Same shape as MQTT: method materialisation happens in
-        // BowireAsyncApiProtocol.MapV3Channels / MapV2Channels. The
-        // resolver is invocation-side only until per-binding method
-        // metadata (key, partition, schema-id) needs to surface on
-        // the method itself.
-        throw new NotImplementedException(
-            "KafkaBindingResolver.BuildMethod is reserved for a future " +
-            "phase where per-binding method metadata (key, partition, " +
-            "schema-id) needs to surface on the method. Current phase " +
-            "builds methods directly from the V3/V2 operation block.");
-    }
-
     public async Task<InvokeResult> InvokeAsync(
         AsyncApiChannelContext channel, List<string> jsonMessages,
         Dictionary<string, string>? metadata, CancellationToken ct)

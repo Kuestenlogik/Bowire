@@ -9,9 +9,8 @@ namespace Kuestenlogik.Bowire.AsyncApi.Tests;
 /// <summary>
 /// Branch-coverage uplift for <see cref="WebSocketBindingResolver"/>.
 /// Complements <c>WebSocketBindingResolverTests</c> by exercising the
-/// surface the happy-path tests don't reach: <c>BindingId</c> getter,
-/// the deliberately-unimplemented <c>BuildMethod</c> sentinel, and the
-/// callerMetadata merge branch (when a caller passes overrides on top
+/// surface the happy-path tests don't reach: <c>BindingId</c> getter and
+/// the callerMetadata merge branch (when a caller passes overrides on top
 /// of the AsyncAPI <c>bindings.ws.*</c> bag).
 /// </summary>
 public sealed class WebSocketBindingResolverCoverageTests
@@ -23,21 +22,6 @@ public sealed class WebSocketBindingResolverCoverageTests
         var resolver = new WebSocketBindingResolver(registry);
 
         Assert.Equal("ws", resolver.BindingId);
-    }
-
-    [Fact]
-    public void BuildMethod_Throws_NotImplementedException_With_Phase_Note()
-    {
-        var registry = new BowireProtocolRegistry();
-        var resolver = new WebSocketBindingResolver(registry);
-        var ctx = new AsyncApiChannelContext(
-            ServerUrl: "ws://example",
-            ChannelAddress: "/x",
-            OperationAction: "send",
-            BindingFields: new Dictionary<string, string>());
-
-        var ex = Assert.Throws<NotImplementedException>(() => resolver.BuildMethod(ctx));
-        Assert.Contains("WebSocketBindingResolver.BuildMethod", ex.Message);
     }
 
     [Fact]

@@ -39,19 +39,6 @@ internal sealed class MqttBindingResolver : IAsyncApiBindingResolver
 
     public string BindingId { get; }
 
-    public BowireMethodInfo BuildMethod(AsyncApiChannelContext channel)
-    {
-        // Method shape is built by BowireAsyncApiProtocol.MapV3Channels —
-        // the resolver only needs the invocation side. Returning a
-        // placeholder keeps the interface honest until Phase A4 (when
-        // binding-specific method metadata, e.g. qos, lands).
-        throw new NotImplementedException(
-            "MqttBindingResolver.BuildMethod is reserved for Phase A4 when " +
-            "per-binding method metadata (qos, retain, content-type) needs " +
-            "to surface on the method itself. Phase A3 builds methods " +
-            "directly from V3OperationDefinition.");
-    }
-
     public async Task<InvokeResult> InvokeAsync(
         AsyncApiChannelContext channel, List<string> jsonMessages,
         Dictionary<string, string>? metadata, CancellationToken ct)
@@ -95,6 +82,34 @@ internal sealed class MqttBindingResolver : IAsyncApiBindingResolver
             showInternalServices: false,
             metadata: mergedMetadata,
             ct: ct).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// #357 — a <c>receive</c> operation is a subscription: the MQTT
+    /// plugin's stream takes the topic as the method, the same way the
+    /// publish above does, and yields one envelope per message.
+    /// </summary>
+    public IAsyncEnumerable<string> InvokeStreamAsync(
+        AsyncApiChannelContext channel, List<string> jsonMessages,
+        Dictionary<string, string>? metadata, CancellationToken ct)
+    {
+        var mqtt = _registry.Protocols.FirstOrDefault(p =>
+            string.Equals(p.Id, "mqtt", StringComparison.OrdinalIgnoreCase));
+        if (mqtt is null)
+        {
+            return AsyncApiStreamSupport.PluginMissing(
+                "AsyncAPI document declares an MQTT binding, but no MQTT plugin is loaded. " +
+                "CLI: ships pre-bundled with the Kuestenlogik.Bowire.Tool. Embedded: add the " +
+                "Kuestenlogik.Bowire.Protocol.Mqtt NuGet package to your host.");
+        }
+        return mqtt.InvokeStreamAsync(
+            serverUrl: channel.ServerUrl,
+            service: channel.ChannelAddress,
+            method: channel.ChannelAddress,
+            jsonMessages: jsonMessages,
+            showInternalServices: false,
+            metadata: MergeMqttBindingFields(channel.BindingFields, metadata),
+            ct: ct);
     }
 
     /// <summary>

@@ -33,20 +33,23 @@ bowire --url https://api.example.com/asyncapi.yaml
 
 The sidebar now shows every channel as a service, every operation as a method, every message as a typed input. Hit Send — the call routes through whichever wire plugin the doc's `bindings:` block declares.
 
-## Active bindings
+## Supported bindings
 
-Today every active binding key resolves to a shipped, first- or third-party plugin:
+Every binding key below resolves to a resolver that maps the AsyncAPI channel and its `bindings.*` fields onto a wire plugin's call. What each can do differs by direction: a `send` operation is a unary publish, a `receive` operation is a subscription that streams into the response pane. Nothing here throws at you: a binding without a subscribe shape yet answers a `receive` with one `{"error": …}` frame that says so, and a binding whose wire plugin is not loaded says which package to add.
 
-| `bindings:` key | Dispatched via | Channel address &rarr; |
-|---|---|---|
-| `http` | Built-in `HttpClient` (no extra wire needed) | URL path + verb |
-| `mqtt` / `mqtt5` | [`Kuestenlogik.Bowire.Protocol.Mqtt`](../protocols/mqtt.md) | Topic. QoS / retain / will fields ride on the metadata bag. |
-| `kafka` | [`Kuestenlogik.Bowire.Protocol.Kafka`](../protocols/kafka.md) | Topic. Schema-Registry hints + key / partition on metadata. |
-| `amqp` (0.9.1) | [`Kuestenlogik.Bowire.Protocol.Amqp`](https://github.com/Kuestenlogik/Bowire.Protocol.Amqp) | Exchange / routing key. |
-| `amqp1` (1.0) | [`Kuestenlogik.Bowire.Protocol.Amqp`](https://github.com/Kuestenlogik/Bowire.Protocol.Amqp) | Address. |
-| `ws` | [`Kuestenlogik.Bowire.Protocol.WebSocket`](../protocols/websocket.md) | Channel address as URL path. |
+| `bindings:` key | Dispatched via | `send` | `receive` | Channel address &rarr; |
+|---|---|---|---|---|
+| `mqtt` / `mqtt5` | [`Kuestenlogik.Bowire.Protocol.Mqtt`](../protocols/mqtt.md) | publish | subscribe | Topic. QoS / retain / will fields ride on the metadata bag. |
+| `nats` | `Kuestenlogik.Bowire.Protocol.Nats` | publish | subscribe | Subject. `queue` / `replyTo` map onto the plugin's `queue_group` / `reply_to`. |
+| `kafka` | [`Kuestenlogik.Bowire.Protocol.Kafka`](../protocols/kafka.md) | produce | not yet | Topic. Schema-Registry hints + key / partition on metadata. |
+| `amqp` (0.9.1) | [`Kuestenlogik.Bowire.Protocol.Amqp`](https://github.com/Kuestenlogik/Bowire.Protocol.Amqp) | send | not yet | Exchange / routing key. |
+| `amqp1` (1.0) | [`Kuestenlogik.Bowire.Protocol.Amqp`](https://github.com/Kuestenlogik/Bowire.Protocol.Amqp) | send | not yet | Address. |
+| `ws` | [`Kuestenlogik.Bowire.Protocol.WebSocket`](../protocols/websocket.md) | open + send + close | not yet | Channel address as URL path. |
+| `http` | Built-in `HttpClient` (no extra wire needed) | request | not yet | URL path + verb. |
+| `sns` | degrades — no wire plugin yet | error result | error frame | Topic ARN. |
+| `sqs` | degrades — no wire plugin yet | error result | error frame | Queue URL. |
 
-NATS follows once `Kuestenlogik.Bowire.Protocol.Nats` ships.
+"not yet" on the `receive` column means the wire plugin has no subscribe shape for that binding today; the stream pane shows the sentence instead of a stack trace. A binding key that no resolver claims is reported the same way, naming the shipped resolvers.
 
 ## Spec coverage
 

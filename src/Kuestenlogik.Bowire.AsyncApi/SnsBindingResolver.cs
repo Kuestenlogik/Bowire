@@ -53,20 +53,6 @@ internal sealed class SnsBindingResolver : IAsyncApiBindingResolver
 
     public string BindingId => "sns";
 
-    public BowireMethodInfo BuildMethod(AsyncApiChannelContext channel)
-    {
-        // Same deferral as Kafka / AMQP / NATS: method materialisation
-        // happens in BowireAsyncApiProtocol.MapV3Channels / MapV2Channels.
-        // The resolver is invocation-side only until per-binding method
-        // metadata (topic ARN, subject, filterPolicy) needs to surface
-        // on the method itself.
-        throw new NotImplementedException(
-            "SnsBindingResolver.BuildMethod is reserved for a future " +
-            "phase where per-binding method metadata (topic.name, subject, " +
-            "filterPolicy) needs to surface on the method. Current phase " +
-            "builds methods directly from the V3/V2 operation block.");
-    }
-
     public async Task<InvokeResult> InvokeAsync(
         AsyncApiChannelContext channel, List<string> jsonMessages,
         Dictionary<string, string>? metadata, CancellationToken ct)

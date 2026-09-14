@@ -52,7 +52,7 @@ public sealed class NatsBindingResolverTests
         Assert.Equal("OK", result.Status);
         Assert.Equal("nats://broker:4222", captured.LastServerUrl);
         Assert.Equal("orders.created", captured.LastService);    // subject ← channel address
-        Assert.Equal("publish", captured.LastMethod);             // literal NATS verb
+        Assert.Equal("nats/orders.created/publish", captured.LastMethod); // the plugin's route form (#357)
         // `queue` / `replyTo` are renamed onto the keys the NATS
         // plugin reads; bindingVersion stays under its own name as a
         // pass-through diagnostic.
@@ -114,18 +114,5 @@ public sealed class NatsBindingResolverTests
 
     [Fact]
     public void BindingId_IsNats() => Assert.Equal("nats", new NatsBindingResolver(new BowireProtocolRegistry()).BindingId);
-
-    [Fact]
-    public void BuildMethod_NotYetImplemented_DocumentsThePhase()
-    {
-        // Same intentional deferral as Kafka / AMQP — guards against
-        // someone wiring BuildMethod into the loader before the
-        // per-binding method-metadata phase lands.
-        var resolver = new NatsBindingResolver(new BowireProtocolRegistry());
-        var ctx = new AsyncApiChannelContext(
-            ServerUrl: "nats://b:4222", ChannelAddress: "s", OperationAction: "send",
-            BindingFields: new Dictionary<string, string>());
-        Assert.Throws<NotImplementedException>(() => resolver.BuildMethod(ctx));
-    }
 
 }

@@ -46,19 +46,6 @@ internal sealed class NatsBindingResolver : IAsyncApiBindingResolver
 
     public string BindingId => "nats";
 
-    public BowireMethodInfo BuildMethod(AsyncApiChannelContext channel)
-    {
-        // Same deferral as Kafka / AMQP: method materialisation
-        // happens in BowireAsyncApiProtocol.MapV3Channels / V2.
-        // Reserved for when per-binding method metadata (queue,
-        // replyTo) needs to surface on the method itself.
-        throw new NotImplementedException(
-            "NatsBindingResolver.BuildMethod is reserved for a future " +
-            "phase where per-binding method metadata (queue, replyTo) " +
-            "needs to surface on the method. Current phase builds " +
-            "methods directly from the V3/V2 operation block.");
-    }
-
     public async Task<InvokeResult> InvokeAsync(
         AsyncApiChannelContext channel, List<string> jsonMessages,
         Dictionary<string, string>? metadata, CancellationToken ct)
@@ -88,19 +75,48 @@ internal sealed class NatsBindingResolver : IAsyncApiBindingResolver
         // overwritten by the doc defaults.
         var mergedMetadata = MergeNatsBindingFields(channel.BindingFields, metadata);
 
-        // The NATS plugin's invoke contract (Phase 1 subject form):
+        // The NATS plugin's invoke contract is the route form the plugin
+        // discovers with — `nats/<subject>/publish` — which its parser
+        // splits back into subject and op. A bare "publish" used to go
+        // here and was read as a subject named "publish" (#357).
         //   serverUrl = NATS URL (nats://host:4222)
         //   service   = subject  ← channel.address from AsyncAPI
-        //   method    = "publish" (the plugin's literal verb for unary pub)
         //   metadata  = queue_group / reply_to + any pass-through bindings
         return await nats.InvokeAsync(
             serverUrl: channel.ServerUrl,
             service: channel.ChannelAddress,
-            method: "publish",
+            method: "nats/" + channel.ChannelAddress + "/publish",
             jsonMessages: jsonMessages,
             showInternalServices: false,
             metadata: mergedMetadata,
             ct: ct).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// #357 — a <c>receive</c> operation subscribes to the subject through
+    /// the plugin's route form, <c>nats/&lt;subject&gt;/subscribe</c>.
+    /// </summary>
+    public IAsyncEnumerable<string> InvokeStreamAsync(
+        AsyncApiChannelContext channel, List<string> jsonMessages,
+        Dictionary<string, string>? metadata, CancellationToken ct)
+    {
+        var nats = _registry.Protocols.FirstOrDefault(p =>
+            string.Equals(p.Id, "nats", StringComparison.OrdinalIgnoreCase));
+        if (nats is null)
+        {
+            return AsyncApiStreamSupport.PluginMissing(
+                "AsyncAPI document declares a NATS binding, but no NATS plugin is loaded. " +
+                "CLI: ships pre-bundled with the Kuestenlogik.Bowire.Tool. Embedded: add the " +
+                "Kuestenlogik.Bowire.Protocol.Nats NuGet package to your host.");
+        }
+        return nats.InvokeStreamAsync(
+            serverUrl: channel.ServerUrl,
+            service: channel.ChannelAddress,
+            method: "nats/" + channel.ChannelAddress + "/subscribe",
+            jsonMessages: jsonMessages,
+            showInternalServices: false,
+            metadata: MergeNatsBindingFields(channel.BindingFields, metadata),
+            ct: ct);
     }
 
     /// <summary>

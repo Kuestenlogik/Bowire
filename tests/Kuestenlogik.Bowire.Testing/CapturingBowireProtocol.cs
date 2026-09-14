@@ -69,13 +69,24 @@ public sealed class CapturingBowireProtocol(string id, string? iconSvg = null) :
     }
 
 #pragma warning disable CS1998 // empty stream returns no yields
+    /// <summary>Frames the stream yields; empty by default.</summary>
+    public List<string> StreamFrames { get; } = [];
+
     public async IAsyncEnumerable<string> InvokeStreamAsync(
         string serverUrl, string service, string method,
         List<string> jsonMessages, bool showInternalServices,
         Dictionary<string, string>? metadata = null,
         [EnumeratorCancellation] CancellationToken ct = default)
     {
-        yield break;
+        // The stream records what it was asked for the same way the
+        // unary path does, so a resolver's subscribe mapping is testable.
+        LastServerUrl = serverUrl;
+        LastService = service;
+        LastMethod = method;
+        LastJsonMessages = jsonMessages;
+        LastMetadata = metadata;
+        InvokeCount++;
+        foreach (var frame in StreamFrames) yield return frame;
     }
 #pragma warning restore CS1998
 

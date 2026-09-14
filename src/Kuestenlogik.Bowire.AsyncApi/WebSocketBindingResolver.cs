@@ -51,15 +51,6 @@ internal sealed class WebSocketBindingResolver : IAsyncApiBindingResolver
     /// </summary>
     public string BindingId => "ws";
 
-    public BowireMethodInfo BuildMethod(AsyncApiChannelContext channel)
-    {
-        throw new NotImplementedException(
-            "WebSocketBindingResolver.BuildMethod is reserved for a later " +
-            "phase where per-binding method metadata (subprotocol, query, " +
-            "headers) needs to surface on the method itself. The current " +
-            "phase builds methods directly from the V3/V2 operation block.");
-    }
-
     public async Task<InvokeResult> InvokeAsync(
         AsyncApiChannelContext channel, List<string> jsonMessages,
         Dictionary<string, string>? metadata, CancellationToken ct)

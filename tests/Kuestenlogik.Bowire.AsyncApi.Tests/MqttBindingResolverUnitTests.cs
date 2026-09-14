@@ -12,8 +12,7 @@ namespace Kuestenlogik.Bowire.AsyncApi.Tests;
 /// already covers the happy publish path). These pin the branches the
 /// integration test can't easily exercise — the no-MQTT-plugin error
 /// path, the QoS-string translation table, the doc-field vs
-/// caller-metadata merge precedence, and the BuildMethod-is-Phase-A4
-/// guard.
+/// caller-metadata merge precedence.
 /// </summary>
 public sealed class MqttBindingResolverUnitTests
 {
@@ -42,14 +41,6 @@ public sealed class MqttBindingResolverUnitTests
         // bag of binding fields the AsyncAPI extractor pulls.
         var resolver = new MqttBindingResolver(new BowireProtocolRegistry(), bindingId: "mqtt5");
         Assert.Equal("mqtt5", resolver.BindingId);
-    }
-
-    [Fact]
-    public void BuildMethod_ThrowsNotImplemented_PointingAtPhaseA4()
-    {
-        var resolver = new MqttBindingResolver(new BowireProtocolRegistry());
-        var ex = Assert.Throws<NotImplementedException>(() => resolver.BuildMethod(MakeChannel()));
-        Assert.Contains("Phase A4", ex.Message, StringComparison.Ordinal);
     }
 
     [Fact]

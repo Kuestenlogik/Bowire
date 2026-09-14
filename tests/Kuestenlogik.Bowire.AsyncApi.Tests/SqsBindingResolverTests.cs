@@ -111,14 +111,4 @@ public sealed class SqsBindingResolverTests
     [Fact]
     public void BindingId_IsSqs() =>
         Assert.Equal("sqs", new SqsBindingResolver(new BowireProtocolRegistry()).BindingId);
-
-    [Fact]
-    public void BuildMethod_NotYetImplemented_DocumentsThePhase()
-    {
-        var resolver = new SqsBindingResolver(new BowireProtocolRegistry());
-        var ctx = new AsyncApiChannelContext(
-            ServerUrl: "sqs://r", ChannelAddress: "q", OperationAction: "send",
-            BindingFields: new Dictionary<string, string>());
-        Assert.Throws<NotImplementedException>(() => resolver.BuildMethod(ctx));
-    }
 }

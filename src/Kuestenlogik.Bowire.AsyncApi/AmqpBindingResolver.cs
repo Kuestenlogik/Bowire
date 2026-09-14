@@ -55,19 +55,6 @@ internal sealed class AmqpBindingResolver : IAsyncApiBindingResolver
 
     public string BindingId { get; }
 
-    public BowireMethodInfo BuildMethod(AsyncApiChannelContext channel)
-    {
-        // Method materialisation happens in BowireAsyncApiProtocol's
-        // V3/V2 channel mapping; the resolver is invocation-side only
-        // until per-binding method metadata (routingKey, exchange) needs
-        // to surface on the method itself. Same shape as Kafka/MQTT.
-        throw new NotImplementedException(
-            "AmqpBindingResolver.BuildMethod is reserved for a future " +
-            "phase where per-binding method metadata (routingKey, " +
-            "exchange, queue) needs to surface on the method. Current " +
-            "phase builds methods directly from the V3/V2 operation block.");
-    }
-
     public async Task<InvokeResult> InvokeAsync(
         AsyncApiChannelContext channel, List<string> jsonMessages,
         Dictionary<string, string>? metadata, CancellationToken ct)

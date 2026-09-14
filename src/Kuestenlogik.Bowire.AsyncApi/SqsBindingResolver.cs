@@ -49,21 +49,6 @@ internal sealed class SqsBindingResolver : IAsyncApiBindingResolver
 
     public string BindingId => "sqs";
 
-    public BowireMethodInfo BuildMethod(AsyncApiChannelContext channel)
-    {
-        // Same deferral as Kafka / AMQP / NATS / SNS: method materialisation
-        // happens in BowireAsyncApiProtocol.MapV3Channels / MapV2Channels.
-        // The resolver is invocation-side only until per-binding method
-        // metadata (queue ARN, messageGroupId, deadLetterQueue) needs
-        // to surface on the method itself.
-        throw new NotImplementedException(
-            "SqsBindingResolver.BuildMethod is reserved for a future " +
-            "phase where per-binding method metadata (queue.name, " +
-            "messageGroupId, deadLetterQueue) needs to surface on the " +
-            "method. Current phase builds methods directly from the " +
-            "V3/V2 operation block.");
-    }
-
     public async Task<InvokeResult> InvokeAsync(
         AsyncApiChannelContext channel, List<string> jsonMessages,
         Dictionary<string, string>? metadata, CancellationToken ct)

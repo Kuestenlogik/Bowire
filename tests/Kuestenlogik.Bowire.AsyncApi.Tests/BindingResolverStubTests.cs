@@ -11,7 +11,7 @@ namespace Kuestenlogik.Bowire.AsyncApi.Tests;
 
 /// <summary>
 /// Cross-resolver tests for the binding-id properties, the
-/// not-yet-implemented <c>BuildMethod</c> stubs, and the
+/// resolvers, and the
 /// <c>InvokeAsync</c> error paths that the per-resolver suites haven't
 /// touched. Pushes <see cref="HttpBindingResolver"/>,
 /// <see cref="KafkaBindingResolver"/>, and
@@ -24,16 +24,6 @@ public sealed class BindingResolverStubTests
     {
         var resolver = new HttpBindingResolver();
         Assert.Equal("http", resolver.BindingId);
-    }
-
-    [Fact]
-    public void HttpBindingResolver_BuildMethod_Throws_NotImplemented()
-    {
-        // Phase-1 contract: methods come from the operation block, not
-        // from the binding. The throw documents that intent + keeps a
-        // future caller honest.
-        var resolver = new HttpBindingResolver();
-        Assert.Throws<NotImplementedException>(() => resolver.BuildMethod(StubChannel("http")));
     }
 
     [Fact]
@@ -104,14 +94,6 @@ public sealed class BindingResolverStubTests
     }
 
     [Fact]
-    public void KafkaBindingResolver_BuildMethod_Throws_NotImplemented()
-    {
-        var registry = new BowireProtocolRegistry();
-        var resolver = new KafkaBindingResolver(registry);
-        Assert.Throws<NotImplementedException>(() => resolver.BuildMethod(StubChannel("kafka")));
-    }
-
-    [Fact]
     public void AmqpBindingResolver_BindingId_Defaults_To_Amqp()
     {
         var registry = new BowireProtocolRegistry();
@@ -128,14 +110,6 @@ public sealed class BindingResolverStubTests
         var registry = new BowireProtocolRegistry();
         var resolver = new AmqpBindingResolver(registry, "amqp091");
         Assert.Equal("amqp091", resolver.BindingId);
-    }
-
-    [Fact]
-    public void AmqpBindingResolver_BuildMethod_Throws_NotImplemented()
-    {
-        var registry = new BowireProtocolRegistry();
-        var resolver = new AmqpBindingResolver(registry);
-        Assert.Throws<NotImplementedException>(() => resolver.BuildMethod(StubChannel("amqp")));
     }
 
     private static AsyncApiChannelContext StubChannel(string protocol) => new(

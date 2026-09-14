@@ -110,17 +110,4 @@ public sealed class SnsBindingResolverTests
     [Fact]
     public void BindingId_IsSns() =>
         Assert.Equal("sns", new SnsBindingResolver(new BowireProtocolRegistry()).BindingId);
-
-    [Fact]
-    public void BuildMethod_NotYetImplemented_DocumentsThePhase()
-    {
-        // Same intentional deferral as Kafka / AMQP / NATS — guards
-        // against someone wiring BuildMethod into the loader before
-        // the per-binding method-metadata phase lands.
-        var resolver = new SnsBindingResolver(new BowireProtocolRegistry());
-        var ctx = new AsyncApiChannelContext(
-            ServerUrl: "sns://r", ChannelAddress: "t", OperationAction: "send",
-            BindingFields: new Dictionary<string, string>());
-        Assert.Throws<NotImplementedException>(() => resolver.BuildMethod(ctx));
-    }
 }

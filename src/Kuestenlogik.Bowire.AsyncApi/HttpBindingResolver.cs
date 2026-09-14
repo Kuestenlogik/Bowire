@@ -45,16 +45,6 @@ internal sealed class HttpBindingResolver : IAsyncApiBindingResolver
 {
     public string BindingId => "http";
 
-    public BowireMethodInfo BuildMethod(AsyncApiChannelContext channel)
-    {
-        throw new NotImplementedException(
-            "HttpBindingResolver.BuildMethod is reserved for a later phase " +
-            "where per-binding method metadata (HTTP verb, declared query / " +
-            "header schemas) needs to surface on the method itself. The " +
-            "current phase builds methods directly from the V3/V2 " +
-            "operation block.");
-    }
-
     public async Task<InvokeResult> InvokeAsync(
         AsyncApiChannelContext channel, List<string> jsonMessages,
         Dictionary<string, string>? metadata, CancellationToken ct)

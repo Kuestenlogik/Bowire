@@ -33,16 +33,8 @@ public interface IAsyncApiBindingResolver
     string BindingId { get; }
 
     /// <summary>
-    /// Build a <see cref="BowireMethodInfo"/> from an AsyncAPI operation +
-    /// channel + the parsed binding block. The returned method is wired
-    /// onto the service that represents the channel; invocations on that
-    /// method run through <see cref="InvokeAsync"/> below.
-    /// </summary>
-    BowireMethodInfo BuildMethod(AsyncApiChannelContext channel);
-
-    /// <summary>
-    /// Dispatch a discovered AsyncAPI method to its wire plugin.
-    /// Implementation looks up the wire plugin via
+    /// Dispatch a discovered AsyncAPI <c>send</c> operation to its wire
+    /// plugin. Implementation looks up the wire plugin via
     /// <c>BowireProtocolRegistry</c>, maps the AsyncAPI channel + binding
     /// fields onto the wire plugin's invocation contract (e.g. MQTT
     /// publish topic + qos), and forwards the JSON payloads.
@@ -50,6 +42,44 @@ public interface IAsyncApiBindingResolver
     Task<InvokeResult> InvokeAsync(
         AsyncApiChannelContext channel, List<string> jsonMessages,
         Dictionary<string, string>? metadata, CancellationToken ct);
+
+    /// <summary>
+    /// Dispatch a discovered AsyncAPI <c>receive</c> operation — a
+    /// subscription — to its wire plugin and stream what arrives. #357:
+    /// the default does not throw. A binding whose wire plugin has no
+    /// subscribe shape yet yields one <c>{"error": …}</c> frame that says
+    /// so, so the operator sees "not supported for this binding" in the
+    /// stream pane rather than a stack trace.
+    /// </summary>
+    IAsyncEnumerable<string> InvokeStreamAsync(
+        AsyncApiChannelContext channel, List<string> jsonMessages,
+        Dictionary<string, string>? metadata, CancellationToken ct)
+        => AsyncApiStreamSupport.Unsupported(BindingId);
+}
+
+/// <summary>Shared pieces of the resolvers' stream paths.</summary>
+internal static class AsyncApiStreamSupport
+{
+    /// <summary>One error frame in the shape the stream pane renders.</summary>
+    public static string ErrorFrame(string message) =>
+        System.Text.Json.JsonSerializer.Serialize(new { error = message });
+
+    /// <summary>The single-frame stream for a binding that cannot subscribe yet.</summary>
+    public static async IAsyncEnumerable<string> Unsupported(string bindingId)
+    {
+        await Task.CompletedTask.ConfigureAwait(false);
+        yield return ErrorFrame(
+            $"Receiving over the AsyncAPI {bindingId} binding is not supported yet: the wire plugin " +
+            "has no subscribe shape for it. Send operations on this binding work; see the " +
+            "supported-bindings matrix in the AsyncAPI protocol docs.");
+    }
+
+    /// <summary>The single-frame stream for a binding whose wire plugin is not loaded.</summary>
+    public static async IAsyncEnumerable<string> PluginMissing(string message)
+    {
+        await Task.CompletedTask.ConfigureAwait(false);
+        yield return ErrorFrame(message);
+    }
 }
 
 /// <summary>

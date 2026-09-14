@@ -20,14 +20,16 @@ namespace Kuestenlogik.Bowire.AsyncApi;
 /// matching wire plugin (MQTT, Kafka, WebSocket, …) at runtime via
 /// <c>BowireProtocolRegistry</c>.
 ///
-/// Phase A2: the loader is wired up — <see cref="DiscoverAsync"/> reads an
-/// AsyncAPI 3.0 document, walks its channels, and emits one
-/// <see cref="BowireServiceInfo"/> per channel. The binding-translator layer
-/// (which routes invocations to MQTT / Kafka / WebSocket via
-/// <c>BowireProtocolRegistry</c>) lands in Phase A3 — until then,
-/// <see cref="InvokeAsync"/> still raises <see cref="NotSupportedException"/>.
-/// AsyncAPI 2.x parsing is supported by the SDK reader but not yet mapped
-/// here; only V3 documents produce services.
+/// <see cref="DiscoverAsync"/> reads an AsyncAPI 3.0 (or 2.x) document,
+/// walks its channels, and emits one <see cref="BowireServiceInfo"/> per
+/// channel. <see cref="InvokeAsync"/> (a <c>send</c> operation) and
+/// <see cref="InvokeStreamAsync"/> (a <c>receive</c>) resolve the document,
+/// operation, server and binding fields the same way and hand them to the
+/// binding resolver for the server's protocol, which forwards to the wire
+/// plugin. Nothing on either path throws at an operator (#357): what is
+/// missing — the document, the operation, a resolver, a plugin, a
+/// subscribe shape for the binding — comes back as an error result or an
+/// error frame that names it.
 /// </summary>
 public sealed class BowireAsyncApiProtocol : IBowireProtocol
 {
@@ -526,16 +528,30 @@ public sealed class BowireAsyncApiProtocol : IBowireProtocol
         // into the channel itself. We try V3 first (the dominant
         // spec version going forward), fall back to V2 if the URL was
         // cached as such, and only then report "not discovered".
+        var (resolver, ctx, error) = ResolveInvocation(serverUrl, service, method);
+        if (error is not null) return Error(error);
+        return await resolver!.InvokeAsync(ctx!, jsonMessages, metadata, ct).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Everything both invoke paths share (#357): find the document the
+    /// URL was discovered as (V3 first, then V2), the operation, the
+    /// server and its resolver, and the binding fields the extractor
+    /// pulled at discovery — or the sentence that says which of those is
+    /// missing. Send and receive differ only in which resolver method
+    /// the result is handed to.
+    /// </summary>
+    private (IAsyncApiBindingResolver? Resolver, AsyncApiChannelContext? Context, string? Error) ResolveInvocation(
+        string serverUrl, string service, string method)
+    {
         if (_v2Documents.TryGetValue(serverUrl, out var v2Document))
         {
-            return await InvokeV2Async(
-                serverUrl, v2Document, service, method, jsonMessages, metadata, ct)
-                .ConfigureAwait(false);
+            return ResolveV2(serverUrl, v2Document, service, method);
         }
 
         if (!_documents.TryGetValue(serverUrl, out var document))
         {
-            return Error("AsyncAPI document has not been discovered yet. " +
+            return (null, null, "AsyncAPI document has not been discovered yet. " +
                 $"Call discover with serverUrl '{serverUrl}' first.");
         }
 
@@ -548,7 +564,7 @@ public sealed class BowireAsyncApiProtocol : IBowireProtocol
         var (opLookupKey, _) = SplitOverloadName(method);
         if (document.Operations is null || !document.Operations.TryGetValue(opLookupKey, out var operation))
         {
-            return Error($"Operation '{method}' not found in AsyncAPI document.");
+            return (null, null, $"Operation '{method}' not found in AsyncAPI document.");
         }
 
         // Server selection: Phase A3 picks the first declared server whose
@@ -556,18 +572,18 @@ public sealed class BowireAsyncApiProtocol : IBowireProtocol
         // per-channel servers[] overrides arrive in Phase A4.
         if (document.Servers is null || document.Servers.Count == 0)
         {
-            return Error("AsyncAPI document declares no servers; cannot route invocation.");
+            return (null, null, "AsyncAPI document declares no servers; cannot route invocation.");
         }
 
         var (serverName, server) = document.Servers.First();
         if (string.IsNullOrWhiteSpace(server.Protocol))
         {
-            return Error($"Server '{serverName}' has no protocol declared.");
+            return (null, null, $"Server '{serverName}' has no protocol declared.");
         }
 
         if (!_resolvers.TryGetValue(server.Protocol, out var resolver))
         {
-            return Error(
+            return (null, null, 
                 $"No AsyncAPI binding resolver registered for protocol '{server.Protocol}'. " +
                 "Shipped resolvers: MQTT (mqtt / mqtt5), Kafka, WebSocket (ws), HTTP, " +
                 "AMQP (amqp / amqp1), NATS, SNS, SQS. SNS / SQS resolvers degrade gracefully " +
@@ -577,7 +593,7 @@ public sealed class BowireAsyncApiProtocol : IBowireProtocol
         var channelKey = ResolveChannelRef(operation.Channel?.Reference);
         if (channelKey is null || !document.Channels!.TryGetValue(channelKey, out var channel))
         {
-            return Error($"Operation '{method}' references an unknown channel.");
+            return (null, null, $"Operation '{method}' references an unknown channel.");
         }
 
         var brokerUrl = $"{server.Protocol}://{server.Host}{server.PathName ?? string.Empty}";
@@ -600,7 +616,7 @@ public sealed class BowireAsyncApiProtocol : IBowireProtocol
             OperationAction: operation.Action == V3OperationAction.Send ? "send" : "receive",
             BindingFields: bindingFields);
 
-        return await resolver.InvokeAsync(ctx, jsonMessages, metadata, ct).ConfigureAwait(false);
+        return (resolver, ctx, null);
     }
 
     /// <summary>
@@ -614,14 +630,12 @@ public sealed class BowireAsyncApiProtocol : IBowireProtocol
     /// <see cref="AsyncApiChannelContext.BindingFields"/> and falls
     /// back to its protocol-level defaults.
     /// </summary>
-    private async Task<InvokeResult> InvokeV2Async(
-        string serverUrl, V2AsyncApiDocument document, string service, string method,
-        List<string> jsonMessages, Dictionary<string, string>? metadata,
-        CancellationToken ct)
+    private (IAsyncApiBindingResolver? Resolver, AsyncApiChannelContext? Context, string? Error) ResolveV2(
+        string serverUrl, V2AsyncApiDocument document, string service, string method)
     {
         if (document.Channels is null || !document.Channels.TryGetValue(service, out var channel))
         {
-            return Error($"Channel '{service}' not found in AsyncAPI v2 document.");
+            return (null, null, $"Channel '{service}' not found in AsyncAPI v2 document.");
         }
 
         // V2 inlines operations as channel.publish / channel.subscribe.
@@ -637,23 +651,23 @@ public sealed class BowireAsyncApiProtocol : IBowireProtocol
         var isReceive = MatchesV2Operation(channel.Subscribe, opLookupKey, fallback: "subscribe");
         if (!isSend && !isReceive)
         {
-            return Error($"Operation '{method}' not found on V2 channel '{service}'.");
+            return (null, null, $"Operation '{method}' not found on V2 channel '{service}'.");
         }
 
         if (document.Servers is null || document.Servers.Count == 0)
         {
-            return Error("AsyncAPI v2 document declares no servers; cannot route invocation.");
+            return (null, null, "AsyncAPI v2 document declares no servers; cannot route invocation.");
         }
 
         var (serverName, server) = document.Servers.First();
         if (string.IsNullOrWhiteSpace(server.Protocol))
         {
-            return Error($"V2 server '{serverName}' has no protocol declared.");
+            return (null, null, $"V2 server '{serverName}' has no protocol declared.");
         }
 
         if (!_resolvers.TryGetValue(server.Protocol, out var resolver))
         {
-            return Error(
+            return (null, null, 
                 $"No AsyncAPI binding resolver registered for protocol '{server.Protocol}'. " +
                 "Phase A ships the MQTT resolver only.");
         }
@@ -682,7 +696,7 @@ public sealed class BowireAsyncApiProtocol : IBowireProtocol
             OperationAction: isSend ? "send" : "receive",
             BindingFields: bindingFields);
 
-        return await resolver.InvokeAsync(ctx, jsonMessages, metadata, ct).ConfigureAwait(false);
+        return (resolver, ctx, null);
     }
 
     private static bool MatchesV2Operation(
@@ -712,22 +726,30 @@ public sealed class BowireAsyncApiProtocol : IBowireProtocol
         new(Response: null, DurationMs: 0, Status: "Error",
             Metadata: new Dictionary<string, string> { ["error"] = message });
 
+    /// <summary>
+    /// A <c>receive</c> operation: the same resolution as
+    /// <see cref="InvokeAsync"/>, handed to the resolver's stream path.
+    /// #357 — nothing here throws at an operator: a document that was not
+    /// discovered, an unknown operation, a server without a resolver, or a
+    /// binding that cannot subscribe yet all arrive as one
+    /// <c>{"error": …}</c> frame in the stream pane.
+    /// </summary>
     public async IAsyncEnumerable<string> InvokeStreamAsync(
         string serverUrl, string service, string method,
         List<string> jsonMessages, bool showInternalServices,
         Dictionary<string, string>? metadata = null,
         [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct = default)
     {
-        await Task.CompletedTask.ConfigureAwait(false);
-        throw new NotSupportedException(
-            "AsyncAPI discovery source has not loaded any channels yet — " +
-            "InvokeStreamAsync will be wired through the binding-resolver " +
-            "layer (Phase A2).");
-#pragma warning disable CS0162 // Unreachable code — the yield keeps the
-                              // method an iterator so the signature stays
-                              // an IAsyncEnumerable<string>.
-        yield break;
-#pragma warning restore CS0162
+        var (resolver, ctx, error) = ResolveInvocation(serverUrl, service, method);
+        if (error is not null)
+        {
+            yield return AsyncApiStreamSupport.ErrorFrame(error);
+            yield break;
+        }
+        await foreach (var frame in resolver!.InvokeStreamAsync(ctx!, jsonMessages, metadata, ct).ConfigureAwait(false))
+        {
+            yield return frame;
+        }
     }
 
     public Task<IBowireChannel?> OpenChannelAsync(
