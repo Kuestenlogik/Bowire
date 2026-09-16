@@ -305,6 +305,55 @@ public sealed class BowireSemanticsEndpointsTests
         }
     }
 
+    [Fact]
+    public async Task UiExtensions_Asset_Endpoint_Serves_A_Gz_Declared_Asset_Under_Its_Plain_Leaf()
+    {
+        // mil-sym-ts is declared as `mil-sym-ts.js.gz` and asked for as
+        // `mil-sym-ts.js`. A client that takes gzip gets the stored bytes
+        // as they are, marked as such; one that does not gets them
+        // inflated. Both are the same file, and both say Vary so a cache
+        // keeps the two apart.
+        var app = await BuildAppAsync();
+        await using (app)
+        {
+            Kuestenlogik.Bowire.Endpoints.BowireSemanticsEndpoints.ResetCachedRegistryForTests();
+            var url = new Uri("/bowire/api/ui/extensions/kuestenlogik.maplibre/mil-sym-ts.js", UriKind.Relative);
+            var client = app.GetTestClient();
+
+            var plain = await client.GetAsync(url, TestContext.Current.CancellationToken);
+            Assert.Equal(HttpStatusCode.OK, plain.StatusCode);
+            Assert.Empty(plain.Content.Headers.ContentEncoding);
+            Assert.Contains("Accept-Encoding", plain.Headers.Vary);
+            Assert.Contains("javascript", plain.Content.Headers.ContentType?.MediaType, StringComparison.OrdinalIgnoreCase);
+            var js = await plain.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+            Assert.Contains("C5Ren=", js, StringComparison.Ordinal);
+            Assert.Contains("RenderSymbol2D", js, StringComparison.Ordinal);
+
+            using var request = new HttpRequestMessage(HttpMethod.Get, url);
+            request.Headers.AcceptEncoding.ParseAdd("gzip, deflate, br");
+            var compressed = await client.SendAsync(request, TestContext.Current.CancellationToken);
+            Assert.Equal(HttpStatusCode.OK, compressed.StatusCode);
+            Assert.Equal(["gzip"], compressed.Content.Headers.ContentEncoding);
+            Assert.Contains("javascript", compressed.Content.Headers.ContentType?.MediaType, StringComparison.OrdinalIgnoreCase);
+            var bytes = await compressed.Content.ReadAsByteArrayAsync(TestContext.Current.CancellationToken);
+            Assert.Equal(0x1f, bytes[0]);
+            Assert.Equal(0x8b, bytes[1]);
+            Assert.True(bytes.Length < js.Length / 3, $"{bytes.Length} compressed vs {js.Length} inflated");
+
+            // `gzip;q=0` is a refusal: inflated again.
+            using var refusing = new HttpRequestMessage(HttpMethod.Get, url);
+            refusing.Headers.AcceptEncoding.ParseAdd("gzip;q=0");
+            var inflated = await client.SendAsync(refusing, TestContext.Current.CancellationToken);
+            Assert.Empty(inflated.Content.Headers.ContentEncoding);
+
+            var license = await client.GetAsync(
+                new Uri("/bowire/api/ui/extensions/kuestenlogik.maplibre/mil-sym-ts.LICENSE", UriKind.Relative),
+                TestContext.Current.CancellationToken);
+            Assert.Equal(HttpStatusCode.OK, license.StatusCode);
+            Assert.Contains("Apache License", await license.Content.ReadAsStringAsync(TestContext.Current.CancellationToken), StringComparison.Ordinal);
+        }
+    }
+
     // ----------------------------------------------------------------
     // Phase 4 — POST/DELETE /api/semantics/annotation
     // ----------------------------------------------------------------

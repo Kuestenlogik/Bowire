@@ -80,6 +80,13 @@ public sealed class MapLibreExtension : IBowireUiExtension
     /// terms. milsymbol (MIT) rides the same way: fetched on first
     /// mount, it draws each pin's MIL-STD-2525 / APP-6 symbol from its
     /// SIDC; without it the widget falls back to four affinity shapes.
+    /// mil-sym-ts (Apache-2.0) draws the multipoint graphics milsymbol
+    /// does not — lines, areas, arrows, corridors, fans — and is the
+    /// heaviest of the three, so it is stored gzipped and fetched only
+    /// once a frame actually carries such a geometry. The asset
+    /// endpoint serves a <c>.gz</c>-declared asset under its plain leaf
+    /// (<c>mil-sym-ts.js</c>), compressed or inflated as the client's
+    /// <c>Accept-Encoding</c> allows.
     /// </summary>
     public IReadOnlyList<string> AdditionalAssetNames { get; } =
     [
@@ -87,5 +94,7 @@ public sealed class MapLibreExtension : IBowireUiExtension
         "wwwroot/maplibre/LICENSE",
         "wwwroot/milsymbol/milsymbol.js",
         "wwwroot/milsymbol/milsymbol.LICENSE",
+        "wwwroot/mil-sym-ts/mil-sym-ts.js.gz",
+        "wwwroot/mil-sym-ts/mil-sym-ts.LICENSE",
     ];
 }

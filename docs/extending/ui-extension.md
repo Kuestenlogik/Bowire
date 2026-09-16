@@ -76,11 +76,15 @@ public sealed class MapLibreExtension : IBowireUiExtension
         "wwwroot/maplibre/LICENSE",
         "wwwroot/milsymbol/milsymbol.js",
         "wwwroot/milsymbol/milsymbol.LICENSE",
+        "wwwroot/mil-sym-ts/mil-sym-ts.js.gz",
+        "wwwroot/mil-sym-ts/mil-sym-ts.LICENSE",
     ];
 }
 ```
 
-Two vendor libraries, two licence files — and the second one is not called `LICENSE`, because the asset endpoint resolves by leaf filename and that name is already taken. A bundle that ships more than one third-party library gives each licence file a distinct leaf.
+Three vendor libraries, three licence files — and only the first one is called `LICENSE`, because the asset endpoint resolves by leaf filename and that name is taken once. A bundle that ships more than one third-party library gives each licence file a distinct leaf.
+
+An asset declared with a `.gz` suffix is **precompressed**: the endpoint answers the plain leaf (`/api/ui/extensions/kuestenlogik.maplibre/mil-sym-ts.js` for the declaration above) from the stored gzip bytes, passing them through with `Content-Encoding: gzip` when the request's `Accept-Encoding` allows it and inflating them when it does not, with `Vary: Accept-Encoding` either way. Store a multi-megabyte library that way and the NuGet carries what the wire carries — mil-sym-ts is 7.4 MB of minified JS and inlined symbol tables, 1.36 MB gzipped. A plain declaration with the same leaf wins over a compressed one, so a `.gz` can be dropped in next to an existing asset without changing its URL.
 
 The `wwwroot/js/widgets/map.js` bundle is shipped as an `<EmbeddedResource>` on the `Kuestenlogik.Bowire.Map` assembly. At first mount, the workbench's extension loader dynamic-imports it from `/api/ui/extensions/kuestenlogik.maplibre/map.js`; the bundle then calls `window.BowireExtensions.register({...})` to declare its mount / unmount callbacks.
 

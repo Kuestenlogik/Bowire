@@ -23,6 +23,10 @@ A pin that carried a MIL-STD-2525 symbol code was drawn as one of four coloured 
 
 Found on the way: the pattern that picked SIDCs out of a frame checked the status letter one position late, against the first letter of the function id. Codes like `SFGPU…` passed by luck; a cruiser (`SFSPCLCC…`) did not, and a pin whose own code fell through picked up the nearest neighbour's colour from the scan of the whole frame.
 
+### An extension asset can ship gzipped
+
+The extension asset endpoint (`/api/ui/extensions/{id}/{name}`) now serves an asset declared with a `.gz` suffix under its plain leaf — passed through with `Content-Encoding: gzip` for a client that accepts it, inflated for one that does not, `Vary: Accept-Encoding` on both. The first user is [mil-sym-ts](https://github.com/missioncommand/mil-sym-ts) (Apache-2.0), the MIL-STD-2525D multipoint renderer the map widget will draw tactical graphics with: 7.4 MB of minified JS and inlined symbol tables that the `Kuestenlogik.Bowire.Map` package now carries as the 1.36 MB it costs on the wire. Nothing fetches it yet; the rendering is the next step.
+
 ## Breaking changes
 
 <!-- Each change has been on a back-compat ramp through the prior minor
