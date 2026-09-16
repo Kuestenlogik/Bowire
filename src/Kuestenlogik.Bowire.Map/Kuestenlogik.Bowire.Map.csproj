@@ -47,5 +47,22 @@
                       LogicalName="Kuestenlogik.Bowire.Map.wwwroot.milsymbol.milsymbol.js" />
     <EmbeddedResource Include="wwwroot\milsymbol\milsymbol.LICENSE"
                       LogicalName="Kuestenlogik.Bowire.Map.wwwroot.milsymbol.milsymbol.LICENSE" />
+    <!--
+      mil-sym-ts (Apache-2.0) — the multipoint renderer for the tactical
+      graphics milsymbol does not draw: boundaries, phase lines, areas,
+      axes of advance, corridors, range fans. This is the upstream web
+      build (`@armyc2.c5isr.renderer/mil-sym-ts-web` 2.10.4, C5Ren.umd.js,
+      sha256 27403955…b0b85c), unmodified but stored gzipped: 7.4 MB of
+      minified JS and inlined symbol tables compress to 1.36 MB, and the
+      asset endpoint serves a `.gz`-declared asset under its plain leaf
+      (`mil-sym-ts.js`), passing the bytes through with
+      Content-Encoding: gzip when the client accepts it and inflating
+      them when it does not. Loaded lazily, only once a frame carries a
+      multipoint location; a workbench that never sees one never pays.
+    -->
+    <EmbeddedResource Include="wwwroot\mil-sym-ts\mil-sym-ts.js.gz"
+                      LogicalName="Kuestenlogik.Bowire.Map.wwwroot.mil-sym-ts.mil-sym-ts.js.gz" />
+    <EmbeddedResource Include="wwwroot\mil-sym-ts\mil-sym-ts.LICENSE"
+                      LogicalName="Kuestenlogik.Bowire.Map.wwwroot.mil-sym-ts.mil-sym-ts.LICENSE" />
   </ItemGroup>
 </Project>

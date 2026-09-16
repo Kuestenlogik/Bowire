@@ -89,6 +89,75 @@ public sealed class MapLibreExtensionTests
             Assert.True(stream!.Length > 0, name);
         }
     }
+
+    [Fact]
+    public void MilSymTs_Is_Declared_Gzipped_With_Its_Own_License_Leaf()
+    {
+        // The multipoint renderer is declared with its `.gz` suffix —
+        // that is what tells the asset endpoint to answer `mil-sym-ts.js`
+        // from the compressed bytes — and its Apache text, like
+        // milsymbol's MIT text, cannot be called LICENSE.
+        var ext = new MapLibreExtension();
+        Assert.Contains("wwwroot/mil-sym-ts/mil-sym-ts.js.gz", ext.AdditionalAssetNames);
+        Assert.Contains("wwwroot/mil-sym-ts/mil-sym-ts.LICENSE", ext.AdditionalAssetNames);
+        Assert.DoesNotContain("wwwroot/mil-sym-ts/mil-sym-ts.js", ext.AdditionalAssetNames);
+    }
+
+    [Fact]
+    public void MilSymTs_Asset_Is_Gzip_And_Inflates_To_The_Upstream_Web_Build()
+    {
+        var asm = typeof(MapLibreExtension).Assembly;
+        var ext = new MapLibreExtension();
+
+        using var stream = EmbeddedExtensionAsset.OpenRead(asm, ext, "wwwroot/mil-sym-ts/mil-sym-ts.js.gz");
+        Assert.NotNull(stream);
+        // Small enough to ride in the package, large enough to be the
+        // whole library — a trimmed or truncated build lands outside.
+        Assert.InRange(stream!.Length, 1_000_000, 2_000_000);
+
+        var magic = new byte[2];
+        Assert.Equal(2, stream.Read(magic, 0, 2));
+        Assert.Equal(new byte[] { 0x1f, 0x8b }, magic);
+
+        var js = MilSymTsBundle.Value;
+        // UMD wrapper defining the `C5Ren` global, and the multipoint
+        // entry point the widget will call.
+        Assert.Contains("C5Ren=", js, StringComparison.Ordinal);
+        Assert.Contains("RenderSymbol2D", js, StringComparison.Ordinal);
+        Assert.Contains("OUTPUT_FORMAT_GEOJSON", js, StringComparison.Ordinal);
+
+        using var license = EmbeddedExtensionAsset.OpenRead(asm, ext, "wwwroot/mil-sym-ts/mil-sym-ts.LICENSE");
+        Assert.NotNull(license);
+        using var reader = new StreamReader(license!);
+        Assert.Contains("Apache License", reader.ReadToEnd(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void MilSymTs_Bundle_Reaches_No_Host()
+    {
+        // The library is vendored for the same reason MapLibre and
+        // milsymbol are: the map must render with the network cut. The
+        // upstream web build inlines every symbol table, so the only
+        // URL left in it is the SVG namespace — a string compared, never
+        // fetched. Anything else is a build that phones home.
+        var urlPattern = new Regex(@"https?://[^\s'""`<>)]+", RegexOptions.Multiline);
+        var hosts = urlPattern.Matches(MilSymTsBundle.Value)
+            .Select(m => new Uri(m.Value).Host)
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
+        Assert.Equal(["www.w3.org"], hosts);
+    }
+
+    /// <summary>The vendored mil-sym-ts web build, inflated once per test run.</summary>
+    private static readonly Lazy<string> MilSymTsBundle = new(() =>
+    {
+        using var stream = EmbeddedExtensionAsset.OpenRead(
+            typeof(MapLibreExtension).Assembly, new MapLibreExtension(), "wwwroot/mil-sym-ts/mil-sym-ts.js.gz")
+            ?? throw new InvalidOperationException("mil-sym-ts.js.gz is not embedded");
+        using var inflate = new System.IO.Compression.GZipStream(stream, System.IO.Compression.CompressionMode.Decompress);
+        using var reader = new StreamReader(inflate);
+        return reader.ReadToEnd();
+    });
 }
 
 /// <summary>

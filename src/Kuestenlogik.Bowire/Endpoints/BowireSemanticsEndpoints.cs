@@ -321,7 +321,7 @@ internal static class BowireSemanticsEndpoints
         }).ExcludeFromDescription();
 
         endpoints.MapGet($"{basePath}/api/ui/extensions/{{id}}/{{name}}",
-            (string id, string name) =>
+            (string id, string name, HttpContext ctx) =>
         {
             var registry = GetExtensionRegistry();
             var ext = registry.GetUiExtension(id);
@@ -334,17 +334,39 @@ internal static class BowireSemanticsEndpoints
             // resource list. Anything else is rejected — the endpoint
             // doesn't serve arbitrary file paths out of the plugin
             // assembly.
-            var resourceName = ResolveAssetResourceName(ext, name);
+            var (resourceName, precompressed) = ResolveAssetResourceName(ext, name);
             if (resourceName is null) return Results.NotFound();
 
             using var stream = EmbeddedExtensionAsset.OpenRead(assembly, ext, resourceName);
             if (stream is null) return Results.NotFound();
 
+            var contentType = EmbeddedExtensionAsset.GuessContentType(name);
             using var ms = new MemoryStream();
-            stream.CopyTo(ms);
-            return Results.File(
-                fileContents: ms.ToArray(),
-                contentType: EmbeddedExtensionAsset.GuessContentType(name));
+            if (!precompressed)
+            {
+                stream.CopyTo(ms);
+                return Results.File(fileContents: ms.ToArray(), contentType: contentType);
+            }
+
+            // A `.gz`-declared asset is stored compressed so a multi-MB
+            // vendor library costs the package what it costs the wire.
+            // Pass the bytes through when the client takes gzip — every
+            // browser does — and inflate for the one that does not, so
+            // the URL means the same file either way.
+            if (AcceptsGzip(ctx.Request))
+            {
+                stream.CopyTo(ms);
+                ctx.Response.Headers.ContentEncoding = "gzip";
+                ctx.Response.Headers.Vary = "Accept-Encoding";
+                return Results.File(fileContents: ms.ToArray(), contentType: contentType);
+            }
+
+            using (var inflate = new System.IO.Compression.GZipStream(stream, System.IO.Compression.CompressionMode.Decompress))
+            {
+                inflate.CopyTo(ms);
+            }
+            ctx.Response.Headers.Vary = "Accept-Encoding";
+            return Results.File(fileContents: ms.ToArray(), contentType: contentType);
         }).ExcludeFromDescription();
 
         return endpoints;
@@ -357,14 +379,22 @@ internal static class BowireSemanticsEndpoints
     /// keep the full embedded-resource path
     /// (<c>wwwroot/js/widgets/map.js</c>).
     /// </summary>
-    private static string? ResolveAssetResourceName(IBowireUiExtension ext, string name)
+    /// <remarks>
+    /// An extra declared with a <c>.gz</c> suffix is a precompressed
+    /// asset: it answers to its plain leaf (<c>mil-sym-ts.js</c> for
+    /// <c>wwwroot/mil-sym-ts/mil-sym-ts.js.gz</c>) and comes back with
+    /// <c>Precompressed</c> set so the endpoint knows the bytes are gzip.
+    /// A plain declaration always wins over a compressed one with the
+    /// same leaf.
+    /// </remarks>
+    private static (string? ResourceName, bool Precompressed) ResolveAssetResourceName(IBowireUiExtension ext, string name)
     {
         // Hot path: bundle / styles.
-        if (LeafEquals(ext.BundleResourceName, name)) return ext.BundleResourceName;
+        if (LeafEquals(ext.BundleResourceName, name)) return (ext.BundleResourceName, false);
         if (ext.StylesResourceName is not null
             && LeafEquals(ext.StylesResourceName, name))
         {
-            return ext.StylesResourceName;
+            return (ext.StylesResourceName, false);
         }
 
         // Extras declared by extensions that ship more than the two
@@ -372,10 +402,34 @@ internal static class BowireSemanticsEndpoints
         // maplibre-gl.js + LICENSE + glyph PBF are an example.
         foreach (var extra in ext.AdditionalAssetNames)
         {
-            if (LeafEquals(extra, name)) return extra;
+            if (LeafEquals(extra, name)) return (extra, false);
         }
 
-        return null;
+        foreach (var extra in ext.AdditionalAssetNames)
+        {
+            if (LeafEquals(extra, name + ".gz")) return (extra, true);
+        }
+
+        return (null, false);
+    }
+
+    private static bool AcceptsGzip(HttpRequest request)
+    {
+        if (!Microsoft.Net.Http.Headers.StringWithQualityHeaderValue.TryParseList(
+                request.Headers.AcceptEncoding, out var encodings))
+        {
+            return false;
+        }
+        foreach (var encoding in encodings)
+        {
+            // `gzip;q=0` is a refusal, not an offer.
+            if (encoding.Value.Equals("gzip", StringComparison.OrdinalIgnoreCase)
+                && (encoding.Quality ?? 1.0) > 0)
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static bool LeafEquals(string resourceName, string requestName)
