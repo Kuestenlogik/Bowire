@@ -135,6 +135,47 @@
     }
 
     /**
+     * mil-sym-ts — the MIL-STD-2525D / APP-6D multipoint renderer
+     * (Apache-2.0), vendored gzipped under wwwroot/mil-sym-ts/ and
+     * served by the same extension-asset endpoint, which inflates it
+     * for a client that does not take gzip. It draws what milsymbol
+     * does not: the tactical graphics a frame carries as a geometry
+     * rather than a point — boundaries, phase lines, areas, axes of
+     * advance, corridors, range fans, ellipses. The UMD bundle publishes
+     * itself as `window.C5Ren`.
+     *
+     * Seven megabytes inflated, so unlike milsymbol it is not fetched
+     * on mount: the first frame that carries a multipoint geometry asks
+     * for it. Until it lands — or forever, if it does not — a graphic
+     * is drawn as its bare geometry in the affinity colour, the same
+     * kind of fallback the pins have in their four shapes.
+     */
+    var bowireMilSymTsLoading = null;
+
+    function bowireLoadMilSymTs() {
+        if (window.C5Ren && window.C5Ren.WebRenderer) {
+            return Promise.resolve(window.C5Ren);
+        }
+        if (bowireMilSymTsLoading) return bowireMilSymTsLoading;
+
+        bowireMilSymTsLoading = new Promise(function (resolve, reject) {
+            var script = document.createElement('script');
+            script.src = bowireMapBundleUrl + '/mil-sym-ts.js';
+            script.async = true;
+            script.onload = function () {
+                if (window.C5Ren && window.C5Ren.WebRenderer) resolve(window.C5Ren);
+                else reject(new Error('mil-sym-ts loaded but window.C5Ren is undefined'));
+            };
+            script.onerror = function () {
+                bowireMilSymTsLoading = null;
+                reject(new Error('Failed to load mil-sym-ts from ' + script.src));
+            };
+            document.head.appendChild(script);
+        });
+        return bowireMilSymTsLoading;
+    }
+
+    /**
      * Blank-background style for the offline-default case. MapLibre still
      * renders pins on top of a solid background even when no tile source
      * is configured — exactly the behaviour the ADR's "Offline mode"
@@ -377,6 +418,18 @@
     };
 
     /**
+     * The four affinity colours as the icons above paint them, for the
+     * graphics that fall back to their bare geometry: a line in the
+     * colour says whose it is the way the shape does for a pin.
+     */
+    var BOWIRE_MAP_AFFINITY_COLORS = {
+        friend: '#22d3ee',
+        hostile: '#dc2626',
+        neutral: '#16a34a',
+        unknown: '#facc15'
+    };
+
+    /**
      * Load an SVG string into the MapLibre sprite atlas under `name`.
      * MapLibre's `addImage` accepts HTMLImageElement, so we route the
      * SVG through a data URL → Image() → addImage path. The promise
@@ -465,6 +518,11 @@
             return null;
         }
         if (typeof value === 'object') {
+            // The two ten-digit halves a 2525D code travels as in
+            // TacticalAPI's NumericIdentifier are one code, not two
+            // numbers that happen to sit together.
+            var numeric = bowireNumericSidc(value);
+            if (numeric) return numeric;
             for (var k in value) {
                 if (Object.prototype.hasOwnProperty.call(value, k)) {
                     var f2 = bowireFindSidcInValue(value[k]);
@@ -678,6 +736,378 @@
         }
     }
 
+    // ------------------------------------------------------------------
+    // Tactical graphics — the multipoint symbols.
+    //
+    // A pin is a point, and a point is the one shape a symbol renderer
+    // can draw from the code alone. The rest of what MIL-STD-2525 calls
+    // a tactical graphic is drawn from its geometry: a boundary follows
+    // its vertices, an axis of advance takes a path and a width point, a
+    // range fan is a vertex with two ranges and two azimuths. The WGS84
+    // detector sees none of that — it pairs lat and lon per object and
+    // hands the widget one coordinate per vertex — so the widget has to
+    // put the vertices back together before it can ask the renderer for
+    // the graphic. That is what the grouping below does, from the paths
+    // the coordinates arrived under.
+    // ------------------------------------------------------------------
+
+    /** Last object key of a JSONPath — `polygon` for `$.a[3].location.polygon`. */
+    function bowireLastSegmentName(path) {
+        var m = /(?:^|\.)([^.\[\]]+)(?:\[\d+\])*$/.exec(path || '');
+        return m ? m[1] : '';
+    }
+
+    /**
+     * The twenty-digit form of a 2525D code that arrived as the two
+     * ten-digit halves TacticalAPI's `NumericIdentifier` carries —
+     * `{ firstTenDigits, secondTenDigits }`, as numbers or, the way
+     * protobuf's JSON mapping writes an int64, as strings. Either half
+     * can have lost a leading zero on the way through an integer, so
+     * both are padded back to ten. Null when the shape is not that.
+     */
+    function bowireNumericSidc(value) {
+        if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+        var a = value.firstTenDigits, b = value.secondTenDigits;
+        if (a == null || b == null) return null;
+        a = String(a); b = String(b);
+        if (!/^\d{1,10}$/.test(a) || !/^\d{1,10}$/.test(b)) return null;
+        while (a.length < 10) a = '0' + a;
+        while (b.length < 10) b = '0' + b;
+        var sidc = a + b;
+        return BOWIRE_SIDC_D_RE.test(sidc) ? sidc : null;
+    }
+
+    /**
+     * Walk UP from `startPath` towards the root, level by level, until
+     * an ancestor's subtree yields a SIDC. Returns the code, the node it
+     * was found under and that node's path — the entity root — or null.
+     * The per-pair lookup the pins use is this walk started at the
+     * coordinate's parent; a graphic starts it at its geometry.
+     */
+    function bowireFindEntityUpwards(parsedRoot, startPath) {
+        if (parsedRoot == null) return null;
+        var probe = startPath || '$';
+        var safety = 16;
+        while (safety-- > 0 && probe) {
+            var node = bowireResolveJsonPath(parsedRoot, probe);
+            if (node != null) {
+                var hit = bowireFindSidcInValue(node);
+                if (hit) return { sidc: hit, node: node, path: probe };
+            }
+            if (probe === '$') break;
+            var next = bowireDropLastSegment(probe);
+            if (next === probe) break;
+            probe = next || '$';
+        }
+        return null;
+    }
+
+    /**
+     * The designation a graphic is labelled with — the `T` modifier the
+     * standard prints as "PL HANSE" or "AA BUCHE" from the bare name.
+     * Read off the entity root: a `name` that is a string, or a
+     * `{ content }` wrapper the way TacticalAPI's data properties nest
+     * it. Empty when the entity has neither.
+     */
+    function bowireGraphicDesignation(entityNode) {
+        if (!entityNode || typeof entityNode !== 'object') return '';
+        var name = entityNode.name;
+        if (name && typeof name === 'object' && typeof name.content === 'string') return name.content;
+        if (typeof name === 'string') return name;
+        return '';
+    }
+
+    /** Great-circle distance in metres — enough for a radius or a width. */
+    function bowireGeoDistanceMetres(lat1, lon1, lat2, lon2) {
+        var toRad = Math.PI / 180;
+        var dLat = (lat2 - lat1) * toRad, dLon = (lon2 - lon1) * toRad;
+        var a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
+            + Math.cos(lat1 * toRad) * Math.cos(lat2 * toRad) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        return 6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+
+    /** Initial bearing from point 1 to point 2, degrees clockwise from north. */
+    function bowireGeoBearingDegrees(lat1, lon1, lat2, lon2) {
+        var toRad = Math.PI / 180;
+        var y = Math.sin((lon2 - lon1) * toRad) * Math.cos(lat2 * toRad);
+        var x = Math.cos(lat1 * toRad) * Math.sin(lat2 * toRad)
+            - Math.sin(lat1 * toRad) * Math.cos(lat2 * toRad) * Math.cos((lon2 - lon1) * toRad);
+        return ((Math.atan2(y, x) * 180 / Math.PI) + 360) % 360;
+    }
+
+    /** First numeric value on `node` whose key matches `re`, or null. */
+    function bowireNumericField(node, re) {
+        if (!node || typeof node !== 'object') return null;
+        for (var k in node) {
+            if (!Object.prototype.hasOwnProperty.call(node, k) || !re.test(k)) continue;
+            var v = node[k];
+            if (typeof v === 'string') v = parseFloat(v);
+            if (typeof v === 'number' && isFinite(v)) return v;
+        }
+        return null;
+    }
+
+    /**
+     * Sort the coordinates of one frame into pins and graphics.
+     *
+     * A coordinate's parent path says how it sits in the frame. Under
+     * an array index — `…polygon.points[2]` — it is a vertex, and every
+     * vertex of the same array is one geometry: a line, an area, an
+     * axis, a corridor. Under a key — `…ellipse.centerPoint`,
+     * `…fan.vertexPoint`, `…point.geoPoint` — it is a named point, and
+     * the geometry is the object holding it; an ellipse is three named
+     * points, a fan one point with ranges and azimuths beside it, and a
+     * plain point is a pin.
+     *
+     * A geometry is only a graphic when an entity above it carries a
+     * symbol code: that is what says the vertices are a tactical
+     * graphic rather than a GPS trace, whose points stay pins and a
+     * trajectory. With a code but fewer than two vertices, or a named
+     * point that is neither ellipse nor fan, the coordinate is a pin as
+     * before — the pin path is unchanged for everything it handled.
+     *
+     * The key names are TacticalAPI's, read as patterns: `points`,
+     * `width`, `minimumRangeDimension`, `orientationAngle`,
+     * `centerPoint`. Another catalogue that nests differently gets its
+     * areas and lines from the array rule alone, which needs no names.
+     */
+    function bowireSplitGraphics(coords) {
+        var pins = [];
+        var graphics = [];
+        var arrays = new Map();  // arrayPath -> { coords: [ { idx, coord } ] }
+        var named = new Map();   // geometryPath -> { points: { key: coord } }
+
+        for (var i = 0; i < coords.length; i++) {
+            var coord = coords[i];
+            var parent = coord.parentPath || '';
+            var m = /^(.*)\[(\d+)\]$/.exec(parent);
+            if (m) {
+                var group = arrays.get(m[1]);
+                if (!group) { group = { coords: [] }; arrays.set(m[1], group); }
+                group.coords.push({ idx: parseInt(m[2], 10), coord: coord });
+            } else {
+                var geomPath = bowireDropLastSegment(parent);
+                var ng = named.get(geomPath);
+                if (!ng) { ng = { points: {}, order: [] }; named.set(geomPath, ng); }
+                var key = bowireLastSegmentName(parent);
+                ng.points[key] = coord;
+                ng.order.push(key);
+            }
+        }
+
+        arrays.forEach(function (group, arrayPath) {
+            group.coords.sort(function (a, b) { return a.idx - b.idx; });
+            var list = group.coords.map(function (e) { return e.coord; });
+            var geomPath = bowireDropLastSegment(arrayPath);
+            var entity = list.length >= 2 ? bowireFindEntityUpwards(list[0].root, geomPath) : null;
+            if (!entity) {
+                for (var p = 0; p < list.length; p++) pins.push(list[p]);
+                return;
+            }
+            var geomNode = bowireResolveJsonPath(list[0].root, geomPath);
+            var kind = bowireLastSegmentName(geomPath);
+            var graphic = {
+                key: arrayPath,
+                kind: kind,
+                sidc: entity.sidc,
+                affinity: bowireSidcAffinity(entity.sidc),
+                designation: bowireGraphicDesignation(entity.node),
+                points: list.map(function (c) { return [c.lat, c.lon]; }),
+                first: list[0],
+                closed: /polygon|area/i.test(kind),
+                modifiers: {}
+            };
+            // A corridor is its centreline and a width in metres — the
+            // standard's AM modifier.
+            var width = bowireNumericField(geomNode, /^width$|corridor.*width|width.*m(etre|eter)s?$/i);
+            if (width != null && width > 0) graphic.modifiers.AM_DISTANCE = String(Math.round(width));
+            graphics.push(graphic);
+        });
+
+        named.forEach(function (ng, geomPath) {
+            var keys = ng.order;
+            var first = ng.points[keys[0]];
+            var geomNode = bowireResolveJsonPath(first.root, geomPath);
+            var kind = bowireLastSegmentName(geomPath);
+            var entity = null;
+
+            // Ellipse: a centre and one point on each axis. Radii are
+            // the distances to the axis points, the rotation is the
+            // bearing of the first axis, turned into the standard's
+            // convention (degrees counter-clockwise from east).
+            var centreKey = null;
+            for (var k = 0; k < keys.length; k++) {
+                if (/cent(er|re)/i.test(keys[k])) { centreKey = keys[k]; break; }
+            }
+            if (keys.length >= 3 && centreKey && /ellipse/i.test(kind)) {
+                entity = bowireFindEntityUpwards(first.root, geomPath);
+            }
+            if (entity) {
+                var centre = ng.points[centreKey];
+                var axes = keys.filter(function (kk) { return kk !== centreKey; })
+                    .map(function (kk) { return ng.points[kk]; });
+                var r1 = bowireGeoDistanceMetres(centre.lat, centre.lon, axes[0].lat, axes[0].lon);
+                var r2 = bowireGeoDistanceMetres(centre.lat, centre.lon, axes[1].lat, axes[1].lon);
+                var majorPoint = r1 >= r2 ? axes[0] : axes[1];
+                var bearing = bowireGeoBearingDegrees(centre.lat, centre.lon, majorPoint.lat, majorPoint.lon);
+                var rotation = ((90 - bearing) % 360 + 360) % 360;
+                graphics.push({
+                    key: geomPath,
+                    kind: kind,
+                    sidc: entity.sidc,
+                    affinity: bowireSidcAffinity(entity.sidc),
+                    designation: bowireGraphicDesignation(entity.node),
+                    points: [[centre.lat, centre.lon]],
+                    first: centre,
+                    closed: false,
+                    modifiers: {
+                        AM_DISTANCE: Math.round(Math.max(r1, r2)) + ',' + Math.round(Math.min(r1, r2)),
+                        AN_AZIMUTH: String(Math.round(rotation))
+                    }
+                });
+                return;
+            }
+
+            // Fan: one vertex, a minimum and maximum range in metres, the
+            // azimuth of the left edge and the width of the sector — the
+            // standard wants the two ranges as AM and both edges as AN.
+            var minRange = bowireNumericField(geomNode, /min(imum)?.*range/i);
+            var maxRange = bowireNumericField(geomNode, /max(imum)?.*range/i);
+            var leftAz = bowireNumericField(geomNode, /orientation|left.*azimuth/i);
+            var sector = bowireNumericField(geomNode, /sector.*(size|angle|width)/i);
+            var rightAz = bowireNumericField(geomNode, /right.*azimuth/i);
+            if (keys.length === 1 && maxRange != null && leftAz != null && (sector != null || rightAz != null)) {
+                entity = bowireFindEntityUpwards(first.root, geomPath);
+            }
+            if (entity) {
+                if (rightAz == null) rightAz = (leftAz + sector) % 360;
+                graphics.push({
+                    key: geomPath,
+                    kind: kind,
+                    sidc: entity.sidc,
+                    affinity: bowireSidcAffinity(entity.sidc),
+                    designation: bowireGraphicDesignation(entity.node),
+                    points: [[first.lat, first.lon]],
+                    first: first,
+                    closed: false,
+                    modifiers: {
+                        AM_DISTANCE: Math.round(Math.max(0, minRange || 0)) + ',' + Math.round(maxRange),
+                        AN_AZIMUTH: Math.round(leftAz) + ',' + Math.round(rightAz)
+                    }
+                });
+                return;
+            }
+
+            for (var q = 0; q < keys.length; q++) pins.push(ng.points[keys[q]]);
+        });
+
+        return { pins: pins, graphics: graphics };
+    }
+
+    /**
+     * Ask mil-sym-ts for one graphic at the current view. Multipoint
+     * symbols cannot be drawn the same at every scale — an arrowhead is
+     * so many pixels wide, not so many metres — so the renderer takes
+     * the viewport and the caller draws again when it moves.
+     *
+     * Returns the GeoJSON features to draw, or null when the library
+     * declined: a code it does not know, too few points for the draw
+     * rule, a 2525C string it has no tables for. The caller falls back
+     * to the bare geometry then. Labels that are only a caption with
+     * nothing after the colon ("Min Alt: ") are dropped here; the
+     * renderer emits them for the optional amplifiers a corridor has
+     * slots for, whether or not the data filled them.
+     */
+    function bowireRenderGraphic(c5, graphic, view) {
+        var WebRenderer = c5.WebRenderer;
+        var controlPoints = graphic.points.map(function (p) { return p[1] + ',' + p[0]; }).join(' ');
+        var modifiers = new Map();
+        if (graphic.designation) modifiers.set('T_UNIQUE_DESIGNATION_1', graphic.designation);
+        for (var k in graphic.modifiers) {
+            if (Object.prototype.hasOwnProperty.call(graphic.modifiers, k)) modifiers.set(k, graphic.modifiers[k]);
+        }
+        var attributes = new Map();
+        attributes.set('LINEWIDTH', '2');
+        attributes.set('HIDEOPTIONALLABELS', 'true');
+        var out;
+        try {
+            out = WebRenderer.RenderSymbol2D(
+                'bowire-' + graphic.key, graphic.designation || '', '',
+                graphic.sidc, controlPoints,
+                view.width, view.height, view.bbox,
+                modifiers, attributes, WebRenderer.OUTPUT_FORMAT_GEOJSON);
+        } catch (e) {
+            return null;
+        }
+        var parsed;
+        try { parsed = typeof out === 'string' ? JSON.parse(out) : out; } catch { return null; }
+        if (!parsed || !Array.isArray(parsed.features)) return null;
+        var features = [];
+        for (var i = 0; i < parsed.features.length; i++) {
+            var f = parsed.features[i];
+            if (!f || !f.geometry || !f.geometry.coordinates || f.geometry.coordinates.length === 0) continue;
+            var props = f.properties || {};
+            if (f.geometry.type === 'Point') {
+                var label = String(props.label == null ? '' : props.label);
+                if (!label.trim() || /^[^:]+:\s*$/.test(label)) continue;
+            }
+            features.push(f);
+        }
+        return features;
+    }
+
+    /**
+     * The labels come out of the renderer as points with a text and a
+     * font; the map cannot set type without a glyph server, which the
+     * offline lockdown forbids. So each distinct label is drawn once on
+     * a canvas — the outline the renderer asks for behind the text — and
+     * registered as a sprite, the same route the symbols take. Returns
+     * `{ data, width, height }` at 2x, or null when the page has no
+     * canvas to draw on.
+     */
+    function bowireDrawLabelSprite(props) {
+        var text = String(props.label);
+        var pt = parseFloat(String(props.fontSize || '12pt')) || 12;
+        var px = /px$/.test(String(props.fontSize)) ? pt : pt * 4 / 3;
+        var weight = props.fontWeight || 'bold';
+        var family = props.fontFamily || 'Arial, sans-serif';
+        var outline = props.labelOutlineWidth != null ? Number(props.labelOutlineWidth) : 3;
+        var ratio = 2;
+        var canvas = document.createElement('canvas');
+        var ctx2d = canvas.getContext('2d');
+        if (!ctx2d) return null;
+        ctx2d.font = weight + ' ' + (px * ratio) + 'px ' + family;
+        var metrics = ctx2d.measureText(text);
+        var pad = outline * ratio + 2;
+        var width = Math.ceil(metrics.width + pad * 2);
+        var height = Math.ceil(px * ratio * 1.3 + pad * 2);
+        canvas.width = width;
+        canvas.height = height;
+        ctx2d = canvas.getContext('2d');
+        ctx2d.font = weight + ' ' + (px * ratio) + 'px ' + family;
+        ctx2d.textBaseline = 'middle';
+        ctx2d.textAlign = 'center';
+        ctx2d.lineJoin = 'round';
+        if (outline > 0) {
+            ctx2d.lineWidth = outline * ratio;
+            ctx2d.strokeStyle = props.labelOutlineColor || '#ffffff';
+            ctx2d.strokeText(text, width / 2, height / 2);
+        }
+        ctx2d.fillStyle = props.fontColor || '#000000';
+        ctx2d.fillText(text, width / 2, height / 2);
+        return { data: ctx2d.getImageData(0, 0, width, height), width: width, height: height };
+    }
+
+    /**
+     * Sprite name for a label — one per distinct text and paint, so a
+     * phase line that says "PL HANSE" at both ends draws one sprite.
+     */
+    function bowireLabelSpriteName(props) {
+        return 'bowire-lbl-' + [
+            props.label, props.fontColor, props.fontSize, props.fontWeight, props.labelOutlineColor
+        ].join('|');
+    }
+
     /**
      * Build the viewer mount function. Hoisted so register() below stays
      * readable.
@@ -881,6 +1311,330 @@
         if (disposed) {
             try { map.remove(); } catch {}
             return function () {};
+        }
+
+        // Tactical graphics — the multipoint symbols, drawn by
+        // mil-sym-ts from the geometry a frame carries. Three sources:
+        // the fills, the strokes and the labels, all rebuilt from the
+        // renderer's output whenever the graphics change or the camera
+        // stops moving. Registered BEFORE the trajectory and pin layers
+        // so an area's fill never covers a pin.
+        var graphicsFillSource = { type: 'FeatureCollection', features: [] };
+        var graphicsLineSource = { type: 'FeatureCollection', features: [] };
+        var graphicsLabelSource = { type: 'FeatureCollection', features: [] };
+        map.addSource('bowire-graphics-fill', { type: 'geojson', data: graphicsFillSource });
+        map.addSource('bowire-graphics-lines', { type: 'geojson', data: graphicsLineSource });
+        map.addSource('bowire-graphics-labels', { type: 'geojson', data: graphicsLabelSource });
+        map.addLayer({
+            id: 'bowire-graphics-fill-layer',
+            type: 'fill',
+            source: 'bowire-graphics-fill',
+            paint: {
+                'fill-color': ['get', 'color'],
+                'fill-opacity': ['get', 'opacity']
+            }
+        });
+        // A light casing under every stroke. The standard draws a
+        // friendly graphic black, which vanishes on the dark blank style
+        // and on satellite imagery; the casing is what a paper overlay's
+        // white ground did for the same line.
+        map.addLayer({
+            id: 'bowire-graphics-casing-layer',
+            type: 'line',
+            source: 'bowire-graphics-lines',
+            layout: { 'line-cap': 'round', 'line-join': 'round' },
+            paint: {
+                'line-color': 'rgba(255,255,255,0.75)',
+                'line-width': ['+', ['get', 'width'], 3],
+                'line-opacity': ['get', 'opacity']
+            }
+        });
+        // Solid and dashed strokes are two layers because MapLibre's
+        // line-dasharray is not data-driven; the renderer marks a
+        // planned graphic dashed and the feature carries the flag.
+        map.addLayer({
+            id: 'bowire-graphics-lines-layer',
+            type: 'line',
+            source: 'bowire-graphics-lines',
+            filter: ['!=', ['get', 'dashed'], 'yes'],
+            layout: { 'line-cap': 'round', 'line-join': 'round' },
+            paint: {
+                'line-color': ['get', 'color'],
+                'line-width': ['get', 'width'],
+                'line-opacity': ['get', 'opacity']
+            }
+        });
+        map.addLayer({
+            id: 'bowire-graphics-dashed-layer',
+            type: 'line',
+            source: 'bowire-graphics-lines',
+            filter: ['==', ['get', 'dashed'], 'yes'],
+            layout: { 'line-cap': 'butt', 'line-join': 'round' },
+            paint: {
+                'line-color': ['get', 'color'],
+                'line-width': ['get', 'width'],
+                'line-opacity': ['get', 'opacity'],
+                'line-dasharray': [2, 2]
+            }
+        });
+        // Labels are sprites, not text: the offline lockdown allows no
+        // glyph server, so each label is drawn on a canvas once and
+        // placed as an icon at the point and angle the renderer chose
+        // for this view. Alignment and offset come from the renderer
+        // too; both are recomputed with the graphic on every move.
+        map.addLayer({
+            id: 'bowire-graphics-labels-layer',
+            type: 'symbol',
+            source: 'bowire-graphics-labels',
+            layout: {
+                'icon-image': ['get', 'sprite'],
+                'icon-anchor': ['get', 'anchor'],
+                'icon-offset': ['get', 'offset'],
+                'icon-rotate': ['get', 'angle'],
+                'icon-rotation-alignment': 'viewport',
+                'icon-pitch-alignment': 'viewport',
+                'icon-allow-overlap': true,
+                'icon-ignore-placement': true
+            },
+            paint: {
+                'icon-opacity': ['get', 'opacity']
+            }
+        });
+
+        // Graphics by geometry path — the polygon, the line, the fan —
+        // latest frame wins, the way a snapshot feed means it. They are
+        // not pins: no trajectory, no track, no playback cursor; a
+        // control measure is planned, not observed.
+        var graphics = new Map();
+        var graphicErrors = new Map();  // key -> points signature the renderer refused
+        var milSymTs = null;
+        var milSymTsFailed = false;
+        var labelSprites = new Set();
+        var graphicsRenderTimer = null;
+
+        function noteGraphics(list, frame) {
+            var frameId = (frame && frame.id) || null;
+            var discriminator = (frame && frame.discriminator) || '*';
+            for (var i = 0; i < list.length; i++) {
+                var g = list[i];
+                g.frameId = frameId;
+                g.discriminator = discriminator;
+                graphics.set(g.key, g);
+                for (var p = 0; p < g.points.length; p++) {
+                    var pt = g.points[p];
+                    if (!bounds) bounds = new maplibregl.LngLatBounds([pt[1], pt[0]], [pt[1], pt[0]]);
+                    else bounds.extend([pt[1], pt[0]]);
+                }
+                // A fan or an ellipse is one point and a reach in metres;
+                // the auto-fit has to see the reach, or the graphic sits
+                // half off the edge of a view fitted to its centre.
+                if (g.points.length === 1 && g.modifiers.AM_DISTANCE) {
+                    var reach = 0;
+                    String(g.modifiers.AM_DISTANCE).split(',').forEach(function (v) {
+                        var n = parseFloat(v);
+                        if (isFinite(n) && n > reach) reach = n;
+                    });
+                    if (reach > 0) {
+                        var lat = g.points[0][0], lon = g.points[0][1];
+                        var dLat = reach / 111320;
+                        var dLon = reach / (111320 * Math.max(0.1, Math.cos(lat * Math.PI / 180)));
+                        bounds.extend([lon - dLon, lat - dLat]);
+                        bounds.extend([lon + dLon, lat + dLat]);
+                    }
+                }
+            }
+            if (list.length > 0 && !milSymTs && !milSymTsFailed) {
+                // The first graphic asks for the library; the pins never
+                // pay for it.
+                bowireLoadMilSymTs().then(function (c5) {
+                    if (disposed) return;
+                    milSymTs = c5;
+                    renderGraphics();
+                }, function (e) {
+                    milSymTsFailed = true;
+                    console.warn('[bowire-map] mil-sym-ts unavailable, graphics keep their bare geometry:', e);
+                });
+            }
+        }
+
+        function scheduleGraphicsRender() {
+            if (graphicsRenderTimer !== null || graphics.size === 0) return;
+            graphicsRenderTimer = setTimeout(function () {
+                graphicsRenderTimer = null;
+                if (!disposed) renderGraphics();
+            }, 40);
+        }
+        map.on('moveend', scheduleGraphicsRender);
+        map.on('resize', scheduleGraphicsRender);
+
+        function ensureLabelSprite(props) {
+            var name = bowireLabelSpriteName(props);
+            if (labelSprites.has(name) && map.hasImage(name)) return name;
+            var drawn = bowireDrawLabelSprite(props);
+            if (!drawn) return null;
+            try {
+                if (map.hasImage(name)) map.removeImage(name);
+                map.addImage(name, drawn.data, { pixelRatio: 2 });
+            } catch (e) {
+                return null;
+            }
+            labelSprites.add(name);
+            return name;
+        }
+
+        function graphicSelectedTag(g) {
+            var anySelected = selectedFrameIds.size > 0;
+            var isSelected = g.frameId != null && selectedFrameIds.has(g.frameId);
+            return isSelected ? 'yes' : (anySelected ? 'no-but-others-are' : 'no');
+        }
+
+        /**
+         * The bare geometry, for a graphic the renderer cannot or has
+         * not yet drawn: its vertices as a line in the affinity colour,
+         * closed for an area. The same kind of fallback the pins have in
+         * their four shapes — visibly a placeholder, never nothing.
+         */
+        function fallbackGraphicFeatures(g, selected) {
+            var color = BOWIRE_MAP_AFFINITY_COLORS[g.affinity] || BOWIRE_MAP_AFFINITY_COLORS.unknown;
+            var coords = g.points.map(function (p) { return [p[1], p[0]]; });
+            if (coords.length < 2) return { lines: [], fills: [], labels: [] };
+            if (g.closed && coords.length >= 3) coords.push(coords[0]);
+            return {
+                lines: [{
+                    type: 'Feature',
+                    geometry: { type: 'LineString', coordinates: coords },
+                    properties: graphicLineProps(g, selected, color, 2, false, 1)
+                }],
+                fills: [],
+                labels: []
+            };
+        }
+
+        function graphicLineProps(g, selected, color, width, dashed, opacity) {
+            return {
+                color: color,
+                width: selected === 'yes' ? width + 2 : width,
+                dashed: dashed ? 'yes' : 'no',
+                opacity: selected === 'no-but-others-are' ? opacity * 0.45 : opacity,
+                graphicKey: g.key,
+                sidc: g.sidc,
+                frameId: g.frameId,
+                parentPath: (g.first && g.first.parentPath) || '',
+                latPath: (g.first && g.first.latPath) || '',
+                lonPath: (g.first && g.first.lonPath) || ''
+            };
+        }
+
+        /**
+         * Draw every graphic for the current view and hand the three
+         * collections to their sources. Called when graphics arrive,
+         * when the library lands, when the selection changes and when
+         * the camera comes to rest — the renderer's output is for one
+         * viewport, and an arrowhead drawn for the last one is the wrong
+         * size for this one.
+         */
+        function renderGraphics() {
+            var fillSrc = map.getSource('bowire-graphics-fill');
+            var lineSrc = map.getSource('bowire-graphics-lines');
+            var labelSrc = map.getSource('bowire-graphics-labels');
+            if (!fillSrc || !lineSrc || !labelSrc) return;
+
+            var fills = [], lines = [], labels = [];
+            var view = null;
+            if (milSymTs) {
+                var container = map.getContainer();
+                var b = map.getBounds();
+                view = {
+                    width: Math.max(1, Math.round(container.clientWidth || 1)),
+                    height: Math.max(1, Math.round(container.clientHeight || 1)),
+                    bbox: [b.getWest(), b.getSouth(), b.getEast(), b.getNorth()].join(',')
+                };
+            }
+
+            graphics.forEach(function (g) {
+                var selected = graphicSelectedTag(g);
+                var signature = g.points.length + '|' + g.sidc;
+                var drawn = null;
+                if (view && graphicErrors.get(g.key) !== signature) {
+                    drawn = bowireRenderGraphic(milSymTs, g, view);
+                    if (!drawn) graphicErrors.set(g.key, signature);
+                }
+                if (!drawn) {
+                    var fb = fallbackGraphicFeatures(g, selected);
+                    lines.push.apply(lines, fb.lines);
+                    return;
+                }
+                for (var i = 0; i < drawn.length; i++) {
+                    var f = drawn[i];
+                    var p = f.properties || {};
+                    var type = f.geometry.type;
+                    if (type === 'Point') {
+                        var sprite = ensureLabelSprite(p);
+                        if (!sprite) continue;
+                        var align = p.labelAlign === 'left' ? 'left' : (p.labelAlign === 'right' ? 'right' : 'center');
+                        labels.push({
+                            type: 'Feature',
+                            geometry: f.geometry,
+                            properties: {
+                                sprite: sprite,
+                                anchor: align,
+                                offset: [Number(p.anchorOffsetX) || 0, Number(p.anchorOffsetY) || 0],
+                                angle: Number(p.angle) || 0,
+                                opacity: selected === 'no-but-others-are' ? 0.45 : 1,
+                                graphicKey: g.key
+                            }
+                        });
+                        continue;
+                    }
+                    var strokeColor = p.strokeColor || '#000000';
+                    var strokeWidth = Number(p.strokeWidth) || 2;
+                    var dashed = Array.isArray(p.strokeDasharray) && p.strokeDasharray.length > 0;
+                    var lineOpacity = p.lineOpacity != null ? Number(p.lineOpacity) : 1;
+                    if (type === 'Polygon' || type === 'MultiPolygon') {
+                        if (p.fillColor) {
+                            fills.push({
+                                type: 'Feature',
+                                geometry: f.geometry,
+                                properties: {
+                                    color: p.fillColor,
+                                    opacity: (p.fillOpacity != null ? Number(p.fillOpacity) : 0.25)
+                                        * (selected === 'no-but-others-are' ? 0.45 : 1),
+                                    graphicKey: g.key,
+                                    frameId: g.frameId,
+                                    parentPath: (g.first && g.first.parentPath) || '',
+                                    latPath: (g.first && g.first.latPath) || '',
+                                    lonPath: (g.first && g.first.lonPath) || ''
+                                }
+                            });
+                        }
+                        // The outline rides in the line source so it gets
+                        // the casing and the dash treatment like any stroke.
+                        var rings = type === 'Polygon' ? [f.geometry.coordinates] : f.geometry.coordinates;
+                        for (var r = 0; r < rings.length; r++) {
+                            lines.push({
+                                type: 'Feature',
+                                geometry: { type: 'MultiLineString', coordinates: rings[r] },
+                                properties: graphicLineProps(g, selected, strokeColor, strokeWidth, dashed, lineOpacity)
+                            });
+                        }
+                        continue;
+                    }
+                    if (type === 'LineString' || type === 'MultiLineString') {
+                        lines.push({
+                            type: 'Feature',
+                            geometry: f.geometry,
+                            properties: graphicLineProps(g, selected, strokeColor, strokeWidth, dashed, lineOpacity)
+                        });
+                    }
+                }
+            });
+
+            graphicsFillSource.features = fills;
+            graphicsLineSource.features = lines;
+            graphicsLabelSource.features = labels;
+            fillSrc.setData(graphicsFillSource);
+            lineSrc.setData(graphicsLineSource);
+            labelSrc.setData(graphicsLabelSource);
         }
 
         // Trajectory line source + layer. Registered BEFORE the two
@@ -1205,8 +1959,22 @@
             // `discriminator` properties tie each pin back to its
             // source frame for selection re-styling, exactly like the
             // single-coord path used to.
-            var coords = extractCoords(frame);
-            if (coords.length === 0) return;
+            var extracted = extractCoords(frame);
+            if (extracted.length === 0) return;
+            // The vertices of a tactical graphic are not entities: they
+            // leave here as one geometry each and never become pins.
+            var split = bowireSplitGraphics(extracted);
+            if (split.graphics.length > 0) noteGraphics(split.graphics, frame);
+            var coords = split.pins;
+            if (coords.length === 0) {
+                // A frame of nothing but graphics is still an update —
+                // it counts towards the settling window the auto-fit
+                // uses, and it has to be drawn.
+                framesSeen++;
+                renderGraphics();
+                if (framesSeen <= 5 && !userMovedCamera) maybeFit();
+                return;
+            }
             collectTrackCandidates(frame, coords);
             var frameOrdinal = framesSeen;
             framesSeen++;
@@ -1299,6 +2067,7 @@
             trimToCap();
             noteFrameOnTimeline(frame, frameOrdinal);
             renderPoints();
+            if (split.graphics.length > 0) renderGraphics();
 
             // Auto-fit on the first few pins, then leave navigation to
             // the user. Avoids the jitter of a re-fit on every frame.
@@ -2517,6 +3286,7 @@
             }
             renderPoints();
             rebuildTrajectories();
+            renderGraphics();
         }
 
         /**
@@ -2771,6 +3541,33 @@
             } catch {}
         });
 
+        // A graphic answers a click the way a pin does: the JSON viewer
+        // scrolls to its first vertex. The fill layer is included so an
+        // area can be hit inside its outline, not only on it.
+        ['bowire-graphics-lines-layer', 'bowire-graphics-dashed-layer', 'bowire-graphics-fill-layer']
+            .forEach(function (layerId) {
+                map.on('click', layerId, function (e) {
+                    if (!e || !e.features || e.features.length === 0) return;
+                    var props = e.features[0].properties || {};
+                    if (!props.parentPath && !props.latPath) return;
+                    try {
+                        if (e.originalEvent) {
+                            e.originalEvent.stopPropagation();
+                            e.originalEvent.preventDefault();
+                        }
+                    } catch {}
+                    try {
+                        document.dispatchEvent(new CustomEvent('bowire:map-coord-click', {
+                            detail: {
+                                parentPath: props.parentPath || '',
+                                latPath: props.latPath || '',
+                                lonPath: props.lonPath || ''
+                            }
+                        }));
+                    } catch {}
+                });
+            });
+
         // Pin double-click → copy the parent path to the clipboard.
         // Same gesture the JSON viewer's dblclick gives the operator
         // ("Copy path"), now reachable from the map side too. We
@@ -2839,6 +3636,20 @@
             symbolIcons: function () {
                 var out = {};
                 sidcIcons.forEach(function (state, sidc) { out[sidc] = state; });
+                return out;
+            },
+            // The tactical graphics: which library state they are drawn
+            // in, and per graphic whether the renderer took it or the
+            // bare geometry stands in.
+            graphics: function () {
+                var out = { library: milSymTs ? 'loaded' : (milSymTsFailed ? 'failed' : 'loading'), items: [] };
+                graphics.forEach(function (g) {
+                    out.items.push({
+                        key: g.key, kind: g.kind, sidc: g.sidc, points: g.points.length,
+                        designation: g.designation,
+                        drawn: !!milSymTs && graphicErrors.get(g.key) !== (g.points.length + '|' + g.sidc)
+                    });
+                });
                 return out;
             },
             trackCandidates: function () { return trackCandidates.slice(); },
