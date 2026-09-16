@@ -908,12 +908,14 @@
             var kind = bowireLastSegmentName(geomPath);
             var graphic = {
                 key: arrayPath,
+                geomPath: geomPath,
                 kind: kind,
                 sidc: entity.sidc,
                 affinity: bowireSidcAffinity(entity.sidc),
                 designation: bowireGraphicDesignation(entity.node),
                 points: list.map(function (c) { return [c.lat, c.lon]; }),
                 first: list[0],
+                vertexPaths: list.map(function (c) { return c.parentPath; }),
                 closed: /polygon|area/i.test(kind),
                 modifiers: {}
             };
@@ -953,12 +955,14 @@
                 var rotation = ((90 - bearing) % 360 + 360) % 360;
                 graphics.push({
                     key: geomPath,
+                    geomPath: geomPath,
                     kind: kind,
                     sidc: entity.sidc,
                     affinity: bowireSidcAffinity(entity.sidc),
                     designation: bowireGraphicDesignation(entity.node),
                     points: [[centre.lat, centre.lon]],
                     first: centre,
+                    vertexPaths: keys.map(function (kk) { return ng.points[kk].parentPath; }),
                     closed: false,
                     modifiers: {
                         AM_DISTANCE: Math.round(Math.max(r1, r2)) + ',' + Math.round(Math.min(r1, r2)),
@@ -983,12 +987,14 @@
                 if (rightAz == null) rightAz = (leftAz + sector) % 360;
                 graphics.push({
                     key: geomPath,
+                    geomPath: geomPath,
                     kind: kind,
                     sidc: entity.sidc,
                     affinity: bowireSidcAffinity(entity.sidc),
                     designation: bowireGraphicDesignation(entity.node),
                     points: [[first.lat, first.lon]],
                     first: first,
+                    vertexPaths: [first.parentPath],
                     closed: false,
                     modifiers: {
                         AM_DISTANCE: Math.round(Math.max(0, minRange || 0)) + ',' + Math.round(maxRange),
@@ -1344,7 +1350,13 @@
             source: 'bowire-graphics-lines',
             layout: { 'line-cap': 'round', 'line-join': 'round' },
             paint: {
-                'line-color': 'rgba(255,255,255,0.75)',
+                // The accent under a graphic the JSON viewer is hovering,
+                // the same signal the pins give with their halo.
+                'line-color': [
+                    'match', ['get', 'highlighted'],
+                    'yes', (ctx.theme && ctx.theme.accent) || '#4f46e5',
+                    /* default */ 'rgba(255,255,255,0.75)'
+                ],
                 'line-width': ['+', ['get', 'width'], 3],
                 'line-opacity': ['get', 'opacity']
             }
@@ -1401,25 +1413,65 @@
             }
         });
 
-        // Graphics by geometry path — the polygon, the line, the fan —
-        // latest frame wins, the way a snapshot feed means it. They are
-        // not pins: no trajectory, no track, no playback cursor; a
-        // control measure is planned, not observed.
-        var graphics = new Map();
+        // Graphics by geometry path — the polygon, the line, the fan.
+        // Each key holds the versions the stream has shown, oldest first,
+        // stamped with the frame ordinal they arrived on: a snapshot feed
+        // sends the same boundary every two seconds, and that is one
+        // version, not a thousand — a new one is kept only when the
+        // shape, code or name changed. The cursor picks the version in
+        // force at the moment it shows, the way it picks the pins; live,
+        // the latest wins. They are still not tracks: no trajectory, no
+        // legend row — a control measure is planned, not observed.
+        var graphics = new Map();       // key -> [{ ordinal, graphic, signature, cache }]
+        var GRAPHIC_VERSION_CAP = 64;
         var graphicErrors = new Map();  // key -> points signature the renderer refused
         var milSymTs = null;
         var milSymTsFailed = false;
         var labelSprites = new Set();
         var graphicsRenderTimer = null;
 
-        function noteGraphics(list, frame) {
+        function graphicSignature(g) {
+            return JSON.stringify([g.sidc, g.designation, g.points, g.modifiers]);
+        }
+
+        /**
+         * The version of a graphic the map shows right now: the latest
+         * while live, otherwise the last one that had arrived by the
+         * cursor's frame — and none at all for a graphic the stream had
+         * not yet shown at that moment.
+         */
+        function graphicAtCursor(versions) {
+            if (!versions || versions.length === 0) return null;
+            if (cursorOrdinal === null) return versions[versions.length - 1];
+            for (var i = versions.length - 1; i >= 0; i--) {
+                if (versions[i].ordinal <= cursorOrdinal) return versions[i];
+            }
+            return null;
+        }
+
+        function noteGraphics(list, frame, frameOrdinal) {
             var frameId = (frame && frame.id) || null;
             var discriminator = (frame && frame.discriminator) || '*';
             for (var i = 0; i < list.length; i++) {
                 var g = list[i];
                 g.frameId = frameId;
                 g.discriminator = discriminator;
-                graphics.set(g.key, g);
+                g.highlighted = false;
+                var versions = graphics.get(g.key);
+                if (!versions) { versions = []; graphics.set(g.key, versions); }
+                var signature = graphicSignature(g);
+                var last = versions.length > 0 ? versions[versions.length - 1] : null;
+                if (last && last.signature === signature) {
+                    // Same graphic again: the frame it belongs to moves
+                    // on, the version does not. Highlight state rides
+                    // on the version, so it survives a re-send too.
+                    last.graphic.frameId = frameId;
+                    g = last.graphic;
+                } else {
+                    if (last) g.highlighted = last.graphic.highlighted;
+                    versions.push({ ordinal: frameOrdinal, graphic: g, signature: signature, cache: null });
+                    if (versions.length > GRAPHIC_VERSION_CAP) versions.splice(0, versions.length - GRAPHIC_VERSION_CAP);
+                }
                 for (var p = 0; p < g.points.length; p++) {
                     var pt = g.points[p];
                     if (!bounds) bounds = new maplibregl.LngLatBounds([pt[1], pt[0]], [pt[1], pt[0]]);
@@ -1513,9 +1565,10 @@
         function graphicLineProps(g, selected, color, width, dashed, opacity) {
             return {
                 color: color,
-                width: selected === 'yes' ? width + 2 : width,
+                width: (selected === 'yes' || g.highlighted) ? width + 2 : width,
                 dashed: dashed ? 'yes' : 'no',
-                opacity: selected === 'no-but-others-are' ? opacity * 0.45 : opacity,
+                opacity: selected === 'no-but-others-are' && !g.highlighted ? opacity * 0.45 : opacity,
+                highlighted: g.highlighted ? 'yes' : 'no',
                 graphicKey: g.key,
                 sidc: g.sidc,
                 frameId: g.frameId,
@@ -1551,12 +1604,24 @@
                 };
             }
 
-            graphics.forEach(function (g) {
+            var viewKey = view ? view.width + '|' + view.height + '|' + view.bbox : null;
+            graphics.forEach(function (versions) {
+                var version = graphicAtCursor(versions);
+                if (!version) return;
+                var g = version.graphic;
                 var selected = graphicSelectedTag(g);
                 var signature = g.points.length + '|' + g.sidc;
                 var drawn = null;
                 if (view && graphicErrors.get(g.key) !== signature) {
-                    drawn = bowireRenderGraphic(milSymTs, g, view);
+                    // The renderer's answer is for one view; while the
+                    // view holds — a hover, a selection, a re-sent frame —
+                    // the answer holds too, and only the paint changes.
+                    if (version.cache && version.cache.viewKey === viewKey) {
+                        drawn = version.cache.features;
+                    } else {
+                        drawn = bowireRenderGraphic(milSymTs, g, view);
+                        version.cache = drawn ? { viewKey: viewKey, features: drawn } : null;
+                    }
                     if (!drawn) graphicErrors.set(g.key, signature);
                 }
                 if (!drawn) {
@@ -1964,20 +2029,21 @@
             // The vertices of a tactical graphic are not entities: they
             // leave here as one geometry each and never become pins.
             var split = bowireSplitGraphics(extracted);
-            if (split.graphics.length > 0) noteGraphics(split.graphics, frame);
             var coords = split.pins;
+            var frameOrdinal = framesSeen;
+            framesSeen++;
+            if (split.graphics.length > 0) noteGraphics(split.graphics, frame, frameOrdinal);
             if (coords.length === 0) {
-                // A frame of nothing but graphics is still an update —
-                // it counts towards the settling window the auto-fit
-                // uses, and it has to be drawn.
-                framesSeen++;
+                // A frame of nothing but graphics is still an update: it
+                // is a moment the scrubber can show, it counts towards
+                // the settling window the auto-fit uses, and it has to
+                // be drawn.
+                noteFrameOnTimeline(frame, frameOrdinal);
                 renderGraphics();
                 if (framesSeen <= 5 && !userMovedCamera) maybeFit();
                 return;
             }
             collectTrackCandidates(frame, coords);
-            var frameOrdinal = framesSeen;
-            framesSeen++;
             var discriminator = (frame && frame.discriminator) || '*';
             var frameId = (frame && frame.id) || null;
 
@@ -2673,6 +2739,7 @@
             cursorOrdinal = Math.max(0, Math.min(ordinal, last));
             renderPoints();
             rebuildTrajectories();
+            renderGraphics();
             renderLegendCounts();
             renderPlaybackBar();
         }
@@ -3427,8 +3494,32 @@
                 props.highlighted = matches ? 'yes' : 'no';
                 if (matches) any = true;
             }
+            // A graphic lights up for any of its vertices, and for the
+            // geometry itself: hovering `…polygon` or `…polygon.points`
+            // in the JSON viewer is hovering the area.
+            var graphicsDirty = false;
+            graphics.forEach(function (versions) {
+                var version = graphicAtCursor(versions);
+                if (!version) return;
+                var g = version.graphic;
+                var hit = pathsMatch(g.geomPath, normalised) || pathUnder(normalised, g.geomPath);
+                for (var v = 0; !hit && v < g.vertexPaths.length; v++) {
+                    hit = pathsMatch(g.vertexPaths[v], normalised) || pathUnder(normalised, g.vertexPaths[v]);
+                }
+                if (!!g.highlighted !== hit) { g.highlighted = hit; graphicsDirty = true; }
+                if (hit) any = true;
+            });
             applyHighlightRestyle();
+            if (graphicsDirty) renderGraphics();
             return any;
+        }
+
+        /** Is `path` inside `root` — a descendant, not the root itself? */
+        function pathUnder(path, root) {
+            if (!path || !root) return false;
+            var nr = root.indexOf('$.') === 0 ? root.substring(2) : (root === '$' ? '' : root);
+            if (!nr) return false;
+            return path.indexOf(nr + '.') === 0 || path.indexOf(nr + '[') === 0;
         }
 
         /**
@@ -3446,6 +3537,13 @@
                 }
             }
             if (dirty) applyHighlightRestyle();
+            var graphicsDirty = false;
+            graphics.forEach(function (versions) {
+                versions.forEach(function (version) {
+                    if (version.graphic.highlighted) { version.graphic.highlighted = false; graphicsDirty = true; }
+                });
+            });
+            if (graphicsDirty) renderGraphics();
         }
 
         /**
@@ -3541,11 +3639,34 @@
             } catch {}
         });
 
-        // A graphic answers a click the way a pin does: the JSON viewer
-        // scrolls to its first vertex. The fill layer is included so an
-        // area can be hit inside its outline, not only on it.
+        // A graphic answers a hover and a click the way a pin does: the
+        // JSON viewer tints, then scrolls to, its first vertex. The fill
+        // layer is included so an area can be hit inside its outline,
+        // not only on it.
         ['bowire-graphics-lines-layer', 'bowire-graphics-dashed-layer', 'bowire-graphics-fill-layer']
             .forEach(function (layerId) {
+                map.on('mouseenter', layerId, function (e) {
+                    map.getCanvas().style.cursor = 'pointer';
+                    if (!e.features || e.features.length === 0) return;
+                    var props = e.features[0].properties || {};
+                    try {
+                        document.dispatchEvent(new CustomEvent('bowire:map-coord-hover', {
+                            detail: {
+                                parentPath: props.parentPath || '',
+                                latPath: props.latPath || '',
+                                lonPath: props.lonPath || ''
+                            }
+                        }));
+                    } catch {}
+                });
+                map.on('mouseleave', layerId, function () {
+                    map.getCanvas().style.cursor = '';
+                    try {
+                        document.dispatchEvent(new CustomEvent('bowire:map-coord-hover', {
+                            detail: { parentPath: '', latPath: '', lonPath: '' }
+                        }));
+                    } catch {}
+                });
                 map.on('click', layerId, function (e) {
                     if (!e || !e.features || e.features.length === 0) return;
                     var props = e.features[0].properties || {};
@@ -3643,10 +3764,14 @@
             // bare geometry stands in.
             graphics: function () {
                 var out = { library: milSymTs ? 'loaded' : (milSymTsFailed ? 'failed' : 'loading'), items: [] };
-                graphics.forEach(function (g) {
+                graphics.forEach(function (versions) {
+                    var version = graphicAtCursor(versions);
+                    if (!version) return;
+                    var g = version.graphic;
                     out.items.push({
                         key: g.key, kind: g.kind, sidc: g.sidc, points: g.points.length,
-                        designation: g.designation,
+                        designation: g.designation, versions: versions.length,
+                        highlighted: !!g.highlighted,
                         drawn: !!milSymTs && graphicErrors.get(g.key) !== (g.points.length + '|' + g.sidc)
                     });
                 });

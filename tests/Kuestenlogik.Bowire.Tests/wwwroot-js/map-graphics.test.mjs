@@ -300,7 +300,7 @@ function trackAndAreaFrame(id, asStrings = false) {
             symbol('t', { symbolCatalog: 'SYMBOL_CATALOG_MIL2525_C', stringIdentifier: FRIEND_TRACK_C }, 'Convoy',
                 { point: { geoPoint: geo(54.09, 10.20) } }),
             symbol('aa', numericId(ASSEMBLY_AREA, asStrings), 'BUCHE',
-                { polygon: { points: AREA_POINTS } }),
+                { polygon: { points: AREA_POINTS.map((p) => ({ ...p })) } }),
         ],
     };
 }
@@ -338,7 +338,8 @@ describe('map widget — tactical graphics via mil-sym-ts', { concurrency: 1 }, 
         assert.equal(g.items.length, 1);
         assert.deepEqual(g.items[0], {
             key: '$.situationObjects[1].symbol.location.content.polygon.points',
-            kind: 'polygon', sidc: ASSEMBLY_AREA, points: 4, designation: 'BUCHE', drawn: true,
+            kind: 'polygon', sidc: ASSEMBLY_AREA, points: 4, designation: 'BUCHE',
+            versions: 1, highlighted: false, drawn: true,
         });
 
         // The renderer got the vertices in order, as "lon,lat", the
@@ -583,6 +584,86 @@ describe('map widget — tactical graphics via mil-sym-ts', { concurrency: 1 }, 
         assert.equal(m.handle.graphics().items.length, 1, 'one graphic, not one per frame');
         const last = m.recorder.calls[m.recorder.calls.length - 1];
         assert.ok(last.controlPoints.startsWith('10.1,54.2 '), last.controlPoints);
+        m.unmount();
+    });
+
+    it('keeps one version per shape, not one per frame, and renders once per view', async () => {
+        const m = await mountMap({ interpretations: TRACK_AND_AREA_PATHS });
+        for (const id of ['f1', 'f2', 'f3']) { m.frames.push(trackAndAreaFrame(id)); await settle(); }
+        assert.equal(m.handle.graphics().items[0].versions, 1, 'the same area three times is one version');
+        // Three frames, one view: the renderer was asked once; the
+        // re-sends only repainted from the cached answer.
+        assert.equal(m.recorder.calls.length, 1);
+        assert.equal(m.lines().features.length, 3);
+        m.unmount();
+    });
+
+    it('shows, under the cursor, the version of a graphic in force at that frame', async () => {
+        const m = await mountMap({ interpretations: TRACK_AND_AREA_PATHS });
+        // f0: the convoy alone. f1: the area appears. f2: the area moves.
+        m.frames.push({ id: 'f0', situationObjects: [trackAndAreaFrame('x').situationObjects[0]] });
+        await settle();
+        m.frames.push(trackAndAreaFrame('f1'));
+        await settle();
+        const moved = trackAndAreaFrame('f2');
+        moved.situationObjects[1].symbol.location.content.polygon.points[0] = geo(54.2, 10.1);
+        m.frames.push(moved);
+        await settle();
+        assert.equal(m.handle.graphics().items[0].versions, 2);
+        assert.equal(m.handle.playback().frames, 3);
+
+        // Live: the moved version.
+        const firstVertex = () => m.lines().features[0].geometry.coordinates[0][0];
+        assert.deepEqual(firstVertex(), [10.1, 54.2]);
+
+        // Back to f1: the original vertex. The renderer is asked for
+        // that version — its answer for this view was never cached.
+        m.handle.setCursorIndex(1);
+        await settle();
+        assert.deepEqual(firstVertex(), [10.16, 54.11]);
+
+        // Back to f0: the area had not appeared yet, so it is not drawn.
+        m.handle.setCursorIndex(0);
+        await settle();
+        assert.equal(m.lines().features.length, 0);
+        assert.equal(m.handle.graphics().items.length, 0);
+
+        // And forward again.
+        m.handle.setCursorIndex(2);
+        await settle();
+        assert.deepEqual(firstVertex(), [10.1, 54.2]);
+        m.unmount();
+    });
+
+    it('lights a graphic up when the JSON viewer hovers a vertex or the geometry, and clears it', async () => {
+        const m = await mountMap({ interpretations: TRACK_AND_AREA_PATHS });
+        m.frames.push(trackAndAreaFrame('f1'));
+        await settle();
+        const callsBefore = m.recorder.calls.length;
+        const line = () => m.lines().features[0].properties;
+        assert.equal(line().highlighted, 'no');
+
+        // A vertex's latitude.
+        assert.equal(m.handle.highlightByPath('$.situationObjects[1].symbol.location.content.polygon.points[2].latitudeCoordinate'), true);
+        assert.equal(line().highlighted, 'yes');
+        assert.equal(line().width, 4);
+        assert.equal(m.handle.graphics().items[0].highlighted, true);
+
+        // The geometry itself, in the chain-variable form.
+        m.handle.clearHighlight();
+        assert.equal(line().highlighted, 'no');
+        assert.equal(m.handle.highlightByPath('situationObjects[1].symbol.location.content.polygon'), true);
+        assert.equal(line().highlighted, 'yes');
+
+        // The neighbour's point: not this graphic.
+        assert.equal(m.handle.highlightByPath('$.situationObjects[0].symbol.location.content.point.geoPoint.latitudeCoordinate'), true);
+        assert.equal(line().highlighted, 'no');
+        assert.equal(m.points().features[0].properties.highlighted, 'yes');
+
+        // Hovering repaints from the cached answer; it never re-runs the renderer.
+        assert.equal(m.recorder.calls.length, callsBefore);
+        const casing = m.recorder.layers.find((l) => l.id === 'bowire-graphics-casing-layer');
+        assert.deepEqual(casing.paint['line-color'], ['match', ['get', 'highlighted'], 'yes', '#4f46e5', 'rgba(255,255,255,0.75)']);
         m.unmount();
     });
 });
