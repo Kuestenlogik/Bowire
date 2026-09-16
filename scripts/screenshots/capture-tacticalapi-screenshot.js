@@ -9,12 +9,14 @@
  *
  * Orchestrates three things: the TacticalAPI plugin is published into a
  * staging plugin-dir, the plugin repo's sample server (thirteen
- * MIL-2525C tracks, four blue forces, own pose) is spawned, and the
+ * MIL-2525C tracks under seven 2525D control measures, four blue
+ * forces, own pose) is spawned, and the
  * locally built Tool is started on :5079 with the plugin loaded and
  * pointed at the sample's h2c port. Playwright then creates a
  * workspace, opens Discover, subscribes to
  * Situation.SubscribeSituationObjectEvents, waits until every SIDC the
- * map has seen is drawn by milsymbol, and shoots.
+ * map has seen is drawn by milsymbol and every graphic by mil-sym-ts,
+ * and shoots.
  *
  * The basemap is forced to ESRI World Imagery (the `satellite` alias)
  * via a setter trap on `window.__BOWIRE_CONFIG__`, so the shot shows
@@ -211,6 +213,17 @@ async function capture(theme, { maximize, shotName, docsOnly }) {
     }, null, { timeout: 20000 });
     log('  symbols: ' + JSON.stringify(await page.evaluate(() =>
         (window.__bowireMapWidgets || []).filter((w) => w.container.isConnected)[0].symbolIcons())));
+    // The overlay's graphics likewise: mil-sym-ts has landed and every
+    // one of them is drawn by it, not standing in as its bare geometry.
+    await page.waitForFunction(() => {
+        const h = (window.__bowireMapWidgets || []).filter((w) => w.container.isConnected)[0];
+        if (!h || typeof h.graphics !== 'function') return false;
+        const g = h.graphics();
+        return g.library === 'loaded' && g.items.length > 0 && g.items.every((i) => i.drawn);
+    }, null, { timeout: 30000 });
+    log('  graphics: ' + JSON.stringify(await page.evaluate(() =>
+        (window.__bowireMapWidgets || []).filter((w) => w.container.isConnected)[0].graphics().items
+            .map((i) => i.kind + ':' + i.designation))));
 
     // Room for the map: fold the tracks legend, hide the message list.
     await page.evaluate(() => {
