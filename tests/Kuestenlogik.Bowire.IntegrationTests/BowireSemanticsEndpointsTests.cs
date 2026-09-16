@@ -326,7 +326,7 @@ public sealed class BowireSemanticsEndpointsTests
             Assert.Contains("Accept-Encoding", plain.Headers.Vary);
             Assert.Contains("javascript", plain.Content.Headers.ContentType?.MediaType, StringComparison.OrdinalIgnoreCase);
             var js = await plain.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
-            Assert.Contains("C5Ren=", js, StringComparison.Ordinal);
+            Assert.Contains("globalThis.C5Ren = {", js, StringComparison.Ordinal);
             Assert.Contains("RenderSymbol2D", js, StringComparison.Ordinal);
 
             using var request = new HttpRequestMessage(HttpMethod.Get, url);
