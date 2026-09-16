@@ -112,24 +112,30 @@ public sealed class MapLibreExtensionTests
         using var stream = EmbeddedExtensionAsset.OpenRead(asm, ext, "wwwroot/mil-sym-ts/mil-sym-ts.js.gz");
         Assert.NotNull(stream);
         // Small enough to ride in the package, large enough to be the
-        // whole library — a trimmed or truncated build lands outside.
-        Assert.InRange(stream!.Length, 1_000_000, 2_000_000);
+        // whole renderer with its control-measure icons — a truncated
+        // build lands below, an untrimmed one (the unit and equipment
+        // icon tables milsymbol makes redundant) well above.
+        Assert.InRange(stream!.Length, 400_000, 1_000_000);
 
         var magic = new byte[2];
         Assert.Equal(2, stream.Read(magic, 0, 2));
         Assert.Equal(new byte[] { 0x1f, 0x8b }, magic);
 
         var js = MilSymTsBundle.Value;
-        // UMD wrapper defining the `C5Ren` global, and the multipoint
-        // entry point the widget will call.
-        Assert.Contains("C5Ren=", js, StringComparison.Ordinal);
+        // The vendoring script's wrapper publishing the `C5Ren` global,
+        // its modification notice (Apache-2.0 §4(b)), and the multipoint
+        // entry point the widget calls.
+        Assert.Contains("globalThis.C5Ren = {", js, StringComparison.Ordinal);
+        Assert.Contains("MODIFIED by Küstenlogik", js, StringComparison.Ordinal);
         Assert.Contains("RenderSymbol2D", js, StringComparison.Ordinal);
         Assert.Contains("OUTPUT_FORMAT_GEOJSON", js, StringComparison.Ordinal);
 
         using var license = EmbeddedExtensionAsset.OpenRead(asm, ext, "wwwroot/mil-sym-ts/mil-sym-ts.LICENSE");
         Assert.NotNull(license);
         using var reader = new StreamReader(license!);
-        Assert.Contains("Apache License", reader.ReadToEnd(), StringComparison.Ordinal);
+        var text = reader.ReadToEnd();
+        Assert.Contains("Apache License", text, StringComparison.Ordinal);
+        Assert.Contains("Modifications by Küstenlogik", text, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -141,7 +147,7 @@ public sealed class MapLibreExtensionTests
         // URL left in it is the SVG namespace — a string compared, never
         // fetched. Anything else is a build that phones home.
         var urlPattern = new Regex(@"https?://[^\s'""`<>)]+", RegexOptions.Multiline);
-        var hosts = urlPattern.Matches(MilSymTsBundle.Value)
+        var hosts = urlPattern.Matches(MapLibreOfflineLockdownTests.StripJsComments(MilSymTsBundle.Value))
             .Select(m => new Uri(m.Value).Host)
             .Distinct(StringComparer.Ordinal)
             .ToList();
@@ -499,7 +505,7 @@ public sealed class MapLibreOfflineLockdownTests
     /// architecture-doc references in the bundle's header. Conservative
     /// — preserves string literals (URLs inside quotes still match).
     /// </summary>
-    private static string StripJsComments(string source)
+    internal static string StripJsComments(string source)
     {
         // Strip block comments first (greedy across newlines).
         source = Regex.Replace(source, @"/\*[\s\S]*?\*/", string.Empty);

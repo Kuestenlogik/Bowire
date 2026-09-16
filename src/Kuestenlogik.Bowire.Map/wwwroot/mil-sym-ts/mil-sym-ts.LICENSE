@@ -199,3 +199,11 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
+
+--------------------------------------------------------------------------
+Modifications by Küstenlogik (Bowire), per section 4(b) of the licence:
+mil-sym-ts.js.gz is built from @armyc2.c5isr.renderer/mil-sym-ts-web@2.10.4 by
+scripts/vendor/mil-sym-ts.mjs. The ES module export is replaced by a
+global (`C5Ren`), and the single-point icon tables are reduced to the
+control-measure entries the multipoint renderer uses. See the notice at
+the top of the file.
