@@ -86,7 +86,9 @@ public sealed class MapLibreExtension : IBowireUiExtension
     /// once a frame actually carries such a geometry. The asset
     /// endpoint serves a <c>.gz</c>-declared asset under its plain leaf
     /// (<c>mil-sym-ts.js</c>), compressed or inflated as the client's
-    /// <c>Accept-Encoding</c> allows.
+    /// <c>Accept-Encoding</c> allows. Next to it rides the 2525C → 2525D
+    /// crosswalk for tactical graphics, a small JSON the widget fetches
+    /// the first time a graphic arrives with a fifteen-letter code.
     /// </summary>
     public IReadOnlyList<string> AdditionalAssetNames { get; } =
     [
@@ -96,5 +98,6 @@ public sealed class MapLibreExtension : IBowireUiExtension
         "wwwroot/milsymbol/milsymbol.LICENSE",
         "wwwroot/mil-sym-ts/mil-sym-ts.js.gz",
         "wwwroot/mil-sym-ts/mil-sym-ts.LICENSE",
+        "wwwroot/mil-sym-ts/2525c-graphics.json",
     ];
 }

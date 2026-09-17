@@ -176,6 +176,36 @@
     }
 
     /**
+     * The 2525C → 2525D crosswalk for tactical graphics — the
+     * fifteen-letter code's category and function id to the 2525D
+     * entity — built from Esri's joint-military-symbology-xml legacy
+     * table (Apache-2.0) and served next to mil-sym-ts. Fetched once
+     * per session, the first time a graphic arrives with a C code;
+     * shared by every widget through `window.bowireMil2525CGraphics`.
+     */
+    var bowireMil2525CGraphicsLoading = null;
+
+    function bowireLoadMil2525CGraphics() {
+        if (window.bowireMil2525CGraphics) return Promise.resolve(window.bowireMil2525CGraphics);
+        if (bowireMil2525CGraphicsLoading) return bowireMil2525CGraphicsLoading;
+        bowireMil2525CGraphicsLoading = window.fetch(bowireMapBundleUrl + '/2525c-graphics.json')
+            .then(function (res) {
+                if (!res.ok) throw new Error('2525c-graphics.json: HTTP ' + res.status);
+                return res.json();
+            })
+            .then(function (json) {
+                var table = json && json.map;
+                if (!table || typeof table !== 'object') throw new Error('2525c-graphics.json has no map');
+                window.bowireMil2525CGraphics = table;
+                return table;
+            }, function (e) {
+                bowireMil2525CGraphicsLoading = null;
+                throw e;
+            });
+        return bowireMil2525CGraphicsLoading;
+    }
+
+    /**
      * Blank-background style for the offline-default case. MapLibre still
      * renders pins on top of a solid background even when no tile source
      * is configured — exactly the behaviour the ADR's "Offline mode"
@@ -778,6 +808,40 @@
     }
 
     /**
+     * A 2525C tactical graphic's code as the 2525D code mil-sym-ts can
+     * draw, or null when the table has no row for it (or the code is
+     * not a tactical graphic — scheme letter `G`).
+     *
+     * The table carries what only a table can: the function id's
+     * entity. The rest translates letter by letter — the affiliation to
+     * context + identity (an exercise affiliation is the exercise
+     * context with the live identity), the status to present or
+     * planned, the echelon letter at position 12 to the two-digit
+     * amplifier. Modifiers are left at zero; a 2525C graphic has none
+     * in its code.
+     */
+    var BOWIRE_2525C_IDENTITY = {
+        P: '00', U: '01', A: '02', F: '03', N: '04', S: '05', H: '06',
+        G: '10', W: '12', M: '13', D: '14', L: '16', J: '15', K: '16'
+    };
+    var BOWIRE_2525C_ECHELON = {
+        A: '11', B: '12', C: '13', D: '14', E: '15', F: '16', G: '17', H: '18',
+        I: '21', J: '22', K: '23', L: '24', M: '25', N: '26'
+    };
+
+    function bowireSidcCToD(sidc, table) {
+        if (!table || typeof sidc !== 'string' || sidc.length < 10) return null;
+        if (sidc.charAt(0).toUpperCase() !== 'G') return null;
+        var upper = sidc.toUpperCase().replace(/\*/g, '-');
+        var entity = table[upper.charAt(2) + upper.substring(4, 10)];
+        if (!entity) return null;
+        var contextIdentity = BOWIRE_2525C_IDENTITY[upper.charAt(1)] || '01';
+        var status = upper.charAt(3) === 'A' ? '1' : '0';
+        var echelon = (upper.length >= 12 && BOWIRE_2525C_ECHELON[upper.charAt(11)]) || '00';
+        return '10' + contextIdentity + '25' + status + '0' + echelon + entity + '0000';
+    }
+
+    /**
      * Walk UP from `startPath` towards the root, level by level, until
      * an ancestor's subtree yields a SIDC. Returns the code, the node it
      * was found under and that node's path — the entity root — or null.
@@ -1026,6 +1090,7 @@
      */
     function bowireRenderGraphic(c5, graphic, view) {
         var WebRenderer = c5.WebRenderer;
+        var sidc = graphic.renderSidc || graphic.sidc;
         var controlPoints = graphic.points.map(function (p) { return p[1] + ',' + p[0]; }).join(' ');
         var modifiers = new Map();
         if (graphic.designation) modifiers.set('T_UNIQUE_DESIGNATION_1', graphic.designation);
@@ -1039,7 +1104,7 @@
         try {
             out = WebRenderer.RenderSymbol2D(
                 'bowire-' + graphic.key, graphic.designation || '', '',
-                graphic.sidc, controlPoints,
+                sidc, controlPoints,
                 view.width, view.height, view.bbox,
                 modifiers, attributes, WebRenderer.OUTPUT_FORMAT_GEOJSON);
         } catch (e) {
@@ -1427,6 +1492,9 @@
         var graphicErrors = new Map();  // key -> points signature the renderer refused
         var milSymTs = null;
         var milSymTsFailed = false;
+        // The 2525C → 2525D crosswalk, fetched on the first C-coded graphic.
+        var crosswalk = window.bowireMil2525CGraphics || null;
+        var crosswalkFailed = false;
         var labelSprites = new Set();
         var graphicsRenderTimer = null;
 
@@ -1494,6 +1562,16 @@
                         bounds.extend([lon + dLon, lat + dLat]);
                     }
                 }
+            }
+            if (!crosswalk && !crosswalkFailed && list.some(function (g) { return BOWIRE_SIDC_RE.test(g.sidc); })) {
+                bowireLoadMil2525CGraphics().then(function (table) {
+                    if (disposed) return;
+                    crosswalk = table;
+                    renderGraphics();
+                }, function (e) {
+                    crosswalkFailed = true;
+                    console.warn('[bowire-map] 2525C crosswalk unavailable, C-coded graphics keep their bare geometry:', e);
+                });
             }
             if (list.length > 0 && !milSymTs && !milSymTsFailed) {
                 // The first graphic asks for the library; the pins never
@@ -1610,9 +1688,14 @@
                 if (!version) return;
                 var g = version.graphic;
                 var selected = graphicSelectedTag(g);
-                var signature = g.points.length + '|' + g.sidc;
+                // A 2525C code is drawn through the crosswalk; until the
+                // table is here, or for a code it does not know, the
+                // graphic stays bare — never handed to a renderer that
+                // has no tables for it.
+                g.renderSidc = BOWIRE_SIDC_RE.test(g.sidc) ? bowireSidcCToD(g.sidc, crosswalk) : g.sidc;
+                var signature = g.points.length + '|' + (g.renderSidc || '');
                 var drawn = null;
-                if (view && graphicErrors.get(g.key) !== signature) {
+                if (view && g.renderSidc && graphicErrors.get(g.key) !== signature) {
                     // The renderer's answer is for one view; while the
                     // view holds — a hover, a selection, a re-sent frame —
                     // the answer holds too, and only the paint changes.
@@ -3769,10 +3852,12 @@
                     if (!version) return;
                     var g = version.graphic;
                     out.items.push({
-                        key: g.key, kind: g.kind, sidc: g.sidc, points: g.points.length,
+                        key: g.key, kind: g.kind, sidc: g.sidc, renderSidc: g.renderSidc || null,
+                        points: g.points.length,
                         designation: g.designation, versions: versions.length,
                         highlighted: !!g.highlighted,
-                        drawn: !!milSymTs && graphicErrors.get(g.key) !== (g.points.length + '|' + g.sidc)
+                        drawn: !!milSymTs && !!g.renderSidc
+                            && graphicErrors.get(g.key) !== (g.points.length + '|' + g.renderSidc)
                     });
                 });
                 return out;
