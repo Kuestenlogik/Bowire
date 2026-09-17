@@ -757,6 +757,21 @@ public sealed class MockHandler
 
                     case FaultKind.PartialResponse:
                     case FaultKind.ConnectionDrop:
+                        // Two units, and the rule picks which. A frame
+                        // budget (#170) is spent by the streaming replays
+                        // themselves, because only they know what one of
+                        // their frames is; bytes stay the unit for a
+                        // unary body, where there are no frames to count.
+                        //
+                        // Both are attached: a step can be matched by a
+                        // glob that spans unary and streaming methods, and
+                        // whichever unit fits the dispatched path is the
+                        // one that fires.
+                        Chaos.FrameBudget.Attach(
+                            ctx,
+                            fault.PartialFrames,
+                            abortAtEnd: fault.Kind == FaultKind.ConnectionDrop);
+
                         // The replayer writes the full recorded body as
                         // always; the wrapper forwards only the first
                         // PartialBytes. Partial-response then ends the

@@ -294,6 +294,12 @@ public static class UnaryReplayer
         var speed = options.ReplaySpeed;
         var pace = speed > 0;
 
+        // #170 — a fault may cap how many frames this stream delivers.
+        // Counted at the write, not at the top of the loop: a frame the
+        // resume-skip passed over never reached the client and must not
+        // spend the budget.
+        var emitted = 0;
+
         long lastTimestampMs = 0;
         foreach (var frame in frames)
         {
@@ -334,6 +340,8 @@ public static class UnaryReplayer
             var eventBytes = Encoding.UTF8.GetBytes(eventText);
             await ctx.Response.Body.WriteAsync(eventBytes, ct);
             await ctx.Response.Body.FlushAsync(ct);
+
+            if (Chaos.FrameBudget.StopAfter(ctx, ++emitted)) return 200;
         }
 
         return 200;
@@ -523,6 +531,10 @@ public static class UnaryReplayer
         var speed = options.ReplaySpeed;
         var pace = speed > 0;
 
+        // #170 — counted at the write: a frame skipped for malformed
+        // base64 never reached the client and must not spend the budget.
+        var emitted = 0;
+
         long lastTimestampMs = 0;
         foreach (var frame in frames)
         {
@@ -562,6 +574,12 @@ public static class UnaryReplayer
 
             await ctx.Response.Body.WriteAsync(envelope, ct);
             await ctx.Response.Body.FlushAsync(ct);
+
+            // No status trailer on a truncated stream: a client that reads
+            // grpc-status sees a call that ended without one, which is what
+            // a server cut short looks like. Writing OK here would model
+            // the opposite of the fault.
+            if (Chaos.FrameBudget.StopAfter(ctx, ++emitted)) return 200;
         }
 
         var (grpcStatus, grpcMessage) = MapToGrpcStatus(step.Status);
@@ -948,6 +966,11 @@ public static class UnaryReplayer
             ? await ctx.WebSockets.AcceptWebSocketAsync()
             : await ctx.WebSockets.AcceptWebSocketAsync(negotiatedSubProtocol);
 
+        // #170 — shared by both replay shapes below (straight frame list
+        // and merged send/receive timeline); a fault caps how many frames
+        // this socket delivers before the stream ends or drops.
+        var emitted = 0;
+
         var inputGating = step.SentMessages is { Count: > 0 };
 
         // Client-frame notifications. The receive loop writes one
@@ -1005,6 +1028,10 @@ public static class UnaryReplayer
                     continue;
                 }
                 await sendTask;
+
+                // #170 — a frame the client received, so it spends the
+                // budget; one TrySendFrame declined does not.
+                if (Chaos.FrameBudget.StopAfter(ctx, ++emitted)) return 200;
             }
         }
         else
@@ -1037,6 +1064,7 @@ public static class UnaryReplayer
                     if (TrySendFrame(socket, evt.Frame!, logger, ct, out var sendTask))
                     {
                         await sendTask;
+                        if (Chaos.FrameBudget.StopAfter(ctx, ++emitted)) return 200;
                     }
                 }
                 else

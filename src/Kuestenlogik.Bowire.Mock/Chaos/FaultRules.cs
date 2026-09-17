@@ -192,6 +192,29 @@ public sealed class FaultRule
     [JsonPropertyName("partialBytes")]
     public int PartialBytes { get; init; } = 1024;
 
+    /// <summary>
+    /// Frames forwarded before a <see cref="FaultKind.PartialResponse"/>
+    /// ends a streaming replay, or a <see cref="FaultKind.ConnectionDrop"/>
+    /// aborts it. Default 0 — no frame cap, and
+    /// <see cref="PartialBytes"/> alone applies.
+    /// </summary>
+    /// <remarks>
+    /// The unit a streaming client actually reasons in (#170). A byte cap
+    /// cuts an event in half, so the client sees a parse error rather than
+    /// a stream that stopped — a different failure from the one being
+    /// modelled. Set on a streaming step, this wins; on a unary one it is
+    /// ignored, because there are no frames to count.
+    /// <para>
+    /// Honoured today by the SSE, gRPC-streaming and WebSocket replays.
+    /// The GraphQL-subscription, SignalR and Socket.IO replays each have
+    /// their own frame loop and are not wired to it yet; on those a rule
+    /// carrying only <c>partialFrames</c> caps nothing, and
+    /// <c>partialBytes</c> still applies as it always did.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("partialFrames")]
+    public int PartialFrames { get; init; }
+
     /// <summary>Latency to inject on every match. Null → no delay.</summary>
     [JsonPropertyName("latency")]
     public FaultLatency? Latency { get; init; }
