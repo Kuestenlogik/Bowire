@@ -1237,6 +1237,35 @@
             textContent: t('settings.plugins.install'),
             onClick: function () { if (canAdminister) _openInstallPluginModal(); }
         }));
+        // Installing something the operator already has. The CLI has
+        // taken `--file` since it shipped; until now the UI had no
+        // counterpart, so a .nupkg in hand meant leaving the workbench for
+        // a terminal. A browser never exposes a path, so this uploads the
+        // file and the server runs the same CLI against a temp copy.
+        var filePicker = el('input', {
+            type: 'file',
+            accept: '.nupkg,.zip',
+            style: 'display:none',
+            onChange: function (ev) {
+                var picked = ev && ev.target && ev.target.files && ev.target.files[0];
+                // Reset first: picking the same file twice in a row fires
+                // no change event otherwise, and a failed install is
+                // exactly when someone retries the same file.
+                if (ev && ev.target) ev.target.value = '';
+                if (picked) _installPluginFromFile(picked);
+            }
+        });
+        bar.appendChild(filePicker);
+        bar.appendChild(el('button', {
+            type: 'button',
+            className: 'bowire-settings-action-btn',
+            disabled: canAdminister ? undefined : true,
+            title: canAdminister
+                ? t('settings.plugins.installFileTitle')
+                : t('settings.adminOnlyInstall'),
+            textContent: t('settings.plugins.installFile'),
+            onClick: function () { if (canAdminister) filePicker.click(); }
+        }));
         bar.appendChild(el('button', {
             type: 'button',
             className: 'bowire-settings-action-btn',
@@ -1293,16 +1322,33 @@
         });
     }
 
+    // Upload the package the operator picked. No JSON body: the bytes
+    // are the request, and the server reads the extension off the name
+    // and nothing else from it.
+    function _installPluginFromFile(file) {
+        if (!file) return;
+        var form = new FormData();
+        form.append('package', file, file.name);
+        _runPluginInstall(file.name, { method: 'POST', body: form });
+    }
+
     function _installPluginById(pkg) {
         if (!pkg) return;
-        pluginActionInFlight = pkg;
-        pluginActionResult = null;
-        renderSettingsDialog();
-        fetch(config.prefix + '/api/plugins/install', {
+        _runPluginInstall(pkg, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ packageId: pkg, prerelease: pluginPrereleaseToggle })
-        })
+        });
+    }
+
+    // One place that drives the request and reports it, so a package id
+    // and an uploaded file land in the same banner and refresh the same
+    // list. `label` is whatever names the thing in the result text.
+    function _runPluginInstall(label, init) {
+        pluginActionInFlight = label;
+        pluginActionResult = null;
+        renderSettingsDialog();
+        fetch(config.prefix + '/api/plugins/install', init)
             .then(function (resp) {
                 return resp.json().then(function (data) { return { ok: resp.ok, data: data }; });
             })
@@ -1311,12 +1357,12 @@
                 pluginActionResult = result.ok
                     ? {
     ok: true,
-    summary: t('settings.plugin.installed', { package: pkg }),
+    summary: t('settings.plugin.installed', { package: label }),
     detail: (result.data && result.data.output) || ''
 }
                     : {
     ok: false,
-    summary: t('settings.plugin.installFailed', { package: pkg }),
+    summary: t('settings.plugin.installFailed', { package: label }),
     detail: (result.data
         && (result.data.detail || result.data.stdout || result.data.output)) || ''
 };
@@ -1326,7 +1372,7 @@
                 pluginActionInFlight = null;
                 pluginActionResult = {
     ok: false,
-    summary: t('settings.plugin.installFailed', { package: pkg }),
+    summary: t('settings.plugin.installFailed', { package: label }),
     detail: String(err)
 };
                 renderSettingsDialog();

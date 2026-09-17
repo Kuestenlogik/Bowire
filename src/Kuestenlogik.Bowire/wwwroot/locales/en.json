@@ -1011,6 +1011,8 @@
   "settings.protocols.lede": "Per-protocol configuration and lifecycle for every IBowireProtocol plugin (REST, gRPC, GraphQL, MCP, MQTT, WebSocket, …). Disable a protocol to hide its chips, services, and switcher entry — the plugin stays loaded for instant re-enable. Use the lifecycle buttons on the right to restart, unload, or reset a plugin’s storage.",
   "settings.protocols.hiddenNote": "Hidden in your view only. They stay loaded and keep working.",
   "settings.plugins.install": "Install plugin…",
+  "settings.plugins.installFile": "Install from file…",
+  "settings.plugins.installFileTitle": "A .nupkg or sidecar .zip you already have",
   "settings.plugins.checkUpdates": "Check for updates",
   "settings.plugins.installPrompt": "Package id as published on NuGet — the plugin loads without a restart.",
   "settings.plugins.installTitle": "Install a protocol plugin",

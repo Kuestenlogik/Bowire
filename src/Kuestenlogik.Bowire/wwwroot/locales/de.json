@@ -1010,6 +1010,8 @@
   "settings.protocols.lede": "Einstellungen und Lebenslauf je Protokoll, für jedes IBowireProtocol-Zusatzpaket (REST, gRPC, GraphQL, MCP, MQTT, WebSocket, …). Ein ausgeschaltetes Protokoll verbirgt seine Marken, Dienste und seinen Eintrag im Umschalter — das Zusatzpaket bleibt geladen und ist sofort wieder einschaltbar. Mit den Schaltflächen rechts starten Sie ein Zusatzpaket neu, entladen es oder setzen seinen Speicher zurück.",
   "settings.protocols.hiddenNote": "Nur in Ihrer Ansicht verborgen. Sie bleiben geladen und arbeiten weiter.",
   "settings.plugins.install": "Zusatzpaket installieren…",
+  "settings.plugins.installFile": "Aus Datei einrichten…",
+  "settings.plugins.installFileTitle": "Ein .nupkg oder eine Beipack-.zip, die Sie schon haben",
   "settings.plugins.checkUpdates": "Nach Aktualisierungen sehen",
   "settings.plugins.installPrompt": "Die Paketkennung, wie sie auf NuGet steht — das Zusatzpaket lädt ohne Neustart.",
   "settings.plugins.installTitle": "Ein Protokoll-Zusatzpaket installieren",

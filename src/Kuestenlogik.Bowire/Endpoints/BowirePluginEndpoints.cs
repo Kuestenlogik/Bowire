@@ -407,6 +407,15 @@ internal static class BowirePluginEndpoints
             if (BowireAdminGate.RequireAdministrator(ctx, "install a plugin") is { } refusal)
                 return refusal;
 
+            // A package the operator already has on disk. The CLI has
+            // taken `--file` since it shipped; the UI had no counterpart,
+            // so anyone holding a .nupkg had to leave the workbench for a
+            // terminal. A browser never hands out a path, so this is an
+            // upload: the bytes land in a temp file, the same CLI runs
+            // against it, and the temp file goes away again.
+            if (ctx.Request.HasFormContentType)
+                return await InstallFromUploadAsync(ctx);
+
             using var reader = new StreamReader(ctx.Request.Body);
             var body = await reader.ReadToEndAsync(ctx.RequestAborted);
             var req = JsonSerializer.Deserialize<JsonElement>(body);
@@ -1140,7 +1149,8 @@ internal static class BowirePluginEndpoints
     /// </para>
     /// </remarks>
     internal static List<string> BuildPluginArgv(
-        string verb, string packageIdOrEmpty, string? version, bool prerelease, string pluginDir)
+        string verb, string packageIdOrEmpty, string? version, bool prerelease, string pluginDir,
+        string? file = null)
     {
         // `--plugin-dir` is an option on the ROOT command, so it only
         // parses before the subcommand token. Appended after
@@ -1153,6 +1163,15 @@ internal static class BowirePluginEndpoints
         var argv = new List<string> { "--plugin-dir", pluginDir, "plugin", verb };
         if (!string.IsNullOrEmpty(packageIdOrEmpty))
             argv.Add(packageIdOrEmpty);
+        // `--file` names the package instead of resolving one from a feed,
+        // so the id is not passed with it: the CLI reads it out of the
+        // package itself, and a mismatched pair would be a way to install
+        // one thing under another thing's name.
+        if (!string.IsNullOrEmpty(file))
+        {
+            argv.Add("--file");
+            argv.Add(file);
+        }
         if (!string.IsNullOrEmpty(version))
         {
             argv.Add("--version");
@@ -1170,6 +1189,87 @@ internal static class BowirePluginEndpoints
         // picked. Passing the resolved path explicitly makes the child
         // install where this host reads from, however it was configured.
         return argv;
+    }
+
+    /// <summary>Package shapes <c>plugin install --file</c> understands.</summary>
+    private static readonly string[] UploadExtensions = [".nupkg", ".zip"];
+
+    /// <summary>
+    /// The largest upload accepted, 200 MB. Sized off the biggest thing a
+    /// plugin actually is — Surgewave ships 14 files and 22 packages — with
+    /// room to spare, and small enough that a stray multi-gigabyte body
+    /// does not fill the disk before anything looks at it.
+    /// </summary>
+    private const long MaxUploadBytes = 200L * 1024 * 1024;
+
+    /// <summary>
+    /// Install from a package the operator uploaded, rather than from a
+    /// feed: write it to a private temp file, hand that to
+    /// <c>plugin install --file</c>, and remove it either way.
+    /// </summary>
+    /// <remarks>
+    /// The file name is never trusted for anything but its extension. The
+    /// temp file gets a generated name in a directory made for this one
+    /// call, so a name like <c>..\..\evil.nupkg</c> — or one that collides
+    /// with a concurrent install — has nowhere to go. The admin gate on
+    /// the endpoint already applies: this path executes the same installer
+    /// as the feed path, and #636 is about what that installer can do.
+    /// </remarks>
+    private static async Task<IResult> InstallFromUploadAsync(HttpContext ctx)
+    {
+        var form = await ctx.Request.ReadFormAsync(ctx.RequestAborted);
+        var file = form.Files.GetFile("package") ?? (form.Files.Count > 0 ? form.Files[0] : null);
+
+        if (file is null || file.Length == 0)
+            return BowireEndpointHelpers.Problem(
+                type: "urn:bowire:invalid-input",
+                title: "A package file is required",
+                status: 400,
+                detail: "Send the .nupkg or sidecar .zip as a multipart form field named `package`.",
+                instance: ctx.Request.Path);
+
+        if (file.Length > MaxUploadBytes)
+            return BowireEndpointHelpers.Problem(
+                type: "urn:bowire:invalid-input",
+                title: "Package is too large",
+                status: 413,
+                detail: $"{file.Length} bytes; the limit is {MaxUploadBytes} bytes.",
+                instance: ctx.Request.Path);
+
+        // The uploaded name is read for its extension and then discarded.
+        // What ends up in the path is the matching entry from the allow
+        // list -- a constant -- so no byte the caller sent reaches the file
+        // system, which is also what keeps CA3003 quiet rather than
+        // suppressed.
+        var sent = Path.GetExtension(file.FileName);
+        var extension = Array.Find(
+            UploadExtensions, known => string.Equals(known, sent, StringComparison.OrdinalIgnoreCase));
+        if (extension is null)
+            return BowireEndpointHelpers.Problem(
+                type: "urn:bowire:invalid-input",
+                title: "Unsupported package type",
+                status: 400,
+                detail: $"Expected one of {string.Join(", ", UploadExtensions)}; got "
+                    + (string.IsNullOrEmpty(sent) ? "no extension" : sent) + ".",
+                instance: ctx.Request.Path);
+
+        var scratch = Path.Combine(Path.GetTempPath(), "bowire-plugin-upload-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(scratch);
+        var path = Path.Combine(scratch, "package" + extension);
+        try
+        {
+            await using (var target = File.Create(path))
+                await file.CopyToAsync(target, ctx.RequestAborted);
+
+            return await RunBowirePluginCommandAsync(
+                "install", packageIdOrEmpty: string.Empty, version: null, prerelease: false, file: path);
+        }
+        finally
+        {
+            try { Directory.Delete(scratch, recursive: true); }
+            catch (IOException) { /* a locked temp file is not worth failing a successful install over */ }
+            catch (UnauthorizedAccessException) { }
+        }
     }
 
     /// <summary>
@@ -1195,7 +1295,7 @@ internal static class BowirePluginEndpoints
     }
 
     private static async Task<IResult> RunBowirePluginCommandAsync(
-        string verb, string packageIdOrEmpty, string? version, bool prerelease)
+        string verb, string packageIdOrEmpty, string? version, bool prerelease, string? file = null)
     {
         // Input validation — packageId / version come straight off the
         // HTTP request body. Refuse anything that isn't NuGet-shape so
@@ -1239,7 +1339,7 @@ internal static class BowirePluginEndpoints
             // each element becomes one argv slot, no shell parsing,
             // no interpolation of metacharacters from the operator
             // input into a single command string.
-            foreach (var arg in BuildPluginArgv(verb, packageIdOrEmpty, version, prerelease, PluginDir))
+            foreach (var arg in BuildPluginArgv(verb, packageIdOrEmpty, version, prerelease, PluginDir, file))
                 psi.ArgumentList.Add(arg);
 
             using var proc = Process.Start(psi);

@@ -208,6 +208,48 @@ public sealed class BowirePluginRootTests : IDisposable
     }
 
     [Fact]
+    public void A_File_Install_Names_The_Package_By_Path_Instead_Of_By_Id()
+    {
+        // `--file` is how the CLI installs something already on disk, and
+        // it replaces the id rather than joining it: the id is read out of
+        // the package, and passing both would be a way to install one
+        // thing under another thing's name.
+        var argv = BowirePluginEndpoints.BuildPluginArgv(
+            "install", packageIdOrEmpty: string.Empty, version: null,
+            prerelease: false, pluginDir: _dir, file: "/tmp/uploads/pkg.nupkg");
+
+        var flag = argv.IndexOf("--file");
+        Assert.True(flag >= 0, string.Join(' ', argv));
+        Assert.Equal("/tmp/uploads/pkg.nupkg", argv[flag + 1]);
+        Assert.Equal("install", argv[argv.IndexOf("plugin") + 1]);
+        // Nothing sits between the verb and the flag where an id would.
+        Assert.Equal("--file", argv[argv.IndexOf("plugin") + 2]);
+    }
+
+    [Fact]
+    public void A_File_Install_Still_Leads_With_The_Plugin_Directory()
+    {
+        // The root option keeps its place whichever way the package is
+        // named, or the child refuses to parse the line at all.
+        var argv = BowirePluginEndpoints.BuildPluginArgv(
+            "install", packageIdOrEmpty: string.Empty, version: null,
+            prerelease: false, pluginDir: _dir, file: "/tmp/pkg.nupkg");
+
+        Assert.True(argv.IndexOf("--plugin-dir") < argv.IndexOf("plugin"), string.Join(' ', argv));
+        Assert.Equal(_dir, argv[argv.IndexOf("--plugin-dir") + 1]);
+    }
+
+    [Fact]
+    public void Without_A_File_Nothing_Changes_For_A_Feed_Install()
+    {
+        var argv = BowirePluginEndpoints.BuildPluginArgv(
+            "install", "Some.Package", version: null, prerelease: false, pluginDir: _dir);
+
+        Assert.DoesNotContain("--file", argv);
+        Assert.Equal("Some.Package", argv[argv.IndexOf("plugin") + 2]);
+    }
+
+    [Fact]
     public void The_Child_Is_The_Apphost_Beside_This_Assembly_When_There_Is_One()
     {
         // Naming "bowire" outright assumes the global tool is on the PATH.
