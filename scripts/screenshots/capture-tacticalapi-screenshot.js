@@ -6,6 +6,11 @@
  *                                      cross-fades to (site + docs)
  *   map-widget-pins.png                the map pane maximised, dark —
  *                                      docs/features/map-widget.md
+ *   map-widget-graphics-hover.png      JSON viewer beside the map, the
+ *                                      stream stopped, a vertex of the
+ *                                      2525C-coded phase line hovered in
+ *                                      the viewer and the graphic lit on
+ *                                      the map — docs/features/map-widget.md
  *
  * Orchestrates three things: the TacticalAPI plugin is published into a
  * staging plugin-dir, the plugin repo's sample server (thirteen
@@ -35,6 +40,8 @@
  *   THEME=dark node scripts/screenshots/capture-tacticalapi-screenshot.js
  *   node scripts/screenshots/capture-tacticalapi-screenshot.js --no-spawn
  *       (workbench on :5079 and sample on :5192 already running)
+ *   ONLY_HOVER=1 THEME=dark node scripts/screenshots/capture-tacticalapi-screenshot.js
+ *       (only the hover shot — the one that takes iterating)
  *
  * Afterwards: `node scripts/site/optimize-images.mjs` regenerates the
  * AVIF/WebP variants of the site copies. It is mtime-driven, so only
@@ -167,11 +174,11 @@ async function openDiscover(page) {
  * page-side lookup below filters by `isConnected` first. (Repeated
  * inline because a page function cannot close over Node-side code.)
  */
-async function capture(theme, { maximize, shotName, docsOnly }) {
-    log(`---- ${shotName}-${theme}${maximize ? ' (maximised)' : ''} ----`);
+async function capture(theme, { maximize, shotName, docsOnly, hover }) {
+    log(`---- ${shotName}-${theme}${maximize ? ' (maximised)' : ''}${hover ? ' (hover)' : ''} ----`);
     const browser = await chromium.launch({ headless: true });
     const ctx = await browser.newContext({
-        viewport: { width: 1440, height: 900 },
+        viewport: hover ? { width: 1600, height: 1100 } : { width: 1440, height: 900 },
         deviceScaleFactor: 2,
         locale: 'en-US',
         colorScheme: theme,
@@ -194,6 +201,13 @@ async function capture(theme, { maximize, shotName, docsOnly }) {
 
     await page.goto(BOWIRE_UI_URL, { waitUntil: 'domcontentloaded' });
     await page.evaluate((t) => { try { localStorage.setItem('bowire_theme_pref', t); } catch (_) {} }, theme);
+    if (hover) {
+        // The JSON viewer and the map share the response pane; the
+        // default split gives the map a third. For this shot the map
+        // gets the larger half — the ratio is the split pane's own
+        // persisted preference.
+        await page.evaluate(() => { try { localStorage.setItem('bowire_widget_split_ratio:kuestenlogik.maplibre', '0.44'); } catch (_) {} });
+    }
     await page.reload({ waitUntil: 'domcontentloaded' });
 
     await openDiscover(page);
@@ -237,6 +251,57 @@ async function capture(theme, { maximize, shotName, docsOnly }) {
         await page.locator('.bowire-widget-pane-maximize').first().click();
         await page.waitForTimeout(800);
     }
+    if (hover) {
+        // Stop the stream so the viewer holds one message, then take
+        // the route a click on the graphic takes: the coord-click event
+        // scrolls the viewer to the vertex and expands its ancestors.
+        // Hovering that vertex's latitude in the viewer is the JSON →
+        // map direction: the graphic gets the accent under its stroke.
+        const stopBtn = page.locator('.bowire-execute-btn.streaming-active').first();
+        if (await stopBtn.isVisible().catch(() => false)) await stopBtn.click();
+        await page.waitForTimeout(600);
+        // The response pane over the whole width — the request pane
+        // has nothing to show for a stream — so the viewer and the
+        // map both get room.
+        const maxResponse = page.locator('.bowire-pane-divider-edge-toggle-trailing').first();
+        if (await maxResponse.isVisible().catch(() => false)) await maxResponse.click();
+        await page.waitForTimeout(800);
+        const vertex = await page.evaluate(() => {
+            const h = (window.__bowireMapWidgets || []).filter((w) => w.container.isConnected)[0];
+            const item = h.graphics().items.find((i) => /^[A-Z]{2}/.test(i.sidc));
+            if (!item) return null;
+            // The graphic's key is its points array; the last vertex,
+            // so the code the line is drawn from — a few rows further
+            // down — is in view with it.
+            const parentPath = item.key + '[' + (item.points - 1) + ']';
+            // The viewer keys its rows by the dot-only chain form.
+            const chain = parentPath.replace(/^\$\./, '').replace(/\[(\d+)\]/g, '.$1');
+            document.dispatchEvent(new CustomEvent('bowire:map-coord-click', {
+                detail: { parentPath: chain, latPath: chain + '.latitudeCoordinate', lonPath: chain + '.longitudeCoordinate' }
+            }));
+            // The decorator stamps the pair's lat path in the bracket form.
+            return parentPath.replace(/^\$\./, '') + '.latitudeCoordinate';
+        });
+        if (!vertex) throw new Error('no 2525C-coded graphic on the map — the sample should carry PL OSTSEE');
+        await page.waitForTimeout(600);
+        const span = page.locator(`[data-bowire-coord-path="${vertex}"]`).first();
+        await span.waitFor({ state: 'visible', timeout: 10000 });
+        await span.scrollIntoViewIfNeeded();
+        await span.hover();
+        await page.waitForTimeout(400);
+        const lit = await page.evaluate(() =>
+            (window.__bowireMapWidgets || []).filter((w) => w.container.isConnected)[0]
+                .graphics().items.filter((i) => i.highlighted).map((i) => i.designation));
+        log('  highlighted: ' + JSON.stringify(lit));
+        if (lit.length !== 1) throw new Error('the hovered vertex should light exactly one graphic');
+        // Closer in on the overlay: the fit that happened in the small
+        // pane leaves the graphics a thumbnail in the widened one.
+        await page.evaluate(() => {
+            const h = (window.__bowireMapWidgets || []).filter((w) => w.container.isConnected)[0];
+            h.flyTo({ center: [10.95, 54.17], zoom: 9.2, duration: 0 });
+        });
+        await page.waitForTimeout(500);
+    }
     // Satellite tiles for the fitted viewport.
     await page.waitForTimeout(4500);
 
@@ -279,23 +344,34 @@ async function capture(theme, { maximize, shotName, docsOnly }) {
 
     try {
         for (const theme of THEMES) {
+            if (process.env.ONLY_HOVER) break;
             await capture(theme, { maximize: false, shotName: 'tacticalapi-map', docsOnly: false });
         }
         if (THEMES.includes('dark')) {
             // The unsuffixed file is the dark variant — the convention every
             // screenshot pair under site/assets/images/screenshots follows.
-            for (const dir of [OUT, DOCS_OUT]) {
+            if (!process.env.ONLY_HOVER) for (const dir of [OUT, DOCS_OUT]) {
                 fs.copyFileSync(path.join(dir, 'tacticalapi-map-dark.png'), path.join(dir, 'tacticalapi-map.png'));
             }
             // The widget doc's hero: the map alone, downscaled — a 2x
             // satellite frame is ~5 MB as PNG, 1600 px wide is a third.
-            const shot = await capture('dark', { maximize: true, shotName: 'map-widget-pins', docsOnly: true });
             const sharp = require('sharp');
+            if (!process.env.ONLY_HOVER) {
+            const shot = await capture('dark', { maximize: true, shotName: 'map-widget-pins', docsOnly: true });
             const hero = path.join(DOCS_OUT, 'map-widget-pins.png');
             const buf = await sharp(shot).resize({ width: 1600 }).png({ compressionLevel: 9 }).toBuffer();
             fs.writeFileSync(hero, buf);
             fs.unlinkSync(shot);
             log(`  -> ${hero}`);
+            }
+            // The hover-sync between the JSON viewer and a graphic, and
+            // the 2525C code in the viewer next to the line it draws as.
+            const hoverShot = await capture('dark', { hover: true, shotName: 'map-widget-graphics-hover', docsOnly: true });
+            const hoverOut = path.join(DOCS_OUT, 'map-widget-graphics-hover.png');
+            const hoverBuf = await sharp(hoverShot).resize({ width: 1600 }).png({ compressionLevel: 9 }).toBuffer();
+            fs.writeFileSync(hoverOut, hoverBuf);
+            fs.unlinkSync(hoverShot);
+            log(`  -> ${hoverOut}`);
         }
     } finally {
         for (const [name, proc] of [['bowire', bowireProc], ['sample', sampleProc]]) {

@@ -517,6 +517,18 @@
                     ln.lineNo, ln.html, ln.path || '', opts,
                     ln.collapsePath, ln.collapsed));
             }
+            // Every line is new, so everything a decorator stamped on
+            // the old ones — the semantic badges, the map widget's
+            // coord paths — is gone. The host that decorated the tree
+            // left a redecorate hook on the tree root; run it, or a
+            // single expand would end the hover-sync until the next
+            // frame happened to re-render the viewer.
+            for (var host = viewer; host; host = host.parentNode) {
+                if (typeof host.__bowireRedecorate === 'function') {
+                    try { host.__bowireRedecorate(); } catch (e) { console.error('[bowire-json-viewer] redecorate', e); }
+                    break;
+                }
+            }
         }
         _rebuildViewerLines();
         // Expose a rebuild hook + the live togglesByPath Set on the

@@ -148,6 +148,10 @@ The `Kuestenlogik.Bowire.Protocol.TacticalApi` plugin is not part of `Bundle.Wor
 
 Captured by `scripts/screenshots/capture-tacticalapi-screenshot.js` against the TacticalAPI sample (`Bowire.Protocol.TacticalApi/samples`, `Situation.SubscribeSituationObjectEvents`) with the ESRI satellite basemap and the map pane maximised; the same run re-shoots the workbench pair the site's protocol popup uses. Every pin is a milsymbol sprite; the surface contacts without a function id show the bare frame — circle, diamond, square — which is what the standard draws for them. Every graphic is mil-sym-ts's output for that viewport, labels included.
 
+![The workbench with the stream stopped: the JSON viewer on the left scrolled to a vertex of phase line OSTSEE, its latitude row hovered; the map on the right with the same line drawn heavier under the theme accent, the other graphics untouched](../images/screenshots/map-widget-graphics-hover.png)
+
+The hover-sync from the same run: the viewer is scrolled to the last vertex of phase line OSTSEE — the graphic the sample sends as a 2525C string — and that row is hovered, so the line on the map takes the accent under its stroke while HANSE, BLAU and the corridor keep theirs. A click on a graphic goes the other way and scrolls the viewer to its first vertex.
+
 ## Edge cases
 
 - **Map widget disappears on Tab ↔ Split toggle** (fixed in v2.1) — extension bootstrap was fire-and-forget, so `preferredSplitExtensionForMethod` returned null at first render. Chained `render()` onto the load promise; stamped distinct host IDs so morphdom replaces wrapper subtrees wholesale ([`a9d403f`](https://github.com/Kuestenlogik/Bowire/commit/a9d403f), [`a00b534`](https://github.com/Kuestenlogik/Bowire/commit/a00b534)).
