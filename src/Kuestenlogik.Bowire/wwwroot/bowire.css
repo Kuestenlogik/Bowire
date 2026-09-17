@@ -8150,23 +8150,21 @@ multiple key:value rules) can append rows without
     flex: 1;
 }
 
+/* Icon-only: the title says what a button does, on hover, and the
+   accent fill says which state it is in. A label beside the icon said
+   the same thing twice — and once carried its own glyph, so a button
+   read "⤓ ◉ Follow latest" — and it was the first thing a narrow pane
+   had to give up. */
 .bowire-stream-toolbar-btn {
     background: transparent;
     border: 1px solid var(--bowire-border);
     color: var(--bowire-text-secondary);
-    padding: 4px 10px;
+    padding: 4px 7px;
     border-radius: var(--bowire-radius-sm);
-    font-size: 11px;
     cursor: pointer;
     transition: all var(--bowire-transition);
-    font-family: var(--bowire-font-sans);
-    /* Icon + label on one line. Without nowrap a narrow response pane
-       (the map split) squeezed "Follow latest" into a column of
-       letters — the button grew tall instead of giving up the label. */
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    white-space: nowrap;
     flex-shrink: 0;
 }
 .bowire-stream-toolbar-btn-icon {
@@ -8178,23 +8176,6 @@ multiple key:value rules) can append rows without
 .bowire-stream-toolbar-btn-icon svg {
     width: 100%;
     height: 100%;
-}
-
-/* The toolbar and the detail header are the containers the buttons
-   answer to. Below ~420px — the map split, a narrow drawer — the
-   labels go and the buttons become icon-only; the title tooltip still
-   says what each does, and the accent fill still says which is on. */
-.bowire-stream-toolbar,
-.bowire-stream-detail-header {
-    container-type: inline-size;
-}
-@container (max-width: 420px) {
-    .bowire-stream-toolbar-btn-label {
-        display: none;
-    }
-    .bowire-stream-toolbar-btn {
-        padding: 4px 7px;
-    }
 }
 
 .bowire-stream-toolbar-btn:hover {
