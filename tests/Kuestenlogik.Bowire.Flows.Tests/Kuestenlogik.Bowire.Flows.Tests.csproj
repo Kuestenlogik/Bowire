@@ -16,6 +16,9 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="xunit.v3" />
     <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" />
+    <!-- #174 - the row-expansion endpoint is exercised over a real
+         routing pipeline, the same way the other endpoint suites do it. -->
+    <PackageReference Include="Microsoft.AspNetCore.TestHost" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Flows\Kuestenlogik.Bowire.Flows.csproj" />

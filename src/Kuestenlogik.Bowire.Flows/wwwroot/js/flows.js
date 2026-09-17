@@ -366,7 +366,9 @@
         try {
             if (node.type === 'request') {
                 var t0 = performance.now();
-                var result = await executeFlowRequest(node);
+                var result = node.data
+                    ? await executeDataDrivenRequest(node)
+                    : await executeFlowRequest(node);
                 result.durationMs = Math.round(performance.now() - t0);
                 flowRunResults[node.id] = result;
                 if (result.response) captureResponse(result.response);
@@ -501,6 +503,79 @@
             flowRunResults[node.id] = { pass: false, status: t('flows.statusError'), error: e.message };
         }
         render();
+    }
+
+    /**
+     * #174 — run a parameterised step once per row.
+     *
+     * The step's `data` block was authored in the workbench and read only
+     * by `bowire test`: in the browser it was ignored, so a parameterised
+     * step ran once with its `{{placeholders}}` unresolved and reported a
+     * single result that looked like a pass. Rows come from the server so
+     * there is one definition of what a row is — the generator's
+     * arithmetic, the label column, the row ceiling — rather than a second
+     * one here that drifts from the runner CI uses.
+     *
+     * A row's columns win over the run's vars for the duration of that
+     * row, which is the precedence `bowire test` documents, and the
+     * previous values are put back afterwards so row N+1 does not inherit
+     * row N.
+     */
+    async function executeDataDrivenRequest(node) {
+        var rows;
+        try {
+            var resp = await fetch(config.prefix + '/api/flows/data/expand', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(node.data),
+            });
+            var payload = await resp.json();
+            if (!resp.ok || payload.error) {
+                return { pass: false, status: t('flows.dataRowsExpandFailed'), error: payload.error || String(resp.status) };
+            }
+            rows = payload.rows || [];
+        } catch (e) {
+            return { pass: false, status: t('flows.dataRowsExpandFailed'), error: String(e && e.message ? e.message : e) };
+        }
+
+        var results = [];
+        for (var i = 0; i < rows.length; i++) {
+            if (flowRunStatus !== 'running') break;
+            var row = rows[i];
+            var restore = {};
+            var columns = row.values || {};
+            for (var key in columns) {
+                if (!Object.prototype.hasOwnProperty.call(columns, key)) continue;
+                restore[key] = Object.prototype.hasOwnProperty.call(flowVars, key) ? flowVars[key] : undefined;
+                flowVars[key] = columns[key];
+            }
+            try {
+                var one = await executeFlowRequest(node);
+                one.label = row.label;
+                results.push(one);
+            } finally {
+                for (var back in restore) {
+                    if (!Object.prototype.hasOwnProperty.call(restore, back)) continue;
+                    if (restore[back] === undefined) delete flowVars[back];
+                    else flowVars[back] = restore[back];
+                }
+            }
+        }
+
+        var passed = results.filter(function (r) { return r.pass; }).length;
+        var last = results.length > 0 ? results[results.length - 1] : null;
+        return {
+            pass: results.length > 0 && passed === results.length,
+            status: t('flows.dataRowsPassed', { passed: passed, total: results.length }),
+            rows: results,
+            rowsPassed: passed,
+            rowsTotal: results.length,
+            // The last row's body is what the response viewer shows and
+            // what a downstream extract reads — the same thing a
+            // non-parameterised step would have left behind.
+            response: last ? last.response : undefined,
+            error: last ? last.error : undefined,
+        };
     }
 
     function executeFlowRequest(node) {
@@ -1645,6 +1720,24 @@
                             textContent: runResult.status }),
                         runResult.durationMs ? el('span', { className: 'bowire-flow-result-time', textContent: runResult.durationMs + 'ms' }) : null
                     ));
+                    // #174 — per-row outcomes for a data-driven step. The
+                    // header already carries "n/m rows"; these say which
+                    // ones, because "3/4" without the failing label is a
+                    // reason to re-run rather than an answer.
+                    if (Array.isArray(runResult.rows) && runResult.rows.length > 0) {
+                        var rowList = el('div', { className: 'bowire-flow-assertion-results' });
+                        for (var rri = 0; rri < runResult.rows.length; rri++) {
+                            var r = runResult.rows[rri];
+                            var rowLine = (r.pass ? '\u2713 ' : '\u2717 ')
+                                + t('flows.dataRowOne', { label: r.label })
+                                + ' \u00b7 ' + r.status;
+                            rowList.appendChild(el('div', {
+                                className: 'bowire-flow-assertion-result ' + (r.pass ? 'pass' : 'fail'),
+                                textContent: rowLine,
+                            }));
+                        }
+                        viewer.appendChild(rowList);
+                    }
                     // Assertion outcomes — one row per evaluated tuple.
                     if (Array.isArray(runResult.assertions) && runResult.assertions.length > 0) {
                         var assertList = el('div', { className: 'bowire-flow-assertion-results' });
