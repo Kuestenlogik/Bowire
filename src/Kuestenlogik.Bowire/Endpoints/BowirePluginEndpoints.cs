@@ -1142,7 +1142,15 @@ internal static class BowirePluginEndpoints
     internal static List<string> BuildPluginArgv(
         string verb, string packageIdOrEmpty, string? version, bool prerelease, string pluginDir)
     {
-        var argv = new List<string> { "plugin", verb };
+        // `--plugin-dir` is an option on the ROOT command, so it only
+        // parses before the subcommand token. Appended after
+        // `plugin install <id>` — where it used to go — the child exits 1
+        // with "Command or argument '--plugin-dir' not recognized", which
+        // is every install, update and uninstall driven from the
+        // workbench UI. The tests below asserted the flag was present and
+        // followed by the directory, and both were true; neither said
+        // where it sat, and nothing ran the child.
+        var argv = new List<string> { "--plugin-dir", pluginDir, "plugin", verb };
         if (!string.IsNullOrEmpty(packageIdOrEmpty))
             argv.Add(packageIdOrEmpty);
         if (!string.IsNullOrEmpty(version))
@@ -1153,17 +1161,37 @@ internal static class BowirePluginEndpoints
         if (prerelease && (verb == "install" || verb == "update"))
             argv.Add("--prerelease");
 
-        // The half of #549 the child could not work out for itself. It
-        // inherits the parent's environment, so BOWIRE_PLUGIN_DIR carried
-        // over and that spelling happened to work — while --plugin-dir and
-        // an appsettings.json entry did not, because neither survives a
-        // process boundary. Which of the three ways of naming one directory
-        // worked depended on which one you picked. Passing the resolved
-        // path explicitly makes the child install where this host reads
-        // from, however it was configured.
-        argv.Add("--plugin-dir");
-        argv.Add(pluginDir);
+        // The directory is the half of #549 the child could not work out
+        // for itself. It inherits the parent's environment, so
+        // BOWIRE_PLUGIN_DIR carried over and that spelling happened to
+        // work — while --plugin-dir and an appsettings.json entry did not,
+        // because neither survives a process boundary. Which of the three
+        // ways of naming one directory worked depended on which one you
+        // picked. Passing the resolved path explicitly makes the child
+        // install where this host reads from, however it was configured.
         return argv;
+    }
+
+    /// <summary>
+    /// The <c>bowire</c> to run for a plugin command: the apphost next to
+    /// this assembly when there is one, otherwise whatever <c>bowire</c>
+    /// the PATH resolves to.
+    /// </summary>
+    /// <remarks>
+    /// Naming <c>"bowire"</c> outright assumes the global tool is
+    /// installed and on the PATH. Anyone running the workbench from a
+    /// build output — <c>dotnet bowire.dll</c>, which is the dev loop and
+    /// what the repo's own docs show — has no such PATH entry, and the
+    /// UI's install button came back with the OS failing to start a
+    /// process, in the OS's language. The apphost is right there beside
+    /// the managed assembly; prefer it, and keep the PATH lookup for a
+    /// genuinely global install.
+    /// </remarks>
+    internal static string ResolveBowireExecutable()
+    {
+        var name = OperatingSystem.IsWindows() ? "bowire.exe" : "bowire";
+        var beside = Path.Combine(AppContext.BaseDirectory, name);
+        return File.Exists(beside) ? beside : "bowire";
     }
 
     private static async Task<IResult> RunBowirePluginCommandAsync(
@@ -1200,7 +1228,7 @@ internal static class BowirePluginEndpoints
 
         try
         {
-            var psi = new ProcessStartInfo("bowire")
+            var psi = new ProcessStartInfo(ResolveBowireExecutable())
             {
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,

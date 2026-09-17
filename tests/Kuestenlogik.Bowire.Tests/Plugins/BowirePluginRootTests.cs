@@ -169,18 +169,59 @@ public sealed class BowirePluginRootTests : IDisposable
     }
 
     [Fact]
-    public void The_Existing_Arguments_Are_Untouched()
+    public void The_Verb_And_Package_Id_Keep_Their_Positional_Slots()
     {
-        // The flag is appended, so nothing above it may shift: verb and
-        // package id stay in the slots the CLI parses positionally.
+        // The CLI parses verb and package id positionally, so they must
+        // stay adjacent and in order wherever the root options sit.
         var argv = BowirePluginEndpoints.BuildPluginArgv(
             "install", "Some.Package", version: "1.2.3", prerelease: true, pluginDir: _dir);
 
-        Assert.Equal("plugin", argv[0]);
-        Assert.Equal("install", argv[1]);
-        Assert.Equal("Some.Package", argv[2]);
+        var plugin = argv.IndexOf("plugin");
+        Assert.True(plugin >= 0, $"no `plugin` token in: {string.Join(' ', argv)}");
+        Assert.Equal("install", argv[plugin + 1]);
+        Assert.Equal("Some.Package", argv[plugin + 2]);
         Assert.Equal("1.2.3", argv[argv.IndexOf("--version") + 1]);
         Assert.Contains("--prerelease", argv);
+    }
+
+    [Theory]
+    [InlineData("install")]
+    [InlineData("update")]
+    [InlineData("uninstall")]
+    public void The_Directory_Leads_Because_It_Is_A_Root_Option(string verb)
+    {
+        // The whole point, and what the three tests above missed for as
+        // long as they existed: `--plugin-dir` belongs to the ROOT
+        // command, so it only parses *before* the subcommand token.
+        // Trailing it produced "Command or argument '--plugin-dir' not
+        // recognized" and exit 1 on every plugin action the workbench UI
+        // offers, while every assertion here stayed green — they asked
+        // whether the flag was present, never where.
+        var argv = BowirePluginEndpoints.BuildPluginArgv(
+            verb, "Some.Package", version: null, prerelease: false, pluginDir: _dir);
+
+        var flag = argv.IndexOf("--plugin-dir");
+        var plugin = argv.IndexOf("plugin");
+        Assert.True(flag >= 0 && plugin >= 0, string.Join(' ', argv));
+        Assert.True(flag < plugin, $"--plugin-dir must precede the subcommand: {string.Join(' ', argv)}");
+        Assert.Equal(_dir, argv[flag + 1]);
+    }
+
+    [Fact]
+    public void The_Child_Is_The_Apphost_Beside_This_Assembly_When_There_Is_One()
+    {
+        // Naming "bowire" outright assumes the global tool is on the PATH.
+        // Running the workbench from a build output -- `dotnet bowire.dll`,
+        // the dev loop -- there is no such entry, and the UI's install
+        // button failed with the OS refusing to start a process.
+        var exe = BowirePluginEndpoints.ResolveBowireExecutable();
+
+        var name = OperatingSystem.IsWindows() ? "bowire.exe" : "bowire";
+        var beside = Path.Combine(AppContext.BaseDirectory, name);
+        if (File.Exists(beside))
+            Assert.Equal(beside, exe);
+        else
+            Assert.Equal("bowire", exe); // PATH lookup, for a global install
     }
 
     [Fact]
