@@ -1328,17 +1328,23 @@ public static class ScanCommand
         await File.WriteAllTextAsync(path, JsonSerializer.Serialize(sarif, s_jsonOpts), ct).ConfigureAwait(false);
     }
 
-    private static List<SarifRule> ExtractRules(List<ScanFinding> findings) => findings
+    // The rule's name is the check's own — "Target serves plaintext
+    // http://" — not its id a second time: Code Scanning shows the name
+    // in its alert list, and the markdown report uses it as the
+    // finding's heading, so a reader should not have to decode
+    // BWR-BUILTIN-TLS-001 to learn what was found. The remediation
+    // travels as the full description for the same reason.
+    internal static List<SarifRule> ExtractRules(List<ScanFinding> findings) => findings
         .Where(f => f.Template.Recording.Vulnerability is not null)
-        .Select(f => f.Template.Recording.Vulnerability!)
-        .GroupBy(v => v.Id)
+        .GroupBy(f => f.Template.Recording.Vulnerability!.Id)
+        .Select(g => (Vulnerability: g.First().Template.Recording.Vulnerability!, Name: g.First().Template.Recording.Name))
         .Select(g => new SarifRule
         {
-            Id = g.Key,
-            Name = g.First().Id,
-            ShortDescription = new SarifMessage { Text = g.First().OwaspApi ?? g.First().Cwe ?? g.First().Id },
-            FullDescription = new SarifMessage { Text = g.First().Remediation ?? "" },
-            HelpUri = g.First().References.Count > 0 ? g.First().References[0] : null,
+            Id = g.Vulnerability.Id,
+            Name = string.IsNullOrWhiteSpace(g.Name) ? g.Vulnerability.Id : g.Name,
+            ShortDescription = new SarifMessage { Text = string.IsNullOrWhiteSpace(g.Name) ? (g.Vulnerability.OwaspApi ?? g.Vulnerability.Cwe ?? g.Vulnerability.Id) : g.Name },
+            FullDescription = new SarifMessage { Text = g.Vulnerability.Remediation ?? "" },
+            HelpUri = g.Vulnerability.References.Count > 0 ? g.Vulnerability.References[0] : null,
             Properties = new Dictionary<string, object>(StringComparer.Ordinal)
             {
                 // GitHub Code Scanning requires `security-severity` to
@@ -1352,10 +1358,10 @@ public static class ScanCommand
                 //   medium    → 5.5
                 //   low       → 3.5
                 //   info / *  → 0.0
-                ["security-severity"] = g.First().Cvss?.ToString("F1", CultureInfo.InvariantCulture)
-                    ?? SeverityToScore(g.First().Severity).ToString("F1", CultureInfo.InvariantCulture),
-                ["cwe"] = g.First().Cwe ?? "",
-                ["owaspApi"] = g.First().OwaspApi ?? "",
+                ["security-severity"] = g.Vulnerability.Cvss?.ToString("F1", CultureInfo.InvariantCulture)
+                    ?? SeverityToScore(g.Vulnerability.Severity).ToString("F1", CultureInfo.InvariantCulture),
+                ["cwe"] = g.Vulnerability.Cwe ?? "",
+                ["owaspApi"] = g.Vulnerability.OwaspApi ?? "",
             },
         })
         .ToList();

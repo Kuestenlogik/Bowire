@@ -83,6 +83,18 @@ public static class FlowExpectationEvaluator
         {
             case FlowExpectationKind.Status:
             {
+                // A REST invoke reports the Bowire status ("OK", "Error")
+                // and carries the HTTP code beside it as `http_status`. An
+                // expectation written as a code — `status eq 200`, the
+                // way anyone who has written an HTTP test writes it — is
+                // read against the code, so it does not fail against "OK"
+                // with the number it asked for sitting one field away.
+                if (IsHttpStatusCode(expectation.Expected)
+                    && envelope.Headers.TryGetValue("http_status", out var httpStatus)
+                    && !string.IsNullOrEmpty(httpStatus))
+                {
+                    return (httpStatus, httpStatus);
+                }
                 var text = envelope.Status ?? string.Empty;
                 return (text, text);
             }
@@ -115,6 +127,9 @@ public static class FlowExpectationEvaluator
                 return (null, string.Empty);
         }
     }
+
+    private static bool IsHttpStatusCode(string? expected)
+        => expected is { Length: 3 } && expected.All(char.IsAsciiDigit) && expected[0] is >= '1' and <= '5';
 
     /// <summary>
     /// Walk a dotted / $-anchored path against a (possibly null) JSON body.

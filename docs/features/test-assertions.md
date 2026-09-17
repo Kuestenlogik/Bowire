@@ -29,7 +29,7 @@ The path syntax mirrors [Request Chaining](response-chaining.md):
 | `response.id` | `body.id` |
 | `response.user.email` | `body.user.email` |
 | `response.items.0.tags.2` | Third tag of the first item |
-| `status` | The gRPC / HTTP status name (e.g. `OK`, `NotFound`, `Unauthenticated`) |
+| `status` | The gRPC / HTTP status name (e.g. `OK`, `NotFound`, `Unauthenticated`). For a REST response an expected value written as a three-digit code — `status eq 200` — is read against the HTTP status code the invoker carries as `http_status`, so it does not fail against `OK` with the number it asked for one field away |
 
 ## Operators
 

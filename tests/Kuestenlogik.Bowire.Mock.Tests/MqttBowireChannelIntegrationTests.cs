@@ -467,7 +467,12 @@ public sealed class MqttBowireChannelIntegrationTests : IAsyncDisposable
 
         // Pre-populate a couple of retained topics so the scan window
         // sees them (broker forwards retained messages immediately on
-        // subscribe).
+        // subscribe). At least-once, not fire-and-forget: a QoS 0
+        // publish returns before the broker has taken the message, and
+        // the seeder disconnecting right behind it let the second
+        // retained topic go missing on a loaded CI host — the scan then
+        // found one topic and two methods instead of four. The PUBACK
+        // is the broker saying it has the message.
         var factory = new MqttClientFactory();
         using var seeder = factory.CreateMqttClient();
         await seeder.ConnectAsync(
@@ -478,9 +483,11 @@ public sealed class MqttBowireChannelIntegrationTests : IAsyncDisposable
             ct);
         await seeder.PublishAsync(new MqttApplicationMessageBuilder()
             .WithTopic("scan/temperature").WithPayload(Encoding.UTF8.GetBytes("21.5"))
+            .WithQualityOfServiceLevel(MQTTnet.Protocol.MqttQualityOfServiceLevel.AtLeastOnce)
             .WithRetainFlag(true).Build(), ct);
         await seeder.PublishAsync(new MqttApplicationMessageBuilder()
             .WithTopic("scan/humidity").WithPayload(Encoding.UTF8.GetBytes("70"))
+            .WithQualityOfServiceLevel(MQTTnet.Protocol.MqttQualityOfServiceLevel.AtLeastOnce)
             .WithRetainFlag(true).Build(), ct);
         await seeder.DisconnectAsync(cancellationToken: ct);
 

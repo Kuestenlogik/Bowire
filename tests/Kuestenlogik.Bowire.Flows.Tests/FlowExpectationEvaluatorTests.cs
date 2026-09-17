@@ -34,6 +34,44 @@ public class FlowExpectationEvaluatorTests
             Error = error,
         };
 
+    // ---- Status written as an HTTP code against a REST envelope ----
+
+    [Fact]
+    public void Status_AsHttpCode_ReadsTheHttpStatusHeaderWhenTheStatusIsABowireName()
+    {
+        // The REST invoker reports "OK" and carries the code as http_status.
+        var envelope = new FlowRequestEnvelope
+        {
+            Status = "OK",
+            Headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) { ["http_status"] = "200" },
+        };
+        var ok = FlowExpectationEvaluator.Evaluate(
+            new FlowExpectation { Kind = FlowExpectationKind.Status, Operator = FlowExpectationOperator.Equals, Expected = "200" }, envelope);
+        Assert.True(ok.Passed, ok.Message);
+        Assert.Equal("200", ok.Actual);
+
+        var wrong = FlowExpectationEvaluator.Evaluate(
+            new FlowExpectation { Kind = FlowExpectationKind.Status, Operator = FlowExpectationOperator.Equals, Expected = "404" }, envelope);
+        Assert.False(wrong.Passed);
+        Assert.Equal("200", wrong.Actual);
+
+        // Written as the name, it is still the name.
+        var byName = FlowExpectationEvaluator.Evaluate(
+            new FlowExpectation { Kind = FlowExpectationKind.Status, Operator = FlowExpectationOperator.Equals, Expected = "OK" }, envelope);
+        Assert.True(byName.Passed, byName.Message);
+    }
+
+    [Fact]
+    public void Status_AsHttpCode_WithoutTheHeader_StillComparesTheStatus()
+    {
+        // gRPC and the rest carry no http_status; a numeric expectation
+        // meets the status string as before.
+        var envelope = new FlowRequestEnvelope { Status = "200" };
+        var ok = FlowExpectationEvaluator.Evaluate(
+            new FlowExpectation { Kind = FlowExpectationKind.Status, Operator = FlowExpectationOperator.Equals, Expected = "200" }, envelope);
+        Assert.True(ok.Passed, ok.Message);
+    }
+
     // ---- Status × every operator that applies ----
 
     [Fact]

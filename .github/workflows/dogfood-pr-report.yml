@@ -100,7 +100,12 @@ jobs:
         run: bowire diff snapshot http://127.0.0.1:6000 --protocol rest -o base.snapshot.json
 
       # A one-step flow against the mock, so the action's Tests section has
-      # something to run and the Perf section has timings to diff.
+      # something to run and the Perf section has timings to diff. The
+      # expectation is the HTTP code: `bowire test` reads a three-digit
+      # status against the code the REST invoker carries as http_status,
+      # so `200` means 200 — it used to be compared with the status name
+      # "OK" and fail on every run, which the gate (`fail-on-tests:
+      # never`) then waved through as a green Tests row.
       - name: Write the flow + capture the base timings
         run: |
           cat > flow.json <<'JSON'
@@ -129,7 +134,7 @@ jobs:
           test -f base-test.xml || { echo "::error::no baseline JUnit produced"; exit 1; }
 
       - name: Run the PR-report action
-        uses: Kuestenlogik/bowire-action@bb2b26379cac1a343cc8e12260112dd490e5ae01 # v1.0.1
+        uses: Kuestenlogik/bowire-action@e60d62e36d120961928f9fe2f9917de756714330 # v1.0.2
         with:
           target: http://127.0.0.1:6000
           protocol: rest
