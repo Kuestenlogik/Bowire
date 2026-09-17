@@ -44,9 +44,12 @@ public sealed class GrpcMockHostingExtension : IBowireMockHostingExtension
     /// steps become unreachable for ordinary clients; see the protocol
     /// note in MockServer).
     /// </remarks>
+    // By the wire, not the label: a step from a plugin built on gRPC
+    // (TacticalAPI records `protocol: "tacticalapi"`) carries the same
+    // bytes a `grpc` step does and needs the same listener.
     public bool RequiresHttp2(BowireRecording recording) =>
         recording.Steps.Any(s =>
-            string.Equals(s.Protocol, "grpc", StringComparison.OrdinalIgnoreCase)
+            GrpcWire.IsGrpcStep(s)
             && (!string.IsNullOrEmpty(s.ResponseBinary)
                 || s.ReceivedMessages is { Count: > 0 }
                 || !string.IsNullOrEmpty(s.SchemaDescriptor)));

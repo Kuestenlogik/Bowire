@@ -57,7 +57,7 @@ public static class UnaryReplayer
         // the recorder tagged it as "rest", "odata", "mcp", etc. — those
         // are all HTTP-with-JSON on the wire. gRPC and WebSocket get their
         // own paths because their wire formats are distinctly different.
-        var isGrpc = string.Equals(step.Protocol, "grpc", StringComparison.OrdinalIgnoreCase);
+        var isGrpc = GrpcWire.IsGrpcStep(step);
         var isWebSocket = string.Equals(step.Protocol, "websocket", StringComparison.OrdinalIgnoreCase);
         var isGraphQl = string.Equals(step.Protocol, "graphql", StringComparison.OrdinalIgnoreCase);
         var isSignalR = string.Equals(step.Protocol, "signalr", StringComparison.OrdinalIgnoreCase);

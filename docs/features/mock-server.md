@@ -242,6 +242,8 @@ The outer `response` field on the step is ignored for streaming replay; only `re
 
 gRPC clients built with `Grpc.Net.Client` consume the mocked stream exactly as they would a live backend: `AsyncServerStreamingCall` + `ResponseStream.MoveNext()` loop works unchanged.
 
+The same goes for a recording from a **protocol plugin built on gRPC** — TacticalAPI's steps say `protocol: "tacticalapi"`, not `grpc`. The host records the wire bytes for every plugin that implements `IBowireStreamingWithWireBytes`, and the mock reads the bytes rather than the label: a step that carries `responseBinary` (on the response, or on every streamed frame) and no HTTP routing replays over gRPC, and the listener speaks HTTP/2 for it. Such a plugin usually records its services by simple name (`Situation` for `rheinmetall.tactical_api.v0.Situation`); the mock matches that against the last segment of the wire path, so a client dialling the fully-qualified service finds the step. Point the workbench at the mock with the plugin's own scheme (`tacticalapi@http://localhost:<port>`) and it sees the recorded frames 1:1.
+
 ### WebSocket duplex replay
 
 Recorded **WebSocket** sessions replay as real WebSocket upgrades. When a client opens `ws://<mock>/<path>`, the mock accepts the handshake and pushes the captured server-to-client frames back in order, paced by each frame's `timestampMs`. Incoming client-to-server frames are accepted and discarded — Phase 2e covers the server-push direction; input-driven replay (gate on matching a `sentMessages` entry before emitting the next batch) is a later phase.

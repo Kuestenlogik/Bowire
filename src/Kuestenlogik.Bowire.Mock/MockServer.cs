@@ -484,6 +484,14 @@ public sealed class MockServer : IAsyncDisposable
                 var display = group.Select(s => s.Protocol)
                     .FirstOrDefault(p => !string.IsNullOrEmpty(p)) ?? "(none)";
                 var count = group.Count();
+                // A plugin built on gRPC records under its own id and its
+                // steps carry the wire bytes; they replay over gRPC like
+                // any other, and the summary says so under their name.
+                if (protocol != "GRPC" && group.All(Mocking.GrpcWire.IsGrpcStep))
+                {
+                    logger.LogInformation("steps[{Protocol}]: {Count} — carry gRPC wire bytes, replay over gRPC (HTTP/2)", display, count);
+                    continue;
+                }
                 switch (protocol)
                 {
                     case "GRPC":

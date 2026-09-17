@@ -226,10 +226,11 @@ public sealed class ExactMatcher : IMockMatcher
          || !string.IsNullOrEmpty(s.Match?.PathRegex)
          || !string.IsNullOrEmpty(s.Match?.PathGlob));
 
+    // By the wire, not the label: a step from a plugin built on gRPC
+    // (TacticalAPI) carries the same bytes a `grpc` step does. See
+    // GrpcWire.
     private static bool IsGrpcStep(BowireRecordingStep s) =>
-        string.Equals(s.Protocol, "grpc", StringComparison.OrdinalIgnoreCase) &&
-        !string.IsNullOrEmpty(s.Service) &&
-        !string.IsNullOrEmpty(s.Method);
+        GrpcWire.IsGrpcStep(s) && !string.IsNullOrEmpty(s.Service) && !string.IsNullOrEmpty(s.Method);
 
     private static bool IsSocketIoStep(BowireRecordingStep s) =>
         string.Equals(s.Protocol, "socketio", StringComparison.OrdinalIgnoreCase);
@@ -454,12 +455,12 @@ public sealed class ExactMatcher : IMockMatcher
         return bindings;
     }
 
-    // gRPC URL form is always /{package.Service}/{Method} — service name is
-    // the fully-qualified protobuf service, method is the RPC method name.
-    // Match on the full path rather than split segments so variants like
-    // '/pkg.v1.Svc/M' (package with dots) work without extra parsing.
+    // gRPC URL form is always /{package.Service}/{Method}. A step that
+    // recorded the fully-qualified service matches on the whole path; one
+    // that recorded the simple name matches on the wire service's last
+    // segment. See GrpcWire.MatchesPath.
     private static bool MatchesGrpcPath(BowireRecordingStep step, MockRequest request) =>
-        string.Equals(request.Path, "/" + step.Service + "/" + step.Method, StringComparison.Ordinal);
+        GrpcWire.MatchesPath(step, request.Path);
 
     private static bool IsTemplate(string path)
     {
