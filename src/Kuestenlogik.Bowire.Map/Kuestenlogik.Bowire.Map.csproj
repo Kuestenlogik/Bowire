@@ -69,5 +69,15 @@
                       LogicalName="Kuestenlogik.Bowire.Map.wwwroot.mil-sym-ts.mil-sym-ts.js.gz" />
     <EmbeddedResource Include="wwwroot\mil-sym-ts\mil-sym-ts.LICENSE"
                       LogicalName="Kuestenlogik.Bowire.Map.wwwroot.mil-sym-ts.mil-sym-ts.LICENSE" />
+    <!--
+      The 2525C → 2525D crosswalk for tactical graphics, built by
+      scripts/vendor/mil-2525c-graphics.mjs from Esri's
+      joint-military-symbology-xml legacy table (Apache-2.0). mil-sym-ts
+      has no tables for the fifteen-letter codes; with this the widget
+      turns a 2525C phase line into the 2525D one before asking. Fetched
+      on the first graphic that carries a C code.
+    -->
+    <EmbeddedResource Include="wwwroot\mil-sym-ts\2525c-graphics.json"
+                      LogicalName="Kuestenlogik.Bowire.Map.wwwroot.mil-sym-ts.2525c-graphics.json" />
   </ItemGroup>
 </Project>

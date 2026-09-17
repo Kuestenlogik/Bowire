@@ -351,6 +351,14 @@ public sealed class BowireSemanticsEndpointsTests
                 TestContext.Current.CancellationToken);
             Assert.Equal(HttpStatusCode.OK, license.StatusCode);
             Assert.Contains("Apache License", await license.Content.ReadAsStringAsync(TestContext.Current.CancellationToken), StringComparison.Ordinal);
+
+            // The 2525C crosswalk the widget fetches next to the library.
+            var crosswalk = await client.GetAsync(
+                new Uri("/bowire/api/ui/extensions/kuestenlogik.maplibre/2525c-graphics.json", UriKind.Relative),
+                TestContext.Current.CancellationToken);
+            Assert.Equal(HttpStatusCode.OK, crosswalk.StatusCode);
+            Assert.Equal("application/json", crosswalk.Content.Headers.ContentType?.MediaType);
+            Assert.Contains("\"GGLP---\": \"140300\"", await crosswalk.Content.ReadAsStringAsync(TestContext.Current.CancellationToken), StringComparison.Ordinal);
         }
     }
 

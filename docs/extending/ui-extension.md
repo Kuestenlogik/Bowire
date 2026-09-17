@@ -78,6 +78,7 @@ public sealed class MapLibreExtension : IBowireUiExtension
         "wwwroot/milsymbol/milsymbol.LICENSE",
         "wwwroot/mil-sym-ts/mil-sym-ts.js.gz",
         "wwwroot/mil-sym-ts/mil-sym-ts.LICENSE",
+        "wwwroot/mil-sym-ts/2525c-graphics.json",
     ];
 }
 ```

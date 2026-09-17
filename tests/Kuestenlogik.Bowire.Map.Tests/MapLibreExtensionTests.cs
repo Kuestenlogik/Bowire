@@ -139,6 +139,41 @@ public sealed class MapLibreExtensionTests
     }
 
     [Fact]
+    public void The_2525C_Crosswalk_Is_Declared_And_Maps_Function_Ids_To_Control_Measures()
+    {
+        // The table mil-sym-ts does not have: a 2525C tactical graphic's
+        // category letter + function id → the 2525D entity code. Built
+        // from Esri's legacy table by scripts/vendor/mil-2525c-graphics.mjs;
+        // this pins its shape and a few rows the sample and the tests
+        // lean on.
+        var ext = new MapLibreExtension();
+        Assert.Contains("wwwroot/mil-sym-ts/2525c-graphics.json", ext.AdditionalAssetNames);
+
+        using var stream = EmbeddedExtensionAsset.OpenRead(typeof(MapLibreExtension).Assembly, ext, "wwwroot/mil-sym-ts/2525c-graphics.json");
+        Assert.NotNull(stream);
+        using var doc = System.Text.Json.JsonDocument.Parse(stream!);
+        var root = doc.RootElement;
+        Assert.Contains("joint-military-symbology-xml", root.GetProperty("source").GetString(), StringComparison.Ordinal);
+        Assert.Contains("Apache-2.0", root.GetProperty("license").GetString(), StringComparison.Ordinal);
+
+        var map = root.GetProperty("map");
+        var rows = 0;
+        foreach (var row in map.EnumerateObject())
+        {
+            rows++;
+            Assert.Matches("^[A-Z][A-Z-]{6}$", row.Name);
+            Assert.Matches(@"^\d{6}$", row.Value.GetString());
+        }
+        Assert.InRange(rows, 400, 600);
+
+        Assert.Equal("110100", map.GetProperty("GGLB---").GetString());   // boundary
+        Assert.Equal("140300", map.GetProperty("GGLP---").GetString());   // phase line
+        Assert.Equal("150200", map.GetProperty("GGAA---").GetString());   // assembly area
+        Assert.Equal("151403", map.GetProperty("GOLAGM-").GetString());   // axis of advance, main attack
+        Assert.Equal("170100", map.GetProperty("GALC---").GetString());   // air corridor
+    }
+
+    [Fact]
     public void MilSymTs_Bundle_Reaches_No_Host()
     {
         // The library is vendored for the same reason MapLibre and

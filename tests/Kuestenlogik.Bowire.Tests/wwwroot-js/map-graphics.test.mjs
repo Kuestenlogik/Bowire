@@ -207,15 +207,30 @@ function makeC5Ren(recorder, { refuse } = {}) {
     };
 }
 
-async function mountMap({ interpretations, withC5Ren = true, refuse } = {}) {
+// A slice of wwwroot/mil-sym-ts/2525c-graphics.json — the real file is
+// read by the C# tests; here the shape is what matters.
+const CROSSWALK = { map: { 'GGLP---': '140300', 'GGAA---': '150200', 'GGLB---': '110100' } };
+
+async function mountMap({ interpretations, withC5Ren = true, refuse, holdFetch = false } = {}) {
     const recorder = {
         sources: {}, layers: [], images: new Map(), renders: 0, calls: [],
-        bounds: [10.0, 53.8, 12.0, 54.5],
+        bounds: [10.0, 53.8, 12.0, 54.5], fetched: [],
     };
     const document = makeDocument();
     const win = {
         __BOWIRE_CONFIG__: { mapBasemap: 'none' },
         maplibregl: makeMapLibre(recorder),
+        // The 2525C crosswalk is fetched, not script-tagged. Each mount
+        // gets its own copy of the loader state through a fresh window;
+        // the fetch resolves on the next tick unless a test holds it.
+        fetch(url) {
+            recorder.fetched.push(url);
+            return new Promise((resolve) => {
+                recorder.releaseFetch = () => resolve({ ok: true, json: async () => CROSSWALK });
+                recorder.failFetch = () => resolve({ ok: false, status: 404 });
+                if (!holdFetch) recorder.releaseFetch();
+            });
+        },
     };
     if (withC5Ren) win.C5Ren = makeC5Ren(recorder, { refuse });
     let registered = null;
@@ -338,7 +353,7 @@ describe('map widget — tactical graphics via mil-sym-ts', { concurrency: 1 }, 
         assert.equal(g.items.length, 1);
         assert.deepEqual(g.items[0], {
             key: '$.situationObjects[1].symbol.location.content.polygon.points',
-            kind: 'polygon', sidc: ASSEMBLY_AREA, points: 4, designation: 'BUCHE',
+            kind: 'polygon', sidc: ASSEMBLY_AREA, renderSidc: ASSEMBLY_AREA, points: 4, designation: 'BUCHE',
             versions: 1, highlighted: false, drawn: true,
         });
 
@@ -551,6 +566,88 @@ describe('map widget — tactical graphics via mil-sym-ts', { concurrency: 1 }, 
         assert.equal(m.handle.graphics().items.length, 0);
         assert.equal(m.recorder.calls.length, 0);
         m.unmount();
+    });
+
+    it('draws a 2525C tactical graphic through the crosswalk, letter by letter around the table', async () => {
+        const paths = [0, 1, 2].map((i) => pairAt(`$.situationObjects[0].symbol.location.content.line.points[${i}]`));
+        const line = (sidc) => ({
+            id: 'f1',
+            situationObjects: [symbol('pl', { symbolCatalog: 'SYMBOL_CATALOG_MIL2525_C', stringIdentifier: sidc }, 'OSTSEE',
+                { line: { points: [geo(54.20, 10.60), geo(54.18, 10.75), geo(54.17, 10.90)] } })],
+        });
+        const cases = [
+            // friendly, present, no echelon
+            ['GFGPGLP-------X', '10032500001403000000'],
+            // the sample's star fillers
+            ['GFGPGLP---*****', '10032500001403000000'],
+            // hostile, anticipated: identity 6, status 1
+            ['GHGAGLP-------X', '10062510001403000000'],
+            // exercise friend: exercise context, friend identity
+            ['GMGPGLP-------X', '10132500001403000000'],
+            // battalion boundary: echelon F at position 12 → 16
+            ['GFGPGLB----F--X', '10032500161101000000'],
+        ];
+        for (const [c, d] of cases) {
+            const m = await mountMap({ interpretations: paths });
+            m.frames.push(line(c));
+            await settle();
+            const item = m.handle.graphics().items[0];
+            assert.equal(item.sidc, c);
+            assert.equal(item.renderSidc, d, c);
+            assert.equal(item.drawn, true, c);
+            assert.equal(m.recorder.calls[0].symbolCode, d, c);
+            assert.equal(m.recorder.calls[0].modifiers.T_UNIQUE_DESIGNATION_1, 'OSTSEE');
+            assert.deepEqual(m.recorder.fetched, ['/api/ui/extensions/kuestenlogik.maplibre/2525c-graphics.json']);
+            m.unmount();
+        }
+    });
+
+    it('keeps a 2525C graphic bare until the crosswalk lands, and for a code the table lacks', async () => {
+        const paths = [0, 1].map((i) => pairAt(`$.situationObjects[0].symbol.location.content.line.points[${i}]`));
+        const line = (sidc) => ({
+            id: 'f1',
+            situationObjects: [symbol('x', { stringIdentifier: sidc }, 'X',
+                { line: { points: [geo(54.20, 10.60), geo(54.17, 10.90)] } })],
+        });
+
+        // Held fetch: the graphic is there, bare, and the renderer has
+        // not been asked — it has no tables for a C code.
+        const m = await mountMap({ interpretations: paths, holdFetch: true });
+        m.frames.push(line('GFGPGLP-------X'));
+        await settle();
+        assert.equal(m.handle.graphics().items[0].renderSidc, null);
+        assert.equal(m.handle.graphics().items[0].drawn, false);
+        assert.equal(m.recorder.calls.length, 0);
+        assert.equal(m.lines().features.length, 1);
+        assert.equal(m.lines().features[0].properties.color, '#22d3ee');
+        m.recorder.releaseFetch();
+        await settle();
+        assert.equal(m.handle.graphics().items[0].renderSidc, '10032500001403000000');
+        assert.equal(m.recorder.calls.length, 1);
+        m.unmount();
+
+        // A function id the table does not know: bare, and the
+        // renderer still not asked.
+        const m2 = await mountMap({ interpretations: paths });
+        m2.frames.push(line('GFGPZZZZZZ----X'));
+        await settle();
+        assert.equal(m2.handle.graphics().items[0].renderSidc, null);
+        assert.equal(m2.recorder.calls.length, 0);
+        assert.equal(m2.lines().features.length, 1);
+        m2.unmount();
+
+        // The table cannot be fetched: bare, once warned, no retry storm.
+        const m3 = await mountMap({ interpretations: paths, holdFetch: true });
+        m3.frames.push(line('GFGPGLP-------X'));
+        await settle();
+        m3.recorder.failFetch();
+        await settle();
+        m3.frames.push(line('GFGPGLP-------X'));
+        await settle();
+        assert.equal(m3.recorder.fetched.length, 1);
+        assert.equal(m3.recorder.calls.length, 0);
+        assert.equal(m3.lines().features.length, 1);
+        m3.unmount();
     });
 
     it('lets a selected frame\'s graphic stand out and the others step back', async () => {
