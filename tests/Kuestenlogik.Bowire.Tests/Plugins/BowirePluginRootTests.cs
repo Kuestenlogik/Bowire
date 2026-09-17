@@ -250,6 +250,40 @@ public sealed class BowirePluginRootTests : IDisposable
     }
 
     [Fact]
+    public void The_Temp_Path_Does_Not_Travel_Back_In_The_Result()
+    {
+        // The upload route writes the package to a temp file we invented,
+        // and the CLI echoes that path in its first line. Reporting it
+        // turned the workbench's result banner into a tour of the temp
+        // directory; the line that matters names the package and where it
+        // actually landed.
+        const string Temp = @"C:\Temp\bowire-plugin-upload-abc\package.nupkg";
+        var output = string.Join('\n',
+            @"  Installing Contoso.Plugin from " + Temp + "...",
+            @"  Installed Contoso.Plugin 1.2.3 (1 file(s)) -> C:\Plugins\Contoso.Plugin");
+
+        var shown = BowirePluginEndpoints.WithoutPath(output, Temp);
+
+        Assert.DoesNotContain("bowire-plugin-upload", shown, StringComparison.Ordinal);
+        // The plugin directory is not the temp directory and stays.
+        Assert.Contains(@"-> C:\Plugins\Contoso.Plugin", shown, StringComparison.Ordinal);
+        Assert.Contains("Installed Contoso.Plugin 1.2.3", shown, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_Feed_Install_Keeps_Every_Line_It_Always_Had()
+    {
+        // No temp file, nothing to hide: the feed route has to read exactly
+        // as it did before the upload route existed.
+        var output = string.Join('\n',
+            "  Installing Contoso.Plugin...",
+            "  Installed Contoso.Plugin 1.2.3 (1 file(s))");
+
+        Assert.Equal(output, BowirePluginEndpoints.WithoutPath(output, null));
+        Assert.Equal(output, BowirePluginEndpoints.WithoutPath(output, string.Empty));
+    }
+
+    [Fact]
     public void The_Child_Is_The_Apphost_Beside_This_Assembly_When_There_Is_One()
     {
         // Naming "bowire" outright assumes the global tool is on the PATH.

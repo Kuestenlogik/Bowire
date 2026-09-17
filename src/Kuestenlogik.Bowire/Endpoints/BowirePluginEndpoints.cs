@@ -1191,6 +1191,20 @@ internal static class BowirePluginEndpoints
         return argv;
     }
 
+    /// <summary>
+    /// <paramref name="text"/> without the lines that mention
+    /// <paramref name="path"/>, or unchanged when there is no path to hide.
+    /// </summary>
+    internal static string WithoutPath(string text, string? path)
+    {
+        if (string.IsNullOrEmpty(path) || string.IsNullOrEmpty(text)) return text;
+
+        var kept = text
+            .Split('\n')
+            .Where(line => line.IndexOf(path, StringComparison.OrdinalIgnoreCase) < 0);
+        return string.Join('\n', kept).Trim('\r', '\n');
+    }
+
     /// <summary>Package shapes <c>plugin install --file</c> understands.</summary>
     private static readonly string[] UploadExtensions = [".nupkg", ".zip"];
 
@@ -1348,6 +1362,14 @@ internal static class BowirePluginEndpoints
             var output = await proc.StandardOutput.ReadToEndAsync();
             var err = await proc.StandardError.ReadToEndAsync();
             await proc.WaitForExitAsync();
+
+            // The temp file is ours, not the caller's. Its path appears in
+            // the CLI's "Installing X from <path>..." line, which turned the
+            // workbench's result banner into a tour of the temp directory;
+            // the line after it names the package and where it landed, which
+            // is what anyone actually wants to read.
+            output = WithoutPath(output, file);
+            err = WithoutPath(err, file);
 
             return proc.ExitCode == 0
                 ? Results.Ok(new { ok = true, verb, packageId = packageIdOrEmpty, output })
