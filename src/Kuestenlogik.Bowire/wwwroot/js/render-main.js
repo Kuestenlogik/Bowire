@@ -8703,25 +8703,14 @@
         // toggles via native <details>, dblclick copies the JSONPath,
         // right-click opens the unified context menu.
         bowireWireResponseTreeGestures(S, body);
-        if (typeof bowireDecorateResponseTreeForSemantics === 'function'
-            && svc && method) {
-            try {
-                bowireDecorateResponseTreeForSemantics(
-                    body, svc.name, method.name);
-            } catch (e) { console.error('[bowire-semantics] decorate stream-detail', e); }
-        }
         if (svc && method) {
-            try {
-                // Per-frame body so any extension that resolves
-                // values from the JSON (e.g. the map widget's
-                // "Center on map" entry) sees THIS message's
-                // payload, not whatever the last unary response
-                // left behind in `responseData`.
-                var parsedFrame = null;
-                try { parsedFrame = JSON.parse(raw); } catch { parsedFrame = null; }
-                bowireDecorateResponseTreeViaExtensions(
-                    body, svc.name, method.name, parsedFrame);
-            } catch (e) { console.error('[bowire-resp-tree] decorate stream-detail', e); }
+            // Per-frame body so any extension that resolves values
+            // from the JSON (e.g. the map widget's "Center on map"
+            // entry) sees THIS message's payload, not whatever the
+            // last unary response left behind in `responseData`.
+            var parsedFrame = null;
+            try { parsedFrame = JSON.parse(raw); } catch { parsedFrame = null; }
+            bowireDecorateResponseTree(body, svc.name, method.name, parsedFrame, 'stream-detail');
         }
 
         return { header: header, body: body };
@@ -9727,6 +9716,32 @@
             method: method,
             explicitRoot: explicitRoot
         });
+    }
+
+    /**
+     * Decorate a rendered response tree: the semantic badges, then the
+     * per-kind hooks the extensions registered (the map widget stamps
+     * its coord paths + wires the hover sync). Both run against the
+     * line elements the JSON viewer has right now — and the viewer
+     * throws every one of them away when a node is expanded or
+     * collapsed. So the same decoration is left on the tree root as
+     * `__bowireRedecorate`, which the viewer calls after each rebuild;
+     * without it one expand ended the hover-sync until the next frame
+     * re-rendered the viewer.
+     */
+    function bowireDecorateResponseTree(treeRoot, serviceName, methodName, explicitRoot, where) {
+        function decorate() {
+            if (typeof bowireDecorateResponseTreeForSemantics === 'function') {
+                try {
+                    bowireDecorateResponseTreeForSemantics(treeRoot, serviceName, methodName);
+                } catch (e) { console.error('[bowire-semantics] decorate ' + where, e); }
+            }
+            try {
+                bowireDecorateResponseTreeViaExtensions(treeRoot, serviceName, methodName, explicitRoot);
+            } catch (e) { console.error('[bowire-resp-tree] decorate ' + where, e); }
+        }
+        treeRoot.__bowireRedecorate = decorate;
+        decorate();
     }
 
     /**
@@ -10871,23 +10886,8 @@ t(mcpContent.count === 1 ? 'main.mcp.itemOne' : 'main.mcp.itemMany',
                 // extensions framework already fetches for the active
                 // method). Failure is silent — the response tree is
                 // perfectly usable without the badges.
-                if (typeof bowireDecorateResponseTreeForSemantics === 'function'
-                    && svc && method) {
-                    try {
-                        bowireDecorateResponseTreeForSemantics(
-                            output, svc.name, method.name);
-                    } catch (e) { console.error('[bowire-semantics] decorate', e); }
-                }
                 if (svc && method) {
-                    try {
-                        // Fan out the per-kind decoration hooks. The
-                        // map widget registers a decorator that
-                        // stamps data-bowire-coord-path + wires
-                        // hover sync; other extensions plug in the
-                        // same way without touching core.
-                        bowireDecorateResponseTreeViaExtensions(
-                            output, svc.name, method.name);
-                    } catch (e) { console.error('[bowire-resp-tree] decorate', e); }
+                    bowireDecorateResponseTree(output, svc.name, method.name, undefined, 'unary');
                 }
             }
         } else {

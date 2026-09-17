@@ -3673,11 +3673,7 @@
             var props = e.features[0].properties || {};
             try {
                 document.dispatchEvent(new CustomEvent('bowire:map-coord-hover', {
-                    detail: {
-                        parentPath: props.parentPath || '',
-                        latPath: props.latPath || '',
-                        lonPath: props.lonPath || ''
-                    }
+                    detail: bowireMapCoordDetail(props)
                 }));
             } catch {}
         });
@@ -3713,11 +3709,7 @@
             } catch {}
             try {
                 document.dispatchEvent(new CustomEvent('bowire:map-coord-click', {
-                    detail: {
-                        parentPath: props.parentPath || '',
-                        latPath: props.latPath || '',
-                        lonPath: props.lonPath || ''
-                    }
+                    detail: bowireMapCoordDetail(props)
                 }));
             } catch {}
         });
@@ -3734,11 +3726,7 @@
                     var props = e.features[0].properties || {};
                     try {
                         document.dispatchEvent(new CustomEvent('bowire:map-coord-hover', {
-                            detail: {
-                                parentPath: props.parentPath || '',
-                                latPath: props.latPath || '',
-                                lonPath: props.lonPath || ''
-                            }
+                            detail: bowireMapCoordDetail(props)
                         }));
                     } catch {}
                 });
@@ -3762,11 +3750,7 @@
                     } catch {}
                     try {
                         document.dispatchEvent(new CustomEvent('bowire:map-coord-click', {
-                            detail: {
-                                parentPath: props.parentPath || '',
-                                latPath: props.latPath || '',
-                                lonPath: props.lonPath || ''
-                            }
+                            detail: bowireMapCoordDetail(props)
                         }));
                     } catch {}
                 });
@@ -4033,6 +4017,24 @@
     }
 
     /**
+     * The paths a pin or graphic hands the JSON viewer in a coord
+     * event, in the chain form the viewer's rows are keyed by. The
+     * features carry the annotations' bracket form
+     * (`$.situationObjects[13].…`); the core's click listener splits
+     * the path on dots to expand the ancestors and looks the row up
+     * by `data-line-path`, so a bracket path found nothing under an
+     * array index — a pin click scrolled the viewer for a flat frame
+     * and did nothing for a multi-entity one.
+     */
+    function bowireMapCoordDetail(props) {
+        return {
+            parentPath: bowireMapJsonPathToChainPath(props.parentPath || ''),
+            latPath: bowireMapJsonPathToChainPath(props.latPath || ''),
+            lonPath: bowireMapJsonPathToChainPath(props.lonPath || '')
+        };
+    }
+
+    /**
      * Walk the cached effective annotations for (service, method)
      * and group lat/lon companions by parent path. Returns an
      * array of `{ parentPath, latPath, lonPath }` records (paths
@@ -4151,26 +4153,40 @@
         // recent decorate-pass's root).
         treeRoot.__bowireMapExplicitRoot = opts.explicitRoot;
 
-        var loader;
+        // Stamp synchronously when the annotations are already cached.
+        // The host renders the tree detached and merges it into the
+        // page with morphdom, which copies attributes but not what a
+        // microtask stamps a moment later onto nodes it has already
+        // discarded — a `.then` on a resolved promise was exactly that,
+        // and the hover-sync died on every re-render that went through
+        // the merge. Only the first decoration of a method, before its
+        // annotations are here, has to wait for the fetch.
         if (typeof fw.effectiveCacheFor === 'function'
             && fw.effectiveCacheFor(opts.service, opts.method)) {
-            loader = Promise.resolve();
-        } else if (typeof fw.fetchEffective === 'function') {
-            loader = fw.fetchEffective(opts.service, opts.method);
-        } else {
+            try { apply(); } catch (err) { console.error('[bowire-map] tree decorator failed', err); }
             return;
         }
-        loader.then(function () {
+        if (typeof fw.fetchEffective !== 'function') return;
+        fw.fetchEffective(opts.service, opts.method).then(apply).catch(function (err) {
+            console.error('[bowire-map] tree decorator failed', err);
+        });
+
+        function apply() {
             var pairs = bowireMapPairsForMethod(opts.service, opts.method);
             if (pairs.length === 0) return;
             // Index: chain-var path → pair record. lat / lon /
             // parent all map to the same record so a hover on any
-            // of them lights the same pin.
+            // of them lights the same pin. The tree's data-json-path
+            // is the dot-only chain form (`situationObjects.13.…`);
+            // the pairs carry the bracket form the annotations use
+            // (`situationObjects[13].…`), and the two never met — no
+            // span under an array index was ever stamped, so the
+            // JSON → map hover was dead for every multi-entity frame.
             var index = {};
             for (var i = 0; i < pairs.length; i++) {
-                index[pairs[i].latPath] = pairs[i];
-                index[pairs[i].lonPath] = pairs[i];
-                if (pairs[i].parentPath) index[pairs[i].parentPath] = pairs[i];
+                index[bowireMapJsonPathToChainPath(pairs[i].latPath)] = pairs[i];
+                index[bowireMapJsonPathToChainPath(pairs[i].lonPath)] = pairs[i];
+                if (pairs[i].parentPath) index[bowireMapJsonPathToChainPath(pairs[i].parentPath)] = pairs[i];
             }
             var picks = treeRoot.querySelectorAll('[data-json-path]');
             for (var p = 0; p < picks.length; p++) {
@@ -4183,9 +4199,7 @@
                     'data-bowire-coord-path', index[raw].latPath);
             }
             bowireMapAttachTreeHover(treeRoot);
-        }).catch(function (err) {
-            console.error('[bowire-map] tree decorator failed', err);
-        });
+        }
     }
 
     /**
