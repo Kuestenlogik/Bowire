@@ -101,11 +101,13 @@ jobs:
 
       # A one-step flow against the mock, so the action's Tests section has
       # something to run and the Perf section has timings to diff. The
-      # expectation is the HTTP code: `bowire test` reads a three-digit
-      # status against the code the REST invoker carries as http_status,
-      # so `200` means 200 — it used to be compared with the status name
-      # "OK" and fail on every run, which the gate (`fail-on-tests:
-      # never`) then waved through as a green Tests row.
+      # expectation is in the v2.2 shape — `operator` and `expected` — and
+      # is the HTTP code: `bowire test` reads a three-digit status against
+      # the code the REST invoker carries as http_status, so `200` means
+      # 200. It used to be written with the legacy tuple's keys (`op`,
+      # `value`), which the v2.2 reader does not know; the expected value
+      # came out null and the test failed on every run, which the gate
+      # (`fail-on-tests: never`) then showed as a green Tests row.
       - name: Write the flow + capture the base timings
         run: |
           cat > flow.json <<'JSON'
@@ -121,7 +123,7 @@ jobs:
                 "method": "getCurrent",
                 "serverUrl": "http://127.0.0.1:6000",
                 "expectations": [
-                  { "kind": "status", "op": "eq", "value": "200" }
+                  { "kind": "status", "operator": "equals", "expected": "200" }
                 ]
               }
             ]

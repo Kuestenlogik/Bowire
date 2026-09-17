@@ -72,6 +72,20 @@ public class FlowExpectationEvaluatorTests
         Assert.True(ok.Passed, ok.Message);
     }
 
+    [Fact]
+    public void Status_WithoutAnExpectedValue_SaysSoInsteadOfFailingSilently()
+    {
+        // `{ "kind": "status", "op": "eq", "value": "200" }` — the legacy
+        // tuple's keys on a v2.2 expectation — deserialises to an Equals
+        // with Expected null. The failure names the missing value.
+        var r = FlowExpectationEvaluator.Evaluate(
+            new FlowExpectation { Kind = FlowExpectationKind.Status, Operator = FlowExpectationOperator.Equals, Expected = null },
+            new FlowRequestEnvelope { Status = "OK" });
+        Assert.False(r.Passed);
+        Assert.Contains("no expected value", r.Message, StringComparison.Ordinal);
+        Assert.Contains("`value` / `op`", r.Message, StringComparison.Ordinal);
+    }
+
     // ---- Status × every operator that applies ----
 
     [Fact]

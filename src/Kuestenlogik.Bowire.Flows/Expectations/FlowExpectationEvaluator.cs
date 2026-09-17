@@ -295,14 +295,17 @@ public static class FlowExpectationEvaluator
             _ => "?",
         };
         var op = OperatorLabel(expectation.Operator);
-        var rhs = expectation.Operator switch
-        {
-            FlowExpectationOperator.Exists or FlowExpectationOperator.NotExists => string.Empty,
-            _ => " " + (expectation.Expected ?? string.Empty),
-        };
-        return passed
-            ? $"{subject} {op}{rhs} — {verb}"
-            : $"{subject} {op}{rhs} — {verb} (actual: {Trunc(actualText)})";
+        var needsExpected = expectation.Operator is not (FlowExpectationOperator.Exists or FlowExpectationOperator.NotExists);
+        var rhs = needsExpected ? " " + (expectation.Expected ?? string.Empty) : string.Empty;
+        if (passed) return $"{subject} {op}{rhs} — {verb}";
+        // A comparison against nothing is almost always an expectation
+        // written in the other shape — `value` where the v2.2 schema
+        // reads `expected`, `op` where it reads `operator` — and the
+        // silent null read as "status equals  — failed (actual: OK)":
+        // a failure with the reason cut out of the line.
+        if (needsExpected && expectation.Expected is null)
+            return $"{subject} {op} — {verb}: no expected value (actual: {Trunc(actualText)}) — an expectation carries `expected` and `operator`; `value` / `op` are the legacy assertion tuple's keys and are not read here";
+        return $"{subject} {op}{rhs} — {verb} (actual: {Trunc(actualText)})";
     }
 
     private static string OperatorLabel(FlowExpectationOperator op) => op switch
