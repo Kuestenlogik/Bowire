@@ -574,45 +574,12 @@ internal static class FlowTestRunner
     }
 
     /// <summary>
-    /// Where one flow's snapshot baselines live: <c>__snapshots__/</c> beside
-    /// the flow file, then a directory of the flow's own.
+    /// Where this flow's baselines live. The rule is
+    /// <see cref="FlowSnapshotStore"/>'s, so the workbench's approve action
+    /// writes the file this runner later reads.
     /// </summary>
-    /// <param name="flowPath">The file the flow was read from.</param>
-    /// <param name="flowId">
-    /// Set when the file is a workspace envelope holding several flows; null
-    /// for a file that is one flow.
-    /// </param>
-    /// <remarks>
-    /// <para>
-    /// Beside the flow file, and checked in with it, so baseline drift shows
-    /// up in the diff of the PR that caused it — the Jest convention, which
-    /// CI reviewers already know how to read.
-    /// </para>
-    /// <para>
-    /// Keyed by the file's stem for a file that is one flow. That is the
-    /// export format, and it is where every baseline already checked in
-    /// lives; keying those by id instead would orphan all of them.
-    /// </para>
-    /// <para>
-    /// Keyed by flow id inside an envelope, because there the stem is the
-    /// same for every flow in the workspace and step ids are only unique
-    /// within a flow. Two flows that both name a step <c>n1</c> shared one
-    /// baseline file, and the failure was silent: the second flow's response
-    /// was written over the first flow's truth, so the next run compared
-    /// against it and passed.
-    /// </para>
-    /// </remarks>
     internal static string SnapshotDirFor(string flowPath, string? flowId)
-    {
-        var dir = Path.GetDirectoryName(Path.GetFullPath(flowPath)) ?? ".";
-        var key = string.IsNullOrWhiteSpace(flowId)
-            ? Path.GetFileNameWithoutExtension(flowPath)
-            // A flow id comes off a file on disk, so it is not automatically
-            // one path segment. SafeFileName flattens it rather than letting
-            // it address a directory of its own choosing.
-            : SafeFileName(flowId);
-        return Path.Combine(dir, "__snapshots__", key);
-    }
+        => FlowSnapshotStore.DirectoryFor(flowPath, flowId);
 
     /// <summary>
     /// #171 — capture-once / diff-on-change. Missing baseline (or
@@ -626,7 +593,7 @@ internal static class FlowTestRunner
         FlowStep step, FlowStepRunResult result, string snapshotDir, bool update, CancellationToken ct)
     {
         var cfg = step.Snapshot!;
-        var file = Path.Combine(snapshotDir, SafeFileName(result.StepId) + ".snap.json");
+        var file = FlowSnapshotStore.FileFor(snapshotDir, result.StepId);
         var actual = result.ResponseBody ?? string.Empty;
 
         try
