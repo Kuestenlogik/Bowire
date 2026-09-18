@@ -72,6 +72,60 @@ public sealed class BowireProxyServerEdgeTests
     }
 
     [Fact]
+    public async Task A_Refusal_Closes_The_Connection_Instead_Of_Resetting_It()
+    {
+        // The proxy reads the request line, refuses, and leaves the rest of
+        // what the client sent unread. Closing a socket that still has unread
+        // data makes Windows send RST rather than FIN, and an RST lets the
+        // peer discard what is in its receive buffer -- including the 400
+        // already written. The client is then left with a transport error and
+        // nothing to report.
+        //
+        // Asserted as the close semantics rather than as "the 400 arrived":
+        // losing the response to the reset is timing-dependent and shows up
+        // only on a loaded machine, whereas whether the connection ends in
+        // FIN or RST does not depend on timing at all.
+        var ct = TestContext.Current.CancellationToken;
+        var store = new CapturedFlowStore();
+        await using var proxy = new BowireProxyServer(store, port: 0);
+        await proxy.StartAsync(ct);
+
+        using var tcp = new TcpClient();
+        await tcp.ConnectAsync(IPAddress.Loopback, proxy.Port, ct);
+        var stream = tcp.GetStream();
+        await stream.WriteAsync(
+            Encoding.ASCII.GetBytes(
+                "GIBBERISH\r\n"
+                + "X-Trailing: still-unread\r\n"
+                + "\r\n"
+                + """{"body":"never-parsed"}"""),
+            ct);
+        await stream.FlushAsync(ct);
+
+        using var received = new MemoryStream();
+        var buffer = new byte[512];
+        while (true)
+        {
+            int read;
+            try
+            {
+                read = await stream.ReadAsync(buffer, ct);
+            }
+            catch (IOException ex)
+            {
+                // This is the failure being guarded against: the peer reset
+                // the connection instead of closing it.
+                Assert.Fail("The proxy reset the connection rather than closing it: " + ex.Message);
+                throw;
+            }
+            if (read == 0) break;
+            await received.WriteAsync(buffer.AsMemory(0, read), ct);
+        }
+
+        Assert.Contains("400", Encoding.ASCII.GetString(received.ToArray()), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task HandlesMalformedConnectLine_Returns400()
     {
         var ct = TestContext.Current.CancellationToken;

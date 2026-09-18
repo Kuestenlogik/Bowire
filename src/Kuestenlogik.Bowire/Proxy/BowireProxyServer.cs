@@ -130,6 +130,9 @@ public sealed class BowireProxyServer : IAsyncDisposable
                 else
                 {
                     await HandlePlainHttpAsync(stream, requestLine, scheme: "http", ct).ConfigureAwait(false);
+                    // Closed deliberately rather than by dropping the socket;
+                    // see CloseGracefully.
+                    await CloseGracefullyAsync(client, ct).ConfigureAwait(false);
                 }
             }
         }
@@ -142,6 +145,54 @@ public sealed class BowireProxyServer : IAsyncDisposable
 #pragma warning restore CA1031
         {
             _logger?.LogWarning(ex, "bowire.proxy: connection handler failed");
+        }
+    }
+
+    /// <summary>
+    /// End a plain-HTTP connection so the response the client was just sent
+    /// actually reaches it.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Closing a socket that still has unread data in its receive buffer
+    /// makes Windows send RST rather than FIN, and an RST lets the peer
+    /// discard whatever of ours is sitting in its receive buffer — including
+    /// a response already written and flushed. A client that sends a
+    /// malformed request with anything after the request line therefore sees
+    /// "connection reset" where it should see "400 Bad Request", and has
+    /// nothing to report but a transport error.
+    /// </para>
+    /// <para>
+    /// There is always something left over on exactly that path: the request
+    /// line is read, the rest of the request is not. So: shut the sending
+    /// side down, which flushes our bytes and sends FIN, then read off what
+    /// the peer had already sent until it closes too. Bounded, because a peer
+    /// that neither closes nor stops talking must not hold the handler.
+    /// </para>
+    /// </remarks>
+    private static async Task CloseGracefullyAsync(TcpClient client, CancellationToken ct)
+    {
+        try
+        {
+            client.Client.Shutdown(SocketShutdown.Send);
+
+            using var drainTimeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            drainTimeout.CancelAfter(TimeSpan.FromSeconds(2));
+
+            var scratch = new byte[1024];
+            var stream = client.GetStream();
+            while (await stream.ReadAsync(scratch, drainTimeout.Token).ConfigureAwait(false) > 0)
+            {
+                // Discarded on purpose: the response said Connection: close,
+                // so anything still arriving is a request we will not answer.
+            }
+        }
+        catch (Exception ex) when (ex is IOException or SocketException
+                                      or ObjectDisposedException or OperationCanceledException)
+        {
+            // The peer went away, or took too long about it. Either way the
+            // socket is about to be disposed and there is nothing to report.
+            _ = ex;
         }
     }
 
