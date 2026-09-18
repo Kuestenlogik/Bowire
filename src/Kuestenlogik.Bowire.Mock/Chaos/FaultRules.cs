@@ -205,11 +205,12 @@ public sealed class FaultRule
     /// modelled. Set on a streaming step, this wins; on a unary one it is
     /// ignored, because there are no frames to count.
     /// <para>
-    /// Honoured today by the SSE, gRPC-streaming and WebSocket replays.
-    /// The GraphQL-subscription, SignalR and Socket.IO replays each have
-    /// their own frame loop and are not wired to it yet; on those a rule
-    /// carrying only <c>partialFrames</c> caps nothing, and
-    /// <c>partialBytes</c> still applies as it always did.
+    /// Honoured by every streaming replay: SSE, gRPC-streaming, WebSocket
+    /// (both its frame-list and merged-timeline shapes), GraphQL
+    /// subscriptions, SignalR and Socket.IO (text and binary emits alike).
+    /// Each spends the budget at its own send, so a frame the replay
+    /// skipped — a resumed client's, one with unusable payload — never
+    /// counts against it.
     /// </para>
     /// </remarks>
     [JsonPropertyName("partialFrames")]

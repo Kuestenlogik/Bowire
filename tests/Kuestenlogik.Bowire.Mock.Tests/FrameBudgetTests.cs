@@ -120,6 +120,54 @@ public sealed class FrameBudgetTests
         Assert.Contains("""{"n":4}""", body, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void Every_Streaming_Replay_Spends_The_Budget()
+    {
+        // The budget is spent per replay path, because only each path knows
+        // what one of its own frames is. That makes "did this one get
+        // wired?" a question the source can answer: a streaming replay with
+        // no StopAfter call is one that silently ignores the rule.
+        var source = File.ReadAllText(ReplayerSourcePath());
+
+        foreach (var method in new[]
+        {
+            "ReplaySseAsync",
+            "ReplayGrpcStreamAsync",
+            "ReplayWebSocketAsync",
+            "ReplayGraphQlSubscriptionAsync",
+            "ReplaySignalRAsync",
+            "ReplaySocketIoAsync",
+        })
+        {
+            // The declaration, not the first call site: slicing from a
+            // call lands in a neighbouring method and the check passes or
+            // fails for the wrong reason.
+            var declaration = "private static async Task<int> " + method + "(";
+            var start = source.IndexOf(declaration, StringComparison.Ordinal);
+            Assert.True(start >= 0, $"{method} declaration not found — renamed or reshaped?");
+            // Up to the next replay method, or the end of the file.
+            var next = source.IndexOf("private static async Task", start + declaration.Length, StringComparison.Ordinal);
+            var body = next > 0 ? source[start..next] : source[start..];
+            Assert.True(
+                body.Contains("FrameBudget.StopAfter", StringComparison.Ordinal),
+                $"{method} does not spend the frame budget — a partialFrames rule would not cap it.");
+        }
+    }
+
+    private static string ReplayerSourcePath()
+    {
+        // Walk up from the test binary to the repo root.
+        var dir = AppContext.BaseDirectory;
+        for (var i = 0; i < 8 && dir is not null; i++)
+        {
+            var candidate = Path.Combine(
+                dir, "src", "Kuestenlogik.Bowire.Mock", "Replay", "UnaryReplayer.cs");
+            if (File.Exists(candidate)) return candidate;
+            dir = Path.GetDirectoryName(dir);
+        }
+        throw new FileNotFoundException("UnaryReplayer.cs not found from " + AppContext.BaseDirectory);
+    }
+
     private static BowireRecording FiveFrames() => new()
     {
         Id = "rec_frame_budget",

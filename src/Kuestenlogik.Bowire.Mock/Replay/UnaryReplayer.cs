@@ -1347,6 +1347,10 @@ public static class UnaryReplayer
         var speed = options.ReplaySpeed;
         var pace = speed > 0;
 
+        // #170 - counted at the send: a frame RewriteGraphQlFrame declined
+        // never reached the client and must not spend the budget.
+        var emitted = 0;
+
         long lastTimestampMs = 0;
         var sawComplete = false;
 
@@ -1378,6 +1382,11 @@ public static class UnaryReplayer
                 System.Net.WebSockets.WebSocketMessageType.Text,
                 endOfMessage: true,
                 cancellationToken: ct);
+
+            // A truncated subscription gets no synthetic `complete`: the
+            // client sees a stream that stopped, which is the fault. The
+            // socket still closes, or aborts when the rule said drop.
+            if (Chaos.FrameBudget.StopAfter(ctx, ++emitted)) return 101;
         }
 
         // Every graphql-transport-ws subscription ends with a `complete` on
@@ -1714,6 +1723,9 @@ public static class UnaryReplayer
             var pace = speed > 0;
             long lastTimestampMs = 0;
 
+            // #170 - counted at the send: a frame with no SignalR payload
+            // never reached the client and must not spend the budget.
+            var emitted = 0;
             foreach (var frame in frames2)
             {
                 ct.ThrowIfCancellationRequested();
@@ -1741,6 +1753,11 @@ public static class UnaryReplayer
                 signalRJson = ResponseBodySubstitutor.Substitute(signalRJson);
 
                 await SendSignalRFrameAsync(socket, signalRJson, ct);
+
+                // A truncated push loop stops here; the socket still closes
+                // through the normal path below, or aborts when the rule
+                // said drop.
+                if (Chaos.FrameBudget.StopAfter(ctx, ++emitted)) break;
             }
         }
 
@@ -2288,6 +2305,10 @@ public static class UnaryReplayer
             var pace = speed > 0;
             long lastTimestampMs = 0;
 
+            // #170 - both emit paths below deliver a frame, so both spend
+            // the budget; a frame that formatted to nothing does not.
+            var emitted = 0;
+
             foreach (var frame in broadcasts)
             {
                 ct.ThrowIfCancellationRequested();
@@ -2327,6 +2348,8 @@ public static class UnaryReplayer
                     {
                         logger.LogWarning(ex, "socket.io-binary emit failed for frame {Index} of step {StepId}", frame.Index, step.Id);
                     }
+
+                    if (Chaos.FrameBudget.StopAfter(ctx, ++emitted)) break;
                     continue;
                 }
 
@@ -2343,6 +2366,8 @@ public static class UnaryReplayer
                 {
                     logger.LogWarning(ex, "socket.io-emit failed for frame {Index} of step {StepId}", frame.Index, step.Id);
                 }
+
+                if (Chaos.FrameBudget.StopAfter(ctx, ++emitted)) break;
             }
         }
 
