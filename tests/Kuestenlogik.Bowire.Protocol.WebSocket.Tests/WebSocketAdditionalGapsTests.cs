@@ -1,6 +1,7 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
+using Kuestenlogik.Bowire.Testing;
 using System.Net;
 using System.Net.WebSockets;
 using System.Reflection;
@@ -723,23 +724,20 @@ public sealed class WebSocketAdditionalGapsTests
         public static (HttpListener Listener, string Url, string Path) StartLoopback()
         {
             // HttpListener requires the prefix to be reserved; loopback
-            // works without admin on Windows + Linux. Bind a random
-            // free port to avoid cross-test collisions.
-            var port = GetFreePort();
-            var prefix = $"http://localhost:{port}/";
-            var listener = new HttpListener();
-            listener.Prefixes.Add(prefix);
-            listener.Start();
-            return (listener, $"ws://localhost:{port}/", "/");
+            // works without admin on Windows + Linux. It will not take port
+            // 0, so a port has to be named -- and between finding a free one
+            // and binding it, anything on the machine can take it. In a full
+            // solution run something did: two different tests in this class
+            // failed on two consecutive runs, fast, and both passed alone.
+            HttpListener? bound = null;
+            var port = LoopbackHost.OnAFreePort(p =>
+            {
+                bound = new HttpListener();
+                bound.Prefixes.Add($"http://localhost:{p}/");
+                bound.Start();
+            });
+            return (bound!, $"ws://localhost:{port}/", "/");
         }
 
-        private static int GetFreePort()
-        {
-            using var probe = new System.Net.Sockets.TcpListener(IPAddress.Loopback, 0);
-            probe.Start();
-            var port = ((IPEndPoint)probe.LocalEndpoint).Port;
-            probe.Stop();
-            return port;
-        }
     }
 }
