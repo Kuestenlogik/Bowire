@@ -48,6 +48,23 @@ public sealed class OtlpEnvelopeStore
         get { lock (_gate) { return _ring.Count; } }
     }
 
+    /// <summary>
+    /// How many subscribers are attached right now.
+    /// </summary>
+    /// <remarks>
+    /// For tests that have to publish <em>after</em> a subscriber is
+    /// listening. Attaching happens on the first <c>MoveNextAsync</c> of the
+    /// iterator, which a caller cannot otherwise observe, so the test that
+    /// needed it slept 50 ms and hoped — and on a loaded runner it lost, the
+    /// appends landing before anyone was listening and the subscriber then
+    /// waiting out its whole timeout. Waiting on this instead makes the test
+    /// wait for the thing it actually depends on.
+    /// </remarks>
+    internal int SubscriberCount
+    {
+        get { lock (_gate) { return _subscribers.Count; } }
+    }
+
     /// <summary>Add an envelope to the ring and notify every subscriber.</summary>
     public void Append(OtlpEnvelope envelope)
     {

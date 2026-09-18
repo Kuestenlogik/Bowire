@@ -106,8 +106,12 @@ public sealed class OtlpEnvelopeStoreTests
             return received;
         }, cts.Token);
 
-        // Give the subscriber a moment to attach.
-        await Task.Delay(50, cts.Token);
+        // Wait for the subscriber to be attached, not for a duration. The
+        // 50 ms sleep this replaces was enough on an idle machine and not on
+        // one running the whole solution: the appends landed before anyone
+        // was listening, and the subscriber then sat until its timeout.
+        await WaitForSubscriberAsync(store, cts.Token);
+
         store.Append(MakeEnvelope(OtlpSignalKind.Traces, "after-1"));
         store.Append(MakeEnvelope(OtlpSignalKind.Metrics, "after-2"));
 
@@ -115,6 +119,24 @@ public sealed class OtlpEnvelopeStoreTests
         Assert.Equal(2, got.Count);
         Assert.Equal("after-1", got[0].BodyJson);
         Assert.Equal("after-2", got[1].BodyJson);
+    }
+
+    /// <summary>
+    /// Block until <paramref name="store"/> has a subscriber attached.
+    /// </summary>
+    /// <remarks>
+    /// Attaching happens inside the iterator's first MoveNextAsync, so there
+    /// is nothing to await directly; the count is the one observable the
+    /// store offers. The token carries the test's own deadline, so a
+    /// subscriber that never attaches fails the test rather than hanging it.
+    /// </remarks>
+    private static async Task WaitForSubscriberAsync(OtlpEnvelopeStore store, CancellationToken ct)
+    {
+        while (store.SubscriberCount == 0)
+        {
+            ct.ThrowIfCancellationRequested();
+            await Task.Delay(5, ct);
+        }
     }
 
     private static OtlpEnvelope MakeEnvelope(OtlpSignalKind kind, string body) =>
