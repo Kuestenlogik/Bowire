@@ -24342,6 +24342,56 @@ not as the
     font: 400 13px/1 var(--bowire-font-mono, monospace);
 }
 
+/* ---- GraphQL operation picker (#292) ---- */
+/* Same geometry as the MCP kind picker: both sit in the second slot of the
+   request bar, so a differing height or border would show as a seam. */
+.bowire-request-builder-graphql-op-wrap { position: relative; display: inline-flex; }
+.bowire-request-builder-graphql-op-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 12px;
+    height: 36px;
+    min-width: 130px;
+    background: var(--bowire-bg-elevated);
+    border: 1px solid var(--bowire-border, #2a2a2a);
+    border-right: none;
+    color: var(--bowire-text);
+    cursor: pointer;
+    font: 600 12px/1 system-ui, sans-serif;
+}
+.bowire-request-builder-graphql-op-btn:hover,
+.bowire-request-builder-graphql-op-btn.is-open { background: var(--bowire-surface-hover); }
+.bowire-request-builder-graphql-op-caret { width: 12px; height: 12px; opacity: 0.7; }
+.bowire-request-builder-graphql-op-menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    z-index: 12;
+    background: var(--bowire-bg-elevated, #1a1a1a);
+    border: 1px solid var(--bowire-border, #2a2a2a);
+    border-radius: 6px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    padding: 4px;
+    min-width: 160px;
+}
+.bowire-request-builder-graphql-op-item {
+    display: block;
+    width: 100%;
+    padding: 6px 8px;
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    color: var(--bowire-text);
+    cursor: pointer;
+    text-align: left;
+    font: 400 13px/1 system-ui, sans-serif;
+}
+.bowire-request-builder-graphql-op-item:hover,
+.bowire-request-builder-graphql-op-item.is-selected {
+    background: var(--bowire-surface-hover);
+}
+
 /* ---- MQTT controls ---- */
 .bowire-request-builder-mqtt-action-wrap {
     display: inline-flex;

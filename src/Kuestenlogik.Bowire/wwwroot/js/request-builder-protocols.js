@@ -948,9 +948,10 @@
     }
 
     // Register response-pane overrides on the streaming layouts. The
-    // request/response layouts (REST, gRPC, MCP, GraphQL) keep the
-    // default — they all populate responseData / responseError on
-    // success and the default pane already handles them.
+    // request/response layouts (REST, gRPC, MCP) keep the default — they
+    // all populate responseData / responseError on success and the
+    // default pane already handles them. GraphQL is the one layout that
+    // is both, and decides per operation (see below).
     if (rbLayouts.websocket) {
         rbLayouts.websocket.renderResponse = function () {
             return _renderWsFrameLog();
@@ -965,6 +966,68 @@
         rbLayouts.sse.renderResponse = function () {
             return _renderSseEventLog();
         };
+    }
+    // GraphQL is half streaming: query and mutation want the default
+    // request/response pane, a subscription wants a frame log. Returning
+    // null for the first two hands the pane back to the default renderer
+    // rather than duplicating it here.
+    if (rbLayouts.graphql) {
+        rbLayouts.graphql.renderResponse = function (fr) {
+            var ps = rbProtoState(fr);
+            if (ps.operation !== 'subscription' && !rbConnState.gqlSubscribed
+                && rbConnState.gqlEvents.length === 0) {
+                return null;
+            }
+            return _renderGraphQLEventLog();
+        };
+    }
+
+    function _renderGraphQLEventLog() {
+        var S = activeState();
+        var pane = el('div', { className: 'bowire-request-builder-response is-streaming' });
+        var head = el('div', { className: 'bowire-pane-heading' });
+        head.appendChild(el('span', { textContent: t('rbGraphQL.events') }));
+        if (rbConnState.gqlSubscribed) {
+            head.appendChild(el('span', {
+                className: 'bowire-request-builder-ws-state-chip is-open',
+                textContent: t('rbGraphQL.subscribedChip')
+            }));
+        }
+        if (rbConnState.gqlEvents.length > 0) {
+            head.appendChild(_streamDownloadBtn('graphql-events', t('rbGraphQL.events'), rbConnState.gqlEvents, function (f) {
+                return { ts: f.ts, data: f.data, err: !!f.err };
+            }));
+        }
+        pane.appendChild(head);
+        if (S.responseError) {
+            var errOut = el('div', { className: 'bowire-response-output error' });
+            errOut.textContent = (typeof S.responseError === 'string')
+                ? S.responseError : (S.responseError.title || 'Error');
+            pane.appendChild(errOut);
+        }
+        if (rbConnState.gqlEvents.length === 0 && !S.responseError) {
+            pane.appendChild(el('div', {
+                className: 'bowire-response-empty',
+                textContent: rbConnState.gqlSubscribed
+                    ? t('rbGraphQL.waiting')
+                    : t('rbGraphQL.subscribeHint')
+            }));
+            return pane;
+        }
+        var list = el('div', { className: 'bowire-request-builder-stream-list' });
+        rbConnState.gqlEvents.slice().reverse().forEach(function (f) {
+            list.appendChild(el('div', {
+                className: 'bowire-request-builder-stream-row is-recv'
+                    + (f.err ? ' is-error' : '')
+            },
+                el('span', { className: 'bowire-request-builder-stream-dir', textContent: '←' }),
+                el('span', { className: 'bowire-request-builder-stream-data', textContent: f.data }),
+                el('span', { className: 'bowire-request-builder-stream-ts',
+                    textContent: _formatRelativeTs(f.ts) })
+            ));
+        });
+        pane.appendChild(list);
+        return pane;
     }
 
     function _renderWsFrameLog() {
@@ -1179,7 +1242,272 @@
         return pane;
     }
 
-    // ---- Outside-click close for gRPC + MCP menus ----
+    // ============================================================
+    // GraphQL (#292)
+    // ============================================================
+    //
+    // Standalone, like every other layout in this bar: the operation is
+    // typed here rather than taken from the Discover rail's selection. The
+    // schema-driven helpers in protocols.js (buildGraphQLDefaultQuery and
+    // friends) read `selectedMethod`, which a builder tab does not have --
+    // reusing them would have tied a tab to whatever the rail happened to
+    // be showing.
+    //
+    // The plugin accepts { query, variables } verbatim, which is exactly
+    // what this state is, so nothing has to be re-derived server-side.
+
+    var rbGraphQLOpMenuOpen = false;
+
+    function _renderGraphQLOperationPicker(fr) {
+        var ps = rbProtoState(fr);
+        // Not translated: these are the GraphQL keywords that go into the
+        // operation the user is writing, and the Query tab shows them as
+        // such.
+        var OPS = [
+            { id: 'query',        label: 'Query'        },  // i18n-exempt: protocol vocabulary: the word names something outside Bowire's own text
+            { id: 'mutation',     label: 'Mutation'     },  // i18n-exempt: protocol vocabulary: the word names something outside Bowire's own text
+            { id: 'subscription', label: 'Subscription' }  // i18n-exempt: protocol vocabulary: the word names something outside Bowire's own text
+        ];
+        var wrap = el('div', { className: 'bowire-request-builder-graphql-op-wrap' });
+        var current = OPS.find(function (o) { return o.id === ps.operation; }) || OPS[0];
+        wrap.appendChild(el('button', {
+            type: 'button',
+            className: 'bowire-request-builder-graphql-op-btn' + (rbGraphQLOpMenuOpen ? ' is-open' : ''),
+            'aria-haspopup': 'listbox',
+            'aria-expanded': rbGraphQLOpMenuOpen ? 'true' : 'false',
+            onClick: function (e) {
+                e.stopPropagation();
+                rbGraphQLOpMenuOpen = !rbGraphQLOpMenuOpen;
+                render();
+            }
+        },
+            el('span', { textContent: current.label }),
+            el('span', { className: 'bowire-request-builder-graphql-op-caret', innerHTML: svgIcon('chevronDown') })
+        ));
+        if (rbGraphQLOpMenuOpen) {
+            var menu = el('div', {
+                className: 'bowire-request-builder-graphql-op-menu',
+                role: 'listbox',
+                onClick: function (e) { e.stopPropagation(); }
+            });
+            OPS.forEach(function (o) {
+                menu.appendChild(el('button', {
+                    type: 'button',
+                    className: 'bowire-request-builder-graphql-op-item' + (o.id === current.id ? ' is-selected' : ''),
+                    role: 'option',
+                    onClick: function () {
+                        ps.operation = o.id;
+                        rbGraphQLOpMenuOpen = false;
+                        render();
+                    }
+                }, o.label));
+            });
+            wrap.appendChild(menu);
+        }
+        return wrap;
+    }
+
+    function _renderGraphQLQueryTab(fr, ps) {
+        var pane = el('div', { className: 'bowire-request-builder-tab-body' });
+        pane.appendChild(el('textarea', {
+            className: 'bowire-request-builder-code',
+            spellcheck: false,
+            placeholder: t('rbGraphQL.queryPlaceholder', { operation: ps.operation || 'query' }),
+            value: ps.query || '',
+            onInput: function (e) { ps.query = e.target.value; }
+        }));
+        return pane;
+    }
+
+    function _renderGraphQLVariablesTab(fr, ps) {
+        var pane = el('div', { className: 'bowire-request-builder-tab-body' });
+        pane.appendChild(el('textarea', {
+            className: 'bowire-request-builder-code',
+            spellcheck: false,
+            placeholder: '{ "id": "42" }',
+            value: ps.variables || '{}',
+            onInput: function (e) { ps.variables = e.target.value; }
+        }));
+        return pane;
+    }
+
+    /// Send the operation as it stands.
+    async function _executeGraphQLRequest(fr) {
+        var S = activeState();
+        if (!fr.serverUrl || !fr.serverUrl.trim()) {
+            if (typeof toast === 'function') toast(t('rbGraphQL.needsUrl'), 'error');
+            return;
+        }
+        var ps = rbProtoState(fr);
+        if (!ps.query || !ps.query.trim()) {
+            if (typeof toast === 'function') toast(t('rbGraphQL.needsQuery'), 'error');
+            return;
+        }
+
+        var url = fr.serverUrl;
+        var query = ps.query;
+        var variablesJson = ps.variables || '{}';
+        try {
+            if (typeof substituteVars === 'function') {
+                url = substituteVars(url);
+                query = substituteVars(query);
+                variablesJson = substituteVars(variablesJson);
+            }
+        } catch (_) { /* leave as typed */ }
+
+        // Refused rather than silently sent as {}: variables that do not
+        // parse are a typo in the pane the operator is looking at, and an
+        // empty object would come back as "field required" from the server
+        // instead.
+        var variables;
+        try {
+            variables = JSON.parse(variablesJson || '{}');
+            if (!variables || typeof variables !== 'object' || Array.isArray(variables)) throw new Error('not an object');
+        } catch (e) {
+            if (typeof toast === 'function') toast(t('rbGraphQL.badVariables', { error: e.message }), 'error');
+            return;
+        }
+
+        var metadata = (typeof effectiveRequestHeaderObject === 'function')
+            ? effectiveRequestHeaderObject(ps.metadata || [], {
+                substituteLibrary: typeof substituteVars === 'function' ? substituteVars : null
+            })
+            : _kvToObject(ps.metadata || []);
+        _applyHoppAuthToMetadata(fr, metadata);
+
+        // The operation name, for the console line and the history row. The
+        // wire does not need it -- the query carries its own -- but a log of
+        // "graphql" repeated twenty times tells the operator nothing.
+        var opName = _graphQLOperationName(query) || (ps.operation || 'query');
+
+        // A subscription is a long-lived stream, so it does not go through
+        // the request/response pane at all: it toggles like the MQTT
+        // subscribe button and writes into a frame log. The plugin picks
+        // graphql-transport-ws when the WebSocket plugin is present and
+        // falls back to graphql-sse; either way what reaches the browser
+        // here is the workbench's own SSE relay.
+        if (ps.operation === 'subscription') {
+            if (rbConnState.gqlSubscribed) {
+                try { if (rbConnState.gqlSource) rbConnState.gqlSource.close(); } catch (_) {}
+                rbConnState.gqlSource = null;
+                rbConnState.gqlSubscribed = false;
+                if (typeof toast === 'function') toast(t('rbGraphQL.unsubscribed', { name: opName }), 'info');
+                render();
+                return;
+            }
+            var streamUrl = config.prefix + '/api/invoke/stream'
+                + '?service=graphql'
+                + '&method=' + encodeURIComponent(opName)
+                + '&messages=' + encodeURIComponent(JSON.stringify([JSON.stringify({ query: query, variables: variables })]))
+                + '&protocol=graphql'
+                + '&metadata=' + encodeURIComponent(JSON.stringify(metadata))
+                + '&serverUrl=' + encodeURIComponent(url);
+            try {
+                var src = new EventSource(streamUrl);
+                rbConnState.gqlSource = src;
+                rbConnState.gqlSubscribed = true;
+                rbConnState.gqlEvents = [];
+                src.onmessage = function (ev) {
+                    rbConnState.gqlEvents.push({ data: ev.data, ts: Date.now() });
+                    if (rbConnState.gqlEvents.length > 500) rbConnState.gqlEvents.shift();
+                    // Coalesced, as MQTT is: a chatty subscription must not
+                    // drive the repaint rate of the whole workbench (#551).
+                    scheduleRender();
+                };
+                src.onerror = function () {
+                    rbConnState.gqlEvents.push({ data: '[stream error]', ts: Date.now(), err: true });
+                    rbConnState.gqlSubscribed = false;
+                    try { src.close(); } catch (_) {}
+                    rbConnState.gqlSource = null;
+                    render();
+                };
+                if (typeof toast === 'function') toast(t('rbGraphQL.subscribed', { name: opName }), 'success');
+            } catch (e) {
+                if (typeof toast === 'function') toast(t('rbGraphQL.subscribeFailed', { reason: e.message }), 'error');
+            }
+            if (typeof addConsoleEntry === 'function') {
+                addConsoleEntry({ type: 'request', method: '[GraphQL sub] ' + opName, body: query });
+            }
+            try { pushHoppHistoryEntry(fr, { status: 'Subscribed', durationMs: 0, ok: true }); }  // i18n-exempt: status label, carried on the console entry and the run summary
+            catch (_) {}
+            render();
+            return;
+        }
+
+        S.isExecuting = true;
+        S.responseData = null;
+        S.responseError = null;
+        if (typeof markJobActive === 'function') markJobActive('request-builder', opName);
+        render();
+
+        if (typeof addConsoleEntry === 'function') {
+            addConsoleEntry({ type: 'request', method: '[GraphQL] ' + opName, body: query });
+        }
+
+        var historyOutcome = { status: null, durationMs: null, ok: false };
+        var historyStartMs = performance.now();
+
+        try {
+            var resp = await fetch(config.prefix + '/api/invoke?serverUrl=' + encodeURIComponent(url), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    service: 'graphql',
+                    method: opName,
+                    // The plugin takes this shape verbatim. Sending variables
+                    // alone would have it synthesise an operation, which is
+                    // the opposite of what a hand-written query is for.
+                    messages: [JSON.stringify({ query: query, variables: variables })],
+                    metadata: Object.keys(metadata).length > 0 ? metadata : null,
+                    protocol: 'graphql'
+                })
+            });
+            var result = await resp.json();
+            historyOutcome.durationMs = result && result.duration_ms != null
+                ? result.duration_ms : Math.round(performance.now() - historyStartMs);
+            if (result.title) {
+                S.responseError = result;
+                historyOutcome.status = result.status != null ? result.status : 'Error';  // i18n-exempt: status label, carried on the console entry and the run summary
+                historyOutcome.ok = false;
+            } else {
+                S.responseData = result.response;
+                historyOutcome.status = result.status != null ? result.status : 200;
+                // A GraphQL server answers 200 with an `errors` array, so
+                // the transport status is not the outcome. The history row
+                // says failed when the response carries errors.
+                historyOutcome.ok = !_graphQLHasErrors(result.response);
+            }
+        } catch (e) {
+            S.responseError = { title: e.message };
+            historyOutcome.status = 'Error';  // i18n-exempt: status label, carried on the console entry and the run summary
+            historyOutcome.ok = false;
+        }
+
+        try { pushHoppHistoryEntry(fr, historyOutcome); }
+        catch (e) { console.warn('[request-builder-history] GraphQL push failed', e); }
+
+        S.isExecuting = false;
+        if (typeof markJobDone === 'function') markJobDone('request-builder', opName);
+        render();
+    }
+
+    /// The operation name out of a query string, or null when it is anonymous.
+    function _graphQLOperationName(query) {
+        var m = /^\s*(?:query|mutation|subscription)\s+([A-Za-z_][A-Za-z0-9_]*)/.exec(query || '');
+        return m ? m[1] : null;
+    }
+
+    /// Whether a GraphQL response carries an errors array.
+    function _graphQLHasErrors(response) {
+        try {
+            var doc = typeof response === 'string' ? JSON.parse(response) : response;
+            return !!(doc && Array.isArray(doc.errors) && doc.errors.length > 0);
+        } catch (_) {
+            return false;
+        }
+    }
+
+    // ---- Outside-click close for the gRPC / MCP / GraphQL menus ----
     document.addEventListener('click', function (e) {
         var changed = false;
         if (rbGrpcMenuOpen) {
@@ -1189,6 +1517,10 @@
         if (rbMcpKindMenuOpen) {
             var w2 = e.target.closest && e.target.closest('.bowire-request-builder-mcp-kind-wrap');
             if (!w2) { rbMcpKindMenuOpen = false; changed = true; }
+        }
+        if (rbGraphQLOpMenuOpen) {
+            var w3 = e.target.closest && e.target.closest('.bowire-request-builder-graphql-op-wrap');
+            if (!w3) { rbGraphQLOpMenuOpen = false; changed = true; }
         }
         if (changed) render();
     });

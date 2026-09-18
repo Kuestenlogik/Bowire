@@ -129,13 +129,20 @@
         mqttFrames: [],
         // SSE
         sseSource: null,
-        sseEvents: []              // [{ event, data, id, ts }]
+        sseEvents: [],             // [{ event, data, id, ts }]
+        // GraphQL subscriptions (#292). Query and mutation stay on the
+        // default request/response pane; only a subscription opens a
+        // stream, so these stay null for the other two operations.
+        gqlSubscribed: false,
+        gqlSource: null,
+        gqlEvents: []              // [{ data, ts, err }]
     };
 
     function rbConnReset() {
         try { if (rbConnState.wsSocket) rbConnState.wsSocket.close(); } catch (_) {}
         try { if (rbConnState.mqttSource) rbConnState.mqttSource.close(); } catch (_) {}
         try { if (rbConnState.sseSource) rbConnState.sseSource.close(); } catch (_) {}
+        try { if (rbConnState.gqlSource) rbConnState.gqlSource.close(); } catch (_) {}
         rbConnState.wsSocket = null;
         rbConnState.wsState = 'idle';
         rbConnState.wsFrames = [];
@@ -144,6 +151,9 @@
         rbConnState.mqttFrames = [];
         rbConnState.sseSource = null;
         rbConnState.sseEvents = [];
+        rbConnState.gqlSource = null;
+        rbConnState.gqlSubscribed = false;
+        rbConnState.gqlEvents = [];
     }
     // #290 — history dropdown (clock icon, between URL input and the
     // send button cluster). Closed by default; toggled by the clock
@@ -3147,6 +3157,63 @@
             return rbConnState.sseSource ? t('channel.disconnect') : t('channel.connect');
         },
         execute: function (fr) { return _executeSseRequest(fr); }
+    });
+
+
+    // ---- GraphQL descriptor (Phase D, #292) ----
+    //
+    // Bar shape: [GraphQL v] [Query/Mutation/Subscription v] [Endpoint] [Send].
+    //
+    // The operation is written here rather than derived from a discovered
+    // schema: a builder tab is standalone, the way the gRPC and MCP tabs
+    // are. The plugin takes { query, variables } verbatim, so what is typed
+    // is what is sent.
+    registerRequestBuilderLayout({
+        id: 'graphql',
+        label: 'GraphQL',  // i18n-exempt: protocol vocabulary: the word names something outside Bowire's own text
+        urlPlaceholder: 'https://api.example.com/graphql',
+        defaults: function () {
+            return {
+                operation: 'query',   // 'query' | 'mutation' | 'subscription'
+                query: '',
+                variables: '{}',
+                metadata: []
+            };
+        },
+        secondControl: function (fr) { return _renderGraphQLOperationPicker(fr); },
+        subTabs: function (fr) {
+            return [
+                { id: 'query',     labelKey: 'rb.tab.query'     },
+                { id: 'variables', labelKey: 'rb.tab.variables' },
+                { id: 'headers',   labelKey: 'rb.tab.headers',
+                  badge: function (f) { return _activeKvCount(rbProtoState(f).metadata); } },
+                { id: 'auth',      labelKey: 'rb.tab.auth' },
+                { id: 'pre',       labelKey: 'rb.tab.pre' },
+                { id: 'post',      labelKey: 'rb.tab.post' },
+                { id: 'vars',      labelKey: 'rb.tab.vars' }
+            ];
+        },
+        renderTab: function (fr, tabId) {
+            var ps = rbProtoState(fr);
+            switch (tabId) {
+                case 'query':     return _renderGraphQLQueryTab(fr, ps);
+                case 'variables': return _renderGraphQLVariablesTab(fr, ps);
+                case 'headers':   return _renderHoppKvTable(ps.metadata, {
+                    headerLibrary: true,
+                    keyPlaceholder: t('rb.tab.header'), valuePlaceholder: t('rb.kv.value'), descPlaceholder: t('rb.kv.description')
+                });
+                default:          return _renderCommonTabBody(fr, tabId);
+            }
+        },
+        executeLabel: function (fr) {
+            // Same shape as the MQTT subscribe button: a subscription is a
+            // toggle, a query or mutation is a one-shot send.
+            if (rbProtoState(fr).operation === 'subscription') {
+                return rbConnState.gqlSubscribed ? 'Unsubscribe' : 'Subscribe';  // i18n-exempt: protocol vocabulary: the word names something outside Bowire's own text
+            }
+            return t('main.execute');
+        },
+        execute: function (fr) { return _executeGraphQLRequest(fr); }
     });
 
 

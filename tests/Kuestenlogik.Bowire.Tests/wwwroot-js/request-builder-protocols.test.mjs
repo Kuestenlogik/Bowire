@@ -55,11 +55,19 @@ const _prelude = `
     var isExecuting = false;
     function markJobStart() {}
     function markJobDone() {}
+    // prologue.js's per-tab state bag: the response panes read it for
+    // responseData / responseError.
+    var _tabState = {};
+    function activeState() { return _tabState; }
 `;
 const _postlude = `
     return {
         _safeParseJsonObject: _safeParseJsonObject,
-        _getLayouts: function () { return rbLayouts; }
+        _getLayouts: function () { return rbLayouts; },
+        _graphQLOperationName: _graphQLOperationName,
+        _graphQLHasErrors: _graphQLHasErrors,
+        _connState: function () { return rbConnState; },
+        _protoState: function (fr) { return rbProtoState(fr); }
     };
 `;
 const _loadProtocols = compileFragment(
@@ -127,7 +135,7 @@ test('protocols fragment registers each non-REST layout under its id', () => {
     const sb = loadProtocols();
     const layouts = sb._getLayouts();
     // rest comes from request-builder.js itself; the others land here.
-    for (const id of ['grpc', 'mcp', 'mqtt', 'websocket', 'sse']) {
+    for (const id of ['grpc', 'mcp', 'mqtt', 'websocket', 'sse', 'graphql']) {
         assert.ok(layouts[id], 'missing layout for ' + id);
         assert.equal(typeof layouts[id].subTabs, 'function', id + '.subTabs');
     }
@@ -136,7 +144,7 @@ test('protocols fragment registers each non-REST layout under its id', () => {
 test('each registered protocol layout exposes execute + executeLabel', () => {
     const sb = loadProtocols();
     const layouts = sb._getLayouts();
-    for (const id of ['grpc', 'mcp', 'mqtt', 'websocket', 'sse']) {
+    for (const id of ['grpc', 'mcp', 'mqtt', 'websocket', 'sse', 'graphql']) {
         assert.equal(typeof layouts[id].execute, 'function', id + '.execute');
         assert.equal(typeof layouts[id].executeLabel, 'function', id + '.executeLabel');
     }
@@ -149,7 +157,7 @@ test('each protocol layout subTabs returns a non-empty list of named tabs', () =
     const sb = loadProtocols();
     const layouts = sb._getLayouts();
     const fr = { _requestBuilder: { protocol: 'grpc', params: [], headers: [], byProtocol: {} } };
-    for (const id of ['grpc', 'mcp', 'mqtt', 'websocket', 'sse']) {
+    for (const id of ['grpc', 'mcp', 'mqtt', 'websocket', 'sse', 'graphql']) {
         fr._requestBuilder.protocol = id;
         const tabs = layouts[id].subTabs(fr);
         assert.ok(Array.isArray(tabs), id + '.subTabs returns array');
@@ -165,11 +173,118 @@ test('each protocol layout subTabs returns a non-empty list of named tabs', () =
 test('mqtt + sse + ws + grpc layouts expose a defaults() factory', () => {
     const sb = loadProtocols();
     const layouts = sb._getLayouts();
-    for (const id of ['grpc', 'mcp', 'mqtt', 'websocket', 'sse']) {
+    for (const id of ['grpc', 'mcp', 'mqtt', 'websocket', 'sse', 'graphql']) {
         if (typeof layouts[id].defaults === 'function') {
             const d = layouts[id].defaults();
             assert.equal(typeof d, 'object');
             assert.ok(d !== null);
         }
+    }
+});
+
+// ---- GraphQL (#292) ----
+
+function graphqlFrame(over) {
+    // A bar parked on the GraphQL layout, with the scratch bag seeded the
+    // way rbProtoState would seed it.
+    return {
+        serverUrl: 'https://api.example.com/graphql',
+        _requestBuilder: {
+            protocol: 'graphql', params: [], headers: [],
+            byProtocol: { graphql: Object.assign({ operation: 'query', query: '', variables: '{}', metadata: [] }, over || {}) }
+        }
+    };
+}
+
+test('graphql layout: defaults seed a query with empty variables object', () => {
+    const sb = loadProtocols();
+    const d = sb._getLayouts().graphql.defaults();
+    assert.equal(d.operation, 'query');
+    assert.equal(d.query, '');
+    // '{}' rather than '' — the Variables pane shows a parseable document
+    // from the first render, so the operator edits rather than starts over.
+    assert.equal(d.variables, '{}');
+    assert.deepEqual(d.metadata, []);
+});
+
+test('graphql layout: the query + variables tabs come before the shared ones', () => {
+    const sb = loadProtocols();
+    const tabs = sb._getLayouts().graphql.subTabs(graphqlFrame()).map((x) => x.id);
+    assert.deepEqual(tabs.slice(0, 2), ['query', 'variables']);
+    for (const shared of ['headers', 'auth', 'pre', 'post', 'vars']) {
+        assert.ok(tabs.includes(shared), 'missing shared tab ' + shared);
+    }
+});
+
+test('_graphQLOperationName: named operations, any root type', () => {
+    const sb = loadProtocols();
+    assert.equal(sb._graphQLOperationName('query GetUser($id: ID!) { user(id: $id) { id } }'), 'GetUser');
+    assert.equal(sb._graphQLOperationName('mutation AddUser { addUser { id } }'), 'AddUser');
+    assert.equal(sb._graphQLOperationName('subscription OnTick { tick }'), 'OnTick');
+    assert.equal(sb._graphQLOperationName('   query  Padded { a }'), 'Padded');
+});
+
+test('_graphQLOperationName: anonymous and shorthand operations have no name', () => {
+    const sb = loadProtocols();
+    // `{ user { id } }` is a legal anonymous query — there is no name to
+    // show, and the caller falls back to the operation keyword.
+    assert.equal(sb._graphQLOperationName('{ user { id } }'), null);
+    assert.equal(sb._graphQLOperationName('query { user { id } }'), null);
+    assert.equal(sb._graphQLOperationName(''), null);
+    assert.equal(sb._graphQLOperationName(null), null);
+});
+
+test('_graphQLHasErrors: a 200 carrying an errors array is not a success', () => {
+    const sb = loadProtocols();
+    // The whole point of the helper: GraphQL answers 200 for a failed
+    // operation, so the transport status cannot decide the history row.
+    assert.equal(sb._graphQLHasErrors('{"data":null,"errors":[{"message":"boom"}]}'), true);
+    assert.equal(sb._graphQLHasErrors({ data: null, errors: [{ message: 'boom' }] }), true);
+});
+
+test('_graphQLHasErrors: no errors key, empty array or unparseable body → no errors', () => {
+    const sb = loadProtocols();
+    assert.equal(sb._graphQLHasErrors('{"data":{"user":{"id":"1"}}}'), false);
+    assert.equal(sb._graphQLHasErrors('{"data":null,"errors":[]}'), false);
+    assert.equal(sb._graphQLHasErrors('not json'), false);
+    assert.equal(sb._graphQLHasErrors(null), false);
+});
+
+test('graphql executeLabel: query and mutation send, subscription toggles', () => {
+    const sb = loadProtocols();
+    const layout = sb._getLayouts().graphql;
+    assert.equal(layout.executeLabel(graphqlFrame({ operation: 'query' })), 'Execute');
+    assert.equal(layout.executeLabel(graphqlFrame({ operation: 'mutation' })), 'Execute');
+    assert.equal(layout.executeLabel(graphqlFrame({ operation: 'subscription' })), 'Subscribe');
+    sb._connState().gqlSubscribed = true;
+    assert.equal(layout.executeLabel(graphqlFrame({ operation: 'subscription' })), 'Unsubscribe');
+    sb._connState().gqlSubscribed = false;
+});
+
+test('graphql renderResponse: query and mutation keep the default pane', () => {
+    // Returning null is what hands the pane back to the shared renderer —
+    // a GraphQL query result is an ordinary response body, not a frame log.
+    const sb = loadProtocols();
+    const layout = sb._getLayouts().graphql;
+    assert.equal(layout.renderResponse(graphqlFrame({ operation: 'query' })), null);
+    assert.equal(layout.renderResponse(graphqlFrame({ operation: 'mutation' })), null);
+});
+
+test('graphql renderResponse: a subscription takes over the pane', () => {
+    const sb = loadProtocols();
+    const layout = sb._getLayouts().graphql;
+    assert.notEqual(layout.renderResponse(graphqlFrame({ operation: 'subscription' })), null);
+});
+
+test('graphql renderResponse: events already received survive a switch back to query', () => {
+    // Switching the picker back to Query must not blank a log the operator
+    // is still reading.
+    const sb = loadProtocols();
+    const layout = sb._getLayouts().graphql;
+    sb._connState().gqlEvents = [{ data: '{"data":{"tick":1}}', ts: Date.now() }];
+    try {
+        assert.notEqual(layout.renderResponse(graphqlFrame({ operation: 'query' })), null);
+    } finally {
+        sb._connState().gqlEvents = [];
     }
 });
