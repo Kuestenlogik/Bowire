@@ -79,6 +79,110 @@
             + (ws && ws.storageRoot ? '&storageRoot=' + encodeURIComponent(ws.storageRoot) : '');
     }
 
+    // The same pair _flowsWsQuery puts in a query string, for the routes
+    // that take a body. Baselines live beside the workspace's flows, so the
+    // server needs to know which workspace before it can find them.
+    function _flowsWsScope() {
+        var wsId = (typeof activeWorkspaceId === 'string' && activeWorkspaceId) ? activeWorkspaceId : '';
+        var ws = (typeof activeWorkspace === 'function') ? activeWorkspace() : null;
+        return {
+            workspaceId: wsId,
+            storageRoot: (ws && ws.storageRoot) ? ws.storageRoot : null
+        };
+    }
+
+    /**
+     * #171 — ask the server how this step's response compares with its
+     * baseline, and hang the answer on the run result.
+     *
+     * The comparison is the server's because it has to be the CLI's: a diff
+     * written in JavaScript would drift, and the drift would read as a
+     * workbench saying a snapshot holds while CI says it does not. The
+     * browser cannot reach __snapshots__/ anyway.
+     */
+    async function evaluateSnapshot(flowId, node, result) {
+        if (!node.snapshot || node.snapshot.enabled === false) return;
+        if (!result || result.error || !result.response) return;
+
+        var scope = _flowsWsScope();
+        // Without a workspace there is no file to sit beside. Said on the
+        // result rather than silently skipped, because a snapshot that is
+        // quietly not being checked is worse than one that says it cannot be.
+        if (!scope.workspaceId) {
+            result.snapshot = { unavailable: t('flows.snapshotNeedsWorkspace') };
+            return;
+        }
+
+        try {
+            var resp = await fetch(config.prefix + '/api/flows/snapshot/compare', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    workspaceId: scope.workspaceId,
+                    storageRoot: scope.storageRoot,
+                    flowId: flowId,
+                    stepId: node.id,
+                    actual: bodyTextOf(result.response),
+                    mode: node.snapshot.mode || 'exact',
+                    ignore: node.snapshot.ignore || []
+                })
+            });
+            var data = await resp.json();
+            if (!resp.ok) {
+                result.snapshot = { unavailable: data && data.error ? data.error : t('flows.snapshotFailed') };
+                return;
+            }
+            result.snapshot = data;
+            // Drift fails the step, the same way it fails a CLI run. A
+            // snapshot that only colours a panel is not a test.
+            if (data.captured && data.diffs && data.diffs.length > 0) {
+                result.pass = false;
+            }
+        } catch (e) {
+            result.snapshot = { unavailable: e.message };
+        }
+    }
+
+    /** Make this step's response its new baseline (#171). */
+    async function approveSnapshot(flowId, node) {
+        var result = flowRunResults[node.id];
+        if (!result || !result.response) return;
+        var scope = _flowsWsScope();
+        if (!scope.workspaceId) return;
+
+        try {
+            var resp = await fetch(config.prefix + '/api/flows/snapshot/approve', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    workspaceId: scope.workspaceId,
+                    storageRoot: scope.storageRoot,
+                    flowId: flowId,
+                    stepId: node.id,
+                    actual: bodyTextOf(result.response)
+                })
+            });
+            var data = await resp.json();
+            if (!resp.ok) {
+                result.snapshot = { unavailable: data && data.error ? data.error : t('flows.snapshotFailed') };
+            } else {
+                // The file is named because it lands in the person's commit.
+                result.snapshot = { captured: true, diffs: [], file: data.file, justApproved: true };
+                result.pass = true;
+            }
+        } catch (e) {
+            result.snapshot = { unavailable: e.message };
+        }
+        render();
+    }
+
+    /** The response body as the text a baseline is made of. */
+    function bodyTextOf(response) {
+        if (response === null || response === undefined) return '';
+        if (typeof response === 'string') return response;
+        try { return JSON.stringify(response); } catch { return String(response); }
+    }
+
     var _flowsDiskSyncTimer = null;
     function scheduleFlowsDiskSync() {
         if (_flowsDiskSyncTimer) clearTimeout(_flowsDiskSyncTimer);
@@ -370,6 +474,7 @@
                     ? await executeDataDrivenRequest(node)
                     : await executeFlowRequest(node);
                 result.durationMs = Math.round(performance.now() - t0);
+                await evaluateSnapshot(flowRunFlowId, node, result);
                 flowRunResults[node.id] = result;
                 if (result.response) captureResponse(result.response);
 
@@ -1738,6 +1843,70 @@
                         }
                         viewer.appendChild(rowList);
                     }
+                    // #171 — snapshot: what drifted, and the one action that
+                    // resolves it. Re-baselining used to mean leaving here
+                    // for `bowire test --update-snapshots`, so the person
+                    // who could see the drift could not act on it.
+                    if (runResult.snapshot) {
+                        var snap = runResult.snapshot;
+                        var snapBox = el('div', { className: 'bowire-flow-assertion-results' });
+
+                        if (snap.unavailable) {
+                            snapBox.appendChild(el('div', {
+                                className: 'bowire-flow-assertion-result fail',
+                                textContent: t('flows.snapshotUnavailable', { reason: snap.unavailable })
+                            }));
+                        } else if (!snap.captured) {
+                            // Not the same as "no differences": nothing has
+                            // been guarding this step at all.
+                            snapBox.appendChild(el('div', {
+                                className: 'bowire-flow-assertion-result',
+                                textContent: t('flows.snapshotNone')
+                            }));
+                        } else if (snap.justApproved) {
+                            snapBox.appendChild(el('div', {
+                                className: 'bowire-flow-assertion-result pass',
+                                textContent: t('flows.snapshotApproved', { file: snap.file })
+                            }));
+                        } else if (!snap.diffs || snap.diffs.length === 0) {
+                            snapBox.appendChild(el('div', {
+                                className: 'bowire-flow-assertion-result pass',
+                                textContent: t('flows.snapshotHolds')
+                            }));
+                        } else {
+                            snapBox.appendChild(el('div', {
+                                className: 'bowire-flow-assertion-result fail',
+                                textContent: t('flows.snapshotDrift', { count: snap.diffs.length })
+                            }));
+                            for (var sdi = 0; sdi < snap.diffs.length; sdi++) {
+                                snapBox.appendChild(el('div', {
+                                    className: 'bowire-flow-assertion-result fail',
+                                    textContent: snap.diffs[sdi]
+                                }));
+                            }
+                        }
+
+                        // Offered whenever there is something to accept --
+                        // drift, or a step with no baseline yet.
+                        if (!snap.unavailable && !snap.justApproved
+                            && (!snap.captured || (snap.diffs && snap.diffs.length > 0))) {
+                            (function (capturedNode) {
+                                snapBox.appendChild(el('button', {
+                                    className: 'bowire-flow-card-action-btn',
+                                    textContent: snap.captured
+                                        ? t('flows.snapshotApprove')
+                                        : t('flows.snapshotCapture'),
+                                    onClick: function (e) {
+                                        e.stopPropagation();
+                                        approveSnapshot(flow.id, capturedNode);
+                                    }
+                                }));
+                            })(node);
+                        }
+
+                        viewer.appendChild(snapBox);
+                    }
+
                     // Assertion outcomes — one row per evaluated tuple.
                     if (Array.isArray(runResult.assertions) && runResult.assertions.length > 0) {
                         var assertList = el('div', { className: 'bowire-flow-assertion-results' });
