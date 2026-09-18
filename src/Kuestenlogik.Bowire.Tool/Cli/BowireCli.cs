@@ -1480,15 +1480,8 @@ internal static class BowireCli
             if (!string.IsNullOrEmpty(wsId))
             {
                 // #365 — the id is what the workbench shows and what a person
-                // would say out loud, so it is what CI can name.
-                //
-                // The storage root has to be settled first. A host does this
-                // on start-up; a bare CLI command never did, so anything
-                // resolving through the user store read ~/.bowire whatever
-                // BOWIRE_DATA_DIR or a project manifest said. The path form
-                // is unaffected -- it is handed a directory -- but an id is
-                // only meaningful relative to a store.
-                Kuestenlogik.Bowire.Projects.BowireStorageRoot.Apply();
+                // would say out loud, so it is what CI can name. Which store
+                // it is looked up in was settled at start-up.
                 return await TestRunner.RunWorkspaceIdAsync(wsId, options, stdout, stderr).ConfigureAwait(false);
             }
             if (!string.IsNullOrEmpty(wsDir))

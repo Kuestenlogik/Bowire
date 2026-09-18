@@ -67,10 +67,29 @@ public sealed class DefaultBowireUserStore : IBowireUserStore, IBowireStorageRoo
         ".bowire");
 
     /// <summary>
-    /// The machine-wide store: <c>~/.bowire/</c>, shared by every workspace on
-    /// this machine. Still the default — a host opts into anything else.
+    /// The store used until a host says otherwise: <c>~/.bowire/</c>, or
+    /// wherever <c>BOWIRE_DATA_DIR</c> points.
     /// </summary>
-    public static readonly DefaultBowireUserStore Instance = new(UserProfileRoot);
+    /// <remarks>
+    /// <para>
+    /// The variable is honoured <em>here</em>, in the fallback, and not only
+    /// where a host is built. <c>BowireStorageRoot.Apply</c> ranks the same
+    /// inputs, but it has to be called; anything reaching this instance is by
+    /// definition code that never called it. That was every bare CLI
+    /// subcommand and every test that had not replaced the store, so a run
+    /// that set the variable to isolate itself still read — and wrote — the
+    /// developer's own <c>~/.bowire</c>. #643 moved the plugin directory for
+    /// the same reason and stopped there; the workspace-scoped artifacts
+    /// behind it did not follow.
+    /// </para>
+    /// <para>
+    /// Read once, at first use. A process-wide storage location that could
+    /// change halfway through would be worse than one that ignores the
+    /// variable, because half the files would already be in the other place.
+    /// </para>
+    /// </remarks>
+    public static readonly DefaultBowireUserStore Instance =
+        new(Projects.BowirePathResolver.DataDirOverride() ?? UserProfileRoot);
 
     private readonly string _root;
 
@@ -126,20 +145,72 @@ public sealed class DefaultBowireUserStore : IBowireUserStore, IBowireStorageRoo
 /// </summary>
 public static class BowireUserContext
 {
-    private static IBowireUserStore _current = DefaultBowireUserStore.Instance;
+    private static IBowireUserStore _default = DefaultBowireUserStore.Instance;
+
+    private static readonly AsyncLocal<IBowireUserStore?> s_scoped = new();
 
     /// <summary>
-    /// Active resolver. Defaults to single-user
-    /// <see cref="DefaultBowireUserStore.Instance"/>; the host can
-    /// replace at startup. Multi-tenant deployments will route through
-    /// an <c>AsyncLocal&lt;IBowireUserStore&gt;</c>-backed wrapper so
-    /// each request sees its caller's scope -- that machinery lands
-    /// with the SCIM phase, not now.
+    /// The resolver in force here: whatever <see cref="Enter"/> is holding
+    /// on this execution context, and otherwise the host's.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Assigning replaces the <em>host's</em> resolver — the one every call
+    /// with no scope of its own gets — and is a start-up move. It does not
+    /// disturb a scope already open elsewhere.
+    /// </para>
+    /// </remarks>
     public static IBowireUserStore Current
     {
-        get => _current;
-        set => _current = value ?? throw new ArgumentNullException(nameof(value));
+        get => s_scoped.Value ?? _default;
+        set => _default = value ?? throw new ArgumentNullException(nameof(value));
+    }
+
+    /// <summary>
+    /// Resolve against <paramref name="store"/> until the returned scope is
+    /// disposed.
+    /// </summary>
+    /// <param name="store">The store this execution context should use.</param>
+    /// <remarks>
+    /// <para>
+    /// One process, more than one storage root. An embedded host serving two
+    /// Bowire instances, and a test that must not reach the developer's real
+    /// <c>~/.bowire</c>, want the same thing: a store that belongs to a piece
+    /// of work rather than to the process.
+    /// </para>
+    /// <para>
+    /// Restoring the previous value rather than clearing it, for the reason
+    /// <see cref="BowireTenancy.Enter"/> gives: a nested scope is legitimate,
+    /// and clearing would silently drop the outer one for the rest of the
+    /// work.
+    /// </para>
+    /// <para>
+    /// It rides an <see cref="AsyncLocal{T}"/>, so it reaches whatever flows
+    /// from here and nothing else. Notably <c>TestServer</c> drops the
+    /// caller's execution context unless
+    /// <c>TestServer.PreserveExecutionContext</c> is set, so a scope opened
+    /// around a request through one is not seen by the handler — quietly,
+    /// by falling back to the host's resolver.
+    /// </para>
+    /// </remarks>
+    public static IDisposable Enter(IBowireUserStore store)
+    {
+        ArgumentNullException.ThrowIfNull(store);
+        var previous = s_scoped.Value;
+        s_scoped.Value = store;
+        return new Scope(previous);
+    }
+
+    private sealed class Scope(IBowireUserStore? previous) : IDisposable
+    {
+        private bool _disposed;
+
+        public void Dispose()
+        {
+            if (_disposed) return;
+            _disposed = true;
+            s_scoped.Value = previous;
+        }
     }
 
     /// <summary>
@@ -148,7 +219,7 @@ public static class BowireUserContext
     /// Stores call this to keep their existing static shape while
     /// participating in the user-scoping seam.
     /// </summary>
-    public static string GetUserPath(string filename) => _current.GetUserPath(filename);
+    public static string GetUserPath(string filename) => Current.GetUserPath(filename);
 
     /// <summary>
     /// #147 — resolve a per-workspace path. When <paramref name="storageRoot"/>
@@ -212,6 +283,6 @@ public static class BowireUserContext
         var legacy = string.IsNullOrEmpty(workspaceId)
             ? Path.Combine("workspaces", relativePath)
             : Path.Combine("workspaces", workspaceId, relativePath);
-        return _current.GetUserPath(legacy);
+        return Current.GetUserPath(legacy);
     }
 }

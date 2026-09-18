@@ -147,10 +147,6 @@ internal static class WorkspaceCommand
     private static async Task<int> RunListAsync(
         bool asJson, TextWriter stdout, TextWriter stderr, CancellationToken ct)
     {
-        // Same reason as `test --workspace-id`: a host settles the storage
-        // root on start-up, a bare CLI command never did, and the inventory
-        // lives under whichever root is in force.
-        BowireStorageRoot.Apply();
         var workspaces = WorkbenchWorkspaces.All();
 
         if (asJson)

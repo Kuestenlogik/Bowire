@@ -6,6 +6,7 @@ using Kuestenlogik.Bowire.App;
 using Kuestenlogik.Bowire.App.Cli;
 using Kuestenlogik.Bowire.App.Configuration;
 using Kuestenlogik.Bowire.App.Plugins;
+using Kuestenlogik.Bowire.Projects;
 
 // Force the console to UTF-8 so subcommand output (list / describe / call,
 // the discovery-result printers, the mcp-serve handshake) renders non-
@@ -24,6 +25,22 @@ try
     Console.InputEncoding = Encoding.UTF8;
 }
 catch (IOException) { /* console handle not encoding-settable here */ }
+
+// Settle where this process stores things, before anything reads or writes
+// it. BOWIRE_DATA_DIR first, then a project manifest that opted into
+// .bowire/ beside the code, then the machine-wide ~/.bowire.
+//
+// This used to run only inside AddBowire(), i.e. only when a host was being
+// built. Every bare subcommand therefore resolved through the default store
+// and read ~/.bowire whatever the variable or the manifest said — so a CI
+// job that set BOWIRE_DATA_DIR to isolate itself still read, and wrote, the
+// developer's own storage. The plugin directory was moved by #643; the
+// workspace-scoped artifacts behind it — collections, recordings, flows,
+// environments, the workspace inventory — were not.
+//
+// Before the plugin loader on purpose, so a plugin's own settings resolve
+// against the same root as everything else.
+BowireStorageRoot.Apply();
 
 // Bootstrap IConfiguration once: appsettings.json -> BOWIRE_* env ->
 // --flag overrides. Plugin loading + every subcommand's defaults read
