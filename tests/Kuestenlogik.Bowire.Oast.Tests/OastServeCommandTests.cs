@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Globalization;
+using System.Text;
 using Kuestenlogik.Bowire.Oast.Server;
 
 namespace Kuestenlogik.Bowire.Oast.Tests;
@@ -32,8 +33,14 @@ public sealed class OastServeCommandTests : IDisposable
     private readonly StringWriter _stdout = new(CultureInfo.InvariantCulture);
     private readonly StringWriter _stderr = new(CultureInfo.InvariantCulture);
 
+    /// <summary>What the server is given to print to; see <see cref="BannerWatch"/>.</summary>
+    private readonly BannerWatch _banner;
+
+    public OastServeCommandTests() => _banner = new BannerWatch(_stdout, LastBannerLine);
+
     public void Dispose()
     {
+        _banner.Dispose();
         _stdout.Dispose();
         _stderr.Dispose();
     }
@@ -143,23 +150,75 @@ public sealed class OastServeCommandTests : IDisposable
     /// the exit code plus everything it printed.
     /// </summary>
     /// <remarks>
-    /// The cancellation is armed <em>before</em> the call rather than raced
-    /// against it from a second task: the run has to be awaited directly, or
-    /// the writers it is still holding outlive this scope.
+    /// Stopped on the server's own word that it is up, not after a wall-clock
+    /// guess. The two seconds this replaces were ample on an idle machine and
+    /// not on a loaded one: cancelled mid-<c>StartAsync</c> the server returns
+    /// 0 without printing anything — a documented path, and indistinguishable
+    /// here from a clean run with an empty banner. That is what made these
+    /// tests pass alone and fail in a full solution run.
     /// </remarks>
     private async Task<(int Exit, string Output)> RunBrieflyAsync(OastServeOptions options)
     {
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(
             TestContext.Current.CancellationToken);
-        // Long enough for Kestrel and the DNS listener to bind.
-        cts.CancelAfter(TimeSpan.FromSeconds(2));
 
-        var exit = await BowireOastServer.RunAsync(options, cts.Token, _stdout, _stderr);
+        var run = BowireOastServer.RunAsync(options, cts.Token, _banner, _stderr);
+
+        // Whichever comes first: the banner is out, or the run ended on its
+        // own — a refused bind never prints it. The timeout is a backstop
+        // against a hang, not the thing being waited on.
+        await Task.WhenAny(run, _banner.Printed)
+            .WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
+        await cts.CancelAsync();
+
+        var exit = await run;
 
         // A CI runner may refuse a bind (locked-down container, no raw UDP).
         // That is the environment saying no, not the server misbehaving.
         Assert.SkipWhen(exit == 1, $"could not bind on this machine: {_stderr}");
 
         return (exit, _stdout.ToString());
+    }
+
+    /// <summary>The server's last line before it settles into serving.</summary>
+    private const string LastBannerLine = "Press Ctrl+C to stop.";
+
+    /// <summary>
+    /// Forwards everything written to an inner writer and completes
+    /// <see cref="Printed"/> once a marker has gone through.
+    /// </summary>
+    /// <remarks>
+    /// Derived from <see cref="TextWriter"/> rather than wrapping
+    /// <see cref="StringWriter"/>: every base overload bottoms out in
+    /// <see cref="Write(char)"/>, so one override sees the whole stream
+    /// whichever method — sync, async, line or char — the server calls.
+    /// </remarks>
+    private sealed class BannerWatch(StringWriter inner, string marker) : TextWriter
+    {
+        private readonly TaskCompletionSource _printed =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly System.Text.StringBuilder _line = new();
+        private readonly Lock _gate = new();
+
+        /// <summary>Completes once <c>marker</c> has been written.</summary>
+        public Task Printed => _printed.Task;
+
+        public override Encoding Encoding => inner.Encoding;
+
+        public override void Write(char value)
+        {
+            bool hit;
+            lock (_gate)
+            {
+                inner.Write(value);
+                if (value is '\n' or '\r') _line.Clear();
+                else _line.Append(value);
+                hit = _line.Length >= marker.Length
+                    && _line.ToString().EndsWith(marker, StringComparison.Ordinal);
+            }
+            // Outside the lock: a continuation that writes here in response
+            // would otherwise re-enter it.
+            if (hit) _printed.TrySetResult();
+        }
     }
 }
