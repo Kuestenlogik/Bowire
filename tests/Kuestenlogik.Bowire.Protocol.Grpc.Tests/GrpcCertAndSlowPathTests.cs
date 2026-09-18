@@ -1,6 +1,7 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
+using Kuestenlogik.Bowire.Testing;
 using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
@@ -728,7 +729,6 @@ public sealed class GrpcCertAndSlowPathTests
                 .SelectMany(fd => fd.Services)
                 .ToList();
 
-            var port = GetFreePort();
             var builder = WebApplication.CreateBuilder(new WebApplicationOptions
             {
                 ContentRootPath = Path.GetTempPath(),
@@ -737,7 +737,7 @@ public sealed class GrpcCertAndSlowPathTests
             builder.Logging.SetMinimumLevel(LogLevel.Warning);
             builder.WebHost.ConfigureKestrel(o =>
             {
-                o.Listen(IPAddress.Loopback, port, lo =>
+                o.Listen(IPAddress.Loopback, 0, lo =>
                 {
                     lo.Protocols = HttpProtocols.Http2;
                 });
@@ -749,17 +749,9 @@ public sealed class GrpcCertAndSlowPathTests
             app.MapGrpcService<ReflectionServiceImpl>();
 
             await app.StartAsync();
-            return new ReflectionOnlyServer(app, $"http://127.0.0.1:{port}");
+            return new ReflectionOnlyServer(app, LoopbackHost.BaseAddress(app.Services));
         }
 
-        private static int GetFreePort()
-        {
-            using var sock = new TcpListener(IPAddress.Loopback, 0);
-            sock.Start();
-            var port = ((IPEndPoint)sock.LocalEndpoint).Port;
-            sock.Stop();
-            return port;
-        }
 
         public async ValueTask DisposeAsync()
         {
@@ -792,7 +784,6 @@ public sealed class GrpcCertAndSlowPathTests
             List<byte[]> responseFrames,
             HttpProtocols protocols = HttpProtocols.Http2)
         {
-            var port = GetFreePort();
             var builder = WebApplication.CreateBuilder(new WebApplicationOptions
             {
                 ContentRootPath = Path.GetTempPath(),
@@ -801,7 +792,7 @@ public sealed class GrpcCertAndSlowPathTests
             builder.Logging.SetMinimumLevel(LogLevel.Warning);
             builder.WebHost.ConfigureKestrel(o =>
             {
-                o.Listen(IPAddress.Loopback, port, lo =>
+                o.Listen(IPAddress.Loopback, 0, lo =>
                 {
                     // Caller picks the protocol set. ServerStream sends
                     // HTTP/1.1 by default (Connect doesn't pin a version
@@ -836,17 +827,9 @@ public sealed class GrpcCertAndSlowPathTests
             });
 
             await app.StartAsync();
-            return new ConnectStreamingCaptureServer(app, $"http://127.0.0.1:{port}");
+            return new ConnectStreamingCaptureServer(app, LoopbackHost.BaseAddress(app.Services));
         }
 
-        private static int GetFreePort()
-        {
-            using var sock = new TcpListener(IPAddress.Loopback, 0);
-            sock.Start();
-            var port = ((IPEndPoint)sock.LocalEndpoint).Port;
-            sock.Stop();
-            return port;
-        }
 
         public async ValueTask DisposeAsync()
         {

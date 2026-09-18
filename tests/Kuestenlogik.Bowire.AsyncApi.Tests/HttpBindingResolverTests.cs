@@ -1,6 +1,7 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
+using Kuestenlogik.Bowire.Testing;
 using System.Net;
 using System.Net.Http;
 using System.Net.Sockets;
@@ -25,10 +26,15 @@ public sealed class HttpBindingResolverTests : IAsyncLifetime
 
     public async ValueTask InitializeAsync()
     {
-        _port = FindFreeTcpPort();
-        _listener = new HttpListener();
-        _listener.Prefixes.Add($"http://127.0.0.1:{_port}/");
-        _listener.Start();
+        HttpListener? bound = null;
+        _port = await LoopbackHost.OnAFreePortAsync(port =>
+        {
+            bound = new HttpListener();
+            bound.Prefixes.Add($"http://127.0.0.1:{port}/");
+            bound.Start();
+            return Task.CompletedTask;
+        });
+        _listener = bound!;
 
         // Drain requests on a background loop — each one is parsed
         // into _received so individual tests can inspect what the
@@ -198,10 +204,15 @@ public sealed class HttpBindingResolverTests : IAsyncLifetime
         // replies 503 — pins the resolver's status-mapping behaviour
         // without polluting the shared fixture listener's expected-
         // 200 responses.
-        var failPort = FindFreeTcpPort();
-        using var failListener = new HttpListener();
-        failListener.Prefixes.Add($"http://127.0.0.1:{failPort}/");
-        failListener.Start();
+        HttpListener? started = null;
+        var failPort = await LoopbackHost.OnAFreePortAsync(port =>
+        {
+            started = new HttpListener();
+            started.Prefixes.Add($"http://127.0.0.1:{port}/");
+            started.Start();
+            return Task.CompletedTask;
+        });
+        using var failListener = started!;
         // HttpListener.GetContextAsync() doesn't take a CancellationToken
         // (the API predates the pattern), so xUnit1051 fires here despite
         // the surrounding test honouring TestContext.Current.CancellationToken
@@ -236,12 +247,4 @@ public sealed class HttpBindingResolverTests : IAsyncLifetime
         Assert.Equal("503", result.Metadata["http.status"]);
     }
 
-    private static int FindFreeTcpPort()
-    {
-        using var listener = new TcpListener(IPAddress.Loopback, 0);
-        listener.Start();
-        var port = ((IPEndPoint)listener.LocalEndpoint).Port;
-        listener.Stop();
-        return port;
-    }
 }

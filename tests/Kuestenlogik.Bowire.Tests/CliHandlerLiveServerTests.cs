@@ -1,6 +1,7 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
+using Kuestenlogik.Bowire.Testing;
 using System.Net;
 using System.Net.Sockets;
 using Google.Protobuf;
@@ -288,14 +289,13 @@ public sealed class CliHandlerLiveServerTests
             var fileDescriptors = FileDescriptor.BuildFromByteStrings(new[] { fdProto.ToByteString() });
             var serviceDescriptors = fileDescriptors.SelectMany(fd => fd.Services).ToList();
 
-            var port = GetFreePort();
             var builder = WebApplication.CreateBuilder(new WebApplicationOptions
             {
                 ContentRootPath = Path.GetTempPath()
             });
             builder.WebHost.ConfigureKestrel(o =>
             {
-                o.Listen(IPAddress.Loopback, port, lo => lo.Protocols = HttpProtocols.Http2);
+                o.Listen(IPAddress.Loopback, 0, lo => lo.Protocols = HttpProtocols.Http2);
             });
             builder.Logging.ClearProviders();
             builder.Services.AddGrpc();
@@ -304,17 +304,9 @@ public sealed class CliHandlerLiveServerTests
             var app = builder.Build();
             app.MapGrpcService<ReflectionServiceImpl>();
             await app.StartAsync();
-            return new LocalReflectionServer(app, $"http://127.0.0.1:{port}");
+            return new LocalReflectionServer(app, LoopbackHost.BaseAddress(app.Services));
         }
 
-        private static int GetFreePort()
-        {
-            using var sock = new TcpListener(IPAddress.Loopback, 0);
-            sock.Start();
-            var port = ((IPEndPoint)sock.LocalEndpoint).Port;
-            sock.Stop();
-            return port;
-        }
 
         public async ValueTask DisposeAsync()
         {

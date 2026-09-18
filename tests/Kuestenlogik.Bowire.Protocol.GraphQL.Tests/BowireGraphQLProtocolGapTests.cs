@@ -1,6 +1,7 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
+using Kuestenlogik.Bowire.Testing;
 using System.Net;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
@@ -122,11 +123,18 @@ public sealed class BowireGraphQLProtocolGapTests
         // next ReadLineAsync is now waiting on bytes that never come,
         // which is exactly when the inner OperationCanceledException catch
         // (line 296) in StreamViaSseAsync fires.
-        var port = GetFreePort();
+        // HttpListener will not take port 0, so it has to be told one and
+        // the gap between finding a free port and binding it cannot be
+        // closed -- only retried.
+        HttpListener? bound = null;
+        var port = LoopbackHost.OnAFreePort(p =>
+        {
+            bound = new HttpListener();
+            bound.Prefixes.Add($"http://localhost:{p}/");
+            bound.Start();
+        });
         var url = $"http://localhost:{port}/";
-        using var listener = new HttpListener();
-        listener.Prefixes.Add(url);
-        listener.Start();
+        using var listener = bound!;
 
         var stallExit = new TaskCompletionSource();
 
@@ -200,18 +208,6 @@ public sealed class BowireGraphQLProtocolGapTests
         Assert.Single(collected); // the first complete frame
     }
 
-    private static int GetFreePort()
-    {
-        // Reserve a TCP port by binding loopback to port 0; the OS picks
-        // an unused ephemeral port. TcpListener implements IDisposable
-        // (release the underlying socket) -- using makes the lifetime
-        // explicit rather than relying on Stop() for the cleanup.
-        using var l = new TcpListener(IPAddress.Loopback, 0);
-        l.Start();
-        var port = ((IPEndPoint)l.LocalEndpoint).Port;
-        l.Stop();
-        return port;
-    }
 
     private sealed class StubWebSocketProtocol : IBowireProtocol, IInlineWebSocketChannel
     {

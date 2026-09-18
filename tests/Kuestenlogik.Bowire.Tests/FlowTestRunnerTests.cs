@@ -1,6 +1,7 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
+using Kuestenlogik.Bowire.Testing;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -649,7 +650,7 @@ public sealed class FlowTestRunnerTests : IDisposable
         // Find a port nothing listens on so the REST invoke fails with a
         // connection-refused / similar transport error → step error,
         // which the CLI contract maps to exit 2.
-        var port = GetFreePort();
+        var port = LoopbackHost.ClosedPort();
         var flow = $$"""
         {
           "id":"flow_err",
@@ -712,7 +713,7 @@ public sealed class FlowTestRunnerTests : IDisposable
     {
         // A backend-down step error (exit 2) must escape --fail-on never —
         // 'never' only softens assertion failures, never a broken run.
-        var port = GetFreePort();
+        var port = LoopbackHost.ClosedPort();
         var flowPath = await WriteFlowAsync("err.json", $"http://127.0.0.1:{port}", "200");
         var ct = TestContext.Current.CancellationToken;
 
@@ -984,14 +985,6 @@ public sealed class FlowTestRunnerTests : IDisposable
 
     // ---- Helpers ----
 
-    private static int GetFreePort()
-    {
-        using var listener = new TcpListener(IPAddress.Loopback, 0);
-        listener.Start();
-        var port = ((IPEndPoint)listener.LocalEndpoint).Port;
-        listener.Stop();
-        return port;
-    }
 
     /// <summary>
     /// Tiny one-shot HTTP loopback server. Each request hits the
@@ -1009,11 +1002,15 @@ public sealed class FlowTestRunnerTests : IDisposable
 
         public LoopbackJsonServer(Func<HttpListenerRequest, (int Status, string ContentType, string Body)> responder)
         {
-            var port = GetFreePort();
+            HttpListener? bound = null;
+            var port = LoopbackHost.OnAFreePort(p =>
+            {
+                bound = new HttpListener();
+                bound.Prefixes.Add($"http://127.0.0.1:{p}/");
+                bound.Start();
+            });
             Url = $"http://127.0.0.1:{port}";
-            _listener = new HttpListener();
-            _listener.Prefixes.Add(Url + "/");
-            _listener.Start();
+            _listener = bound!;
             _loop = Task.Run(async () =>
             {
                 while (!_cts.IsCancellationRequested)

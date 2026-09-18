@@ -1,6 +1,7 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
+using Kuestenlogik.Bowire.Testing;
 using System.Buffers.Binary;
 using System.Net;
 using System.Net.Sockets;
@@ -1216,12 +1217,7 @@ public sealed class GrpcAdditionalGapsTests
             });
 
             await app.StartAsync();
-            var baseUrl = app.Services
-                .GetRequiredService<IServer>()
-                .Features
-                .Get<IServerAddressesFeature>()!
-                .Addresses
-                .First();
+            var baseUrl = LoopbackHost.BaseAddress(app.Services);
             return new ConnectUnaryServer { App = app, BaseUrl = baseUrl };
         }
 
@@ -1259,19 +1255,16 @@ public sealed class GrpcAdditionalGapsTests
             // negotiation on Kestrel won't allow HTTP/2 prior-knowledge
             // unless the endpoint is bound HTTP/2-only, so we pin the
             // listener to HTTP/2 (h2c) explicitly.
-            var port = GetFreePort();
             var builder = WebApplication.CreateBuilder();
             builder.Logging.ClearProviders();
             builder.WebHost.ConfigureKestrel(o =>
             {
-                o.Listen(IPAddress.Loopback, port, lo =>
+                o.Listen(IPAddress.Loopback, 0, lo =>
                 {
                     lo.Protocols = HttpProtocols.Http2;
                 });
             });
             var app = builder.Build();
-            app.Urls.Clear();
-            app.Urls.Add($"http://127.0.0.1:{port}");
 
             // Shared handler covers all three paths (unary post URL +
             // both streaming method URLs) so each test just picks the
@@ -1326,23 +1319,10 @@ public sealed class GrpcAdditionalGapsTests
             });
 
             await app.StartAsync();
-            var baseUrl = app.Services
-                .GetRequiredService<IServer>()
-                .Features
-                .Get<IServerAddressesFeature>()!
-                .Addresses
-                .First();
+            var baseUrl = LoopbackHost.BaseAddress(app.Services);
             return new ConnectStreamingServer { App = app, BaseUrl = baseUrl };
         }
 
-        private static int GetFreePort()
-        {
-            using var sock = new TcpListener(IPAddress.Loopback, 0);
-            sock.Start();
-            var port = ((IPEndPoint)sock.LocalEndpoint).Port;
-            sock.Stop();
-            return port;
-        }
 
         private static async Task<int> ReadFullyAsync(
             Stream stream, byte[] buffer, int count, CancellationToken ct)
@@ -1392,7 +1372,6 @@ public sealed class GrpcAdditionalGapsTests
                 .SelectMany(fd => fd.Services)
                 .ToList();
 
-            var port = GetFreePort();
 
             var builder = WebApplication.CreateBuilder(new WebApplicationOptions
             {
@@ -1400,7 +1379,7 @@ public sealed class GrpcAdditionalGapsTests
             });
             builder.WebHost.ConfigureKestrel(options =>
             {
-                options.Listen(IPAddress.Loopback, port, listenOptions =>
+                options.Listen(IPAddress.Loopback, 0, listenOptions =>
                 {
                     listenOptions.Protocols = HttpProtocols.Http2;
                 });
@@ -1412,17 +1391,9 @@ public sealed class GrpcAdditionalGapsTests
             app.MapGrpcService<ReflectionServiceImpl>();
 
             await app.StartAsync();
-            return new ReflectionServer(app, $"http://127.0.0.1:{port}");
+            return new ReflectionServer(app, LoopbackHost.BaseAddress(app.Services));
         }
 
-        private static int GetFreePort()
-        {
-            using var sock = new TcpListener(IPAddress.Loopback, 0);
-            sock.Start();
-            var port = ((IPEndPoint)sock.LocalEndpoint).Port;
-            sock.Stop();
-            return port;
-        }
 
         public async ValueTask DisposeAsync()
         {
@@ -1452,7 +1423,6 @@ public sealed class GrpcAdditionalGapsTests
 
         public static async Task<GapGreeterHost> StartAsync()
         {
-            var port = GetFreePort();
 
             var builder = WebApplication.CreateBuilder(new WebApplicationOptions
             {
@@ -1461,7 +1431,7 @@ public sealed class GrpcAdditionalGapsTests
             builder.Logging.ClearProviders();
             builder.WebHost.ConfigureKestrel(o =>
             {
-                o.Listen(IPAddress.Loopback, port, lo =>
+                o.Listen(IPAddress.Loopback, 0, lo =>
                 {
                     lo.Protocols = HttpProtocols.Http2;
                 });
@@ -1474,17 +1444,9 @@ public sealed class GrpcAdditionalGapsTests
             app.MapGrpcReflectionService();
 
             await app.StartAsync();
-            return new GapGreeterHost(app, $"http://127.0.0.1:{port}");
+            return new GapGreeterHost(app, LoopbackHost.BaseAddress(app.Services));
         }
 
-        private static int GetFreePort()
-        {
-            using var sock = new TcpListener(IPAddress.Loopback, 0);
-            sock.Start();
-            var port = ((IPEndPoint)sock.LocalEndpoint).Port;
-            sock.Stop();
-            return port;
-        }
 
         public async ValueTask DisposeAsync()
         {
@@ -1511,7 +1473,6 @@ public sealed class GrpcAdditionalGapsTests
 
         public static async Task<GapDepsHost> StartAsync()
         {
-            var port = GetFreePortStatic();
             var builder = WebApplication.CreateBuilder(new WebApplicationOptions
             {
                 ContentRootPath = Path.GetTempPath(),
@@ -1519,7 +1480,7 @@ public sealed class GrpcAdditionalGapsTests
             builder.Logging.ClearProviders();
             builder.WebHost.ConfigureKestrel(o =>
             {
-                o.Listen(IPAddress.Loopback, port, lo =>
+                o.Listen(IPAddress.Loopback, 0, lo =>
                 {
                     lo.Protocols = HttpProtocols.Http2;
                 });
@@ -1532,7 +1493,7 @@ public sealed class GrpcAdditionalGapsTests
             app.MapGrpcReflectionService();
 
             await app.StartAsync();
-            return new GapDepsHost(app, $"http://127.0.0.1:{port}");
+            return new GapDepsHost(app, LoopbackHost.BaseAddress(app.Services));
         }
 
         public async ValueTask DisposeAsync()
@@ -1554,14 +1515,6 @@ public sealed class GrpcAdditionalGapsTests
         }
     }
 
-    private static int GetFreePortStatic()
-    {
-        using var sock = new TcpListener(IPAddress.Loopback, 0);
-        sock.Start();
-        var port = ((IPEndPoint)sock.LocalEndpoint).Port;
-        sock.Stop();
-        return port;
-    }
 
     /// <summary>
     /// Test-only GapGreeter implementation covering all four method

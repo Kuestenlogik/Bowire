@@ -1,6 +1,7 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
+using Kuestenlogik.Bowire.Testing;
 using System.Net;
 using System.Net.Sockets;
 using Google.Api;
@@ -506,7 +507,6 @@ public sealed class GrpcReflectionTranscodingTests
                 .SelectMany(fd => fd.Services)
                 .ToList();
 
-            var port = GetFreePort();
 
             var builder = WebApplication.CreateBuilder(new WebApplicationOptions
             {
@@ -514,7 +514,7 @@ public sealed class GrpcReflectionTranscodingTests
             });
             builder.WebHost.ConfigureKestrel(options =>
             {
-                options.Listen(IPAddress.Loopback, port, listenOptions =>
+                options.Listen(IPAddress.Loopback, 0, listenOptions =>
                 {
                     listenOptions.Protocols = HttpProtocols.Http2;
                 });
@@ -526,17 +526,9 @@ public sealed class GrpcReflectionTranscodingTests
             app.MapGrpcService<ReflectionServiceImpl>();
 
             await app.StartAsync();
-            return new ReflectionServer(app, $"http://127.0.0.1:{port}");
+            return new ReflectionServer(app, LoopbackHost.BaseAddress(app.Services));
         }
 
-        private static int GetFreePort()
-        {
-            using var sock = new TcpListener(IPAddress.Loopback, 0);
-            sock.Start();
-            var port = ((IPEndPoint)sock.LocalEndpoint).Port;
-            sock.Stop();
-            return port;
-        }
 
         public async ValueTask DisposeAsync()
         {

@@ -1,6 +1,7 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
+using Kuestenlogik.Bowire.Testing;
 using System.ComponentModel;
 using System.Net.Sockets;
 using Kuestenlogik.Bowire.Mcp;
@@ -28,17 +29,6 @@ public sealed class BowireForwardingMcpTransportTests
 {
     // ---- helpers ----------------------------------------------------
 
-    private static int GetFreePort()
-    {
-        // The SDK's Streamable-HTTP transport binds a real socket; we
-        // need a port we know is free. Open + close a TCP listener on
-        // port 0 to grab one the OS hasn't lent out yet.
-        using var listener = new TcpListener(System.Net.IPAddress.Loopback, 0);
-        listener.Start();
-        var port = ((System.Net.IPEndPoint)listener.LocalEndpoint).Port;
-        listener.Stop();
-        return port;
-    }
 
     private sealed record ParentHandle(WebApplication App, Uri McpEndpoint, int Port) : IAsyncDisposable
     {
@@ -49,12 +39,12 @@ public sealed class BowireForwardingMcpTransportTests
     {
         ForwardingTestCountingTools.Reset();
 
-        var port = GetFreePort();
         var builder = WebApplication.CreateBuilder();
         builder.Logging.ClearProviders();
-        // Pin the binding URL up-front; otherwise the host picks 5000/5001
-        // and the test races every other developer on the box.
-        builder.WebHost.UseUrls($"http://127.0.0.1:{port}");
+        // Not the default 5000/5001, which every other developer on the box
+        // is also using. Port 0 and read back what it got, rather than a
+        // number found a moment earlier that anything could have taken since.
+        builder.WebHost.UseUrls(LoopbackHost.AnyPort);
 
         builder.Services
             .AddBowireMcp(o => { o.LoadAllowlistFromEnvironments = false; })
@@ -88,6 +78,7 @@ public sealed class BowireForwardingMcpTransportTests
 
         app.MapMcp("/bowire/mcp");
         await app.StartAsync(ct);
+        var port = LoopbackHost.Port(app.Services);
         return new ParentHandle(app, new Uri($"http://127.0.0.1:{port}/bowire/mcp"), port);
     }
 
@@ -99,10 +90,9 @@ public sealed class BowireForwardingMcpTransportTests
     private static async Task<ChildHandle> StartForwarderChildAsync(
         Uri parentEndpoint, string? attachToken = null, CancellationToken ct = default)
     {
-        var port = GetFreePort();
         var builder = WebApplication.CreateBuilder();
         builder.Logging.ClearProviders();
-        builder.WebHost.UseUrls($"http://127.0.0.1:{port}");
+        builder.WebHost.UseUrls(LoopbackHost.AnyPort);
 
         builder.Services
             .AddBowireMcpForwarder(parentEndpoint, attachToken)
@@ -111,7 +101,8 @@ public sealed class BowireForwardingMcpTransportTests
         var app = builder.Build();
         app.MapMcp("/bowire/mcp");
         await app.StartAsync(ct);
-        return new ChildHandle(app, new Uri($"http://127.0.0.1:{port}/bowire/mcp"));
+        return new ChildHandle(
+            app, new Uri($"{LoopbackHost.BaseAddress(app.Services)}/bowire/mcp"));
     }
 
     private static async Task<McpClient> ConnectClientAsync(Uri endpoint, CancellationToken ct)
@@ -161,7 +152,7 @@ public sealed class BowireForwardingMcpTransportTests
     public async Task GetClientAsync_Throws_When_Parent_Unreachable()
     {
         // Use a port we *know* nothing is listening on.
-        var deadPort = GetFreePort();
+        var deadPort = LoopbackHost.ClosedPort();
         await using var t = new BowireForwardingMcpTransport(
             new Uri($"http://localhost:{deadPort}/bowire/mcp"));
 
@@ -214,7 +205,7 @@ public sealed class BowireForwardingMcpTransportTests
     {
         var ct = TestContext.Current.CancellationToken;
         // Aim the child at a port no parent is listening on.
-        var deadPort = GetFreePort();
+        var deadPort = LoopbackHost.ClosedPort();
         var phantomParent = new Uri($"http://localhost:{deadPort}/bowire/mcp");
         await using var child = await StartForwarderChildAsync(phantomParent, ct: ct);
 
@@ -288,16 +279,16 @@ public sealed class BowireForwardingMcpTransportTests
 
         // Resolve the forwarder transport directly so we can check
         // ParentEndpoint round-trip + observe disposal.
-        var port = GetFreePort();
         var builder = WebApplication.CreateBuilder();
         builder.Logging.ClearProviders();
-        builder.WebHost.UseUrls($"http://127.0.0.1:{port}");
+        builder.WebHost.UseUrls(LoopbackHost.AnyPort);
         builder.Services
             .AddBowireMcpForwarder(parent.McpEndpoint)
             .WithHttpTransport(o => o.Stateless = true);
         var app = builder.Build();
         app.MapMcp("/bowire/mcp");
         await app.StartAsync(ct);
+        var port = LoopbackHost.Port(app.Services);
 
         var forwarder = app.Services.GetRequiredService<BowireForwardingMcpTransport>();
         Assert.Equal(parent.McpEndpoint, forwarder.ParentEndpoint);

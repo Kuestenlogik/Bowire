@@ -103,6 +103,44 @@ public static class LoopbackHost
         }
     }
 
+    /// <summary>
+    /// As <see cref="OnAFreePortAsync"/>, for servers that bind
+    /// synchronously — <see cref="System.Net.HttpListener"/> among them.
+    /// </summary>
+    /// <param name="start">Starts the server on the given port.</param>
+    /// <param name="attempts">How many ports to try before giving up.</param>
+    /// <returns>The port it started on.</returns>
+    public static int OnAFreePort(Action<int> start, int attempts = 8)
+    {
+        ArgumentNullException.ThrowIfNull(start);
+
+        for (var attempt = 1; ; attempt++)
+        {
+            var port = Reserve();
+            try
+            {
+                start(port);
+                return port;
+            }
+            catch (Exception ex) when (attempt < attempts && IsPortTaken(ex))
+            {
+                // Someone took it in the gap. The next one is a fresh draw.
+            }
+        }
+    }
+
+    /// <summary>
+    /// A loopback port nothing is listening on — for the tests that need a
+    /// connection to be refused.
+    /// </summary>
+    /// <remarks>
+    /// The same open-and-close as <see cref="Reserve"/>, named separately
+    /// because the intent is the opposite: here the point is that the port
+    /// ends up unowned, and the risk is something else taking it and
+    /// answering a connection that was supposed to fail.
+    /// </remarks>
+    public static int ClosedPort() => Reserve();
+
     /// <summary>A port that was free a moment ago. See <see cref="OnAFreePortAsync"/>.</summary>
     private static int Reserve()
     {

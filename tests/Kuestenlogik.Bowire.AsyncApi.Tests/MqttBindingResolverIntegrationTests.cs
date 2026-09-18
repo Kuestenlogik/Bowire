@@ -1,6 +1,7 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
+using Kuestenlogik.Bowire.Testing;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -35,21 +36,21 @@ public sealed class MqttBindingResolverIntegrationTests : IAsyncLifetime
 
     public async ValueTask InitializeAsync()
     {
-        // Pick a free TCP port the OS handed us so parallel test runs
-        // (or a leftover broker from a crashed previous run) don't
-        // collide on 1883. Bind a temporary listener just long
-        // enough to learn the port; close it before handing the
-        // number to MQTTnet so the broker can bind without
-        // tripping on our placeholder.
-        _brokerPort = FindFreeTcpPort();
-
+        // Not 1883: parallel runs, and a leftover broker from a crashed
+        // previous run, both collide there. MQTTnet will not report the port
+        // an OS-assigned endpoint ended up on, so it has to be told one --
+        // and between finding a free port and the broker binding it, anything
+        // on the machine can take it. Retried rather than assumed.
         var factory = new MqttServerFactory();
-        _broker = factory.CreateMqttServer(
-            new MqttServerOptionsBuilder()
-                .WithDefaultEndpoint()
-                .WithDefaultEndpointPort(_brokerPort)
-                .Build());
-        await _broker.StartAsync();
+        _brokerPort = await LoopbackHost.OnAFreePortAsync(async port =>
+        {
+            _broker = factory.CreateMqttServer(
+                new MqttServerOptionsBuilder()
+                    .WithDefaultEndpoint()
+                    .WithDefaultEndpointPort(port)
+                    .Build());
+            await _broker.StartAsync();
+        });
     }
 
     public async ValueTask DisposeAsync()
@@ -178,16 +179,4 @@ public sealed class MqttBindingResolverIntegrationTests : IAsyncLifetime
         }
     }
 
-    private static int FindFreeTcpPort()
-    {
-        // The Bind+0 trick: ask the OS for an ephemeral port, read
-        // back what it gave us, release immediately. Race-window
-        // between release and broker re-bind is tiny; in practice
-        // never seen a collision on CI runners.
-        using var listener = new TcpListener(IPAddress.Loopback, 0);
-        listener.Start();
-        var port = ((IPEndPoint)listener.LocalEndpoint).Port;
-        listener.Stop();
-        return port;
-    }
 }

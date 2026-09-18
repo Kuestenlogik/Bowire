@@ -1,6 +1,7 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
+using Kuestenlogik.Bowire.Testing;
 using System.Net;
 using System.Net.Sockets;
 using Kuestenlogik.Bowire.Security.Scanner;
@@ -34,20 +35,10 @@ public sealed class WebSocketCompressionBombProbeTests
     {
         // A ws:// URL on a port that's guaranteed closed → ConnectAsync fails →
         // the probe reports an inconclusive Skipped marker rather than a verdict.
-        var url = $"ws://127.0.0.1:{ClosedLoopbackPort()}/ws";
+        var url = $"ws://127.0.0.1:{LoopbackHost.ClosedPort()}/ws";
         var f = Assert.Single(await new WebSocketCompressionBombProbe().RunAsync(url, protocol: null!, s_auth, Dur(1), Ct));
         Assert.Equal(ScanFindingStatus.Skipped, f.Status);
         Assert.Contains("COMPRESSION-BOMB-INCONCLUSIVE", f.Template.Recording.Id, StringComparison.Ordinal);
     }
 
-    // Bind to an ephemeral loopback port, capture it, then release it — connecting
-    // to the now-closed port reliably refuses (fast, no timing dependence).
-    private static int ClosedLoopbackPort()
-    {
-        using var listener = new TcpListener(IPAddress.Loopback, 0);
-        listener.Start();
-        var port = ((IPEndPoint)listener.LocalEndpoint).Port;
-        listener.Stop();
-        return port;
-    }
 }
