@@ -135,7 +135,7 @@ public static class CodeProbeExecutor
             var scriptPath = Path.Combine(scratch.FullName, "template" + ExtensionFor(chosen.Engine));
             await File.WriteAllTextAsync(scriptPath, source, ct).ConfigureAwait(false);
 
-            return await RunAsync(chosen.Path, scriptPath, scratch.FullName, timeoutSeconds, ct)
+            return await RunAsync(chosen.Engine, chosen.Path, scriptPath, scratch.FullName, timeoutSeconds, ct)
                 .ConfigureAwait(false);
         }
         finally
@@ -147,7 +147,8 @@ public static class CodeProbeExecutor
     }
 
     private static async Task<AttackProbeResponse> RunAsync(
-        string enginePath, string scriptPath, string workingDirectory, int timeoutSeconds, CancellationToken ct)
+        string engine, string enginePath, string scriptPath, string workingDirectory,
+        int timeoutSeconds, CancellationToken ct)
     {
         var psi = new ProcessStartInfo
         {
@@ -159,9 +160,10 @@ public static class CodeProbeExecutor
             UseShellExecute = false,
             CreateNoWindow = true,
         };
-        // As an argument, never interpolated into a command line: the path is
+        // As arguments, never interpolated into a command line: the path is
         // ours, but making that a habit is what keeps the next edit safe.
-        psi.ArgumentList.Add(scriptPath);
+        foreach (var argument in ArgumentsFor(engine, scriptPath))
+            psi.ArgumentList.Add(argument);
 
         using var process = new Process { StartInfo = psi };
         var stdout = new StringBuilder();
@@ -241,6 +243,37 @@ public static class CodeProbeExecutor
     /// Extension per engine. A lookup rather than a lowercased switch: casing
     /// belongs to the comparer, not to a transformation of the input.
     /// </summary>
+    /// <summary>
+    /// How <paramref name="engine"/> is asked to run
+    /// <paramref name="scriptPath"/>.
+    /// </summary>
+    /// <remarks>
+    /// Every other interpreter takes the path and nothing else. PowerShell
+    /// does not: handed a bare path it applies the machine's execution
+    /// policy, and on a default Windows that refuses to run the file at
+    /// all — <c>PSSecurityException / UnauthorizedAccess</c>, exit 1,
+    /// before a line of the probe executes. The policy exists to stop
+    /// scripts of unknown provenance; this one Bowire wrote itself,
+    /// seconds ago, into a private temp directory it is about to delete.
+    /// <list type="bullet">
+    ///   <item><c>-NoProfile</c>: the operator's profile is not part of the probe, and loading it is the slowest thing a short-lived PowerShell does.</item>
+    ///   <item><c>-NonInteractive</c>: a probe that stops to ask something would hang the scan until the timeout.</item>
+    ///   <item><c>-ExecutionPolicy Bypass</c>: see above — provenance is not in question here.</item>
+    ///   <item><c>-File</c>: says the next argument is a path, so a script whose name starts with a dash cannot become a switch.</item>
+    /// </list>
+    /// </remarks>
+    internal static IReadOnlyList<string> ArgumentsFor(string engine, string scriptPath)
+    {
+        ArgumentNullException.ThrowIfNull(engine);
+        return s_powerShellEngines.Contains(engine)
+            ? ["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", scriptPath]
+            : [scriptPath];
+    }
+
+    /// <summary>Engines that are PowerShell and need its invocation switches.</summary>
+    private static readonly HashSet<string> s_powerShellEngines =
+        new(StringComparer.OrdinalIgnoreCase) { "pwsh", "powershell" };
+
     private static readonly Dictionary<string, string> s_extensions =
         new(StringComparer.OrdinalIgnoreCase)
         {
