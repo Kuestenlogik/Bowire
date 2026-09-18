@@ -46,5 +46,10 @@
                       LogicalName="Kuestenlogik.Bowire.Interceptor.wwwroot.js.intercepted-view.js" />
     <EmbeddedResource Include="wwwroot\js\intercept-view.js"
                       LogicalName="Kuestenlogik.Bowire.Interceptor.wwwroot.js.intercept-view.js" />
+    <!-- #311 - the Tools-menu launcher for BowireReverseProxyHost. The
+         endpoints it calls (/api/tools/reverse-proxy/*) already ship
+         from this package; the UI was the last piece still in core. -->
+    <EmbeddedResource Include="wwwroot\js\tools-reverse-proxy.js"
+                      LogicalName="Kuestenlogik.Bowire.Interceptor.wwwroot.js.tools-reverse-proxy.js" />
   </ItemGroup>
 </Project>

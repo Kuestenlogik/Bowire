@@ -126,29 +126,75 @@ The stitched-in code therefore shares core's closure scope, so the
 existing bare-identifier references into helpers / state / renderers
 keep resolving without any window-namespace dance.
 
-Shipped in this phase (package ids reflect the v2.1 #325 rename):
+Every package that owns JS fragments today, measured against the
+working tree (source bytes, UTF-8):
 
-| Package | JS fragment | LOC moved |
-|--------------|-------------|----------:|
-| `Kuestenlogik.Bowire.Recordings` | `recording.js` | ~1700 |
-| `Kuestenlogik.Bowire.Mock` _(was `Rail.Mocks` pre-v2.1)_ | `mocks.js` | ~600 |
-| `Kuestenlogik.Bowire.Flows` | `flows.js` | ~1700 |
-| `Kuestenlogik.Bowire.Compose` | `compose-rail.js` | ~1200 |
-| `Kuestenlogik.Bowire.Interceptor` _(was `Rail.Intercepted` pre-v2.1)_ | `intercepted-view.js` + `proxy-view.js` + `traffic-view.js` | ~1500 |
+| Package | JS fragment(s) | Lines | KB |
+|---|---|---:|---:|
+| `Kuestenlogik.Bowire.Map` _(asset endpoint, not stitched — `extensions.js` loads it on demand)_ | `widgets/map.js` | 4,438 | 204 |
+| `Kuestenlogik.Bowire.Benchmarking` | `benchmarks.js`, `benchmark-schedules.js` | 3,836 | 182 |
+| `Kuestenlogik.Bowire.Recordings` | `recording.js`, `recording-correlation.js` | 3,605 | 171 |
+| `Kuestenlogik.Bowire.Flows` | `flows.js` | 2,745 | 131 |
+| `Kuestenlogik.Bowire.Ai` | `ai.js` | 2,358 | 113 |
+| `Kuestenlogik.Bowire.Interceptor` | `intercept-view.js`, `intercepted-view.js`, `proxy-view.js`, `tools-reverse-proxy.js` | 2,327 | 107 |
+| `Kuestenlogik.Bowire.Compose` | `compose-rail.js` | 1,643 | 76 |
+| `Kuestenlogik.Bowire.Mock` | `mocks.js` | 1,265 | 68 |
+| `Kuestenlogik.Bowire.SchemaDesigner` | `schema-designer.js` | 854 | 34 |
+| `Kuestenlogik.Bowire.Security.Scanner` | `security.js` | 492 | 26 |
+| `Kuestenlogik.Bowire.Help` | `help.js` | 465 | 20 |
+| `Kuestenlogik.Bowire.Monitoring` | `monitoring.js` | 327 | 14 |
+| `Kuestenlogik.Bowire.Contracts` | `contract-matrix.js` | 211 | 8 |
+| **Total** | | **24,566** | **1,155** |
 
-Together, ~6,000 lines (≈200 KB pre-minify) drop out of every
-`Bundle.Minimal` bundle that doesn't opt into the matching rail.
-Hosts that DO reference the rail package see the same JS surface as
-today — the splice is byte-for-byte identical to the old monolithic
-concat, only the source-of-truth moved.
+## Shipped bundle size by package selection
 
-Deferred to a follow-up ticket (Phase G remainder): the per-rail
-branches inside `render-sidebar.js` and `render-main.js`, plus
-`proxy-view.js`, `benchmarks.js`, `collections.js`. These have
-cross-rail dispatchers that need a small descriptor-driven hook
-(`IBowireRailContribution.RenderSidebar(state)` &c.) before they can
-cleanly leave core — out of scope for #311 but unblocked by the
-stitching machinery it lands.
+Core's built `wwwroot/bowire.js` is the baseline every host pays:
+**3,966 KB**. Each package above adds its fragments on top, and only when
+the host references it.
+
+| Selection | Bundle (source bytes) |
+|---|---:|
+| `Bundle.Minimal` (REST + gRPC only — no package owns a JS fragment) | ~3,966 KB |
+| `Bundle.Minimal` + Recordings + Mock | ~4,205 KB |
+| `Bundle.Workbench` (all 13 packages) | ~4,917 KB |
+
+`Bundle.Workbench` does reference `Kuestenlogik.Bowire.Map`, but Map's
+204 KB is **not** in that figure: its widget JS ships through an asset
+endpoint that `extensions.js` fetches on demand, not through the splice.
+
+Two caveats on reading these numbers:
+
+* **These are source bytes, not transfer bytes.** The build's `MinifyFile`
+  step is not a minifier despite the name — comment stripping was disabled
+  because the `//` regex could not tell a comment from a `https://` URL,
+  so all it does now is collapse blank-line runs and strip trailing
+  whitespace. Measured against the fragments, that is under 1%. What
+  actually shrinks the payload is the response compression in front of it,
+  which these figures do not model.
+* **The baseline is not a floor.** Core still carries Discover-rail and
+  layout code (`collections.js`, `presets.js`, `catalogue.js`,
+  `coverage.js`, `perf-diff.js`, `shelf.js`, …) that is cross-cutting
+  rather than rail-owned. Those belong to core by design, not leftovers.
+
+To re-measure after adding a fragment, `wc -c` the files under each
+package's `wwwroot/js/` and core's built `wwwroot/bowire.js`.
+
+## Adding a fragment to a package
+
+1. Put the `.js` under `<Package>/wwwroot/js/`.
+2. Declare it as an `EmbeddedResource` whose `LogicalName` is
+   `<AssemblyName>.wwwroot.js.<file>.js` — the generator matches on
+   `.wwwroot.js.` and the `.js` suffix, so the name has to be spelled
+   out rather than left to the default.
+3. Make sure **every** core reference into the fragment is guarded
+   (`typeof fn === 'function'`, or `typeof x !== 'undefined'` for
+   module-scope state). A bare identifier read throws `ReferenceError`
+   in a host that doesn't ship the package — the fragment's `var`
+   declaration is gone, not merely unassigned.
+4. Fragments are spliced in **last**, right before `init.js`. Function
+   declarations still hoist across the shared closure, but module-scope
+   `var` *assignments* now run after every core fragment has loaded, so
+   a fragment cannot be relied on for load-time state.
 
 ## See also
 

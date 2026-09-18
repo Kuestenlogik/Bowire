@@ -13,6 +13,18 @@
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
   <ItemGroup>
+    <!-- #311 - the AI side panel JS, stitched into the workbench bundle
+         at HTML-emit time: the core HTML generator discovers every
+         embedded resource whose LogicalName matches
+         `Kuestenlogik.Bowire.*.wwwroot.js.*.js` and splices it into the
+         IIFE right before init.js. Every core reference into this
+         fragment sits behind a `typeof` guard, so a host without this
+         package renders the workbench unchanged - minus 2,357 lines it
+         never downloads. -->
+    <EmbeddedResource Include="wwwroot\js\ai.js"
+                      LogicalName="Kuestenlogik.Bowire.Ai.wwwroot.js.ai.js" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
     <PackageReference Include="Microsoft.Extensions.AI" />
     <PackageReference Include="OllamaSharp" />

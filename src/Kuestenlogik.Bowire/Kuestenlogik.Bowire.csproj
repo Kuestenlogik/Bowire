@@ -279,10 +279,11 @@
          module-scope let/const, so nothing here can hit a TDZ. -->
     <BowireJsFragment Include="wwwroot\js\response-handoff.js" />
     <BowireJsFragment Include="wwwroot\js\settings.js" />
-    <!-- #153 UI phase — reverse-proxy launcher (Tools menu + Settings list).
-         Must come BEFORE settings.js's renderSettingsTools call site (window.bowire*
-         globals are read via typeof at click time) but ordering otherwise free. -->
-    <BowireJsFragment Include="wwwroot\js\tools-reverse-proxy.js" />
+    <!-- tools-reverse-proxy.js: #311 - lives on
+         Kuestenlogik.Bowire.Interceptor, which is where the
+         /api/tools/reverse-proxy endpoints already live. The launcher
+         is read through window.bowire* typeof guards at click time, so
+         being stitched in last costs nothing. -->
     <BowireJsFragment Include="wwwroot\js\plugin-update-badge.js" />
     <!-- #97 — the one-time offer to copy a single-user install's data into
          the signed-in identity's slot. Renders straight into document.body
@@ -296,7 +297,10 @@
          carries the fragment but never shows a control. Depends on
          helpers.js (el) and prologue.js (config, render). -->
     <BowireJsFragment Include="wwwroot\js\user-chip.js" />
-    <BowireJsFragment Include="wwwroot\js\ai.js" />
+    <!-- ai.js: #311 - lives on Kuestenlogik.Bowire.Ai and is stitched in
+         at HTML-emit time. Every core reference into it is typeof-gated,
+         so a host without the Ai package never downloads the 2,357
+         lines at all. -->
     <!-- #125 Phase 2 — vars resolver UX. Must come before init.js
          (which calls installVarsAutocomplete + installVarsChips). -->
     <BowireJsFragment Include="wwwroot\js\vars-autocomplete.js" />

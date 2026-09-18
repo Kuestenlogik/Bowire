@@ -10,7 +10,7 @@ import { dirname, resolve } from 'node:path';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SRC = readFileSync(
-    resolve(__dirname, '../../../src/Kuestenlogik.Bowire/wwwroot/js/ai.js'),
+    resolve(__dirname, '../../../src/Kuestenlogik.Bowire.Ai/wwwroot/js/ai.js'),
     'utf8'
 );
 
