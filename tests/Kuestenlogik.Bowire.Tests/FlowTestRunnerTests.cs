@@ -295,7 +295,7 @@ public sealed class FlowTestRunnerTests : IDisposable
         """;
         await File.WriteAllTextAsync(flowPath, flow, ct);
         var snapshotFile = SafePath.Combine(
-            FlowTestRunner.SnapshotDirFor(flowPath), "n1.snap.json");
+            FlowTestRunner.SnapshotDirFor(flowPath, flowId: null), "n1.snap.json");
 
         // Run 1 — no baseline: capture, pass.
         using (var stdout = new StringWriter())
