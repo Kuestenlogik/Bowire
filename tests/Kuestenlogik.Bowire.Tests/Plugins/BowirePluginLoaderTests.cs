@@ -38,18 +38,29 @@ public sealed class BowirePluginLoaderTests : IDisposable
         GC.SuppressFinalize(this);
     }
 
-    // A real Bowire plugin assembly that ships next to the test runner.
-    // OData is the smallest with self-contained dependencies, so renaming
-    // a copy of it is the cheapest way to make a loadable stub plugin.
-    private static string ProbePluginDll => Path.Combine(
+    // Real Bowire plugin assemblies that ship next to the test runner.
+    // Each is small and self-contained, so a renamed copy is the cheapest
+    // loadable stub plugin.
+    //
+    // Two of them, and which one a test uses matters. Copying a file does
+    // not change the assembly identity inside it, so seeding two packages
+    // from ONE source puts two copies of one identity in the process --
+    // and this source ships beside the test runner, so the default context
+    // may already hold a third. Which copy a resolve finds then depends on
+    // the order the tests happened to run in, which is how this suite
+    // produced a failure that came and went with unrelated edits.
+    private static string ProbeDll(string fileName) => Path.Combine(
         Path.GetDirectoryName(typeof(BowirePluginLoaderTests).Assembly.Location)!,
-        "Kuestenlogik.Bowire.Protocol.OData.dll");
+        fileName);
 
-    private static void SeedPlugin(string root, string packageId)
+    private const string ProbeA = "Kuestenlogik.Bowire.Protocol.OData.dll";
+    private const string ProbeB = "Kuestenlogik.Bowire.Protocol.JsonRpc.dll";
+
+    private static void SeedPlugin(string root, string packageId, string source = ProbeA)
     {
         var sub = Path.Combine(root, packageId);
         Directory.CreateDirectory(sub);
-        File.Copy(ProbePluginDll, Path.Combine(sub, packageId + ".dll"));
+        File.Copy(ProbeDll(source), Path.Combine(sub, packageId + ".dll"));
     }
 
     [Fact]
@@ -60,8 +71,8 @@ public sealed class BowirePluginLoaderTests : IDisposable
         // variable points somewhere else entirely and must not matter.
         var wanted = NewDir("bowire-loader-explicit-");
         var poison = NewDir("bowire-loader-poison-");
-        SeedPlugin(wanted, "Explicit.Wanted");
-        SeedPlugin(poison, "Poison.Unwanted");
+        SeedPlugin(wanted, "Explicit.Wanted", ProbeA);
+        SeedPlugin(poison, "Poison.Unwanted", ProbeB);
 
         var previous = Environment.GetEnvironmentVariable(BowirePluginOptions.EnvVarName);
         try
@@ -95,8 +106,10 @@ public sealed class BowirePluginLoaderTests : IDisposable
         // and reports, which is the part the ticket can fix.
         var rootA = NewDir("bowire-loader-a-");
         var rootB = NewDir("bowire-loader-b-");
-        SeedPlugin(rootA, "Alpha.Plug");
-        SeedPlugin(rootB, "Beta.Plug");
+        // Distinct source assemblies: two packages that are really two
+        // assemblies, which is what the claim below is about.
+        SeedPlugin(rootA, "Alpha.Plug", ProbeA);
+        SeedPlugin(rootB, "Beta.Plug", ProbeB);
 
         var a = new BowirePluginLoader(new BowirePluginOptions { PluginDirectory = rootA });
         var b = new BowirePluginLoader(new BowirePluginOptions { PluginDirectory = rootB });
