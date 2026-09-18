@@ -28,8 +28,13 @@ namespace Kuestenlogik.Bowire.Flows;
 /// has none: it lives inside the workspace's <c>flows.json</c>. Rather
 /// than invent a base directory, a CSV row source is refused here with
 /// that reason; inline rows and generators, which are self-contained, work
-/// everywhere. Resolving CSV needs the file-per-flow layout that #97 is
-/// about, and #365 is waiting on the same thing.
+/// everywhere.
+/// </para>
+/// <para>
+/// This used to cite #97 as what CSV was waiting for. That was wrong -- #97
+/// closed in August and was about a migration dialog. A workspace flow now
+/// has a resolvable file (#365), so a base directory for CSV is available
+/// and the refusal is a decision waiting to be revisited rather than a wall.
 /// </para>
 /// </remarks>
 public sealed class BowireFlowDataEndpoints : IBowireEndpointContribution

@@ -5,6 +5,16 @@ using Microsoft.AspNetCore.Http;
 
 namespace Kuestenlogik.Bowire.Endpoints;
 
+/// <summary>A validated workspace scope, or the reason it was refused.</summary>
+/// <param name="WorkspaceId">Null when the caller named none.</param>
+/// <param name="StorageRoot">Null when the caller named none.</param>
+/// <param name="Error">Null when the scope is usable.</param>
+public readonly record struct BowireWorkspaceScope(string? WorkspaceId, string? StorageRoot, string? Error)
+{
+    /// <summary>True when the request named something this server will not act on.</summary>
+    public bool IsInvalid => Error is not null;
+}
+
 /// <summary>
 /// The <c>?workspaceId=</c> / <c>?storageRoot=</c> pair every per-workspace
 /// endpoint reads, validated once.
@@ -23,23 +33,20 @@ namespace Kuestenlogik.Bowire.Endpoints;
 /// scripts from the target APIs it renders. "It only listens locally" bounds
 /// who can reach it, not what a request can ask for once it does.
 /// </para>
+/// <para>
+/// Public because the endpoints that read this pair are no longer all in
+/// core: a rail package contributing a workspace-scoped route needs the same
+/// check, and the alternative — a second copy of it out there — is how a
+/// security rule comes to differ from itself.
+/// </para>
 /// </remarks>
-internal static class WorkspaceScopeQuery
+public static class WorkspaceScopeQuery
 {
-    /// <summary>A validated scope, or the reason it was refused.</summary>
-    /// <param name="WorkspaceId">Null when the caller named none.</param>
-    /// <param name="StorageRoot">Null when the caller named none.</param>
-    /// <param name="Error">Null when the scope is usable.</param>
-    internal readonly record struct Scope(string? WorkspaceId, string? StorageRoot, string? Error)
-    {
-        /// <summary>True when the request named something this server will not act on.</summary>
-        public bool IsInvalid => Error is not null;
-    }
 
     /// <summary>
     /// Read and validate the pair from a request.
     /// </summary>
-    internal static Scope From(HttpContext ctx)
+    public static BowireWorkspaceScope From(HttpContext ctx)
     {
         ArgumentNullException.ThrowIfNull(ctx);
 
@@ -52,14 +59,14 @@ internal static class WorkspaceScopeQuery
     /// The rules, separated from <see cref="HttpContext"/> so they can be
     /// exercised directly.
     /// </summary>
-    internal static Scope Validate(string? workspaceId, string? storageRoot)
+    public static BowireWorkspaceScope Validate(string? workspaceId, string? storageRoot)
     {
         var id = string.IsNullOrWhiteSpace(workspaceId) ? null : workspaceId.Trim();
         var root = string.IsNullOrWhiteSpace(storageRoot) ? null : storageRoot.Trim();
 
         if (id is not null && !IsSafeSegment(id))
         {
-            return new Scope(null, null,
+            return new BowireWorkspaceScope(null, null,
                 "workspaceId must be a single path segment: letters, digits, dot, dash or underscore.");
         }
 
@@ -69,13 +76,13 @@ internal static class WorkspaceScopeQuery
             // working directory — which is not something the caller can see
             // and not something they meant to write into.
             if (!Path.IsPathRooted(root))
-                return new Scope(null, null, "storageRoot must be an absolute path.");
+                return new BowireWorkspaceScope(null, null, "storageRoot must be an absolute path.");
 
             // '..' is refused before normalisation rather than after: a root
             // is a location the operator chose, and one that has to climb out
             // of itself to mean something is not that.
             if (root.Split(['/', '\\']).Any(s => s == ".."))
-                return new Scope(null, null, "storageRoot must not contain '..'.");
+                return new BowireWorkspaceScope(null, null, "storageRoot must not contain '..'.");
 
             // A workspace root is a directory the operator already pointed
             // Bowire at. Requiring it to exist is what stops a request from
@@ -83,10 +90,10 @@ internal static class WorkspaceScopeQuery
             // the difference between writing into a folder someone chose and
             // writing into one the request invented.
             if (!Directory.Exists(root))
-                return new Scope(null, null, "storageRoot does not exist, or is not a directory.");
+                return new BowireWorkspaceScope(null, null, "storageRoot does not exist, or is not a directory.");
         }
 
-        return new Scope(id, root, null);
+        return new BowireWorkspaceScope(id, root, null);
     }
 
     /// <summary>
