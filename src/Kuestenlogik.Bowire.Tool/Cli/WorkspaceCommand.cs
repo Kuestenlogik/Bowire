@@ -71,6 +71,7 @@ internal static class WorkspaceCommand
     {
         var workspace = new Command("workspace",
             "Manage Bowire workspaces — init a git-backed workspace directory (#147 / #149), migrate a legacy bundle-shaped workspace to the per-entity file layout (#196 Phase 2.2), migrate a workspace to a checked-in .bowire/project.json manifest (#172), or export/import the workspace state as a single JSON file (#149).");
+        workspace.Add(BuildListCommand());
         workspace.Add(BuildInitCommand());
         workspace.Add(BuildMigrateFormatCommand());
         workspace.Add(BuildMigrateToProjectCommand());
@@ -114,6 +115,88 @@ internal static class WorkspaceCommand
          "globals", "collections", "recordings", "scripts", "flows", "presets",
          // #290 — Request-builder history (browser-only; disk exporters write []).
          "requestBuilderHistory"];
+
+    /// <summary>
+    /// <c>bowire workspace list</c> — the ids <c>bowire test --workspace-id</c>
+    /// takes (#365).
+    /// </summary>
+    /// <remarks>
+    /// Added with that option: an id the operator cannot look up is an id
+    /// they have to guess, and the only other way to see one was to name a
+    /// wrong one and read the refusal.
+    /// </remarks>
+    private static Command BuildListCommand()
+    {
+        var list = new Command("list",
+            "List the workspaces saved in this identity's inventory — the ids `bowire test --workspace-id` takes, with the checkout each git-native one lives in.");
+
+        var jsonOpt = new Option<bool>("--json")
+        {
+            Description = "Emit the list as JSON instead of a table, for scripts that pick an id out of it.",
+        };
+        list.Add(jsonOpt);
+
+        list.SetAction((pr, ct) => RunListAsync(
+            pr.GetValue(jsonOpt),
+            pr.InvocationConfiguration.Output,
+            pr.InvocationConfiguration.Error,
+            ct));
+        return list;
+    }
+
+    private static async Task<int> RunListAsync(
+        bool asJson, TextWriter stdout, TextWriter stderr, CancellationToken ct)
+    {
+        // Same reason as `test --workspace-id`: a host settles the storage
+        // root on start-up, a bare CLI command never did, and the inventory
+        // lives under whichever root is in force.
+        BowireStorageRoot.Apply();
+        var workspaces = WorkbenchWorkspaces.All();
+
+        if (asJson)
+        {
+            await stdout.WriteLineAsync(JsonSerializer.Serialize(
+                workspaces.Select(w => new
+                {
+                    id = w.Id,
+                    name = w.Name,
+                    storageRoot = w.StorageRoot,
+                    flows = WorkbenchWorkspaces.FlowsFile(w),
+                }),
+                IndentedJsonOpts)).ConfigureAwait(false);
+            return 0;
+        }
+
+        if (workspaces.Count == 0)
+        {
+            // Not an error: an install with no workspaces is the ordinary
+            // starting state, and a script asking "what is there" got its
+            // answer.
+            await stdout.WriteLineAsync(
+                "No workspaces saved yet. Create one in the workbench, or run `bowire test --workspace <dir>` against a directory.")
+                .ConfigureAwait(false);
+            return 0;
+        }
+
+        var idWidth = Math.Max(2, workspaces.Max(w => w.Id.Length));
+        var nameWidth = Math.Max(4, workspaces.Max(w => w.Name.Length));
+        await stdout.WriteLineAsync(
+            $"  {"ID".PadRight(idWidth)}  {"NAME".PadRight(nameWidth)}  FLOWS").ConfigureAwait(false);
+
+        foreach (var workspace in workspaces)
+        {
+            ct.ThrowIfCancellationRequested();
+            var flows = WorkbenchWorkspaces.FlowsFile(workspace);
+            // Saying so beats an operator opening the path to find out.
+            var marker = File.Exists(flows) ? string.Empty : "  (none yet)";
+            await stdout.WriteLineAsync(
+                $"  {workspace.Id.PadRight(idWidth)}  {workspace.Name.PadRight(nameWidth)}  {flows}{marker}")
+                .ConfigureAwait(false);
+        }
+
+        _ = stderr;
+        return 0;
+    }
 
     private static Command BuildExportCommand()
     {

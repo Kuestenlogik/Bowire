@@ -78,7 +78,8 @@ public sealed class WorkspaceCommandEdgeCasesTests : IDisposable
     {
         // Pins the parent-command shape: name, description hint, and the
         // known subcommands — init + migrate-format + export + import (#149),
-        // plus migrate (#172, --to-project). When a future phase adds a new
+        // migrate (#172, --to-project), and list (#365, the ids that
+        // `bowire test --workspace-id` takes). When a future phase adds a new
         // verb, this assertion is the forcing function for an updated
         // subcommand inventory.
         var workspace = WorkspaceCommand.Build();
@@ -91,7 +92,8 @@ public sealed class WorkspaceCommandEdgeCasesTests : IDisposable
         Assert.Contains("export", names);
         Assert.Contains("import", names);
         Assert.Contains("migrate", names);
-        Assert.Equal(5, workspace.Subcommands.Count);
+        Assert.Contains("list", names);
+        Assert.Equal(6, workspace.Subcommands.Count);
     }
 
     [Fact]

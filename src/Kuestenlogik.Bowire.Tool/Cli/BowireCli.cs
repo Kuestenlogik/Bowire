@@ -1389,6 +1389,10 @@ internal static class BowireCli
         {
             Description = "Run every Flow JSON under a git-native workspace directory (its flows/ folder, or the directory itself). Aggregates pass/fail across all flows; the positional file is ignored.",
         };
+        var workspaceId = new Option<string?>("--workspace-id")
+        {
+            Description = "Run the suite of a workspace the workbench saved, addressed by its id. Resolves through the workspace inventory, so a git-native workspace is found in its checkout. Use `bowire workspace list` to see the ids; the positional file is ignored.",
+        };
         // v2.2 T2 — Flow-runner specific. Ignored for the recording
         // codepath which already carries serverUrl + environment per
         // test-collection.
@@ -1432,7 +1436,7 @@ internal static class BowireCli
         var cmd = new Command("test", "Run an assertion-based test suite. Accepts a recording JSON (v2.1 test-collection format) or a Flow JSON document (v2.2 — the T2 CI runner). Format auto-detected.");
         cmd.Add(collectionPath); cmd.Add(url); cmd.Add(report); cmd.Add(junit);
         cmd.Add(sarif); cmd.Add(annotations); cmd.Add(updateSnapshots);
-        cmd.Add(failOn); cmd.Add(workspaceDir);
+        cmd.Add(failOn); cmd.Add(workspaceDir); cmd.Add(workspaceId);
         cmd.Add(baseUrl); cmd.Add(env); cmd.Add(envFile); cmd.Add(keyring); cmd.Add(aiSeed);
         cmd.Add(secret); cmd.Add(secretFile);
         cmd.SetAction(async (pr, _) =>
@@ -1462,6 +1466,31 @@ internal static class BowireCli
             // per-flow (written next to each flow with a .<flow>.junit
             // suffix) so a CI reporter can glob them.
             var wsDir = pr.GetValue(workspaceDir);
+            var wsId = pr.GetValue(workspaceId);
+            if (!string.IsNullOrEmpty(wsDir) && !string.IsNullOrEmpty(wsId))
+            {
+                // Both name a workspace and they can name different ones.
+                // Picking one silently would run a suite the operator did
+                // not ask for and report it as theirs.
+                await stderr.WriteLineAsync(
+                    "bowire test: --workspace and --workspace-id both name a workspace; pass one.")
+                    .ConfigureAwait(false);
+                return 2;
+            }
+            if (!string.IsNullOrEmpty(wsId))
+            {
+                // #365 — the id is what the workbench shows and what a person
+                // would say out loud, so it is what CI can name.
+                //
+                // The storage root has to be settled first. A host does this
+                // on start-up; a bare CLI command never did, so anything
+                // resolving through the user store read ~/.bowire whatever
+                // BOWIRE_DATA_DIR or a project manifest said. The path form
+                // is unaffected -- it is handed a directory -- but an id is
+                // only meaningful relative to a store.
+                Kuestenlogik.Bowire.Projects.BowireStorageRoot.Apply();
+                return await TestRunner.RunWorkspaceIdAsync(wsId, options, stdout, stderr).ConfigureAwait(false);
+            }
             if (!string.IsNullOrEmpty(wsDir))
             {
                 return await TestRunner.RunWorkspaceAsync(wsDir, options, stdout, stderr).ConfigureAwait(false);

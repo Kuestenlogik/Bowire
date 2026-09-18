@@ -79,32 +79,107 @@ internal static class TestRunner
         var worst = 0;
         foreach (var file in files)
         {
-            // The workbench keeps a workspace's flows in one `flows.json`
-            // envelope. Run each of them, named by its id, rather than
-            // handing the envelope to the runner as if it were a single
-            // flow -- which is what used to happen, and ended in "Flow has
-            // no nodes" with nothing executed.
-            var ids = await EnvelopeIdsAsync(file).ConfigureAwait(false);
-            if (ids.Count > 0)
-            {
-                foreach (var id in ids)
-                {
-                    var perEnvelopeFlow = BuildPerFlowOptions(cli, file, reportKey: id);
-                    perEnvelopeFlow.FlowId = id;
-                    var envelopeRc = await RunAsync(perEnvelopeFlow, stdout, stderr).ConfigureAwait(false);
-                    if (envelopeRc > worst) worst = envelopeRc;
-                }
-                continue;
-            }
-
-            // Per-flow report paths: <report>.<flow>.<ext> so a glob
-            // picks all of them up; null stays null.
-            var perFlow = BuildPerFlowOptions(cli, file, Path.GetFileNameWithoutExtension(file));
-            var rc = await RunAsync(perFlow, stdout, stderr).ConfigureAwait(false);
+            var rc = await RunFlowFileAsync(file, cli, stdout, stderr).ConfigureAwait(false);
             // Worst-of: 2 (error) beats 1 (fail) beats 0 (pass).
             if (rc > worst) worst = rc;
         }
         return worst;
+    }
+
+    /// <summary>
+    /// #365 — run the suite of a workspace the workbench saved, addressed by
+    /// its id rather than by a path.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The path form needs the caller to know where a workspace's files
+    /// ended up, which depends on whether it is git-native and on the
+    /// identity's slot. The id is what the workbench shows and what a person
+    /// would say out loud, so it is what CI should be able to name.
+    /// </para>
+    /// <para>
+    /// Resolved through the inventory rather than by looking for a directory:
+    /// a git-native workspace's flows live in its checkout, and only the
+    /// inventory knows that. This runs the one file the workspace keeps its
+    /// flows in, where the path form globs a directory — so a checkout whose
+    /// root also holds <c>package.json</c> does not have it handed to the
+    /// test runner.
+    /// </para>
+    /// </remarks>
+    public static async Task<int> RunWorkspaceIdAsync(
+        string workspaceId, TestCliOptions cli, TextWriter? output = null, TextWriter? error = null)
+    {
+        ArgumentNullException.ThrowIfNull(cli);
+        var stdout = output ?? Console.Out;
+        var stderr = error ?? Console.Error;
+
+        var known = WorkbenchWorkspaces.All();
+        if (known.Count == 0)
+        {
+            await WriteErrorAsync(stderr,
+                "No workspaces have been saved yet. Create one in the workbench, or point --workspace at a directory.")
+                .ConfigureAwait(false);
+            return 2;
+        }
+
+        var match = known.FirstOrDefault(
+            w => string.Equals(w.Id, workspaceId, StringComparison.Ordinal));
+        if (match is null)
+        {
+            // Naming what does exist: an id is easy to mistype and there is
+            // no other way to see the list from here.
+            await WriteErrorAsync(stderr,
+                $"No workspace with id '{workspaceId}'. Known ids: {string.Join(", ", known.Select(w => w.Id))}")
+                .ConfigureAwait(false);
+            return 2;
+        }
+
+        var flowsFile = WorkbenchWorkspaces.FlowsFile(match);
+        if (!File.Exists(flowsFile))
+        {
+            await WriteErrorAsync(stderr,
+                $"Workspace '{match.Id}' has no flows yet ({flowsFile}).").ConfigureAwait(false);
+            return 2;
+        }
+
+        await WriteHeaderAsync(stdout,
+            $"Bowire Test Runner   workspace: {match.Name} ({match.Id})   {flowsFile}").ConfigureAwait(false);
+
+        return await RunFlowFileAsync(flowsFile, cli, stdout, stderr).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Run one file: every flow in it when it is a workbench envelope, the
+    /// file itself when it is a single flow.
+    /// </summary>
+    /// <remarks>
+    /// The workbench keeps a workspace's flows in one <c>flows.json</c>
+    /// envelope. Each is run named by its id, rather than the envelope being
+    /// handed to the runner as if it were a single flow — which is what used
+    /// to happen, and ended in "Flow has no nodes" with nothing executed.
+    /// </remarks>
+    private static async Task<int> RunFlowFileAsync(
+        string file, TestCliOptions cli, TextWriter stdout, TextWriter stderr)
+    {
+        var worst = 0;
+
+        var ids = await EnvelopeIdsAsync(file).ConfigureAwait(false);
+        if (ids.Count > 0)
+        {
+            foreach (var id in ids)
+            {
+                var perEnvelopeFlow = BuildPerFlowOptions(cli, file, reportKey: id);
+                perEnvelopeFlow.FlowId = id;
+                var envelopeRc = await RunAsync(perEnvelopeFlow, stdout, stderr).ConfigureAwait(false);
+                if (envelopeRc > worst) worst = envelopeRc;
+            }
+            return worst;
+        }
+
+        // Per-flow report paths: <report>.<flow>.<ext> so a glob picks all
+        // of them up; null stays null.
+        var perFlow = BuildPerFlowOptions(cli, file, Path.GetFileNameWithoutExtension(file));
+        return await RunAsync(perFlow, stdout, stderr).ConfigureAwait(false);
     }
 
     /// <summary>
