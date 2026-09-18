@@ -17,13 +17,14 @@ namespace Kuestenlogik.Bowire.Tests.Cli;
 /// <see cref="RecordingStore.StorePath"/> override so the scans run
 /// against fixture-controlled storage.
 /// </summary>
-[Collection("BowireUserContext")]
 public sealed class WorkbenchRecordingJsonProviderCoverageTests : IDisposable
 {
-    private readonly IBowireUserStore _originalUserStore;
     private readonly string _originalRecordingStorePath;
     private readonly string _sandboxRoot;
     private readonly WorkbenchRecordingJsonProvider _provider;
+
+    /// <summary>This class's storage, for as long as it runs.</summary>
+    private readonly IDisposable _userScope;
 
     public WorkbenchRecordingJsonProviderCoverageTests()
     {
@@ -32,8 +33,7 @@ public sealed class WorkbenchRecordingJsonProviderCoverageTests : IDisposable
             $"bowire-recprov-{Guid.NewGuid():N}");
         Directory.CreateDirectory(_sandboxRoot);
 
-        _originalUserStore = BowireUserContext.Current;
-        BowireUserContext.Current = new TempStore(_sandboxRoot);
+        _userScope = BowireUserContext.Enter(new TempStore(_sandboxRoot));
 
         // Redirect the legacy unscoped RecordingStore to a temp file
         // under the sandbox too, so its taps survive without touching
@@ -46,7 +46,7 @@ public sealed class WorkbenchRecordingJsonProviderCoverageTests : IDisposable
 
     public void Dispose()
     {
-        BowireUserContext.Current = _originalUserStore;
+        _userScope.Dispose();
         RecordingStore.StorePath = _originalRecordingStorePath;
         if (Directory.Exists(_sandboxRoot))
         {

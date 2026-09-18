@@ -29,14 +29,15 @@ namespace Kuestenlogik.Bowire.Tests;
 /// file-level refusal is exercised here.
 /// </para>
 /// </remarks>
-[Collection("BowireUserContext")]
 public sealed class AuthRecordingCommandTests : IDisposable
 {
     private const string EnvVar = "BOWIRE_TEST_AUTH_RECORDING_SECRET";
 
     private readonly string _root = Path.Combine(
         Path.GetTempPath(), "bowire-authrec-" + Guid.NewGuid().ToString("N"));
-    private readonly IBowireUserStore _previous = BowireUserContext.Current;
+
+    /// <summary>This class's storage, for as long as it runs.</summary>
+    private readonly IDisposable _userScope;
 
     public AuthRecordingCommandTests()
     {
@@ -44,12 +45,12 @@ public sealed class AuthRecordingCommandTests : IDisposable
         // test that missed this would write real credentials into the
         // developer's own ~/.bowire/workspaces/auth-recordings.
         Directory.CreateDirectory(_root);
-        BowireUserContext.Current = new DefaultBowireUserStore(_root);
+        _userScope = BowireUserContext.Enter(new DefaultBowireUserStore(_root));
     }
 
     public void Dispose()
     {
-        BowireUserContext.Current = _previous;
+        _userScope.Dispose();
         Environment.SetEnvironmentVariable(EnvVar, null);
         try { Directory.Delete(_root, recursive: true); }
         catch (IOException) { } catch (UnauthorizedAccessException) { }

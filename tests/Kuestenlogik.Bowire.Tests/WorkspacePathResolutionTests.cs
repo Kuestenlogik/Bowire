@@ -19,7 +19,6 @@ namespace Kuestenlogik.Bowire.Tests;
 ///     stable layout.</item>
 /// </list>
 /// </summary>
-[Collection("BowireUserContext")]
 public sealed class WorkspacePathResolutionTests
 {
     [Fact]

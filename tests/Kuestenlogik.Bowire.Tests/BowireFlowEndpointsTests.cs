@@ -30,9 +30,6 @@ namespace Kuestenlogik.Bowire.Tests;
 /// plus the refusals, because this route writes to disk on the operator's
 /// machine.
 /// </remarks>
-// Same collection as FlowStoreTests: both swap the process-wide store
-// location, and run concurrently they read each other's files.
-[Collection("BowireUserContext")]
 public sealed class BowireFlowEndpointsTests : IDisposable
 {
     private const string OneFlow =
@@ -40,21 +37,19 @@ public sealed class BowireFlowEndpointsTests : IDisposable
 
     private readonly string _root = Path.Combine(
         Path.GetTempPath(), "bowire-flows-" + Guid.NewGuid().ToString("N"));
-    private readonly IBowireUserStore _previousUsers = BowireUserContext.Current;
-    private readonly string _previousStorePath;
+
+    /// <summary>This class's storage, for as long as it runs.</summary>
+    private readonly IDisposable _userScope;
 
     public BowireFlowEndpointsTests()
     {
         Directory.CreateDirectory(_root);
-        _previousStorePath = FlowStore.StorePath;
-        BowireUserContext.Current = new DefaultBowireUserStore(_root);
-        FlowStore.StorePath = Path.Combine(_root, "flows.json");
+        _userScope = BowireUserContext.Enter(new DefaultBowireUserStore(_root));
     }
 
     public void Dispose()
     {
-        FlowStore.StorePath = _previousStorePath;
-        BowireUserContext.Current = _previousUsers;
+        _userScope.Dispose();
         try { Directory.Delete(_root, recursive: true); }
         catch (IOException) { } catch (UnauthorizedAccessException) { }
     }
@@ -227,6 +222,12 @@ public sealed class BowireFlowEndpointsTests : IDisposable
             })
             .Build();
         await host.StartAsync(TestContext.Current.CancellationToken);
+
+        // TestServer drops the caller's execution context by default, so the
+        // store scope this class opened would not reach the handler -- and
+        // the handler would fall back to the host's, which is the real
+        // ~/.bowire. Quietly, by writing there.
+        host.GetTestServer().PreserveExecutionContext = true;
         return host;
     }
 

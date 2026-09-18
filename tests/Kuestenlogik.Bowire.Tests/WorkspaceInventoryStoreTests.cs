@@ -20,7 +20,6 @@ namespace Kuestenlogik.Bowire.Tests;
 /// freshly seeded template.
 /// </para>
 /// </remarks>
-[Collection("BowireUserContext")]
 public sealed class WorkspaceInventoryStoreTests : IDisposable
 {
     private const string TwoWorkspaces =
@@ -28,21 +27,22 @@ public sealed class WorkspaceInventoryStoreTests : IDisposable
 
     private const string NoWorkspaces = """{"workspaces":[]}""";
 
-    private readonly IBowireUserStore _previousUsers = BowireUserContext.Current;
 
     private readonly string _root = Path.Combine(
         Path.GetTempPath(), "bowire-inventory-" + Guid.NewGuid().ToString("N"));
 
+    /// <summary>This class's storage, for as long as it runs.</summary>
+    private readonly IDisposable _userScope;
+
     public WorkspaceInventoryStoreTests()
     {
         Directory.CreateDirectory(_root);
-        BowireUserContext.Current = new DefaultBowireUserStore(_root);
+        _userScope = BowireUserContext.Enter(new DefaultBowireUserStore(_root));
     }
 
     public void Dispose()
     {
-        WorkspaceInventoryStore.TestPathOverride = null;
-        BowireUserContext.Current = _previousUsers;
+        _userScope.Dispose();
         try { Directory.Delete(_root, recursive: true); }
         catch (DirectoryNotFoundException) { }
         catch (IOException) { }
@@ -79,16 +79,21 @@ public sealed class WorkspaceInventoryStoreTests : IDisposable
         // The defect this exists to remove. Before, both identities read one
         // localStorage key in one browser profile, so deleting an entry
         // removed it for the other person.
-        BowireUserContext.Current = new ScopedBowireUserStore(_root, "alice@example.com");
-        WorkspaceInventoryStore.Save(TwoWorkspaces);
+        using (BowireUserContext.Enter(new ScopedBowireUserStore(_root, "alice@example.com")))
+        {
+            WorkspaceInventoryStore.Save(TwoWorkspaces);
+        }
 
-        BowireUserContext.Current = new ScopedBowireUserStore(_root, "bob@example.com");
-        Assert.Null(WorkspaceInventoryStore.Load());
+        using (BowireUserContext.Enter(new ScopedBowireUserStore(_root, "bob@example.com")))
+        {
+            Assert.Null(WorkspaceInventoryStore.Load());
+            WorkspaceInventoryStore.Save(NoWorkspaces);
+        }
 
-        WorkspaceInventoryStore.Save(NoWorkspaces);
-
-        BowireUserContext.Current = new ScopedBowireUserStore(_root, "alice@example.com");
-        Assert.Equal(TwoWorkspaces, WorkspaceInventoryStore.Load());
+        using (BowireUserContext.Enter(new ScopedBowireUserStore(_root, "alice@example.com")))
+        {
+            Assert.Equal(TwoWorkspaces, WorkspaceInventoryStore.Load());
+        }
     }
 
     [Fact]
@@ -99,7 +104,7 @@ public sealed class WorkspaceInventoryStoreTests : IDisposable
         // not on its not-personal list. Both reach this file only because of
         // where it is, which is why neither needed a line of its own.
         var store = new ScopedBowireUserStore(_root, "alice@example.com");
-        BowireUserContext.Current = store;
+        using var scope = BowireUserContext.Enter(store);
 
         WorkspaceInventoryStore.Save(TwoWorkspaces);
 

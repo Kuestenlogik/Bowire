@@ -15,25 +15,25 @@ namespace Kuestenlogik.Bowire.Tests;
 /// and the AddBowireAi overlay precedence (defaults → IConfiguration →
 /// configure callback → user-config file).
 /// </summary>
-[Collection("BowireUserContext")]
 public sealed class BowireAiRuntimeTests : IDisposable
 {
-    private readonly IBowireUserStore _originalStore;
     private readonly string _tempRoot;
+
+    /// <summary>This class's storage, for as long as it runs.</summary>
+    private readonly IDisposable _userScope;
 
     public BowireAiRuntimeTests()
     {
-        _originalStore = BowireUserContext.Current;
         _tempRoot = Path.Combine(
             Path.GetTempPath(),
             $"bowire-ai-test-{Guid.NewGuid():N}");
         Directory.CreateDirectory(_tempRoot);
-        BowireUserContext.Current = new TempUserStore(_tempRoot);
+        _userScope = BowireUserContext.Enter(new TempUserStore(_tempRoot));
     }
 
     public void Dispose()
     {
-        BowireUserContext.Current = _originalStore;
+        _userScope.Dispose();
         try { Directory.Delete(_tempRoot, recursive: true); } catch { /* best-effort */ }
         GC.SuppressFinalize(this);
     }

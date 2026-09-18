@@ -15,13 +15,15 @@ namespace Kuestenlogik.Bowire.Tests;
 /// and <see cref="BowireUserContext.Current"/> to temp paths so the
 /// scan + cache write don't touch the developer's real <c>~/.bowire/</c>.
 /// </summary>
-[Collection("BowireUserContext")]
+[Collection("PluginUpdateCheckDir")]
 public sealed class PluginUpdateCheckServiceTests : IDisposable
 {
     private readonly string _originalPluginDir;
-    private readonly IBowireUserStore _originalUserStore;
     private readonly string _pluginDir;
     private readonly string _userStoreRoot;
+
+    /// <summary>This class's storage, for as long as it runs.</summary>
+    private readonly IDisposable _userScope;
 
     public PluginUpdateCheckServiceTests()
     {
@@ -32,15 +34,14 @@ public sealed class PluginUpdateCheckServiceTests : IDisposable
         Directory.CreateDirectory(_userStoreRoot);
 
         _originalPluginDir = PluginUpdateCheckService.PluginDir;
-        _originalUserStore = BowireUserContext.Current;
         PluginUpdateCheckService.PluginDir = _pluginDir;
-        BowireUserContext.Current = new TempStore(_userStoreRoot);
+        _userScope = BowireUserContext.Enter(new TempStore(_userStoreRoot));
     }
 
     public void Dispose()
     {
         PluginUpdateCheckService.PluginDir = _originalPluginDir;
-        BowireUserContext.Current = _originalUserStore;
+        _userScope.Dispose();
         var sandbox = Path.GetDirectoryName(_pluginDir);
         if (sandbox is not null && Directory.Exists(sandbox))
         {

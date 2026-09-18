@@ -22,7 +22,6 @@ namespace Kuestenlogik.Bowire.Tests.Endpoints;
 ///     touching the per-user fallback.</item>
 /// </list>
 /// </summary>
-[Collection("BowireUserContext")]
 public sealed class WorkspaceStorageRootTests : IDisposable
 {
     private readonly string _storageRoot;

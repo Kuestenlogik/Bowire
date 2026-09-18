@@ -14,23 +14,23 @@ namespace Kuestenlogik.Bowire.Tests;
 /// per-workspace <c>AuthRecordingStore</c> scan runs against fixtures, not the
 /// developer's real <c>~/.bowire/</c>.
 /// </summary>
-[Collection("BowireUserContext")]
 public sealed class WorkbenchAuthRecordingResolverTests : IDisposable
 {
-    private readonly IBowireUserStore _original;
     private readonly string _tempRoot;
+
+    /// <summary>This class's storage, for as long as it runs.</summary>
+    private readonly IDisposable _userScope;
 
     public WorkbenchAuthRecordingResolverTests()
     {
-        _original = BowireUserContext.Current;
         _tempRoot = Path.Combine(Path.GetTempPath(), $"bowire-authrec-resolver-{Guid.NewGuid():N}");
         Directory.CreateDirectory(_tempRoot);
-        BowireUserContext.Current = new TempUserStore(_tempRoot);
+        _userScope = BowireUserContext.Enter(new TempUserStore(_tempRoot));
     }
 
     public void Dispose()
     {
-        BowireUserContext.Current = _original;
+        _userScope.Dispose();
         try { Directory.Delete(_tempRoot, recursive: true); } catch { /* best-effort */ }
         GC.SuppressFinalize(this);
     }

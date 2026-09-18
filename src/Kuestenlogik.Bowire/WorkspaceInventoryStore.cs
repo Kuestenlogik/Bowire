@@ -60,18 +60,6 @@ internal static class WorkspaceInventoryStore
 
     private static readonly Lock s_gate = new();
 
-    private static string? s_testPathOverride;
-
-    /// <summary>
-    /// Test seam — point the store at a scratch file. Set to <c>null</c> to
-    /// go back to resolving through <see cref="BowireUserContext"/>.
-    /// </summary>
-    internal static string? TestPathOverride
-    {
-        get => s_testPathOverride;
-        set => s_testPathOverride = value;
-    }
-
     /// <summary>
     /// The calling identity's inventory as written, or <c>null</c> when they
     /// have never saved one.
@@ -155,8 +143,6 @@ internal static class WorkspaceInventoryStore
     /// </summary>
     private static string? ResolvePath()
     {
-        if (s_testPathOverride is not null) return s_testPathOverride;
-
         try { return BowireUserContext.GetUserPath(FileName); }
         catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
         {

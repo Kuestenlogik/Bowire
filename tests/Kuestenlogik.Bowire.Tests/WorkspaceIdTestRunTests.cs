@@ -27,7 +27,6 @@ namespace Kuestenlogik.Bowire.Tests;
 /// file — and that is fixed.
 /// </para>
 /// </remarks>
-[Collection("BowireUserContext")]
 public sealed class WorkspaceIdTestRunTests : IDisposable
 {
     private const string TwoFlows = """
@@ -41,21 +40,19 @@ public sealed class WorkspaceIdTestRunTests : IDisposable
 
     private readonly string _root = Path.Combine(
         Path.GetTempPath(), "bowire-wsid-" + Guid.NewGuid().ToString("N"));
-    private readonly IBowireUserStore _previousUsers = BowireUserContext.Current;
-    private readonly string? _previousInventory;
+
+    /// <summary>This class's storage, for as long as it runs.</summary>
+    private readonly IDisposable _userScope;
 
     public WorkspaceIdTestRunTests()
     {
         Directory.CreateDirectory(_root);
-        _previousInventory = WorkspaceInventoryStore.TestPathOverride;
-        BowireUserContext.Current = new DefaultBowireUserStore(_root);
-        WorkspaceInventoryStore.TestPathOverride = Path.Combine(_root, "workspaces.json");
+        _userScope = BowireUserContext.Enter(new DefaultBowireUserStore(_root));
     }
 
     public void Dispose()
     {
-        WorkspaceInventoryStore.TestPathOverride = _previousInventory;
-        BowireUserContext.Current = _previousUsers;
+        _userScope.Dispose();
         try { Directory.Delete(_root, recursive: true); }
         catch (IOException) { } catch (UnauthorizedAccessException) { }
     }

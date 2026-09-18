@@ -46,7 +46,6 @@ public sealed class BowireDataDirOverrideTests : IDisposable
 
     private readonly string? _previousEnv = Environment.GetEnvironmentVariable("BOWIRE_DATA_DIR");
     private readonly IBowirePathResolver _previousPaths = BowirePaths.Current;
-    private readonly IBowireUserStore _previousUsers = BowireUserContext.Current;
 
     public BowireDataDirOverrideTests() => Directory.CreateDirectory(_scratch);
 
@@ -54,7 +53,6 @@ public sealed class BowireDataDirOverrideTests : IDisposable
     {
         Environment.SetEnvironmentVariable("BOWIRE_DATA_DIR", _previousEnv);
         BowirePaths.Current = _previousPaths;
-        BowireUserContext.Current = _previousUsers;
         try { Directory.Delete(_scratch, recursive: true); }
         catch (DirectoryNotFoundException) { }
         catch (IOException) { }
@@ -81,7 +79,7 @@ public sealed class BowireDataDirOverrideTests : IDisposable
     {
         Environment.SetEnvironmentVariable("BOWIRE_DATA_DIR", _scratch);
         BowirePaths.Current = new BowirePathResolver();
-        BowireUserContext.Current = new DefaultBowireUserStore(BowireStorageRoot.Resolve());
+        using var store = BowireUserContext.Enter(new DefaultBowireUserStore(BowireStorageRoot.Resolve()));
 
         var flows = BowireUserContext.GetWorkspacePath("team-a", null, "flows.json");
 
@@ -97,7 +95,7 @@ public sealed class BowireDataDirOverrideTests : IDisposable
         // with a clone.
         Environment.SetEnvironmentVariable("BOWIRE_DATA_DIR", _scratch);
         BowirePaths.Current = new BowirePathResolver();
-        BowireUserContext.Current = new DefaultBowireUserStore(BowireStorageRoot.Resolve());
+        using var store = BowireUserContext.Enter(new DefaultBowireUserStore(BowireStorageRoot.Resolve()));
 
         var checkout = Path.Combine(_scratch, "..", "checkout-" + Guid.NewGuid().ToString("N")[..6]);
         Directory.CreateDirectory(checkout);

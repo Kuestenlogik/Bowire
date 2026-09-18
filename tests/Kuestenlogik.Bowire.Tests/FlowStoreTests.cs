@@ -24,30 +24,27 @@ namespace Kuestenlogik.Bowire.Tests;
 /// the ones that matter here.
 /// </para>
 /// </remarks>
-[Collection("BowireUserContext")]
 public sealed class FlowStoreTests : IDisposable
 {
     private const string TwoFlows =
         """{"flows":[{"id":"flow_a","name":"Login"},{"id":"flow_b","name":"Checkout"}]}""";
 
-    private readonly IBowireUserStore _previousUsers = BowireUserContext.Current;
-    private readonly string _originalPath;
 
     private readonly string _root = Path.Combine(
         Path.GetTempPath(), "bowire-flows-" + Guid.NewGuid().ToString("N"));
 
+    /// <summary>This class's storage, for as long as it runs.</summary>
+    private readonly IDisposable _userScope;
+
     public FlowStoreTests()
     {
         Directory.CreateDirectory(_root);
-        _originalPath = FlowStore.StorePath;
-        BowireUserContext.Current = new DefaultBowireUserStore(_root);
-        FlowStore.StorePath = Path.Combine(_root, "flows.json");
+        _userScope = BowireUserContext.Enter(new DefaultBowireUserStore(_root));
     }
 
     public void Dispose()
     {
-        FlowStore.StorePath = _originalPath;
-        BowireUserContext.Current = _previousUsers;
+        _userScope.Dispose();
         try { Directory.Delete(_root, recursive: true); }
         catch (DirectoryNotFoundException) { }
         catch (IOException) { }

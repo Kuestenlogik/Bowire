@@ -44,19 +44,20 @@ namespace Kuestenlogik.Bowire;
 /// </remarks>
 internal static class FlowStore
 {
-    private static string? _testStorePathOverride;
-
     /// <summary>
     /// The legacy, workspace-less location. Kept for the same reason
     /// collections keep theirs: a caller that names no workspace is either the
     /// CLI or a host that predates workspaces, and neither should be handed
     /// somebody's workspace file.
     /// </summary>
-    internal static string StorePath
-    {
-        get => _testStorePathOverride ?? BowireUserContext.GetUserPath("flows.json");
-        set => _testStorePathOverride = value;
-    }
+    /// <remarks>
+    /// There used to be a settable override beside this, for tests that
+    /// needed the file somewhere else. It was from before the user store
+    /// could be swapped: this already resolves through the store, so a test
+    /// that scopes the store has moved this too, and a second way to say the
+    /// same thing was one process-global more than the code needed.
+    /// </remarks>
+    internal static string StorePath => BowireUserContext.GetUserPath("flows.json");
 
     private static readonly Lock FileLock = new();
 
@@ -71,13 +72,6 @@ internal static class FlowStore
     /// </remarks>
     private static string ResolvePath(string? workspaceId, string? storageRoot)
     {
-        if (_testStorePathOverride is not null
-            && string.IsNullOrWhiteSpace(workspaceId)
-            && string.IsNullOrWhiteSpace(storageRoot))
-        {
-            return _testStorePathOverride;
-        }
-
         if (string.IsNullOrWhiteSpace(workspaceId) && string.IsNullOrWhiteSpace(storageRoot))
             return StorePath;
 

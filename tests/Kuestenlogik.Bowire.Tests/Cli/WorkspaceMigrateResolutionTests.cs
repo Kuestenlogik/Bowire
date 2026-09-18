@@ -24,7 +24,6 @@ namespace Kuestenlogik.Bowire.Tests.Cli;
 /// why the class runs in the serialised <c>BowireUserContext</c> collection.
 /// </para>
 /// </remarks>
-[Collection("BowireUserContext")]
 public sealed class WorkspaceMigrateResolutionTests : IDisposable
 {
     private const int Ok = 0;
@@ -33,19 +32,21 @@ public sealed class WorkspaceMigrateResolutionTests : IDisposable
 
     private readonly string _home = Path.Combine(
         Path.GetTempPath(), "bowire-ws-resolve-" + Guid.NewGuid().ToString("N"));
-    private readonly IBowireUserStore _previous = BowireUserContext.Current;
     private readonly StringWriter _out = new();
     private readonly StringWriter _err = new();
+
+    /// <summary>This class's storage, for as long as it runs.</summary>
+    private readonly IDisposable _userScope;
 
     public WorkspaceMigrateResolutionTests()
     {
         Directory.CreateDirectory(_home);
-        BowireUserContext.Current = new DefaultBowireUserStore(_home);
+        _userScope = BowireUserContext.Enter(new DefaultBowireUserStore(_home));
     }
 
     public void Dispose()
     {
-        BowireUserContext.Current = _previous;
+        _userScope.Dispose();
         _out.Dispose();
         _err.Dispose();
         try { Directory.Delete(_home, recursive: true); }

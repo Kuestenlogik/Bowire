@@ -16,12 +16,14 @@ namespace Kuestenlogik.Bowire.Tests;
 /// path through both the work and the interval delay, and the
 /// IntervalHours clamp.
 /// </summary>
-[Collection("BowireUserContext")]
+[Collection("PluginUpdateCheckDir")]
 public sealed class PluginUpdateCheckHostedServiceTests : IDisposable
 {
     private readonly string _originalPluginDir;
-    private readonly IBowireUserStore _originalUserStore;
     private readonly string _sandbox;
+
+    /// <summary>This class's storage, for as long as it runs.</summary>
+    private readonly IDisposable _userScope;
 
     public PluginUpdateCheckHostedServiceTests()
     {
@@ -30,15 +32,14 @@ public sealed class PluginUpdateCheckHostedServiceTests : IDisposable
         Directory.CreateDirectory(SafePath.Combine(_sandbox, "userstore"));
 
         _originalPluginDir = PluginUpdateCheckService.PluginDir;
-        _originalUserStore = BowireUserContext.Current;
         PluginUpdateCheckService.PluginDir = SafePath.Combine(_sandbox, "plugins");
-        BowireUserContext.Current = new TempStore(SafePath.Combine(_sandbox, "userstore"));
+        _userScope = BowireUserContext.Enter(new TempStore(SafePath.Combine(_sandbox, "userstore")));
     }
 
     public void Dispose()
     {
         PluginUpdateCheckService.PluginDir = _originalPluginDir;
-        BowireUserContext.Current = _originalUserStore;
+        _userScope.Dispose();
         try { Directory.Delete(_sandbox, recursive: true); } catch { /* best-effort */ }
         GC.SuppressFinalize(this);
     }
