@@ -292,7 +292,7 @@ public static class UnaryReplayer
         await ctx.Response.StartAsync(ct);
 
         var speed = options.ReplaySpeed;
-        var pace = speed > 0;
+        var pacer = new FramePacer(speed);
 
         // #170 — a fault may cap how many frames this stream delivers.
         // Counted at the write, not at the top of the loop: a frame the
@@ -300,7 +300,6 @@ public static class UnaryReplayer
         // spend the budget.
         var emitted = 0;
 
-        long lastTimestampMs = 0;
         foreach (var frame in frames)
         {
             ct.ThrowIfCancellationRequested();
@@ -311,15 +310,9 @@ public static class UnaryReplayer
             // means emitting frames with Index > lastId.
             if (resumeAfter is int skipUpTo && frame.Index <= skipUpTo) continue;
 
-            if (pace && frame.TimestampMs is long frameTs && frameTs > lastTimestampMs)
+            if (!await pacer.WaitForAsync(frame.TimestampMs, ct))
             {
-                var waitMs = (long)((frameTs - lastTimestampMs) / speed);
-                if (waitMs > 0)
-                {
-                    try { await Task.Delay(TimeSpan.FromMilliseconds(waitMs), ct); }
-                    catch (OperationCanceledException) { return 200; }
-                }
-                lastTimestampMs = frameTs;
+                return 200;
             }
 
             // Apply response-body substitution to the frame payload. Same
@@ -529,30 +522,20 @@ public static class UnaryReplayer
         await ctx.Response.StartAsync(ct);
 
         var speed = options.ReplaySpeed;
-        var pace = speed > 0;
+        var pacer = new FramePacer(speed);
 
         // #170 — counted at the write: a frame skipped for malformed
         // base64 never reached the client and must not spend the budget.
         var emitted = 0;
 
-        long lastTimestampMs = 0;
         foreach (var frame in frames)
         {
             ct.ThrowIfCancellationRequested();
 
-            if (pace && frame.TimestampMs is long frameTs && frameTs > lastTimestampMs)
+            if (!await pacer.WaitForAsync(frame.TimestampMs, ct))
             {
-                var waitMs = (long)((frameTs - lastTimestampMs) / speed);
-                if (waitMs > 0)
-                {
-                    try { await Task.Delay(TimeSpan.FromMilliseconds(waitMs), ct); }
-                    catch (OperationCanceledException)
-                    {
-                        WriteGrpcStatusTrailer(ctx, status: 1, message: "Cancelled");
-                        return 200;
-                    }
-                }
-                lastTimestampMs = frameTs;
+                WriteGrpcStatusTrailer(ctx, status: 1, message: "Cancelled");
+                return 200;
             }
 
             byte[] payload;
@@ -691,7 +674,7 @@ public static class UnaryReplayer
         await ctx.Response.StartAsync(ct);
 
         var speed = options.ReplaySpeed;
-        var pace = speed > 0;
+        var pacer = new FramePacer(speed);
         var gating = step.SentMessages is { Count: > 0 };
 
         // Client-frame ticket channel for gating. Independent of the
@@ -715,23 +698,13 @@ public static class UnaryReplayer
 
         if (!gating)
         {
-            long lastTimestampMs = 0;
             foreach (var frame in received)
             {
                 ct.ThrowIfCancellationRequested();
-                if (pace && frame.TimestampMs is long frameTs && frameTs > lastTimestampMs)
+                if (!await pacer.WaitForAsync(frame.TimestampMs, ct))
                 {
-                    var waitMs = (long)((frameTs - lastTimestampMs) / speed);
-                    if (waitMs > 0)
-                    {
-                        try { await Task.Delay(TimeSpan.FromMilliseconds(waitMs), ct); }
-                        catch (OperationCanceledException)
-                        {
-                            WriteGrpcStatusTrailer(ctx, status: 1, message: "Cancelled");
-                            return 200;
-                        }
-                    }
-                    lastTimestampMs = frameTs;
+                    WriteGrpcStatusTrailer(ctx, status: 1, message: "Cancelled");
+                    return 200;
                 }
                 await WriteGrpcFrameAsync(ctx, frame, logger, ct);
             }
@@ -739,26 +712,16 @@ public static class UnaryReplayer
         else
         {
             var timeline = BuildGrpcTimeline(received, step.SentMessages!);
-            long lastTimestampMs = 0;
             foreach (var evt in timeline)
             {
                 ct.ThrowIfCancellationRequested();
 
                 if (evt.Kind == WebSocketEventKind.Received)
                 {
-                    if (pace && evt.Frame!.TimestampMs is long frameTs && frameTs > lastTimestampMs)
+                    if (!await pacer.WaitForAsync(evt.Frame!.TimestampMs, ct))
                     {
-                        var waitMs = (long)((frameTs - lastTimestampMs) / speed);
-                        if (waitMs > 0)
-                        {
-                            try { await Task.Delay(TimeSpan.FromMilliseconds(waitMs), ct); }
-                            catch (OperationCanceledException)
-                            {
-                                WriteGrpcStatusTrailer(ctx, status: 1, message: "Cancelled");
-                                return 200;
-                            }
-                        }
-                        lastTimestampMs = frameTs;
+                        WriteGrpcStatusTrailer(ctx, status: 1, message: "Cancelled");
+                        return 200;
                     }
                     await WriteGrpcFrameAsync(ctx, evt.Frame!, logger, ct);
                 }
@@ -769,7 +732,7 @@ public static class UnaryReplayer
                     catch (OperationCanceledException) { break; }
                     if (!ticketAvailable) break;
                     clientTickets.Reader.TryRead(out _);
-                    if (evt.TimestampMs > lastTimestampMs) lastTimestampMs = evt.TimestampMs;
+                    pacer.Advance(evt.TimestampMs);
                     logger.LogInformation(
                         "grpc-bidi-gate(step={StepId}, sentIndex={Index}) → released",
                         step.Id, evt.SentIndex);
@@ -1002,25 +965,18 @@ public static class UnaryReplayer
         }, ct);
 
         var speed = options.ReplaySpeed;
-        var pace = speed > 0;
+        var pacer = new FramePacer(speed);
 
         if (!inputGating)
         {
-            long lastTimestampMs = 0;
             foreach (var frame in frames)
             {
                 ct.ThrowIfCancellationRequested();
                 if (socket.State != System.Net.WebSockets.WebSocketState.Open) break;
 
-                if (pace && frame.TimestampMs is long frameTs && frameTs > lastTimestampMs)
+                if (!await pacer.WaitForAsync(frame.TimestampMs, ct))
                 {
-                    var waitMs = (long)((frameTs - lastTimestampMs) / speed);
-                    if (waitMs > 0)
-                    {
-                        try { await Task.Delay(TimeSpan.FromMilliseconds(waitMs), ct); }
-                        catch (OperationCanceledException) { break; }
-                    }
-                    lastTimestampMs = frameTs;
+                    break;
                 }
 
                 if (!TrySendFrame(socket, frame, logger, ct, out var sendTask))
@@ -1041,7 +997,6 @@ public static class UnaryReplayer
             // frame captured at the same instant as a send reaches the
             // client before we start waiting for the next client ticket.
             var timeline = BuildWebSocketTimeline(frames, step.SentMessages!);
-            long lastTimestampMs = 0;
 
             foreach (var evt in timeline)
             {
@@ -1050,15 +1005,9 @@ public static class UnaryReplayer
 
                 if (evt.Kind == WebSocketEventKind.Received)
                 {
-                    if (pace && evt.Frame!.TimestampMs is long frameTs && frameTs > lastTimestampMs)
+                    if (!await pacer.WaitForAsync(evt.Frame!.TimestampMs, ct))
                     {
-                        var waitMs = (long)((frameTs - lastTimestampMs) / speed);
-                        if (waitMs > 0)
-                        {
-                            try { await Task.Delay(TimeSpan.FromMilliseconds(waitMs), ct); }
-                            catch (OperationCanceledException) { break; }
-                        }
-                        lastTimestampMs = frameTs;
+                        break;
                     }
 
                     if (TrySendFrame(socket, evt.Frame!, logger, ct, out var sendTask))
@@ -1084,7 +1033,7 @@ public static class UnaryReplayer
                     // the next recv's pacing gap is measured from the
                     // gate-unlock moment — not from the replay start,
                     // which would bunch frames up after a slow client.
-                    if (evt.TimestampMs > lastTimestampMs) lastTimestampMs = evt.TimestampMs;
+                    pacer.Advance(evt.TimestampMs);
                     logger.LogInformation(
                         "ws-input-gate(step={StepId}, sentIndex={Index}) → released",
                         step.Id, evt.SentIndex);
@@ -1345,13 +1294,12 @@ public static class UnaryReplayer
         }, ct);
 
         var speed = options.ReplaySpeed;
-        var pace = speed > 0;
+        var pacer = new FramePacer(speed);
 
         // #170 - counted at the send: a frame RewriteGraphQlFrame declined
         // never reached the client and must not spend the budget.
         var emitted = 0;
 
-        long lastTimestampMs = 0;
         var sawComplete = false;
 
         foreach (var frame in frames)
@@ -1359,15 +1307,9 @@ public static class UnaryReplayer
             ct.ThrowIfCancellationRequested();
             if (socket.State != System.Net.WebSockets.WebSocketState.Open) break;
 
-            if (pace && frame.TimestampMs is long frameTs && frameTs > lastTimestampMs)
+            if (!await pacer.WaitForAsync(frame.TimestampMs, ct))
             {
-                var waitMs = (long)((frameTs - lastTimestampMs) / speed);
-                if (waitMs > 0)
-                {
-                    try { await Task.Delay(TimeSpan.FromMilliseconds(waitMs), ct); }
-                    catch (OperationCanceledException) { break; }
-                }
-                lastTimestampMs = frameTs;
+                break;
             }
 
             var rewritten = RewriteGraphQlFrame(frame, subId, logger);
@@ -1720,8 +1662,7 @@ public static class UnaryReplayer
         if (frames2 is { Count: > 0 })
         {
             var speed = options.ReplaySpeed;
-            var pace = speed > 0;
-            long lastTimestampMs = 0;
+            var pacer = new FramePacer(speed);
 
             // #170 - counted at the send: a frame with no SignalR payload
             // never reached the client and must not spend the budget.
@@ -1731,15 +1672,9 @@ public static class UnaryReplayer
                 ct.ThrowIfCancellationRequested();
                 if (socket.State != System.Net.WebSockets.WebSocketState.Open) break;
 
-                if (pace && frame.TimestampMs is long frameTs && frameTs > lastTimestampMs)
+                if (!await pacer.WaitForAsync(frame.TimestampMs, ct))
                 {
-                    var waitMs = (long)((frameTs - lastTimestampMs) / speed);
-                    if (waitMs > 0)
-                    {
-                        try { await Task.Delay(TimeSpan.FromMilliseconds(waitMs), ct); }
-                        catch (OperationCanceledException) { break; }
-                    }
-                    lastTimestampMs = frameTs;
+                    break;
                 }
 
                 // Serialise the recorded frame to its SignalR JSON form.
@@ -2302,8 +2237,7 @@ public static class UnaryReplayer
         if (broadcasts.Count > 0)
         {
             var speed = options.ReplaySpeed;
-            var pace = speed > 0;
-            long lastTimestampMs = 0;
+            var pacer = new FramePacer(speed);
 
             // #170 - both emit paths below deliver a frame, so both spend
             // the budget; a frame that formatted to nothing does not.
@@ -2314,15 +2248,9 @@ public static class UnaryReplayer
                 ct.ThrowIfCancellationRequested();
                 if (socket.State != System.Net.WebSockets.WebSocketState.Open) break;
 
-                if (pace && frame.TimestampMs is long frameTs && frameTs > lastTimestampMs)
+                if (!await pacer.WaitForAsync(frame.TimestampMs, ct))
                 {
-                    var waitMs = (long)((frameTs - lastTimestampMs) / speed);
-                    if (waitMs > 0)
-                    {
-                        try { await Task.Delay(TimeSpan.FromMilliseconds(waitMs), ct); }
-                        catch (OperationCanceledException) { break; }
-                    }
-                    lastTimestampMs = frameTs;
+                    break;
                 }
 
                 // Binary event? Envelope carries a `binary` field with
