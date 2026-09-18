@@ -1,6 +1,7 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
+using Kuestenlogik.Bowire.Testing;
 using System.Net;
 using System.Net.Sockets;
 using Kuestenlogik.Bowire.Models;
@@ -46,11 +47,9 @@ public sealed class RestInvokerEndToEndTests
     [Fact]
     public async Task Query_Header_And_Body_Buckets_All_Reach_Server()
     {
-        var port = GetFreeTcpPort();
-        var url = $"http://127.0.0.1:{port}";
 
         var builder = WebApplication.CreateBuilder();
-        builder.WebHost.UseUrls(url);
+        builder.WebHost.UseUrls(LoopbackHost.AnyPort);
         builder.Logging.ClearProviders();
         await using var app = builder.Build();
         app.MapPost("/things/{id}", async (HttpContext ctx, string id) =>
@@ -69,6 +68,7 @@ public sealed class RestInvokerEndToEndTests
             });
         });
         await app.StartAsync(TestContext.Current.CancellationToken);
+        var url = LoopbackHost.BaseAddress(app.Services);
 
         try
         {
@@ -133,15 +133,14 @@ public sealed class RestInvokerEndToEndTests
     [Fact]
     public async Task Server_Error_Maps_To_Internal_Status()
     {
-        var port = GetFreeTcpPort();
-        var url = $"http://127.0.0.1:{port}";
 
         var builder = WebApplication.CreateBuilder();
-        builder.WebHost.UseUrls(url);
+        builder.WebHost.UseUrls(LoopbackHost.AnyPort);
         builder.Logging.ClearProviders();
         await using var app = builder.Build();
         app.MapGet("/boom", () => Results.Problem("nope", statusCode: 503));
         await app.StartAsync(TestContext.Current.CancellationToken);
+        var url = LoopbackHost.BaseAddress(app.Services);
 
         try
         {
@@ -169,11 +168,9 @@ public sealed class RestInvokerEndToEndTests
     [Fact]
     public async Task Get_Drops_Body_Fields_Because_Verb_Cannot_Carry_Body()
     {
-        var port = GetFreeTcpPort();
-        var url = $"http://127.0.0.1:{port}";
 
         var builder = WebApplication.CreateBuilder();
-        builder.WebHost.UseUrls(url);
+        builder.WebHost.UseUrls(LoopbackHost.AnyPort);
         builder.Logging.ClearProviders();
         await using var app = builder.Build();
         app.MapGet("/q", async (HttpContext ctx) =>
@@ -183,6 +180,7 @@ public sealed class RestInvokerEndToEndTests
             return Results.Json(new { contentType = ctx.Request.ContentType ?? string.Empty, body });
         });
         await app.StartAsync(TestContext.Current.CancellationToken);
+        var url = LoopbackHost.BaseAddress(app.Services);
 
         try
         {
@@ -215,11 +213,9 @@ public sealed class RestInvokerEndToEndTests
     [Fact]
     public async Task Path_Template_With_Existing_Query_String_Appends_Extra_Params()
     {
-        var port = GetFreeTcpPort();
-        var url = $"http://127.0.0.1:{port}";
 
         var builder = WebApplication.CreateBuilder();
-        builder.WebHost.UseUrls(url);
+        builder.WebHost.UseUrls(LoopbackHost.AnyPort);
         builder.Logging.ClearProviders();
         await using var app = builder.Build();
         app.MapGet("/search", (HttpContext ctx) => Results.Json(new
@@ -228,6 +224,7 @@ public sealed class RestInvokerEndToEndTests
             q = ctx.Request.Query["q"].ToString()
         }));
         await app.StartAsync(TestContext.Current.CancellationToken);
+        var url = LoopbackHost.BaseAddress(app.Services);
 
         try
         {
@@ -260,11 +257,9 @@ public sealed class RestInvokerEndToEndTests
     [Fact]
     public async Task AwsSigV4_Marker_Signs_Request_Authorization_Reaches_Server()
     {
-        var port = GetFreeTcpPort();
-        var url = $"http://127.0.0.1:{port}";
 
         var builder = WebApplication.CreateBuilder();
-        builder.WebHost.UseUrls(url);
+        builder.WebHost.UseUrls(LoopbackHost.AnyPort);
         builder.Logging.ClearProviders();
         await using var app = builder.Build();
         app.MapPost("/sig", (HttpContext ctx) => Results.Json(new
@@ -275,6 +270,7 @@ public sealed class RestInvokerEndToEndTests
             sessTok = ctx.Request.Headers["X-Amz-Security-Token"].ToString()
         }));
         await app.StartAsync(TestContext.Current.CancellationToken);
+        var url = LoopbackHost.BaseAddress(app.Services);
 
         try
         {
@@ -317,11 +313,9 @@ public sealed class RestInvokerEndToEndTests
     [Fact]
     public async Task AwsSigV4_Marker_Bad_Json_Is_Silently_Ignored_Request_Still_Sent()
     {
-        var port = GetFreeTcpPort();
-        var url = $"http://127.0.0.1:{port}";
 
         var builder = WebApplication.CreateBuilder();
-        builder.WebHost.UseUrls(url);
+        builder.WebHost.UseUrls(LoopbackHost.AnyPort);
         builder.Logging.ClearProviders();
         await using var app = builder.Build();
         app.MapGet("/ping", (HttpContext ctx) => Results.Json(new
@@ -329,6 +323,7 @@ public sealed class RestInvokerEndToEndTests
             auth = ctx.Request.Headers["Authorization"].ToString()
         }));
         await app.StartAsync(TestContext.Current.CancellationToken);
+        var url = LoopbackHost.BaseAddress(app.Services);
 
         try
         {
@@ -362,11 +357,9 @@ public sealed class RestInvokerEndToEndTests
     [Fact]
     public async Task Multipart_Repeated_Array_Field_Emits_One_Part_Per_Element()
     {
-        var port = GetFreeTcpPort();
-        var url = $"http://127.0.0.1:{port}";
 
         var builder = WebApplication.CreateBuilder();
-        builder.WebHost.UseUrls(url);
+        builder.WebHost.UseUrls(LoopbackHost.AnyPort);
         builder.Logging.ClearProviders();
         await using var app = builder.Build();
         app.MapPost("/tags", async (HttpRequest req) =>
@@ -376,6 +369,7 @@ public sealed class RestInvokerEndToEndTests
             return Results.Json(new { tags, contentType = req.ContentType ?? string.Empty });
         });
         await app.StartAsync(TestContext.Current.CancellationToken);
+        var url = LoopbackHost.BaseAddress(app.Services);
 
         try
         {
@@ -409,11 +403,9 @@ public sealed class RestInvokerEndToEndTests
     [Fact]
     public async Task Multipart_Binary_With_Invalid_Base64_Sends_Empty_File()
     {
-        var port = GetFreeTcpPort();
-        var url = $"http://127.0.0.1:{port}";
 
         var builder = WebApplication.CreateBuilder();
-        builder.WebHost.UseUrls(url);
+        builder.WebHost.UseUrls(LoopbackHost.AnyPort);
         builder.Logging.ClearProviders();
         await using var app = builder.Build();
         app.MapPost("/up", async (HttpRequest req) =>
@@ -423,6 +415,7 @@ public sealed class RestInvokerEndToEndTests
             return Results.Json(new { length = file?.Length ?? -1L });
         });
         await app.StartAsync(TestContext.Current.CancellationToken);
+        var url = LoopbackHost.BaseAddress(app.Services);
 
         try
         {
@@ -460,15 +453,14 @@ public sealed class RestInvokerEndToEndTests
     [Fact]
     public async Task Empty_Response_Body_Becomes_Null_Response_Property()
     {
-        var port = GetFreeTcpPort();
-        var url = $"http://127.0.0.1:{port}";
 
         var builder = WebApplication.CreateBuilder();
-        builder.WebHost.UseUrls(url);
+        builder.WebHost.UseUrls(LoopbackHost.AnyPort);
         builder.Logging.ClearProviders();
         await using var app = builder.Build();
         app.MapGet("/empty", () => Results.NoContent());
         await app.StartAsync(TestContext.Current.CancellationToken);
+        var url = LoopbackHost.BaseAddress(app.Services);
 
         try
         {
@@ -493,14 +485,6 @@ public sealed class RestInvokerEndToEndTests
         }
     }
 
-    private static int GetFreeTcpPort()
-    {
-        using var listener = new TcpListener(IPAddress.Loopback, 0);
-        listener.Start();
-        var port = ((IPEndPoint)listener.LocalEndpoint).Port;
-        listener.Stop();
-        return port;
-    }
 }
 
 /// <summary>
@@ -516,8 +500,6 @@ public sealed class BowireRestProtocolEndToEndTests
     [Fact]
     public async Task Discover_And_Invoke_Against_Real_OpenApi_Server_Round_Trips()
     {
-        var port = GetFreeTcpPort();
-        var url = $"http://127.0.0.1:{port}";
 
         const string openApi = $$"""
             {
@@ -540,13 +522,18 @@ public sealed class BowireRestProtocolEndToEndTests
             """;
 
         var builder = WebApplication.CreateBuilder();
-        builder.WebHost.UseUrls(url);
+        builder.WebHost.UseUrls(LoopbackHost.AnyPort);
         builder.Logging.ClearProviders();
         await using var app = builder.Build();
-        var swaggerJson = openApi.Replace("BASEURL", url, StringComparison.Ordinal);
-        app.MapGet("/swagger/v1/swagger.json", () => Results.Content(swaggerJson, "application/json"));
+        // The document names its own server, which is not known until the
+        // host has bound. Built per request rather than up front: by then it
+        // is, and the alternative is naming a port before anything owns it.
+        app.MapGet("/swagger/v1/swagger.json", () => Results.Content(
+            openApi.Replace("BASEURL", LoopbackHost.BaseAddress(app.Services), StringComparison.Ordinal),
+            "application/json"));
         app.MapGet("/pets/{id}", (string id) => Results.Json(new { id, name = "Rex" }));
         await app.StartAsync(TestContext.Current.CancellationToken);
+        var url = LoopbackHost.BaseAddress(app.Services);
 
         try
         {
@@ -615,17 +602,16 @@ public sealed class BowireRestProtocolEndToEndTests
     [Fact]
     public async Task Cold_Cache_Lazy_Discovery_Returns_Error_For_Non_OpenApi_Url()
     {
-        var port = GetFreeTcpPort();
-        var url = $"http://127.0.0.1:{port}";
 
         var builder = WebApplication.CreateBuilder();
-        builder.WebHost.UseUrls(url);
+        builder.WebHost.UseUrls(LoopbackHost.AnyPort);
         builder.Logging.ClearProviders();
         await using var app = builder.Build();
         // The discovery URL itself returns HTML — discovery rejects it, the
         // cache stays empty, and the protocol surfaces a structured error.
         app.MapGet("/", () => Results.Content("<html>not openapi</html>", "text/html"));
         await app.StartAsync(TestContext.Current.CancellationToken);
+        var url = LoopbackHost.BaseAddress(app.Services);
 
         try
         {
@@ -654,15 +640,14 @@ public sealed class BowireRestProtocolEndToEndTests
         // Just verifies Initialize doesn't throw on a real IConfiguration —
         // the underlying BowireHttpClientFactory has its own tests; here
         // we only need the Initialize branch covered.
-        var port = GetFreeTcpPort();
-        var url = $"http://127.0.0.1:{port}";
 
         var builder = WebApplication.CreateBuilder();
-        builder.WebHost.UseUrls(url);
+        builder.WebHost.UseUrls(LoopbackHost.AnyPort);
         builder.Logging.ClearProviders();
         await using var app = builder.Build();
         app.MapGet("/", () => Results.Text("hi"));
         await app.StartAsync(TestContext.Current.CancellationToken);
+        var url = LoopbackHost.BaseAddress(app.Services);
 
         try
         {
@@ -728,14 +713,13 @@ public sealed class BowireRestProtocolEndToEndTests
             }
             """;
 
-        var port = GetFreeTcpPort();
-        var url = $"http://127.0.0.1:{port}";
         var builder = WebApplication.CreateBuilder();
-        builder.WebHost.UseUrls(url);
+        builder.WebHost.UseUrls(LoopbackHost.AnyPort);
         builder.Logging.ClearProviders();
         await using var app = builder.Build();
         app.MapGet("/openapi.json", () => Results.Content(remote, "application/json"));
         await app.StartAsync(TestContext.Current.CancellationToken);
+        var url = LoopbackHost.BaseAddress(app.Services);
 
         OpenApiUploadStore.Clear();
         OpenApiUploadStore.Add(uploaded, "uploaded.json");
@@ -764,14 +748,13 @@ public sealed class BowireRestProtocolEndToEndTests
     {
         // Drives the DiscoverInternalAsync 'discovered is null' branch:
         // server returns 404 → cache stays empty → empty list back.
-        var port = GetFreeTcpPort();
-        var url = $"http://127.0.0.1:{port}";
         var builder = WebApplication.CreateBuilder();
-        builder.WebHost.UseUrls(url);
+        builder.WebHost.UseUrls(LoopbackHost.AnyPort);
         builder.Logging.ClearProviders();
         await using var app = builder.Build();
         app.MapGet("/openapi.json", () => Results.StatusCode(404));
         await app.StartAsync(TestContext.Current.CancellationToken);
+        var url = LoopbackHost.BaseAddress(app.Services);
 
         try
         {
@@ -789,12 +772,4 @@ public sealed class BowireRestProtocolEndToEndTests
         }
     }
 
-    private static int GetFreeTcpPort()
-    {
-        using var listener = new TcpListener(IPAddress.Loopback, 0);
-        listener.Start();
-        var port = ((IPEndPoint)listener.LocalEndpoint).Port;
-        listener.Stop();
-        return port;
-    }
 }

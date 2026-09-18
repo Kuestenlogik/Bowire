@@ -1,6 +1,7 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
+using Kuestenlogik.Bowire.Testing;
 using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography;
@@ -34,11 +35,9 @@ public class MtlsSignalRIntegrationTests
         var (_, _, serverCert) = GenerateSelfSignedPem("CN=mtls-signalr-server");
         var serverCertPem = ExportCertOnlyPem(serverCert);
 
-        var port = GetFreeTcpPort();
-        var url = $"https://127.0.0.1:{port}";
 
         var builder = WebApplication.CreateBuilder();
-        builder.WebHost.UseUrls(url);
+        builder.WebHost.UseUrls(LoopbackHost.AnySecurePort);
         builder.WebHost.ConfigureKestrel(opts =>
         {
             opts.ConfigureEndpointDefaults(lo => lo.Protocols = HttpProtocols.Http1AndHttp2);
@@ -55,6 +54,7 @@ public class MtlsSignalRIntegrationTests
         await using var app = builder.Build();
         app.MapHub<ChatHub>("/chathub");
         await app.StartAsync(TestContext.Current.CancellationToken);
+        var url = LoopbackHost.BaseAddress(app.Services);
 
         try
         {
@@ -99,11 +99,9 @@ public class MtlsSignalRIntegrationTests
     {
         var (_, _, serverCert) = GenerateSelfSignedPem("CN=mtls-signalr-server");
 
-        var port = GetFreeTcpPort();
-        var url = $"https://127.0.0.1:{port}";
 
         var builder = WebApplication.CreateBuilder();
-        builder.WebHost.UseUrls(url);
+        builder.WebHost.UseUrls(LoopbackHost.AnySecurePort);
         builder.WebHost.ConfigureKestrel(opts =>
         {
             opts.ConfigureEndpointDefaults(lo => lo.Protocols = HttpProtocols.Http1AndHttp2);
@@ -120,6 +118,7 @@ public class MtlsSignalRIntegrationTests
         await using var app = builder.Build();
         app.MapHub<ChatHub>("/chathub");
         await app.StartAsync(TestContext.Current.CancellationToken);
+        var url = LoopbackHost.BaseAddress(app.Services);
 
         try
         {
@@ -179,12 +178,4 @@ public class MtlsSignalRIntegrationTests
         + Convert.ToBase64String(cert.Export(X509ContentType.Cert), Base64FormattingOptions.InsertLineBreaks)
         + "\n-----END CERTIFICATE-----";
 
-    private static int GetFreeTcpPort()
-    {
-        using var listener = new TcpListener(IPAddress.Loopback, 0);
-        listener.Start();
-        var port = ((IPEndPoint)listener.LocalEndpoint).Port;
-        listener.Stop();
-        return port;
-    }
 }

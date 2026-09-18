@@ -1,6 +1,7 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
+using Kuestenlogik.Bowire.Testing;
 using System.Net;
 using System.Net.Sockets;
 using Kuestenlogik.Bowire.IntegrationTests.Services;
@@ -59,11 +60,9 @@ public sealed class GrpcConcurrentStreamProbeIntegrationTests
 
     private static async Task<GreeterHost> StartGreeterHostAsync(CancellationToken ct)
     {
-        var port = GetFreeTcpPort();
-        var url = $"http://127.0.0.1:{port}";
 
         var builder = WebApplication.CreateBuilder();
-        builder.WebHost.UseUrls(url);
+        builder.WebHost.UseUrls(LoopbackHost.AnyPort);
         builder.WebHost.ConfigureKestrel(o => o.ConfigureEndpointDefaults(lo => lo.Protocols = HttpProtocols.Http2));
         builder.Logging.ClearProviders();
         builder.Services.AddGrpc();
@@ -74,17 +73,10 @@ public sealed class GrpcConcurrentStreamProbeIntegrationTests
         app.MapGrpcReflectionService();
 
         await app.StartAsync(ct);
+        var url = LoopbackHost.BaseAddress(app.Services);
         return new GreeterHost(app, url);
     }
 
-    private static int GetFreeTcpPort()
-    {
-        using var listener = new TcpListener(IPAddress.Loopback, 0);
-        listener.Start();
-        var port = ((IPEndPoint)listener.LocalEndpoint).Port;
-        listener.Stop();
-        return port;
-    }
 
     private sealed class GreeterHost(WebApplication app, string baseUrl) : IAsyncDisposable
     {

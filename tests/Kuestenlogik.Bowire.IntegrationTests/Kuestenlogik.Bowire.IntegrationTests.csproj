@@ -37,6 +37,9 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+    <!-- LoopbackHost: binds a test host on port 0 and reads back what it
+         got, instead of reserving a port and hoping it is still free. -->
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Testing\Kuestenlogik.Bowire.Testing.csproj" />
     <!-- v2.1 (#325): the interceptor surface (middleware, reverse-proxy
          host, /api/intercepted endpoints, flow / mock stores) moved to
          this dedicated package. The integration suite touches the

@@ -1,6 +1,7 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
+using Kuestenlogik.Bowire.Testing;
 using System.Net;
 using System.Net.Sockets;
 using Kuestenlogik.Bowire.IntegrationTests.Services;
@@ -25,10 +26,10 @@ namespace Kuestenlogik.Bowire.IntegrationTests;
 /// HTTP/2 host is intentionally unreachable from these tests so we can prove
 /// the plugin is hitting the gRPC-Web endpoint, not silently falling back.
 /// </summary>
-// Each test allocates an ephemeral TCP port via GetFreeTcpPort (bind-to-0,
-// read, close), then hands it to Kestrel. Run in parallel on Linux CI the
-// returned port can race between close and bind. Pin to the same xUnit
-// collection the Rest end-to-end tests use so they all serialise.
+// Pinned to the Rest end-to-end collection, which runs on its own: these
+// hosts touch the process-wide protocol registry, and a reader in another
+// collection would see it mid-swap. The port race this comment used to
+// cite is gone — Kestrel binds 0 and the tests read back what it got.
 [Collection(nameof(RestInvokerEndToEndFixture))]
 public sealed class GrpcWebIntegrationTests
 {
@@ -283,14 +284,6 @@ public sealed class GrpcWebIntegrationTests
         throw new InvalidOperationException("Kestrel didn't publish any bound URL after StartAsync.");
     }
 
-    private static int GetFreeTcpPort()
-    {
-        using var listener = new TcpListener(IPAddress.Loopback, 0);
-        listener.Start();
-        var port = ((IPEndPoint)listener.LocalEndpoint).Port;
-        listener.Stop();
-        return port;
-    }
 
     private sealed class GreeterHost : IAsyncDisposable
     {

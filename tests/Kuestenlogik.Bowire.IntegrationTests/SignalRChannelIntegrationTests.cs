@@ -1,6 +1,7 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
+using Kuestenlogik.Bowire.Testing;
 using System.Net;
 using System.Net.Sockets;
 using Kuestenlogik.Bowire.IntegrationTests.Hubs;
@@ -337,11 +338,9 @@ public sealed class SignalRChannelIntegrationTests
 
     private static async Task<ChatHubHost> StartChatHubHostAsync()
     {
-        var port = GetFreeTcpPort();
-        var url = $"http://127.0.0.1:{port}";
 
         var builder = WebApplication.CreateBuilder();
-        builder.WebHost.UseUrls(url);
+        builder.WebHost.UseUrls(LoopbackHost.AnyPort);
         builder.Logging.ClearProviders();
         builder.Services.AddSignalR();
 
@@ -349,17 +348,10 @@ public sealed class SignalRChannelIntegrationTests
         app.MapHub<ChatHub>("/chathub");
 
         await app.StartAsync(TestContext.Current.CancellationToken);
+        var url = LoopbackHost.BaseAddress(app.Services);
         return new ChatHubHost(app, url);
     }
 
-    private static int GetFreeTcpPort()
-    {
-        using var listener = new TcpListener(IPAddress.Loopback, 0);
-        listener.Start();
-        var port = ((IPEndPoint)listener.LocalEndpoint).Port;
-        listener.Stop();
-        return port;
-    }
 
     private sealed class ChatHubHost : IAsyncDisposable
     {

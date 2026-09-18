@@ -1,6 +1,7 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
+using Kuestenlogik.Bowire.Testing;
 using System.Net;
 using System.Net.Sockets;
 using Kuestenlogik.Bowire.Protocol.Mqtt;
@@ -35,14 +36,20 @@ public sealed class MqttCleartextProbeIntegrationTests : IAsyncLifetime
 
     public async ValueTask InitializeAsync()
     {
-        _brokerPort = FindFreeTcpPort();
+        // MQTTnet will not report the port an OS-assigned endpoint ended up
+        // on, so the broker has to be told one. Retried rather than assumed:
+        // between picking a free port and the broker binding it, anything on
+        // the machine can take it, and in a full parallel run something does.
         var factory = new MqttServerFactory();
-        _broker = factory.CreateMqttServer(
-            new MqttServerOptionsBuilder()
-                .WithDefaultEndpoint()
-                .WithDefaultEndpointPort(_brokerPort)
-                .Build());
-        await _broker.StartAsync();
+        _brokerPort = await LoopbackHost.OnAFreePortAsync(async port =>
+        {
+            _broker = factory.CreateMqttServer(
+                new MqttServerOptionsBuilder()
+                    .WithDefaultEndpoint()
+                    .WithDefaultEndpointPort(port)
+                    .Build());
+            await _broker.StartAsync();
+        });
     }
 
     public async ValueTask DisposeAsync()
@@ -121,12 +128,4 @@ public sealed class MqttCleartextProbeIntegrationTests : IAsyncLifetime
         Assert.Empty(findings);
     }
 
-    private static int FindFreeTcpPort()
-    {
-        using var listener = new TcpListener(IPAddress.Loopback, 0);
-        listener.Start();
-        var port = ((IPEndPoint)listener.LocalEndpoint).Port;
-        listener.Stop();
-        return port;
-    }
 }

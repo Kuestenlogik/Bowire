@@ -1,6 +1,7 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
+using Kuestenlogik.Bowire.Testing;
 using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography;
@@ -36,11 +37,9 @@ public class MtlsRestIntegrationTests
         var (_, _, serverCert) = GenerateSelfSignedPem("CN=mtls-test-server");
         var serverCertPem = ExportCertOnlyPem(serverCert);
 
-        var port = GetFreeTcpPort();
-        var url = $"https://127.0.0.1:{port}";
 
         var builder = WebApplication.CreateBuilder();
-        builder.WebHost.UseUrls(url);
+        builder.WebHost.UseUrls(LoopbackHost.AnySecurePort);
         builder.WebHost.ConfigureKestrel(opts =>
         {
             opts.ConfigureHttpsDefaults(https =>
@@ -66,6 +65,7 @@ public class MtlsRestIntegrationTests
             });
         });
         await app.StartAsync(TestContext.Current.CancellationToken);
+        var url = LoopbackHost.BaseAddress(app.Services);
 
         try
         {
@@ -124,11 +124,9 @@ public class MtlsRestIntegrationTests
     {
         var (_, _, serverCert) = GenerateSelfSignedPem("CN=mtls-test-server");
 
-        var port = GetFreeTcpPort();
-        var url = $"https://127.0.0.1:{port}";
 
         var builder = WebApplication.CreateBuilder();
-        builder.WebHost.UseUrls(url);
+        builder.WebHost.UseUrls(LoopbackHost.AnySecurePort);
         builder.WebHost.ConfigureKestrel(opts =>
         {
             opts.ConfigureHttpsDefaults(https =>
@@ -143,6 +141,7 @@ public class MtlsRestIntegrationTests
         await using var app = builder.Build();
         app.MapGet("/echo-cert", () => Results.Ok("should never reach"));
         await app.StartAsync(TestContext.Current.CancellationToken);
+        var url = LoopbackHost.BaseAddress(app.Services);
 
         try
         {
@@ -234,12 +233,4 @@ public class MtlsRestIntegrationTests
             + "\n-----END CERTIFICATE-----";
     }
 
-    private static int GetFreeTcpPort()
-    {
-        using var listener = new TcpListener(IPAddress.Loopback, 0);
-        listener.Start();
-        var port = ((IPEndPoint)listener.LocalEndpoint).Port;
-        listener.Stop();
-        return port;
-    }
 }

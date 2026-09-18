@@ -1,6 +1,7 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
+using Kuestenlogik.Bowire.Testing;
 using System.Net;
 using System.Net.Sockets;
 using Kuestenlogik.Bowire.Auth;
@@ -24,11 +25,9 @@ public class CookieJarRestIntegrationTests
     [Fact]
     public async Task Login_Then_Me_PersistsSessionCookieAcrossCalls()
     {
-        var port = GetFreeTcpPort();
-        var url = $"http://127.0.0.1:{port}";
 
         var builder = WebApplication.CreateBuilder();
-        builder.WebHost.UseUrls(url);
+        builder.WebHost.UseUrls(LoopbackHost.AnyPort);
         builder.Logging.ClearProviders();
 
         await using var app = builder.Build();
@@ -52,6 +51,7 @@ public class CookieJarRestIntegrationTests
             return Results.Json(new { session, hasSession = session is not null });
         });
         await app.StartAsync(TestContext.Current.CancellationToken);
+        var url = LoopbackHost.BaseAddress(app.Services);
 
         // Use a unique envId so concurrent test runs don't share jar state.
         var envId = "cookietest-" + Guid.NewGuid().ToString("N");
@@ -139,11 +139,9 @@ public class CookieJarRestIntegrationTests
         // Two envs, two parallel sessions. Setting a cookie in env A must
         // not bleed into env B's jar — that's the whole reason the marker
         // key is per-env, not global.
-        var port = GetFreeTcpPort();
-        var url = $"http://127.0.0.1:{port}";
 
         var builder = WebApplication.CreateBuilder();
-        builder.WebHost.UseUrls(url);
+        builder.WebHost.UseUrls(LoopbackHost.AnyPort);
         builder.Logging.ClearProviders();
 
         await using var app = builder.Build();
@@ -162,6 +160,7 @@ public class CookieJarRestIntegrationTests
             return Results.Json(new { hasSession = session is not null });
         });
         await app.StartAsync(TestContext.Current.CancellationToken);
+        var url = LoopbackHost.BaseAddress(app.Services);
 
         var envA = "envA-" + Guid.NewGuid().ToString("N");
         var envB = "envB-" + Guid.NewGuid().ToString("N");
@@ -207,12 +206,4 @@ public class CookieJarRestIntegrationTests
         }
     }
 
-    private static int GetFreeTcpPort()
-    {
-        using var listener = new TcpListener(IPAddress.Loopback, 0);
-        listener.Start();
-        var port = ((IPEndPoint)listener.LocalEndpoint).Port;
-        listener.Stop();
-        return port;
-    }
 }

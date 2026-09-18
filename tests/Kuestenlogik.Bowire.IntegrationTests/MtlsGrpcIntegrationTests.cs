@@ -1,6 +1,7 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
+using Kuestenlogik.Bowire.Testing;
 using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography;
@@ -33,11 +34,9 @@ public class MtlsGrpcIntegrationTests
         var (_, _, serverCert) = GenerateSelfSignedPem("CN=mtls-grpc-server");
         var serverCertPem = ExportCertOnlyPem(serverCert);
 
-        var port = GetFreeTcpPort();
-        var url = $"https://127.0.0.1:{port}";
 
         var builder = WebApplication.CreateBuilder();
-        builder.WebHost.UseUrls(url);
+        builder.WebHost.UseUrls(LoopbackHost.AnySecurePort);
         builder.WebHost.ConfigureKestrel(opts =>
         {
             // gRPC needs HTTP/2 — pin the listener to HTTP/2 over TLS so
@@ -58,6 +57,7 @@ public class MtlsGrpcIntegrationTests
         app.MapGrpcService<GreeterService>();
         app.MapGrpcReflectionService();
         await app.StartAsync(TestContext.Current.CancellationToken);
+        var url = LoopbackHost.BaseAddress(app.Services);
 
         try
         {
@@ -102,11 +102,9 @@ public class MtlsGrpcIntegrationTests
     {
         var (_, _, serverCert) = GenerateSelfSignedPem("CN=mtls-grpc-server");
 
-        var port = GetFreeTcpPort();
-        var url = $"https://127.0.0.1:{port}";
 
         var builder = WebApplication.CreateBuilder();
-        builder.WebHost.UseUrls(url);
+        builder.WebHost.UseUrls(LoopbackHost.AnySecurePort);
         builder.WebHost.ConfigureKestrel(opts =>
         {
             opts.ConfigureEndpointDefaults(lo => lo.Protocols = HttpProtocols.Http2);
@@ -125,6 +123,7 @@ public class MtlsGrpcIntegrationTests
         app.MapGrpcService<GreeterService>();
         app.MapGrpcReflectionService();
         await app.StartAsync(TestContext.Current.CancellationToken);
+        var url = LoopbackHost.BaseAddress(app.Services);
 
         try
         {
@@ -189,12 +188,4 @@ public class MtlsGrpcIntegrationTests
         + Convert.ToBase64String(cert.Export(X509ContentType.Cert), Base64FormattingOptions.InsertLineBreaks)
         + "\n-----END CERTIFICATE-----";
 
-    private static int GetFreeTcpPort()
-    {
-        using var listener = new TcpListener(IPAddress.Loopback, 0);
-        listener.Start();
-        var port = ((IPEndPoint)listener.LocalEndpoint).Port;
-        listener.Stop();
-        return port;
-    }
 }

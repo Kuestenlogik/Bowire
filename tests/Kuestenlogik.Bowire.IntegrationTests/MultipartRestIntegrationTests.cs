@@ -1,6 +1,7 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
+using Kuestenlogik.Bowire.Testing;
 using System.Net;
 using System.Net.Sockets;
 using Kuestenlogik.Bowire.Models;
@@ -24,11 +25,9 @@ public class MultipartRestIntegrationTests
     [Fact]
     public async Task RestInvoker_BinaryAndPlainFormFields_ReachServerAsMultipart()
     {
-        var port = GetFreeTcpPort();
-        var url = $"http://127.0.0.1:{port}";
 
         var builder = WebApplication.CreateBuilder();
-        builder.WebHost.UseUrls(url);
+        builder.WebHost.UseUrls(LoopbackHost.AnyPort);
         builder.Logging.ClearProviders();
 
         await using var app = builder.Build();
@@ -60,6 +59,7 @@ public class MultipartRestIntegrationTests
             });
         });
         await app.StartAsync(TestContext.Current.CancellationToken);
+        var url = LoopbackHost.BaseAddress(app.Services);
 
         try
         {
@@ -129,11 +129,9 @@ public class MultipartRestIntegrationTests
         // the text-only multipart shape so OpenAPI specs that declare
         // `multipart/form-data` with all-text properties (Slack-style POST
         // forms) still round-trip cleanly.
-        var port = GetFreeTcpPort();
-        var url = $"http://127.0.0.1:{port}";
 
         var builder = WebApplication.CreateBuilder();
-        builder.WebHost.UseUrls(url);
+        builder.WebHost.UseUrls(LoopbackHost.AnyPort);
         builder.Logging.ClearProviders();
 
         await using var app = builder.Build();
@@ -148,6 +146,7 @@ public class MultipartRestIntegrationTests
             });
         });
         await app.StartAsync(TestContext.Current.CancellationToken);
+        var url = LoopbackHost.BaseAddress(app.Services);
 
         try
         {
@@ -191,12 +190,4 @@ public class MultipartRestIntegrationTests
         }
     }
 
-    private static int GetFreeTcpPort()
-    {
-        using var listener = new TcpListener(IPAddress.Loopback, 0);
-        listener.Start();
-        var port = ((IPEndPoint)listener.LocalEndpoint).Port;
-        listener.Stop();
-        return port;
-    }
 }
