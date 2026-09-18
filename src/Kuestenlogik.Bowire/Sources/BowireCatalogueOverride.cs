@@ -377,7 +377,7 @@ public sealed class BowireCatalogueOverrideStore
                 for (var i = 1; i < parameters.Length; i++)
                 {
                     var pt = parameters[i].ParameterType;
-                    args[i] = TrySynthesiseDefault(pt);
+                    args[i] = TrySynthesiseDefault(pt, siblingAsm);
                     if (args[i] is null) { ok = false; break; }
                 }
             }
@@ -407,20 +407,68 @@ public sealed class BowireCatalogueOverrideStore
 
     private static T ReturnCaptured<T>(T captured) => captured;
 
-    private static object? TrySynthesiseDefault(Type t)
+    /// <summary>
+    /// A value for one non-resolver parameter of a sibling provider's
+    /// resolver constructor, or <c>null</c> when none can be produced — in
+    /// which case the caller moves on to the next constructor.
+    /// </summary>
+    /// <param name="t">The parameter type.</param>
+    /// <param name="siblingAssembly">The provider's own assembly.</param>
+    private static object? TrySynthesiseDefault(Type t, Assembly siblingAssembly)
     {
         // Synthesise common factory shapes the sibling providers'
-        // resolver ctors take. Anything we don't recognise returns
-        // null so the caller skips that ctor.
+        // resolver ctors take.
         if (t == typeof(Func<HttpClient>)) return new Func<HttpClient>(() => new HttpClient());
         if (t == typeof(Func<HttpMessageHandler, HttpClient>))
             return new Func<HttpMessageHandler, HttpClient>(h => new HttpClient(h, disposeHandler: false));
-        // Allow nullable / interface parameters to default to null —
-        // the sibling providers cope with that via their own internal
-        // fallbacks (the test seam was built for this).
-        if (!t.IsValueType) return null;
+
+        // Anything else: the seam the provider declared for its own tests.
+        // Used to return null here, on the reasoning that the provider would
+        // fall back internally. It does not — the field is used unguarded —
+        // and the caller reads a null as "cannot build this ctor", so the
+        // resolver ctor was skipped and the parameterless one ran instead.
+        // That loads the provider on its own defaults and silently discards
+        // everything the operator typed into the Settings dialog. The
+        // Kubernetes provider's IKubernetesEnvironment parameter is exactly
+        // this shape, so its override never took effect at all.
+        //
+        // The provider's own parameterless ctor passes a concrete
+        // implementation from its assembly; found here by type rather than
+        // by name, and only when the assembly offers exactly one, so an
+        // ambiguous seam still falls through instead of guessing.
+        if (!t.IsValueType) return SoleImplementationIn(siblingAssembly, t);
+
         try { return Activator.CreateInstance(t); }
 #pragma warning disable CA1031
+        catch { return null; }
+#pragma warning restore CA1031
+    }
+
+    /// <summary>
+    /// The one instantiable implementation of <paramref name="contract"/> in
+    /// <paramref name="assembly"/>, or <c>null</c> when there is not exactly
+    /// one.
+    /// </summary>
+    private static object? SoleImplementationIn(Assembly assembly, Type contract)
+    {
+        Type[] types;
+        try { types = assembly.GetTypes(); }
+        catch (Exception ex) when (ex is ReflectionTypeLoadException or TypeLoadException or FileLoadException or FileNotFoundException or BadImageFormatException)
+        { return null; }
+
+        Type? only = null;
+        foreach (var candidate in types)
+        {
+            if (candidate.IsAbstract || candidate.IsInterface) continue;
+            if (!contract.IsAssignableFrom(candidate)) continue;
+            if (candidate.GetConstructor(Type.EmptyTypes) is null) continue;
+            if (only is not null) return null;
+            only = candidate;
+        }
+        if (only is null) return null;
+
+#pragma warning disable CA1031
+        try { return Activator.CreateInstance(only); }
         catch { return null; }
 #pragma warning restore CA1031
     }

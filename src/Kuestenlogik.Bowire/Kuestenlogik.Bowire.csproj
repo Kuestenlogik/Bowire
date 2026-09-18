@@ -32,6 +32,11 @@
     <InternalsVisibleTo Include="Kuestenlogik.Bowire.Tests" />
     <InternalsVisibleTo Include="Kuestenlogik.Bowire.Protocol.Grpc.Tests" />
     <InternalsVisibleTo Include="Kuestenlogik.Bowire.IntegrationTests" />
+    <!-- #309 — BowireCatalogueOverrideStore.BuildProvider reaches these
+         packages by reflection and nothing else links the two sides, so
+         each sibling's own tests pin the seam from its end. -->
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.Catalogue.Kubernetes.Tests" />
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.Catalogue.Agent.Tests" />
   </ItemGroup>
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
