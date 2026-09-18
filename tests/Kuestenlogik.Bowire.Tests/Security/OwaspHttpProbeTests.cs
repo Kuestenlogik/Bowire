@@ -32,7 +32,7 @@ public sealed class OwaspHttpProbeTests
         await using var upstream = await StartAsync(ctx => { ctx.Response.StatusCode = 200; return Task.CompletedTask; }, Ct);
         using var http = NewClient();
 
-        var findings = await new Api6BusinessFlowProbe().RunAsync(upstream.Urls.First(), http, s_noAuth, s_noAuth, Ct);
+        var findings = await new Api6BusinessFlowProbe().RunAsync(new OwaspApiProbeContext { Target = upstream.Urls.First(), Http = http, AuthHeaders = s_noAuth, AuthHeadersB = s_noAuth }, Ct);
 
         var f = Assert.Single(findings, x => x.Status == ScanFindingStatus.Vulnerable);
         Assert.Equal("BWR-OWASP-API6-NO-FRICTION", f.Template.Recording.Vulnerability?.Id);
@@ -50,7 +50,7 @@ public sealed class OwaspHttpProbeTests
         }, Ct);
         using var http = NewClient();
 
-        var findings = await new Api6BusinessFlowProbe().RunAsync(upstream.Urls.First(), http, s_noAuth, s_noAuth, Ct);
+        var findings = await new Api6BusinessFlowProbe().RunAsync(new OwaspApiProbeContext { Target = upstream.Urls.First(), Http = http, AuthHeaders = s_noAuth, AuthHeadersB = s_noAuth }, Ct);
 
         Assert.Single(findings, x => x.Status == ScanFindingStatus.Safe);
         Assert.DoesNotContain(findings, x => x.Status == ScanFindingStatus.Vulnerable);
@@ -66,7 +66,7 @@ public sealed class OwaspHttpProbeTests
         }, Ct);
         using var http = NewClient();
 
-        var f = Assert.Single(await new Api6BusinessFlowProbe().RunAsync(upstream.Urls.First(), http, s_noAuth, s_noAuth, Ct));
+        var f = Assert.Single(await new Api6BusinessFlowProbe().RunAsync(new OwaspApiProbeContext { Target = upstream.Urls.First(), Http = http, AuthHeaders = s_noAuth, AuthHeadersB = s_noAuth }, Ct));
         Assert.Equal(ScanFindingStatus.Skipped, f.Status);
         Assert.Contains("API6-NO-FLOW", f.Template.Recording.Id, StringComparison.Ordinal);
     }
@@ -83,7 +83,7 @@ public sealed class OwaspHttpProbeTests
         }, Ct);
         using var http = NewClient();
 
-        var findings = await new Api10UnsafeConsumptionProbe().RunAsync(upstream.Urls.First(), http, s_noAuth, s_noAuth, Ct);
+        var findings = await new Api10UnsafeConsumptionProbe().RunAsync(new OwaspApiProbeContext { Target = upstream.Urls.First(), Http = http, AuthHeaders = s_noAuth, AuthHeadersB = s_noAuth }, Ct);
 
         var f = Assert.Single(findings, x => x.Status == ScanFindingStatus.Vulnerable);
         Assert.Equal("BWR-OWASP-API10-UPSTREAM-ERROR", f.Template.Recording.Vulnerability?.Id);
@@ -100,7 +100,7 @@ public sealed class OwaspHttpProbeTests
         }, Ct);
         using var http = NewClient();
 
-        var findings = await new Api10UnsafeConsumptionProbe().RunAsync(upstream.Urls.First(), http, s_noAuth, s_noAuth, Ct);
+        var findings = await new Api10UnsafeConsumptionProbe().RunAsync(new OwaspApiProbeContext { Target = upstream.Urls.First(), Http = http, AuthHeaders = s_noAuth, AuthHeadersB = s_noAuth }, Ct);
 
         Assert.Contains(findings, x => x.Status == ScanFindingStatus.Vulnerable
             && x.Template.Recording.Vulnerability?.Id == "BWR-OWASP-API10-OFFHOST-REDIRECT");
@@ -116,7 +116,7 @@ public sealed class OwaspHttpProbeTests
         }, Ct);
         using var http = NewClient();
 
-        var f = Assert.Single(await new Api10UnsafeConsumptionProbe().RunAsync(upstream.Urls.First(), http, s_noAuth, s_noAuth, Ct));
+        var f = Assert.Single(await new Api10UnsafeConsumptionProbe().RunAsync(new OwaspApiProbeContext { Target = upstream.Urls.First(), Http = http, AuthHeaders = s_noAuth, AuthHeadersB = s_noAuth }, Ct));
         Assert.Equal(ScanFindingStatus.Skipped, f.Status);
         Assert.Contains("API10-REVIEW-ONLY", f.Template.Recording.Id, StringComparison.Ordinal);
     }

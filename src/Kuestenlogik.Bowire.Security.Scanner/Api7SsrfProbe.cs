@@ -4,6 +4,7 @@
 using System.Collections.Specialized;
 using System.Diagnostics;
 using System.Web;
+using Kuestenlogik.Bowire.Security;
 
 namespace Kuestenlogik.Bowire.Security.Scanner;
 
@@ -44,8 +45,10 @@ internal sealed class Api7SsrfProbe : IOwaspApiProbe
 
     public OwaspApiEntry Entry { get; } = OwaspApiCatalog.Entries.Single(e => e.Id == "API7:2023");
 
-    public async Task<IReadOnlyList<ScanFinding>> RunAsync(string target, HttpClient http, IList<string> authHeaders, IList<string> authHeadersB, CancellationToken ct)
+    public async Task<IReadOnlyList<ScanFinding>> RunAsync(OwaspApiProbeContext ctx, CancellationToken ct)
     {
+        var (target, http, authHeaders, authHeadersB) =
+            (ctx.Target, ctx.Http, ctx.AuthHeaders, ctx.AuthHeadersB);
         Uri uri;
         try { uri = new Uri(target); }
         catch (UriFormatException)
@@ -70,6 +73,13 @@ internal sealed class Api7SsrfProbe : IOwaspApiProbe
         }
 
         var findings = new List<ScanFinding>();
+
+        // Plant a callback host in every candidate before timing any of
+        // them, so one round of waiting covers the lot rather than one per
+        // parameter. Nothing is asserted yet -- a callback is evidence when
+        // it arrives, and its absence is not evidence of anything.
+        var planted = await PlantCallbacksAsync(ctx, uri, query, urlParams, ct).ConfigureAwait(false);
+
         foreach (var param in urlParams)
         {
             var mutated = SwapParam(uri, query, param, Blackhole);
@@ -88,10 +98,19 @@ internal sealed class Api7SsrfProbe : IOwaspApiProbe
             }
         }
 
+        // Out-of-band evidence, if any arrived. Added after the timing
+        // findings and never merged into them: a callback proves the fetch
+        // happened where a latency stall infers it, and a reader should be
+        // able to tell which they are looking at.
+        findings.AddRange(await CollectCallbacksAsync(ctx, planted, ct).ConfigureAwait(false));
+
         if (findings.Count == 0)
         {
             findings.Add(Marker(ScanFindingStatus.Safe, "API7-CLEAN", "No SSRF timing signal found",
-                $"Probed {urlParams.Count} URL-input parameter(s); none showed the latency stall that indicates a server-side fetch."));
+                $"Probed {urlParams.Count} URL-input parameter(s); none showed the latency stall that indicates a server-side fetch."
+                + (planted.Count > 0
+                    ? " No out-of-band callback arrived either, which is not the same as proof there is none: a target with no outbound network reaches nothing."
+                    : string.Empty)));
         }
         return findings;
     }
@@ -133,6 +152,113 @@ internal sealed class Api7SsrfProbe : IOwaspApiProbe
 
     private static string Fmt(double ms) => ms >= double.MaxValue / 2 ? "timeout" : $"{ms:F0}ms";
 
+    /// <summary>
+    /// Put a fresh callback host in each candidate parameter and fire the
+    /// request, mapping each host back to the parameter it went into.
+    /// </summary>
+    /// <returns>Empty when the scan has no interaction server.</returns>
+    private static async Task<IReadOnlyDictionary<string, string>> PlantCallbacksAsync(
+        OwaspApiProbeContext ctx, Uri uri, NameValueCollection query,
+        IReadOnlyList<string> urlParams, CancellationToken ct)
+    {
+        if (ctx.Oast is null) return new Dictionary<string, string>();
+
+        // One host per parameter, so an arriving callback names which input
+        // reached the network. That is the difference between "this endpoint
+        // is vulnerable" and a report somebody has to re-test by hand.
+        var planted = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var param in urlParams)
+        {
+            ct.ThrowIfCancellationRequested();
+
+            var callbackHost = await ctx.Oast.AllocateAsync(ct).ConfigureAwait(false);
+            planted[callbackHost] = param;
+
+            try
+            {
+                await TimeAsync(
+                    ctx.Http,
+                    SwapParam(uri, query, param, $"http://{callbackHost}/"),
+                    ctx.AuthHeaders, ct).ConfigureAwait(false);
+            }
+            catch (Exception ex) when (ex is HttpRequestException or OperationCanceledException
+                                          or InvalidOperationException or UriFormatException)
+            {
+                // Our request failing says nothing about whether the server
+                // made its own. A callback may still arrive.
+                _ = ex;
+            }
+        }
+        return planted;
+    }
+
+    /// <summary>
+    /// Wait briefly, then turn the callbacks that arrived into findings.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A callback lands after the target has made its own request, so there
+    /// is nothing to read at the moment our request returns. The wait is
+    /// short and bounded: a scan that blocked until a callback that may never
+    /// come would hang on every target that simply does not fetch.
+    /// </para>
+    /// <para>
+    /// Anything slower than this still reaches the workbench live feed, which
+    /// polls the same session. Losing it from the finding costs less than
+    /// making every clean scan wait.
+    /// </para>
+    /// </remarks>
+    private async Task<IReadOnlyList<ScanFinding>> CollectCallbacksAsync(
+        OwaspApiProbeContext ctx, IReadOnlyDictionary<string, string> planted, CancellationToken ct)
+    {
+        if (ctx.Oast is null || planted.Count == 0) return [];
+
+        var matched = new Dictionary<string, List<ProbeInteraction>>(StringComparer.OrdinalIgnoreCase);
+        var deadline = DateTimeOffset.UtcNow + ctx.OastGrace;
+
+        while (DateTimeOffset.UtcNow < deadline && matched.Count < planted.Count)
+        {
+            try { await Task.Delay(ctx.OastPollInterval, ct).ConfigureAwait(false); }
+            catch (OperationCanceledException) { break; }
+
+            IReadOnlyList<OastCallback> seen;
+            try { seen = await ctx.Oast.PollAsync(ct).ConfigureAwait(false); }
+            catch (Exception ex) when (ex is HttpRequestException or OperationCanceledException)
+            {
+                // The interaction server went away mid-scan. The timing
+                // findings stand; this pass contributes nothing.
+                _ = ex;
+                break;
+            }
+
+            // The feed is cumulative, so this rebuilds the match set each
+            // pass rather than appending -- otherwise a callback seen in two
+            // polls would be counted twice.
+            matched.Clear();
+            foreach (var callback in seen)
+            {
+                var host = planted.Keys.FirstOrDefault(h =>
+                    callback.Id?.Contains(h, StringComparison.OrdinalIgnoreCase) == true);
+                if (host is null) continue;
+
+                if (!matched.TryGetValue(host, out var list))
+                {
+                    list = [];
+                    matched[host] = list;
+                }
+                list.Add(new ProbeInteraction
+                {
+                    Protocol = callback.Protocol,
+                    Id = callback.Id,
+                    RemoteAddress = callback.RemoteAddress,
+                    RawRequest = callback.RawRequest,
+                });
+            }
+        }
+
+        return [.. matched.Select(pair => Confirmed(planted[pair.Key], pair.Value))];
+    }
+
     // ---- finding factories ----
 
     private ScanFinding Finding(string id, string name, string detail, string remediation, string severity, double cvss) => new()
@@ -140,6 +266,27 @@ internal sealed class Api7SsrfProbe : IOwaspApiProbe
         Template = SyntheticTemplate.Build(id, name, cwe: null, owaspApi: Entry.Tag, severity, cvss, remediation),
         Status = ScanFindingStatus.Vulnerable,
         Detail = detail,
+    };
+
+    /// <summary>
+    /// An SSRF the target proved by reaching out. Separate from the timing
+    /// finding on purpose: this one carries the callback as evidence and does
+    /// not rest on a latency threshold anyone has to trust.
+    /// </summary>
+    private ScanFinding Confirmed(string param, IReadOnlyList<ProbeInteraction> interactions) => new()
+    {
+        Template = SyntheticTemplate.Build(
+            id: $"BWR-OWASP-API7-OOB-{param.ToUpperInvariant()}",
+            name: $"Confirmed SSRF via '{param}' parameter",
+            cwe: null, owaspApi: Entry.Tag, severity: "critical", cvss: 9.1,
+            remediation: "Validate and allow-list outbound URLs server-side: reject internal / link-local / metadata ranges (169.254.0.0/16, 127.0.0.0/8, 10/8, 172.16/12, 192.168/16), pin schemes/hosts, and disable redirects on the fetch."),
+        Status = ScanFindingStatus.Vulnerable,
+        Detail = $"A callback host planted in '{param}' was contacted from "
+            + string.Join(", ", interactions.Select(i => i.RemoteAddress ?? "an unrecorded address").Distinct(StringComparer.Ordinal))
+            + " over "
+            + string.Join("/", interactions.Select(i => i.Protocol).Distinct(StringComparer.Ordinal))
+            + ". The server fetched the supplied URL. This is the request arriving, not an inference from timing.",
+        Response = new AttackProbeResponse { Interactions = interactions },
     };
 
     private ScanFinding Marker(ScanFindingStatus status, string id, string name, string detail) => new()

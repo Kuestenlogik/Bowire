@@ -12,7 +12,7 @@ using Microsoft.Extensions.Logging;
 namespace Kuestenlogik.Bowire.Tests.Security;
 
 /// <summary>
-/// Integration coverage for the OWASP suite runner (<see cref="OwaspApiSuite.RunProbesAsync"/>
+/// Integration coverage for the OWASP suite runner (<see cref="OwaspApiSuite"/>
 /// driving all ten HTTP probes) plus the API7 SSRF timing probe's live path,
 /// against a loopback Kestrel upstream.
 /// </summary>
@@ -51,7 +51,7 @@ public sealed class ScannerSuiteIntegrationTests
         using var http = NewClient();
         var target = up.Urls.First().TrimEnd('/') + "/fetch?url=http://example.com/image.png";
 
-        var findings = await new Api7SsrfProbe().RunAsync(target, http, s_noAuth, s_noAuth, Ct);
+        var findings = await new Api7SsrfProbe().RunAsync(new OwaspApiProbeContext { Target = target, Http = http, AuthHeaders = s_noAuth, AuthHeadersB = s_noAuth }, Ct);
 
         Assert.DoesNotContain(findings, f => f.Status == ScanFindingStatus.Vulnerable);
         Assert.NotEmpty(findings);

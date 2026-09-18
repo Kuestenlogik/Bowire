@@ -39,8 +39,10 @@ internal sealed class Api5AuthorizationProbe : IOwaspApiProbe
 
     public OwaspApiEntry Entry { get; } = OwaspApiCatalog.Entries.Single(e => e.Id == "API5:2023");
 
-    public async Task<IReadOnlyList<ScanFinding>> RunAsync(string target, HttpClient http, IList<string> authHeaders, IList<string> authHeadersB, CancellationToken ct)
+    public async Task<IReadOnlyList<ScanFinding>> RunAsync(OwaspApiProbeContext ctx, CancellationToken ct)
     {
+        var (target, http, authHeaders, authHeadersB) =
+            (ctx.Target, ctx.Http, ctx.AuthHeaders, ctx.AuthHeadersB);
         Uri uri;
         try { uri = new Uri(target); }
         catch (UriFormatException)

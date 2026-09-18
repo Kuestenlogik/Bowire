@@ -68,8 +68,10 @@ internal sealed class Api6BusinessFlowProbe : IOwaspApiProbe
 
     public OwaspApiEntry Entry { get; } = OwaspApiCatalog.Entries.Single(e => e.Id == "API6:2023");
 
-    public async Task<IReadOnlyList<ScanFinding>> RunAsync(string target, HttpClient http, IList<string> authHeaders, IList<string> authHeadersB, CancellationToken ct)
+    public async Task<IReadOnlyList<ScanFinding>> RunAsync(OwaspApiProbeContext ctx, CancellationToken ct)
     {
+        var (target, http, authHeaders, authHeadersB) =
+            (ctx.Target, ctx.Http, ctx.AuthHeaders, ctx.AuthHeadersB);
         var tasks = new List<Task<Attempt>>(BurstCount);
         for (var i = 0; i < BurstCount; i++)
             tasks.Add(OnePostAsync(http, target, authHeaders, ct));

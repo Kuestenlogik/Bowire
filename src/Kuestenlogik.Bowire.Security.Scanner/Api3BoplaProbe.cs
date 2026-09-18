@@ -26,8 +26,10 @@ internal sealed class Api3BoplaProbe : IOwaspApiProbe
 {
     public OwaspApiEntry Entry { get; } = OwaspApiCatalog.Entries.Single(e => e.Id == "API3:2023");
 
-    public async Task<IReadOnlyList<ScanFinding>> RunAsync(string target, HttpClient http, IList<string> authHeaders, IList<string> authHeadersB, CancellationToken ct)
+    public async Task<IReadOnlyList<ScanFinding>> RunAsync(OwaspApiProbeContext ctx, CancellationToken ct)
     {
+        var (target, http, authHeaders, authHeadersB) =
+            (ctx.Target, ctx.Http, ctx.AuthHeaders, ctx.AuthHeadersB);
         // Baseline: the target must be a readable JSON object to mass-assign against.
         var (statusG, bodyG) = await SendAsync(http, HttpMethod.Get, target, null, authHeaders, ct).ConfigureAwait(false);
         if (statusG is < 200 or >= 300 || !LooksLikeJsonObject(bodyG))

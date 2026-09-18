@@ -49,7 +49,7 @@ public sealed record OastCallback
 /// enable it rather than pretending to work.
 /// </para>
 /// </remarks>
-public sealed class OastWorkbenchSession : IAsyncDisposable
+public sealed class OastWorkbenchSession : IAsyncDisposable, IOastProbeChannel
 {
     // A manual session is bounded by how fast a human plants payloads, but a
     // looping / hostile target could flood the DNS catcher — so the feed keeps

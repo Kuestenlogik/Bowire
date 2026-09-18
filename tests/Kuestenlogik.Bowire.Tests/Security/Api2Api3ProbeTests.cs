@@ -45,7 +45,7 @@ public sealed class Api2Api3ProbeTests
         using var http = NewClient();
         var auth = new List<string> { "Authorization: Bearer " + Jwt("{\"sub\":\"1\"}") }; // no exp
 
-        var findings = await new Api2AuthProbe().RunAsync(up.Urls.First(), http, auth, s_noAuth, Ct);
+        var findings = await new Api2AuthProbe().RunAsync(new OwaspApiProbeContext { Target = up.Urls.First(), Http = http, AuthHeaders = auth, AuthHeadersB = s_noAuth }, Ct);
 
         Assert.Contains(findings, f => f.Template.Recording.Vulnerability?.Id == "BWR-OWASP-API2-ALG-NONE");
         Assert.Contains(findings, f => f.Template.Recording.Vulnerability?.Id == "BWR-OWASP-API2-NOEXP");
@@ -63,7 +63,7 @@ public sealed class Api2Api3ProbeTests
         }, Ct);
         using var http = NewClient();
 
-        var findings = await new Api2AuthProbe().RunAsync(up.Urls.First(), http, ["Authorization: " + exact], s_noAuth, Ct);
+        var findings = await new Api2AuthProbe().RunAsync(new OwaspApiProbeContext { Target = up.Urls.First(), Http = http, AuthHeaders = ["Authorization: " + exact], AuthHeadersB = s_noAuth }, Ct);
 
         Assert.DoesNotContain(findings, f => f.Status == ScanFindingStatus.Vulnerable);
         Assert.Contains(findings, f => f.Status == ScanFindingStatus.Safe);
@@ -80,7 +80,7 @@ public sealed class Api2Api3ProbeTests
         using var http = NewClient();
         var auth = new List<string> { "Authorization: Bearer " + Jwt("{\"sub\":\"1\",\"exp\":1}") }; // long expired
 
-        var findings = await new Api2AuthProbe().RunAsync(up.Urls.First(), http, auth, s_noAuth, Ct);
+        var findings = await new Api2AuthProbe().RunAsync(new OwaspApiProbeContext { Target = up.Urls.First(), Http = http, AuthHeaders = auth, AuthHeadersB = s_noAuth }, Ct);
         Assert.Contains(findings, f => f.Template.Recording.Vulnerability?.Id == "BWR-OWASP-API2-EXPIRED");
     }
 
@@ -89,7 +89,7 @@ public sealed class Api2Api3ProbeTests
     {
         await using var up = await StartAsync(ctx => { ctx.Response.StatusCode = 403; return Task.CompletedTask; }, Ct);
         using var http = NewClient();
-        var f = Assert.Single(await new Api2AuthProbe().RunAsync(up.Urls.First(), http, ["Authorization: Bearer x"], s_noAuth, Ct));
+        var f = Assert.Single(await new Api2AuthProbe().RunAsync(new OwaspApiProbeContext { Target = up.Urls.First(), Http = http, AuthHeaders = ["Authorization: Bearer x"], AuthHeadersB = s_noAuth }, Ct));
         Assert.Equal(ScanFindingStatus.Skipped, f.Status);
     }
 
@@ -115,7 +115,7 @@ public sealed class Api2Api3ProbeTests
         }, Ct);
         using var http = NewClient();
 
-        var findings = await new Api3BoplaProbe().RunAsync(up.Urls.First(), http, s_noAuth, s_noAuth, Ct);
+        var findings = await new Api3BoplaProbe().RunAsync(new OwaspApiProbeContext { Target = up.Urls.First(), Http = http, AuthHeaders = s_noAuth, AuthHeadersB = s_noAuth }, Ct);
         Assert.Contains(findings, f => f.Status == ScanFindingStatus.Vulnerable
             && (f.Template.Recording.Vulnerability?.OwaspApi?.StartsWith("API3", StringComparison.Ordinal) ?? false));
     }
@@ -131,7 +131,7 @@ public sealed class Api2Api3ProbeTests
         }, Ct);
         using var http = NewClient();
 
-        var findings = await new Api3BoplaProbe().RunAsync(up.Urls.First(), http, s_noAuth, s_noAuth, Ct);
+        var findings = await new Api3BoplaProbe().RunAsync(new OwaspApiProbeContext { Target = up.Urls.First(), Http = http, AuthHeaders = s_noAuth, AuthHeadersB = s_noAuth }, Ct);
         Assert.DoesNotContain(findings, f => f.Status == ScanFindingStatus.Vulnerable);
     }
 

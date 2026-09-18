@@ -6,6 +6,7 @@ using Kuestenlogik.Bowire.Plugins;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Kuestenlogik.Bowire.Security.Scanner;
 
@@ -72,7 +73,23 @@ public sealed class OwaspScanEndpoints : IBowireEndpointContribution
             {
                 if (req.RunBuiltins)
                     findings.AddRange(await SecurityBuiltins.RunAllAsync(req.Target, http, authA, ctx.RequestAborted).ConfigureAwait(false));
-                findings.AddRange(await OwaspApiSuite.RunProbesAsync(req.Target, http, authA, authB, ctx.RequestAborted).ConfigureAwait(false));
+                // #486 — hand the probes the OAST session when the operator
+                // configured an interaction server. SSRF is the one that uses
+                // it today: a callback arriving is the target making the
+                // request, where the timing check only infers it. Null
+                // otherwise, and the probes fall back to what they can prove
+                // without one.
+                var oast = ctx.RequestServices.GetService<OastWorkbenchSession>();
+                findings.AddRange(await OwaspApiSuite.RunProbesAsync(
+                    new OwaspApiProbeContext
+                    {
+                        Target = req.Target,
+                        Http = http,
+                        AuthHeaders = authA,
+                        AuthHeadersB = authB,
+                        Oast = oast is { Configured: true } ? oast : null,
+                    },
+                    ctx.RequestAborted).ConfigureAwait(false));
 
                 // Protocol-specific probes (GraphQL introspection, gRPC
                 // reflection / transport auth) — parity with `bowire scan`.

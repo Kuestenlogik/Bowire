@@ -32,12 +32,14 @@ internal interface IOwaspApiProbe
     OwaspApiEntry Entry { get; }
 
     /// <summary>
-    /// Run the probe against the target and return its findings.
-    /// <paramref name="authHeadersB"/> carries an optional *second* identity's
-    /// headers (from <c>--auth-header-b</c>) — used by cross-identity checks
-    /// like BOLA; probes that don't need it ignore it.
+    /// Run the probe against the scan's target and return its findings.
     /// </summary>
-    Task<IReadOnlyList<ScanFinding>> RunAsync(string target, HttpClient http, IList<string> authHeaders, IList<string> authHeadersB, CancellationToken ct);
+    /// <remarks>
+    /// A probe reads what it needs off <paramref name="ctx"/> and ignores the
+    /// rest — a second identity's headers for the cross-identity checks, an
+    /// out-of-band callback channel for the ones that can use one.
+    /// </remarks>
+    Task<IReadOnlyList<ScanFinding>> RunAsync(OwaspApiProbeContext ctx, CancellationToken ct);
 }
 
 /// <summary>
@@ -80,14 +82,36 @@ internal static class OwaspApiSuite
     /// merged findings. A probe that throws is isolated into a single Error
     /// finding for its entry so one wedged probe can't sink the suite.
     /// </summary>
-    public static async Task<IReadOnlyList<ScanFinding>> RunProbesAsync(string target, HttpClient http, IList<string> authHeaders, IList<string> authHeadersB, CancellationToken ct)
+    public static Task<IReadOnlyList<ScanFinding>> RunProbesAsync(
+        string target, HttpClient http, IList<string> authHeaders, IList<string> authHeadersB, CancellationToken ct)
+        => RunProbesAsync(
+            new OwaspApiProbeContext
+            {
+                Target = target,
+                Http = http,
+                AuthHeaders = authHeaders,
+                AuthHeadersB = authHeadersB,
+            },
+            ct);
+
+    /// <summary>
+    /// Run every registered probe with the scan's full context.
+    /// </summary>
+    /// <remarks>
+    /// The overload above is the flag-free call every existing caller makes.
+    /// This one is what a caller with an out-of-band callback channel uses —
+    /// see <see cref="OwaspApiProbeContext.Oast"/>.
+    /// </remarks>
+    public static async Task<IReadOnlyList<ScanFinding>> RunProbesAsync(
+        OwaspApiProbeContext ctx, CancellationToken ct)
     {
+        ArgumentNullException.ThrowIfNull(ctx);
         var merged = new List<ScanFinding>();
         foreach (var probe in Probes)
         {
             try
             {
-                merged.AddRange(await probe.RunAsync(target, http, authHeaders, authHeadersB, ct).ConfigureAwait(false));
+                merged.AddRange(await probe.RunAsync(ctx, ct).ConfigureAwait(false));
             }
             catch (Exception ex)
             {

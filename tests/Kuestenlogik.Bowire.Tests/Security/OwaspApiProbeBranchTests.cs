@@ -38,7 +38,7 @@ public sealed class OwaspApiProbeBranchTests
         }, Ct);
         using var http = NewClient();
 
-        var findings = await new Api8ConfigProbe().RunAsync(up.Urls.First(), http, s_noAuth, s_noAuth, Ct);
+        var findings = await new Api8ConfigProbe().RunAsync(new OwaspApiProbeContext { Target = up.Urls.First(), Http = http, AuthHeaders = s_noAuth, AuthHeadersB = s_noAuth }, Ct);
         Assert.Contains(findings, f => f.Template.Recording.Vulnerability?.Id == "BWR-OWASP-API8-CORS-PERMISSIVE");
     }
 
@@ -48,7 +48,7 @@ public sealed class OwaspApiProbeBranchTests
         await using var up = await StartAsync(ctx => { ctx.Response.StatusCode = 200; return Task.CompletedTask; }, Ct);
         using var http = NewClient();
 
-        var findings = await new Api8ConfigProbe().RunAsync(up.Urls.First(), http, s_noAuth, s_noAuth, Ct);
+        var findings = await new Api8ConfigProbe().RunAsync(new OwaspApiProbeContext { Target = up.Urls.First(), Http = http, AuthHeaders = s_noAuth, AuthHeadersB = s_noAuth }, Ct);
         Assert.Contains(findings, f => f.Template.Recording.Vulnerability?.Id == "BWR-OWASP-API8-XCTO");
     }
 
@@ -64,7 +64,7 @@ public sealed class OwaspApiProbeBranchTests
         }, Ct);
         using var http = NewClient();
 
-        var findings = await new Api8ConfigProbe().RunAsync(up.Urls.First(), http, s_noAuth, s_noAuth, Ct);
+        var findings = await new Api8ConfigProbe().RunAsync(new OwaspApiProbeContext { Target = up.Urls.First(), Http = http, AuthHeaders = s_noAuth, AuthHeadersB = s_noAuth }, Ct);
         Assert.Contains(findings, f => f.Template.Recording.Vulnerability?.Id == "BWR-OWASP-API8-CSP");
         Assert.Contains(findings, f => f.Template.Recording.Vulnerability?.Id == "BWR-OWASP-API8-XFO");
     }
@@ -73,7 +73,7 @@ public sealed class OwaspApiProbeBranchTests
     public async Task Api8_UnreachableTarget_Skips()
     {
         using var http = NewClient();
-        var f = Assert.Single(await new Api8ConfigProbe().RunAsync("http://127.0.0.1:9/", http, s_noAuth, s_noAuth, Ct));
+        var f = Assert.Single(await new Api8ConfigProbe().RunAsync(new OwaspApiProbeContext { Target = "http://127.0.0.1:9/", Http = http, AuthHeaders = s_noAuth, AuthHeadersB = s_noAuth }, Ct));
         Assert.Equal(ScanFindingStatus.Skipped, f.Status);
     }
 
@@ -91,7 +91,7 @@ public sealed class OwaspApiProbeBranchTests
         using var http = NewClient();
         var target = up.Urls.First().TrimEnd('/') + "/api/v2/users";
 
-        var findings = await new Api9InventoryProbe().RunAsync(target, http, s_noAuth, s_noAuth, Ct);
+        var findings = await new Api9InventoryProbe().RunAsync(new OwaspApiProbeContext { Target = target, Http = http, AuthHeaders = s_noAuth, AuthHeadersB = s_noAuth }, Ct);
         Assert.Contains(findings, f => f.Status == ScanFindingStatus.Vulnerable
             && (f.Template.Recording.Vulnerability?.Id?.Contains("API9-VER", StringComparison.Ordinal) ?? false));
     }
@@ -107,7 +107,7 @@ public sealed class OwaspApiProbeBranchTests
         }, Ct);
         using var http = NewClient();
 
-        var findings = await new Api9InventoryProbe().RunAsync(up.Urls.First(), http, s_noAuth, s_noAuth, Ct);
+        var findings = await new Api9InventoryProbe().RunAsync(new OwaspApiProbeContext { Target = up.Urls.First(), Http = http, AuthHeaders = s_noAuth, AuthHeadersB = s_noAuth }, Ct);
         Assert.Contains(findings, f => f.Status == ScanFindingStatus.Vulnerable
             && (f.Template.Recording.Vulnerability?.Id?.Contains("DEPRECATED", StringComparison.Ordinal) ?? false));
     }
@@ -118,7 +118,7 @@ public sealed class OwaspApiProbeBranchTests
         await using var up = await StartAsync(ctx => { ctx.Response.StatusCode = 200; return Task.CompletedTask; }, Ct);
         using var http = NewClient();
 
-        var findings = await new Api9InventoryProbe().RunAsync(up.Urls.First(), http, s_noAuth, s_noAuth, Ct);
+        var findings = await new Api9InventoryProbe().RunAsync(new OwaspApiProbeContext { Target = up.Urls.First(), Http = http, AuthHeaders = s_noAuth, AuthHeadersB = s_noAuth }, Ct);
         Assert.Contains(findings, f => f.Status == ScanFindingStatus.Skipped
             && f.Template.Recording.Id.Contains("API9-CATCHALL", StringComparison.Ordinal));
     }
@@ -129,8 +129,7 @@ public sealed class OwaspApiProbeBranchTests
     public async Task Api1_SameIdentity_Skips()
     {
         using var http = NewClient();
-        var f = Assert.Single(await new Api1BolaProbe().RunAsync(
-            "https://api.example.com/orders/123", http, s_authA, s_authA, Ct));
+        var f = Assert.Single(await new Api1BolaProbe().RunAsync(new OwaspApiProbeContext { Target = "https://api.example.com/orders/123", Http = http, AuthHeaders = s_authA, AuthHeadersB = s_authA }, Ct));
         Assert.Equal(ScanFindingStatus.Skipped, f.Status);
         Assert.Contains("API1-SAME-IDENTITY", f.Template.Recording.Id, StringComparison.Ordinal);
     }
@@ -148,7 +147,7 @@ public sealed class OwaspApiProbeBranchTests
         using var http = NewClient();
         var target = up.Urls.First().TrimEnd('/') + "/orders/123";
 
-        var findings = await new Api1BolaProbe().RunAsync(target, http, s_authA, s_authB, Ct);
+        var findings = await new Api1BolaProbe().RunAsync(new OwaspApiProbeContext { Target = target, Http = http, AuthHeaders = s_authA, AuthHeadersB = s_authB }, Ct);
         Assert.DoesNotContain(findings, f => f.Status == ScanFindingStatus.Vulnerable);
     }
 
@@ -156,7 +155,7 @@ public sealed class OwaspApiProbeBranchTests
     public async Task Api1_InvalidTarget_Errors()
     {
         using var http = NewClient();
-        var f = Assert.Single(await new Api1BolaProbe().RunAsync("not a url", http, s_authA, s_authB, Ct));
+        var f = Assert.Single(await new Api1BolaProbe().RunAsync(new OwaspApiProbeContext { Target = "not a url", Http = http, AuthHeaders = s_authA, AuthHeadersB = s_authB }, Ct));
         Assert.Equal(ScanFindingStatus.Error, f.Status);
     }
 
@@ -164,7 +163,7 @@ public sealed class OwaspApiProbeBranchTests
     public async Task Api1_NoObjectIdInPath_Skips()
     {
         using var http = NewClient();
-        var f = Assert.Single(await new Api1BolaProbe().RunAsync("https://api.example.com/orders", http, s_authA, s_authB, Ct));
+        var f = Assert.Single(await new Api1BolaProbe().RunAsync(new OwaspApiProbeContext { Target = "https://api.example.com/orders", Http = http, AuthHeaders = s_authA, AuthHeadersB = s_authB }, Ct));
         Assert.Equal(ScanFindingStatus.Skipped, f.Status);
         Assert.Contains("API1-NO-OBJECT-ID", f.Template.Recording.Id, StringComparison.Ordinal);
     }
@@ -183,7 +182,7 @@ public sealed class OwaspApiProbeBranchTests
         }, Ct);
         using var http = NewClient();
 
-        var f = Assert.Single(await new Api3BoplaProbe().RunAsync(up.Urls.First(), http, s_noAuth, s_noAuth, Ct));
+        var f = Assert.Single(await new Api3BoplaProbe().RunAsync(new OwaspApiProbeContext { Target = up.Urls.First(), Http = http, AuthHeaders = s_noAuth, AuthHeadersB = s_noAuth }, Ct));
         Assert.Equal(ScanFindingStatus.Skipped, f.Status);
         Assert.Contains("API3-WRITE-DENIED", f.Template.Recording.Id, StringComparison.Ordinal);
     }
@@ -200,7 +199,7 @@ public sealed class OwaspApiProbeBranchTests
         }, Ct);
         using var http = NewClient();
 
-        var f = Assert.Single(await new Api3BoplaProbe().RunAsync(up.Urls.First(), http, s_noAuth, s_noAuth, Ct));
+        var f = Assert.Single(await new Api3BoplaProbe().RunAsync(new OwaspApiProbeContext { Target = up.Urls.First(), Http = http, AuthHeaders = s_noAuth, AuthHeadersB = s_noAuth }, Ct));
         Assert.Equal(ScanFindingStatus.Skipped, f.Status);
         Assert.Contains("API3-NO-PATCH", f.Template.Recording.Id, StringComparison.Ordinal);
     }
@@ -217,7 +216,7 @@ public sealed class OwaspApiProbeBranchTests
         }, Ct);
         using var http = NewClient();
 
-        var findings = await new Api3BoplaProbe().RunAsync(up.Urls.First(), http, s_noAuth, s_noAuth, Ct);
+        var findings = await new Api3BoplaProbe().RunAsync(new OwaspApiProbeContext { Target = up.Urls.First(), Http = http, AuthHeaders = s_noAuth, AuthHeadersB = s_noAuth }, Ct);
         Assert.Contains(findings, f => f.Status == ScanFindingStatus.Safe);
         Assert.DoesNotContain(findings, f => f.Status == ScanFindingStatus.Vulnerable);
     }

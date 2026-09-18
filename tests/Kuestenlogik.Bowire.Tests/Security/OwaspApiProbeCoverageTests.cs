@@ -34,7 +34,7 @@ public sealed class OwaspApiProbeCoverageTests
         await using var up = await StartAsync(ctx => { ctx.Response.StatusCode = 200; return Task.CompletedTask; }, Ct);
         using var http = NewClient();
 
-        var findings = await new Api4ResourceProbe().RunAsync(up.Urls.First(), http, s_noAuth, s_noAuth, Ct);
+        var findings = await new Api4ResourceProbe().RunAsync(new OwaspApiProbeContext { Target = up.Urls.First(), Http = http, AuthHeaders = s_noAuth, AuthHeadersB = s_noAuth }, Ct);
 
         Assert.Contains(findings, f => f.Template.Recording.Vulnerability?.Id == "BWR-OWASP-API4-RATELIMIT");
         Assert.Contains(findings, f => f.Template.Recording.Vulnerability?.Id == "BWR-OWASP-API4-BODYSIZE");
@@ -51,7 +51,7 @@ public sealed class OwaspApiProbeCoverageTests
         }, Ct);
         using var http = NewClient();
 
-        var findings = await new Api4ResourceProbe().RunAsync(up.Urls.First(), http, s_noAuth, s_noAuth, Ct);
+        var findings = await new Api4ResourceProbe().RunAsync(new OwaspApiProbeContext { Target = up.Urls.First(), Http = http, AuthHeaders = s_noAuth, AuthHeadersB = s_noAuth }, Ct);
         Assert.Contains(findings, f => f.Status == ScanFindingStatus.Safe);
         Assert.DoesNotContain(findings, f => f.Status == ScanFindingStatus.Vulnerable);
     }
@@ -68,7 +68,7 @@ public sealed class OwaspApiProbeCoverageTests
         }, Ct);
         using var http = NewClient();
 
-        var findings = await new Api5AuthorizationProbe().RunAsync(up.Urls.First(), http, s_noAuth, s_noAuth, Ct);
+        var findings = await new Api5AuthorizationProbe().RunAsync(new OwaspApiProbeContext { Target = up.Urls.First(), Http = http, AuthHeaders = s_noAuth, AuthHeadersB = s_noAuth }, Ct);
         Assert.Contains(findings, f => f.Status == ScanFindingStatus.Vulnerable
             && (f.Template.Recording.Vulnerability?.OwaspApi?.StartsWith("API5", StringComparison.Ordinal) ?? false));
     }
@@ -79,7 +79,7 @@ public sealed class OwaspApiProbeCoverageTests
         await using var up = await StartAsync(ctx => { ctx.Response.StatusCode = 404; return Task.CompletedTask; }, Ct);
         using var http = NewClient();
 
-        var f = Assert.Single(await new Api5AuthorizationProbe().RunAsync(up.Urls.First(), http, s_noAuth, s_noAuth, Ct));
+        var f = Assert.Single(await new Api5AuthorizationProbe().RunAsync(new OwaspApiProbeContext { Target = up.Urls.First(), Http = http, AuthHeaders = s_noAuth, AuthHeadersB = s_noAuth }, Ct));
         Assert.Equal(ScanFindingStatus.Safe, f.Status);
     }
 
@@ -89,7 +89,7 @@ public sealed class OwaspApiProbeCoverageTests
         await using var up = await StartAsync(ctx => { ctx.Response.StatusCode = 200; return Task.CompletedTask; }, Ct);
         using var http = NewClient();
 
-        var f = Assert.Single(await new Api5AuthorizationProbe().RunAsync(up.Urls.First(), http, s_noAuth, s_noAuth, Ct));
+        var f = Assert.Single(await new Api5AuthorizationProbe().RunAsync(new OwaspApiProbeContext { Target = up.Urls.First(), Http = http, AuthHeaders = s_noAuth, AuthHeadersB = s_noAuth }, Ct));
         Assert.Equal(ScanFindingStatus.Skipped, f.Status);
     }
 
@@ -111,7 +111,7 @@ public sealed class OwaspApiProbeCoverageTests
         }, Ct);
         using var http = NewClient();
 
-        var findings = await new Api8ConfigProbe().RunAsync(up.Urls.First(), http, s_noAuth, s_noAuth, Ct);
+        var findings = await new Api8ConfigProbe().RunAsync(new OwaspApiProbeContext { Target = up.Urls.First(), Http = http, AuthHeaders = s_noAuth, AuthHeadersB = s_noAuth }, Ct);
         Assert.Contains(findings, f => f.Template.Recording.Vulnerability?.Id == "BWR-OWASP-API8-CORS-REFLECT-CREDS");
     }
 
@@ -126,7 +126,7 @@ public sealed class OwaspApiProbeCoverageTests
         }, Ct);
         using var http = NewClient();
 
-        var findings = await new Api8ConfigProbe().RunAsync(up.Urls.First(), http, s_noAuth, s_noAuth, Ct);
+        var findings = await new Api8ConfigProbe().RunAsync(new OwaspApiProbeContext { Target = up.Urls.First(), Http = http, AuthHeaders = s_noAuth, AuthHeadersB = s_noAuth }, Ct);
         Assert.DoesNotContain(findings, f => (f.Template.Recording.Vulnerability?.Id?.Contains("CORS", StringComparison.Ordinal) ?? false));
     }
 
@@ -142,7 +142,7 @@ public sealed class OwaspApiProbeCoverageTests
         }, Ct);
         using var http = NewClient();
 
-        var findings = await new Api9InventoryProbe().RunAsync(up.Urls.First(), http, s_noAuth, s_noAuth, Ct);
+        var findings = await new Api9InventoryProbe().RunAsync(new OwaspApiProbeContext { Target = up.Urls.First(), Http = http, AuthHeaders = s_noAuth, AuthHeadersB = s_noAuth }, Ct);
         Assert.Contains(findings, f => f.Status == ScanFindingStatus.Vulnerable
             && (f.Template.Recording.Vulnerability?.Id?.Contains("API9-DOC", StringComparison.Ordinal) ?? false));
     }
@@ -153,7 +153,7 @@ public sealed class OwaspApiProbeCoverageTests
         await using var up = await StartAsync(ctx => { ctx.Response.StatusCode = 404; return Task.CompletedTask; }, Ct);
         using var http = NewClient();
 
-        var f = Assert.Single(await new Api9InventoryProbe().RunAsync(up.Urls.First(), http, s_noAuth, s_noAuth, Ct));
+        var f = Assert.Single(await new Api9InventoryProbe().RunAsync(new OwaspApiProbeContext { Target = up.Urls.First(), Http = http, AuthHeaders = s_noAuth, AuthHeadersB = s_noAuth }, Ct));
         Assert.Equal(ScanFindingStatus.Safe, f.Status);
     }
 
@@ -163,7 +163,7 @@ public sealed class OwaspApiProbeCoverageTests
     public async Task Api1_MissingSecondIdentity_Skips()
     {
         using var http = NewClient();
-        var f = Assert.Single(await new Api1BolaProbe().RunAsync("https://api.example.com/orders/123", http, s_authA, s_noAuth, Ct));
+        var f = Assert.Single(await new Api1BolaProbe().RunAsync(new OwaspApiProbeContext { Target = "https://api.example.com/orders/123", Http = http, AuthHeaders = s_authA, AuthHeadersB = s_noAuth }, Ct));
         Assert.Equal(ScanFindingStatus.Skipped, f.Status);
         Assert.Contains("API1-NEEDS-TWO-IDENTITIES", f.Template.Recording.Id, StringComparison.Ordinal);
     }
@@ -180,7 +180,7 @@ public sealed class OwaspApiProbeCoverageTests
         using var http = NewClient();
 
         var target = up.Urls.First().TrimEnd('/') + "/orders/123";
-        var findings = await new Api1BolaProbe().RunAsync(target, http, s_authA, s_authB, Ct);
+        var findings = await new Api1BolaProbe().RunAsync(new OwaspApiProbeContext { Target = target, Http = http, AuthHeaders = s_authA, AuthHeadersB = s_authB }, Ct);
         Assert.Contains(findings, f => f.Status == ScanFindingStatus.Vulnerable
             && (f.Template.Recording.Vulnerability?.OwaspApi?.StartsWith("API1", StringComparison.Ordinal) ?? false));
     }
@@ -192,7 +192,7 @@ public sealed class OwaspApiProbeCoverageTests
     {
         await using var up = await StartAsync(ctx => { ctx.Response.StatusCode = 200; return Task.CompletedTask; }, Ct);
         using var http = NewClient();
-        var findings = await new Api2AuthProbe().RunAsync(up.Urls.First(), http, s_noAuth, s_noAuth, Ct);
+        var findings = await new Api2AuthProbe().RunAsync(new OwaspApiProbeContext { Target = up.Urls.First(), Http = http, AuthHeaders = s_noAuth, AuthHeadersB = s_noAuth }, Ct);
         Assert.All(findings, f => Assert.NotEqual(ScanFindingStatus.Vulnerable, f.Status));
     }
 
@@ -205,7 +205,7 @@ public sealed class OwaspApiProbeCoverageTests
             await ctx.Response.WriteAsync("not json", ctx.RequestAborted);
         }, Ct);
         using var http = NewClient();
-        var f = Assert.Single(await new Api3BoplaProbe().RunAsync(up.Urls.First(), http, s_noAuth, s_noAuth, Ct));
+        var f = Assert.Single(await new Api3BoplaProbe().RunAsync(new OwaspApiProbeContext { Target = up.Urls.First(), Http = http, AuthHeaders = s_noAuth, AuthHeadersB = s_noAuth }, Ct));
         Assert.Equal(ScanFindingStatus.Skipped, f.Status);
     }
 
@@ -213,7 +213,7 @@ public sealed class OwaspApiProbeCoverageTests
     public async Task Api7_NoUrlParameter_Skips()
     {
         using var http = NewClient();
-        var f = Assert.Single(await new Api7SsrfProbe().RunAsync("https://api.example.com/health", http, s_noAuth, s_noAuth, Ct));
+        var f = Assert.Single(await new Api7SsrfProbe().RunAsync(new OwaspApiProbeContext { Target = "https://api.example.com/health", Http = http, AuthHeaders = s_noAuth, AuthHeadersB = s_noAuth }, Ct));
         Assert.Equal(ScanFindingStatus.Skipped, f.Status);
     }
 
