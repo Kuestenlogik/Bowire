@@ -28,6 +28,7 @@ namespace Kuestenlogik.Bowire.Tests.Plugins;
 /// turns a silent regression into a decision someone has to write down.
 /// </para>
 /// </remarks>
+[Collection("PluginLoadResults")]
 public sealed class NoStaticPluginStateTests
 {
     /// <summary>

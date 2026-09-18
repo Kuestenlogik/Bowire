@@ -25,6 +25,7 @@ namespace Kuestenlogik.Bowire.Tests;
 ///   <item><c>LastLoadResults</c> getter</item>
 /// </list>
 /// </summary>
+[Collection("PluginLoadResults")]
 public sealed class PluginManagerEdgeCasesTests : IDisposable
 {
     private readonly string _tempDir;

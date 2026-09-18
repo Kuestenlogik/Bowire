@@ -12,6 +12,7 @@ namespace Kuestenlogik.Bowire.Tests;
 /// <c>update</c> must delete. <see cref="BowireCli.IsPluginManagementCommand"/>
 /// is that decision; these guard which invocations skip the load.
 /// </summary>
+[Collection("PluginLoadResults")]
 public sealed class BowirePluginLoadGuardTests
 {
     // InlineData carries only constants (a first token + the expected

@@ -18,6 +18,7 @@ namespace Kuestenlogik.Bowire.Tests.Plugins;
 /// <see cref="NoStaticPluginStateTests"/>, because "gone" has to mean
 /// something a rename cannot satisfy.
 /// </remarks>
+[Collection("PluginLoadResults")]
 public sealed class BowirePluginLoaderTests : IDisposable
 {
     private readonly List<string> _tempDirs = [];

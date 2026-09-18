@@ -12,6 +12,7 @@ namespace Kuestenlogik.Bowire.Tests;
 /// endpoint in core (no dependency on Kuestenlogik.Bowire.Tool) while
 /// still letting it surface the loader's structured failure rows.
 /// </summary>
+[Collection("PluginLoadResults")]
 public sealed class PluginLoadResultStoreTests
 {
     [Fact]

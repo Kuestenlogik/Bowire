@@ -29,3 +29,18 @@ namespace Kuestenlogik.Bowire.Tests;
 [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1515:Consider making public types internal", Justification = "xUnit collection definition must be public.")]
 [System.Diagnostics.CodeAnalysis.SuppressMessage("Naming", "CA1711:Identifiers should not have incorrect suffix", Justification = "*Collection is the xUnit convention for a collection definition.")]
 public sealed class PluginUpdateCheckDirCollection { }
+
+/// <summary>
+/// Owns <c>PluginLoadResultStore.Latest</c>.
+/// </summary>
+/// <remarks>
+/// Every <c>BowirePluginLoader.Load()</c> publishes the run's results into
+/// that one static, so a class asserting what is in it races every class
+/// that loads a plugin. None of them was serialised — the race predates the
+/// user-store scope and only showed itself when new tests shifted the
+/// scheduling, which is the way this kind of race always shows itself.
+/// </remarks>
+[CollectionDefinition("PluginLoadResults", DisableParallelization = true)]
+[System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1515:Consider making public types internal", Justification = "xUnit collection definition must be public.")]
+[System.Diagnostics.CodeAnalysis.SuppressMessage("Naming", "CA1711:Identifiers should not have incorrect suffix", Justification = "*Collection is the xUnit convention for a collection definition.")]
+public sealed class PluginLoadResultsCollection { }
