@@ -326,6 +326,72 @@ public sealed class GrpcReplayTests : IDisposable
     }
 
     [Fact]
+    public async Task BidiStreaming_WithoutRecordedSends_JustStreamsTheFrames()
+    {
+        // A duplex call the client never wrote to -- or one recorded before
+        // sends were captured. There is nothing to gate on, so the frames
+        // go out in order and the call ends.
+        //
+        // The gated case above is the one with a test; this branch is the
+        // one a recording made from a server-push channel actually takes,
+        // and it had none.
+        byte[] Bytes(string s) => new StringValue { Value = s }.ToByteArray();
+        var recording = new
+        {
+            id = "rec_bidi_free",
+            name = "grpc bidi ungated",
+            recordingFormatVersion = 2,
+            steps = new[]
+            {
+                new
+                {
+                    id = "step_bidi_free",
+                    protocol = "grpc",
+                    service = "chat.Chatter",
+                    method = "Talk",
+                    methodType = "Duplex",
+                    status = "OK",
+                    response = "\"c\"",
+                    receivedMessages = new object[]
+                    {
+                        new { index = 0, timestampMs = 0,  data = "\"a\"", responseBinary = Convert.ToBase64String(Bytes("a")) },
+                        new { index = 1, timestampMs = 20, data = "\"b\"", responseBinary = Convert.ToBase64String(Bytes("b")) },
+                    },
+                    // No sentMessages: nothing to wait for.
+                }
+            }
+        };
+
+        var path = SafePath.Combine(_tempDir, "bidi-free.json");
+        await File.WriteAllTextAsync(path, JsonSerializer.Serialize(recording), TestContext.Current.CancellationToken);
+
+        await using var server = await MockServer.StartAsync(
+            new MockServerOptions { RecordingPath = path, Port = 0, Watch = false, ReplaySpeed = 0, HostingExtensions = new IBowireMockHostingExtension[] { new GrpcMockHostingExtension() } },
+            TestContext.Current.CancellationToken);
+
+        using var channel = GrpcChannel.ForAddress($"http://127.0.0.1:{server.Port}");
+        var method = new Method<StringValue, StringValue>(
+            MethodType.DuplexStreaming, "chat.Chatter", "Talk",
+            StringValueMarshaller, StringValueMarshaller);
+
+        using var call = channel.CreateCallInvoker()
+            .AsyncDuplexStreamingCall(method, host: null, new CallOptions());
+
+        // Both frames arrive without the client writing anything.
+        Assert.True(await call.ResponseStream.MoveNext(TestContext.Current.CancellationToken));
+        Assert.Equal("a", call.ResponseStream.Current.Value);
+        Assert.True(await call.ResponseStream.MoveNext(TestContext.Current.CancellationToken));
+        Assert.Equal("b", call.ResponseStream.Current.Value);
+
+        await call.RequestStream.CompleteAsync();
+
+        // And the call ends cleanly -- a client reading grpc-status sees a
+        // call that finished, not one that was cut off.
+        Assert.False(await call.ResponseStream.MoveNext(TestContext.Current.CancellationToken));
+        Assert.Equal(StatusCode.OK, call.GetStatus().StatusCode);
+    }
+
+    [Fact]
     public async Task GrpcMissCapture_PersistsStepAfterUnknownMethod()
     {
         // End-to-end gRPC miss-capture: server has no matching step,

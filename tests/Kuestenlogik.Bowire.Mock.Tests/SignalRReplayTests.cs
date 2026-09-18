@@ -157,6 +157,49 @@ public sealed class SignalRReplayTests : IDisposable
     }
 
     [Fact]
+    public async Task ClientInvocation_PairedResponse_WhenTheRecordingWrappedItsFrames()
+    {
+        // A recording made through the channel abstraction stores each
+        // frame as {"type":"text","text":"<the frame, as a string>"} rather
+        // than as the frame itself. The replayer unwraps that in three
+        // places and no test fed it one, so all three were guesses.
+        //
+        // It matters here rather than only cosmetically: invocation pairing
+        // reads invocationId off the frame, and a wrapper left on hides it.
+        // The recorded response would then never pair, and the client would
+        // get the synthetic "no such target" error instead of its answer.
+        var serverFrames = new[] { Wrapped(0, 0, """{"type":3,"invocationId":"3","result":{"answer":42}}""") };
+        var clientFrames = new[] { Wrapped(0, 0, """{"type":1,"invocationId":"3","target":"GetFoo","arguments":[]}""") };
+        var recording = MakeRecording(receivedMessages: serverFrames, sentMessages: clientFrames);
+        var path = await WriteAsync(recording, "rec-invoke-wrapped.json");
+
+        await using var server = await MockServer.StartAsync(
+            new MockServerOptions { RecordingPath = path, Port = 0, Watch = false, ReplaySpeed = 0 },
+            TestContext.Current.CancellationToken);
+
+        using var client = new ClientWebSocket();
+        await client.ConnectAsync(new Uri($"ws://127.0.0.1:{server.Port}/hub"), TestContext.Current.CancellationToken);
+        await SendFrameAsync(client, """{"protocol":"json","version":1}""");
+        _ = await ReceiveFrameAsync(client, TimeSpan.FromSeconds(5)); // ack
+        await ReceiveFrameAsync(client, TimeSpan.FromSeconds(5));     // recorded broadcast
+
+        const string clientId = "client-chosen-xyz";
+        await SendFrameAsync(client,
+            $$"""{"type":1,"invocationId":"{{clientId}}","target":"GetFoo","arguments":[]}""");
+
+        var response = await ReceiveFrameAsync(client, TimeSpan.FromSeconds(5));
+        using var doc = JsonDocument.Parse(response);
+        // Paired, so the wrapper came off on both sides: the recorded
+        // client frame to find the target, the recorded response to rewrite
+        // its id.
+        Assert.Equal(3, doc.RootElement.GetProperty("type").GetInt32());
+        Assert.Equal(clientId, doc.RootElement.GetProperty("invocationId").GetString());
+        Assert.Equal(42, doc.RootElement.GetProperty("result").GetProperty("answer").GetInt32());
+
+        await client.CloseAsync(WebSocketCloseStatus.NormalClosure, "done", TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
     public async Task ClientInvocation_UnpairedTarget_SyntheticErrorCompletion()
     {
         var recording = MakeRecording(receivedMessages: []);
@@ -186,6 +229,13 @@ public sealed class SignalRReplayTests : IDisposable
     }
 
     // ---- helpers ----
+
+    /// <summary>
+    /// A frame as the channel abstraction records it: the real frame as a
+    /// string, inside a text envelope.
+    /// </summary>
+    private static object Wrapped(int index, long ts, string json) =>
+        new { index, timestampMs = ts, data = new { type = "text", text = json } };
 
     private static object Frame(int index, long ts, string json) =>
         new { index, timestampMs = ts, data = JsonDocument.Parse(json).RootElement };
