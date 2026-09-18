@@ -79,25 +79,27 @@ internal static class TestRunner
         var worst = 0;
         foreach (var file in files)
         {
-            var perFlow = new TestCliOptions
+            // The workbench keeps a workspace's flows in one `flows.json`
+            // envelope. Run each of them, named by its id, rather than
+            // handing the envelope to the runner as if it were a single
+            // flow -- which is what used to happen, and ended in "Flow has
+            // no nodes" with nothing executed.
+            var ids = await EnvelopeIdsAsync(file).ConfigureAwait(false);
+            if (ids.Count > 0)
             {
-                CollectionPath = file,
-                // Per-flow report paths: <report>.<flow>.<ext> so a glob
-                // picks all of them up; null stays null.
-                JUnitPath = SuffixReport(cli.JUnitPath, file),
-                SarifPath = SuffixReport(cli.SarifPath, file),
-                ReportPath = SuffixReport(cli.ReportPath, file),
-                Annotations = cli.Annotations,
-                UpdateSnapshots = cli.UpdateSnapshots,
-                FailOn = cli.FailOn,
-                BaseUrl = cli.BaseUrl,
-                EnvOverrides = cli.EnvOverrides,
-                EnvFiles = cli.EnvFiles,
-                Keyring = cli.Keyring,
-                AiSeed = cli.AiSeed,
-                Secrets = cli.Secrets,
-                SecretFile = cli.SecretFile,
-            };
+                foreach (var id in ids)
+                {
+                    var perEnvelopeFlow = BuildPerFlowOptions(cli, file, reportKey: id);
+                    perEnvelopeFlow.FlowId = id;
+                    var envelopeRc = await RunAsync(perEnvelopeFlow, stdout, stderr).ConfigureAwait(false);
+                    if (envelopeRc > worst) worst = envelopeRc;
+                }
+                continue;
+            }
+
+            // Per-flow report paths: <report>.<flow>.<ext> so a glob
+            // picks all of them up; null stays null.
+            var perFlow = BuildPerFlowOptions(cli, file, Path.GetFileNameWithoutExtension(file));
             var rc = await RunAsync(perFlow, stdout, stderr).ConfigureAwait(false);
             // Worst-of: 2 (error) beats 1 (fail) beats 0 (pass).
             if (rc > worst) worst = rc;
@@ -106,15 +108,62 @@ internal static class TestRunner
     }
 
     /// <summary>
+    /// The flow ids in <paramref name="file"/> when it is a workbench
+    /// envelope; empty when it is a single flow or anything else.
+    /// </summary>
+    private static async Task<IReadOnlyList<string>> EnvelopeIdsAsync(string file)
+    {
+        try
+        {
+            return FlowTestRunner.EnvelopeFlowIds(await File.ReadAllTextAsync(file).ConfigureAwait(false));
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException)
+        {
+            // Unreadable here means unreadable in RunAsync a moment later,
+            // which reports it properly. Treat it as "not an envelope" and
+            // let the normal path produce the message.
+            return [];
+        }
+    }
+
+    /// <summary>
+    /// Per-flow options for a workspace run. <paramref name="reportKey"/>
+    /// distinguishes the report files — the file stem for a flow of its
+    /// own, the flow id for one inside an envelope, where every flow
+    /// otherwise shares a stem.
+    /// </summary>
+    private static TestCliOptions BuildPerFlowOptions(TestCliOptions cli, string file, string reportKey)
+        => new()
+        {
+            CollectionPath = file,
+            JUnitPath = SuffixReport(cli.JUnitPath, reportKey),
+            SarifPath = SuffixReport(cli.SarifPath, reportKey),
+            ReportPath = SuffixReport(cli.ReportPath, reportKey),
+            Annotations = cli.Annotations,
+            UpdateSnapshots = cli.UpdateSnapshots,
+            FailOn = cli.FailOn,
+            BaseUrl = cli.BaseUrl,
+            EnvOverrides = cli.EnvOverrides,
+            EnvFiles = cli.EnvFiles,
+            Keyring = cli.Keyring,
+            AiSeed = cli.AiSeed,
+            Secrets = cli.Secrets,
+            SecretFile = cli.SecretFile,
+        };
+
+    /// <summary>
     /// Turn a single report path into a per-flow variant so the workspace
     /// run doesn't overwrite one file per flow:
     /// <c>results.xml</c> + flow <c>smoke</c> → <c>results.smoke.xml</c>.
     /// Null / empty passes through (report disabled).
     /// </summary>
-    private static string? SuffixReport(string? path, string flowFile)
+    private static string? SuffixReport(string? path, string key)
     {
         if (string.IsNullOrEmpty(path)) return null;
-        var stem = Path.GetFileNameWithoutExtension(flowFile);
+        // The key is already what distinguishes this flow -- a file stem
+        // or a flow id -- so it is used as given rather than run through
+        // a path helper that would quietly mangle an id with a dot in it.
+        var stem = key;
         var dir = Path.GetDirectoryName(path);
         var name = Path.GetFileNameWithoutExtension(path);
         var ext = Path.GetExtension(path);
@@ -166,6 +215,7 @@ internal static class TestRunner
             var flowCli = new FlowTestCliOptions
             {
                 FlowPath = cli.CollectionPath,
+                FlowId = cli.FlowId,
                 ReportPath = cli.ReportPath,
                 JUnitPath = cli.JUnitPath,
                 SarifPath = cli.SarifPath,

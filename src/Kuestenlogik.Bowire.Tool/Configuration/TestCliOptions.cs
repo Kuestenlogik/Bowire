@@ -28,6 +28,13 @@ internal sealed class TestCliOptions
     /// <summary>Path to the test-collection JSON file (positional arg).</summary>
     public string? CollectionPath { get; set; }
 
+    /// <summary>
+    /// Which flow inside a workbench <c>flows.json</c> envelope to run.
+    /// Set by the workspace runner, which expands an envelope into one
+    /// run per flow; null everywhere else.
+    /// </summary>
+    public string? FlowId { get; set; }
+
     /// <summary>Optional HTML report output (<c>--report</c>).</summary>
     public string? ReportPath { get; set; }
 

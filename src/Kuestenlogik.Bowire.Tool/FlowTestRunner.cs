@@ -64,12 +64,118 @@ internal static class FlowTestRunner
             // The Flow document is the only shape that carries a top-level
             // "nodes" array — recordings use "tests" / "messages", test
             // collections use "tests". Quick + unambiguous discriminator.
-            return root.TryGetProperty("nodes", out var nodes)
-                && nodes.ValueKind == JsonValueKind.Array;
+            if (root.TryGetProperty("nodes", out var nodes)
+                && nodes.ValueKind == JsonValueKind.Array)
+            {
+                return true;
+            }
+
+            // The workbench stores every flow of a workspace in one
+            // `flows.json` envelope rather than a file each. Pointed at
+            // such a workspace the runner used to read the envelope as a
+            // single flow, find no nodes, and stop with "Flow has no
+            // nodes" — a workspace the workbench wrote was unusable.
+            return IsFlowEnvelope(root);
         }
         catch (JsonException)
         {
             return false;
+        }
+    }
+
+    /// <summary>
+    /// The flow to run out of <paramref name="rawJson"/>: the document
+    /// itself when it is one flow, or the named one out of the
+    /// workbench's envelope. Returns null with a reason in
+    /// <paramref name="error"/> when the envelope cannot answer.
+    /// </summary>
+    /// <remarks>
+    /// An envelope with exactly one flow needs no id — there is nothing to
+    /// choose between. With several, an unnamed request is refused rather
+    /// than guessed at, and the message lists what is on offer: running
+    /// the wrong flow of a workspace is worse than not running one.
+    /// </remarks>
+    internal static FlowDefinition? LoadFlow(string rawJson, string? flowId, out string? error)
+    {
+        error = null;
+        using var doc = JsonDocument.Parse(rawJson);
+        if (!IsFlowEnvelope(doc.RootElement))
+            return JsonSerializer.Deserialize<FlowDefinition>(rawJson, JsonOptions);
+
+        var ids = EnvelopeFlowIds(rawJson);
+        if (ids.Count == 0)
+        {
+            error = "The flows document is empty.";
+            return null;
+        }
+
+        var index = 0;
+        if (!string.IsNullOrEmpty(flowId))
+        {
+            index = -1;
+            for (var i = 0; i < ids.Count; i++)
+            {
+                if (string.Equals(ids[i], flowId, StringComparison.Ordinal)) { index = i; break; }
+            }
+            if (index < 0)
+            {
+                error = $"No flow '{flowId}' in this document. It holds: {string.Join(", ", ids)}.";
+                return null;
+            }
+        }
+        else if (ids.Count > 1)
+        {
+            error = $"This document holds {ids.Count} flows ({string.Join(", ", ids)}). "
+                + "Name one, or run the workspace so every flow runs.";
+            return null;
+        }
+
+        var flows = doc.RootElement.GetProperty("flows");
+        return JsonSerializer.Deserialize<FlowDefinition>(flows[index].GetRawText(), JsonOptions);
+    }
+
+    /// <summary>True for the workbench's <c>{"flows":[…]}</c> store.</summary>
+    private static bool IsFlowEnvelope(JsonElement root)
+        => root.ValueKind == JsonValueKind.Object
+            && root.TryGetProperty("flows", out var flows)
+            && flows.ValueKind == JsonValueKind.Array;
+
+    /// <summary>
+    /// The ids of the flows in a workbench store, in document order.
+    /// Empty for anything that is not one.
+    /// </summary>
+    /// <remarks>
+    /// A flow the workbench wrote always carries an id; one hand-edited in
+    /// may not, and gets its index as a stand-in so it is still
+    /// addressable rather than silently unreachable.
+    /// </remarks>
+    public static IReadOnlyList<string> EnvelopeFlowIds(string json)
+    {
+        if (string.IsNullOrWhiteSpace(json)) return [];
+        try
+        {
+            using var doc = JsonDocument.Parse(json);
+            if (!IsFlowEnvelope(doc.RootElement)) return [];
+
+            var ids = new List<string>();
+            var index = 0;
+            foreach (var flow in doc.RootElement.GetProperty("flows").EnumerateArray())
+            {
+                var id = flow.ValueKind == JsonValueKind.Object
+                         && flow.TryGetProperty("id", out var idElement)
+                         && idElement.ValueKind == JsonValueKind.String
+                    ? idElement.GetString()
+                    : null;
+                ids.Add(string.IsNullOrEmpty(id)
+                    ? index.ToString(System.Globalization.CultureInfo.InvariantCulture)
+                    : id);
+                index++;
+            }
+            return ids;
+        }
+        catch (JsonException)
+        {
+            return [];
         }
     }
 
@@ -105,7 +211,12 @@ internal static class FlowTestRunner
         try
         {
             rawJson = await File.ReadAllTextAsync(cli.FlowPath, ct).ConfigureAwait(false);
-            flow = JsonSerializer.Deserialize<FlowDefinition>(rawJson, JsonOptions);
+            flow = LoadFlow(rawJson, cli.FlowId, out var loadError);
+            if (loadError is not null)
+            {
+                await stderr.WriteLineAsync("error: " + loadError).ConfigureAwait(false);
+                return 2;
+            }
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException or NotSupportedException)
         {
@@ -737,6 +848,12 @@ internal sealed class FlowTestCliOptions
 {
     /// <summary>Path to the flow JSON file (positional arg).</summary>
     public string? FlowPath { get; set; }
+    /// <summary>
+    /// Which flow inside a workbench <c>flows.json</c> envelope to run.
+    /// Null for a single-flow file, and for an envelope holding exactly
+    /// one flow.
+    /// </summary>
+    public string? FlowId { get; set; }
     /// <summary>Optional HTML report output (<c>--report</c>).</summary>
     public string? ReportPath { get; set; }
     /// <summary>Optional JUnit XML report output (<c>--junit</c>).</summary>
