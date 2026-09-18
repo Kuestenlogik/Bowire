@@ -1,14 +1,14 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
-using System.Net;
-using System.Net.Sockets;
 using Grpc.Core;
 using Kuestenlogik.Bowire.IntegrationTests.Services;
 using Kuestenlogik.Bowire.Protocol.Grpc;
 using Kuestenlogik.Bowire.Security.Scanner;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Hosting.Server;
+using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -196,10 +196,14 @@ public sealed class GrpcAuthorizationProbeIntegrationTests
 
     private static async Task<GreeterHost> StartAsync(AuthMode mode, bool reflection = true)
     {
-        var url = $"http://127.0.0.1:{GetFreeTcpPort()}";
-
         var builder = WebApplication.CreateBuilder();
-        builder.WebHost.UseUrls(url);
+        // Port 0, and the real one read back after Kestrel has bound it.
+        // Picking a port with a throwaway listener and binding a moment
+        // later leaves a window in which anything else on the machine can
+        // take it — including another test in this run, which is how this
+        // failed: "Failed to bind to address http://127.0.0.1:55266:
+        // address already in use."
+        builder.WebHost.UseUrls("http://127.0.0.1:0");
         builder.WebHost.ConfigureKestrel(opts =>
             opts.ConfigureEndpointDefaults(lo => lo.Protocols = HttpProtocols.Http2));
         builder.Logging.ClearProviders();
@@ -214,16 +218,11 @@ public sealed class GrpcAuthorizationProbeIntegrationTests
         if (reflection) app.MapGrpcReflectionService();
 
         await app.StartAsync(TestContext.Current.CancellationToken);
-        return new GreeterHost(app, url);
-    }
 
-    private static int GetFreeTcpPort()
-    {
-        using var listener = new TcpListener(IPAddress.Loopback, 0);
-        listener.Start();
-        var port = ((IPEndPoint)listener.LocalEndpoint).Port;
-        listener.Stop();
-        return port;
+        var url = app.Services.GetRequiredService<IServer>()
+            .Features.Get<IServerAddressesFeature>()?.Addresses.FirstOrDefault()
+            ?? throw new InvalidOperationException("Kestrel bound no address.");
+        return new GreeterHost(app, url);
     }
 
     private sealed class GreeterHost(WebApplication app, string url) : IAsyncDisposable
