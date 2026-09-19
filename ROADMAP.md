@@ -12,13 +12,16 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.8 — Localisation, layout and the test pillar: DE + EN catalogues, splits and shelf, contract testing *(due 2026-11-03)*
 
-**36/39 done** · 1 in progress · 2 backlog
+**37/43 done** · 1 in progress · 5 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [250](https://github.com/Kuestenlogik/Bowire/issues/250) | Bowire | [Unified Layout — within-tab split (Auto/drag/shortcut/per-tab) + cross-tab pane split with tab drag-and-drop](#issue-kuestenlogik-bowire-250) | 🟡 In progress | `area:workbench` |
 | [583](https://github.com/Kuestenlogik/Bowire/issues/583) | Bowire | [Design-time lint: naming/PII rules, inline workbench hints, test --suite=lint](#issue-kuestenlogik-bowire-583) | ⬜ Backlog | `area:multi` |
 | [639](https://github.com/Kuestenlogik/Bowire/issues/639) | Bowire | [SCIM: live Okta and Entra ID provisioning round-trips](#issue-kuestenlogik-bowire-639) | ⬜ Backlog | `area:workbench` |
+| [711](https://github.com/Kuestenlogik/Bowire/issues/711) | Bowire | [Schema-Designer: Eingabefelder und Dropdowns übernehmen die Workbench-Stile nicht](#issue-kuestenlogik-bowire-711) | ⬜ Backlog |  |
+| [712](https://github.com/Kuestenlogik/Bowire/issues/712) | Bowire | [Stream-Vertrag hat keine Fehlerform — jedes Plugin erfindet seine eigene](#issue-kuestenlogik-bowire-712) | ⬜ Backlog |  |
+| [713](https://github.com/Kuestenlogik/Bowire/issues/713) | Bowire | [GraphQL-Transportoptionen: Multiplexing, GET, APQ, Uploads, Batching](#issue-kuestenlogik-bowire-713) | ⬜ Backlog |  |
 | [47](https://github.com/Kuestenlogik/Bowire/issues/47) | Bowire | [Sidebar display: method name vs path toggle](#issue-kuestenlogik-bowire-47) | ✅ Done | `area:workbench` |
 | [95](https://github.com/Kuestenlogik/Bowire/issues/95) | Bowire | [Header Library: named, scoped, toggleable header sets](#issue-kuestenlogik-bowire-95) | ✅ Done | `area:workbench` |
 | [117](https://github.com/Kuestenlogik/Bowire/issues/117) | Bowire | [i18n — extract every UI string; ship DE + EN catalogues](#issue-kuestenlogik-bowire-117) | ✅ Done | `area:workbench` |
@@ -55,6 +58,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [695](https://github.com/Kuestenlogik/Bowire/issues/695) | Bowire | [Request and response state lives in globals, so only one method can ever be live](#issue-kuestenlogik-bowire-695) | ✅ Done | `area:workbench` |
 | [696](https://github.com/Kuestenlogik/Bowire/issues/696) | Bowire | [Post-mount wiring is scheduled with requestAnimationFrame, so a hidden tab never wires it](#issue-kuestenlogik-bowire-696) | ✅ Done | `area:workbench` |
 | [706](https://github.com/Kuestenlogik/Bowire/issues/706) | Bowire | [The first click into any text field is lost: the chip overlay re-parents the field on focus](#issue-kuestenlogik-bowire-706) | ✅ Done | `area:workbench` |
+| [710](https://github.com/Kuestenlogik/Bowire/issues/710) | Bowire | [GraphQL: Lücken zwischen Discovery und einem vollwertigen GraphQL-Client](#issue-kuestenlogik-bowire-710) | ✅ Done |  |
 
 ### v2.9 — MCP completion + agent hub *(due 2026-11-24)*
 
@@ -188,6 +192,18 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 > `area:workbench`
 
 Split from #96 so the SCIM surface can ship on its own merits. [[more]](https://github.com/Kuestenlogik/Bowire/issues/639)
+
+#### <a id="issue-kuestenlogik-bowire-711"></a>⬜ Backlog · [#711](https://github.com/Kuestenlogik/Bowire/issues/711) Schema-Designer: Eingabefelder und Dropdowns übernehmen die Workbench-Stile nicht
+
+In der Schema-Designer-Werkzeugleiste sehen Suchfeld, die beiden Dropdowns und die Checkbox nach Browser-Voreinstellung aus, während alles drumherum thematisiert ist. Der „Reset view"-Knopf direkt daneben sitzt richtig im Thema — der Kontrast fällt dadurch besonders auf. [[more]](https://github.com/Kuestenlogik/Bowire/issues/711)
+
+#### <a id="issue-kuestenlogik-bowire-712"></a>⬜ Backlog · [#712](https://github.com/Kuestenlogik/Bowire/issues/712) Stream-Vertrag hat keine Fehlerform — jedes Plugin erfindet seine eigene
+
+Aufgefallen bei `Bowire.Protocols.TacticalApi`: ein Stream-Abbruch (Refusal / Idle / Transport) wird dort als Ad-hoc-JSON `{ "error", "status" }` in den Frame-Strom geschrieben. Die Ursache liegt aber hier, nicht dort — **der Kern-Vertrag kennt keine Fehlerform.** [[more]](https://github.com/Kuestenlogik/Bowire/issues/712)
+
+#### <a id="issue-kuestenlogik-bowire-713"></a>⬜ Backlog · [#713](https://github.com/Kuestenlogik/Bowire/issues/713) GraphQL-Transportoptionen: Multiplexing, GET, APQ, Uploads, Batching
+
+Abgespalten von #710. Dort standen sechs Punkte unter „Lücken". Vier davon **waren** Lücken — Dinge, die nicht oder falsch funktionierten; sie sind erledigt. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/713)
 
 #### <a id="issue-kuestenlogik-bowire-47"></a>✅ Done · [#47](https://github.com/Kuestenlogik/Bowire/issues/47) Sidebar display: method name vs path toggle
 
@@ -404,6 +420,10 @@ Post-mount wiring across the workbench is scheduled with `requestAnimationFrame`
 > `area:workbench`
 
 Click into a text field or textarea that has never been focused before, start typing — nothing lands. `document.activeElement` is `<body>`. The second click works. [[more]](https://github.com/Kuestenlogik/Bowire/issues/706)
+
+#### <a id="issue-kuestenlogik-bowire-710"></a>✅ Done · [#710](https://github.com/Kuestenlogik/Bowire/issues/710) GraphQL: Lücken zwischen Discovery und einem vollwertigen GraphQL-Client
+
+Bestandsaufnahme nach #292. Die Frage war: „Können wir auf einen GraphQL-Server zeigen und über das Schema discovern?" — **Ja, das funktioniert.** Beim Nachprüfen sind aber sechs Lücken aufgefallen, die hier festgehalten werden. Keine davon blockiert den Normalfall. [[more]](https://github.com/Kuestenlogik/Bowire/issues/710)
 
 ### v2.9 — MCP completion + agent hub *(due 2026-11-24)*
 
