@@ -12,15 +12,15 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.8 — Localisation, layout and the test pillar: DE + EN catalogues, splits and shelf, contract testing *(due 2026-11-03)*
 
-**37/43 done** · 1 in progress · 5 backlog
+**37/43 done** · 2 in progress · 4 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [250](https://github.com/Kuestenlogik/Bowire/issues/250) | Bowire | [Unified Layout — within-tab split (Auto/drag/shortcut/per-tab) + cross-tab pane split with tab drag-and-drop](#issue-kuestenlogik-bowire-250) | 🟡 In progress | `area:workbench` |
+| [712](https://github.com/Kuestenlogik/Bowire/issues/712) | Bowire | [Stream-Vertrag hat keine Fehlerform — jedes Plugin erfindet seine eigene](#issue-kuestenlogik-bowire-712) | 🟡 In progress |  |
 | [583](https://github.com/Kuestenlogik/Bowire/issues/583) | Bowire | [Design-time lint: naming/PII rules, inline workbench hints, test --suite=lint](#issue-kuestenlogik-bowire-583) | ⬜ Backlog | `area:multi` |
 | [639](https://github.com/Kuestenlogik/Bowire/issues/639) | Bowire | [SCIM: live Okta and Entra ID provisioning round-trips](#issue-kuestenlogik-bowire-639) | ⬜ Backlog | `area:workbench` |
 | [711](https://github.com/Kuestenlogik/Bowire/issues/711) | Bowire | [Schema-Designer: Eingabefelder und Dropdowns übernehmen die Workbench-Stile nicht](#issue-kuestenlogik-bowire-711) | ⬜ Backlog |  |
-| [712](https://github.com/Kuestenlogik/Bowire/issues/712) | Bowire | [Stream-Vertrag hat keine Fehlerform — jedes Plugin erfindet seine eigene](#issue-kuestenlogik-bowire-712) | ⬜ Backlog |  |
 | [713](https://github.com/Kuestenlogik/Bowire/issues/713) | Bowire | [GraphQL-Transportoptionen: Multiplexing, GET, APQ, Uploads, Batching](#issue-kuestenlogik-bowire-713) | ⬜ Backlog |  |
 | [47](https://github.com/Kuestenlogik/Bowire/issues/47) | Bowire | [Sidebar display: method name vs path toggle](#issue-kuestenlogik-bowire-47) | ✅ Done | `area:workbench` |
 | [95](https://github.com/Kuestenlogik/Bowire/issues/95) | Bowire | [Header Library: named, scoped, toggleable header sets](#issue-kuestenlogik-bowire-95) | ✅ Done | `area:workbench` |
@@ -181,6 +181,10 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 #135 shipped in v2.0 as a **within-tab** request/response split (vertical ↔ horizontal toggle). That feature predates the workbench tab system (#123). Now that tabs are first-class, the "split" concept has TWO orthogonal axes that operators need at different times, and #135 only covers one of them. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/250)
 
+#### <a id="issue-kuestenlogik-bowire-712"></a>🟡 In progress · [#712](https://github.com/Kuestenlogik/Bowire/issues/712) Stream-Vertrag hat keine Fehlerform — jedes Plugin erfindet seine eigene
+
+Aufgefallen bei `Bowire.Protocols.TacticalApi`: ein Stream-Abbruch (Refusal / Idle / Transport) wird dort als Ad-hoc-JSON `{ "error", "status" }` in den Frame-Strom geschrieben. Die Ursache liegt aber hier, nicht dort — **der Kern-Vertrag kennt keine Fehlerform.** [[more]](https://github.com/Kuestenlogik/Bowire/issues/712)
+
 #### <a id="issue-kuestenlogik-bowire-583"></a>⬜ Backlog · [#583](https://github.com/Kuestenlogik/Bowire/issues/583) Design-time lint: naming/PII rules, inline workbench hints, test --suite=lint
 
 > `area:multi`
@@ -196,10 +200,6 @@ Split from #96 so the SCIM surface can ship on its own merits. [[more]](https://
 #### <a id="issue-kuestenlogik-bowire-711"></a>⬜ Backlog · [#711](https://github.com/Kuestenlogik/Bowire/issues/711) Schema-Designer: Eingabefelder und Dropdowns übernehmen die Workbench-Stile nicht
 
 In der Schema-Designer-Werkzeugleiste sehen Suchfeld, die beiden Dropdowns und die Checkbox nach Browser-Voreinstellung aus, während alles drumherum thematisiert ist. Der „Reset view"-Knopf direkt daneben sitzt richtig im Thema — der Kontrast fällt dadurch besonders auf. [[more]](https://github.com/Kuestenlogik/Bowire/issues/711)
-
-#### <a id="issue-kuestenlogik-bowire-712"></a>⬜ Backlog · [#712](https://github.com/Kuestenlogik/Bowire/issues/712) Stream-Vertrag hat keine Fehlerform — jedes Plugin erfindet seine eigene
-
-Aufgefallen bei `Bowire.Protocols.TacticalApi`: ein Stream-Abbruch (Refusal / Idle / Transport) wird dort als Ad-hoc-JSON `{ "error", "status" }` in den Frame-Strom geschrieben. Die Ursache liegt aber hier, nicht dort — **der Kern-Vertrag kennt keine Fehlerform.** [[more]](https://github.com/Kuestenlogik/Bowire/issues/712)
 
 #### <a id="issue-kuestenlogik-bowire-713"></a>⬜ Backlog · [#713](https://github.com/Kuestenlogik/Bowire/issues/713) GraphQL-Transportoptionen: Multiplexing, GET, APQ, Uploads, Batching
 
