@@ -76,14 +76,34 @@ internal static class GraphQlIntrospection
         }
 
         var declaredNames = new HashSet<string>(StringComparer.Ordinal);
-        var types = new JsonArray();
+        // A type reference has to carry the right kind: a client switches on
+        // it to decide whether an argument is a scalar, an enum or an input
+        // object. Emitting OBJECT for everything — as this did at first —
+        // turns every ID and every enum into a nested message on the other
+        // side. The kinds are known here, so they are collected first and
+        // the references look them up.
+        var kinds = new Dictionary<string, string>(StringComparer.Ordinal);
+        var mappedTypes = new List<JsonObject>();
         foreach (var definition in declared)
         {
             var mapped = MapType(definition);
             if (mapped is null) continue;
-            if (mapped["name"]?.GetValue<string>() is { } n) declaredNames.Add(n);
-            types.Add(mapped);
+            if (mapped["name"]?.GetValue<string>() is { } n)
+            {
+                declaredNames.Add(n);
+                kinds[n] = mapped["kind"]?.GetValue<string>() ?? "OBJECT";
+            }
+            mappedTypes.Add(mapped);
         }
+
+        foreach (var scalar in BuiltInScalars)
+        {
+            if (declaredNames.Contains(scalar)) continue;
+            kinds[scalar] = "SCALAR";
+        }
+
+        var types = new JsonArray();
+        foreach (var mapped in mappedTypes) types.Add(Requalify(mapped, kinds));
 
         foreach (var scalar in BuiltInScalars)
         {
@@ -107,6 +127,45 @@ internal static class GraphQlIntrospection
                 },
             },
         };
+    }
+
+    /// <summary>
+    /// Fills in each type reference's real kind, now that every declared
+    /// type's kind is known.
+    /// </summary>
+    /// <remarks>
+    /// Done as a second pass rather than threading a lookup through the
+    /// mapping, because a type can reference one declared later in the file
+    /// and a single pass would have to guess.
+    /// </remarks>
+    private static JsonObject Requalify(JsonObject type, Dictionary<string, string> kinds)
+    {
+        foreach (var listName in (string[])["fields", "inputFields"])
+        {
+            if (type[listName] is not JsonArray list) continue;
+            foreach (var entry in list)
+            {
+                if (entry is not JsonObject field) continue;
+                if (field["type"] is JsonObject fieldType) RequalifyRef(fieldType, kinds);
+                if (field["args"] is not JsonArray args) continue;
+                foreach (var arg in args)
+                {
+                    if (arg is JsonObject a && a["type"] is JsonObject argType)
+                        RequalifyRef(argType, kinds);
+                }
+            }
+        }
+        return type;
+    }
+
+    private static void RequalifyRef(JsonObject reference, Dictionary<string, string> kinds)
+    {
+        if (reference["ofType"] is JsonObject inner) RequalifyRef(inner, kinds);
+        if (reference["name"]?.GetValue<string>() is not { } name) return;
+        // Unknown names keep what they had: a schema may reference a type it
+        // never declares, and inventing a kind for it would be worse than
+        // leaving the client to notice.
+        if (kinds.TryGetValue(name, out var kind)) reference["kind"] = kind;
     }
 
     private static JsonObject? RootRef(string name, HashSet<string> declared)
@@ -270,10 +329,9 @@ internal static class GraphQlIntrospection
         },
         GraphQLNamedType named => new JsonObject
         {
-            // Which kind a named type really is takes a second lookup, and
-            // the client does not need it here: it resolves the name against
-            // the type table, where the real kind sits. Only the wrappers
-            // have to be right at this level.
+            // A placeholder; Requalify replaces it once every declared
+            // type's kind is known. It cannot be decided here because a
+            // type may reference one declared further down the file.
             ["kind"] = "OBJECT",
             ["name"] = named.Name.StringValue,
             ["ofType"] = null,

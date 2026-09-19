@@ -143,18 +143,25 @@ internal static class GraphQLQueryBuilder
     /// </summary>
     private static string BuildArgType(BowireFieldInfo field)
     {
-        var inner = field.Type switch
-        {
-            "int32" or "int64" or "uint32" or "uint64" => "Int",
-            "float" or "double" => "Float",
-            "bool" => "Boolean",
-            "message" => field.MessageType?.Name ?? "JSON",
-            _ => "String"
-        };
-
-        // The discovered field stores ID and custom scalars as "string", so we
-        // can't perfectly round-trip them — fall back to String, which any
-        // GraphQL server with implicit ID coercion will accept.
+        // #713 - the schema's own name for the type when discovery kept it.
+        // Without this, ID, every enum and every custom scalar came out as
+        // String, because that is what they all normalise to in Bowire's
+        // shared vocabulary. `$id: String!` against an `ID!` argument is
+        // refused by any server that does not do implicit coercion, and an
+        // enum argument is refused by all of them.
+        var inner = !string.IsNullOrWhiteSpace(field.SchemaType)
+            ? field.SchemaType
+            : field.Type switch
+            {
+                // The fallback path, for a field that reached here without
+                // discovery — a stub built from the request body. It cannot
+                // do better than guess from the JSON value's shape.
+                "int32" or "int64" or "uint32" or "uint64" => "Int",
+                "float" or "double" => "Float",
+                "bool" => "Boolean",
+                "message" => field.MessageType?.Name ?? "JSON",
+                _ => "String"
+            };
 
         if (field.IsRepeated)
             inner = "[" + inner + "!]";

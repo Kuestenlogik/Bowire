@@ -288,6 +288,65 @@ public sealed class GraphQlMockDiscoveryTests : IDisposable
         Assert.NotNull(result.Status);
     }
 
+    [Fact]
+    public async Task A_Discovered_Argument_Keeps_The_Name_Its_Schema_Gave_It()
+    {
+        // Bowire's shared vocabulary flattens ID, every enum and every
+        // custom scalar to "string" — right for a form renderer, and the
+        // reason a generated operation used to declare `$id: String!`
+        // against an `ID!` argument. Servers without implicit coercion
+        // refuse that, and no server accepts String for an enum.
+        var ct = TestContext.Current.CancellationToken;
+        await using var server = await StartAsync(WriteSchema(HarbourSdl), ct);
+        using var protocol = new BowireGraphQLProtocol();
+
+        var services = await protocol.DiscoverAsync(
+            $"http://127.0.0.1:{server.Port}/graphql", showInternalServices: false, ct);
+
+        var query = services.Single(s => s.Name == "Query");
+        var id = query.Methods.Single(m => m.Name == "berth").InputType.Fields.Single();
+        Assert.Equal("ID", id.SchemaType);
+        // The normalised type is untouched: the form renderer still gets
+        // the vocabulary it was built for.
+        Assert.Equal("string", id.Type);
+
+        var status = query.Methods.Single(m => m.Name == "berths")
+            .InputType.Fields.Single(f => f.Name == "status");
+        Assert.Equal("BerthStatus", status.SchemaType);
+        Assert.Equal("string", status.Type);
+    }
+
+    [Fact]
+    public async Task A_Generated_Operation_Declares_The_Schema_Types()
+    {
+        // The end of the chain: discovery keeps the name, the builder
+        // writes it back out, and the operation is one a strict server
+        // accepts.
+        var ct = TestContext.Current.CancellationToken;
+        await using var server = await StartAsync(WriteSchema(HarbourSdl), ct);
+        using var protocol = new BowireGraphQLProtocol();
+        var url = $"http://127.0.0.1:{server.Port}/graphql";
+
+        await protocol.DiscoverAsync(url, showInternalServices: false, ct);
+
+        var result = await protocol.InvokeAsync(
+            url, service: "Query", method: "berth",
+            jsonMessages: ["""{"id":"b1"}"""],
+            showInternalServices: false, ct: ct);
+
+        Assert.Equal("OK", result.Status);
+        // The mock echoes nothing about the operation, so assert on what
+        // the builder produced by asking it directly.
+        var berth = services_berth(await protocol.DiscoverAsync(url, showInternalServices: false, ct));
+        var (operation, _) = GraphQLQueryBuilder.Build("query", berth, """{"id":"b1"}""");
+        Assert.Contains("$id: ID!", operation, StringComparison.Ordinal);
+        Assert.DoesNotContain("$id: String", operation, StringComparison.Ordinal);
+    }
+
+    private static Kuestenlogik.Bowire.Models.BowireMethodInfo services_berth(
+        IReadOnlyList<Kuestenlogik.Bowire.Models.BowireServiceInfo> services)
+        => services.Single(s => s.Name == "Query").Methods.Single(m => m.Name == "berth");
+
     /// <summary>
     /// A cut-down introspection query. The mock answers the whole document
     /// whatever is selected, so the selection here only has to name

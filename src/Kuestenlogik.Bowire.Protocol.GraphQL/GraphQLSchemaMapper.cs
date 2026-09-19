@@ -137,9 +137,9 @@ internal sealed class GraphQLSchemaMapper
             ? dv.GetString()
             : null;
 
-        var (typeName, isRepeated, required, nested, enumValues) = arg.TryGetProperty("type", out var typeRef)
+        var (typeName, isRepeated, required, nested, enumValues, schemaType) = arg.TryGetProperty("type", out var typeRef)
             ? ResolveType(typeRef, name)
-            : ("string", false, false, null, null);
+            : ("string", false, false, null, null, null);
 
         return new BowireFieldInfo(
             Name: name,
@@ -152,13 +152,20 @@ internal sealed class GraphQLSchemaMapper
             EnumValues: enumValues)
         {
             Required = required,
+            SchemaType = schemaType,
             Description = description,
             Source = "body",
             Example = defaultValue
         };
     }
 
-    private (string Type, bool IsRepeated, bool Required, BowireMessageInfo? Nested, List<BowireEnumValue>? Enums)
+    /// <remarks>
+    /// <c>SchemaName</c> is what GraphQL called the named type — <c>ID</c>,
+    /// an enum's name, a custom scalar. Bowire's own <c>Type</c> flattens
+    /// all of those to <c>string</c>, which is right for a form and wrong
+    /// for anything that has to write the type back out (#713).
+    /// </remarks>
+    private (string Type, bool IsRepeated, bool Required, BowireMessageInfo? Nested, List<BowireEnumValue>? Enums, string? SchemaName)
         ResolveType(JsonElement typeRef, string contextName)
     {
         var required = false;
@@ -192,25 +199,25 @@ internal sealed class GraphQLSchemaMapper
         switch (namedKind)
         {
             case "SCALAR":
-                return (MapScalar(namedName), isRepeated, required, null, null);
+                return (MapScalar(namedName), isRepeated, required, null, null, namedName);
 
             case "ENUM":
                 var enumValues = ResolveEnumValues(namedName);
-                return ("string", isRepeated, required, null, enumValues);
+                return ("string", isRepeated, required, null, enumValues, namedName);
 
             case "INPUT_OBJECT":
                 var nested = ResolveInputObject(namedName, contextName);
-                return ("message", isRepeated, required, nested, null);
+                return ("message", isRepeated, required, nested, null, namedName);
 
             case "OBJECT":
             case "INTERFACE":
             case "UNION":
                 // Output types — should not appear as argument types, but if they
                 // do, surface as opaque "message" so the form still renders.
-                return ("message", isRepeated, required, null, null);
+                return ("message", isRepeated, required, null, null, namedName);
 
             default:
-                return ("string", isRepeated, required, null, null);
+                return ("string", isRepeated, required, null, null, namedName);
         }
     }
 
@@ -396,9 +403,9 @@ internal sealed class GraphQLSchemaMapper
             var fname = f.TryGetProperty("name", out var fn) ? fn.GetString() ?? $"field{i}" : $"field{i}";
             var fdesc = f.TryGetProperty("description", out var fd) ? fd.GetString() : null;
 
-            var (typeName, isRepeated, required, nested, enums) = f.TryGetProperty("type", out var ft)
+            var (typeName, isRepeated, required, nested, enums, schemaType) = f.TryGetProperty("type", out var ft)
                 ? ResolveType(ft, fname)
-                : ("string", false, false, null, null);
+                : ("string", false, false, null, null, null);
 
             mapped.Add(new BowireFieldInfo(
                 Name: fname,
@@ -411,6 +418,7 @@ internal sealed class GraphQLSchemaMapper
                 EnumValues: enums)
             {
                 Required = required,
+                SchemaType = schemaType,
                 Description = fdesc,
                 Source = "body"
             });

@@ -28,6 +28,29 @@ public sealed record BowireFieldInfo(
     /// <summary>True if the source schema marks this field as required.</summary>
     public bool Required { get; init; }
 
+    /// <summary>
+    /// What the source schema called this field's type, when that is more
+    /// specific than <see cref="Type"/>. Null when the two would say the
+    /// same thing, or when the protocol has nothing extra to add.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <see cref="Type"/> is Bowire's own vocabulary — <c>string</c>,
+    /// <c>int32</c>, <c>message</c> — shared across every protocol so one
+    /// form renderer can serve them all. Normalising is what makes that
+    /// work, and it necessarily throws away whatever the schema called the
+    /// type.
+    /// </para>
+    /// <para>
+    /// For a form that is no loss. For anything that has to write the type
+    /// back out it is: GraphQL's <c>ID</c>, an enum name, and every custom
+    /// scalar all normalise to <c>string</c>, and a generated operation
+    /// declaring <c>$id: String!</c> against an <c>ID!</c> argument is
+    /// refused by any server that does not do implicit coercion.
+    /// </para>
+    /// </remarks>
+    public string? SchemaType { get; init; }
+
     /// <summary>Human-readable description from the source schema. Optional.</summary>
     public string? Description { get; init; }
 
