@@ -160,23 +160,30 @@ function statusLabel(item) {
     return fieldValue(item, "Status") || "Open";
 }
 
-// Convention: `vX.Y[.Z][-rc.N] — <theme>` where the em-dash separator
-// and theme tail are optional. Falls back to `{ version: title }` for
-// plain version-only titles so legacy milestones still bucket cleanly.
+// Convention since 2026-09-19: milestones are ordered work sections
+// `M<n> — <theme>` (docs/contributing/project-board.md, "Milestones and
+// releases"); the release version is chosen at the cut. The former
+// `vX.Y[.Z][-rc.N] — <theme>` form is still parsed for old milestones and
+// for the board's Release field. Falls back to `{ version: title }` for
+// anything else so legacy titles still bucket cleanly.
 function parseMilestoneTitle(title) {
     if (!title) return { version: null, theme: null };
-    const m = title.match(/^(v[\d.]+(?:-[\w.]+)?)\s*(?:[—-]\s*(.+))?$/);
+    const m = title.match(/^(M\d+|v[\d.]+(?:-[\w.]+)?)\s*(?:[—-]\s*(.+))?$/);
     if (!m) return { version: title, theme: null };
     return { version: m[1], theme: m[2] ? m[2].trim() : null };
 }
 
-// Semver-ish sort key for milestone versions. Drives the order in
-// which milestones appear in both the overview and detail sections.
+// Sort key for milestone versions: sections `M<n>` in their order, then
+// semver-ish for the old `vX.Y` form. Drives the order in which milestones
+// appear in both the overview and detail sections.
 function semverKey(v) {
     if (!v) return [Number.MAX_SAFE_INTEGER];
+    const section = v.match(/^M(\d+)$/);
+    if (section) return [0, parseInt(section[1], 10)];
     const m = v.match(/^v(\d+)(?:\.(\d+))?(?:\.(\d+))?(?:-(\w+)\.(\d+))?/);
     if (!m) return [Number.MAX_SAFE_INTEGER];
     return [
+        1,
         parseInt(m[1] || "0", 10),
         parseInt(m[2] || "0", 10),
         parseInt(m[3] || "0", 10),

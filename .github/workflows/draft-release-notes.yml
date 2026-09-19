@@ -46,6 +46,9 @@ on:
       version:
         description: 'Version to draft notes for (e.g. 1.8.1 or 2.0.0). With or without leading v.'
         required: true
+      milestone:
+        description: 'Milestone the release ships (e.g. M1). Empty = the frontmost complete section.'
+        required: false
 
 permissions:
   contents: write
@@ -65,6 +68,11 @@ jobs:
           token: ${{ secrets.BOWIRE_DISPATCH_TOKEN }}
           fetch-depth: 0
 
+      # Milestones are ordered work sections `M<n> — <theme>`; the version
+      # is chosen at the cut. Before the tag exists, the milestone to draft
+      # for is the one named here (`milestone` input, e.g. M1) or, unnamed,
+      # the frontmost complete section — scripts/ci/resolve-milestone.mjs
+      # applies the same rules the release pipeline uses on the tag.
       - name: Resolve milestone + theme
         id: ms
         env:
@@ -73,26 +81,17 @@ jobs:
           set -euo pipefail
           RAW="${{ github.event.inputs.version }}"
           VERSION="${RAW#v}"
-          BASE=$(echo "$VERSION" | sed -E 's/-.*$//')
-          MAJ_MIN=$(echo "$BASE" | cut -d. -f1-2)
-
-          # Match milestone whose title starts with `v${BASE}` OR
-          # `v${MAJ_MIN}` followed by either end-of-string or ` — `.
-          MS_TITLES=$(gh api "repos/${{ github.repository }}/milestones?state=all&per_page=100" --jq '.[].title')
-          MS_TITLE=""
-          for candidate in "v${BASE}" "v${MAJ_MIN}"; do
-            match=$(echo "$MS_TITLES" | grep -E "^${candidate}([[:space:]]+[—-][[:space:]]+.+)?$" | head -n 1 || true)
-            if [ -n "$match" ]; then
-              MS_TITLE="$match"
-              break
-            fi
-          done
-
-          if [ -z "$MS_TITLE" ]; then
-            echo "::warning::No milestone matches v${BASE} or v${MAJ_MIN} — drafting without a theme + issue list."
-            THEME=""
+          NAMED="${{ github.event.inputs.milestone }}"
+          if [ -n "$NAMED" ]; then
+            MS_TITLE=$(gh api "repos/${{ github.repository }}/milestones?state=all&per_page=100" --jq ".[] | select(.title | startswith(\"$NAMED \") or . == \"$NAMED\") | .title" | head -n 1 || true)
+            THEME=$(echo "$MS_TITLE" | sed -E 's/^M[0-9]+[[:space:]]*[—-][[:space:]]*//')
           else
-            THEME=$(echo "$MS_TITLE" | sed -E 's/^v[[:alnum:].-]+[[:space:]]+[—-][[:space:]]+//; t; s/.*//')
+            node scripts/ci/resolve-milestone.mjs "v$VERSION" > resolved.json
+            MS_TITLE=$(node -e "process.stdout.write(JSON.parse(require('fs').readFileSync('resolved.json','utf8')).milestone)")
+            THEME=$(node -e "process.stdout.write(JSON.parse(require('fs').readFileSync('resolved.json','utf8')).theme)")
+          fi
+          if [ -z "$MS_TITLE" ]; then
+            echo "::warning::No milestone resolved for v${VERSION} — drafting without a theme + issue list."
           fi
 
           {

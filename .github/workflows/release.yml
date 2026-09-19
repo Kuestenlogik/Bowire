@@ -770,53 +770,31 @@ jobs:
           cat release-body.md
           echo "----- end -----"
 
-      # Pull the release-title theme straight from the matching
-      # milestone's title. Convention is documented in
-      # docs/contributing/project-board.md — milestone titles carry
-      # an optional `vX.Y[.Z] — <theme>` form, and we splice the
-      # theme into the GitHub Release title so it reads vX.Y.Z —
-      # <theme>.
-      #
-      # Lookup logic: strip the tag's `v` prefix, drop any pre-release
-      # suffix (rc.N, beta), find the milestone whose title starts
-      # with v<base> or v<major.minor> followed by either end-of-
-      # string or the ` — ` separator. Empty / missing → bare title
-      # so the pipeline doesn't crash on a half-set-up milestone.
+      # The release-title theme comes from the milestone(s) this release
+      # ships. Milestones are ordered work sections `M<n> — <theme>`
+      # (docs/contributing/project-board.md, "Milestones and releases");
+      # the version number is chosen at the cut, so the tag names the
+      # milestones in its message and scripts/ci/resolve-milestone.mjs
+      # reads them (falling back to a `v<base> — …` title for old tags,
+      # then to the frontmost complete section). Empty → bare title, so
+      # the pipeline never crashes on a half-set-up milestone.
       - name: Resolve release title from milestone
         id: title
         env:
           GH_TOKEN: ${{ secrets.RELEASE_PAT || secrets.GITHUB_TOKEN }}
         run: |
           TAG="${GITHUB_REF_NAME}"
-          VERSION="${TAG#v}"
-          BASE=$(echo "$VERSION" | sed -E 's/-.*$//')
-          MAJ_MIN=$(echo "$BASE" | cut -d. -f1-2)
-          MS_TITLES=$(gh api "repos/${{ github.repository }}/milestones?state=all&per_page=100" \
-            --jq '.[].title' 2>/dev/null)
-          THEME=""
-          for candidate in "v${BASE}" "v${MAJ_MIN}"; do
-            # Match the candidate at the start of a title, followed by
-            # either end-of-string OR ` — <theme>` / ` - <theme>`.
-            FULL=$(echo "$MS_TITLES" | grep -E "^${candidate}([[:space:]]+[—-][[:space:]]+.+)?$" | head -n 1)
-            if [[ -n "$FULL" ]]; then
-              # Strip everything up to and including the ` — ` separator
-              # to isolate the theme. If the title is bare (no theme),
-              # the strip leaves the version itself and we treat the
-              # theme as empty.
-              CANDIDATE_THEME=$(echo "$FULL" | sed -E "s/^${candidate}[[:space:]]+[—-][[:space:]]+//; t; d")
-              if [[ -n "$CANDIDATE_THEME" ]]; then
-                THEME="$CANDIDATE_THEME"
-                echo "Resolved theme from milestone '${FULL}': ${THEME}"
-                break
-              fi
-            fi
-          done
+          # Never fail the release over its title: a resolver error is a bare title, said in the log.
+          node scripts/ci/resolve-milestone.mjs "$TAG" > resolved.json || echo '{"theme":"","numbers":""}' > resolved.json
+          THEME=$(node -e "process.stdout.write(JSON.parse(require('fs').readFileSync('resolved.json','utf8')).theme || '')" || true)
+          NUMBERS=$(node -e "process.stdout.write(JSON.parse(require('fs').readFileSync('resolved.json','utf8')).numbers || '')" || true)
           if [[ -n "$THEME" ]]; then
             echo "title=${TAG} — ${THEME}" >> "$GITHUB_OUTPUT"
           else
-            echo "::notice::No theme found on milestone matching v${BASE} or v${MAJ_MIN} — release title will be bare ${TAG}."
+            echo "::notice::No milestone resolved for ${TAG} — release title will be bare ${TAG}."
             echo "title=${TAG}" >> "$GITHUB_OUTPUT"
           fi
+          echo "milestones=${NUMBERS}" >> "$GITHUB_OUTPUT"
 
       # SHA-256 for every asset this release ships. Until now a download
       # could not be verified at all: the only sha256 in this workflow is
