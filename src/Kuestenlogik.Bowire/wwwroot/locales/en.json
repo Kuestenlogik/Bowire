@@ -752,6 +752,7 @@
   "rbGraphQL.needsUrl": "Enter the GraphQL endpoint first.",
   "rbGraphQL.needsQuery": "Write an operation in the Query tab first.",
   "rbGraphQL.badVariables": "Variables are not a JSON object: {error}",
+  "rbGraphQL.operationToRun": "Operation to run",
   "rbGraphQL.subscribed": "Subscribed to {name}",
   "rbGraphQL.unsubscribed": "Unsubscribed from {name}",
   "rbGraphQL.subscribeFailed": "The subscription could not be opened: {reason}",

@@ -3177,6 +3177,10 @@
                 operation: 'query',   // 'query' | 'mutation' | 'subscription'
                 query: '',
                 variables: '{}',
+                // #710 - which operation of a multi-operation document to
+                // run. Empty while the document declares at most one: the
+                // plugin resolves that case by parsing the document.
+                operationName: '',
                 metadata: []
             };
         },

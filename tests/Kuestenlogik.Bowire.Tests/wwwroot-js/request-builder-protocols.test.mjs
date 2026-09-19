@@ -65,6 +65,7 @@ const _postlude = `
         _safeParseJsonObject: _safeParseJsonObject,
         _getLayouts: function () { return rbLayouts; },
         _graphQLOperationName: _graphQLOperationName,
+        _graphQLOperationNames: _graphQLOperationNames,
         _graphQLHasErrors: _graphQLHasErrors,
         _connState: function () { return rbConnState; },
         _protoState: function (fr) { return rbProtoState(fr); }
@@ -191,7 +192,7 @@ function graphqlFrame(over) {
         serverUrl: 'https://api.example.com/graphql',
         _requestBuilder: {
             protocol: 'graphql', params: [], headers: [],
-            byProtocol: { graphql: Object.assign({ operation: 'query', query: '', variables: '{}', metadata: [] }, over || {}) }
+            byProtocol: { graphql: Object.assign({ operation: 'query', query: '', variables: '{}', operationName: '', metadata: [] }, over || {}) }
         }
     };
 }
@@ -287,4 +288,81 @@ test('graphql renderResponse: events already received survive a switch back to q
     } finally {
         sb._connState().gqlEvents = [];
     }
+});
+
+// ---- GraphQL operation picker (#710) ----
+
+test('_graphQLOperationNames: every named operation, in source order', () => {
+    const sb = loadProtocols();
+    assert.deepEqual(
+        sb._graphQLOperationNames('query A { a }\nmutation B { b }\nsubscription C { c }'),
+        ['A', 'B', 'C']);
+});
+
+test('_graphQLOperationNames: anonymous and shorthand contribute no name', () => {
+    const sb = loadProtocols();
+    assert.deepEqual(sb._graphQLOperationNames('{ user { id } }'), []);
+    assert.deepEqual(sb._graphQLOperationNames('query { user { id } }'), []);
+    assert.deepEqual(sb._graphQLOperationNames(''), []);
+    assert.deepEqual(sb._graphQLOperationNames(null), []);
+});
+
+test('_graphQLOperationNames: a comment that looks like an operation is not one', () => {
+    // Without blanking comments the picker would offer Ghost, and picking
+    // it would send a name the document does not declare.
+    const sb = loadProtocols();
+    assert.deepEqual(sb._graphQLOperationNames('# query Ghost { x }\nquery Real { y }'), ['Real']);
+});
+
+test('_graphQLOperationNames: a string literal that looks like one is not one', () => {
+    const sb = loadProtocols();
+    assert.deepEqual(
+        sb._graphQLOperationNames('query Real { field(note: "query Ghost { x }") }'),
+        ['Real']);
+});
+
+test('_graphQLOperationNames: a fragment ahead of the operation does not hide it', () => {
+    // The document no longer starts with the keyword, which is what the
+    // old anchored pattern required.
+    const sb = loadProtocols();
+    assert.deepEqual(sb._graphQLOperationNames('fragment F on T { id }\nquery Real { ...F }'), ['Real']);
+});
+
+test('_graphQLOperationName: a name for the log only when there is exactly one', () => {
+    const sb = loadProtocols();
+    assert.equal(sb._graphQLOperationName('query Only { a }'), 'Only');
+    // Two operations: no single name to put on a console line, and the
+    // plugin will not pick one either.
+    assert.equal(sb._graphQLOperationName('query A { a }\nquery B { b }'), null);
+    assert.equal(sb._graphQLOperationName('{ a }'), null);
+});
+
+test('graphql query tab: several operations seed a choice, one operation clears it', () => {
+    const sb = loadProtocols();
+    const layout = sb._getLayouts().graphql;
+
+    const many = graphqlFrame({ query: 'query A { a }\nquery B { b }' });
+    layout.renderTab(many, 'query');
+    // Nothing else can know which one is meant, so the first is offered
+    // rather than left blank -- a blank would be sent as "no name" and the
+    // server would refuse the request.
+    assert.equal(sb._protoState(many).operationName, 'A');
+
+    const one = graphqlFrame({ query: 'query Only { a }', operationName: 'B' });
+    layout.renderTab(one, 'query');
+    // 'B' is stale: the document no longer declares it.
+    assert.equal(sb._protoState(one).operationName, '');
+});
+
+test('graphql query tab: a pick that is edited away is replaced, not kept', () => {
+    const sb = loadProtocols();
+    const layout = sb._getLayouts().graphql;
+    const fr = graphqlFrame({ query: 'query A { a }\nquery B { b }', operationName: 'B' });
+
+    layout.renderTab(fr, 'query');
+    assert.equal(sb._protoState(fr).operationName, 'B', 'a valid pick survives');
+
+    sb._protoState(fr).query = 'query A { a }\nquery C { c }';
+    layout.renderTab(fr, 'query');
+    assert.equal(sb._protoState(fr).operationName, 'A', 'B is gone, so it falls back');
 });

@@ -1309,6 +1309,40 @@
 
     function _renderGraphQLQueryTab(fr, ps) {
         var pane = el('div', { className: 'bowire-request-builder-tab-body' });
+
+        // #710 - one document may declare several operations, and then the
+        // spec requires operationName. Nothing but the operator can say
+        // which one is meant, so this is the only place the answer exists.
+        // A single-operation document needs no picker: the plugin resolves
+        // that case on its own.
+        var names = _graphQLOperationNames(ps.query);
+        if (names.length > 1) {
+            // A name that was picked and then edited away must not keep
+            // being sent -- it would name an operation the document no
+            // longer has.
+            if (names.indexOf(ps.operationName) === -1) ps.operationName = names[0];
+            var pick = el('select', {
+                className: 'bowire-request-builder-graphql-opname',
+                onChange: function (e) { ps.operationName = e.target.value; render(); }
+            });
+            names.forEach(function (n) {
+                pick.appendChild(el('option', {
+                    value: n, textContent: n,
+                    selected: n === ps.operationName ? 'selected' : undefined
+                }));
+            });
+            pane.appendChild(el('div', { className: 'bowire-request-builder-graphql-opname-row' },
+                el('span', {
+                    className: 'bowire-request-builder-graphql-opname-label',
+                    textContent: t('rbGraphQL.operationToRun')
+                }),
+                pick
+            ));
+        } else if (ps.operationName) {
+            // Down to one operation (or none): a leftover pick is stale.
+            ps.operationName = '';
+        }
+
         pane.appendChild(el('textarea', {
             className: 'bowire-request-builder-code',
             spellcheck: false,
@@ -1378,7 +1412,14 @@
         // The operation name, for the console line and the history row. The
         // wire does not need it -- the query carries its own -- but a log of
         // "graphql" repeated twenty times tells the operator nothing.
-        var opName = _graphQLOperationName(query) || (ps.operation || 'query');
+        var opName = _graphQLOperationName(query) || ps.operationName || (ps.operation || 'query');
+
+        // #710 - sent only when the operator actually picked one. For a
+        // single-operation document the plugin parses the document and
+        // resolves the name itself, which is stricter than anything this
+        // side can do.
+        var wireBody = { query: query, variables: variables };
+        if (ps.operationName) wireBody.operationName = ps.operationName;
 
         // A subscription is a long-lived stream, so it does not go through
         // the request/response pane at all: it toggles like the MQTT
@@ -1398,7 +1439,7 @@
             var streamUrl = config.prefix + '/api/invoke/stream'
                 + '?service=graphql'
                 + '&method=' + encodeURIComponent(opName)
-                + '&messages=' + encodeURIComponent(JSON.stringify([JSON.stringify({ query: query, variables: variables })]))
+                + '&messages=' + encodeURIComponent(JSON.stringify([JSON.stringify(wireBody)]))
                 + '&protocol=graphql'
                 + '&metadata=' + encodeURIComponent(JSON.stringify(metadata))
                 + '&serverUrl=' + encodeURIComponent(url);
@@ -1457,7 +1498,7 @@
                     // The plugin takes this shape verbatim. Sending variables
                     // alone would have it synthesise an operation, which is
                     // the opposite of what a hand-written query is for.
-                    messages: [JSON.stringify({ query: query, variables: variables })],
+                    messages: [JSON.stringify(wireBody)],
                     metadata: Object.keys(metadata).length > 0 ? metadata : null,
                     protocol: 'graphql'
                 })
@@ -1491,10 +1532,37 @@
         render();
     }
 
-    /// The operation name out of a query string, or null when it is anonymous.
+    /// The named operations a document declares, in source order (#710).
+    ///
+    /// String literals and comments are blanked out first. Both are ordinary
+    /// things to write and both can hold the word `query` followed by an
+    /// identifier -- without this the picker would offer operations that do
+    /// not exist. Blanking preserves length, so nothing shifts.
+    ///
+    /// This drives the picker only. What decides the wire is the plugin,
+    /// which parses the document with GraphQL-Parser; a name that slips
+    /// through here is refused there.
+    function _graphQLOperationNames(query) {
+        var src = String(query || '');
+        if (!src) return [];
+        function blank(m) { return m.replace(/[^\n]/g, ' '); }
+        var blanked = src
+            .replace(/"(?:[^"\\\n]|\\.)*"/g, blank)
+            .replace(/#[^\n]*/g, blank);
+        var names = [];
+        var re = /(?:^|[\s{}])(?:query|mutation|subscription)\s+([A-Za-z_][A-Za-z0-9_]*)/g;
+        var m;
+        while ((m = re.exec(blanked)) !== null) {
+            if (names.indexOf(m[1]) === -1) names.push(m[1]);
+        }
+        return names;
+    }
+
+    /// The single operation name for a log line, or null when the document
+    /// is anonymous or declares more than one.
     function _graphQLOperationName(query) {
-        var m = /^\s*(?:query|mutation|subscription)\s+([A-Za-z_][A-Za-z0-9_]*)/.exec(query || '');
-        return m ? m[1] : null;
+        var names = _graphQLOperationNames(query);
+        return names.length === 1 ? names[0] : null;
     }
 
     /// Whether a GraphQL response carries an errors array.

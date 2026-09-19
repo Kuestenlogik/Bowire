@@ -24392,6 +24392,32 @@ not as the
     background: var(--bowire-surface-hover);
 }
 
+/* ---- GraphQL operation-to-run picker (#710) ---- */
+/* Only rendered when the document declares more than one operation, so it
+   sits above the editor rather than in the bar: it is a property of what
+   was typed, not of the request. */
+.bowire-request-builder-graphql-opname-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+.bowire-request-builder-graphql-opname-label {
+    color: var(--bowire-text-secondary, #999);
+    font: 400 12px/1 system-ui, sans-serif;
+    white-space: nowrap;
+}
+.bowire-request-builder-graphql-opname {
+    height: 28px;
+    padding: 0 8px;
+    background: var(--bowire-bg-elevated);
+    border: 1px solid var(--bowire-border, #2a2a2a);
+    border-radius: 4px;
+    color: var(--bowire-text);
+    font: 400 12px/1 var(--bowire-font-mono, monospace);
+}
+.bowire-request-builder-graphql-opname:hover { background: var(--bowire-surface-hover); }
+
 /* ---- MQTT controls ---- */
 .bowire-request-builder-mqtt-action-wrap {
     display: inline-flex;

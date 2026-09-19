@@ -131,12 +131,20 @@ public sealed class BowireGraphQLProtocol : IBowireProtocol, IDisposable
             //   2. full request   — { "query": "...", "variables": {...} }.
             //      We send it verbatim. This is what the GraphQL UI editor
             //      pane produces when the user edits the query manually.
-            var (operation, variables) = TryParseFullRequest(jsonMessages, out var fullQuery)
+            var verbatim = TryParseFullRequest(jsonMessages, out var fullQuery);
+            var (operation, variables) = verbatim
                 ? (fullQuery, ExtractVariables(jsonMessages))
                 : BuildOperation(operationKind, service, method, jsonMessages);
 
+            // #710 - only the verbatim path needs resolving. An operation we
+            // built ourselves has exactly one definition and we named it
+            // `method`, so there is nothing to disambiguate.
+            var operationName = verbatim
+                ? GraphQLDocumentInfo.ResolveOperationName(operation, ExtractOperationName(jsonMessages))
+                : method;
+
             var endpoint = serverUrl.TrimEnd('/');
-            var response = await SendOperationAsync(endpoint, operation, variables, metadata, ct);
+            var response = await SendOperationAsync(endpoint, operation, variables, metadata, ct, operationName);
 
             var elapsedMs = (long)(DateTime.UtcNow - startedAt).TotalMilliseconds;
             var json = JsonSerializer.Serialize(response, s_indented);
@@ -166,9 +174,17 @@ public sealed class BowireGraphQLProtocol : IBowireProtocol, IDisposable
         // Subscriptions are only meaningful on the Subscription root type.
         // Anything else routes through InvokeAsync, but we still try for
         // forwards compatibility with servers that send streamed query results.
-        var (operation, variables) = TryParseFullRequest(jsonMessages, out var fullQuery)
+        var verbatim = TryParseFullRequest(jsonMessages, out var fullQuery);
+        var (operation, variables) = verbatim
             ? (fullQuery, ExtractVariables(jsonMessages))
             : BuildOperation("subscription", service, method, jsonMessages);
+
+        // #710 - a subscription needs the name as much as a query does, and
+        // for the same reason: a document with several operations is not
+        // resolvable without it. Both transports carry it.
+        var operationName = verbatim
+            ? GraphQLDocumentInfo.ResolveOperationName(operation, ExtractOperationName(jsonMessages))
+            : method;
 
         var (transportPreference, headers) = ExtractTransportPreference(metadata);
 
@@ -180,7 +196,7 @@ public sealed class BowireGraphQLProtocol : IBowireProtocol, IDisposable
 
         if (transportPreference == "sse" || (transportPreference is null && wsChannel is null))
         {
-            await foreach (var evt in StreamViaSseAsync(serverUrl, operation, variables, headers, ct))
+            await foreach (var evt in StreamViaSseAsync(serverUrl, operation, variables, headers, ct, operationName))
                 yield return evt;
             yield break;
         }
@@ -196,7 +212,7 @@ public sealed class BowireGraphQLProtocol : IBowireProtocol, IDisposable
             yield break;
         }
 
-        await foreach (var evt in StreamViaGraphQLTransportWsAsync(wsChannel, serverUrl, operation, variables, headers, ct))
+        await foreach (var evt in StreamViaGraphQLTransportWsAsync(wsChannel, serverUrl, operation, variables, headers, ct, operationName))
             yield return evt;
     }
 
@@ -255,12 +271,13 @@ public sealed class BowireGraphQLProtocol : IBowireProtocol, IDisposable
         string operation,
         JsonElement? variables,
         Dictionary<string, string>? headers,
-        [EnumeratorCancellation] CancellationToken ct)
+        [EnumeratorCancellation] CancellationToken ct,
+        string? operationName = null)
     {
         var endpoint = serverUrl.TrimEnd('/');
         var payload = variables.HasValue && variables.Value.ValueKind == JsonValueKind.Object
-            ? (object)new { query = operation, variables = variables.Value }
-            : new { query = operation };
+            ? (object)new { query = operation, variables = variables.Value, operationName }
+            : new { query = operation, operationName };
 
         using var request = new HttpRequestMessage(HttpMethod.Post, endpoint)
         {
@@ -350,7 +367,8 @@ public sealed class BowireGraphQLProtocol : IBowireProtocol, IDisposable
         string operation,
         JsonElement? variables,
         Dictionary<string, string>? headers,
-        [EnumeratorCancellation] CancellationToken ct)
+        [EnumeratorCancellation] CancellationToken ct,
+        string? operationName = null)
     {
         var wsUrl = HttpToWs(serverUrl);
         IBowireChannel? channel = null;
@@ -425,8 +443,8 @@ public sealed class BowireGraphQLProtocol : IBowireProtocol, IDisposable
                         if (subscribed) break;
                         subscribed = true;
                         var subPayload = variables.HasValue && variables.Value.ValueKind == JsonValueKind.Object
-                            ? (object)new { query = operation, variables = variables.Value }
-                            : new { query = operation };
+                            ? (object)new { query = operation, variables = variables.Value, operationName }
+                            : new { query = operation, operationName };
                         var subscribe = new
                         {
                             id = operationId,
@@ -496,6 +514,36 @@ public sealed class BowireGraphQLProtocol : IBowireProtocol, IDisposable
         {
             return false;
         }
+    }
+
+    /// <summary>
+    /// The <c>operationName</c> the caller put in the payload, if any (#710).
+    /// </summary>
+    /// <remarks>
+    /// This is how a caller with several operations in one document says
+    /// which one it means. Nothing else can know: the document declares
+    /// them all and the wire carries no other hint.
+    /// </remarks>
+    private static string? ExtractOperationName(List<string> jsonMessages)
+    {
+        if (jsonMessages.Count == 0) return null;
+        try
+        {
+            using var doc = JsonDocument.Parse(jsonMessages[0]);
+            if (doc.RootElement.ValueKind == JsonValueKind.Object
+                && doc.RootElement.TryGetProperty("operationName", out var n)
+                && n.ValueKind == JsonValueKind.String)
+            {
+                var s = n.GetString();
+                return string.IsNullOrWhiteSpace(s) ? null : s;
+            }
+        }
+        catch (JsonException)
+        {
+            // The caller's payload is not JSON; TryParseFullRequest has
+            // already decided what that means.
+        }
+        return null;
     }
 
     private static JsonElement ExtractVariables(List<string> jsonMessages)
@@ -587,7 +635,8 @@ public sealed class BowireGraphQLProtocol : IBowireProtocol, IDisposable
         string query,
         JsonElement? variables,
         Dictionary<string, string>? headers,
-        CancellationToken ct)
+        CancellationToken ct,
+        string? operationName = null)
     {
         using var request = new HttpRequestMessage(HttpMethod.Post, endpoint);
         request.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
@@ -598,9 +647,13 @@ public sealed class BowireGraphQLProtocol : IBowireProtocol, IDisposable
                 request.Headers.TryAddWithoutValidation(key, value);
         }
 
+        // #710 - operationName rides along when there is one to send. The
+        // serializer is configured to drop nulls, so a single-operation
+        // document still puts exactly the two fields on the wire it always
+        // did, and no server sees a shape it did not see before.
         var payload = variables.HasValue && variables.Value.ValueKind == JsonValueKind.Object
-            ? (object)new { query, variables = variables.Value }
-            : new { query };
+            ? (object)new { query, variables = variables.Value, operationName }
+            : new { query, operationName };
 
         request.Content = JsonContent.Create(payload, options: s_jsonOptions);
 
