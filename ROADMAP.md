@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### M1 — Localisation, layout and the test pillar *(due 2026-11-03)*
 
-**29/54 done** · 1 in progress · 24 backlog
+**30/54 done** · 1 in progress · 23 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -39,7 +39,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [654](https://github.com/Kuestenlogik/Bowire/issues/654) | Bowire | [Uploaded schemas live in a process-wide static — lost on restart, shared between identities, invisible to the CLI](#issue-kuestenlogik-bowire-654) | ⬜ Backlog | `area:multi` |
 | [689](https://github.com/Kuestenlogik/Bowire/issues/689) | Bowire | [Action-log entries store rendered English text instead of a key](#issue-kuestenlogik-bowire-689) | ⬜ Backlog | `area:workbench` |
 | [690](https://github.com/Kuestenlogik/Bowire/issues/690) | Bowire | [Translate the CLI help surface, or decide not to](#issue-kuestenlogik-bowire-690) | ⬜ Backlog | `area:cli` |
-| [713](https://github.com/Kuestenlogik/Bowire/issues/713) | Bowire | [GraphQL-Transportoptionen: Multiplexing, GET, APQ, Uploads, Batching](#issue-kuestenlogik-bowire-713) | ⬜ Backlog |  |
 | [714](https://github.com/Kuestenlogik/Bowire/issues/714) | Bowire | [Interceptor-Tests: Assert.Single über den ganzen Flow-Store ist gegen Fremdverkehr ungeschützt](#issue-kuestenlogik-bowire-714) | ⬜ In review |  |
 | [47](https://github.com/Kuestenlogik/Bowire/issues/47) | Bowire | [Sidebar display: method name vs path toggle](#issue-kuestenlogik-bowire-47) | ✅ Done | `area:workbench` |
 | [95](https://github.com/Kuestenlogik/Bowire/issues/95) | Bowire | [Header Library: named, scoped, toggleable header sets](#issue-kuestenlogik-bowire-95) | ✅ Done | `area:workbench` |
@@ -70,6 +69,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [710](https://github.com/Kuestenlogik/Bowire/issues/710) | Bowire | [GraphQL: Lücken zwischen Discovery und einem vollwertigen GraphQL-Client](#issue-kuestenlogik-bowire-710) | ✅ Done |  |
 | [711](https://github.com/Kuestenlogik/Bowire/issues/711) | Bowire | [Schema-Designer: Eingabefelder und Dropdowns übernehmen die Workbench-Stile nicht](#issue-kuestenlogik-bowire-711) | ✅ Done |  |
 | [712](https://github.com/Kuestenlogik/Bowire/issues/712) | Bowire | [Stream-Vertrag hat keine Fehlerform — jedes Plugin erfindet seine eigene](#issue-kuestenlogik-bowire-712) | ✅ Done |  |
+| [713](https://github.com/Kuestenlogik/Bowire/issues/713) | Bowire | [GraphQL-Transportoptionen: Multiplexing, GET, APQ, Uploads, Batching](#issue-kuestenlogik-bowire-713) | ✅ Done |  |
 
 ### M2 — MCP completion + agent hub *(due 2026-11-24)*
 
@@ -181,12 +181,17 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### M9 — Polyglot SDK parity: settings, channels, manifests
 
-**0/3 done** · 3 backlog
+**0/8 done** · 8 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
+| [3](https://github.com/Kuestenlogik/Bowire.Sdk.Python/issues/3) | Sdk.Python | [Example manifest: name python3 directly, once a host with Kuestenlogik/Bowire#692 ships](#issue-kuestenlogik-bowire-sdk-python-3) | ⬜ Backlog |  |
+| [3](https://github.com/Kuestenlogik/Bowire.Sdk.Go/issues/3) | Sdk.Go | [openChannel is declared but nothing routes it](#issue-kuestenlogik-bowire-sdk-go-3) | ⬜ Backlog |  |
 | [4](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/4) | Sdk.Node | [openChannel is declared but nothing routes it](#issue-kuestenlogik-bowire-sdk-node-4) | ⬜ Backlog |  |
+| [4](https://github.com/Kuestenlogik/Bowire.Sdk.Python/issues/4) | Sdk.Python | [Settings: a plugin can declare them but cannot read the values the host now sends](#issue-kuestenlogik-bowire-sdk-python-4) | ⬜ Backlog |  |
+| [4](https://github.com/Kuestenlogik/Bowire.Sdk.Go/issues/4) | Sdk.Go | [Settings: a plugin can declare them but cannot read the values the host now sends](#issue-kuestenlogik-bowire-sdk-go-4) | ⬜ Backlog |  |
 | [5](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/5) | Sdk.Node | [Example manifest: name node directly and drop run.sh, once a host with Kuestenlogik/Bowire#692 ships](#issue-kuestenlogik-bowire-sdk-node-5) | ⬜ Backlog |  |
+| [5](https://github.com/Kuestenlogik/Bowire.Sdk.Rust/issues/5) | Sdk.Rust | [openChannel is declared but nothing routes it](#issue-kuestenlogik-bowire-sdk-rust-5) | ⬜ Backlog |  |
 | [6](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/6) | Sdk.Node | [Settings: a plugin can declare them but cannot read the values the host now sends](#issue-kuestenlogik-bowire-sdk-node-6) | ⬜ Backlog |  |
 
 ## Details
@@ -330,10 +335,6 @@ The Activity drawer renders text that was translated once, when the action happe
 > `area:cli`
 
 `bowire --help` is still English in every locale. The machinery it needs already exists — `BowireLocale` resolves `BOWIRE_LOCALE` / `LC_ALL` / `LANG` / the OS culture and reads the same catalogues the workbench does — but nothing in the help surface calls it yet. [[more]](https://github.com/Kuestenlogik/Bowire/issues/690)
-
-#### <a id="issue-kuestenlogik-bowire-713"></a>⬜ Backlog · [#713](https://github.com/Kuestenlogik/Bowire/issues/713) GraphQL-Transportoptionen: Multiplexing, GET, APQ, Uploads, Batching
-
-Abgespalten von #710. Dort standen sechs Punkte unter „Lücken". Vier davon **waren** Lücken — Dinge, die nicht oder falsch funktionierten; sie sind erledigt. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/713)
 
 #### <a id="issue-kuestenlogik-bowire-714"></a>⬜ In review · [#714](https://github.com/Kuestenlogik/Bowire/issues/714) Interceptor-Tests: Assert.Single über den ganzen Flow-Store ist gegen Fremdverkehr ungeschützt
 
@@ -506,6 +507,10 @@ In der Schema-Designer-Werkzeugleiste sehen Suchfeld, die beiden Dropdowns und d
 #### <a id="issue-kuestenlogik-bowire-712"></a>✅ Done · [#712](https://github.com/Kuestenlogik/Bowire/issues/712) Stream-Vertrag hat keine Fehlerform — jedes Plugin erfindet seine eigene
 
 Aufgefallen bei `Bowire.Protocols.TacticalApi`: ein Stream-Abbruch (Refusal / Idle / Transport) wird dort als Ad-hoc-JSON `{ "error", "status" }` in den Frame-Strom geschrieben. Die Ursache liegt aber hier, nicht dort — **der Kern-Vertrag kennt keine Fehlerform.** [[more]](https://github.com/Kuestenlogik/Bowire/issues/712)
+
+#### <a id="issue-kuestenlogik-bowire-713"></a>✅ Done · [#713](https://github.com/Kuestenlogik/Bowire/issues/713) GraphQL-Transportoptionen: Multiplexing, GET, APQ, Uploads, Batching
+
+Abgespalten von #710. Dort standen sechs Punkte unter „Lücken". Vier davon **waren** Lücken — Dinge, die nicht oder falsch funktionierten; sie sind erledigt. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/713)
 
 ### M2 — MCP completion + agent hub *(due 2026-11-24)*
 
@@ -873,13 +878,33 @@ Everything Bowire measures today is a request that completes. `bowire bench` cal
 
 ### M9 — Polyglot SDK parity: settings, channels, manifests
 
+#### <a id="issue-kuestenlogik-bowire-sdk-python-3"></a>⬜ Backlog · [Kuestenlogik/Bowire.Sdk.Python#3](https://github.com/Kuestenlogik/Bowire.Sdk.Python/issues/3) Example manifest: name python3 directly, once a host with Kuestenlogik/Bowire#692 ships
+
+The example manifest works around a host defect that no longer exists. [[more]](https://github.com/Kuestenlogik/Bowire.Sdk.Python/issues/3)
+
+#### <a id="issue-kuestenlogik-bowire-sdk-go-3"></a>⬜ Backlog · [Kuestenlogik/Bowire.Sdk.Go#3](https://github.com/Kuestenlogik/Bowire.Sdk.Go/issues/3) openChannel is declared but nothing routes it
+
+The plugin surface declares a duplex capability that no dispatcher routes. `the ChannelPlugin optional interface` is part of the public API — a plugin author implements it, ships it, and nothing ever calls it, because the dispatcher has no `openChannel` case at all. [[more]](https://github.com/Kuestenlogik/Bowire.Sdk.Go/issues/3)
+
 #### <a id="issue-kuestenlogik-bowire-sdk-node-4"></a>⬜ Backlog · [Kuestenlogik/Bowire.Sdk.Node#4](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/4) openChannel is declared but nothing routes it
 
 The plugin surface declares a duplex capability that no dispatcher routes. `the BowirePlugin interface's openChannel` is part of the public API — a plugin author implements it, ships it, and nothing ever calls it, because the dispatcher has no `openChannel` case at all. [[more]](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/4)
 
+#### <a id="issue-kuestenlogik-bowire-sdk-python-4"></a>⬜ Backlog · [Kuestenlogik/Bowire.Sdk.Python#4](https://github.com/Kuestenlogik/Bowire.Sdk.Python/issues/4) Settings: a plugin can declare them but cannot read the values the host now sends
+
+The settings hook this SDK already has now reaches somewhere, and the other half of it has nowhere to land. [[more]](https://github.com/Kuestenlogik/Bowire.Sdk.Python/issues/4)
+
+#### <a id="issue-kuestenlogik-bowire-sdk-go-4"></a>⬜ Backlog · [Kuestenlogik/Bowire.Sdk.Go#4](https://github.com/Kuestenlogik/Bowire.Sdk.Go/issues/4) Settings: a plugin can declare them but cannot read the values the host now sends
+
+The settings hook this SDK already has now reaches somewhere, and the other half of it has nowhere to land. [[more]](https://github.com/Kuestenlogik/Bowire.Sdk.Go/issues/4)
+
 #### <a id="issue-kuestenlogik-bowire-sdk-node-5"></a>⬜ Backlog · [Kuestenlogik/Bowire.Sdk.Node#5](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/5) Example manifest: name node directly and drop run.sh, once a host with Kuestenlogik/Bowire#692 ships
 
 The example manifest works around a host defect that no longer exists. [[more]](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/5)
+
+#### <a id="issue-kuestenlogik-bowire-sdk-rust-5"></a>⬜ Backlog · [Kuestenlogik/Bowire.Sdk.Rust#5](https://github.com/Kuestenlogik/Bowire.Sdk.Rust/issues/5) openChannel is declared but nothing routes it
+
+The plugin surface declares a duplex capability that no dispatcher routes. `the BowirePlugin trait's open_channel` is part of the public API — a plugin author implements it, ships it, and nothing ever calls it, because the dispatcher has no `openChannel` case at all. [[more]](https://github.com/Kuestenlogik/Bowire.Sdk.Rust/issues/5)
 
 #### <a id="issue-kuestenlogik-bowire-sdk-node-6"></a>⬜ Backlog · [Kuestenlogik/Bowire.Sdk.Node#6](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/6) Settings: a plugin can declare them but cannot read the values the host now sends
 
