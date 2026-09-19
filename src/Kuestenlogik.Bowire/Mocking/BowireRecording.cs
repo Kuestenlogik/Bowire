@@ -309,6 +309,32 @@ public sealed class BowireRecordingStep
     [JsonPropertyName("status")]
     public string Status { get; set; } = "OK";
 
+    /// <summary>
+    /// Why a streaming step's stream stopped, when it stopped for a reason
+    /// (#712). Null for a step that ran to completion, which is all of them
+    /// before this field existed.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Kept on the step rather than as a frame, and that is the decision
+    /// worth recording. A frame is what the server sent. A stream error is
+    /// what Bowire concluded — "the WebSocket plugin is not installed",
+    /// "this is not an event-stream" — and writing it into the frame list
+    /// would have a mock replay it as though a server had said it. Some of
+    /// those sentences a mock cannot honestly say: it IS serving
+    /// text/event-stream.
+    /// </para>
+    /// <para>
+    /// The cost, stated rather than hidden: a replay of a failed stream
+    /// reproduces the frames that did arrive and then completes normally.
+    /// The failure is in the recording and readable, but the mock does not
+    /// re-stage it. Reproducing a transport failure is a fault-injection
+    /// feature, not a replay one.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("streamError")]
+    public StreamError? StreamError { get; set; }
+
     [JsonPropertyName("durationMs")]
     public long DurationMs { get; set; }
 

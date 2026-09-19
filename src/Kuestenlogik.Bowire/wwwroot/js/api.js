@@ -1147,8 +1147,16 @@
                 body: failed ? streamError.message : undefined
             });
 
+            // #712 - the frames the server actually sent. The error frame,
+            // if there is one, is Bowire's own marker: it must not be
+            // mistaken for the last thing the server said, by the
+            // post-response script or by the recording.
+            var dataFrames = S.streamMessages.filter(function (m) {
+                return !(m && m.error && m.error.message);
+            });
+
             // ---- Post-response script (streaming) ----
-            var streamResponseObj = S.streamMessages.length > 0 ? S.streamMessages[S.streamMessages.length - 1] : null;
+            var streamResponseObj = dataFrames.length > 0 ? dataFrames[dataFrames.length - 1] : null;
             if (streamResponseObj && streamResponseObj.data !== undefined) {
                 try { streamResponseObj = JSON.parse(streamResponseObj.data); } catch {}
             }
@@ -1182,10 +1190,22 @@
                 body: messages[0] || '{}',
                 messages: messages.slice(),
                 metadata: metadata || null,
-                status: 'OK',
+                // #712 - this said 'OK' unconditionally, so a recording of
+                // a stream that was cut short claimed it had completed. The
+                // console and the history row were fixed first and this was
+                // missed; a recording outlives both of them.
+                status: statusText,
                 durationMs: elapsed,
-                response: S.streamMessages.length > 0 ? S.streamMessages[S.streamMessages.length - 1] : null,
-                receivedMessages: S.streamMessages.map(function (m, i) {
+                // #712 - why it stopped, on the step rather than among the
+                // frames. A frame is what the server sent; this is what
+                // Bowire concluded, and a mock replaying it as a frame would
+                // be staging a sentence no server said.
+                streamError: streamError || null,
+                response: dataFrames.length > 0 ? dataFrames[dataFrames.length - 1] : null,
+                // The error frame itself is deliberately not among them --
+                // see streamError above. Everything before it is genuine
+                // server output and stays.
+                receivedMessages: dataFrames.map(function (m, i) {
                     return {
                         index: (m && typeof m.index === 'number') ? m.index : i,
                         timestampMs: (m && typeof m.timestampMs === 'number') ? m.timestampMs : null,
