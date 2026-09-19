@@ -164,6 +164,20 @@ public sealed class BowireGraphQLProtocol : IBowireProtocol, IDisposable
                 : await BuildOperationAsync(
                     operationKind, service, method, jsonMessages, endpoint, mayIntrospect: true, ct);
 
+            // #710 - a document that does not parse is answered here rather
+            // than sent. Only the verbatim path: an operation Bowire built
+            // itself parses by construction. The message names Bowire so an
+            // operator can tell a local parser complaint from their
+            // server's.
+            if (verbatim && GraphQLDocumentInfo.SyntaxError(operation) is { } syntax)
+            {
+                return new InvokeResult(
+                    null,
+                    (long)(DateTime.UtcNow - startedAt).TotalMilliseconds,
+                    "Bowire could not parse this GraphQL document: " + syntax,
+                    new Dictionary<string, string>());
+            }
+
             // #710 - only the verbatim path needs resolving. An operation we
             // built ourselves has exactly one definition and we named it
             // `method`, so there is nothing to disambiguate.

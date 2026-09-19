@@ -93,6 +93,40 @@ public sealed class GraphQLDocumentInfoTests
         Assert.Null(GraphQLDocumentInfo.ResolveOperationName("query Broken { unclosed ", null));
     }
 
+    // ---- #710 gap 5: the grammar is checked where the typo was made ----
+
+    [Fact]
+    public void A_Document_That_Parses_Has_No_Complaint()
+    {
+        Assert.Null(GraphQLDocumentInfo.SyntaxError("query A { a }"));
+        Assert.Null(GraphQLDocumentInfo.SyntaxError("{ a }"));
+        // Nothing typed yet is not a syntax error either -- refusing an
+        // empty editor would be noise, and the caller has its own reason
+        // to reject it.
+        Assert.Null(GraphQLDocumentInfo.SyntaxError(""));
+        Assert.Null(GraphQLDocumentInfo.SyntaxError(null));
+    }
+
+    [Fact]
+    public void An_Unclosed_Brace_Is_Reported_Rather_Than_Sent()
+    {
+        // The whole point: before this, an unclosed brace cost an HTTP
+        // round trip and came back in whatever wording the server chose.
+        var complaint = GraphQLDocumentInfo.SyntaxError("query Broken { unclosed ");
+        Assert.NotNull(complaint);
+        Assert.NotEmpty(complaint);
+    }
+
+    [Fact]
+    public void Only_The_Grammar_Is_Checked_Not_The_Schema()
+    {
+        // A field that does not exist is not this function's business. The
+        // server knows the schema; refusing here would mean refusing valid
+        // documents against schemas Bowire has never seen.
+        Assert.Null(GraphQLDocumentInfo.SyntaxError(
+            "query { thisFieldCertainlyDoesNotExist { norDoesThisOne } }"));
+    }
+
     [Fact]
     public void Empty_Input_Is_Not_An_Error()
     {

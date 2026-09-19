@@ -144,6 +144,39 @@ public sealed class GraphQLProtocolIntegrationTests
         Assert.Contains("\"whichOperation\": \"B\"", result.Response, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task A_Document_That_Does_Not_Parse_Never_Reaches_The_Server()
+    {
+        // #710 gap 5. The saving is not the round trip -- it is that the
+        // answer names the problem and where it is, instead of arriving as
+        // whatever wording the server chose for a body it could not read.
+        await using var host = await PluginTestHost.StartAsync(MapGraphQLEndpoint);
+        using var protocol = new BowireGraphQLProtocol();
+
+        var result = await InvokeVerbatimAsync(protocol, host,
+            """{"query":"query Broken { ping "}""");
+
+        Assert.NotEqual("OK", result.Status);
+        Assert.Null(result.Response);
+        // Whose complaint this is, so an operator does not go looking at
+        // their server for a parser that lives here.
+        Assert.Contains("Bowire could not parse", result.Status, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_Document_That_Parses_Is_Still_Sent()
+    {
+        // The guard must not become a second opinion on valid documents.
+        await using var host = await PluginTestHost.StartAsync(MapGraphQLEndpoint);
+        using var protocol = new BowireGraphQLProtocol();
+
+        var result = await InvokeVerbatimAsync(protocol, host,
+            """{"query":"query Fine { ping }"}""");
+
+        Assert.Equal("OK", result.Status);
+        Assert.Contains("pong", result.Response, StringComparison.Ordinal);
+    }
+
     private static Task<InvokeResult> InvokeVerbatimAsync(
         BowireGraphQLProtocol protocol, PluginTestHost host, string payload)
         => protocol.InvokeAsync(

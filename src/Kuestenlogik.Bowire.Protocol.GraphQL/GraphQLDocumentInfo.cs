@@ -46,10 +46,10 @@ internal static class GraphQLDocumentInfo
         catch (Exception)
         {
             // Catch-all, like the mock's own parse site: GraphQLParser does
-            // not expose a documented syntax-error type on this surface, and
-            // this is not our error to report anyway. The document goes to
-            // the server as typed and the server's message is the better one
-            // -- it knows the schema, we only know the grammar.
+            // not expose a documented syntax-error type here. Callers that
+            // care about the reason use SyntaxError; this one only wants
+            // the operations, and a document that does not parse has none
+            // it can name.
             return [];
         }
 
@@ -60,6 +60,44 @@ internal static class GraphQLDocumentInfo
                 names.Add(op.Name?.StringValue);
         }
         return names;
+    }
+
+    /// <summary>
+    /// The parser's complaint about a document, or <c>null</c> when it
+    /// parses (#710).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Grammar only. A field that does not exist, an argument of the wrong
+    /// type, a fragment on the wrong type — none of that is visible here,
+    /// and the server's answer is the better one for all of it, because the
+    /// server knows the schema.
+    /// </para>
+    /// <para>
+    /// What this catches is the unclosed brace. Before it, a typo in the
+    /// editor became an HTTP round trip and whatever wording the server
+    /// chose; now it is answered where it was made, with a position.
+    /// </para>
+    /// <para>
+    /// The risk this accepts, stated because it is not zero: a document
+    /// this parser version rejects and a server would have accepted is
+    /// refused here. That is why the message says who is speaking — an
+    /// operator who sees Bowire's name on it knows to look at the parser
+    /// rather than at their server.
+    /// </para>
+    /// </remarks>
+    public static string? SyntaxError(string? query)
+    {
+        if (string.IsNullOrWhiteSpace(query)) return null;
+        try
+        {
+            Parser.Parse(query);
+            return null;
+        }
+        catch (Exception ex)
+        {
+            return ex.Message;
+        }
     }
 
     /// <summary>
