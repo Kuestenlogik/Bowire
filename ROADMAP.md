@@ -179,6 +179,16 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [623](https://github.com/Kuestenlogik/Bowire/issues/623) | Bowire | [Benchmark: report the shape of a run, not only its totals](#issue-kuestenlogik-bowire-623) | ⬜ Backlog | `area:cli` |
 | [624](https://github.com/Kuestenlogik/Bowire/issues/624) | Bowire | [Benchmark: hold connections open and report what became of them](#issue-kuestenlogik-bowire-624) | ⬜ Backlog | `area:cli` |
 
+### M9 — Polyglot SDK parity: settings, channels, manifests
+
+**0/3 done** · 3 backlog
+
+| # | Project | Title | Status | Tags |
+|---|---|---|---|---|
+| [4](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/4) | Sdk.Node | [openChannel is declared but nothing routes it](#issue-kuestenlogik-bowire-sdk-node-4) | ⬜ Backlog |  |
+| [5](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/5) | Sdk.Node | [Example manifest: name node directly and drop run.sh, once a host with Kuestenlogik/Bowire#692 ships](#issue-kuestenlogik-bowire-sdk-node-5) | ⬜ Backlog |  |
+| [6](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/6) | Sdk.Node | [Settings: a plugin can declare them but cannot read the values the host now sends](#issue-kuestenlogik-bowire-sdk-node-6) | ⬜ Backlog |  |
+
 ## Details
 
 ### M1 — Localisation, layout and the test pillar *(due 2026-11-03)*
@@ -860,6 +870,20 @@ A benchmark run targets one endpoint and produces one set of numbers. Anyone rou
 > `area:cli`
 
 Everything Bowire measures today is a request that completes. `bowire bench` calls `InvokeAsync`, times the round trip and moves on; even for a streaming method it takes the non-streaming path. [[more]](https://github.com/Kuestenlogik/Bowire/issues/624)
+
+### M9 — Polyglot SDK parity: settings, channels, manifests
+
+#### <a id="issue-kuestenlogik-bowire-sdk-node-4"></a>⬜ Backlog · [Kuestenlogik/Bowire.Sdk.Node#4](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/4) openChannel is declared but nothing routes it
+
+The plugin surface declares a duplex capability that no dispatcher routes. `the BowirePlugin interface's openChannel` is part of the public API — a plugin author implements it, ships it, and nothing ever calls it, because the dispatcher has no `openChannel` case at all. [[more]](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/4)
+
+#### <a id="issue-kuestenlogik-bowire-sdk-node-5"></a>⬜ Backlog · [Kuestenlogik/Bowire.Sdk.Node#5](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/5) Example manifest: name node directly and drop run.sh, once a host with Kuestenlogik/Bowire#692 ships
+
+The example manifest works around a host defect that no longer exists. [[more]](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/5)
+
+#### <a id="issue-kuestenlogik-bowire-sdk-node-6"></a>⬜ Backlog · [Kuestenlogik/Bowire.Sdk.Node#6](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/6) Settings: a plugin can declare them but cannot read the values the host now sends
+
+The settings hook this SDK already has now reaches somewhere, and the other half of it has nowhere to land. [[more]](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/6)
 
 ---
 
