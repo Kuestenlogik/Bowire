@@ -12,29 +12,29 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.8 — Localisation, layout and the test pillar: DE + EN catalogues, splits and shelf, contract testing *(due 2026-11-03)*
 
-**30/39 done** · 1 in progress · 8 backlog
+**36/39 done** · 1 in progress · 2 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [250](https://github.com/Kuestenlogik/Bowire/issues/250) | Bowire | [Unified Layout — within-tab split (Auto/drag/shortcut/per-tab) + cross-tab pane split with tab drag-and-drop](#issue-kuestenlogik-bowire-250) | 🟡 In progress | `area:workbench` |
-| [216](https://github.com/Kuestenlogik/Bowire/issues/216) | Bowire | [Test infra: WebApplicationFactory fixture for InvokeEndpoints + UnaryReplayer coverage](#issue-kuestenlogik-bowire-216) | ⬜ Backlog | `area:workbench` |
-| [292](https://github.com/Kuestenlogik/Bowire/issues/292) | Bowire | [Request-builder: GraphQL layout (#291 Phase D follow-up)](#issue-kuestenlogik-bowire-292) | ⬜ Backlog | `area:workbench` |
-| [311](https://github.com/Kuestenlogik/Bowire/issues/311) | Bowire | [Pluggable workbench: extract remaining rails (Phase G continuation)](#issue-kuestenlogik-bowire-311) | ⬜ Backlog | `area:workbench` |
-| [365](https://github.com/Kuestenlogik/Bowire/issues/365) | Bowire | [Contract testing + workspace-id: run a workbench-stored workspace's suite by id](#issue-kuestenlogik-bowire-365) | ⬜ Backlog | `area:workbench` |
-| [366](https://github.com/Kuestenlogik/Bowire/issues/366) | Bowire | [Test-pillar UI polish: snapshot diff/approve, data-driven results view, mock frame-drop faults](#issue-kuestenlogik-bowire-366) | ⬜ Backlog | `area:workbench` |
-| [486](https://github.com/Kuestenlogik/Bowire/issues/486) | Bowire | [Security rail: manual OAST/pen-test surface — generate a callback payload + watch interactions live](#issue-kuestenlogik-bowire-486) | ⬜ Backlog | `area:security` |
 | [583](https://github.com/Kuestenlogik/Bowire/issues/583) | Bowire | [Design-time lint: naming/PII rules, inline workbench hints, test --suite=lint](#issue-kuestenlogik-bowire-583) | ⬜ Backlog | `area:multi` |
 | [639](https://github.com/Kuestenlogik/Bowire/issues/639) | Bowire | [SCIM: live Okta and Entra ID provisioning round-trips](#issue-kuestenlogik-bowire-639) | ⬜ Backlog | `area:workbench` |
 | [47](https://github.com/Kuestenlogik/Bowire/issues/47) | Bowire | [Sidebar display: method name vs path toggle](#issue-kuestenlogik-bowire-47) | ✅ Done | `area:workbench` |
 | [95](https://github.com/Kuestenlogik/Bowire/issues/95) | Bowire | [Header Library: named, scoped, toggleable header sets](#issue-kuestenlogik-bowire-95) | ✅ Done | `area:workbench` |
 | [117](https://github.com/Kuestenlogik/Bowire/issues/117) | Bowire | [i18n — extract every UI string; ship DE + EN catalogues](#issue-kuestenlogik-bowire-117) | ✅ Done | `area:workbench` |
+| [216](https://github.com/Kuestenlogik/Bowire/issues/216) | Bowire | [Test infra: WebApplicationFactory fixture for InvokeEndpoints + UnaryReplayer coverage](#issue-kuestenlogik-bowire-216) | ✅ Done | `area:workbench` |
 | [247](https://github.com/Kuestenlogik/Bowire/issues/247) | Bowire | [Schema graph designer — visualise discovered .proto / SDL / OpenAPI type graph for large schemas](#issue-kuestenlogik-bowire-247) | ✅ Done | `area:workbench` |
 | [249](https://github.com/Kuestenlogik/Bowire/issues/249) | Bowire | [Optional rail modules — Phase 2: Schema Designer ships as the first default-off opt-in module](#issue-kuestenlogik-bowire-249) | ✅ Done | `area:workbench` |
 | [251](https://github.com/Kuestenlogik/Bowire/issues/251) | Bowire | [Visual shelf — drag-and-drop holding area for cross-surface fragments (parallel to OS clipboard)](#issue-kuestenlogik-bowire-251) | ✅ Done | `area:workbench` |
 | [256](https://github.com/Kuestenlogik/Bowire/issues/256) | Bowire | [Freeform builder: schema-free ad-hoc REST — URL + verb + body, Postman-style](#issue-kuestenlogik-bowire-256) | ✅ Done | `area:workbench` |
 | [258](https://github.com/Kuestenlogik/Bowire/issues/258) | Bowire | [Console toolbar: distinct icons for Clear selection / Clear all / Close](#issue-kuestenlogik-bowire-258) | ✅ Done | `area:workbench` |
+| [292](https://github.com/Kuestenlogik/Bowire/issues/292) | Bowire | [Request-builder: GraphQL layout (#291 Phase D follow-up)](#issue-kuestenlogik-bowire-292) | ✅ Done | `area:workbench` |
+| [311](https://github.com/Kuestenlogik/Bowire/issues/311) | Bowire | [Pluggable workbench: extract remaining rails (Phase G continuation)](#issue-kuestenlogik-bowire-311) | ✅ Done | `area:workbench` |
 | [362](https://github.com/Kuestenlogik/Bowire/issues/362) | Bowire | [Sidebar UI-pattern consistency: converge every rail on the Workspaces house pattern](#issue-kuestenlogik-bowire-362) | ✅ Done | `area:workbench` |
 | [363](https://github.com/Kuestenlogik/Bowire/issues/363) | Bowire | [Sidebar UX round 2: rail-strip drop targets + uniform 'select → assign → save as preset' toolbar affordance](#issue-kuestenlogik-bowire-363) | ✅ Done | `area:workbench` |
+| [365](https://github.com/Kuestenlogik/Bowire/issues/365) | Bowire | [Contract testing + workspace-id: run a workbench-stored workspace's suite by id](#issue-kuestenlogik-bowire-365) | ✅ Done | `area:workbench` |
+| [366](https://github.com/Kuestenlogik/Bowire/issues/366) | Bowire | [Test-pillar UI polish: snapshot diff/approve, data-driven results view, mock frame-drop faults](#issue-kuestenlogik-bowire-366) | ✅ Done | `area:workbench` |
+| [486](https://github.com/Kuestenlogik/Bowire/issues/486) | Bowire | [Security rail: manual OAST/pen-test surface — generate a callback payload + watch interactions live](#issue-kuestenlogik-bowire-486) | ✅ Done | `area:security` |
 | [534](https://github.com/Kuestenlogik/Bowire/issues/534) | Bowire | [Explain why discovery failed instead of just reporting 0 services](#issue-kuestenlogik-bowire-534) | ✅ Done | `area:workbench` |
 | [535](https://github.com/Kuestenlogik/Bowire/issues/535) | Bowire | [Embedded first run should land on Discover, not on a workspace-creation gate](#issue-kuestenlogik-bowire-535) | ✅ Done | `area:workbench` |
 | [536](https://github.com/Kuestenlogik/Bowire/issues/536) | Bowire | [Offer next-step handoffs directly from a successful response](#issue-kuestenlogik-bowire-536) | ✅ Done | `area:workbench` |
@@ -177,42 +177,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 #135 shipped in v2.0 as a **within-tab** request/response split (vertical ↔ horizontal toggle). That feature predates the workbench tab system (#123). Now that tabs are first-class, the "split" concept has TWO orthogonal axes that operators need at different times, and #135 only covers one of them. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/250)
 
-#### <a id="issue-kuestenlogik-bowire-216"></a>⬜ Backlog · [#216](https://github.com/Kuestenlogik/Bowire/issues/216) Test infra: WebApplicationFactory fixture for InvokeEndpoints + UnaryReplayer coverage
-
-> `area:workbench`
-
-`Mock.Replay.UnaryReplayer` (~226 uncovered lines) and `Endpoints.BowireInvokeEndpoints` (~58 uncovered lines) together carry the largest single coverage hole in the repo. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/216)
-
-#### <a id="issue-kuestenlogik-bowire-292"></a>⬜ Backlog · [#292](https://github.com/Kuestenlogik/Bowire/issues/292) Request-builder: GraphQL layout (#291 Phase D follow-up)
-
-> `area:workbench`
-
-Followup to #291. Phases A+B+C+E shipped (REST / gRPC / MCP / MQTT / WebSocket / SSE + streaming response pane). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/292)
-
-#### <a id="issue-kuestenlogik-bowire-311"></a>⬜ Backlog · [#311](https://github.com/Kuestenlogik/Bowire/issues/311) Pluggable workbench: extract remaining rails (Phase G continuation)
-
-> `area:workbench`
-
-Follow-up to #306. Phase G's descriptor-by-package extraction shipped in 0b76086 — every rail descriptor now lives in its own `Kuestenlogik.Bowire.Rail.*` NuGet, `BuiltInRails.cs` is gone from core, and `Bundle.Workbench` is the new meta-package referenced by `Bowire.Tool`. [[more]](https://github.com/Kuestenlogik/Bowire/issues/311)
-
-#### <a id="issue-kuestenlogik-bowire-365"></a>⬜ Backlog · [#365](https://github.com/Kuestenlogik/Bowire/issues/365) Contract testing + workspace-id: run a workbench-stored workspace's suite by id
-
-> `area:workbench`
-
-Follow-up to #181. `bowire test --workspace <dir>` (82825f43) runs every flow in a **git-native workspace directory**. The original #181 sketch also listed `--workspace-id` — running a workspace addressed by its id from the workbench's `~/.bowire/` per-user storage. [[more]](https://github.com/Kuestenlogik/Bowire/issues/365)
-
-#### <a id="issue-kuestenlogik-bowire-366"></a>⬜ Backlog · [#366](https://github.com/Kuestenlogik/Bowire/issues/366) Test-pillar UI polish: snapshot diff/approve, data-driven results view, mock frame-drop faults
-
-> `area:workbench`
-
-Follow-ups collecting the workbench-UI remainders from the shipped test-pillar features (#170/#171/#174). The CLI + engine + authoring editors are done; these are read-side / streaming refinements. [[more]](https://github.com/Kuestenlogik/Bowire/issues/366)
-
-#### <a id="issue-kuestenlogik-bowire-486"></a>⬜ Backlog · [#486](https://github.com/Kuestenlogik/Bowire/issues/486) Security rail: manual OAST/pen-test surface — generate a callback payload + watch interactions live
-
-> `area:security`
-
-The `app.interactsh.com` analog, as a **sub-tab of the Security rail** — the workflow the OAST work so far does not cover. [[more]](https://github.com/Kuestenlogik/Bowire/issues/486)
-
 #### <a id="issue-kuestenlogik-bowire-583"></a>⬜ Backlog · [#583](https://github.com/Kuestenlogik/Bowire/issues/583) Design-time lint: naming/PII rules, inline workbench hints, test --suite=lint
 
 > `area:multi`
@@ -242,6 +206,12 @@ Headers like `Accept: application/vnd.example+json`, `X-Api-Version: 2`, `User-A
 > `area:workbench`
 
 Bowire's UI is English-only today. Every label, every button, every tooltip, every empty-state copy is a hard-coded literal in the JS source. [[more]](https://github.com/Kuestenlogik/Bowire/issues/117)
+
+#### <a id="issue-kuestenlogik-bowire-216"></a>✅ Done · [#216](https://github.com/Kuestenlogik/Bowire/issues/216) Test infra: WebApplicationFactory fixture for InvokeEndpoints + UnaryReplayer coverage
+
+> `area:workbench`
+
+`Mock.Replay.UnaryReplayer` (~226 uncovered lines) and `Endpoints.BowireInvokeEndpoints` (~58 uncovered lines) together carry the largest single coverage hole in the repo. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/216)
 
 #### <a id="issue-kuestenlogik-bowire-247"></a>✅ Done · [#247](https://github.com/Kuestenlogik/Bowire/issues/247) Schema graph designer — visualise discovered .proto / SDL / OpenAPI type graph for large schemas
 
@@ -273,6 +243,18 @@ A visible, in-app **shelf** (working name) — a drag-and-drop holding area for 
 
 All three buttons used the same X glyph (Close + Clear selection) or text 'Clear' (Clear all). New `selectionClear` SVG (dashed rectangle + interior X) for Clear selection so the three actions read as three different intents. i18n-safe — no labels to translate.
 
+#### <a id="issue-kuestenlogik-bowire-292"></a>✅ Done · [#292](https://github.com/Kuestenlogik/Bowire/issues/292) Request-builder: GraphQL layout (#291 Phase D follow-up)
+
+> `area:workbench`
+
+Followup to #291. Phases A+B+C+E shipped (REST / gRPC / MCP / MQTT / WebSocket / SSE + streaming response pane). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/292)
+
+#### <a id="issue-kuestenlogik-bowire-311"></a>✅ Done · [#311](https://github.com/Kuestenlogik/Bowire/issues/311) Pluggable workbench: extract remaining rails (Phase G continuation)
+
+> `area:workbench`
+
+Follow-up to #306. Phase G's descriptor-by-package extraction shipped in 0b76086 — every rail descriptor now lives in its own `Kuestenlogik.Bowire.Rail.*` NuGet, `BuiltInRails.cs` is gone from core, and `Bundle.Workbench` is the new meta-package referenced by `Bowire.Tool`. [[more]](https://github.com/Kuestenlogik/Bowire/issues/311)
+
 #### <a id="issue-kuestenlogik-bowire-362"></a>✅ Done · [#362](https://github.com/Kuestenlogik/Bowire/issues/362) Sidebar UI-pattern consistency: converge every rail on the Workspaces house pattern
 
 > `area:workbench`
@@ -284,6 +266,24 @@ A full sidebar audit (2026-07-03) found the same affordances placed/behaving dif
 > `area:workbench`
 
 Follow-up to #362 (audit findings cleared). Two genuinely-new enhancements that go beyond the consistency audit: [[more]](https://github.com/Kuestenlogik/Bowire/issues/363)
+
+#### <a id="issue-kuestenlogik-bowire-365"></a>✅ Done · [#365](https://github.com/Kuestenlogik/Bowire/issues/365) Contract testing + workspace-id: run a workbench-stored workspace's suite by id
+
+> `area:workbench`
+
+Follow-up to #181. `bowire test --workspace <dir>` (82825f43) runs every flow in a **git-native workspace directory**. The original #181 sketch also listed `--workspace-id` — running a workspace addressed by its id from the workbench's `~/.bowire/` per-user storage. [[more]](https://github.com/Kuestenlogik/Bowire/issues/365)
+
+#### <a id="issue-kuestenlogik-bowire-366"></a>✅ Done · [#366](https://github.com/Kuestenlogik/Bowire/issues/366) Test-pillar UI polish: snapshot diff/approve, data-driven results view, mock frame-drop faults
+
+> `area:workbench`
+
+Follow-ups collecting the workbench-UI remainders from the shipped test-pillar features (#170/#171/#174). The CLI + engine + authoring editors are done; these are read-side / streaming refinements. [[more]](https://github.com/Kuestenlogik/Bowire/issues/366)
+
+#### <a id="issue-kuestenlogik-bowire-486"></a>✅ Done · [#486](https://github.com/Kuestenlogik/Bowire/issues/486) Security rail: manual OAST/pen-test surface — generate a callback payload + watch interactions live
+
+> `area:security`
+
+The `app.interactsh.com` analog, as a **sub-tab of the Security rail** — the workflow the OAST work so far does not cover. [[more]](https://github.com/Kuestenlogik/Bowire/issues/486)
 
 #### <a id="issue-kuestenlogik-bowire-534"></a>✅ Done · [#534](https://github.com/Kuestenlogik/Bowire/issues/534) Explain why discovery failed instead of just reporting 0 services
 
@@ -801,4 +801,4 @@ The Activity drawer renders text that was translated once, when the action happe
 
 ---
 
-*Generated 2026-09-18 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
+*Generated 2026-09-19 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
