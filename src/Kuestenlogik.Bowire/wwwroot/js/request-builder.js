@@ -3181,6 +3181,11 @@
                 // run. Empty while the document declares at most one: the
                 // plugin resolves that case by parsing the document.
                 operationName: '',
+                // Upload rows: { path, name, contentType, _ref }. The File
+                // itself lives on _ref and is deliberately NOT persisted —
+                // same rule the REST binary body already follows, because a
+                // File reference does not survive a reload.
+                files: [],
                 metadata: []
             };
         },
@@ -3189,6 +3194,8 @@
             return [
                 { id: 'query',     labelKey: 'rb.tab.query'     },
                 { id: 'variables', labelKey: 'rb.tab.variables' },
+                { id: 'files',     labelKey: 'rb.tab.files',
+                  badge: function (f) { return (rbProtoState(f).files || []).length; } },
                 { id: 'headers',   labelKey: 'rb.tab.headers',
                   badge: function (f) { return _activeKvCount(rbProtoState(f).metadata); } },
                 { id: 'auth',      labelKey: 'rb.tab.auth' },
@@ -3202,6 +3209,7 @@
             switch (tabId) {
                 case 'query':     return _renderGraphQLQueryTab(fr, ps);
                 case 'variables': return _renderGraphQLVariablesTab(fr, ps);
+                case 'files':     return _renderGraphQLFilesTab(fr, ps);
                 case 'headers':   return _renderHoppKvTable(ps.metadata, {
                     headerLibrary: true,
                     keyPlaceholder: t('rb.tab.header'), valuePlaceholder: t('rb.kv.value'), descPlaceholder: t('rb.kv.description')

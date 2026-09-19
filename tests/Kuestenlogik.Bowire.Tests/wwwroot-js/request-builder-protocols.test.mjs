@@ -66,6 +66,7 @@ const _postlude = `
         _getLayouts: function () { return rbLayouts; },
         _graphQLOperationName: _graphQLOperationName,
         _graphQLOperationNames: _graphQLOperationNames,
+        _graphQLVariableNames: _graphQLVariableNames,
         _graphQLHasErrors: _graphQLHasErrors,
         _connState: function () { return rbConnState; },
         _protoState: function (fr) { return rbProtoState(fr); }
@@ -192,7 +193,7 @@ function graphqlFrame(over) {
         serverUrl: 'https://api.example.com/graphql',
         _requestBuilder: {
             protocol: 'graphql', params: [], headers: [],
-            byProtocol: { graphql: Object.assign({ operation: 'query', query: '', variables: '{}', operationName: '', metadata: [] }, over || {}) }
+            byProtocol: { graphql: Object.assign({ operation: 'query', query: '', variables: '{}', operationName: '', files: [], metadata: [] }, over || {}) }
         }
     };
 }
@@ -365,4 +366,58 @@ test('graphql query tab: a pick that is edited away is replaced, not kept', () =
     sb._protoState(fr).query = 'query A { a }\nquery C { c }';
     layout.renderTab(fr, 'query');
     assert.equal(sb._protoState(fr).operationName, 'A', 'B is gone, so it falls back');
+});
+
+// ---- GraphQL uploads (#713 UI) ----
+
+test('graphql layout: defaults carry an empty file list', () => {
+    const sb = loadProtocols();
+    assert.deepEqual(sb._getLayouts().graphql.defaults().files, []);
+});
+
+test('graphql layout: the files tab sits between variables and headers', () => {
+    // Order is not cosmetic here: a file is chosen for a variable, so the
+    // tab belongs beside the variables rather than among the transport
+    // settings.
+    const sb = loadProtocols();
+    const tabs = sb._getLayouts().graphql.subTabs(graphqlFrame()).map((x) => x.id);
+    assert.deepEqual(tabs.slice(0, 4), ['query', 'variables', 'files', 'headers']);
+});
+
+test('graphql layout: the files tab badges how many rows there are', () => {
+    const sb = loadProtocols();
+    const tab = sb._getLayouts().graphql.subTabs(graphqlFrame()).find((x) => x.id === 'files');
+    const fr = graphqlFrame({ files: [{ path: 'variables.a' }, { path: 'variables.b' }] });
+    assert.equal(tab.badge(fr), 2);
+});
+
+test('_graphQLVariableNames: the variables an operation declares', () => {
+    const sb = loadProtocols();
+    assert.deepEqual(
+        sb._graphQLVariableNames('mutation Up($file: Upload!, $note: String) { up(f: $file) }'),
+        ['file', 'note']);
+});
+
+test('_graphQLVariableNames: a use is not a declaration', () => {
+    // `$file` appears twice in a signed operation -- once declared with a
+    // type, once used. Only the declaration counts, or the warning would
+    // never fire for a path that is genuinely wrong.
+    const sb = loadProtocols();
+    assert.deepEqual(
+        sb._graphQLVariableNames('mutation Up($file: Upload!) { up(f: $file, g: $file) }'),
+        ['file']);
+    assert.deepEqual(sb._graphQLVariableNames('{ up(f: $undeclared) }'), []);
+    assert.deepEqual(sb._graphQLVariableNames(''), []);
+    assert.deepEqual(sb._graphQLVariableNames(null), []);
+});
+
+test('graphql files tab: adding a row guesses only the first path', () => {
+    // The first row takes the commonest shape. A second has nothing to
+    // guess from, and a wrong guess there is worse than an empty field:
+    // it looks filled in.
+    const sb = loadProtocols();
+    const fr = graphqlFrame();
+    const ps = sb._protoState(fr);
+    sb._getLayouts().graphql.renderTab(fr, 'files');
+    assert.deepEqual(ps.files, []);
 });

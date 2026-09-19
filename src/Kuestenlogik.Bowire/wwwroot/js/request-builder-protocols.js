@@ -1365,6 +1365,175 @@
         return pane;
     }
 
+    /// The Files tab: which file goes into which GraphQL variable (#713 UI).
+    ///
+    /// The mapping is the part only the operator can supply. A query says
+    /// `$file: Upload!` but nothing in it says that the bytes the operator
+    /// has in mind belong there rather than in `$thumbnail`, and Bowire does
+    /// not read the schema on this path.
+    ///
+    /// The File objects live on the row as `_ref` and are never persisted.
+    /// That is the same rule the REST binary body follows, for the same
+    /// reason: a File reference does not survive a reload, and pretending
+    /// otherwise would produce a tab that looks ready and sends nothing.
+    function _renderGraphQLFilesTab(fr, ps) {
+        var pane = el('div', { className: 'bowire-request-builder-tab-body' });
+        if (!Array.isArray(ps.files)) ps.files = [];
+
+        pane.appendChild(el('div', {
+            className: 'bowire-request-builder-script-hint',
+            textContent: t('rbGraphQL.filesHint')
+        }));
+
+        // Which variables the document actually declares, so a path that
+        // matches none can be pointed out here rather than coming back as a
+        // server error nobody connects to this tab.
+        var declared = _graphQLVariableNames(ps.query);
+
+        ps.files.forEach(function (row, index) {
+            var line = el('div', { className: 'bowire-request-builder-graphql-file-row' });
+
+            var pathInput = el('input', {
+                type: 'text',
+                className: 'bowire-field bowire-request-builder-graphql-file-path',
+                value: row.path || '',
+                placeholder: 'variables.file',
+                onInput: function (e) { row.path = e.target.value; render(); }
+            });
+            line.appendChild(pathInput);
+
+            line.appendChild(el('input', {
+                type: 'file',
+                className: 'bowire-request-builder-graphql-file-pick',
+                onChange: function (e) {
+                    var f = e.target.files && e.target.files[0];
+                    row._ref = f || null;
+                    row.name = f ? f.name : '';
+                    // Only when the row has none: an explicit override the
+                    // operator typed must survive picking a different file.
+                    if (f && !row.contentType) row.contentType = f.type || '';
+                    render();
+                }
+            }));
+
+            line.appendChild(el('input', {
+                type: 'text',
+                className: 'bowire-field bowire-request-builder-graphql-file-type',
+                value: row.contentType || '',
+                placeholder: 'application/octet-stream',  // i18n-exempt: protocol vocabulary: the word names something outside Bowire's own text
+                onInput: function (e) { row.contentType = e.target.value; }
+            }));
+
+            line.appendChild(el('button', {
+                type: 'button',
+                className: 'bowire-request-builder-graphql-file-remove',
+                title: t('rb.kv.removeRow'),
+                textContent: '×',  // i18n-exempt: a symbol, not a word
+                onClick: function () { ps.files.splice(index, 1); render(); }
+            }));
+
+            pane.appendChild(line);
+
+            if (row.name) {
+                pane.appendChild(el('div', {
+                    className: 'bowire-request-builder-graphql-file-name',
+                    textContent: t('rb.binarySelected', { name: row.name })
+                }));
+            }
+
+            // A path the document does not declare. Said here, where it can
+            // be fixed, instead of arriving as "variable $x is not defined".
+            var head = String(row.path || '').split('.')[1];
+            if (row.path && declared.length > 0 && head && declared.indexOf(head) === -1) {
+                pane.appendChild(el('div', {
+                    className: 'bowire-request-builder-graphql-file-warning',
+                    textContent: t('rbGraphQL.filesUnknownVariable', { name: head })
+                }));
+            }
+        });
+
+        pane.appendChild(el('button', {
+            type: 'button',
+            className: 'bowire-btn-ghost',
+            textContent: t('rbGraphQL.filesAdd'),
+            onClick: function () {
+                ps.files.push({
+                    // The first row guesses the commonest shape; later ones
+                    // start empty because there is nothing to guess from.
+                    path: ps.files.length === 0 ? 'variables.file' : '',
+                    name: '', contentType: '', _ref: null
+                });
+                render();
+            }
+        }));
+
+        return pane;
+    }
+
+    /// The variable names an operation declares, for the Files tab's warning.
+    ///
+    /// Read off `$name:` in the operation's signature. Deliberately a
+    /// pattern rather than a parse: this drives a hint, and the plugin
+    /// parses the document properly before anything is sent.
+    function _graphQLVariableNames(query) {
+        var src = String(query || '');
+        if (!src) return [];
+        var names = [];
+        var re = /\$([A-Za-z_][A-Za-z0-9_]*)\s*:/g;
+        var m;
+        while ((m = re.exec(src)) !== null) {
+            if (names.indexOf(m[1]) === -1) names.push(m[1]);
+        }
+        return names;
+    }
+
+    /// How much of a file the browser will carry for an upload.
+    ///
+    /// The bytes travel twice — base64 to the workbench backend, then as
+    /// real bytes to the target server — and base64 adds a third on top of
+    /// that. A tab that freezes on a large pick is worse than one that says
+    /// no, so this refuses with the number rather than trying.
+    var RB_GRAPHQL_MAX_UPLOAD_BYTES = 25 * 1024 * 1024;
+
+    /// The `files` list the plugin expects, or null when there is nothing
+    /// to send. Throws with a readable message when a file is too large.
+    async function _graphQLUploadPayload(ps) {
+        var rows = (ps.files || []).filter(function (r) { return r && r._ref && r.path; });
+        if (rows.length === 0) return null;
+
+        var out = [];
+        for (var i = 0; i < rows.length; i++) {
+            var row = rows[i];
+            if (row._ref.size > RB_GRAPHQL_MAX_UPLOAD_BYTES) {
+                throw new Error(t('rbGraphQL.fileTooLarge', {
+                    name: row.name || row._ref.name,
+                    limit: String(Math.round(RB_GRAPHQL_MAX_UPLOAD_BYTES / (1024 * 1024)))
+                }));
+            }
+            out.push({
+                variablePath: row.path,
+                name: row.name || row._ref.name || 'file',
+                contentType: row.contentType || row._ref.type || '',
+                base64: await _fileToBase64(row._ref)
+            });
+        }
+        return out;
+    }
+
+    /// A File as base64, without the data: prefix FileReader puts in front.
+    function _fileToBase64(file) {
+        return new Promise(function (resolve, reject) {
+            var reader = new FileReader();
+            reader.onerror = function () { reject(new Error(t('rbGraphQL.fileReadFailed', { name: file.name }))); };
+            reader.onload = function () {
+                var result = String(reader.result || '');
+                var comma = result.indexOf(',');
+                resolve(comma >= 0 ? result.slice(comma + 1) : result);
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
     /// Send the operation as it stands.
     async function _executeGraphQLRequest(fr) {
         var S = activeState();
@@ -1420,6 +1589,17 @@
         // side can do.
         var wireBody = { query: query, variables: variables };
         if (ps.operationName) wireBody.operationName = ps.operationName;
+
+        // #713 - files ride along base64-encoded; the plugin turns them
+        // into a graphql-multipart-request-spec body. No flag: a caller
+        // either picked files or did not.
+        try {
+            var uploads = await _graphQLUploadPayload(ps);
+            if (uploads) wireBody.files = uploads;
+        } catch (e) {
+            if (typeof toast === 'function') toast(e.message, 'error');
+            return;
+        }
 
         // A subscription is a long-lived stream, so it does not go through
         // the request/response pane at all: it toggles like the MQTT

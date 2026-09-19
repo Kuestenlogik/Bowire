@@ -24434,6 +24434,50 @@ not as the
     background: var(--bowire-surface-hover);
 }
 
+/* ---- GraphQL upload rows (#713 UI) ---- */
+.bowire-request-builder-graphql-file-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+.bowire-request-builder-graphql-file-path {
+    flex: 0 0 180px;
+    font-family: var(--bowire-font-mono, monospace);
+}
+.bowire-request-builder-graphql-file-type {
+    flex: 0 0 170px;
+}
+.bowire-request-builder-graphql-file-pick {
+    flex: 1;
+    min-width: 0;
+    color: var(--bowire-text-secondary, #999);
+    font: 400 12px/1 system-ui, sans-serif;
+}
+.bowire-request-builder-graphql-file-remove {
+    background: transparent;
+    border: none;
+    color: var(--bowire-text-tertiary);
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    padding: 4px 6px;
+}
+.bowire-request-builder-graphql-file-remove:hover { color: var(--bowire-text); }
+.bowire-request-builder-graphql-file-name {
+    color: var(--bowire-text-secondary, #999);
+    font: 400 12px/1.4 system-ui, sans-serif;
+    margin: -2px 0 8px 188px;
+}
+/* The path does not match a variable the operation declares. A warning,
+   not a refusal: the document may be mid-edit, and the operator is the one
+   who knows whether it is finished. */
+.bowire-request-builder-graphql-file-warning {
+    color: var(--bowire-warning, #d08770);
+    font: 400 12px/1.4 system-ui, sans-serif;
+    margin: -2px 0 8px 188px;
+}
+
 /* ---- Schema-designer toolbar (#711) ---- */
 /* The look comes from .bowire-field; these three carry only the geometry
    that used to sit in inline styles. */
