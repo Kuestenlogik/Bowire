@@ -117,28 +117,13 @@ jobs:
           if [ -z "$PREV_TAG" ]; then PREV_TAG=$(git rev-list --max-parents=0 HEAD); fi
           echo "Previous tag: $PREV_TAG"
 
-          # ---- Highlights from closed milestone issues ----
+          # ---- Highlights: the shared release tool (docs/contributing/project-board.md) ----
+          # Closed tickets of the shipped section(s) in this repo AND of every sibling that
+          # mirrors them on the board, grouped by repository, type (Feature / Bug / Task) and
+          # area — the same list the cut ships.
           HIGHLIGHTS=""
           if [ -n "$MS_TITLE" ]; then
-            # Fetch closed issues in the milestone, oldest first.
-            ISSUES_JSON=$(gh issue list --milestone "$MS_TITLE" --state closed \
-              --limit 100 --json number,title)
-            #
-            # A flat list on purpose. This used to bucket by a `track:` label,
-            # falling back to `area:`, falling back to "misc". Neither label
-            # namespace exists in this repo — `track:` was folded into the
-            # board's Area field and `area:` was never a label — so every
-            # issue landed in "misc" and the grouping produced one bucket
-            # called misc, which reads worse than no grouping at all.
-            #
-            # Bringing grouping back needs an axis that actually exists: the
-            # native issue Type, or the board's Area field. Neither is
-            # reachable from `gh issue list --json` (it has no issueType
-            # field), so it would take a GraphQL query — worth doing when
-            # someone wants grouped notes, not worth faking until then.
-            HIGHLIGHTS=$(echo "$ISSUES_JSON" | jq -r '
-              [ .[] | "- #\(.number) \(.title)" ] | join("\n")
-            ')
+            HIGHLIGHTS=$(node scripts/ci/release.mjs notes "v$VERSION" "$MS_TITLE" --highlights 2>/dev/null || true)
           fi
 
           # ---- Maintenance from commit log ----
