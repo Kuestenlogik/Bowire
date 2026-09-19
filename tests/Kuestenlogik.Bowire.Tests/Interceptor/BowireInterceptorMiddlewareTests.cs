@@ -74,20 +74,55 @@ public sealed class BowireInterceptorMiddlewareTests
     // therefore observe completion while the server-side bookkeeping is
     // still pending, so every "response received → flow recorded" assertion
     // must poll instead of snapshotting immediately.
-    private static async Task WaitUntilAsync(Func<bool> condition, CancellationToken ct)
+    private static async Task WaitUntilAsync(
+        Func<bool> condition, CancellationToken ct, string what = "the expected state")
     {
         var deadline = DateTimeOffset.UtcNow.AddSeconds(5);
         while (!condition() && DateTimeOffset.UtcNow < deadline)
         {
             await Task.Delay(10, ct);
         }
+
+        // #714 - this used to return quietly when the deadline passed. The
+        // caller then asserted against whatever it had, and a timeout
+        // arrived looking like a content mismatch somewhere further down.
+        Assert.True(condition(), $"Timed out after 5s waiting for {what}.");
     }
 
-    private static async Task<IReadOnlyList<InterceptedFlow>> WaitForFlowsAsync(
-        InterceptedFlowStore store, int count, CancellationToken ct)
+    /// <summary>
+    /// The flow this test's own request produced (#714).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This used to be <c>Assert.Single(store.Snapshot())</c>, which asserts
+    /// that the store saw nothing but our request — a property the test does
+    /// not establish and the product deliberately does not have: the
+    /// interceptor records what arrives, not what a test sent.
+    /// </para>
+    /// <para>
+    /// It failed intermittently under a solution-wide run with two flows,
+    /// ids 1 and 2, 2.2ms apart. A second real request reached the host; the
+    /// leading theory is an ephemeral port recycled between hosts while
+    /// another client still aimed at it, but that was never established
+    /// because the failure message did not name the paths. Hence the
+    /// message below: the next occurrence answers the question instead of
+    /// hiding it again.
+    /// </para>
+    /// </remarks>
+    private static async Task<InterceptedFlow> WaitForFlowAsync(
+        InterceptedFlowStore store, string path, CancellationToken ct)
     {
-        await WaitUntilAsync(() => store.Snapshot().Count >= count, ct);
-        return store.Snapshot();
+        await WaitUntilAsync(
+            () => store.Snapshot().Any(f => f.Path == path), ct,
+            $"a flow for {path}");
+
+        var all = store.Snapshot();
+        var mine = all.Where(f => f.Path == path).ToList();
+        Assert.True(mine.Count == 1,
+            $"Expected exactly one flow for {path}, saw {mine.Count}. "
+            + "All flows in this store: "
+            + string.Join(", ", all.Select(f => $"#{f.Id} {f.Method} {f.Path}")));
+        return mine[0];
     }
 
     [Fact]
@@ -103,9 +138,7 @@ public sealed class BowireInterceptorMiddlewareTests
         var body = await resp.Content.ReadAsStringAsync(ct);
         Assert.Contains("hi", body, StringComparison.Ordinal);
 
-        var snap = await WaitForFlowsAsync(store, 1, ct);
-        Assert.Single(snap);
-        var flow = snap[0];
+        var flow = await WaitForFlowAsync(store, "/api/hello", ct);
         Assert.Equal("GET", flow.Method);
         Assert.Equal(200, flow.ResponseStatus);
         Assert.Contains("/api/hello", flow.Url, StringComparison.Ordinal);
@@ -128,7 +161,7 @@ public sealed class BowireInterceptorMiddlewareTests
         var echoed = await resp.Content.ReadAsStringAsync(ct);
         Assert.Equal(payload, echoed);
 
-        var flow = Assert.Single(await WaitForFlowsAsync(store, 1, ct));
+        var flow = await WaitForFlowAsync(store, "/api/echo", ct);
         Assert.Equal("POST", flow.Method);
         Assert.Equal(payload, flow.RequestBody);
         Assert.Equal(payload, flow.ResponseBody);
@@ -176,7 +209,7 @@ public sealed class BowireInterceptorMiddlewareTests
         // Drain so the host's request completes before we inspect the store.
         _ = await resp.Content.ReadAsStringAsync(ct);
 
-        var flow = Assert.Single(await WaitForFlowsAsync(store, 1, ct));
+        var flow = await WaitForFlowAsync(store, "/api/stream", ct);
         Assert.True(flow.Streaming);
         Assert.Null(flow.ResponseBody);
     }
@@ -195,7 +228,7 @@ public sealed class BowireInterceptorMiddlewareTests
         using var resp = await http.GetAsync(new Uri("/api/hello", UriKind.Relative), ct);
         Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
 
-        Assert.Single(await WaitForFlowsAsync(store, 1, ct));
+        await WaitForFlowAsync(store, "/api/hello", ct);
         // RecordFlow adds to the store BEFORE appending the recording step —
         // wait for the step separately instead of piggybacking on the store.
         await WaitUntilAsync(() => session.Active?.StepCount == 1, ct);
@@ -256,7 +289,7 @@ public sealed class BowireInterceptorMiddlewareTests
         var body = await resp.Content.ReadAsStringAsync(ct);
         Assert.Equal("{\"greeting\":\"mocked\"}", body);
 
-        var flow = Assert.Single(await WaitForFlowsAsync(store, 1, ct));
+        var flow = await WaitForFlowAsync(store, "/api/hello", ct);
         Assert.True(flow.Mocked);
         Assert.Equal(418, flow.ResponseStatus);
         Assert.Equal("{\"greeting\":\"mocked\"}", flow.ResponseBody);
@@ -282,7 +315,7 @@ public sealed class BowireInterceptorMiddlewareTests
         Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
         var body = await resp.Content.ReadAsStringAsync(ct);
         Assert.Contains("hi", body, StringComparison.Ordinal);
-        Assert.False(Assert.Single(await WaitForFlowsAsync(store, 1, ct)).Mocked);
+        Assert.False((await WaitForFlowAsync(store, "/api/hello", ct)).Mocked);
     }
 
     [Fact]
@@ -305,7 +338,7 @@ public sealed class BowireInterceptorMiddlewareTests
         Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
         var body = await resp.Content.ReadAsStringAsync(ct);
         Assert.Contains("wildcard", body, StringComparison.Ordinal);
-        Assert.True(Assert.Single(await WaitForFlowsAsync(store, 1, ct)).Mocked);
+        Assert.True((await WaitForFlowAsync(store, "/api/hello", ct)).Mocked);
     }
 
     [Fact]
@@ -328,7 +361,7 @@ public sealed class BowireInterceptorMiddlewareTests
         // so the client can observe completion before RecordFlow runs — poll
         // the store rather than snapshotting immediately (same race the
         // response-truncation test guards against).
-        var flow = Assert.Single(await WaitForFlowsAsync(store, 1, ct));
+        var flow = await WaitForFlowAsync(store, "/api/echo", ct);
         Assert.True(flow.RequestBodyTruncated);
         Assert.NotNull(flow.RequestBody);
         Assert.Equal(16, flow.RequestBody!.Length);
@@ -349,7 +382,7 @@ public sealed class BowireInterceptorMiddlewareTests
         var clientBody = await resp.Content.ReadAsStringAsync(ct);
         Assert.Equal(5000, clientBody.Length);
 
-        var flow = Assert.Single(await WaitForFlowsAsync(store, 1, ct));
+        var flow = await WaitForFlowAsync(store, "/api/large", ct);
         Assert.True(flow.ResponseBodyTruncated);
         Assert.Equal(16, flow.ResponseBody!.Length);
     }
@@ -369,7 +402,7 @@ public sealed class BowireInterceptorMiddlewareTests
         Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
         _ = await resp.Content.ReadAsStringAsync(ct);
 
-        var flow = Assert.Single(await WaitForFlowsAsync(store, 1, ct));
+        var flow = await WaitForFlowAsync(store, "/api/echo", ct);
         Assert.Null(flow.RequestBody);
         Assert.NotNull(flow.RequestBodyBase64);
         Assert.Equal(binary, Convert.FromBase64String(flow.RequestBodyBase64!));
@@ -386,7 +419,7 @@ public sealed class BowireInterceptorMiddlewareTests
         using var resp = await http.GetAsync(new Uri("/api/boom", UriKind.Relative), ct);
         Assert.Equal(HttpStatusCode.InternalServerError, resp.StatusCode);
 
-        var flow = Assert.Single(await WaitForFlowsAsync(store, 1, ct));
+        var flow = await WaitForFlowAsync(store, "/api/boom", ct);
         Assert.Equal("GET", flow.Method);
         Assert.NotNull(flow.Error);
         Assert.Contains("kaboom", flow.Error!, StringComparison.Ordinal);
@@ -411,7 +444,7 @@ public sealed class BowireInterceptorMiddlewareTests
         using var resp = await http.GetAsync(new Uri("/api/hello", UriKind.Relative), ct);
         Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
         Assert.Equal(binary, await resp.Content.ReadAsByteArrayAsync(ct));
-        Assert.True(Assert.Single(await WaitForFlowsAsync(store, 1, ct)).Mocked);
+        Assert.True((await WaitForFlowAsync(store, "/api/hello", ct)).Mocked);
     }
 
     [Fact]
