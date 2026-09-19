@@ -185,7 +185,27 @@ public sealed class BowireGraphQLProtocol : IBowireProtocol, IDisposable
                 ? GraphQLDocumentInfo.ResolveOperationName(operation, ExtractOperationName(jsonMessages))
                 : method;
 
-            var response = await SendOperationAsync(endpoint, operation, variables, metadata, ct, operationName);
+            // #713 - GET is opt-in, and only for queries. The
+            // GraphQL-over-HTTP spec allows GET for queries alone, and the
+            // reason is not pedantry: a mutation sent over GET is a request
+            // that intermediaries treat as safe to retry, prefetch and
+            // cache. Refusing here is better than letting a proxy decide to
+            // run somebody's mutation twice.
+            var (useGet, sendHeaders) = ExtractHttpMethod(metadata);
+            if (useGet && OperationKindOf(operation, operationKind) != "query")
+            {
+                return new InvokeResult(
+                    null,
+                    (long)(DateTime.UtcNow - startedAt).TotalMilliseconds,
+                    $"{HttpMethodMetadataKey}=get applies to queries only — this is a "
+                    + OperationKindOf(operation, operationKind)
+                    + ". GraphQL over GET is defined for queries because intermediaries may "
+                    + "retry, prefetch or cache a GET.",
+                    new Dictionary<string, string>());
+            }
+
+            var response = await SendOperationAsync(
+                endpoint, operation, variables, sendHeaders, ct, operationName, useGet);
 
             var elapsedMs = (long)(DateTime.UtcNow - startedAt).TotalMilliseconds;
             var json = JsonSerializer.Serialize(response, s_indented);
@@ -205,6 +225,26 @@ public sealed class BowireGraphQLProtocol : IBowireProtocol, IDisposable
     /// is loaded) and falls back to SSE.
     /// </summary>
     public const string SubscriptionTransportMetadataKey = "X-Bowire-GraphQL-Subscription-Transport";
+
+    /// <summary>
+    /// Optional metadata key. Set to <c>get</c> to send queries over
+    /// <c>GET</c> instead of <c>POST</c> (#713).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Bowire has always posted. That works against nearly every server and
+    /// is the right default, but it leaves two cases unreachable: a CDN or
+    /// cache in front of the API, which can only cache a GET, and a server
+    /// configured to accept queries over GET alone.
+    /// </para>
+    /// <para>
+    /// Opt-in rather than automatic, because the choice has consequences a
+    /// caller should make deliberately: a GET puts the whole document in
+    /// the URL, where proxies and access logs keep it, and long documents
+    /// meet a URL length limit nobody controls.
+    /// </para>
+    /// </remarks>
+    public const string HttpMethodMetadataKey = "X-Bowire-GraphQL-Http-Method";
 
     public async IAsyncEnumerable<string> InvokeStreamAsync(
         string serverUrl, string service, string method,
@@ -762,9 +802,12 @@ public sealed class BowireGraphQLProtocol : IBowireProtocol, IDisposable
         JsonElement? variables,
         Dictionary<string, string>? headers,
         CancellationToken ct,
-        string? operationName = null)
+        string? operationName = null,
+        bool useGet = false)
     {
-        using var request = new HttpRequestMessage(HttpMethod.Post, endpoint);
+        using var request = useGet
+            ? new HttpRequestMessage(HttpMethod.Get, BuildGetUri(endpoint, query, variables, operationName))
+            : new HttpRequestMessage(HttpMethod.Post, endpoint);
         request.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
 
         if (headers is not null)
@@ -773,19 +816,106 @@ public sealed class BowireGraphQLProtocol : IBowireProtocol, IDisposable
                 request.Headers.TryAddWithoutValidation(key, value);
         }
 
-        // #710 - operationName rides along when there is one to send. The
-        // serializer is configured to drop nulls, so a single-operation
-        // document still puts exactly the two fields on the wire it always
-        // did, and no server sees a shape it did not see before.
-        var payload = variables.HasValue && variables.Value.ValueKind == JsonValueKind.Object
-            ? (object)new { query, variables = variables.Value, operationName }
-            : new { query, operationName };
+        if (!useGet)
+        {
+            // #710 - operationName rides along when there is one to send.
+            // The serializer is configured to drop nulls, so a
+            // single-operation document still puts exactly the two fields
+            // on the wire it always did, and no server sees a shape it did
+            // not see before.
+            var payload = variables.HasValue && variables.Value.ValueKind == JsonValueKind.Object
+                ? (object)new { query, variables = variables.Value, operationName }
+                : new { query, operationName };
 
-        request.Content = JsonContent.Create(payload, options: s_jsonOptions);
+            request.Content = JsonContent.Create(payload, options: s_jsonOptions);
+        }
 
         using var response = await _http.SendAsync(request, ct);
         response.EnsureSuccessStatusCode();
 
         return await response.Content.ReadFromJsonAsync<JsonElement>(s_jsonOptions, ct);
+    }
+
+    /// <summary>
+    /// What kind of operation a document actually declares (#713).
+    /// </summary>
+    /// <remarks>
+    /// The service name says "Query" for a discovered method, but a verbatim
+    /// document carries its own keyword and that is the one that counts —
+    /// somebody can paste a mutation into a tab the rail thinks is a query.
+    /// Falls back to the caller's expectation when the document declares
+    /// nothing readable, which leaves the existing behaviour in place.
+    /// </remarks>
+    private static string OperationKindOf(string document, string fallback)
+    {
+        foreach (var definition in GraphQLDocumentInfo.OperationKinds(document))
+            return definition;
+        return fallback;
+    }
+
+    /// <summary>
+    /// The URL for a query sent over <c>GET</c> (#713).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The GraphQL-over-HTTP convention: <c>query</c>, <c>variables</c> as
+    /// a JSON string, and <c>operationName</c>, all percent-encoded. An
+    /// endpoint that already carries a query string keeps it — some
+    /// deployments route on one, and dropping it would send the request
+    /// somewhere else entirely.
+    /// </para>
+    /// </remarks>
+    internal static Uri BuildGetUri(
+        string endpoint, string query, JsonElement? variables, string? operationName)
+    {
+        var parts = new List<string> { "query=" + Uri.EscapeDataString(query) };
+
+        if (variables.HasValue && variables.Value.ValueKind == JsonValueKind.Object)
+        {
+            var json = JsonSerializer.Serialize(variables.Value, s_jsonOptions);
+            // An empty object carries no information and only lengthens a
+            // URL that is already the tightest budget on this path.
+            if (json != "{}") parts.Add("variables=" + Uri.EscapeDataString(json));
+        }
+
+        if (!string.IsNullOrWhiteSpace(operationName))
+            parts.Add("operationName=" + Uri.EscapeDataString(operationName));
+
+        var separator = endpoint.Contains('?', StringComparison.Ordinal) ? "&" : "?";
+        return new Uri(endpoint + separator + string.Join("&", parts), UriKind.Absolute);
+    }
+
+    /// <summary>
+    /// Whether this call was asked to go over <c>GET</c>, and the metadata
+    /// with that instruction removed (#713).
+    /// </summary>
+    /// <remarks>
+    /// Stripped from the metadata for the same reason the subscription
+    /// transport key is: it is an instruction to Bowire, not a header the
+    /// server should ever see.
+    /// </remarks>
+    private static (bool UseGet, Dictionary<string, string>? Headers) ExtractHttpMethod(
+        Dictionary<string, string>? metadata)
+    {
+        if (metadata is null) return (false, null);
+
+        string? matched = null;
+        var useGet = false;
+        foreach (var (k, v) in metadata)
+        {
+            if (!string.Equals(k, HttpMethodMetadataKey, StringComparison.OrdinalIgnoreCase)) continue;
+            matched = k;
+            useGet = string.Equals(v?.Trim(), "get", StringComparison.OrdinalIgnoreCase);
+            break;
+        }
+
+        if (matched is null) return (false, metadata);
+
+        var filtered = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var (k, v) in metadata)
+        {
+            if (!string.Equals(k, matched, StringComparison.Ordinal)) filtered[k] = v;
+        }
+        return (useGet, filtered);
     }
 }

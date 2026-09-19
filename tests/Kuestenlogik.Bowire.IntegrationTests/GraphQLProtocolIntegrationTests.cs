@@ -177,6 +177,117 @@ public sealed class GraphQLProtocolIntegrationTests
         Assert.Contains("pong", result.Response, StringComparison.Ordinal);
     }
 
+    // ---- #713: queries over GET ----
+
+    [Fact]
+    public async Task A_Query_Can_Go_Over_Get_When_Asked()
+    {
+        // The server records the verb it was called with, because that is
+        // the whole claim: nothing else about the response would differ.
+        var verbs = new List<string>();
+        await using var host = await PluginTestHost.StartAsync(app => MapVerbRecorder(app, verbs));
+        using var protocol = new BowireGraphQLProtocol();
+
+        var result = await protocol.InvokeAsync(
+            host.BaseUrl + "/graphql", service: "Query", method: "ping",
+            jsonMessages: ["""{"query":"query P { ping }"}"""],
+            showInternalServices: false,
+            metadata: new Dictionary<string, string>
+            {
+                [BowireGraphQLProtocol.HttpMethodMetadataKey] = "get",
+            },
+            ct: TestContext.Current.CancellationToken);
+
+        Assert.Equal("OK", result.Status);
+        Assert.Equal(["GET"], verbs);
+    }
+
+    [Fact]
+    public async Task Without_The_Flag_It_Still_Posts()
+    {
+        // The default does not move. Every server Bowire reaches today
+        // keeps working exactly as it did.
+        var verbs = new List<string>();
+        await using var host = await PluginTestHost.StartAsync(app => MapVerbRecorder(app, verbs));
+        using var protocol = new BowireGraphQLProtocol();
+
+        await protocol.InvokeAsync(
+            host.BaseUrl + "/graphql", service: "Query", method: "ping",
+            jsonMessages: ["""{"query":"query P { ping }"}"""],
+            showInternalServices: false, ct: TestContext.Current.CancellationToken);
+
+        Assert.Equal(["POST"], verbs);
+    }
+
+    [Fact]
+    public async Task A_Mutation_Over_Get_Is_Refused_Before_It_Is_Sent()
+    {
+        // The guard that makes the feature safe to offer. GraphQL over GET
+        // is defined for queries because intermediaries may retry, prefetch
+        // and cache a GET -- a mutation behind that verb is a write someone
+        // else may decide to repeat. Refused here, so nothing reaches the
+        // wire at all.
+        var verbs = new List<string>();
+        await using var host = await PluginTestHost.StartAsync(app => MapVerbRecorder(app, verbs));
+        using var protocol = new BowireGraphQLProtocol();
+
+        var result = await protocol.InvokeAsync(
+            host.BaseUrl + "/graphql", service: "Query", method: "echo",
+            jsonMessages: ["""{"query":"mutation M { echo }"}"""],
+            showInternalServices: false,
+            metadata: new Dictionary<string, string>
+            {
+                [BowireGraphQLProtocol.HttpMethodMetadataKey] = "get",
+            },
+            ct: TestContext.Current.CancellationToken);
+
+        Assert.NotEqual("OK", result.Status);
+        Assert.Contains("queries only", result.Status, StringComparison.Ordinal);
+        Assert.Empty(verbs);
+    }
+
+    [Fact]
+    public async Task The_Instruction_Itself_Is_Not_Sent_As_A_Header()
+    {
+        // It is a word to Bowire, not to the server. Leaving it on the
+        // request would put an internal flag into somebody's access log and,
+        // worse, into a signed-header calculation.
+        var seenHeaders = new List<string>();
+        await using var host = await PluginTestHost.StartAsync(app =>
+            app.MapMethods("/graphql", ["GET", "POST"], async (HttpContext ctx) =>
+            {
+                seenHeaders.AddRange(ctx.Request.Headers.Select(h => h.Key));
+                ctx.Response.ContentType = "application/json";
+                await ctx.Response.WriteAsync("""{ "data": { "ping": "pong" } }""");
+            }));
+        using var protocol = new BowireGraphQLProtocol();
+
+        await protocol.InvokeAsync(
+            host.BaseUrl + "/graphql", service: "Query", method: "ping",
+            jsonMessages: ["""{"query":"query P { ping }"}"""],
+            showInternalServices: false,
+            metadata: new Dictionary<string, string>
+            {
+                [BowireGraphQLProtocol.HttpMethodMetadataKey] = "get",
+                ["X-Tenant"] = "harbour",
+            },
+            ct: TestContext.Current.CancellationToken);
+
+        Assert.Contains("X-Tenant", seenHeaders);
+        Assert.DoesNotContain(BowireGraphQLProtocol.HttpMethodMetadataKey, seenHeaders);
+    }
+
+    /// <summary>A /graphql that answers either verb and records which it got.</summary>
+    private static void MapVerbRecorder(WebApplication app, List<string> verbs)
+    {
+        app.MapMethods("/graphql", ["GET", "POST"], async (HttpContext ctx) =>
+        {
+            verbs.Add(ctx.Request.Method);
+            ctx.Response.ContentType = "application/json";
+            await ctx.Response.WriteAsync("""{ "data": { "ping": "pong" } }""");
+        });
+    }
+
     private static Task<InvokeResult> InvokeVerbatimAsync(
         BowireGraphQLProtocol protocol, PluginTestHost host, string payload)
         => protocol.InvokeAsync(

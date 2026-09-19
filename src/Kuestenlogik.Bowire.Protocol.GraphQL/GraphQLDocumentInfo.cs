@@ -63,6 +63,51 @@ internal static class GraphQLDocumentInfo
     }
 
     /// <summary>
+    /// The operation keywords a document declares, in source order (#713).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Lower-case <c>query</c>, <c>mutation</c> or <c>subscription</c>. The
+    /// GraphQL shorthand <c>{ field }</c> is a query and reports itself as
+    /// one, which is why this reads the parser's operation type rather than
+    /// looking for a keyword that may not be written.
+    /// </para>
+    /// <para>
+    /// The caller that needs this is the GET guard: the rail may believe a
+    /// tab holds a query while the document pasted into it declares a
+    /// mutation, and sending that over GET puts a write behind a verb
+    /// intermediaries treat as safe to repeat.
+    /// </para>
+    /// </remarks>
+    public static IReadOnlyList<string> OperationKinds(string? query)
+    {
+        if (string.IsNullOrWhiteSpace(query)) return [];
+
+        GraphQLDocument document;
+        try
+        {
+            document = Parser.Parse(query);
+        }
+        catch (Exception)
+        {
+            return [];
+        }
+
+        var kinds = new List<string>();
+        foreach (var definition in document.Definitions)
+        {
+            if (definition is not GraphQLOperationDefinition op) continue;
+            kinds.Add(op.Operation switch
+            {
+                OperationType.Mutation => "mutation",
+                OperationType.Subscription => "subscription",
+                _ => "query",
+            });
+        }
+        return kinds;
+    }
+
+    /// <summary>
     /// The parser's complaint about a document, or <c>null</c> when it
     /// parses (#710).
     /// </summary>
