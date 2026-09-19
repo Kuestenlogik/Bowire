@@ -419,6 +419,12 @@ internal static class BowireInvokeEndpoints
                         FrameProbingMiddleware.Observe(prober, service, method, frame.Json);
                         var interpretations = ResolveLiveInterpretations(
                             annotationStore, service, method, frame.Json);
+                        // #712 - a sibling of `data`, never inside it. The
+                        // envelope is the level the consumer already parses,
+                        // and a reason buried in the payload is exactly what
+                        // made an aborted stream look like a message.
+                        var streamError = frame.Error
+                            ?? BowireStreamErrorEnvelope.TryRead(frame.Json);
                         var eventData = JsonSerializer.Serialize(new
                         {
                             index,
@@ -429,6 +435,7 @@ internal static class BowireInvokeEndpoints
                                 : Convert.ToBase64String(frame.Binary),
                             discriminator = AnnotationKey.Wildcard,
                             interpretations,
+                            error = streamError,
                         }, BowireEndpointHelpers.JsonOptions);
 
                         await ctx.Response.WriteAsync($"data: {eventData}\n\n", ctx.RequestAborted);
@@ -444,6 +451,10 @@ internal static class BowireInvokeEndpoints
                         FrameProbingMiddleware.Observe(prober, service, method, response);
                         var interpretations = ResolveLiveInterpretations(
                             annotationStore, service, method, response);
+                        // #712 - see the binary path above. A JSON-only
+                        // plugin has no typed slot, so it yields the
+                        // reserved envelope as its last frame.
+                        var streamError = BowireStreamErrorEnvelope.TryRead(response);
                         var eventData = JsonSerializer.Serialize(new
                         {
                             index,
@@ -451,6 +462,7 @@ internal static class BowireInvokeEndpoints
                             timestampMs = Environment.TickCount64 - streamStartMs,
                             discriminator = AnnotationKey.Wildcard,
                             interpretations,
+                            error = streamError,
                         }, BowireEndpointHelpers.JsonOptions);
 
                         await ctx.Response.WriteAsync($"data: {eventData}\n\n", ctx.RequestAborted);

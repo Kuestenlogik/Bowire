@@ -248,12 +248,13 @@ public sealed class BowireGraphQLProtocol : IBowireProtocol, IDisposable
 
         if (wsChannel is null)
         {
-            yield return JsonSerializer.Serialize(new
-            {
-                error = "graphql-transport-ws subscriptions require the WebSocket plugin "
-                    + "(Kuestenlogik.Bowire.Protocol.WebSocket). Install it, or set the metadata header '"
-                    + SubscriptionTransportMetadataKey + "' to 'sse' to use graphql-sse instead."
-            }, s_indented);
+            // #712 - this is a missing prerequisite on this host, not a
+            // failure of the server being called. The kind says so.
+            yield return BowireStreamErrorEnvelope.Frame(
+                BowireStreamErrorKinds.NotConfigured,
+                "graphql-transport-ws subscriptions require the WebSocket plugin "
+                + "(Kuestenlogik.Bowire.Protocol.WebSocket). Install it, or set the metadata header '"
+                + SubscriptionTransportMetadataKey + "' to 'sse' to use graphql-sse instead.");
             yield break;
         }
 
@@ -351,7 +352,8 @@ public sealed class BowireGraphQLProtocol : IBowireProtocol, IDisposable
 
         if (response is null)
         {
-            yield return JsonSerializer.Serialize(new { error = sendError ?? "graphql-sse send failed" }, s_indented);
+            yield return BowireStreamErrorEnvelope.Frame(
+                BowireStreamErrorKinds.Transport, sendError ?? "graphql-sse send failed");
             yield break;
         }
 
@@ -429,7 +431,8 @@ public sealed class BowireGraphQLProtocol : IBowireProtocol, IDisposable
 
         if (channel is null)
         {
-            yield return JsonSerializer.Serialize(new { error = connectError ?? "graphql-ws connect failed" }, s_indented);
+            yield return BowireStreamErrorEnvelope.Frame(
+                BowireStreamErrorKinds.Transport, connectError ?? "graphql-ws connect failed");
             yield break;
         }
 
@@ -505,10 +508,15 @@ public sealed class BowireGraphQLProtocol : IBowireProtocol, IDisposable
                         break;
 
                     case "error":
-                        if (msg.TryGetProperty("payload", out var errPayload))
-                            yield return JsonSerializer.Serialize(new { errors = errPayload }, s_indented);
-                        else
-                            yield return JsonSerializer.Serialize(new { error = "graphql-ws error" }, s_indented);
+                        // #712 - the server ended the subscription itself.
+                        // Its own errors array is the message, verbatim:
+                        // summarising it here would lose the path and the
+                        // extensions a GraphQL error carries.
+                        yield return BowireStreamErrorEnvelope.Frame(
+                            BowireStreamErrorKinds.Server,
+                            msg.TryGetProperty("payload", out var errPayload)
+                                ? JsonSerializer.Serialize(errPayload, s_indented)
+                                : "graphql-ws error");
                         yield break;
 
                     case "complete":

@@ -1022,6 +1022,12 @@
         // Held in a local as well: the handlers below belong to THIS
         // source, and S.sseSource may already be another one, or null,
         // by the time they run.
+        // #712 - why the stream stopped, when it stopped for a reason.
+        // Until the contract had a place for this, every frame was parsed
+        // as data and `done` reported OK regardless, so an aborted stream
+        // showed up as a message and was logged as "Completed".
+        var streamError = null;
+
         var es = new EventSource(url);
         S.sseSource = es;
         // Track the SSE subscription so the statusbar pill + per-pane
@@ -1040,6 +1046,11 @@
             try {
                 const parsed = JSON.parse(event.data);
                 parsed._clientReceivedAtMs = receivedAt;
+                // #712 - a sibling of `data`, so recognising it costs no
+                // guessing about payload shapes. The frame is still
+                // dispatched: what a failing stream managed to say before
+                // it stopped is usually the interesting part.
+                if (parsed && parsed.error && parsed.error.message) streamError = parsed.error;
                 // Phase 3.1 — mint a stable per-frame id used by the
                 // Streaming-Frames selection sync. The server already
                 // ships a monotonic `index`; we wrap it in
@@ -1105,7 +1116,17 @@
 
         es.addEventListener('done', function () {
             const elapsed = Math.round(performance.now() - startTime);
-            S.statusInfo = { status: 'OK', durationMs: elapsed };
+            // #712 - the kind is for reading, never for control flow: any
+            // error at all means failed, including a kind this build has
+            // never heard of. A plugin must be able to name its own without
+            // silently landing back in the success path.
+            var failed = !!streamError;
+            var statusText = failed
+                ? (streamError.kind ? 'Error: ' + streamError.kind : 'Error')  // i18n-exempt: status label, carried on the console entry and the run summary
+                : 'OK';  // i18n-exempt: status label, carried on the console entry and the run summary
+            S.statusInfo = failed
+                ? { status: statusText, durationMs: elapsed, error: streamError.message }
+                : { status: 'OK', durationMs: elapsed };
             S.isExecuting = false;
             markJobDone(service, method);
             es.close();
@@ -1116,10 +1137,15 @@
             if (typeof safeRecordMethodRun === 'function') {
                 safeRecordMethodRun({
                     service: service, method: method, source: 'discover',
-                    startedAt: Date.now() - elapsed, durationMs: elapsed, outcome: 'ok'
+                    startedAt: Date.now() - elapsed, durationMs: elapsed,
+                    outcome: failed ? 'error' : 'ok'
                 });
             }
-            addConsoleEntry({ type: 'response', method: fullName, status: 'Completed', durationMs: elapsed });  // i18n-exempt: the action log stores rendered text, see #689
+            addConsoleEntry({
+                type: 'response', method: fullName, durationMs: elapsed,
+                status: failed ? statusText : 'Completed',  // i18n-exempt: the action log stores rendered text, see #689
+                body: failed ? streamError.message : undefined
+            });
 
             // ---- Post-response script (streaming) ----
             var streamResponseObj = S.streamMessages.length > 0 ? S.streamMessages[S.streamMessages.length - 1] : null;
@@ -1127,7 +1153,7 @@
                 try { streamResponseObj = JSON.parse(streamResponseObj.data); } catch {}
             }
             runPostResponseScript(service, method, streamResponseObj, {
-                status: 'OK',
+                status: statusText,
                 durationMs: elapsed,
                 headers: {}
             });
@@ -1139,7 +1165,7 @@
                 body: messages[0] || '{}',
                 messages: messages.slice(),
                 metadata: metadata || null,
-                status: 'OK',
+                status: statusText,
                 durationMs: elapsed
             });
 

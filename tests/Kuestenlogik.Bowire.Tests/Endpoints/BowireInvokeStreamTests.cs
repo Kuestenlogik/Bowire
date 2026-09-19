@@ -242,6 +242,112 @@ public sealed class BowireInvokeStreamTests
     }
 
     /// <summary>A plugin that streams what it was given, and can stop badly.</summary>
+    // ---- #712: why a stream stopped ----
+
+    [Fact]
+    public async Task An_Error_Frame_Surfaces_Beside_The_Data_Not_Inside_It()
+    {
+        // The envelope is the level the browser already parses. Putting the
+        // reason inside `data` is what made an aborted stream look like a
+        // message: api.js parsed every frame as payload and then reported
+        // the run as OK.
+        await using var host = await StartAsync(new StubProtocol(streamFrames: [
+            """{"n":1}""",
+            BowireStreamErrorEnvelope.Frame(BowireStreamErrorKinds.Refused, "quota exceeded", "429"),
+        ]));
+
+        var frames = await ReadFramesAsync(host, "service=S&method=M");
+
+        Assert.Equal(2, frames.Count);
+        Assert.False(frames[0].TryGetProperty("error", out _), "a data frame carries no error");
+
+        var error = frames[1].GetProperty("error");
+        Assert.Equal("refused", error.GetProperty("kind").GetString());
+        Assert.Equal("quota exceeded", error.GetProperty("message").GetString());
+        Assert.Equal("429", error.GetProperty("code").GetString());
+    }
+
+    [Fact]
+    public async Task An_Ordinary_Frame_Envelope_Is_Unchanged()
+    {
+        // The field is omitted rather than sent as null, so every existing
+        // consumer and every recording on disk keeps the exact shape it had.
+        await using var host = await StartAsync(new StubProtocol(streamFrames: ["""{"error":"this is payload"}"""]));
+
+        var frames = await ReadFramesAsync(host, "service=S&method=M");
+
+        var frame = Assert.Single(frames);
+        // A bare `error` key in the payload is data -- several plugins in
+        // this repo emit exactly that -- and must not be mistaken for the
+        // stream ending.
+        Assert.False(frame.TryGetProperty("error", out _));
+        Assert.Equal("""{"error":"this is payload"}""", frame.GetProperty("data").GetString());
+    }
+
+    [Fact]
+    public async Task A_Wire_Bytes_Plugin_Reports_Its_Error_Through_The_Typed_Slot()
+    {
+        // gRPC's path. No envelope needed: StreamFrame has somewhere to put
+        // it, which is what its private ConnectStreamFrame.ErrorCode was
+        // standing in for.
+        await using var host = await StartAsync(new WireByteErrorProtocol());
+
+        var frames = await ReadFramesAsync(host, "service=S&method=M&protocol=stub");
+
+        var frame = Assert.Single(frames);
+        var error = frame.GetProperty("error");
+        Assert.Equal("server", error.GetProperty("kind").GetString());
+        Assert.Equal("8", error.GetProperty("code").GetString());
+    }
+
+    /// <summary>
+    /// A wire-bytes plugin whose stream ends with a typed error (#712).
+    /// </summary>
+    private sealed class WireByteErrorProtocol : IBowireProtocol, IBowireStreamingWithWireBytes
+    {
+        public string Id => "stub";
+        public string Name => "Stub";
+        public string IconSvg => "<svg/>";
+
+        public Task<List<BowireServiceInfo>> DiscoverAsync(
+            string serverUrl, bool showInternalServices, CancellationToken ct = default)
+            => Task.FromResult(new List<BowireServiceInfo>());
+
+        public Task<InvokeResult> InvokeAsync(
+            string serverUrl, string service, string method, List<string> jsonMessages,
+            bool showInternalServices, Dictionary<string, string>? metadata = null,
+            CancellationToken ct = default)
+            => Task.FromResult(new InvokeResult("{}", 0, "OK", new Dictionary<string, string>()));
+
+        public async IAsyncEnumerable<string> InvokeStreamAsync(
+            string serverUrl, string service, string method, List<string> jsonMessages,
+            bool showInternalServices, Dictionary<string, string>? metadata = null,
+            [EnumeratorCancellation] CancellationToken ct = default)
+        {
+            yield break;
+#pragma warning disable CS0162 // Unreachable — the endpoint prefers the wire-bytes surface.
+            await Task.Yield();
+#pragma warning restore CS0162
+        }
+
+        public async IAsyncEnumerable<StreamFrame> InvokeStreamWithFramesAsync(
+            string serverUrl, string service, string method, List<string> jsonMessages,
+            bool showInternalServices, Dictionary<string, string>? metadata = null,
+            [EnumeratorCancellation] CancellationToken ct = default)
+        {
+            yield return new StreamFrame("""{"status":"RESOURCE_EXHAUSTED"}""", null)
+            {
+                Error = new StreamError(BowireStreamErrorKinds.Server, "RESOURCE_EXHAUSTED", "8"),
+            };
+            await Task.Yield();
+        }
+
+        public Task<IBowireChannel?> OpenChannelAsync(
+            string serverUrl, string service, string method, bool showInternalServices,
+            Dictionary<string, string>? metadata = null, CancellationToken ct = default)
+            => Task.FromResult<IBowireChannel?>(null);
+    }
+
     private sealed class StubProtocol(
         IEnumerable<string>? streamFrames = null,
         int? throwAfterFrames = null) : IBowireProtocol

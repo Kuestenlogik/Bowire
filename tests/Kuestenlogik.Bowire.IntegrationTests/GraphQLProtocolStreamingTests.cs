@@ -108,9 +108,14 @@ public sealed class GraphQLProtocolStreamingTests
             events.Add(evt);
         }
 
+        // #712 - the shape, not a substring. Reading it back through the
+        // envelope is what proves a consumer can tell this frame from data;
+        // "contains the word error" was true of payloads too.
         var only = Assert.Single(events);
-        Assert.Contains("graphql-sse", only, StringComparison.Ordinal);
-        Assert.Contains("error", only, StringComparison.Ordinal);
+        var error = BowireStreamErrorEnvelope.TryRead(only);
+        Assert.NotNull(error);
+        Assert.Equal(BowireStreamErrorKinds.Transport, error!.Kind);
+        Assert.Contains("graphql-sse", error.Message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -172,9 +177,15 @@ public sealed class GraphQLProtocolStreamingTests
             events.Add(evt);
         }
 
+        // #712 - the server ended the subscription, so the kind says
+        // `server` rather than `transport`: nothing went wrong on the wire.
+        // Its own errors array survives verbatim in the message, because a
+        // GraphQL error carries a path and extensions worth keeping.
         var only = Assert.Single(events);
-        Assert.Contains("errors", only, StringComparison.Ordinal);
-        Assert.Contains("boom", only, StringComparison.Ordinal);
+        var error = BowireStreamErrorEnvelope.TryRead(only);
+        Assert.NotNull(error);
+        Assert.Equal(BowireStreamErrorKinds.Server, error!.Kind);
+        Assert.Contains("boom", error.Message, StringComparison.Ordinal);
     }
 
     [Fact]
