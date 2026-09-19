@@ -408,6 +408,158 @@ public sealed class GraphQLProtocolStreamingTests
         });
     }
 
+    // ---- #713: one socket, several subscriptions ----
+
+    [Fact]
+    public async Task Two_Subscriptions_Share_One_Socket_And_Get_Only_Their_Own_Frames()
+    {
+        // The whole claim, and both halves matter. One socket is the saving;
+        // frames reaching the right subscriber is what makes the saving
+        // safe. A demultiplexer that mixed them would hand a caller another
+        // caller's data with nothing to notice it by.
+        var sockets = 0;
+        await using var host = await PluginTestHost.StartAsync(app =>
+        {
+            app.UseWebSockets();
+            app.Map("/graphql", async (HttpContext ctx) =>
+            {
+                if (!ctx.WebSockets.IsWebSocketRequest) { ctx.Response.StatusCode = 400; return; }
+                Interlocked.Increment(ref sockets);
+                using var ws = await ctx.WebSockets.AcceptWebSocketAsync("graphql-transport-ws");
+                _ = await ReceiveJsonAsync(ws, ctx.RequestAborted); // connection_init
+                await SendJsonAsync(ws, "{\"type\":\"connection_ack\"}", ctx.RequestAborted);
+
+                // Answer every subscribe with one frame carrying its own id,
+                // then complete it. Two subscribes arrive on this one socket.
+                for (var i = 0; i < 2; i++)
+                {
+                    var subscribe = await ReceiveJsonAsync(ws, ctx.RequestAborted);
+                    var id = subscribe.GetProperty("id").GetString();
+                    await SendJsonAsync(ws,
+                        "{\"type\":\"next\",\"id\":\"" + id + "\",\"payload\":{\"data\":{\"tick\":\"for-" + id + "\"}}}",
+                        ctx.RequestAborted);
+                    await SendJsonAsync(ws,
+                        "{\"type\":\"complete\",\"id\":\"" + id + "\"}",
+                        ctx.RequestAborted);
+                }
+
+                try { await Task.Delay(TimeSpan.FromSeconds(5), ctx.RequestAborted); }
+                catch (OperationCanceledException) { /* client done */ }
+            });
+        });
+        _ = new BowireWebSocketProtocol();
+
+        using var protocol = new BowireGraphQLProtocol();
+        var metadata = new Dictionary<string, string>
+        {
+            [BowireGraphQLProtocol.MultiplexMetadataKey] = "on",
+        };
+
+        async Task<List<string>> SubscribeAsync()
+        {
+            var frames = new List<string>();
+            await foreach (var evt in protocol.InvokeStreamAsync(
+                host.BaseUrl + "/graphql", service: "Subscription", method: "tick",
+                jsonMessages: ["{}"], showInternalServices: false,
+                metadata: metadata, ct: TestContext.Current.CancellationToken))
+            {
+                frames.Add(evt);
+            }
+            return frames;
+        }
+
+        var first = SubscribeAsync();
+        var second = SubscribeAsync();
+        var results = await Task.WhenAll(first, second);
+
+        Assert.Equal(1, sockets);
+
+        // Each got exactly one frame, and it was addressed to its own id.
+        foreach (var frames in results)
+        {
+            var only = Assert.Single(frames);
+            Assert.Contains("for-", only, StringComparison.Ordinal);
+        }
+        Assert.NotEqual(results[0][0], results[1][0]);
+    }
+
+    [Fact]
+    public async Task Without_The_Flag_Each_Subscription_Still_Opens_Its_Own_Socket()
+    {
+        // The default does not move. The path with years behind it stays
+        // the one a caller gets unless they ask otherwise.
+        var sockets = 0;
+        await using var host = await PluginTestHost.StartAsync(app =>
+        {
+            app.UseWebSockets();
+            app.Map("/graphql", async (HttpContext ctx) =>
+            {
+                if (!ctx.WebSockets.IsWebSocketRequest) { ctx.Response.StatusCode = 400; return; }
+                Interlocked.Increment(ref sockets);
+                using var ws = await ctx.WebSockets.AcceptWebSocketAsync("graphql-transport-ws");
+                await DriveTransportWsAsync(ws, sendError: false, ctx.RequestAborted);
+            });
+        });
+        _ = new BowireWebSocketProtocol();
+
+        using var protocol = new BowireGraphQLProtocol();
+        for (var i = 0; i < 2; i++)
+        {
+            await foreach (var _ in protocol.InvokeStreamAsync(
+                host.BaseUrl + "/graphql", service: "Subscription", method: "tick",
+                jsonMessages: ["{}"], showInternalServices: false,
+                metadata: null, ct: TestContext.Current.CancellationToken))
+            {
+                // drain
+            }
+        }
+
+        Assert.Equal(2, sockets);
+    }
+
+    [Fact]
+    public async Task A_Socket_That_Dies_Tells_Every_Subscriber_Why()
+    {
+        // The risk a shared socket introduces: one failure, several
+        // callers. Silence would read as a server with nothing more to
+        // say, which is the wrong conclusion to leave somebody with.
+        await using var host = await PluginTestHost.StartAsync(app =>
+        {
+            app.UseWebSockets();
+            app.Map("/graphql", async (HttpContext ctx) =>
+            {
+                if (!ctx.WebSockets.IsWebSocketRequest) { ctx.Response.StatusCode = 400; return; }
+                using var ws = await ctx.WebSockets.AcceptWebSocketAsync("graphql-transport-ws");
+                _ = await ReceiveJsonAsync(ws, ctx.RequestAborted); // connection_init
+                await SendJsonAsync(ws, "{\"type\":\"connection_ack\"}", ctx.RequestAborted);
+                _ = await ReceiveJsonAsync(ws, ctx.RequestAborted); // subscribe
+                // Drop the connection without a complete.
+                try { await ws.CloseAsync(WebSocketCloseStatus.InternalServerError, "gone", ctx.RequestAborted); }
+                catch { /* client may already be gone */ }
+            });
+        });
+        _ = new BowireWebSocketProtocol();
+
+        using var protocol = new BowireGraphQLProtocol();
+        var frames = new List<string>();
+        await foreach (var evt in protocol.InvokeStreamAsync(
+            host.BaseUrl + "/graphql", service: "Subscription", method: "tick",
+            jsonMessages: ["{}"], showInternalServices: false,
+            metadata: new Dictionary<string, string>
+            {
+                [BowireGraphQLProtocol.MultiplexMetadataKey] = "on",
+            },
+            ct: TestContext.Current.CancellationToken))
+        {
+            frames.Add(evt);
+        }
+
+        var last = Assert.Single(frames);
+        var error = BowireStreamErrorEnvelope.TryRead(last);
+        Assert.NotNull(error);
+        Assert.Equal(BowireStreamErrorKinds.Transport, error!.Kind);
+    }
+
     // ---- WebSocket (graphql-transport-ws) server fixtures ----
 
     private static void MapTransportWsSubscription(WebApplication app)

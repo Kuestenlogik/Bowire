@@ -452,6 +452,100 @@ public sealed class GraphQLProtocolIntegrationTests
             },
             ct: TestContext.Current.CancellationToken);
 
+    // ---- #713: file uploads ----
+
+    [Fact]
+    public async Task A_Message_With_Files_Goes_Out_As_Multipart()
+    {
+        // No flag for this one: a caller either has bytes to send or does
+        // not. Asking them to say so twice is a way to get it wrong.
+        string? contentType = null;
+        var parts = new List<string>();
+        await using var host = await PluginTestHost.StartAsync(app =>
+            app.MapPost("/graphql", async (HttpContext ctx) =>
+            {
+                contentType = ctx.Request.ContentType;
+                if (ctx.Request.HasFormContentType)
+                {
+                    var form = await ctx.Request.ReadFormAsync();
+                    parts.AddRange(form.Keys);
+                    parts.AddRange(form.Files.Select(f => "file:" + f.Name + ":" + f.FileName));
+                }
+                ctx.Response.ContentType = "application/json";
+                await ctx.Response.WriteAsync("""{ "data": { "upload": "ok" } }""");
+            }));
+        using var protocol = new BowireGraphQLProtocol();
+
+        var result = await protocol.InvokeAsync(
+            host.BaseUrl + "/graphql", service: "Mutation", method: "upload",
+            jsonMessages: ["""
+                {"query":"mutation Up($file: Upload!) { upload(file: $file) }",
+                 "variables":{"file":null},
+                 "files":[{"variablePath":"variables.file","name":"chart.png","contentType":"image/png","base64":"aGVsbG8="}]}
+                """],
+            showInternalServices: false, ct: TestContext.Current.CancellationToken);
+
+        Assert.Equal("OK", result.Status);
+        Assert.StartsWith("multipart/form-data", contentType!, StringComparison.Ordinal);
+        Assert.Contains("operations", parts);
+        Assert.Contains("map", parts);
+        Assert.Contains("file:0:chart.png", parts);
+    }
+
+    [Fact]
+    public async Task Without_Files_The_Body_Stays_Plain_Json()
+    {
+        string? contentType = null;
+        await using var host = await PluginTestHost.StartAsync(app =>
+            app.MapPost("/graphql", async (HttpContext ctx) =>
+            {
+                contentType = ctx.Request.ContentType;
+                ctx.Response.ContentType = "application/json";
+                await ctx.Response.WriteAsync("""{ "data": { "ping": "pong" } }""");
+            }));
+        using var protocol = new BowireGraphQLProtocol();
+
+        await protocol.InvokeAsync(
+            host.BaseUrl + "/graphql", service: "Query", method: "ping",
+            jsonMessages: ["""{"query":"query P { ping }"}"""],
+            showInternalServices: false, ct: TestContext.Current.CancellationToken);
+
+        Assert.StartsWith("application/json", contentType!, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Files_Over_Get_Are_Refused_Rather_Than_Dropped()
+    {
+        // A multipart body has no URL form. Silently sending the operation
+        // without its files would look like it worked and produce a row
+        // with a null where a document should be.
+        var reached = 0;
+        await using var host = await PluginTestHost.StartAsync(app =>
+            app.MapMethods("/graphql", ["GET", "POST"], (HttpContext ctx) =>
+            {
+                Interlocked.Increment(ref reached);
+                return Results.Json(new { data = new { ok = true } });
+            }));
+        using var protocol = new BowireGraphQLProtocol();
+
+        var result = await protocol.InvokeAsync(
+            host.BaseUrl + "/graphql", service: "Query", method: "upload",
+            jsonMessages: ["""
+                {"query":"query Up($file: Upload!) { upload(file: $file) }",
+                 "files":[{"variablePath":"variables.file","base64":"aGVsbG8="}]}
+                """],
+            showInternalServices: false,
+            metadata: new Dictionary<string, string>
+            {
+                [BowireGraphQLProtocol.HttpMethodMetadataKey] = "get",
+            },
+            ct: TestContext.Current.CancellationToken);
+
+        Assert.NotEqual("OK", result.Status);
+        Assert.Contains("cannot carry file uploads", result.Status, StringComparison.Ordinal);
+        Assert.Equal(0, reached);
+    }
+
     /// <summary>
     /// A /graphql that answers an array with an array, echoing each entry's
     /// operation name so ordering is observable.

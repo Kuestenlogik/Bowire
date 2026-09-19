@@ -95,6 +95,9 @@ public sealed class BowireGraphQLProtocol : IBowireProtocol, IDisposable
     public void Dispose()
     {
         _http.Dispose();
+        // Closes every shared socket and tells its subscribers why, rather
+        // than letting them wait on a stream nothing will ever feed.
+        _sockets.DisposeAsync().AsTask().GetAwaiter().GetResult();
     }
 
     public async Task<List<BowireServiceInfo>> DiscoverAsync(
@@ -167,6 +170,12 @@ public sealed class BowireGraphQLProtocol : IBowireProtocol, IDisposable
             }
             metadata = batchHeaders;
 
+            // #713 - files are declared in the message itself, not by a
+            // flag: a caller either has bytes to send or does not, and
+            // making them say so twice would be a way to get it wrong.
+            var uploads = GraphQLMultipartRequest.Uploads(
+                jsonMessages.Count > 0 ? jsonMessages[0] : null);
+
             // Two payload shapes are accepted on the wire:
             //   1. variables-only — plain object like { "id": "abc" }. We
             //      synthesize the operation string for the user.
@@ -221,6 +230,32 @@ public sealed class BowireGraphQLProtocol : IBowireProtocol, IDisposable
             }
 
             var (useApq, finalHeaders) = ExtractPersistedQuery(sendHeaders);
+
+            // #713 - a multipart body is its own shape: the document and
+            // variables live in a form part, so neither the GET URL nor the
+            // APQ hash-only body applies. Files win, and the guard below
+            // says so rather than silently dropping them.
+            if (uploads.Count > 0)
+            {
+                if (useGet)
+                {
+                    return new InvokeResult(
+                        null,
+                        (long)(DateTime.UtcNow - startedAt).TotalMilliseconds,
+                        $"{HttpMethodMetadataKey}=get cannot carry file uploads — a multipart body "
+                        + "has no URL form. Send this one as a POST.",
+                        new Dictionary<string, string>());
+                }
+
+                var uploaded = await SendMultipartAsync(
+                    endpoint, operation, variables, operationName, uploads, finalHeaders, ct);
+                return new InvokeResult(
+                    JsonSerializer.Serialize(uploaded, s_indented),
+                    (long)(DateTime.UtcNow - startedAt).TotalMilliseconds,
+                    "OK",
+                    new Dictionary<string, string>());
+            }
+
             var response = useApq
                 ? await SendWithPersistedQueryAsync(
                     endpoint, operation, variables, finalHeaders, operationName, useGet, ct)
@@ -312,6 +347,31 @@ public sealed class BowireGraphQLProtocol : IBowireProtocol, IDisposable
     public const string BatchMetadataKey = "X-Bowire-GraphQL-Batch";
 
     /// <summary>
+    /// Optional metadata key. Set to <c>on</c> to share one
+    /// <c>graphql-transport-ws</c> socket across subscriptions to the same
+    /// endpoint (#713).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The protocol was built for this: every message carries an operation
+    /// id so one connection can serve many. Without it each subscription
+    /// opens its own socket, which is correct but wasteful against a server
+    /// with a connection limit or an expensive auth handshake.
+    /// </para>
+    /// <para>
+    /// Opt-in, and deliberately so rather than for symmetry with the other
+    /// flags. A shared socket means one failure reaches several callers,
+    /// and the one-socket-per-subscription path has years of use behind it
+    /// while this has none. The flag is how this earns the mileage to
+    /// become the default.
+    /// </para>
+    /// </remarks>
+    public const string MultiplexMetadataKey = "X-Bowire-GraphQL-Multiplex";
+
+    /// <summary>Shared sockets, when multiplexing is asked for (#713).</summary>
+    private readonly GraphQLSocketPool _sockets = new();
+
+    /// <summary>
     /// Endpoints that answered PERSISTED_QUERY_NOT_SUPPORTED (#713).
     /// </summary>
     /// <remarks>
@@ -375,8 +435,29 @@ public sealed class BowireGraphQLProtocol : IBowireProtocol, IDisposable
             yield break;
         }
 
-        await foreach (var evt in StreamViaGraphQLTransportWsAsync(wsChannel, serverUrl, operation, variables, headers, ct, operationName))
+        // #713 - one socket for all subscriptions to this endpoint when
+        // asked. The payload is identical either way; what differs is who
+        // owns the connection and how the operation is identified on it.
+        var (multiplex, socketHeaders) = ExtractMultiplex(headers);
+        if (multiplex)
+        {
+            var payload = variables.ValueKind == JsonValueKind.Object
+                ? (object)new { query = operation, variables, operationName }
+                : new { query = operation, operationName };
+
+            await foreach (var evt in _sockets.SubscribeAsync(
+                wsChannel, HttpToWs(serverUrl), socketHeaders, payload, ct))
+            {
+                yield return evt;
+            }
+            yield break;
+        }
+
+        await foreach (var evt in StreamViaGraphQLTransportWsAsync(
+            wsChannel, serverUrl, operation, variables, socketHeaders, ct, operationName))
+        {
             yield return evt;
+        }
     }
 
     public Task<IBowireChannel?> OpenChannelAsync(
@@ -969,6 +1050,38 @@ public sealed class BowireGraphQLProtocol : IBowireProtocol, IDisposable
     }
 
     /// <summary>
+    /// Whether this subscription may share a socket, and the metadata with
+    /// that instruction removed (#713).
+    /// </summary>
+    private static (bool Multiplex, Dictionary<string, string>? Headers) ExtractMultiplex(
+        Dictionary<string, string>? metadata)
+    {
+        if (metadata is null) return (false, null);
+
+        string? matched = null;
+        var on = false;
+        foreach (var (k, v) in metadata)
+        {
+            if (!string.Equals(k, MultiplexMetadataKey, StringComparison.OrdinalIgnoreCase)) continue;
+            matched = k;
+            var value = v?.Trim();
+            on = string.Equals(value, "on", StringComparison.OrdinalIgnoreCase)
+                 || string.Equals(value, "true", StringComparison.OrdinalIgnoreCase)
+                 || string.Equals(value, "1", StringComparison.Ordinal);
+            break;
+        }
+
+        if (matched is null) return (false, metadata);
+
+        var filtered = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var (k, v) in metadata)
+        {
+            if (!string.Equals(k, matched, StringComparison.Ordinal)) filtered[k] = v;
+        }
+        return (on, filtered);
+    }
+
+    /// <summary>
     /// Whether this call was asked to batch, and the metadata with that
     /// instruction removed (#713).
     /// </summary>
@@ -998,6 +1111,36 @@ public sealed class BowireGraphQLProtocol : IBowireProtocol, IDisposable
             if (!string.Equals(k, matched, StringComparison.Ordinal)) filtered[k] = v;
         }
         return (on, filtered);
+    }
+
+    /// <summary>
+    /// Send an operation with file parts, per graphql-multipart-request-spec
+    /// (#713).
+    /// </summary>
+    private async Task<JsonElement> SendMultipartAsync(
+        string endpoint,
+        string query,
+        JsonElement? variables,
+        string? operationName,
+        IReadOnlyList<GraphQLUpload> uploads,
+        Dictionary<string, string>? headers,
+        CancellationToken ct)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Post, endpoint);
+        request.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
+
+        if (headers is not null)
+        {
+            foreach (var (key, value) in headers)
+                request.Headers.TryAddWithoutValidation(key, value);
+        }
+
+        request.Content = GraphQLMultipartRequest.Build(query, variables, operationName, uploads);
+
+        using var response = await _http.SendAsync(request, ct);
+        response.EnsureSuccessStatusCode();
+
+        return await response.Content.ReadFromJsonAsync<JsonElement>(s_jsonOptions, ct);
     }
 
     /// <summary>
