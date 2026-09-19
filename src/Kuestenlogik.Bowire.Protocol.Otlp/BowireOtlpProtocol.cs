@@ -5,6 +5,8 @@ using System.Runtime.CompilerServices;
 using System.Text.Json;
 using Kuestenlogik.Bowire.Models;
 
+using Kuestenlogik.Bowire;
+
 namespace Kuestenlogik.Bowire.Protocol.Otlp;
 
 /// <summary>
@@ -156,14 +158,23 @@ public sealed class BowireOtlpProtocol : IBowireProtocol
         var kind = MapMethodToKind(method);
         if (kind is null)
         {
-            yield return $"{{\"error\":\"Unknown OTLP method '{method}'. Expected ReceiveTraces / ReceiveMetrics / ReceiveLogs.\"}}";
+            // #712 - the caller named a method this plugin does not
+            // have. A protocol-level mistake, not a transport one.
+            yield return BowireStreamErrorEnvelope.Frame(
+                BowireStreamErrorKinds.Protocol,
+                $"Unknown OTLP method '{method}'. Expected ReceiveTraces / ReceiveMetrics / ReceiveLogs.");
             yield break;
         }
 
         var store = _store;
         if (store is null)
         {
-            yield return "{\"error\":\"OTLP receiver not registered — call services.AddBowireOtlpReceiver() in the host.\"}";
+            // #712 - a missing piece on this host, which is exactly
+            // what not-configured is for: the message names the call
+            // that fixes it.
+            yield return BowireStreamErrorEnvelope.Frame(
+                BowireStreamErrorKinds.NotConfigured,
+                "OTLP receiver not registered — call services.AddBowireOtlpReceiver() in the host.");
             yield break;
         }
 

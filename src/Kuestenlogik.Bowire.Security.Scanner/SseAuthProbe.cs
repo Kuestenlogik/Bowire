@@ -86,19 +86,17 @@ internal sealed class SseAuthProbe : IOwaspProtocolProbe
 
     // A plugin error envelope is a JSON object with a top-level "error" member
     // (the content-type guard emits one for a non-event-stream response).
+    /// <summary>
+    /// Whether this frame is the subscriber saying the stream ended (#712).
+    /// </summary>
+    /// <remarks>
+    /// This used to look for a bare <c>error</c> key, which is a shape a
+    /// server's own events are free to have — an SSE feed that reports
+    /// errors as events would have had its auth check skipped for saying
+    /// so. The stream contract's form cannot be confused with payload.
+    /// </remarks>
     private static bool IsErrorEnvelope(string item)
-    {
-        try
-        {
-            using var doc = JsonDocument.Parse(item);
-            return doc.RootElement.ValueKind == JsonValueKind.Object
-                && doc.RootElement.TryGetProperty("error", out _);
-        }
-        catch (JsonException)
-        {
-            return false;
-        }
-    }
+        => BowireStreamErrorEnvelope.TryRead(item) is not null;
 
     // ---- finding factories ----
 

@@ -119,10 +119,15 @@ public sealed class SseSubscriberLiveServerTests : IAsyncDisposable
             break;
         }
 
+        // #712 - read back through the stream contract's error form rather
+        // than a bare `error` key. The bare key was indistinguishable from
+        // a payload that happens to have one, so a consumer could not tell
+        // "this stream ended" from "the server said something".
         var json = Assert.Single(items);
-        using var doc = JsonDocument.Parse(json);
-        Assert.True(doc.RootElement.TryGetProperty("error", out var err));
-        Assert.Contains("not an event-stream", err.GetString(), StringComparison.Ordinal);
+        var error = BowireStreamErrorEnvelope.TryRead(json);
+        Assert.NotNull(error);
+        Assert.Equal(BowireStreamErrorKinds.Protocol, error!.Kind);
+        Assert.Contains("not an event-stream", error.Message, StringComparison.Ordinal);
     }
 
     [Fact]

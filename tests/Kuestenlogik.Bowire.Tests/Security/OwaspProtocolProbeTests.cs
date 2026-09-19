@@ -387,7 +387,8 @@ public sealed class OwaspProtocolProbeTests
     public async Task Sse_NotAnEventStream_Skips()
     {
         var probe = new SseAuthProbe();
-        var proto = new FakeProtocol { Id = "sse", Stream = () => ["{\"error\":\"not an event-stream (content-type: text/html)\"}"] };
+        var proto = new FakeProtocol { Id = "sse", Stream = () => [BowireStreamErrorEnvelope.Frame(
+            BowireStreamErrorKinds.Protocol, "not an event-stream (content-type: text/html)")] };
 
         var f = Assert.Single(await probe.RunAsync("https://x", proto, s_auth, Ct));
         Assert.Equal(ScanFindingStatus.Skipped, f.Status);

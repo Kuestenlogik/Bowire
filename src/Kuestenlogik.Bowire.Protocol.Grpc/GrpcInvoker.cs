@@ -222,12 +222,14 @@ internal sealed class GrpcInvoker : IDisposable
                 jsonMessages.FirstOrDefault() ?? "{}",
                 metadata, ct).ConfigureAwait(false))
             {
-                // Both real-message frames and end-of-stream-error frames
-                // flow through StreamFrame.Json — the workbench renders the
-                // last error frame as a trailing red marker, the rest as
-                // normal stream rows. Binary is null on error frames; mock
-                // replay just won't re-emit the error sentinel byte-for-byte.
-                yield return new StreamFrame(Json: frame.Json, Binary: frame.Binary);
+                // #712 - the error rides in StreamFrame.Error now, so the
+                // Connect status code survives the conversion. It did not
+                // before: ConnectStreamFrame.ErrorCode was computed here and
+                // then dropped, because StreamFrame had nowhere to put it.
+                // The message still goes through Json, which is what the
+                // workbench renders; Binary is null on an error frame, so
+                // mock replay does not re-emit the sentinel byte-for-byte.
+                yield return ToStreamFrame(frame);
             }
             yield break;
         }
@@ -241,7 +243,7 @@ internal sealed class GrpcInvoker : IDisposable
                 jsonMessages,
                 metadata, ct).ConfigureAwait(false))
             {
-                yield return new StreamFrame(Json: frame.Json, Binary: frame.Binary);
+                yield return ToStreamFrame(frame);
             }
             yield break;
         }
@@ -788,6 +790,32 @@ internal sealed class GrpcInvoker : IDisposable
     }
 
     private static object? SkipAndReturnNull(CodedInputStream cis) { cis.SkipLastField(); return null; }
+
+    /// <summary>
+    /// A Connect frame in the shape the core streaming contract uses (#712).
+    /// </summary>
+    /// <remarks>
+    /// The interesting half is the error. ConnectInvoker has always worked
+    /// out a Connect status code for a failed stream — and this conversion
+    /// threw it away, because <see cref="StreamFrame"/> had nowhere to put
+    /// it. The code reached nothing and nothing read it. Now it travels as
+    /// <see cref="StreamError.Code"/>, and the browser can say a stream
+    /// ended rather than reporting the run as OK.
+    /// </remarks>
+    private static StreamFrame ToStreamFrame(ConnectStreamFrame frame)
+        => frame.ErrorCode is null
+            ? new StreamFrame(frame.Json, frame.Binary)
+            : new StreamFrame(frame.Json, frame.Binary)
+            {
+                // The peer refused or failed the call and said so in its own
+                // vocabulary; `server` is the kind for that, and the Connect
+                // code goes along verbatim rather than being mapped onto a
+                // word that would lose it.
+                Error = new StreamError(
+                    BowireStreamErrorKinds.Server,
+                    string.IsNullOrWhiteSpace(frame.Json) ? frame.ErrorCode : frame.Json,
+                    frame.ErrorCode),
+            };
 
     private static string FormatResponse(byte[] data, MessageDescriptor descriptor)
         => ProtobufToJson(data, descriptor);

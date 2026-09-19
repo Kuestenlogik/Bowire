@@ -3,6 +3,8 @@
 
 using Kuestenlogik.Bowire.Models;
 
+using Kuestenlogik.Bowire;
+
 namespace Kuestenlogik.Bowire.AsyncApi;
 
 /// <summary>
@@ -60,25 +62,36 @@ public interface IAsyncApiBindingResolver
 /// <summary>Shared pieces of the resolvers' stream paths.</summary>
 internal static class AsyncApiStreamSupport
 {
-    /// <summary>One error frame in the shape the stream pane renders.</summary>
-    public static string ErrorFrame(string message) =>
-        System.Text.Json.JsonSerializer.Serialize(new { error = message });
+    /// <summary>
+    /// One error frame, in the form the stream contract defines (#712).
+    /// </summary>
+    /// <remarks>
+    /// This used to serialize <c>new { error = message }</c> — its own
+    /// invention of a concept the contract lacked, and indistinguishable
+    /// from a server payload that happens to have an <c>error</c> key. The
+    /// consumer reported the run as OK either way.
+    /// </remarks>
+    public static string ErrorFrame(string message, string kind = BowireStreamErrorKinds.Protocol) =>
+        BowireStreamErrorEnvelope.Frame(kind, message);
 
     /// <summary>The single-frame stream for a binding that cannot subscribe yet.</summary>
     public static async IAsyncEnumerable<string> Unsupported(string bindingId)
     {
         await Task.CompletedTask.ConfigureAwait(false);
+        // not-configured: nothing is wrong with the peer or the wire. This
+        // build has no subscribe shape for the binding.
         yield return ErrorFrame(
             $"Receiving over the AsyncAPI {bindingId} binding is not supported yet: the wire plugin " +
             "has no subscribe shape for it. Send operations on this binding work; see the " +
-            "supported-bindings matrix in the AsyncAPI protocol docs.");
+            "supported-bindings matrix in the AsyncAPI protocol docs.",
+            BowireStreamErrorKinds.NotConfigured);
     }
 
     /// <summary>The single-frame stream for a binding whose wire plugin is not loaded.</summary>
     public static async IAsyncEnumerable<string> PluginMissing(string message)
     {
         await Task.CompletedTask.ConfigureAwait(false);
-        yield return ErrorFrame(message);
+        yield return ErrorFrame(message, BowireStreamErrorKinds.NotConfigured);
     }
 }
 

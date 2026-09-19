@@ -4,6 +4,8 @@
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 
+using Kuestenlogik.Bowire;
+
 namespace Kuestenlogik.Bowire.Protocol.Sse;
 
 /// <summary>
@@ -73,8 +75,11 @@ internal sealed class SseSubscriber : IAsyncDisposable
         var mediaType = response.Content.Headers.ContentType?.MediaType;
         if (!string.Equals(mediaType, "text/event-stream", StringComparison.OrdinalIgnoreCase))
         {
-            yield return JsonSerializer.Serialize(
-                new { error = $"not an event-stream (content-type: {mediaType ?? "none"})" }, s_jsonOptions);
+            // #712 - protocol, not transport: the request succeeded and the
+            // peer answered, it just did not answer with an event stream.
+            yield return BowireStreamErrorEnvelope.Frame(
+                BowireStreamErrorKinds.Protocol,
+                $"not an event-stream (content-type: {mediaType ?? "none"})");
             yield break;
         }
 

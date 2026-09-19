@@ -3,6 +3,8 @@
 
 using Kuestenlogik.Bowire.Testing;
 
+using Kuestenlogik.Bowire;
+
 namespace Kuestenlogik.Bowire.AsyncApi.Tests;
 
 /// <summary>
@@ -65,9 +67,14 @@ public sealed class ReceiveOperationTests
         var frames = await Drain(new MqttBindingResolver(new BowireProtocolRegistry()).InvokeStreamAsync(
             Receive("t"), [], null, TestContext.Current.CancellationToken));
 
+        // #712 - read through the stream contract rather than matching on a
+        // bare `error` key. not-configured is the kind for a missing piece
+        // on this host, as opposed to anything the peer did.
         var frame = Assert.Single(frames);
-        Assert.Contains("\"error\"", frame, StringComparison.Ordinal);
-        Assert.Contains("no MQTT plugin is loaded", frame, StringComparison.Ordinal);
+        var error = BowireStreamErrorEnvelope.TryRead(frame);
+        Assert.NotNull(error);
+        Assert.Equal(BowireStreamErrorKinds.NotConfigured, error!.Kind);
+        Assert.Contains("no MQTT plugin is loaded", error.Message, StringComparison.Ordinal);
     }
 
     [Theory]
@@ -92,9 +99,14 @@ public sealed class ReceiveOperationTests
 
         var frames = await Drain(resolver.InvokeStreamAsync(Receive("c"), [], null, TestContext.Current.CancellationToken));
 
+        // #712 - same reason as above: the binding has no subscribe shape
+        // in this build, which is a missing piece here rather than a
+        // failure of whatever is at the other end.
         var frame = Assert.Single(frames);
-        Assert.Contains("\"error\"", frame, StringComparison.Ordinal);
-        Assert.Contains($"{resolver.BindingId} binding is not supported yet", frame, StringComparison.Ordinal);
+        var error = BowireStreamErrorEnvelope.TryRead(frame);
+        Assert.NotNull(error);
+        Assert.Equal(BowireStreamErrorKinds.NotConfigured, error!.Kind);
+        Assert.Contains($"{resolver.BindingId} binding is not supported yet", error.Message, StringComparison.Ordinal);
     }
 
     [Fact]
