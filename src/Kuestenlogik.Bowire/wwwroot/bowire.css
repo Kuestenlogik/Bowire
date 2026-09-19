@@ -4766,17 +4766,66 @@ img.bowire-logo-icon {
     background: var(--bowire-warning);
     animation: bowire-pulse 1s ease-in-out infinite;
 }
+/* ---- The one definition of what a Bowire form field looks like (#711) ----
+ *
+ * Three rails had grown their own: .bowire-flow-field-input,
+ * .bowire-envelope-field-* and .bowire-search-input, each repeating the
+ * same border / radius / background / colour. The schema designer grew
+ * none, which is why its controls rendered as browser defaults — there is
+ * no generic `input` / `select` element rule in this file, so a control
+ * without a class gets nothing.
+ *
+ * Written as a group rather than a base class in the markup: nothing in JS
+ * has to change, so no call site can be missed. A new rail uses
+ * `.bowire-field` on its own and inherits the lot.
+ *
+ * What each rule below keeps for itself is what genuinely differs —
+ * padding, font, width, height. Those are layout, not identity.
+ */
+.bowire-field,
+.bowire-flow-field-input,
+.bowire-envelope-field-select,
+.bowire-envelope-field-input,
+.bowire-envelope-field-textarea,
+.bowire-search-input {
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius-sm);
+    background: var(--bowire-bg);
+    color: var(--bowire-text);
+    outline: none;
+    transition: border-color 120ms;
+}
+
+/* The focus ring was on Flows and on the search box but not on
+ * Benchmarking's fields, so half the workbench told you where the caret
+ * was and half did not. One rule, everywhere. */
+.bowire-field:focus,
+.bowire-flow-field-input:focus,
+.bowire-envelope-field-select:focus,
+.bowire-envelope-field-input:focus,
+.bowire-envelope-field-textarea:focus,
+.bowire-search-input:focus {
+    border-color: var(--bowire-accent);
+}
+
+.bowire-field {
+    padding: 5px 8px;
+    font-size: 12px;
+    font-family: var(--bowire-font-sans);
+}
+
+/* Shared look lives in the .bowire-field group (#711). The search box
+   overrides three of them on purpose: it sits on the surface rather than
+   the background, wears the larger radius, and carries a glow as well as
+   a border because it is the one field the eye is meant to find. */
 .bowire-search-input {
     width: 100%;
     height: 36px;
     padding: 0 12px 0 36px;
     background: var(--bowire-surface);
-    border: 1px solid var(--bowire-border);
     border-radius: var(--bowire-radius-md);
-    color: var(--bowire-text);
     font-size: 13px;
     font-family: var(--bowire-font-sans);
-    outline: none;
     transition: border-color var(--bowire-transition), box-shadow var(--bowire-transition);
 }
 
@@ -13358,18 +13407,13 @@ delete) */
     letter-spacing: 0.5px;
     color: var(--bowire-text-dim);
 }
+/* Shared look lives in the .bowire-field group (#711); only the
+   monospace step editors differ. */
 .bowire-flow-field-input {
     font-size: 12px;
     font-family: var(--bowire-font-mono, monospace);
     padding: 5px 8px;
-    border: 1px solid var(--bowire-border);
-    border-radius: var(--bowire-radius-sm);
-    background: var(--bowire-bg);
-    color: var(--bowire-text);
-    outline: none;
-    transition: border-color 120ms;
 }
-.bowire-flow-field-input:focus { border-color: var(--bowire-accent); }
 .bowire-flow-field-textarea {
     resize: vertical;
     min-height: 60px;
@@ -22534,15 +22578,13 @@ not as the
     text-transform: uppercase;
     letter-spacing: 0.04em;
 }
+/* Shared look lives in the .bowire-field group (#711). These fill their
+   column, which the others do not. */
 .bowire-envelope-field-select,
 .bowire-envelope-field-input,
 .bowire-envelope-field-textarea {
     width: 100%;
     padding: 6px 8px;
-    border: 1px solid var(--bowire-border);
-    border-radius: var(--bowire-radius-sm);
-    background: var(--bowire-bg);
-    color: var(--bowire-text);
     font-size: 12px;
     font-family: inherit;
 }
@@ -24390,6 +24432,25 @@ not as the
 .bowire-request-builder-graphql-op-item:hover,
 .bowire-request-builder-graphql-op-item.is-selected {
     background: var(--bowire-surface-hover);
+}
+
+/* ---- Schema-designer toolbar (#711) ---- */
+/* The look comes from .bowire-field; these three carry only the geometry
+   that used to sit in inline styles. */
+.bowire-schema-toolbar-search {
+    flex: 1;
+    min-width: 140px;
+    max-width: 280px;
+}
+.bowire-schema-toolbar-file {
+    max-width: 200px;
+}
+/* A checkbox draws its own box, so the field styling would do nothing for
+   it. accent-color is the one property that themes the tick, and without
+   it the control stays the browser's blue in a dark workbench. */
+.bowire-schema-toolbar-check {
+    accent-color: var(--bowire-accent);
+    cursor: pointer;
 }
 
 /* ---- GraphQL operation-to-run picker (#710) ---- */

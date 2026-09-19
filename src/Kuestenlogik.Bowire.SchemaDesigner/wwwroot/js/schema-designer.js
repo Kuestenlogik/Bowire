@@ -533,16 +533,20 @@
     function schemaToolbar() {
         var files = (schemaGraph && schemaGraph.files) || [];
 
+        // #711 - these four carried no className at all, only inline
+        // geometry, and bowire.css has no generic input / select element
+        // rule. A control without a class therefore got browser defaults
+        // while the button beside it sat in the theme.
         var search = el('input', {
             type: 'search',
+            className: 'bowire-field bowire-schema-toolbar-search',
             value: schemaSearch,
             placeholder: t('schema.searchPlaceholder'),
-            style: 'flex:1;min-width:140px;max-width:280px',
             oninput: function (ev) { schemaSearch = ev.target.value; schemaDrawGraph(); }
         });
 
         var fileSelect = el('select', {
-            style: 'max-width:200px',
+            className: 'bowire-field bowire-schema-toolbar-file',
             onchange: function (ev) { schemaFileFilter = ev.target.value; schemaResetView(); }
         }, el('option', { value: '', textContent: t('schema.allFiles') }));
         for (var i = 0; i < files.length; i++) {
@@ -554,6 +558,7 @@
         }
 
         var usage = el('select', {
+            className: 'bowire-field',
             onchange: function (ev) { schemaMinUsage = parseInt(ev.target.value, 10) || 0; schemaResetView(); }
         });
         [0, 2, 3, 5].forEach(function (n) {
@@ -573,7 +578,11 @@
             usage,
             el('label', { style: 'display:flex;align-items:center;gap:4px;font-size:12px;white-space:nowrap' },
                 el('input', {
+                    // Not .bowire-field: a checkbox has no box to draw. What
+                    // it needs is accent-color, so the tick follows the theme
+                    // instead of the browser's blue.
                     type: 'checkbox',
+                    className: 'bowire-schema-toolbar-check',
                     checked: schemaIncludeWellKnown ? 'checked' : undefined,
                     onchange: function (ev) { schemaIncludeWellKnown = ev.target.checked; schemaLoadGraph(); }
                 }),
