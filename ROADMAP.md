@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### M1 — Localisation, layout and the test pillar *(due 2026-11-03)*
 
-**28/52 done** · 1 in progress · 23 backlog
+**29/54 done** · 1 in progress · 24 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -31,13 +31,14 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [32](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/32) | Protocol.Akka | [Tell-from-Bowire — interactive duplex via OpenChannelAsync](#issue-kuestenlogik-bowire-protocol-akka-32) | ⬜ Backlog | `area:plugin-sdk` |
 | [33](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/33) | Protocol.Akka | [DeadLetter capture under the global default mailbox](#issue-kuestenlogik-bowire-protocol-akka-33) | ⬜ Backlog | `area:plugin-sdk` |
 | [34](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/34) | Protocol.Akka | [Docs drift: TappedMessage envelope field names & payload shape](#issue-kuestenlogik-bowire-protocol-akka-34) | ⬜ Backlog | `area:plugin-sdk` |
+| [34](https://github.com/Kuestenlogik/Bowire.Bootcamp/issues/34) | Bootcamp | [Ship each exercise as two downloads: the shell with its TODOs, and the solution](#issue-kuestenlogik-bowire-bootcamp-34) | ⬜ Backlog | `area:bootcamp` |
 | [36](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/36) | Protocol.Akka | [Multi-subscriber + mixed-mode integration tests](#issue-kuestenlogik-bowire-protocol-akka-36) | ⬜ Backlog | `area:plugin-sdk` |
+| [92](https://github.com/Kuestenlogik/Bowire.Samples/issues/92) | Samples | [Ship each sample as its own ready-to-run download](#issue-kuestenlogik-bowire-samples-92) | ⬜ Backlog | `area:docs` |
 | [583](https://github.com/Kuestenlogik/Bowire/issues/583) | Bowire | [Design-time lint: naming/PII rules, inline workbench hints, test --suite=lint](#issue-kuestenlogik-bowire-583) | ⬜ Backlog | `area:multi` |
 | [639](https://github.com/Kuestenlogik/Bowire/issues/639) | Bowire | [SCIM: live Okta and Entra ID provisioning round-trips](#issue-kuestenlogik-bowire-639) | ⬜ Backlog | `area:workbench` |
 | [654](https://github.com/Kuestenlogik/Bowire/issues/654) | Bowire | [Uploaded schemas live in a process-wide static — lost on restart, shared between identities, invisible to the CLI](#issue-kuestenlogik-bowire-654) | ⬜ Backlog | `area:multi` |
 | [689](https://github.com/Kuestenlogik/Bowire/issues/689) | Bowire | [Action-log entries store rendered English text instead of a key](#issue-kuestenlogik-bowire-689) | ⬜ Backlog | `area:workbench` |
 | [690](https://github.com/Kuestenlogik/Bowire/issues/690) | Bowire | [Translate the CLI help surface, or decide not to](#issue-kuestenlogik-bowire-690) | ⬜ Backlog | `area:cli` |
-| [711](https://github.com/Kuestenlogik/Bowire/issues/711) | Bowire | [Schema-Designer: Eingabefelder und Dropdowns übernehmen die Workbench-Stile nicht](#issue-kuestenlogik-bowire-711) | ⬜ Backlog |  |
 | [713](https://github.com/Kuestenlogik/Bowire/issues/713) | Bowire | [GraphQL-Transportoptionen: Multiplexing, GET, APQ, Uploads, Batching](#issue-kuestenlogik-bowire-713) | ⬜ Backlog |  |
 | [714](https://github.com/Kuestenlogik/Bowire/issues/714) | Bowire | [Interceptor-Tests: Assert.Single über den ganzen Flow-Store ist gegen Fremdverkehr ungeschützt](#issue-kuestenlogik-bowire-714) | ⬜ In review |  |
 | [47](https://github.com/Kuestenlogik/Bowire/issues/47) | Bowire | [Sidebar display: method name vs path toggle](#issue-kuestenlogik-bowire-47) | ✅ Done | `area:workbench` |
@@ -67,6 +68,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [696](https://github.com/Kuestenlogik/Bowire/issues/696) | Bowire | [Post-mount wiring is scheduled with requestAnimationFrame, so a hidden tab never wires it](#issue-kuestenlogik-bowire-696) | ✅ Done | `area:workbench` |
 | [706](https://github.com/Kuestenlogik/Bowire/issues/706) | Bowire | [The first click into any text field is lost: the chip overlay re-parents the field on focus](#issue-kuestenlogik-bowire-706) | ✅ Done | `area:workbench` |
 | [710](https://github.com/Kuestenlogik/Bowire/issues/710) | Bowire | [GraphQL: Lücken zwischen Discovery und einem vollwertigen GraphQL-Client](#issue-kuestenlogik-bowire-710) | ✅ Done |  |
+| [711](https://github.com/Kuestenlogik/Bowire/issues/711) | Bowire | [Schema-Designer: Eingabefelder und Dropdowns übernehmen die Workbench-Stile nicht](#issue-kuestenlogik-bowire-711) | ✅ Done |  |
 | [712](https://github.com/Kuestenlogik/Bowire/issues/712) | Bowire | [Stream-Vertrag hat keine Fehlerform — jedes Plugin erfindet seine eigene](#issue-kuestenlogik-bowire-712) | ✅ Done |  |
 
 ### M2 — MCP completion + agent hub *(due 2026-11-24)*
@@ -177,13 +179,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [623](https://github.com/Kuestenlogik/Bowire/issues/623) | Bowire | [Benchmark: report the shape of a run, not only its totals](#issue-kuestenlogik-bowire-623) | ⬜ Backlog | `area:cli` |
 | [624](https://github.com/Kuestenlogik/Bowire/issues/624) | Bowire | [Benchmark: hold connections open and report what became of them](#issue-kuestenlogik-bowire-624) | ⬜ Backlog | `area:cli` |
 
-### Backlog (not yet scheduled)
-
-| # | Project | Title | Status | Tags |
-|---|---|---|---|---|
-| [34](https://github.com/Kuestenlogik/Bowire.Bootcamp/issues/34) | Bootcamp | [Ship each exercise as two downloads: the shell with its TODOs, and the solution](#issue-kuestenlogik-bowire-bootcamp-34) | ⬜ Backlog | `area:bootcamp` |
-| [92](https://github.com/Kuestenlogik/Bowire.Samples/issues/92) | Samples | [Ship each sample as its own ready-to-run download](#issue-kuestenlogik-bowire-samples-92) | ⬜ Backlog | `area:docs` |
-
 ## Details
 
 ### M1 — Localisation, layout and the test pillar *(due 2026-11-03)*
@@ -278,11 +273,23 @@ When `BowireTapMailbox` is the global default mailbox, the `DeadLetterListener` 
 
 `COVERAGE.md` (envelope table) and `SMOKE.md` (sample JSON frame) show fields `RecipientPath` / `SenderPath` and a JSON-object `Payload`, but the actual record is `Recipient` / `Sender` (string) with a string `Payload` (`src/Kuestenlogik.Bowire.Protocol.Akka/TappedMessage.cs`). … [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/34)
 
+#### <a id="issue-kuestenlogik-bowire-bootcamp-34"></a>⬜ Backlog · [Kuestenlogik/Bowire.Bootcamp#34](https://github.com/Kuestenlogik/Bowire.Bootcamp/issues/34) Ship each exercise as two downloads: the shell with its TODOs, and the solution
+
+> `area:bootcamp`
+
+Two downloads per exercise, from the Releases page: [[more]](https://github.com/Kuestenlogik/Bowire.Bootcamp/issues/34)
+
 #### <a id="issue-kuestenlogik-bowire-protocol-akka-36"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Akka#36](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/36) Multi-subscriber + mixed-mode integration tests
 
 > `area:plugin-sdk`
 
 `COVERAGE.md` calls out the branch gap: the 0/1/many-subscriber paths in `BowireAkkaExtension` and the mixed mode (global default mailbox + per-actor `WithMailbox` override) are only covered by single-mode tests. … [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/36)
+
+#### <a id="issue-kuestenlogik-bowire-samples-92"></a>⬜ Backlog · [Kuestenlogik/Bowire.Samples#92](https://github.com/Kuestenlogik/Bowire.Samples/issues/92) Ship each sample as its own ready-to-run download
+
+> `area:docs`
+
+Each sample downloadable on its own, built and ready to run, from the repo's Releases page — instead of "clone the whole repo, find the folder, work out which project to start". [[more]](https://github.com/Kuestenlogik/Bowire.Samples/issues/92)
 
 #### <a id="issue-kuestenlogik-bowire-583"></a>⬜ Backlog · [#583](https://github.com/Kuestenlogik/Bowire/issues/583) Design-time lint: naming/PII rules, inline workbench hints, test --suite=lint
 
@@ -313,10 +320,6 @@ The Activity drawer renders text that was translated once, when the action happe
 > `area:cli`
 
 `bowire --help` is still English in every locale. The machinery it needs already exists — `BowireLocale` resolves `BOWIRE_LOCALE` / `LC_ALL` / `LANG` / the OS culture and reads the same catalogues the workbench does — but nothing in the help surface calls it yet. [[more]](https://github.com/Kuestenlogik/Bowire/issues/690)
-
-#### <a id="issue-kuestenlogik-bowire-711"></a>⬜ Backlog · [#711](https://github.com/Kuestenlogik/Bowire/issues/711) Schema-Designer: Eingabefelder und Dropdowns übernehmen die Workbench-Stile nicht
-
-In der Schema-Designer-Werkzeugleiste sehen Suchfeld, die beiden Dropdowns und die Checkbox nach Browser-Voreinstellung aus, während alles drumherum thematisiert ist. Der „Reset view"-Knopf direkt daneben sitzt richtig im Thema — der Kontrast fällt dadurch besonders auf. [[more]](https://github.com/Kuestenlogik/Bowire/issues/711)
 
 #### <a id="issue-kuestenlogik-bowire-713"></a>⬜ Backlog · [#713](https://github.com/Kuestenlogik/Bowire/issues/713) GraphQL-Transportoptionen: Multiplexing, GET, APQ, Uploads, Batching
 
@@ -485,6 +488,10 @@ Click into a text field or textarea that has never been focused before, start ty
 #### <a id="issue-kuestenlogik-bowire-710"></a>✅ Done · [#710](https://github.com/Kuestenlogik/Bowire/issues/710) GraphQL: Lücken zwischen Discovery und einem vollwertigen GraphQL-Client
 
 Bestandsaufnahme nach #292. Die Frage war: „Können wir auf einen GraphQL-Server zeigen und über das Schema discovern?" — **Ja, das funktioniert.** Beim Nachprüfen sind aber sechs Lücken aufgefallen, die hier festgehalten werden. Keine davon blockiert den Normalfall. [[more]](https://github.com/Kuestenlogik/Bowire/issues/710)
+
+#### <a id="issue-kuestenlogik-bowire-711"></a>✅ Done · [#711](https://github.com/Kuestenlogik/Bowire/issues/711) Schema-Designer: Eingabefelder und Dropdowns übernehmen die Workbench-Stile nicht
+
+In der Schema-Designer-Werkzeugleiste sehen Suchfeld, die beiden Dropdowns und die Checkbox nach Browser-Voreinstellung aus, während alles drumherum thematisiert ist. Der „Reset view"-Knopf direkt daneben sitzt richtig im Thema — der Kontrast fällt dadurch besonders auf. [[more]](https://github.com/Kuestenlogik/Bowire/issues/711)
 
 #### <a id="issue-kuestenlogik-bowire-712"></a>✅ Done · [#712](https://github.com/Kuestenlogik/Bowire/issues/712) Stream-Vertrag hat keine Fehlerform — jedes Plugin erfindet seine eigene
 
@@ -853,20 +860,6 @@ A benchmark run targets one endpoint and produces one set of numbers. Anyone rou
 > `area:cli`
 
 Everything Bowire measures today is a request that completes. `bowire bench` calls `InvokeAsync`, times the round trip and moves on; even for a streaming method it takes the non-streaming path. [[more]](https://github.com/Kuestenlogik/Bowire/issues/624)
-
-### Backlog (not yet scheduled)
-
-#### <a id="issue-kuestenlogik-bowire-bootcamp-34"></a>⬜ Backlog · [Kuestenlogik/Bowire.Bootcamp#34](https://github.com/Kuestenlogik/Bowire.Bootcamp/issues/34) Ship each exercise as two downloads: the shell with its TODOs, and the solution
-
-> `area:bootcamp`
-
-Two downloads per exercise, from the Releases page: [[more]](https://github.com/Kuestenlogik/Bowire.Bootcamp/issues/34)
-
-#### <a id="issue-kuestenlogik-bowire-samples-92"></a>⬜ Backlog · [Kuestenlogik/Bowire.Samples#92](https://github.com/Kuestenlogik/Bowire.Samples/issues/92) Ship each sample as its own ready-to-run download
-
-> `area:docs`
-
-Each sample downloadable on its own, built and ready to run, from the repo's Releases page — instead of "clone the whole repo, find the folder, work out which project to start". [[more]](https://github.com/Kuestenlogik/Bowire.Samples/issues/92)
 
 ---
 
