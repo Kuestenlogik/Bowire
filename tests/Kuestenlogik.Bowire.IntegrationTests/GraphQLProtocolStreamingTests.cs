@@ -290,6 +290,56 @@ public sealed class GraphQLProtocolStreamingTests
         Assert.Single(events);
     }
 
+    [Fact]
+    public async Task A_Subscription_Is_Never_Preceded_By_An_Introspection_Request()
+    {
+        // #710 - the unary path introspects an unknown endpoint so it can
+        // build a real selection set. A subscription must not: over
+        // graphql-sse the subscription endpoint IS a POST to this same URL,
+        // so an introspection query sent here is answered as a subscription
+        // -- an event stream that stays open while the client waits for a
+        // JSON body that never ends.
+        //
+        // Counting requests rather than asserting on a timeout: the failure
+        // this guards against showed up as a 30-second hang, which reads as
+        // a slow test rather than as a wrong one.
+        var posts = 0;
+        await using var host = await PluginTestHost.StartAsync(app =>
+        {
+            app.MapPost("/graphql", async (HttpContext ctx) =>
+            {
+                Interlocked.Increment(ref posts);
+                ctx.Response.ContentType = "text/event-stream";
+                await ctx.Response.WriteAsync("event: next\ndata: {\"data\":{\"tick\":\"once\"}}\n\n", ctx.RequestAborted);
+                await ctx.Response.Body.FlushAsync(ctx.RequestAborted);
+                await ctx.Response.WriteAsync("event: complete\ndata: \n\n", ctx.RequestAborted);
+                await ctx.Response.Body.FlushAsync(ctx.RequestAborted);
+            });
+        });
+        using var protocol = new BowireGraphQLProtocol();
+
+        var metadata = new Dictionary<string, string>
+        {
+            [BowireGraphQLProtocol.SubscriptionTransportMetadataKey] = "sse"
+        };
+
+        var events = new List<string>();
+        await foreach (var evt in protocol.InvokeStreamAsync(
+            host.BaseUrl + "/graphql",
+            service: "Subscription",
+            method: "tick",
+            jsonMessages: ["{}"],
+            showInternalServices: false,
+            metadata: metadata,
+            ct: TestContext.Current.CancellationToken))
+        {
+            events.Add(evt);
+        }
+
+        Assert.Single(events);
+        Assert.Equal(1, posts);
+    }
+
     // ---- SSE server fixtures ----
 
     private static void MapSseSubscription(WebApplication app)

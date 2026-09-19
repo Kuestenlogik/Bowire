@@ -1,6 +1,7 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Collections.Concurrent;
 using System.Net.Http.Json;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
@@ -38,6 +39,27 @@ public sealed class BowireGraphQLProtocol : IBowireProtocol, IDisposable
     private static readonly JsonSerializerOptions s_indented = new() { WriteIndented = true };
 
     private static readonly string[] s_graphqlTransportWsSubProtocols = ["graphql-transport-ws"];
+
+    /// <summary>
+    /// What the last discovery found, per endpoint (#710).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// /api/invoke carries a service and a method name, not the discovered
+    /// <see cref="BowireMethodInfo"/>. Without this the plugin had to
+    /// re-derive a stub from the request body, and a stub has no output
+    /// type — which is why every generated operation selected nothing but
+    /// <c>__typename</c>.
+    /// </para>
+    /// <para>
+    /// Bounded by the number of endpoints an operator discovers in one
+    /// session, and each entry is a schema they asked for. A miss is not an
+    /// error: the stub path still runs and still produces a valid
+    /// operation, just a less useful one.
+    /// </para>
+    /// </remarks>
+    private readonly ConcurrentDictionary<string, List<BowireServiceInfo>> _discovered =
+        new(StringComparer.OrdinalIgnoreCase);
 
     // Test-only override for the protocol registry used by the
     // subscription dispatch in InvokeStreamAsync. Production callers leave
@@ -95,7 +117,11 @@ public sealed class BowireGraphQLProtocol : IBowireProtocol, IDisposable
                 return [];
 
             var mapper = new GraphQLSchemaMapper();
-            return mapper.Map(data, serverUrl);
+            var services = mapper.Map(data, serverUrl);
+            // #710 - remembered so InvokeAsync can build a real selection
+            // set instead of falling back to __typename.
+            if (services.Count > 0) _discovered[endpoint] = services;
+            return services;
         }
         catch (HttpRequestException)
         {
@@ -131,10 +157,12 @@ public sealed class BowireGraphQLProtocol : IBowireProtocol, IDisposable
             //   2. full request   — { "query": "...", "variables": {...} }.
             //      We send it verbatim. This is what the GraphQL UI editor
             //      pane produces when the user edits the query manually.
+            var endpoint = serverUrl.TrimEnd('/');
             var verbatim = TryParseFullRequest(jsonMessages, out var fullQuery);
             var (operation, variables) = verbatim
                 ? (fullQuery, ExtractVariables(jsonMessages))
-                : BuildOperation(operationKind, service, method, jsonMessages);
+                : await BuildOperationAsync(
+                    operationKind, service, method, jsonMessages, endpoint, mayIntrospect: true, ct);
 
             // #710 - only the verbatim path needs resolving. An operation we
             // built ourselves has exactly one definition and we named it
@@ -143,7 +171,6 @@ public sealed class BowireGraphQLProtocol : IBowireProtocol, IDisposable
                 ? GraphQLDocumentInfo.ResolveOperationName(operation, ExtractOperationName(jsonMessages))
                 : method;
 
-            var endpoint = serverUrl.TrimEnd('/');
             var response = await SendOperationAsync(endpoint, operation, variables, metadata, ct, operationName);
 
             var elapsedMs = (long)(DateTime.UtcNow - startedAt).TotalMilliseconds;
@@ -177,7 +204,11 @@ public sealed class BowireGraphQLProtocol : IBowireProtocol, IDisposable
         var verbatim = TryParseFullRequest(jsonMessages, out var fullQuery);
         var (operation, variables) = verbatim
             ? (fullQuery, ExtractVariables(jsonMessages))
-            : BuildOperation("subscription", service, method, jsonMessages);
+            // mayIntrospect: false — see SchemaForAsync. Probing a
+            // subscription endpoint opens a stream instead of answering.
+            : await BuildOperationAsync(
+                "subscription", service, method, jsonMessages, serverUrl.TrimEnd('/'),
+                mayIntrospect: false, ct);
 
         // #710 - a subscription needs the name as much as a query does, and
         // for the same reason: a document with several operations is not
@@ -561,14 +592,28 @@ public sealed class BowireGraphQLProtocol : IBowireProtocol, IDisposable
         return default;
     }
 
-    private static (string Operation, JsonElement Variables) BuildOperation(
-        string operationKind, string service, string method, List<string> jsonMessages)
+    private async Task<(string Operation, JsonElement Variables)> BuildOperationAsync(
+        string operationKind, string service, string method, List<string> jsonMessages,
+        string? endpoint, bool mayIntrospect, CancellationToken ct)
     {
-        // We need the BowireMethodInfo to know argument types — but the
-        // /api/invoke path doesn't pass the method object back to us. Re-derive
-        // a minimal one from the JSON body so we can still build a valid
-        // operation. The variables come from the user's form submission.
         var variablesJson = jsonMessages.Count > 0 ? jsonMessages[0] : "{}";
+
+        // #710 - the discovered method carries the real argument types and
+        // the real output type, so the generated operation both types its
+        // variables correctly and selects actual fields instead of just
+        // __typename.
+        if (endpoint is not null)
+        {
+            var services = await SchemaForAsync(endpoint, mayIntrospect, ct);
+            if (services is not null && FindMethod(services, service, method) is { } discovered)
+                return GraphQLQueryBuilder.Build(operationKind, discovered, variablesJson);
+        }
+
+        // No schema for this endpoint — it refuses introspection, or is not
+        // reachable, or is not GraphQL at all. /api/invoke does not pass the
+        // method object back either, so re-derive what can be derived from
+        // the body. The operation stays valid; its selection set falls back
+        // to __typename because a stub has no output type to walk.
         var stub = new BowireMethodInfo(
             Name: method,
             FullName: service + "/" + method,
@@ -579,6 +624,65 @@ public sealed class BowireGraphQLProtocol : IBowireProtocol, IDisposable
             MethodType: "Unary");
 
         return GraphQLQueryBuilder.Build(operationKind, stub, variablesJson);
+    }
+
+    /// <summary>
+    /// The schema for an endpoint, introspecting it once if nobody has
+    /// (#710).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Relying on a prior Discover would have made the generated selection
+    /// set depend on which screen the operator had visited. A flow that
+    /// names a service and a method directly never discovers anything, and
+    /// flows are exactly the caller this change exists for.
+    /// </para>
+    /// <para>
+    /// A failed introspection is remembered as an empty list rather than
+    /// retried. A server that refuses introspection refuses it every time,
+    /// and paying a round trip per invoke to be told so again is a cost the
+    /// caller did not ask for.
+    /// </para>
+    /// <para>
+    /// <paramref name="mayIntrospect"/> is false on the subscription path,
+    /// and that is not caution — it is correctness. A graphql-sse
+    /// subscription endpoint IS a POST to the same URL, so an introspection
+    /// query sent there is answered as a subscription: an event stream that
+    /// stays open. The client would then sit waiting for a JSON body that
+    /// never ends. A subscription therefore uses the cache when a Discover
+    /// has filled it and the stub otherwise.
+    /// </para>
+    /// </remarks>
+    private async Task<List<BowireServiceInfo>?> SchemaForAsync(
+        string endpoint, bool mayIntrospect, CancellationToken ct)
+    {
+        if (_discovered.TryGetValue(endpoint, out var cached))
+            return cached.Count == 0 ? null : cached;
+
+        if (!mayIntrospect) return null;
+
+        var services = await DiscoverAsync(endpoint, showInternalServices: false, ct);
+        // DiscoverAsync stores a non-empty result itself; record the empty
+        // one here so the next call does not ask again.
+        if (services.Count == 0) _discovered[endpoint] = [];
+        return services.Count == 0 ? null : services;
+    }
+
+    /// <summary>
+    /// The discovered method behind a service/method pair, or null.
+    /// </summary>
+    private static BowireMethodInfo? FindMethod(
+        List<BowireServiceInfo> services, string service, string method)
+    {
+        foreach (var s in services)
+        {
+            if (!string.Equals(s.Name, service, StringComparison.Ordinal)) continue;
+            foreach (var m in s.Methods)
+            {
+                if (string.Equals(m.Name, method, StringComparison.Ordinal)) return m;
+            }
+        }
+        return null;
     }
 
     /// <summary>

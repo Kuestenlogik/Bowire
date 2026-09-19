@@ -17,10 +17,12 @@ namespace Kuestenlogik.Bowire.Protocol.GraphQL;
 ///   getUser(id: $id) { id name email }
 /// }
 /// </code>
-/// We don't try to walk the full output type — the inner selection set is
-/// always <c>__typename</c>, which is universally valid and lets the user
-/// see whether the call routed correctly. Real selection sets (with the
-/// fields the user actually wants) are tracked as a follow-up.
+/// #710 — the inner selection set used to be <c>__typename</c> and nothing
+/// else. Valid, and useless outside the workbench: the UI has its own field
+/// picker and sends a finished query, so only the callers without a UI —
+/// the CLI, flows, contract tests — ever saw the generated operation, and
+/// what came back was the type's name. It is now walked from the discovered
+/// output type.
 /// </summary>
 internal static class GraphQLQueryBuilder
 {
@@ -75,12 +77,62 @@ internal static class GraphQLQueryBuilder
             sb.Append(')');
         }
 
-        // Universal valid selection — every GraphQL type supports __typename.
-        // The user can override the operation in the JSON editor when they
-        // want a richer selection set.
-        sb.Append(" {\n    __typename\n  }\n}");
+        // #710 - the selection set comes from the discovered output type.
+        // __typename stays the fallback for a type nothing is known about,
+        // because an empty selection set is a syntax error.
+        sb.Append(" {\n").Append(BuildSelectionSet(method.OutputType, "    ", depth: 0))
+          .Append("\n  }\n}");
 
         return (sb.ToString(), variables);
+    }
+
+    /// <summary>
+    /// How deep the generated selection set goes. Past this a
+    /// self-referential type - a Node whose children are Nodes - would
+    /// generate forever.
+    /// </summary>
+    private const int MaxSelectionDepth = 3;
+
+    /// <summary>
+    /// A selection set for a discovered output type (#710).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Every scalar is selected and every object field is recursed into.
+    /// That is the rule the workbench's own field picker starts from, so a
+    /// caller without a UI gets what a caller with one would have seen
+    /// before touching a checkbox.
+    /// </para>
+    /// <para>
+    /// <c>__typename</c> is the fallback wherever there is nothing else to
+    /// say: no fields, past the depth cap, or a shape discovery chose not
+    /// to expand. An empty selection set is a syntax error, so the fallback
+    /// is what keeps the operation valid rather than merely uninformative.
+    /// </para>
+    /// </remarks>
+    private static string BuildSelectionSet(BowireMessageInfo? type, string indent, int depth)
+    {
+        if (type is null || type.Fields.Count == 0 || depth >= MaxSelectionDepth)
+            return indent + "__typename";
+
+        var sb = new StringBuilder();
+        foreach (var field in type.Fields)
+        {
+            if (sb.Length > 0) sb.Append('\n');
+
+            if (field.Type == "message" && field.MessageType is { } nested)
+            {
+                sb.Append(indent).Append(field.Name).Append(" {\n")
+                  .Append(BuildSelectionSet(nested, indent + "  ", depth + 1))
+                  .Append('\n').Append(indent).Append('}');
+            }
+            else
+            {
+                sb.Append(indent).Append(field.Name);
+            }
+        }
+
+        return sb.Length == 0 ? indent + "__typename" : sb.ToString();
     }
 
     /// <summary>

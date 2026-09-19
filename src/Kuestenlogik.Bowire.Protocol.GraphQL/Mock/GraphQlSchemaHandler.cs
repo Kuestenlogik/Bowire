@@ -48,13 +48,25 @@ public sealed class GraphQlSchemaHandler
     private readonly string? _queryRootTypeName;
     private readonly ILogger _logger;
 
+    /// <summary>
+    /// The introspection answer, built once at load (#710).
+    /// </summary>
+    /// <remarks>
+    /// Built here rather than per request because the schema does not
+    /// change after startup, and the workbench asks this question on every
+    /// Discover — once per rail click, against a file that was read once.
+    /// </remarks>
+    private readonly string _introspectionJson;
+
     private GraphQlSchemaHandler(
         FrozenDictionary<string, TypeInfo> types,
         string? queryRootTypeName,
+        string introspectionJson,
         ILogger logger)
     {
         _types = types;
         _queryRootTypeName = queryRootTypeName;
+        _introspectionJson = introspectionJson;
         _logger = logger;
     }
 
@@ -101,6 +113,7 @@ public sealed class GraphQlSchemaHandler
         return new GraphQlSchemaHandler(
             types.ToFrozenDictionary(StringComparer.Ordinal),
             queryRoot,
+            GraphQlIntrospection.Build(doc).ToJsonString(),
             logger);
     }
 
@@ -159,6 +172,17 @@ public sealed class GraphQlSchemaHandler
             return true;
         }
 
+        // #710 - introspection is a query against the meta-schema, which
+        // this mock's type index does not contain. Answered from the SDL
+        // instead, before the normal field walk gets a chance to look
+        // `__schema` up among the schema's own types and find nothing.
+        if (IsIntrospectionQuery(operation))
+        {
+            await WriteJsonAsync(ctx, _introspectionJson, ct);
+            _logger.LogInformation("graphql-schema(introspection)");
+            return true;
+        }
+
         if (operation.Operation != OperationType.Query)
         {
             await WriteJsonAsync(ctx,
@@ -182,6 +206,29 @@ public sealed class GraphQlSchemaHandler
             operation.Name?.StringValue ?? "<anonymous>",
             operation.SelectionSet.Selections.Count);
         return true;
+    }
+
+    /// <summary>
+    /// Whether the operation asks for <c>__schema</c> at its root (#710).
+    /// </summary>
+    /// <remarks>
+    /// Root-level only, and deliberately so. <c>__schema</c> is a meta-field
+    /// on the query root; nested anywhere else it is an ordinary field name
+    /// that a schema is free to declare, and answering the whole
+    /// introspection document there would be wrong.
+    /// </remarks>
+    private static bool IsIntrospectionQuery(GraphQLOperationDefinition operation)
+    {
+        if (operation.Operation != OperationType.Query) return false;
+        foreach (var selection in operation.SelectionSet.Selections)
+        {
+            if (selection is GraphQLField f
+                && string.Equals(f.Name.StringValue, "__schema", StringComparison.Ordinal))
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     private JsonObject? RenderSelectionSet(GraphQLSelectionSet? selectionSet, TypeInfo parent, int depth)
