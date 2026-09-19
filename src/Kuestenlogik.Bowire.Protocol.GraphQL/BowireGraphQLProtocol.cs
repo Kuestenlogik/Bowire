@@ -170,6 +170,23 @@ public sealed class BowireGraphQLProtocol : IBowireProtocol, IDisposable
             }
             metadata = batchHeaders;
 
+            // Several documents, and nobody asked for a batch. This plugin
+            // read jsonMessages[0] and dropped the rest without a word for
+            // as long as it has existed -- silent loss, whose only clue to
+            // the caller was an answer covering one of the things they
+            // sent. Saying so is not a new restriction: nothing could ever
+            // have run the others.
+            if (jsonMessages.Count > 1)
+            {
+                return new InvokeResult(
+                    null,
+                    (long)(DateTime.UtcNow - startedAt).TotalMilliseconds,
+                    $"{jsonMessages.Count} messages were sent but only one can run: GraphQL takes "
+                    + $"one document per request. Set {BatchMetadataKey}=on to send them together, "
+                    + "or make one call per document.",
+                    new Dictionary<string, string>());
+            }
+
             // #713 - files are declared in the message itself, not by a
             // flag: a caller either has bytes to send or does not, and
             // making them say so twice would be a way to get it wrong.
@@ -392,6 +409,17 @@ public sealed class BowireGraphQLProtocol : IBowireProtocol, IDisposable
         // Subscriptions are only meaningful on the Subscription root type.
         // Anything else routes through InvokeAsync, but we still try for
         // forwards compatibility with servers that send streamed query results.
+        // Same silent drop as the unary path, same answer. A subscription
+        // carries one document; the others were never going to run.
+        if (jsonMessages.Count > 1)
+        {
+            yield return BowireStreamErrorEnvelope.Frame(
+                BowireStreamErrorKinds.Protocol,
+                $"{jsonMessages.Count} messages were sent but a subscription runs one document. "
+                + "Open one subscription per document.");
+            yield break;
+        }
+
         var verbatim = TryParseFullRequest(jsonMessages, out var fullQuery);
         var (operation, variables) = verbatim
             ? (fullQuery, ExtractVariables(jsonMessages))

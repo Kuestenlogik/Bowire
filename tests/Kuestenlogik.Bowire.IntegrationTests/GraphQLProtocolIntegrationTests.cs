@@ -546,6 +546,60 @@ public sealed class GraphQLProtocolIntegrationTests
         Assert.Equal(0, reached);
     }
 
+    // ---- extra messages are no longer dropped in silence ----
+
+    [Fact]
+    public async Task Several_Documents_Without_The_Batch_Flag_Are_Refused_Not_Dropped()
+    {
+        // For as long as this plugin has existed it read jsonMessages[0]
+        // and discarded the rest without a word. The caller's only clue was
+        // an answer that covered one of the things they sent -- which reads
+        // exactly like success.
+        //
+        // This is not a new restriction. Nothing could ever have run the
+        // others; the only change is that the caller is told.
+        var reached = 0;
+        await using var host = await PluginTestHost.StartAsync(app =>
+            app.MapPost("/graphql", (HttpContext ctx) =>
+            {
+                Interlocked.Increment(ref reached);
+                return Results.Json(new { data = new { ping = "pong" } });
+            }));
+        using var protocol = new BowireGraphQLProtocol();
+
+        var result = await protocol.InvokeAsync(
+            host.BaseUrl + "/graphql", service: "Query", method: "ping",
+            jsonMessages: ["""{"query":"query A { ping }"}""", """{"query":"query B { ping }"}"""],
+            showInternalServices: false, ct: TestContext.Current.CancellationToken);
+
+        Assert.NotEqual("OK", result.Status);
+        Assert.Contains("only one can run", result.Status, StringComparison.Ordinal);
+        // And it names the way out, rather than leaving the caller to find it.
+        Assert.Contains(BowireGraphQLProtocol.BatchMetadataKey, result.Status, StringComparison.Ordinal);
+        Assert.Equal(0, reached);
+    }
+
+    [Fact]
+    public async Task One_Document_Is_Untouched_By_The_Guard()
+    {
+        var reached = 0;
+        await using var host = await PluginTestHost.StartAsync(app =>
+            app.MapPost("/graphql", (HttpContext ctx) =>
+            {
+                Interlocked.Increment(ref reached);
+                return Results.Json(new { data = new { ping = "pong" } });
+            }));
+        using var protocol = new BowireGraphQLProtocol();
+
+        var result = await protocol.InvokeAsync(
+            host.BaseUrl + "/graphql", service: "Query", method: "ping",
+            jsonMessages: ["""{"query":"query A { ping }"}"""],
+            showInternalServices: false, ct: TestContext.Current.CancellationToken);
+
+        Assert.Equal("OK", result.Status);
+        Assert.Equal(1, reached);
+    }
+
     /// <summary>
     /// A /graphql that answers an array with an array, echoing each entry's
     /// operation name so ordering is observable.
