@@ -277,6 +277,240 @@ public sealed class GraphQLProtocolIntegrationTests
         Assert.DoesNotContain(BowireGraphQLProtocol.HttpMethodMetadataKey, seenHeaders);
     }
 
+    // ---- #713: Automatic Persisted Queries ----
+
+    [Fact]
+    public async Task The_First_Call_Sends_A_Hash_And_No_Document()
+    {
+        // The entire point of APQ. If the document went along on the first
+        // leg there would be nothing saved and nothing gained.
+        var bodies = new List<string>();
+        await using var host = await PluginTestHost.StartAsync(app => MapApqServer(app, bodies, knowsHash: true));
+        using var protocol = new BowireGraphQLProtocol();
+
+        var result = await InvokeApqAsync(protocol, host, """{"query":"query P { ping }"}""");
+
+        Assert.Equal("OK", result.Status);
+        var only = Assert.Single(bodies);
+        Assert.Contains("sha256Hash", only, StringComparison.Ordinal);
+        Assert.DoesNotContain("\"query\"", only, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_Server_That_Has_Not_Seen_It_Gets_The_Document_On_The_Second_Call()
+    {
+        // The half without which APQ is worse than useless: a client that
+        // stopped here would fail every first call against every server it
+        // had not already primed, and the failure would read as the server
+        // being broken.
+        var bodies = new List<string>();
+        await using var host = await PluginTestHost.StartAsync(app => MapApqServer(app, bodies, knowsHash: false));
+        using var protocol = new BowireGraphQLProtocol();
+
+        var result = await InvokeApqAsync(protocol, host, """{"query":"query P { ping }"}""");
+
+        Assert.Equal("OK", result.Status);
+        Assert.Equal(2, bodies.Count);
+        Assert.DoesNotContain("\"query\"", bodies[0], StringComparison.Ordinal);
+        // Second leg: document AND hash, so the server can store it and the
+        // next call is one request again.
+        Assert.Contains("\"query\"", bodies[1], StringComparison.Ordinal);
+        Assert.Contains("sha256Hash", bodies[1], StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_Server_That_Refuses_Apq_Is_Not_Asked_Twice_Again()
+    {
+        // PERSISTED_QUERY_NOT_SUPPORTED will not change during a session.
+        // Remembering it turns a permanent double request into a single
+        // one, so the second call sends the document straight away.
+        var bodies = new List<string>();
+        await using var host = await PluginTestHost.StartAsync(app => MapApqServer(app, bodies, knowsHash: false, supported: false));
+        using var protocol = new BowireGraphQLProtocol();
+
+        await InvokeApqAsync(protocol, host, """{"query":"query P { ping }"}""");
+        Assert.Equal(2, bodies.Count);
+
+        await InvokeApqAsync(protocol, host, """{"query":"query P { ping }"}""");
+        Assert.Equal(3, bodies.Count);
+        Assert.Contains("\"query\"", bodies[2], StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Without_The_Flag_Nothing_About_The_Request_Changes()
+    {
+        var bodies = new List<string>();
+        await using var host = await PluginTestHost.StartAsync(app => MapApqServer(app, bodies, knowsHash: true));
+        using var protocol = new BowireGraphQLProtocol();
+
+        await protocol.InvokeAsync(
+            host.BaseUrl + "/graphql", service: "Query", method: "ping",
+            jsonMessages: ["""{"query":"query P { ping }"}"""],
+            showInternalServices: false, ct: TestContext.Current.CancellationToken);
+
+        var only = Assert.Single(bodies);
+        Assert.Contains("\"query\"", only, StringComparison.Ordinal);
+        Assert.DoesNotContain("persistedQuery", only, StringComparison.Ordinal);
+    }
+
+    private static Task<InvokeResult> InvokeApqAsync(
+        BowireGraphQLProtocol protocol, PluginTestHost host, string payload)
+        => protocol.InvokeAsync(
+            host.BaseUrl + "/graphql", service: "Query", method: "ping",
+            jsonMessages: [payload],
+            showInternalServices: false,
+            metadata: new Dictionary<string, string>
+            {
+                [BowireGraphQLProtocol.PersistedQueryMetadataKey] = "on",
+            },
+            ct: TestContext.Current.CancellationToken);
+
+    // ---- #713: batching ----
+
+    [Fact]
+    public async Task Several_Documents_Go_Out_As_One_Array()
+    {
+        // InvokeAsync has always taken a LIST of messages and this plugin
+        // has always read only the first, dropping the rest without a word.
+        // Batching is what makes the plural mean something.
+        var bodies = new List<string>();
+        await using var host = await PluginTestHost.StartAsync(app => MapBatchServer(app, bodies));
+        using var protocol = new BowireGraphQLProtocol();
+
+        var result = await InvokeBatchAsync(protocol, host,
+            ["""{"query":"query A { ping }"}""", """{"query":"query B { ping }"}"""]);
+
+        Assert.Equal("OK", result.Status);
+        var sent = Assert.Single(bodies);
+        Assert.StartsWith("[", sent.TrimStart(), StringComparison.Ordinal);
+        Assert.Contains("query A", sent, StringComparison.Ordinal);
+        Assert.Contains("query B", sent, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task The_Answers_Come_Back_In_The_Order_They_Were_Sent()
+    {
+        // There is no id to match an answer to its request -- position is
+        // the entire contract. A batch that reordered would hand the
+        // caller somebody else's data with no way to notice.
+        var bodies = new List<string>();
+        await using var host = await PluginTestHost.StartAsync(app => MapBatchServer(app, bodies));
+        using var protocol = new BowireGraphQLProtocol();
+
+        var result = await InvokeBatchAsync(protocol, host,
+            ["""{"query":"query First { ping }"}""", """{"query":"query Second { ping }"}"""]);
+
+        using var doc = JsonDocument.Parse(result.Response!);
+        Assert.Equal(JsonValueKind.Array, doc.RootElement.ValueKind);
+        var answers = doc.RootElement.EnumerateArray()
+            .Select(e => e.GetProperty("data").GetProperty("echo").GetString()).ToArray();
+        Assert.Equal(["First", "Second"], answers);
+    }
+
+    [Fact]
+    public async Task A_Single_Document_Batches_Too_Rather_Than_Being_A_Special_Case()
+    {
+        // A caller that asked for a batch gets one, even of size one. The
+        // alternative -- quietly sending a bare object instead -- would
+        // make the response shape depend on the count, which is the kind of
+        // thing that breaks a caller's parser on a slow day.
+        var bodies = new List<string>();
+        await using var host = await PluginTestHost.StartAsync(app => MapBatchServer(app, bodies));
+        using var protocol = new BowireGraphQLProtocol();
+
+        var result = await InvokeBatchAsync(protocol, host, ["""{"query":"query Only { ping }"}"""]);
+
+        Assert.StartsWith("[", Assert.Single(bodies).TrimStart(), StringComparison.Ordinal);
+        using var doc = JsonDocument.Parse(result.Response!);
+        Assert.Equal(JsonValueKind.Array, doc.RootElement.ValueKind);
+    }
+
+    [Fact]
+    public async Task Without_The_Flag_The_Body_Is_A_Single_Object_As_Before()
+    {
+        var bodies = new List<string>();
+        await using var host = await PluginTestHost.StartAsync(app => MapBatchServer(app, bodies));
+        using var protocol = new BowireGraphQLProtocol();
+
+        await protocol.InvokeAsync(
+            host.BaseUrl + "/graphql", service: "Query", method: "ping",
+            jsonMessages: ["""{"query":"query A { ping }"}"""],
+            showInternalServices: false, ct: TestContext.Current.CancellationToken);
+
+        Assert.StartsWith("{", Assert.Single(bodies).TrimStart(), StringComparison.Ordinal);
+    }
+
+    private static Task<InvokeResult> InvokeBatchAsync(
+        BowireGraphQLProtocol protocol, PluginTestHost host, List<string> messages)
+        => protocol.InvokeAsync(
+            host.BaseUrl + "/graphql", service: "Query", method: "ping",
+            jsonMessages: messages,
+            showInternalServices: false,
+            metadata: new Dictionary<string, string>
+            {
+                [BowireGraphQLProtocol.BatchMetadataKey] = "on",
+            },
+            ct: TestContext.Current.CancellationToken);
+
+    /// <summary>
+    /// A /graphql that answers an array with an array, echoing each entry's
+    /// operation name so ordering is observable.
+    /// </summary>
+    private static void MapBatchServer(WebApplication app, List<string> bodies)
+    {
+        app.MapPost("/graphql", async (HttpContext ctx) =>
+        {
+            using var reader = new StreamReader(ctx.Request.Body);
+            var body = await reader.ReadToEndAsync();
+            bodies.Add(body);
+            ctx.Response.ContentType = "application/json";
+
+            using var doc = JsonDocument.Parse(body);
+            if (doc.RootElement.ValueKind != JsonValueKind.Array)
+            {
+                await ctx.Response.WriteAsync("""{ "data": { "ping": "pong" } }""");
+                return;
+            }
+
+            var answers = doc.RootElement.EnumerateArray().Select(entry =>
+            {
+                var query = entry.TryGetProperty("query", out var q) ? q.GetString() ?? "" : "";
+                var name = query.Split(' ', StringSplitOptions.RemoveEmptyEntries).Skip(1).FirstOrDefault() ?? "";
+                return $$"""{ "data": { "echo": "{{name}}" } }""";
+            });
+            await ctx.Response.WriteAsync("[" + string.Join(",", answers) + "]");
+        });
+    }
+
+    /// <summary>
+    /// A /graphql that behaves like an APQ server: records every body, and
+    /// answers a hash-only request either from its store or with the miss
+    /// the convention defines.
+    /// </summary>
+    private static void MapApqServer(
+        WebApplication app, List<string> bodies, bool knowsHash, bool supported = true)
+    {
+        app.MapPost("/graphql", async (HttpContext ctx) =>
+        {
+            using var reader = new StreamReader(ctx.Request.Body);
+            var body = await reader.ReadToEndAsync();
+            bodies.Add(body);
+
+            var hasDocument = body.Contains("\"query\"", StringComparison.Ordinal);
+            ctx.Response.ContentType = "application/json";
+
+            if (!hasDocument && !knowsHash)
+            {
+                var code = supported ? "PERSISTED_QUERY_NOT_FOUND" : "PERSISTED_QUERY_NOT_SUPPORTED";
+                await ctx.Response.WriteAsync(
+                    $$"""{ "errors": [{ "message": "miss", "extensions": { "code": "{{code}}" } }] }""");
+                return;
+            }
+
+            await ctx.Response.WriteAsync("""{ "data": { "ping": "pong" } }""");
+        });
+    }
+
     /// <summary>A /graphql that answers either verb and records which it got.</summary>
     private static void MapVerbRecorder(WebApplication app, List<string> verbs)
     {

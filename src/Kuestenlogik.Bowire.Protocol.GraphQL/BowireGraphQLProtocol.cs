@@ -151,6 +151,22 @@ public sealed class BowireGraphQLProtocol : IBowireProtocol, IDisposable
         var startedAt = DateTime.UtcNow;
         try
         {
+            // #713 - a batch is decided before anything else, because it
+            // changes what the body IS: an array of requests rather than
+            // one. Everything below assumes a single document.
+            var (useBatch, batchHeaders) = ExtractBatch(metadata);
+            if (useBatch)
+            {
+                var batched = await SendBatchAsync(
+                    serverUrl.TrimEnd('/'), jsonMessages, batchHeaders, ct);
+                return new InvokeResult(
+                    JsonSerializer.Serialize(batched, s_indented),
+                    (long)(DateTime.UtcNow - startedAt).TotalMilliseconds,
+                    "OK",
+                    new Dictionary<string, string>());
+            }
+            metadata = batchHeaders;
+
             // Two payload shapes are accepted on the wire:
             //   1. variables-only — plain object like { "id": "abc" }. We
             //      synthesize the operation string for the user.
@@ -204,8 +220,12 @@ public sealed class BowireGraphQLProtocol : IBowireProtocol, IDisposable
                     new Dictionary<string, string>());
             }
 
-            var response = await SendOperationAsync(
-                endpoint, operation, variables, sendHeaders, ct, operationName, useGet);
+            var (useApq, finalHeaders) = ExtractPersistedQuery(sendHeaders);
+            var response = useApq
+                ? await SendWithPersistedQueryAsync(
+                    endpoint, operation, variables, finalHeaders, operationName, useGet, ct)
+                : await SendOperationAsync(
+                    endpoint, operation, variables, finalHeaders, ct, operationName, useGet);
 
             var elapsedMs = (long)(DateTime.UtcNow - startedAt).TotalMilliseconds;
             var json = JsonSerializer.Serialize(response, s_indented);
@@ -245,6 +265,63 @@ public sealed class BowireGraphQLProtocol : IBowireProtocol, IDisposable
     /// </para>
     /// </remarks>
     public const string HttpMethodMetadataKey = "X-Bowire-GraphQL-Http-Method";
+
+    /// <summary>
+    /// Optional metadata key. Set to <c>on</c> to use Automatic Persisted
+    /// Queries: send a SHA-256 of the document and let the server run it
+    /// from its own store (#713).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The saving is the whole document on every request after the first.
+    /// Behind a per-request body limit, or on a link where the document is
+    /// the expensive part, that is the difference between workable and not.
+    /// </para>
+    /// <para>
+    /// Opt-in because it costs an extra round trip the first time a server
+    /// sees a document, and a caller that sends one query once pays that
+    /// cost for nothing.
+    /// </para>
+    /// </remarks>
+    public const string PersistedQueryMetadataKey = "X-Bowire-GraphQL-Persisted-Query";
+
+    /// <summary>
+    /// Optional metadata key. Set to <c>on</c> to send several documents in
+    /// one request as a JSON array, the way a batching server expects
+    /// (#713).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <see cref="InvokeAsync"/> has always taken a <em>list</em> of
+    /// messages, and this plugin has always read only the first. Every
+    /// further one was dropped without a word. Batching is what makes that
+    /// plural mean something.
+    /// </para>
+    /// <para>
+    /// Opt-in, because a server that does not batch answers an array with
+    /// a parse error, and the caller would have no idea why a request that
+    /// works one at a time fails together.
+    /// </para>
+    /// <para>
+    /// Not combined with GET (an array has no sensible URL form) or with
+    /// APQ (a batch would need a hash per entry and a retry per miss —
+    /// buildable, but nobody has asked, and guessing at the shape would
+    /// pin a convention servers do not agree on).
+    /// </para>
+    /// </remarks>
+    public const string BatchMetadataKey = "X-Bowire-GraphQL-Batch";
+
+    /// <summary>
+    /// Endpoints that answered PERSISTED_QUERY_NOT_SUPPORTED (#713).
+    /// </summary>
+    /// <remarks>
+    /// A server that does not do APQ will not start doing it during a
+    /// session. Remembering the refusal turns a permanent two-request
+    /// penalty into a single one, and the entry is per endpoint because
+    /// the next host may well support it.
+    /// </remarks>
+    private readonly ConcurrentDictionary<string, bool> _apqUnsupported =
+        new(StringComparer.OrdinalIgnoreCase);
 
     public async IAsyncEnumerable<string> InvokeStreamAsync(
         string serverUrl, string service, string method,
@@ -796,17 +873,68 @@ public sealed class BowireGraphQLProtocol : IBowireProtocol, IDisposable
         _ => ("string", false)
     };
 
-    private async Task<JsonElement> SendOperationAsync(
+    /// <summary>
+    /// Send, optionally as a persisted query (#713).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The two-step dance, and it has to be both steps. First the hash
+    /// alone; if the server has never seen it, it answers
+    /// PERSISTED_QUERY_NOT_FOUND and the document goes out with the hash
+    /// so the server can store it. A client that sent only the hash would
+    /// fail every first call against every server it had not primed — and
+    /// the failure would look like the server being broken.
+    /// </para>
+    /// <para>
+    /// A server that refuses APQ outright is remembered, so the penalty is
+    /// paid once per endpoint rather than on every call.
+    /// </para>
+    /// </remarks>
+    private async Task<JsonElement> SendWithPersistedQueryAsync(
         string endpoint,
         string query,
         JsonElement? variables,
         Dictionary<string, string>? headers,
+        string? operationName,
+        bool useGet,
+        CancellationToken ct)
+    {
+        if (_apqUnsupported.ContainsKey(endpoint))
+            return await SendOperationAsync(endpoint, query, variables, headers, ct, operationName, useGet);
+
+        var hash = GraphQLPersistedQuery.Hash(query);
+
+        // Step one: the hash on its own. No document at all -- sending it
+        // anyway would forfeit the entire point of APQ.
+        var first = await SendOperationAsync(
+            endpoint, query: null, variables, headers, ct, operationName, useGet,
+            persistedHash: hash);
+
+        if (!GraphQLPersistedQuery.IsMiss(first)) return first;
+
+        if (GraphQLPersistedQuery.IsPermanentlyUnsupported(first))
+            _apqUnsupported[endpoint] = true;
+
+        // Step two: document plus hash, so a server that does support APQ
+        // stores it and the next call is one request again.
+        return await SendOperationAsync(
+            endpoint, query, variables, headers, ct, operationName, useGet,
+            persistedHash: hash);
+    }
+
+    private async Task<JsonElement> SendOperationAsync(
+        string endpoint,
+        string? query,
+        JsonElement? variables,
+        Dictionary<string, string>? headers,
         CancellationToken ct,
         string? operationName = null,
-        bool useGet = false)
+        bool useGet = false,
+        string? persistedHash = null)
     {
         using var request = useGet
-            ? new HttpRequestMessage(HttpMethod.Get, BuildGetUri(endpoint, query, variables, operationName))
+            ? new HttpRequestMessage(HttpMethod.Get,
+                BuildGetUri(endpoint, query, variables, operationName, persistedHash))
             : new HttpRequestMessage(HttpMethod.Post, endpoint);
         request.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
 
@@ -823,9 +951,13 @@ public sealed class BowireGraphQLProtocol : IBowireProtocol, IDisposable
             // single-operation document still puts exactly the two fields
             // on the wire it always did, and no server sees a shape it did
             // not see before.
+            // #713 - `query` is null on the first leg of an APQ exchange,
+            // and the serializer drops nulls, so the body is the hash and
+            // nothing else. That omission IS the feature.
+            var extensions = persistedHash is null ? null : GraphQLPersistedQuery.Extension(persistedHash);
             var payload = variables.HasValue && variables.Value.ValueKind == JsonValueKind.Object
-                ? (object)new { query, variables = variables.Value, operationName }
-                : new { query, operationName };
+                ? (object)new { query, variables = variables.Value, operationName, extensions }
+                : new { query, operationName, extensions };
 
             request.Content = JsonContent.Create(payload, options: s_jsonOptions);
         }
@@ -834,6 +966,111 @@ public sealed class BowireGraphQLProtocol : IBowireProtocol, IDisposable
         response.EnsureSuccessStatusCode();
 
         return await response.Content.ReadFromJsonAsync<JsonElement>(s_jsonOptions, ct);
+    }
+
+    /// <summary>
+    /// Whether this call was asked to batch, and the metadata with that
+    /// instruction removed (#713).
+    /// </summary>
+    private static (bool UseBatch, Dictionary<string, string>? Headers) ExtractBatch(
+        Dictionary<string, string>? metadata)
+    {
+        if (metadata is null) return (false, null);
+
+        string? matched = null;
+        var on = false;
+        foreach (var (k, v) in metadata)
+        {
+            if (!string.Equals(k, BatchMetadataKey, StringComparison.OrdinalIgnoreCase)) continue;
+            matched = k;
+            var value = v?.Trim();
+            on = string.Equals(value, "on", StringComparison.OrdinalIgnoreCase)
+                 || string.Equals(value, "true", StringComparison.OrdinalIgnoreCase)
+                 || string.Equals(value, "1", StringComparison.Ordinal);
+            break;
+        }
+
+        if (matched is null) return (false, metadata);
+
+        var filtered = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var (k, v) in metadata)
+        {
+            if (!string.Equals(k, matched, StringComparison.Ordinal)) filtered[k] = v;
+        }
+        return (on, filtered);
+    }
+
+    /// <summary>
+    /// Send several documents as one batched request (#713).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A JSON array in, a JSON array out, in the same order. The ordering
+    /// is the contract a caller relies on to tell which answer belongs to
+    /// which request — there is no id to match on — so the entries go out
+    /// exactly as they arrived.
+    /// </para>
+    /// <para>
+    /// Each entry is taken verbatim when it already looks like a GraphQL
+    /// request. A caller batching a mixture of shapes is telling us
+    /// something we cannot second-guess per entry, so anything else is
+    /// passed through as written and the server decides.
+    /// </para>
+    /// </remarks>
+    private async Task<JsonElement> SendBatchAsync(
+        string endpoint,
+        List<string> jsonMessages,
+        Dictionary<string, string>? headers,
+        CancellationToken ct)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Post, endpoint);
+        request.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
+
+        if (headers is not null)
+        {
+            foreach (var (key, value) in headers)
+                request.Headers.TryAddWithoutValidation(key, value);
+        }
+
+        var body = "[" + string.Join(",", jsonMessages) + "]";
+        request.Content = new StringContent(body, System.Text.Encoding.UTF8, "application/json");
+
+        using var response = await _http.SendAsync(request, ct);
+        response.EnsureSuccessStatusCode();
+
+        return await response.Content.ReadFromJsonAsync<JsonElement>(s_jsonOptions, ct);
+    }
+
+    /// <summary>
+    /// Whether this call was asked to use APQ, and the metadata with that
+    /// instruction removed (#713).
+    /// </summary>
+    private static (bool UseApq, Dictionary<string, string>? Headers) ExtractPersistedQuery(
+        Dictionary<string, string>? metadata)
+    {
+        if (metadata is null) return (false, null);
+
+        string? matched = null;
+        var on = false;
+        foreach (var (k, v) in metadata)
+        {
+            if (!string.Equals(k, PersistedQueryMetadataKey, StringComparison.OrdinalIgnoreCase)) continue;
+            matched = k;
+            var value = v?.Trim();
+            on = string.Equals(value, "on", StringComparison.OrdinalIgnoreCase)
+                 || string.Equals(value, "true", StringComparison.OrdinalIgnoreCase)
+                 || string.Equals(value, "1", StringComparison.Ordinal);
+            break;
+        }
+
+        if (matched is null) return (false, metadata);
+
+        var filtered = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var (k, v) in metadata)
+        {
+            if (!string.Equals(k, matched, StringComparison.Ordinal)) filtered[k] = v;
+        }
+        return (on, filtered);
     }
 
     /// <summary>
@@ -866,9 +1103,14 @@ public sealed class BowireGraphQLProtocol : IBowireProtocol, IDisposable
     /// </para>
     /// </remarks>
     internal static Uri BuildGetUri(
-        string endpoint, string query, JsonElement? variables, string? operationName)
+        string endpoint, string? query, JsonElement? variables, string? operationName,
+        string? persistedHash = null)
     {
-        var parts = new List<string> { "query=" + Uri.EscapeDataString(query) };
+        var parts = new List<string>();
+        // #713 - null on the first leg of an APQ exchange. A GET that
+        // carries only a hash is the shortest this path ever gets, which is
+        // the combination CDNs in front of a GraphQL API are built for.
+        if (query is not null) parts.Add("query=" + Uri.EscapeDataString(query));
 
         if (variables.HasValue && variables.Value.ValueKind == JsonValueKind.Object)
         {
@@ -880,6 +1122,12 @@ public sealed class BowireGraphQLProtocol : IBowireProtocol, IDisposable
 
         if (!string.IsNullOrWhiteSpace(operationName))
             parts.Add("operationName=" + Uri.EscapeDataString(operationName));
+
+        if (persistedHash is not null)
+        {
+            parts.Add("extensions=" + Uri.EscapeDataString(
+                JsonSerializer.Serialize(GraphQLPersistedQuery.Extension(persistedHash), s_jsonOptions)));
+        }
 
         var separator = endpoint.Contains('?', StringComparison.Ordinal) ? "&" : "?";
         return new Uri(endpoint + separator + string.Join("&", parts), UriKind.Absolute);
