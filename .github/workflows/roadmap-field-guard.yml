@@ -1,13 +1,15 @@
 name: Roadmap field guard
 
-# An item that has been PULLED must name the version it was pulled for.
+# Every open item names the work section it belongs to — its milestone.
 #
-# The board carries two independent axes: `Status` is where the work sits in
-# the flow, `Release` is which product version it targets. Backlog is the
-# reservoir — everything rests there, unassigned, until someone pulls it. So
-# an empty `Release` is perfectly correct while `Status` is still `Backlog`.
-# Moving an item to `Next up` IS the decision about when it ships, and an
-# item in flight with no version is the contradiction worth catching.
+# Since 2026-09-19 the board carries three axes: `Status` is where the work
+# sits in the flow, the `Milestone` is the ordered work section it belongs
+# to (M1, M2, … — mirrored into the sibling repos), and `Release` is the
+# version it shipped in, stamped at the cut and empty before. An open issue
+# without a milestone has skipped the one decision every ticket gets at
+# birth — that is the contradiction worth catching. (It used to check the
+# `Release` field once an item left Backlog; the version is no longer known
+# before the cut.)
 #
 # This guard used to demand "never empty" instead. That forced a placeholder
 # `Backlog` option onto the Release field — a category error, since a release
@@ -35,7 +37,7 @@ permissions:
 
 jobs:
   guard:
-    name: Every board item has a Release
+    name: Every open item names its milestone
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ secrets.BOWIRE_DISPATCH_TOKEN }}
@@ -44,7 +46,7 @@ jobs:
       # nothing to resolve without the repo on disk.
       - uses: actions/checkout@v7
 
-      - name: Find pulled items with no Release
+      - name: Find open items with no milestone
         id: scan
         run: |
           gh api graphql --paginate -f query='
@@ -56,10 +58,7 @@ jobs:
                     nodes {
                       content {
                         __typename
-                        ... on Issue { number state url repository { nameWithOwner } }
-                      }
-                      release: fieldValueByName(name: "Release") {
-                        ... on ProjectV2ItemFieldSingleSelectValue { name }
+                        ... on Issue { number state url milestone { title } repository { nameWithOwner } }
                       }
                       status: fieldValueByName(name: "Status") {
                         ... on ProjectV2ItemFieldSingleSelectValue { name }
@@ -70,33 +69,28 @@ jobs:
               }
             }' > pages.json
 
-          # A violation is an OPEN issue that has left Backlog without being
-          # given a version. Still in Backlog with no Release is the normal
-          # resting state and must NOT be reported — that was the old rule,
-          # and it made the check vacuous once every item got seeded.
-          #
-          # A missing Status counts as pulled: the field is never empty in
-          # practice (GitHub seeds it), so an absent one means something
-          # unusual and is worth a look rather than a silent pass.
+          # A violation is an OPEN issue without a milestone, wherever it sits
+          # in the flow: the section is decided when the ticket is born, and
+          # the sibling repos mirror the main repo's sections as their own
+          # milestones, so "no milestone" is never a legitimate resting state.
           jq -rs '[ .[].data.organization.projectV2.items.nodes[]
                     | select(.content.__typename == "Issue" and .content.state == "OPEN")
-                    | select(.release == null)
-                    | select((.status.name // "unset") != "Backlog")
+                    | select(.content.milestone == null)
                     | "\(.content.repository.nameWithOwner)#\(.content.number)\t\(.content.url)\t\(.status.name // "unset")" ]
                   | .[]' pages.json > offenders.txt || true
 
           COUNT=$(grep -c . offenders.txt || true)
           if [ "${COUNT:-0}" -eq 0 ]; then
-            echo "✅ Every pulled item names a Release." >> "$GITHUB_STEP_SUMMARY"
+            echo "✅ Every open item names its milestone." >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
 
           {
-            echo "## ❌ $COUNT item(s) pulled without a Release"
+            echo "## ❌ $COUNT open item(s) without a milestone"
             echo ""
-            echo "These have left Backlog but name no version. Pulling an item"
-            echo "is the decision about when it ships — give each one a version,"
-            echo "or move it back to Backlog:"
+            echo "These name no work section. Give each one the milestone it"
+            echo "belongs to (a sibling repo mirrors the main repo's sections"
+            echo "as its own milestones), or close it:"
             echo ""
             while IFS=$'\t' read -r ref url status; do
               [ -z "$ref" ] && continue
@@ -132,18 +126,16 @@ jobs:
         with:
           channel: roadmap-release-field
           hint: |
-            These items have left `Backlog` without naming a version. Pulling
-            an item is the decision about when it ships, so one in flight with
-            no `Release` is a decision that was skipped — and it will not
-            appear on the versioned roadmap `scripts/ci/generate-roadmap.mjs`
-            renders.
+            These open items name no milestone. The milestone is the work
+            section a ticket belongs to (M1, M2, … — docs/contributing/
+            project-board.md, "Milestones and releases"); it is decided when
+            the ticket is born, and an item without one does not appear on
+            the roadmap `scripts/ci/generate-roadmap.mjs` renders.
 
             ${{ steps.scan.outputs.offenders }}
 
-            Give each one a version, or move it back to `Backlog` if it was
-            pulled by accident.
-
-            An item still resting in `Backlog` with no `Release` is **not** a
-            violation and is never listed here — that is the normal state of
-            unplanned work.
+            Give each one the milestone it belongs to — a sibling repo
+            mirrors the main repo's sections as its own milestones — or close
+            it. The `Release` field stays empty until the cut stamps the
+            version.
           token: ${{ secrets.BOWIRE_DISPATCH_TOKEN }}

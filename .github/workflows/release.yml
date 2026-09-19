@@ -795,6 +795,17 @@ jobs:
             echo "title=${TAG}" >> "$GITHUB_OUTPUT"
           fi
           echo "milestones=${NUMBERS}" >> "$GITHUB_OUTPUT"
+          TITLES=$(node -e "process.stdout.write(JSON.parse(require('fs').readFileSync('resolved.json','utf8')).milestones || '')" || true)
+          echo "milestone_titles=${TITLES}" >> "$GITHUB_OUTPUT"
+
+      # The board's Release field is the version a ticket shipped in — empty until here.
+      # Stamped on every item of the shipped milestones (main repo and the siblings that
+      # mirror them); the milestone stays the section. Never fails the release.
+      - name: Stamp the board's Release field
+        if: steps.title.outputs.milestone_titles != ''
+        env:
+          GH_TOKEN: ${{ secrets.BOWIRE_DISPATCH_TOKEN || secrets.RELEASE_PAT || secrets.GITHUB_TOKEN }}
+        run: node scripts/ci/stamp-release-field.mjs "${GITHUB_REF_NAME}" "${{ steps.title.outputs.milestone_titles }}"
 
       # SHA-256 for every asset this release ships. Until now a download
       # could not be verified at all: the only sha256 in this workflow is
