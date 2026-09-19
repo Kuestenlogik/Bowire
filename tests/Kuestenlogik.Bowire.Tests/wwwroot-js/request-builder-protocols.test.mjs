@@ -67,6 +67,8 @@ const _postlude = `
         _graphQLOperationName: _graphQLOperationName,
         _graphQLOperationNames: _graphQLOperationNames,
         _graphQLVariableNames: _graphQLVariableNames,
+        _graphQLUploadPayload: _graphQLUploadPayload,
+        _graphQLMaxUploadBytes: RB_GRAPHQL_MAX_UPLOAD_BYTES,
         _graphQLHasErrors: _graphQLHasErrors,
         _connState: function () { return rbConnState; },
         _protoState: function (fr) { return rbProtoState(fr); }
@@ -74,7 +76,7 @@ const _postlude = `
 `;
 const _loadProtocols = compileFragment(
     '../../../src/Kuestenlogik.Bowire/wwwroot/js/request-builder.js',
-    ['document'],
+    ['document', 'FileReader'],
     PROTO_SRC + '\n' + _prelude + '\n' + _postlude
 );
 
@@ -91,7 +93,27 @@ function loadProtocols() {
         body: { appendChild() {}, removeChild() {} },
         activeElement: null,
     };
-    return _loadProtocols({ document });
+    // The upload path reads files through FileReader, which the browser has
+    // and node does not. The stub does what readAsDataURL does — including
+    // the `data:` prefix the fragment has to strip back off.
+    class FileReader {
+        readAsDataURL(file) {
+            file.arrayBuffer().then((buf) => {
+                this.result = 'data:' + (file.type || 'application/octet-stream')
+                    + ';base64,' + Buffer.from(buf).toString('base64');
+                if (this.onload) this.onload();
+            }, () => { if (this.onerror) this.onerror(); });
+        }
+    }
+    return _loadProtocols({ document, FileReader });
+}
+
+// A File that reports a size without holding the bytes, so the limit can be
+// crossed in a test without allocating 25 MB.
+function hugeFile(name, size) {
+    const f = new File(['x'], name, { type: 'image/png' });
+    Object.defineProperty(f, 'size', { value: size });
+    return f;
 }
 
 // ---- _safeParseJsonObject ----
@@ -420,4 +442,74 @@ test('graphql files tab: adding a row guesses only the first path', () => {
     const ps = sb._protoState(fr);
     sb._getLayouts().graphql.renderTab(fr, 'files');
     assert.deepEqual(ps.files, []);
+});
+
+// ---- _graphQLUploadPayload ----
+
+test('_graphQLUploadPayload: a file becomes the entry the plugin expects', async () => {
+    const sb = loadProtocols();
+    const out = await sb._graphQLUploadPayload({
+        files: [{ path: 'variables.file', name: 'chart.png', contentType: 'image/png', _ref: new File(['hello'], 'chart.png', { type: 'image/png' }) }],
+    });
+    assert.deepEqual(out, [{
+        variablePath: 'variables.file',
+        name: 'chart.png',
+        contentType: 'image/png',
+        // base64 of "hello", with the data: prefix FileReader adds stripped off
+        base64: 'aGVsbG8=',
+    }]);
+});
+
+test('_graphQLUploadPayload: name and type fall back to the file itself', async () => {
+    const sb = loadProtocols();
+    const out = await sb._graphQLUploadPayload({
+        files: [{ path: 'variables.a', _ref: new File(['hi'], 'picked.txt', { type: 'text/plain' }) }],
+    });
+    assert.equal(out[0].name, 'picked.txt');
+    assert.equal(out[0].contentType, 'text/plain');
+});
+
+test('_graphQLUploadPayload: a half-filled row is skipped, not sent', async () => {
+    // A path typed but no file picked, or a file picked with no path: neither
+    // can be placed in the operation, and the spec needs both halves.
+    const sb = loadProtocols();
+    const out = await sb._graphQLUploadPayload({
+        files: [
+            { path: 'variables.a' },
+            { _ref: new File(['x'], 'x.txt') },
+            { path: 'variables.c', _ref: new File(['ok'], 'c.txt') },
+        ],
+    });
+    assert.equal(out.length, 1);
+    assert.equal(out[0].variablePath, 'variables.c');
+});
+
+test('_graphQLUploadPayload: nothing to send is null, not an empty list', async () => {
+    // The caller uses this to decide whether the request is multipart at all.
+    const sb = loadProtocols();
+    assert.equal(await sb._graphQLUploadPayload({ files: [] }), null);
+    assert.equal(await sb._graphQLUploadPayload({}), null);
+    assert.equal(await sb._graphQLUploadPayload({ files: [{ path: 'variables.a' }] }), null);
+});
+
+test('_graphQLUploadPayload: too large is refused before the bytes are read', async () => {
+    // The bytes travel twice on this path — base64 to the workbench, real
+    // bytes onward. Without the limit the tab freezes and says nothing.
+    const sb = loadProtocols();
+    const tooBig = hugeFile('huge.png', sb._graphQLMaxUploadBytes + 1);
+    await assert.rejects(
+        () => sb._graphQLUploadPayload({ files: [{ path: 'variables.file', _ref: tooBig }] }),
+        (err) => {
+            assert.match(err.message, /huge\.png/);
+            assert.match(err.message, /25 MB/);
+            return true;
+        });
+});
+
+test('_graphQLUploadPayload: exactly at the limit still goes', async () => {
+    // An off-by-one here refuses a file the message says is allowed.
+    const sb = loadProtocols();
+    const atLimit = hugeFile('edge.png', sb._graphQLMaxUploadBytes);
+    const out = await sb._graphQLUploadPayload({ files: [{ path: 'variables.file', _ref: atLimit }] });
+    assert.equal(out.length, 1);
 });
