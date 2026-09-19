@@ -798,9 +798,10 @@ jobs:
           TITLES=$(node -e "process.stdout.write(JSON.parse(require('fs').readFileSync('resolved.json','utf8')).milestones || '')" || true)
           echo "milestone_titles=${TITLES}" >> "$GITHUB_OUTPUT"
 
-      # The board's Release field is the version a ticket shipped in — empty until here.
-      # Stamped on every item of the shipped milestones (main repo and the siblings that
-      # mirror them); the milestone stays the section. Never fails the release.
+      # The board's Release field is the delivery a ticket shipped in — empty until here.
+      # Stamped on every *closed* item of the shipped milestones (main repo and the siblings
+      # that mirror them) that does not already carry a release; the milestone stays the
+      # section, which holds one delivery or several. Never fails the release.
       - name: Stamp the board's Release field
         if: steps.title.outputs.milestone_titles != ''
         env:

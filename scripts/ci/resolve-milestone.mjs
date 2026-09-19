@@ -8,7 +8,9 @@
 //      `M<n>` token in it is a shipped milestone.
 //   2. A milestone whose title starts with the version (`v2.8 — …`), for tags cut under the
 //      old convention.
-//   3. The frontmost open milestone with no open ticket — "a finished milestone is the release".
+//   3. The frontmost open milestone — the section being delivered from. A release is cut at the
+//      end of a section and may be cut in between, so the section is not required to be finished;
+//      when it is not, the resolution is an inference and says so.
 //
 // Usage: node scripts/ci/resolve-milestone.mjs <tag-or-version>
 // Prints GitHub Actions outputs: milestones (titles, `|`-separated), milestone (the first),
@@ -49,11 +51,21 @@ if (chosen.length === 0) {
   }
 }
 
-// 3. the finished frontmost section
+// 3. the frontmost section — the one being delivered from
+//
+// An in-between cut ships from a section that still has open tickets, so requiring the frontmost
+// section to be finished would make this fall through for exactly that case and hand the release
+// no theme at all. It resolves either way; only the confidence differs, and the log says which.
 if (chosen.length === 0) {
   const open = all.filter(m => m.state === 'open' && Number.isFinite(order(m.title))).sort((a, b) => order(a.title) - order(b.title));
   const front = open[0];
-  if (front && front.open_issues === 0) { chosen = [front]; how = `frontmost milestone ${front.title.split(' ')[0]} is complete`; }
+  if (front) {
+    chosen = [front];
+    const name = front.title.split(' ')[0];
+    how = front.open_issues === 0
+      ? `frontmost milestone ${name} is complete`
+      : `frontmost milestone ${name} is the one in progress — inferred, ${front.open_issues} ticket(s) still open`;
+  }
 }
 
 const out = chosen.length
@@ -65,7 +77,7 @@ const out = chosen.length
     }
   : { milestones: '', milestone: '', theme: '', numbers: '' };
 
-console.error(chosen.length ? `Resolved for ${tag}: ${out.milestones} (${how})` : `::warning::No milestone resolved for ${tag}: the tag message names none, no title starts with v${base}/v${majMin}, and the frontmost section is not complete.`);
+console.error(chosen.length ? `Resolved for ${tag}: ${out.milestones} (${how})` : `::warning::No milestone resolved for ${tag}: the tag message names none, no title starts with v${base}/v${majMin}, and there is no open section to deliver from.`);
 if (process.env.GITHUB_OUTPUT) {
   execFileSync('sh', ['-c', `printf '%s\\n' "$LINES" >> "$GITHUB_OUTPUT"`], { env: { ...process.env, LINES: Object.entries(out).map(([k, v]) => `${k}=${v}`).join('\n') } });
 }

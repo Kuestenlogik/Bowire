@@ -2,9 +2,11 @@
 // Release bookkeeping — one tool, the same in every Küstenlogik repository.
 //
 // Milestones are ordered work sections `M<n> — <theme>`; a release gets its version number
-// only when it is cut and names the sections it ships. A sibling repository on the product's
-// board mirrors the sections as its own milestones (same titles); the board's Release field,
-// where the board has one, carries the version a ticket shipped in and is stamped at the cut.
+// only when it is cut and names the sections it ships. A section is delivered in one release or
+// several — the last cut finishes it, an `--interim` cut before that ships what is closed so far
+// and leaves it open. A sibling repository on the product's board mirrors the sections as its own
+// milestones (same titles); the board's Release field, where the board has one, carries the
+// delivery a ticket shipped in: the full version, closed tickets only, written once.
 //
 //   status                              The sections in order with open/closed counts (main repo
 //                                       and its mirrors), whether a release is due — the frontmost
@@ -16,13 +18,16 @@
 //                                       what is not in, and what closed since the last tag outside
 //                                       the shipped sections. Writes artifacts/release/<tag>.md.
 //                                       --highlights prints only the grouped ticket list.
-//   cut <version> [<section>…] [--dry-run]
+//   cut <version> [<section>…] [--interim] [--dry-run]
 //                                       Refuses while a shipped section (or a mirror) has an open
-//                                       ticket; tags with a message naming the sections and pushes;
-//                                       publishes the drafted notes as the GitHub release unless a
-//                                       release pipeline (.github/workflows/release.yml) does that
-//                                       on the tag; closes the sections and their mirrors with
-//                                       "Ausgeliefert in <tag>"; stamps the board's Release field.
+//                                       ticket — --interim overrides that for an in-between
+//                                       delivery; tags with a message naming the sections and
+//                                       pushes; publishes the drafted notes as the GitHub release
+//                                       unless a release pipeline (.github/workflows/release.yml)
+//                                       does that on the tag; closes the sections and their mirrors
+//                                       with "Ausgeliefert in <tag>" — but only those with nothing
+//                                       left open; stamps the board's Release field on every closed
+//                                       item that does not already carry one.
 //
 // Needs the gh CLI signed in (project scope for the board). Sections are given as M-number ("M1")
 // or full title.
@@ -127,7 +132,7 @@ if (command === 'status') {
 // ── notes / cut ──────────────────────────────────────────────────────────────
 if (command === 'notes' || command === 'cut') {
   const [version, ...names] = args;
-  if (!version) { console.error('usage: release.mjs notes|cut <version> [<section>…]'); process.exit(2); }
+  if (!version) { console.error('usage: release.mjs notes|cut <version> [<section>…] [--interim]'); process.exit(2); }
   const all = sections();
   const b = board();
   let chosen = names.length ? resolve(names, all) : [];
@@ -141,7 +146,9 @@ if (command === 'notes' || command === 'cut') {
   }
   const titles = chosen.map(m => m.title);
   const tag = version.startsWith('v') ? version : 'v' + version;
-  const majMin = 'v' + tag.slice(1).replace(/-.*$/, '').split('.').slice(0, 2).join('.');
+  // The stamp names the delivery: release notes are written per cut, so v2.8.0 and v2.8.1
+  // have to stay apart. A prerelease stamps the version it previews.
+  const shippedVersion = 'v' + tag.slice(1).replace(/-.*$/, '');
   const since = opts.get('--since') ?? (() => { try { return git('describe', '--tags', '--abbrev=0'); } catch { return null; } })();
   const notesPath = `artifacts/release/${tag}.md`;
 
@@ -189,6 +196,9 @@ if (command === 'notes' || command === 'cut') {
     for (const s of stillOpen) console.error(`WARNING: still open: ${s.repo}#${s.number} ${s.title}`);
     let md = `${name} ${tag} — enthält ${titles.join(', ')}.${since ? ` ${git('rev-list', '--count', `${since}..HEAD`)} Commits seit ${since}.` : ''}\n\n## Themen\n\n`;
     for (const k of keys) md += `### ${k}\n\n${grouped.get(k).map(l => `- ${l}`).join('\n')}\n\n`;
+    // What is still open in a shipped section belongs in the notes of an in-between delivery:
+    // the header says "enthält <section>", and without this the reader would take that literally.
+    if (stillOpen.length) md += `## Noch offen in ${titles.join(', ')}\n\n${stillOpen.map(s => `- ${s.repo === repo ? '' : s.repo}#${s.number} ${s.title}`).join('\n')}\n\n`;
     const others = all.filter(m => m.state === 'open' && !chosen.includes(m));
     if (others.length) md += `## Nicht drin\n\n${others.map(m => `- ${m.title}: ${m.open_issues} offen`).join('\n')}\n\n`;
     if (since) {
@@ -205,7 +215,18 @@ if (command === 'notes' || command === 'cut') {
   }
 
   // cut
-  if (stillOpen.length) { for (const s of stillOpen) console.error(`${s.repo}#${s.number} is still open`); console.error('Not cutting.'); process.exit(1); }
+  //
+  // A section is delivered in one release or several. The default cut is the one that finishes a
+  // section, and an open ticket in it means the cut is premature — so it refuses. An in-between
+  // delivery is the other case and has to say so: `--interim` ships what is closed, lists the rest
+  // as not included, and leaves the milestone open for the cut that does finish it.
+  const interim = flags.has('--interim');
+  if (stillOpen.length && !interim) {
+    for (const s of stillOpen) console.error(`${s.repo}#${s.number} is still open`);
+    console.error('Not cutting. Pass --interim to deliver what is closed and keep the section open.');
+    process.exit(1);
+  }
+  if (stillOpen.length) console.log(`[interim] ${stillOpen.length} ticket(s) stay open for a later cut of ${titles.join(', ')}`);
   if (!existsSync(notesPath)) { console.error(`no ${notesPath} — run 'notes' first`); process.exit(2); }
   const dry = flags.has('--dry-run');
   const say = s => console.log((dry ? '[dry-run] ' : '') + s);
@@ -218,27 +239,41 @@ if (command === 'notes' || command === 'cut') {
     say(`gh release create ${tag} --notes-file ${notesPath}`);
     if (!dry) gh('release', 'create', tag, '--repo', repo, '--title', `${name} ${tag}`, '--notes-file', notesPath);
   }
+  // Only the cut that finishes a section closes it. A section may be delivered from more than
+  // once, and an in-between cut that closed the milestone would drop the section off the roadmap
+  // with its remaining tickets still open.
   for (const m of chosen) {
-    for (const target of [{ repo, ...m }, ...mirrors(m.title, b)]) {
+    const targets = [{ repo, ...m }, ...mirrors(m.title, b)];
+    const openTotal = targets.reduce((sum, t) => sum + t.open_issues, 0);
+    if (openTotal > 0) {
+      say(`keep milestone '${m.title}' open: ${openTotal} ticket(s) left — ${tag} delivers from it, it does not finish it`);
+      continue;
+    }
+    for (const target of targets) {
       say(`close ${target.repo} milestone '${target.title}': Ausgeliefert in ${tag}`);
       if (!dry) gh('api', '-X', 'PATCH', `repos/${target.repo}/milestones/${target.number}`, '-f', 'state=closed', '-f', `description=${(target.description ?? '').trim()} Ausgeliefert in ${tag}.`);
     }
   }
   if (b?.release) {
-    let option = b.release.options.find(o => o.name === majMin);
-    say(`stamp Release = ${majMin} on every board item of ${titles.join(', ')}`);
+    let option = b.release.options.find(o => o.name === shippedVersion);
+    say(`stamp Release = ${shippedVersion} on every closed board item of ${titles.join(', ')}`);
     if (!dry) {
       if (!option) {
-        const inner = [{ name: majMin }, ...b.release.options].map(o => `{${o.id ? `id: "${o.id}", ` : ''}name: ${JSON.stringify(o.name)}, color: GRAY, description: ${JSON.stringify(o.id ? '' : `Ausgeliefert als ${tag}`)}}`).join(',');
+        const inner = [{ name: shippedVersion }, ...b.release.options].map(o => `{${o.id ? `id: "${o.id}", ` : ''}name: ${JSON.stringify(o.name)}, color: GRAY, description: ${JSON.stringify(o.id ? '' : `Ausgeliefert als ${tag}`)}}`).join(',');
         graphql(`mutation { updateProjectV2Field(input: {fieldId: "${b.release.id}", name: "Release", singleSelectOptions: [${inner}]}) { projectV2Field { ... on ProjectV2SingleSelectField { id } } } }`);
-        option = board().release.options.find(o => o.name === majMin);
+        option = board().release.options.find(o => o.name === shippedVersion);
       }
-      let n = 0;
+      // Closed only: an open ticket has not shipped. First stamp wins: a ticket ships once, and
+      // overwriting would drag every earlier ticket of the section onto the newest cut — which
+      // would leave the field saying no more than the milestone already says.
+      let n = 0, held = 0, earlier = 0;
       for (const it of boardItems(b)) {
-        if (!titles.includes(it.content.milestone?.title ?? '') || it.release?.name === majMin) continue;
+        if (!titles.includes(it.content.milestone?.title ?? '')) continue;
+        if (it.content.state !== 'CLOSED') { held++; continue; }
+        if (it.release?.name) { if (it.release.name !== shippedVersion) earlier++; continue; }
         gh('project', 'item-edit', '--project-id', b.id, '--id', it.id, '--field-id', b.release.id, '--single-select-option-id', option.id); n++;
       }
-      console.log(`stamped ${n} item(s)`);
+      console.log(`stamped ${n} item(s)` + (held ? `, ${held} still open` : '') + (earlier ? `, ${earlier} shipped earlier` : ''));
     }
   }
   const bump = existsSync('Directory.Build.props') ? readFileSync('Directory.Build.props', 'utf8').match(/<Version>([^<]+)<\/Version>/)?.[1] : null;
@@ -246,5 +281,5 @@ if (command === 'notes' || command === 'cut') {
   process.exit(0);
 }
 
-console.error('usage: release.mjs status | notes <version> [<section>…] [--highlights] | cut <version> [<section>…] [--dry-run]');
+console.error('usage: release.mjs status | notes <version> [<section>…] [--highlights] | cut <version> [<section>…] [--interim] [--dry-run]');
 process.exit(2);
