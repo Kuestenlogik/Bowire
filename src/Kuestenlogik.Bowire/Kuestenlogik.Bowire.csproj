@@ -28,6 +28,25 @@
          Problem(). Same pattern Core uses for the Protocol.* plugins
          that lean on the helpers. -->
     <InternalsVisibleTo Include="Kuestenlogik.Bowire.Interceptor" />
+    <!-- #311 - /api/flows moved out beside the Flows rail JS. Its two
+         handlers call FlowStore, WorkspaceScopeQuery and
+         BowireEndpointHelpers, all internal to core. Same reason the
+         Interceptor entry above exists. -->
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.Flows" />
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.Flows.Tests" />
+    <!-- #311 - the help surface (/api/help/* + the standalone
+         /help/topic/{id} page) moved out beside the Help rail JS. It
+         calls BowireEndpointHelpers.Problem for the 501 that names the
+         missing package. -->
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.Help" />
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.Help.Tests" />
+    <!-- #311 - the recording HTTP surface (/api/recordings/* and
+         /api/recording/session/*) moved out beside the Recordings rail
+         JS. RecordingStore, ChunkedRecordingStore and
+         BowireRecordingSession stay in core, where the CLI and the
+         replay pipeline reach them. -->
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.Recordings" />
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.Recordings.Tests" />
     <InternalsVisibleTo Include="bowire" />
     <InternalsVisibleTo Include="Kuestenlogik.Bowire.Tests" />
     <InternalsVisibleTo Include="Kuestenlogik.Bowire.Protocol.Grpc.Tests" />

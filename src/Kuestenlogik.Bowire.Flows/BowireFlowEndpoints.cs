@@ -2,12 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Text.Json;
+using Kuestenlogik.Bowire.Endpoints;
+using Kuestenlogik.Bowire.Plugins;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Logging;
 
-namespace Kuestenlogik.Bowire.Endpoints;
+namespace Kuestenlogik.Bowire.Flows;
 
 /// <summary>
 /// Maps the disk-backed flow endpoints (#641).
@@ -23,12 +25,21 @@ namespace Kuestenlogik.Bowire.Endpoints;
 /// One store and one pair of endpoints, in the shape the others already use,
 /// answers all four.
 /// </para>
+/// <para>
+/// #311 — moved out of core beside the rail's JS. The store stays in
+/// core: <c>bowire test</c> and the two MCP resources read it directly,
+/// and they must keep working in a host that never installs this
+/// package. What moves is the HTTP surface, which only the Flows rail
+/// uses.
+/// </para>
 /// </remarks>
-internal static class BowireFlowEndpoints
+public sealed class BowireFlowEndpoints : IBowireEndpointContribution
 {
-    public static IEndpointRouteBuilder MapBowireFlowEndpoints(
-        this IEndpointRouteBuilder endpoints, BowireOptions options, string basePath)
+    /// <inheritdoc />
+    public void MapEndpoints(IEndpointRouteBuilder endpoints, string basePath)
     {
+        ArgumentNullException.ThrowIfNull(endpoints);
+
         endpoints.MapGet($"{basePath}/api/flows", (HttpContext ctx) =>
         {
             var scope = WorkspaceScopeQuery.From(ctx);
@@ -70,7 +81,5 @@ internal static class BowireFlowEndpoints
                     statusCode: 400);
             }
         }).ExcludeFromDescription();
-
-        return endpoints;
     }
 }

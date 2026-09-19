@@ -155,9 +155,11 @@ internal static class BowireApiEndpoints
             .MapBowireChannelEndpoints(options, basePath)
             .MapBowireUploadEndpoints(options, basePath)
             .MapBowireEnvironmentEndpoints(options, basePath)
-            .MapBowireFlowEndpoints(options, basePath)
-            .MapBowireRecordingEndpoints(options, basePath)
-            .MapBowireRecordingSessionEndpoints(basePath)
+            // #311 - three route families left this chain for the packages
+            // that own their UI, and arrive through the endpoint-contribution
+            // seam further down: /api/flows (Flows), /api/recordings/* and
+            // /api/recording/session/* (Recordings). Their stores stay in
+            // core, where the CLI and the replay pipeline reach them.
             .MapBowireCollectionEndpoints(options, basePath)
             .MapBowireParallelEndpoints(basePath)
             .MapBowirePresetEndpoints(basePath)
@@ -174,7 +176,8 @@ internal static class BowireApiEndpoints
             .MapBowireImpersonationEndpoints(basePath)
             .MapBowireSemanticsEndpoints(basePath)
             .MapBowireSecurityEndpoints(basePath)
-            .MapBowireHelpEndpoints(basePath)
+            // #311 - /api/help/* and /help/topic/{id} moved to
+            // Kuestenlogik.Bowire.Help; they arrive through the seam below.
             .MapBowireCatalogueEndpoints(basePath);
 
         // #325 (v2.1) — Endpoint contributions discovered from sibling

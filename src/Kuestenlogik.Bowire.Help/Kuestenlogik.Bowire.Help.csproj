@@ -7,6 +7,9 @@
   </PropertyGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="Kuestenlogik.Bowire.Tests" />
+    <!-- #311 - StandaloneHelpHtml came over from core with the help
+         endpoints; its escaping tests live in this package now. -->
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.Help.Tests" />
   </ItemGroup>
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />

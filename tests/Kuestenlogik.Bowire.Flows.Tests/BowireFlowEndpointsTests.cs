@@ -6,7 +6,6 @@ using System.Net.Http;
 using System.Text;
 using System.Text.Json;
 using Kuestenlogik.Bowire.Auth;
-using Kuestenlogik.Bowire.Endpoints;
 using Kuestenlogik.Bowire.Projects;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -15,7 +14,7 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
-namespace Kuestenlogik.Bowire.Tests;
+namespace Kuestenlogik.Bowire.Flows.Tests;
 
 /// <summary>
 /// <c>GET</c> / <c>PUT /api/flows</c> — the server side flows did not have
@@ -217,7 +216,7 @@ public sealed class BowireFlowEndpointsTests : IDisposable
                    {
                        app.UseRouting();
                        app.UseEndpoints(e =>
-                           e.MapBowireFlowEndpoints(new BowireOptions(), string.Empty));
+                           new BowireFlowEndpoints().MapEndpoints(e, string.Empty));
                    });
             })
             .Build();

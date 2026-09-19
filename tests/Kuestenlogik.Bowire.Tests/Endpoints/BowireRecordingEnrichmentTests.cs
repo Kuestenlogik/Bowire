@@ -6,6 +6,7 @@ using System.Text.Json.Nodes;
 using Kuestenlogik.Bowire.Endpoints;
 using Kuestenlogik.Bowire.Mocking;
 using Kuestenlogik.Bowire.Tests.Mocking;
+using Kuestenlogik.Bowire.Recordings;
 
 namespace Kuestenlogik.Bowire.Tests.Endpoints;
 

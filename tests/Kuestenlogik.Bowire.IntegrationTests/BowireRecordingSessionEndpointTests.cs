@@ -15,6 +15,7 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Kuestenlogik.Bowire.Recordings;
 
 namespace Kuestenlogik.Bowire.IntegrationTests;
 
@@ -242,7 +243,7 @@ public sealed class BowireRecordingSessionEndpointTests
                    .Configure(app =>
                    {
                        app.UseRouting();
-                       app.UseEndpoints(e => e.MapBowireRecordingSessionEndpoints(basePath: string.Empty));
+                       app.UseEndpoints(e => new BowireRecordingSessionEndpoints().MapEndpoints(e, string.Empty));
                    })
                    .ConfigureServices(s =>
                    {

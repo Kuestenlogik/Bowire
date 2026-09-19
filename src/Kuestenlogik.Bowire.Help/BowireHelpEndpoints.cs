@@ -1,13 +1,14 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
-using Kuestenlogik.Bowire.Help;
+using Kuestenlogik.Bowire.Endpoints;
+using Kuestenlogik.Bowire.Plugins;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Kuestenlogik.Bowire.Endpoints;
+namespace Kuestenlogik.Bowire.Help;
 
 /// <summary>
 /// HTTP surface for the in-app help system (#154). Four endpoints:
@@ -25,11 +26,23 @@ namespace Kuestenlogik.Bowire.Endpoints;
 /// probe always answers <c>200</c> with <c>{ available: bool }</c> so
 /// the workbench can gate UI affordances at boot in one round-trip.
 /// </summary>
-internal static class BowireHelpEndpoints
+/// <remarks>
+/// <para>
+/// #311 — moved out of core beside the rail's JS. The 501 branch below
+/// is still reachable and still worth having: a host can reference this
+/// package without calling <c>AddBowireHelp()</c>, and then the routes
+/// exist but the provider does not. A host that never references the
+/// package gets 404 instead, which the boot probe in init.js already
+/// reads as "not available".
+/// </para>
+/// </remarks>
+public sealed class BowireHelpEndpoints : IBowireEndpointContribution
 {
-    public static IEndpointRouteBuilder MapBowireHelpEndpoints(
-        this IEndpointRouteBuilder endpoints, string basePath)
+    /// <inheritdoc />
+    public void MapEndpoints(IEndpointRouteBuilder endpoints, string basePath)
     {
+        ArgumentNullException.ThrowIfNull(endpoints);
+
         endpoints.MapGet($"{basePath}/api/help/available", (HttpContext ctx) =>
         {
             var provider = ctx.RequestServices.GetService<IBowireHelpProvider>();
@@ -102,8 +115,6 @@ internal static class BowireHelpEndpoints
                 StandaloneHelpHtml.Topic(basePath, topic),
                 "text/html; charset=utf-8");
         }).ExcludeFromDescription();
-
-        return endpoints;
     }
 
     /// <summary>

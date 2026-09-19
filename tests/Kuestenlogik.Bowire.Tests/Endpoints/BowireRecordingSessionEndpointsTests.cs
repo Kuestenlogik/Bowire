@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Kuestenlogik.Bowire.Recordings;
 
 namespace Kuestenlogik.Bowire.Tests.Endpoints;
 
@@ -58,7 +59,7 @@ public sealed class BowireRecordingSessionEndpointsTests
         b.WebHost.ConfigureKestrel(o => o.Listen(IPAddress.Loopback, 0, l => l.Protocols = HttpProtocols.Http1));
         b.Services.AddSingleton<BowireRecordingSession>();
         var app = b.Build();
-        app.MapBowireRecordingSessionEndpoints("");
+        new BowireRecordingSessionEndpoints().MapEndpoints(app, "");
         await app.StartAsync(ct).ConfigureAwait(false);
         var http = new HttpClient { BaseAddress = new Uri(app.Urls.First()) };
         return new Host(app, http, storeFile, prev);

@@ -2,13 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Text.Json;
+using Kuestenlogik.Bowire.Endpoints;
 using Kuestenlogik.Bowire.Mocking;
+using Kuestenlogik.Bowire.Plugins;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Logging;
 
-namespace Kuestenlogik.Bowire.Endpoints;
+namespace Kuestenlogik.Bowire.Recordings;
 
 /// <summary>
 /// Maps the disk-backed recording endpoints. Recordings live at
@@ -18,11 +20,20 @@ namespace Kuestenlogik.Bowire.Endpoints;
 /// localStorage cache for instant updates without server round-trips —
 /// these endpoints are the source of truth.
 /// </summary>
-internal static class BowireRecordingEndpoints
+/// <remarks>
+/// <para>
+/// #311 - moved out of core beside the rail's JS. RecordingStore stays
+/// in core: the CLI and the replay pipeline read it directly and must
+/// keep working without this package. What moves is the HTTP surface,
+/// which only recording.js calls.
+/// </para>
+/// </remarks>
+public sealed class BowireRecordingEndpoints : IBowireEndpointContribution
 {
-    public static IEndpointRouteBuilder MapBowireRecordingEndpoints(
-        this IEndpointRouteBuilder endpoints, BowireOptions options, string basePath)
+    /// <inheritdoc />
+    public void MapEndpoints(IEndpointRouteBuilder endpoints, string basePath)
     {
+        ArgumentNullException.ThrowIfNull(endpoints);
         endpoints.MapGet($"{basePath}/api/recordings", (HttpContext ctx) =>
         {
             // #144 Phase 1.6 — pass workspaceId so each workspace's
@@ -238,7 +249,6 @@ internal static class BowireRecordingEndpoints
             }
         }).ExcludeFromDescription();
 
-        return endpoints;
     }
 
     /// <summary>

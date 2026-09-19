@@ -1,10 +1,9 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
-using Kuestenlogik.Bowire.Endpoints;
 using Kuestenlogik.Bowire.Help;
 
-namespace Kuestenlogik.Bowire.Tests;
+namespace Kuestenlogik.Bowire.Help.Tests;
 
 /// <summary>
 /// The standalone help page served at <c>/help/topic/{id}</c> (#324).

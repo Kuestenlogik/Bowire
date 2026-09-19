@@ -3,14 +3,16 @@
 
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Kuestenlogik.Bowire.Endpoints;
 using Kuestenlogik.Bowire.Mocking;
+using Kuestenlogik.Bowire.Plugins;
 using Kuestenlogik.Bowire.Recording;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Kuestenlogik.Bowire.Endpoints;
+namespace Kuestenlogik.Bowire.Recordings;
 
 /// <summary>
 /// REST + SSE surface for the server-side <see cref="BowireRecordingSession"/>
@@ -38,7 +40,15 @@ namespace Kuestenlogik.Bowire.Endpoints;
 ///   workbench's badge updates.</item>
 /// </list>
 /// </summary>
-internal static class BowireRecordingSessionEndpoints
+/// <remarks>
+/// <para>
+/// #311 - moved out of core beside the rail's JS. The session object
+/// and RecordingStore stay in core: the CLI and the replay pipeline
+/// reach them directly and must keep working without this package.
+/// What moves is the HTTP surface, which only recording.js calls.
+/// </para>
+/// </remarks>
+public sealed class BowireRecordingSessionEndpoints : IBowireEndpointContribution
 {
     /// <summary>
     /// JSON serialiser used for both REST responses and SSE event payloads.
@@ -57,9 +67,10 @@ internal static class BowireRecordingSessionEndpoints
         },
     };
 
-    public static IEndpointRouteBuilder MapBowireRecordingSessionEndpoints(
-        this IEndpointRouteBuilder endpoints, string basePath)
+    /// <inheritdoc />
+    public void MapEndpoints(IEndpointRouteBuilder endpoints, string basePath)
     {
+        ArgumentNullException.ThrowIfNull(endpoints);
         endpoints.MapPost($"{basePath}/api/recording/session/start", async (HttpContext ctx) =>
         {
             var session = ctx.RequestServices.GetRequiredService<BowireRecordingSession>();
@@ -208,7 +219,6 @@ internal static class BowireRecordingSessionEndpoints
             }
         }).ExcludeFromDescription();
 
-        return endpoints;
     }
 
     /// <summary>

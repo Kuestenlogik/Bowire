@@ -34,5 +34,10 @@
   </ItemGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="Kuestenlogik.Bowire.Recordings.Tests" />
+    <!-- #311 - the recording HTTP surface came over from core, and the
+         suites that came with it call BowireRecordingEndpoints
+         .TryEnrichWithSourceSchema directly. -->
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.Tests" />
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.IntegrationTests" />
   </ItemGroup>
 </Project>

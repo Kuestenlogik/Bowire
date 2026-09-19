@@ -169,6 +169,14 @@ public sealed class BowireHelpEndpointTests
     {
         _ = typeof(BowireGrpcProtocol).Assembly;
         _ = typeof(BowireSignalRProtocol).Assembly;
+        // #311 - the help routes live on Kuestenlogik.Bowire.Help now, and
+        // the contribution scan reads AppDomain.CurrentDomain.GetAssemblies().
+        // A real host is covered: AddBowire() calls ForceLoadBowireAssemblies,
+        // which LoadFroms every Kuestenlogik.Bowire*.dll beside the entry
+        // assembly. This harness maps without adding, so nothing force-loads
+        // and the reference alone leaves the assembly untouched -- same reason
+        // the two protocol plugins above are poked.
+        _ = typeof(Kuestenlogik.Bowire.Help.BowireHelpEndpoints).Assembly;
 
         var builder = WebApplication.CreateBuilder();
         builder.WebHost.UseTestServer();

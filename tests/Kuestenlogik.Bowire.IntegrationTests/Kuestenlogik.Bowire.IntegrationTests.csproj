@@ -99,6 +99,13 @@
          that proves the route surfaces 501 when AddBowireGitWorkspace
          was NOT called (no watcher leaks into stock embedded hosts). -->
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Workspace.Git\Kuestenlogik.Bowire.Workspace.Git.csproj" />
+    <!-- #311 - the recording HTTP surface moved to this package;
+         the suites below map it and call its enrichment helper. -->
+    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Recordings\Kuestenlogik.Bowire.Recordings.csproj" />
+    <!-- #311 - the help HTTP surface moved to this package; the suite
+         drives it through MapBowire(), which discovers contributions
+         from loaded assemblies. -->
+    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Help\Kuestenlogik.Bowire.Help.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Protobuf Include="Protos/*.proto" GrpcServices="Both" />

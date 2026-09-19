@@ -2,9 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Net;
-using Kuestenlogik.Bowire.Help;
 
-namespace Kuestenlogik.Bowire.Endpoints;
+namespace Kuestenlogik.Bowire.Help;
 
 /// <summary>
 /// Minimal-frame HTML wrapper used by the standalone
