@@ -167,21 +167,10 @@ internal static class CliHandler
 
         var color = UseColor(io.Out);
 
-        // #654 — services parsed out of a .proto are merged by the caller,
-        // not by a plugin: the gRPC plugin discovers over reflection, and a
-        // file on disk has no server to reflect against. /api/services does
-        // this same merge, which is why the workbench showed an uploaded
-        // .proto and `bowire discover` did not. The store answers with
-        // whatever --schema named when one was given, and with the identity's
-        // own uploads otherwise.
-        var fromSchemas = ProtoUploadStore.GetServices();
-        foreach (var svc in fromSchemas) svc.IsUploaded = true;
-
-        // Probed services win a name clash: a live server describing itself is
-        // more current than a file somebody saved.
-        var named = new HashSet<string>(probe.Services.Select(s => s.Name), StringComparer.Ordinal);
-        var services = new List<BowireServiceInfo>(probe.Services);
-        services.AddRange(fromSchemas.Where(s => named.Add(s.Name)));
+        // Uploaded schemas — and whatever --schema named — are folded in by
+        // BowireDiscoveryProbe now, so this surface, /api/services and the
+        // bowire.discover MCP tool answer with the same list.
+        var services = probe.Services;
 
         foreach (var svc in services)
         {

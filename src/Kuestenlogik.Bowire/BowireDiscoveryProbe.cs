@@ -101,7 +101,14 @@ public static class BowireDiscoveryProbe
         var services = new List<BowireServiceInfo>();
         var attempts = new List<BowireDiscoveryAttempt>(protocolsToProbe.Count);
         if (protocolsToProbe.Count == 0)
-            return new BowireDiscoveryProbeResult(services, attempts);
+        {
+            // Still merged: an uploaded schema does not come from a plugin, so
+            // "no plugin matched" is not a reason to withhold it. A host with
+            // none loaded, or a hint that names one that is not installed,
+            // would otherwise answer "nothing here" about a schema the
+            // operator had just handed over.
+            return new BowireDiscoveryProbeResult(WithUploadedSchemas(services, serverUrl), attempts);
+        }
 
         using var probeCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         probeCts.CancelAfter(perProbeCeiling);
@@ -239,7 +246,55 @@ public static class BowireDiscoveryProbe
             attempts.Add(attempt);
         }
 
-        return new BowireDiscoveryProbeResult(services, attempts);
+        return new BowireDiscoveryProbeResult(WithUploadedSchemas(services, serverUrl), attempts);
+    }
+
+    /// <summary>
+    /// Fold in the services described by an uploaded <c>.proto</c>, which no
+    /// plugin can find: a file on disk has no server to reflect against.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Here rather than in each caller, for the reason
+    /// <see cref="WithPluginHint"/> already gives about the plugin hint. Only
+    /// the HTTP endpoint merged these, so the workbench showed an uploaded
+    /// schema and the other two surfaces did not: <c>bowire discover</c>
+    /// found nothing, and <c>bowire.discover</c> answered an agent with
+    /// <c>services: []</c> for a URL the person beside it was reading a
+    /// method list for. Same identity, same store, three answers.
+    /// </para>
+    /// <para>
+    /// An uploaded schema wins a name clash, which is the endpoint's existing
+    /// rule and worth keeping: uploading one is an operator saying "describe
+    /// it this way", and that outranks what reflection volunteered.
+    /// </para>
+    /// <para>
+    /// The endpoint still merges <c>BowireOptions.ProtoSources</c> itself —
+    /// those are the host's own schemas, configured in code, and nothing
+    /// outside that process knows they exist.
+    /// </para>
+    /// </remarks>
+    private static List<BowireServiceInfo> WithUploadedSchemas(
+        List<BowireServiceInfo> probed, string serverUrl)
+    {
+        if (!ProtoUploadStore.HasUploads) return probed;
+
+        var uploaded = ProtoUploadStore.GetServices();
+        if (uploaded.Count == 0) return probed;
+
+        foreach (var svc in uploaded)
+        {
+            svc.IsUploaded = true;
+            svc.OriginUrl ??= serverUrl;
+        }
+
+        var merged = new List<BowireServiceInfo>(uploaded);
+        var taken = new HashSet<string>(uploaded.Select(s => s.Name), StringComparer.Ordinal);
+        foreach (var svc in probed)
+        {
+            if (taken.Add(svc.Name)) merged.Add(svc);
+        }
+        return merged;
     }
 
     /// <summary>

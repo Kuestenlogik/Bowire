@@ -154,20 +154,16 @@ internal static class BowireDiscoveryEndpoints
                     : Results.Json(Array.Empty<BowireServiceInfo>(), BowireEndpointHelpers.JsonOptions);
             }
 
-            // Collect proto-sourced services (code-configured + uploaded). Code-configured
-            // protos via options.ProtoSources are not "uploads" — they're the host's own
-            // schemas; only ProtoUploadStore entries get the IsUploaded flag.
+            // The host's own schemas, configured in code. Uploaded ones are
+            // not here any more: BowireDiscoveryProbe folds those in, so the
+            // CLI and the MCP tool get them too — only this endpoint used to,
+            // and the three surfaces disagreed about what a URL offered.
+            // ProtoSources stays, because nothing outside this process knows
+            // these exist.
             var protoServices = new List<BowireServiceInfo>();
 
             if (options.ProtoSources.Count > 0)
                 protoServices.AddRange(ProtoFileParser.ParseAll(options.ProtoSources));
-
-            if (ProtoUploadStore.HasUploads)
-            {
-                var uploaded = ProtoUploadStore.GetServices();
-                foreach (var svc in uploaded) svc.IsUploaded = true;
-                protoServices.AddRange(uploaded);
-            }
 
             // Try protocol plugins. The fanout itself lives in
             // BowireDiscoveryProbe so this endpoint, `bowire discover`

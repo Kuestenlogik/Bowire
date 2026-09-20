@@ -10,10 +10,20 @@ namespace Kuestenlogik.Bowire.Tests;
 /// registry fan-out behind <c>/api/services</c>, <c>bowire discover</c>
 /// and the <c>bowire.discover</c> MCP tool.
 /// <para>
-/// The behaviour worth pinning is the <em>attempt</em> bookkeeping, not
-/// the service merge: the bug this replaced only reported plugins that
-/// threw, so "the plugin ran and found nothing" — by far the most common
-/// outcome, and the one that explains an empty sidebar — was invisible.
+/// The <em>attempt</em> bookkeeping came first: the bug this replaced only
+/// reported plugins that threw, so "the plugin ran and found nothing" — by
+/// far the most common outcome, and the one that explains an empty sidebar —
+/// was invisible.
+/// </para>
+/// <para>
+/// The service merge is pinned here too now, and for the same reason the
+/// plugin hint is merged in the probe rather than by each caller. A plugin
+/// cannot find a schema that was uploaded from disk — there is no server to
+/// reflect against — so somebody folds it in, and only the HTTP endpoint
+/// did. Measured against one store and one URL, the three surfaces this type
+/// exists to keep identical gave three answers: the workbench listed the
+/// uploaded service, <c>bowire discover</c> found nothing, and
+/// <c>bowire.discover</c> answered an agent <c>services: []</c>.
 /// </para>
 /// </summary>
 public class BowireDiscoveryProbeTests
@@ -411,5 +421,115 @@ public class BowireDiscoveryProbeTests
             string serverUrl, string service, string method,
             bool showInternalServices, Dictionary<string, string>? metadata = null,
             CancellationToken ct = default) => Task.FromResult<IBowireChannel?>(null);
+    }
+
+    // ---- uploaded schemas, folded in for every surface ----
+
+    private const string BeaconProto = """
+        syntax = "proto3";
+        package differential;
+        service Beacon {
+          rpc Ping (PingRequest) returns (PingReply);
+        }
+        message PingRequest { string id = 1; }
+        message PingReply { string status = 1; }
+        """;
+
+    /// <summary>
+    /// An uploaded schema is a file under the identity's slot, so a test that
+    /// touches one needs storage of its own or it reads the developer's.
+    /// </summary>
+    private static async Task<BowireDiscoveryProbeResult> WithUpload(
+        BowireProtocolRegistry registry, Action<string> arrange)
+    {
+        var root = Path.Combine(Path.GetTempPath(), "bowire-probe-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        using (Kuestenlogik.Bowire.Auth.BowireUserContext.Enter(new Kuestenlogik.Bowire.Auth.DefaultBowireUserStore(root)))
+        {
+            ProtoUploadStore.Clear();
+            arrange(root);
+            try
+            {
+                return await BowireDiscoveryProbe.RunAsync(
+                    registry, "https://api.example.com", pluginHint: null,
+                    showInternalServices: false, perProbeCeiling: Ceiling,
+                    ct: TestContext.Current.CancellationToken);
+            }
+            finally
+            {
+                ProtoUploadStore.Clear();
+                try { Directory.Delete(root, recursive: true); } catch (IOException) { }
+            }
+        }
+    }
+
+    [Fact]
+    public async Task RunAsync_Includes_An_Uploaded_Schemas_Services()
+    {
+        // Every surface reads this list, which is what makes all three agree
+        // without any of them knowing that uploads exist.
+        var result = await WithUpload(new BowireProtocolRegistry(),
+            _ => ProtoUploadStore.AddAndParse(BeaconProto, "beacon.proto"));
+
+        var svc = Assert.Single(result.Services);
+        Assert.Equal("differential.Beacon", svc.Name);
+        Assert.Equal("Ping", Assert.Single(svc.Methods).Name);
+        Assert.True(svc.IsUploaded);
+        Assert.Equal("https://api.example.com", svc.OriginUrl);
+    }
+
+    [Fact]
+    public async Task RunAsync_Lists_An_Upload_Beside_What_The_Plugins_Found()
+    {
+        var registry = new BowireProtocolRegistry();
+        registry.Register(new FakeProtocol("a", "Alpha", services: 2));
+
+        var result = await WithUpload(registry,
+            _ => ProtoUploadStore.AddAndParse(BeaconProto, "beacon.proto"));
+
+        Assert.Equal(3, result.Services.Count);
+        Assert.Equal(1, result.Services.Count(s => s.Name == "differential.Beacon"));
+        // An upload is not a probe and must not appear as one in the table an
+        // operator reads when the list is shorter than expected.
+        Assert.Single(result.Attempts);
+    }
+
+    [Fact]
+    public async Task RunAsync_Lets_An_Uploaded_Schema_Win_A_Name_Clash()
+    {
+        // The endpoint's rule, kept: uploading a schema is the operator
+        // saying "describe it this way", which outranks what reflection
+        // volunteered under the same name.
+        var registry = new BowireProtocolRegistry();
+        registry.Register(new ClashingProtocol("live", "Live", "differential.Beacon"));
+
+        var result = await WithUpload(registry,
+            _ => ProtoUploadStore.AddAndParse(BeaconProto, "beacon.proto"));
+
+        var svc = Assert.Single(result.Services);
+        Assert.True(svc.IsUploaded);
+    }
+
+    [Fact]
+    public async Task RunAsync_Leaves_The_Common_Path_Untouched()
+    {
+        // Nothing uploaded is the overwhelmingly common case; it must not
+        // reorder or re-flag what the plugins returned.
+        var registry = new BowireProtocolRegistry();
+        registry.Register(new FakeProtocol("a", "Alpha", services: 2));
+
+        var result = await WithUpload(registry, _ => { });
+
+        Assert.Equal(2, result.Services.Count);
+        Assert.All(result.Services, s => Assert.False(s.IsUploaded));
+    }
+
+    /// <summary>A plugin that returns one service under a name we choose.</summary>
+    private sealed class ClashingProtocol(string id, string name, string serviceName)
+        : StubProtocolBase(id, name)
+    {
+        public override Task<List<BowireServiceInfo>> DiscoverAsync(
+            string serverUrl, bool showInternalServices, CancellationToken ct = default)
+            => Task.FromResult(new List<BowireServiceInfo> { new(serviceName, "live", []) });
     }
 }

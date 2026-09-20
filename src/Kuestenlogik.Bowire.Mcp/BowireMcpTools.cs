@@ -41,8 +41,23 @@ namespace Kuestenlogik.Bowire.Mcp;
 [McpServerToolType]
 public sealed class BowireMcpTools
 {
+    /// <remarks>
+    /// The naming policy is load-bearing. Every payload here is an anonymous
+    /// type with lower-case members, so it read as camelCase by accident —
+    /// except <c>probe.Attempts</c>, which is a record and came out as
+    /// <c>PluginId</c> / <c>Outcome</c> / <c>Details</c>. The tool's own
+    /// description tells the agent to read <c>outcome</c> and <c>details</c>,
+    /// and <c>/api/services</c> serves the same array camelCased, so the one
+    /// shape that came from a declared type was the one that disagreed with
+    /// both its documentation and its sibling surface. Naming it explicitly
+    /// makes the anonymous types keep what they had and fixes the record.
+    /// </remarks>
     private static readonly JsonSerializerOptions JsonOpts = new()
-    { PropertyNameCaseInsensitive = true, WriteIndented = false };
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        PropertyNameCaseInsensitive = true,
+        WriteIndented = false,
+    };
 
     private readonly BowireProtocolRegistry _registry;
     private readonly BowireMockHandleRegistry _mockHandles;
