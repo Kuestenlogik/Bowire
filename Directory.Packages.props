@@ -149,7 +149,7 @@
     <PackageVersion Include="HotChocolate.Subscriptions.InMemory" Version="16.6.6" />
     <PackageVersion Include="SocketIOClient" Version="4.0.5" />
     <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.12" />
-    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.10.0" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.10.1" />
     <PackageVersion Include="xunit.v3" Version="4.0.1" />
     <PackageVersion Include="Microsoft.Testing.Extensions.CodeCoverage" Version="18.11.0" />
     <!-- NuGet.Protocol: used by `bowire plugin install` to fetch
