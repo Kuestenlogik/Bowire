@@ -17,7 +17,7 @@
          integration fixture host the GreeterService behind UseGrpcWeb()
          on HTTP/1.1. Not pulled in by the plugin itself. -->
     <PackageVersion Include="Grpc.AspNetCore.Web" Version="2.83.0" />
-    <PackageVersion Include="Google.Protobuf" Version="3.36.1" />
+    <PackageVersion Include="Google.Protobuf" Version="3.36.2" />
     <!-- Cron parsing for scheduled benchmark runs (#232). Referenced only
          by the optional Kuestenlogik.Bowire.Benchmarking package, never by
          Core. Hand-rolling this was the alternative, and the schedule block
@@ -28,7 +28,7 @@
     <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.12" />
     <PackageVersion Include="Microsoft.AspNetCore.TestHost" Version="10.0.12" />
     <PackageVersion Include="Grpc.AspNetCore" Version="2.83.0" />
-    <PackageVersion Include="Grpc.Tools" Version="2.83.0" />
+    <PackageVersion Include="Grpc.Tools" Version="2.84.0" />
     <!-- Kuestenlogik.Bowire.Protocol.TacticalApi — Rheinmetall TacticalAPI
          gRPC plugin. Domain-specific (not universal like the other
          Protocol.* refs), so it's retired from Bundle.Workbench + moved
