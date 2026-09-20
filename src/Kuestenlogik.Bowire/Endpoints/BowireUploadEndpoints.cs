@@ -34,7 +34,11 @@ internal static class BowireUploadEndpoints
                     detail: "POST the raw .proto file contents as the request body (Content-Type: text/plain).",
                     instance: ctx.Request.Path);
 
-            var services = ProtoUploadStore.AddAndParse(body);
+            // #654 — the same ?name= the OpenAPI route already took. It is
+            // what the document is stored under, and a schema named
+            // routeguide.proto in a git-native workspace is the difference
+            // between a reviewable diff and an opaque one.
+            var services = ProtoUploadStore.AddAndParse(body, ctx.Request.Query["name"].FirstOrDefault());
             return Results.Json(new
             {
                 imported = services.Count,

@@ -1,12 +1,12 @@
 # Where Bowire stores things
 
-Bowire writes collections, environments, recordings, plugins, certificates and caches to disk. This page is the one place that says where, and why the answer is not simply `~/.bowire`.
+Bowire writes collections, environments, recordings, uploaded schemas, plugins, certificates and caches to disk. This page is the one place that says where, and why the answer is not simply `~/.bowire`.
 
 ## Two scopes
 
 | Scope | Windows | Linux / macOS | For |
 |---|---|---|---|
-| **Data** | `~\.bowire` (or the project's `.bowire\`) | `~/.bowire` (or the project's `.bowire/`) | A person's own work: collections, environments, recordings, presets |
+| **Data** | `~\.bowire` (or the project's `.bowire\`) | `~/.bowire` (or the project's `.bowire/`) | A person's own work: collections, environments, recordings, uploaded schemas, presets |
 | **Machine** | `%ProgramData%\Bowire` | `/var/lib/bowire` | State a service instance must find regardless of which account it runs as |
 
 **Data** is the default and the one almost everything uses. It follows the project opt-in below.
@@ -57,6 +57,7 @@ One Bowire serving several signed-in people puts each of them in their own slot 
 └─ users/
    ├─ ada-example.com-4f2a1c07/
    │  ├─ environments.json
+   │  ├─ schemas/            ← uploaded .proto / OpenAPI documents, one file each
    │  ├─ workspaces/
    │  └─ .migration.json    ← what was decided, and when
    └─ grace-example.com-9b3e5d10/
@@ -83,7 +84,7 @@ So Bowire offers it once, per identity:
 Three things are worth knowing about how it runs:
 
 - **It copies; it never moves.** The legacy files stay put. That costs disk and buys a switch back to single-user without a second migration, plus a way out if the data lands in the wrong slot — decline it in the right one. Deleting the originals is the operator's call to time.
-- **Everything comes along except what is named as not personal** — `plugins`, `certs`, `logs`, `cache`, `state`, `project.json`, the provisioned user list in `scim`, and `users` itself. An inclusion list would have to grow with every new store, and forgetting one would be silent data loss; forgetting to exclude one merely copies a cache.
+- **Everything comes along except what is named as not personal** — `plugins`, `certs`, `logs`, `cache`, `state`, `project.json`, the provisioned user list in `scim`, and `users` itself. An inclusion list would have to grow with every new store, and forgetting one would be silent data loss; forgetting to exclude one merely copies a cache. [#654](https://github.com/Kuestenlogik/Bowire/issues/654) is what that buys: `schemas/` arrived as a new top-level directory and migrated, archived and purged with the rest without a line being written for it.
 - **A slot that already holds work is left alone.** Merging two sets of environments produces one set nobody can take apart again.
 
 The decision is recorded in `.migration.json` inside the slot — what was copied, from where, and when. It lives there rather than in a central log so that deleting an identity deletes its receipt too: an index of people who used to exist is not state Bowire should keep on its own initiative.

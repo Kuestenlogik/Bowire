@@ -45,6 +45,14 @@ public sealed class BowireTestFixture : IAsyncLifetime
         app.MapBowire("/bowire");
 
         await app.StartAsync(TestContext.Current.CancellationToken);
+
+        // #654 — TestServer drops the caller's execution context by default,
+        // so a BowireUserContext scope opened by a test class would not reach
+        // the request handler: an endpoint that writes a file would resolve
+        // against the real ~/.bowire, quietly. Every class sharing this host
+        // gets the preserved context; one that sets nothing is unaffected.
+        app.GetTestServer().PreserveExecutionContext = true;
+
         Host = app;
         Client = app.GetTestClient();
     }

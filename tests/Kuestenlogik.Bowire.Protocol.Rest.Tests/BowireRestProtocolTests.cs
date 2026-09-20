@@ -21,8 +21,10 @@ namespace Kuestenlogik.Bowire.Protocol.Rest.Tests;
 /// need a server.
 /// </summary>
 [Collection(nameof(OpenApiUploadStoreTestGroup))]
-public sealed class BowireRestProtocolTests
+public sealed class BowireRestProtocolTests : IDisposable
 {
+    private readonly TempUserRoot _storage = new();
+
     public BowireRestProtocolTests()
     {
         OpenApiUploadStore.Clear();
@@ -34,6 +36,13 @@ public sealed class BowireRestProtocolTests
         // construct an OpenApi3-side type would otherwise see an
         // empty registry + return zero services.
         _ = typeof(OpenApi3Adapter);
+    }
+
+    public void Dispose()
+    {
+        OpenApiUploadStore.Clear();
+        _storage.Dispose();
+        GC.SuppressFinalize(this);
     }
 
     [Fact]
@@ -756,6 +765,8 @@ public sealed class RestInvokerTests
 [Collection(nameof(OpenApiUploadStoreTestGroup))]
 public sealed class OpenApiUploadStoreTests : IDisposable
 {
+    private readonly TempUserRoot _storage = new();
+
     public OpenApiUploadStoreTests()
     {
         OpenApiUploadStore.Clear();
@@ -764,6 +775,7 @@ public sealed class OpenApiUploadStoreTests : IDisposable
     public void Dispose()
     {
         OpenApiUploadStore.Clear();
+        _storage.Dispose();
     }
 
     [Fact]

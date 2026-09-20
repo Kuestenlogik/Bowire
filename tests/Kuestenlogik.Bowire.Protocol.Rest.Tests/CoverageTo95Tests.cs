@@ -29,8 +29,18 @@ namespace Kuestenlogik.Bowire.Protocol.Rest.Tests;
 // stubbed /openapi.json probe vanished, so it logged "no document found"
 // instead of the expected winning-probe Info entry).
 [Collection(nameof(OpenApiUploadStoreTestGroup))]
-public sealed class CoverageTo95Tests
+public sealed class CoverageTo95Tests : IDisposable
 {
+    // #654 — an uploaded document is a file in the identity's slot now, so
+    // this class needs a storage root of its own rather than the developer's.
+    private readonly TempUserRoot _storage = new();
+
+    public void Dispose()
+    {
+        _storage.Dispose();
+        GC.SuppressFinalize(this);
+    }
+
     [Fact]
     public void Register_null_adapter_throws_ArgumentNullException()
     {

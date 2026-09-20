@@ -495,8 +495,16 @@ public sealed class RestInvokerEndToEndTests
 /// fall-through on cold invocation.
 /// </summary>
 [Collection(nameof(RestInvokerEndToEndFixture))]
-public sealed class BowireRestProtocolEndToEndTests
+public sealed class BowireRestProtocolEndToEndTests : IDisposable
 {
+    private readonly TempUserRoot _storage = new("rest-e2e");
+
+    public void Dispose()
+    {
+        _storage.Dispose();
+        GC.SuppressFinalize(this);
+    }
+
     [Fact]
     public async Task Discover_And_Invoke_Against_Real_OpenApi_Server_Round_Trips()
     {

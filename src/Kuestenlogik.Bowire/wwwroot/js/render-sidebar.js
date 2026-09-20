@@ -712,7 +712,7 @@
                         var lower = file.name.toLowerCase();
                         var endpoint;
                         if (lower.endsWith('.proto')) {
-                            endpoint = '/api/proto/upload';
+                            endpoint = '/api/proto/upload?name=' + encodeURIComponent(file.name);
                             protoCount++;
                         } else {
                             // .json / .yaml / .yml — treat as OpenAPI/Swagger
@@ -3730,7 +3730,7 @@
                     var lower = file.name.toLowerCase();
                     var endpoint;
                     if (lower.endsWith('.proto')) {
-                        endpoint = '/api/proto/upload';
+                        endpoint = '/api/proto/upload?name=' + encodeURIComponent(file.name);
                         protoCount++;
                     } else {
                         endpoint = '/api/openapi/upload?name=' + encodeURIComponent(file.name);

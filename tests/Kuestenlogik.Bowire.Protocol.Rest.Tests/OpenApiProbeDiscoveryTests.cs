@@ -25,6 +25,8 @@ namespace Kuestenlogik.Bowire.Protocol.Rest.Tests;
 [Collection(nameof(OpenApiUploadStoreTestGroup))]
 public sealed class OpenApiProbeDiscoveryTests : IDisposable
 {
+    private readonly TempUserRoot _storage = new();
+
     public OpenApiProbeDiscoveryTests()
     {
         OpenApiUploadStore.Clear();
@@ -37,6 +39,7 @@ public sealed class OpenApiProbeDiscoveryTests : IDisposable
         OpenApiUploadStore.Clear();
         BowireOpenApiAdapterRegistry.ResetForTests();
         RestProbeLog.Clear();
+        _storage.Dispose();
     }
 
     [Fact]

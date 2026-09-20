@@ -77,6 +77,25 @@ public sealed class BowireUserMigratorTests : IDisposable
     }
 
     [Fact]
+    public void An_Uploaded_Schema_Travels_With_Its_Identity()
+    {
+        // #654 moved uploaded .proto and OpenAPI documents out of a
+        // process-wide static and into the slot, on the argument that they
+        // would then migrate, archive and purge with everything else rather
+        // than needing a line of their own. This is that argument, checked:
+        // schemas/ is a new top-level directory and nothing had to be told
+        // about it.
+        Legacy("schemas/index.json");
+        Legacy("schemas/routeguide.proto", "syntax = \"proto3\";");
+
+        var plan = Plan();
+
+        Assert.Equal(BowireUserMigrationState.Available, plan.State);
+        Assert.Contains(plan.Entries, e => e.RelativePath == "schemas/routeguide.proto");
+        Assert.Contains(plan.Entries, e => e.RelativePath == "schemas/index.json");
+    }
+
+    [Fact]
     public void A_Store_Nobody_Has_Written_Yet_Is_Still_Migrated()
     {
         // The exclusion list is the whole rule: anything not named in it comes

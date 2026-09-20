@@ -1,23 +1,42 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
+using Kuestenlogik.Bowire.Auth;
+
 namespace Kuestenlogik.Bowire.Protocol.Grpc.Tests;
 
 /// <summary>
-/// Unit tests for the <see cref="ProtoUploadStore"/> — the in-memory
-/// container that the upload endpoint feeds with user-supplied .proto
-/// payloads and the discovery endpoint reads back as services. The store
-/// is process-static, so each test starts and ends with <c>Clear()</c> to
-/// avoid cross-test bleed; xunit.v3 serialises test methods within a
-/// single class by default so the per-test reset is enough.
+/// Unit tests for the <see cref="ProtoUploadStore"/> — the store the upload
+/// endpoint feeds with user-supplied .proto payloads and the discovery
+/// endpoint reads back as services.
 /// </summary>
+/// <remarks>
+/// The documents live on disk under the identity's slot since #654, so this
+/// class scopes the user store to a temp directory of its own. Before that
+/// the store was a process-wide static and <c>Clear()</c> was the isolation;
+/// now <c>Clear()</c> would reach into whatever <c>~/.bowire</c> the machine
+/// running the suite happens to have.
+/// </remarks>
 public sealed class ProtoUploadStoreTests : IDisposable
 {
-    public ProtoUploadStoreTests() => ProtoUploadStore.Clear();
+    private readonly string _root = Path.Combine(
+        Path.GetTempPath(), "bowire-protos-" + Guid.NewGuid().ToString("N"));
+
+    private readonly IDisposable _userScope;
+
+    public ProtoUploadStoreTests()
+    {
+        Directory.CreateDirectory(_root);
+        _userScope = BowireUserContext.Enter(new DefaultBowireUserStore(_root));
+        ProtoUploadStore.Clear();
+    }
 
     public void Dispose()
     {
         ProtoUploadStore.Clear();
+        _userScope.Dispose();
+        try { Directory.Delete(_root, recursive: true); }
+        catch (IOException) { } catch (UnauthorizedAccessException) { }
         GC.SuppressFinalize(this);
     }
 

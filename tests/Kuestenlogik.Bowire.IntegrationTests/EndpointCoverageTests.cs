@@ -16,11 +16,23 @@ namespace Kuestenlogik.Bowire.IntegrationTests;
 /// <see cref="BowireTestFixture"/> so we re-use the same in-process
 /// host without a second WebApplication startup tax.
 /// </summary>
-public sealed class EndpointCoverageTests : IClassFixture<BowireTestFixture>
+public sealed class EndpointCoverageTests : IClassFixture<BowireTestFixture>, IDisposable
 {
     private readonly HttpClient _client;
 
+    // The upload cases below POST a .proto and an OpenAPI document through
+    // the real endpoints, which since #654 puts them on disk. Without a root
+    // of its own this suite would write into the developer's own workbench —
+    // and leave them there for the next discovery to pick up.
+    private readonly TempUserRoot _storage = new("endpoint-coverage");
+
     public EndpointCoverageTests(BowireTestFixture fixture) => _client = fixture.Client;
+
+    public void Dispose()
+    {
+        _storage.Dispose();
+        GC.SuppressFinalize(this);
+    }
 
     // ---------- BowireChannelEndpoints ----------
 

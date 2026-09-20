@@ -27,9 +27,17 @@ namespace Kuestenlogik.Bowire.IntegrationTests;
 // writes a process-wide static, so these must not run concurrently with
 // tests that expect the real plugin set.
 [Collection(nameof(RestInvokerEndToEndFixture))]
-public sealed class BowireDiscoveryDiagnosticsTests
+public sealed class BowireDiscoveryDiagnosticsTests : IDisposable
 {
     private const string TargetUrl = "https://api.example.com";
+
+    private readonly TempUserRoot _storage = new("discovery-diagnostics");
+
+    public void Dispose()
+    {
+        _storage.Dispose();
+        GC.SuppressFinalize(this);
+    }
 
     [Fact]
     public async Task Services_502_Lists_Every_Probed_Plugin_Including_The_Silent_One()
@@ -124,11 +132,13 @@ public sealed class BowireDiscoveryDiagnosticsTests
 
     private static async Task<DiagnosticsHost> StartAsync(BowireProtocolRegistry registry)
     {
-        // ProtoUploadStore is a process-wide static, and an earlier suite
-        // (EndpointCoverageTests.ProtoUpload_ValidContent_…) leaves an
-        // uploaded .proto behind. /api/services returns those with 200
-        // before it ever reaches the no-services triage, so without this
-        // the whole class passes in isolation and fails in a full run.
+        // This used to clear a process-wide static, because
+        // EndpointCoverageTests.ProtoUpload_ValidContent_… left an uploaded
+        // .proto behind and /api/services returns those with 200 before it
+        // ever reaches the no-services triage — the class passed in isolation
+        // and failed in a full run. Since #654 the uploads are per identity
+        // and this suite has a root of its own, so there is nothing to bleed;
+        // the clear stays as the cheap guarantee that this class starts empty.
         ProtoUploadStore.Clear();
 
         var builder = WebApplication.CreateBuilder();
@@ -142,6 +152,9 @@ public sealed class BowireDiscoveryDiagnosticsTests
         Endpoints.BowireEndpointHelpers.SetRegistry(registry);
 
         await app.StartAsync(TestContext.Current.CancellationToken);
+        // The handler reads the uploaded protos; without this it would not
+        // see this class's storage scope (#654).
+        app.GetTestServer().PreserveExecutionContext = true;
         return new DiagnosticsHost(app, app.GetTestClient());
     }
 
