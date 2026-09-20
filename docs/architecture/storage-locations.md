@@ -58,6 +58,7 @@ One Bowire serving several signed-in people puts each of them in their own slot 
    ├─ ada-example.com-4f2a1c07/
    │  ├─ environments.json
    │  ├─ schemas/            ← uploaded .proto / OpenAPI documents, one file each
+   │  │                       (the CLI names its own with --schema; see cli-mode.md)
    │  ├─ workspaces/
    │  └─ .migration.json    ← what was decided, and when
    └─ grace-example.com-9b3e5d10/

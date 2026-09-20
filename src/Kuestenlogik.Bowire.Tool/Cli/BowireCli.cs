@@ -773,6 +773,24 @@ internal static class BowireCli
     // attempt table, so a headless / CI user gets the same diagnosis the
     // workbench shows in its Sources rail. Exit 0 when at least one
     // service was found, 1 otherwise, so CI can gate on it.
+    /// <summary>
+    /// <c>--schema</c> — discover from a document on disk instead of from a
+    /// server, or in addition to one (#654).
+    /// </summary>
+    /// <remarks>
+    /// Repeatable, because a service is often described by more than one
+    /// file. The workbench's equivalent is dropping the file on the sidebar,
+    /// which stores it; a CLI run names it instead, so a pipeline does not
+    /// depend on what somebody uploaded on another machine.
+    /// </remarks>
+    private static Option<string[]> SchemaOption() => new("--schema")
+    {
+        Description = "Discover from a schema file instead of (or as well as) the server: "
+            + "a .proto, or an OpenAPI / Swagger .json / .yaml / .yml. Repeatable. "
+            + "The workbench's uploaded schemas are not read by the CLI — name the file here.",
+        AllowMultipleArgumentsPerToken = true,
+    };
+
     // internal so the CLI-grammar tests can parse it without booting a host.
     internal static Command BuildDiscoverCommand(IConfiguration cfg)
     {
@@ -781,48 +799,77 @@ internal static class BowireCli
             "Probe a URL with every loaded protocol plugin and report what each one found — or why it didn't. "
             + "Accepts the `protocol@url` hint form to pin one plugin.");
         var descriptorSet = GrpcDescriptorSetOption();
-        cmd.Add(url); cmd.Add(plaintext); cmd.Add(verbose); cmd.Add(descriptorSet);
+        var schemaFiles = SchemaOption();
+        cmd.Add(url); cmd.Add(plaintext); cmd.Add(verbose); cmd.Add(descriptorSet); cmd.Add(schemaFiles);
         cmd.SetAction(async (pr, _) =>
         {
-            var cli = BuildCliOptions(pr, url, plaintext, verbose, new Option<bool>("--compact"), null, null, null);
-            ApplyDescriptorSet(pr, descriptorSet, cli);
-            return await CliHandler.DiscoverAsync(cli,
-                pr.InvocationConfiguration.Output, pr.InvocationConfiguration.Error).ConfigureAwait(false);
+            var (given, code) = await CliSchemaInputs.ReadAsync(
+                pr.GetValue(schemaFiles), pr.InvocationConfiguration.Error).ConfigureAwait(false);
+            if (code != 0) return code;
+            // Opened here, not in the helper: an AsyncLocal set inside an
+            // async method does not survive its return (#654).
+            using (given is null ? null : SchemaUploadStore.EnterExplicit(given))
+            {
+                var cli = BuildCliOptions(pr, url, plaintext, verbose, new Option<bool>("--compact"), null, null, null);
+                ApplyDescriptorSet(pr, descriptorSet, cli);
+                return await CliHandler.DiscoverAsync(cli,
+                    pr.InvocationConfiguration.Output, pr.InvocationConfiguration.Error).ConfigureAwait(false);
+            }
         });
         return cmd;
     }
 
-    private static Command BuildListCommand(IConfiguration cfg)
+    // internal so the CLI-grammar tests can parse it without booting a host.
+    internal static Command BuildListCommand(IConfiguration cfg)
     {
         var (url, plaintext, verbose, _, _, _) = GrpcCliOptions(cfg);
         var descriptorSet = GrpcDescriptorSetOption();
+        var schemaFiles = SchemaOption();
         var cmd = new Command("list", "List discovered gRPC services.");
-        cmd.Add(url); cmd.Add(plaintext); cmd.Add(verbose); cmd.Add(descriptorSet);
+        cmd.Add(url); cmd.Add(plaintext); cmd.Add(verbose); cmd.Add(descriptorSet); cmd.Add(schemaFiles);
         cmd.SetAction(async (pr, _) =>
         {
-            var cli = BuildCliOptions(pr, url, plaintext, verbose, new Option<bool>("--compact"), null, null, null);
-            ApplyDescriptorSet(pr, descriptorSet, cli);
-            return await CliHandler.ListAsync(cli,
-                pr.InvocationConfiguration.Output, pr.InvocationConfiguration.Error).ConfigureAwait(false);
+            var (given, code) = await CliSchemaInputs.ReadAsync(
+                pr.GetValue(schemaFiles), pr.InvocationConfiguration.Error, allowProto: false).ConfigureAwait(false);
+            if (code != 0) return code;
+            // Opened here, not in the helper: an AsyncLocal set inside an
+            // async method does not survive its return (#654).
+            using (given is null ? null : SchemaUploadStore.EnterExplicit(given))
+            {
+                var cli = BuildCliOptions(pr, url, plaintext, verbose, new Option<bool>("--compact"), null, null, null);
+                ApplyDescriptorSet(pr, descriptorSet, cli);
+                return await CliHandler.ListAsync(cli,
+                    pr.InvocationConfiguration.Output, pr.InvocationConfiguration.Error).ConfigureAwait(false);
+            }
         });
         return cmd;
     }
 
-    private static Command BuildDescribeCommand(IConfiguration cfg)
+    // internal so the CLI-grammar tests can parse it without booting a host.
+    internal static Command BuildDescribeCommand(IConfiguration cfg)
     {
         var (url, plaintext, verbose, _, _, _) = GrpcCliOptions(cfg);
         var target = new Argument<string>("target") { Description = "Service name, or service/method." };
 
         var descriptorSet = GrpcDescriptorSetOption();
+        var schemaFiles = SchemaOption();
         var cmd = new Command("describe", "Describe a gRPC service or method.");
-        cmd.Add(target); cmd.Add(url); cmd.Add(plaintext); cmd.Add(verbose); cmd.Add(descriptorSet);
+        cmd.Add(target); cmd.Add(url); cmd.Add(plaintext); cmd.Add(verbose); cmd.Add(descriptorSet); cmd.Add(schemaFiles);
         cmd.SetAction(async (pr, _) =>
         {
-            var cli = BuildCliOptions(
-                pr, url, plaintext, verbose, new Option<bool>("--compact"), null, null, pr.GetValue(target));
-            ApplyDescriptorSet(pr, descriptorSet, cli);
-            return await CliHandler.DescribeAsync(cli,
-                pr.InvocationConfiguration.Output, pr.InvocationConfiguration.Error).ConfigureAwait(false);
+            var (given, code) = await CliSchemaInputs.ReadAsync(
+                pr.GetValue(schemaFiles), pr.InvocationConfiguration.Error, allowProto: false).ConfigureAwait(false);
+            if (code != 0) return code;
+            // Opened here, not in the helper: an AsyncLocal set inside an
+            // async method does not survive its return (#654).
+            using (given is null ? null : SchemaUploadStore.EnterExplicit(given))
+            {
+                var cli = BuildCliOptions(
+                    pr, url, plaintext, verbose, new Option<bool>("--compact"), null, null, pr.GetValue(target));
+                ApplyDescriptorSet(pr, descriptorSet, cli);
+                return await CliHandler.DescribeAsync(cli,
+                    pr.InvocationConfiguration.Output, pr.InvocationConfiguration.Error).ConfigureAwait(false);
+            }
         });
         return cmd;
     }
@@ -888,23 +935,36 @@ internal static class BowireCli
         cmd.Add(compact); cmd.Add(data); cmd.Add(headers);
         cmd.Add(protocol); cmd.Add(stream); cmd.Add(vars); cmd.Add(varFiles);
         cmd.Add(grpcDescriptorSet);
+        // `call` resolves the method by discovering first, so a schema named
+        // here is what lets it invoke against a service the server does not
+        // describe (#654).
+        var schemaFiles = SchemaOption();
+        cmd.Add(schemaFiles);
         // ct rather than `_`: --stream blocks until the server ends the
         // stream, so Ctrl+C has to reach InvokeStreamAsync.
         cmd.SetAction(async (pr, ct) =>
         {
-            var cli = BuildCliOptions(
-                pr, url, plaintext, verbose, compact, data, headers, pr.GetValue(target));
-            // Explicit --protocol beats the hint BuildCliOptions parsed
-            // off the URL; a hint is a convenience, the flag is a
-            // statement.
-            var explicitProtocol = pr.GetValue(protocol);
-            if (!string.IsNullOrEmpty(explicitProtocol)) cli.Protocol = explicitProtocol;
-            cli.Stream = pr.GetValue(stream);
-            ApplyDescriptorSet(pr, grpcDescriptorSet, cli);
-            cli.Vars.AddRange(pr.GetValue(vars) ?? []);
-            cli.VarFiles.AddRange(pr.GetValue(varFiles) ?? []);
-            return await CliHandler.CallAsync(cli,
-                pr.InvocationConfiguration.Output, pr.InvocationConfiguration.Error, ct).ConfigureAwait(false);
+            var (given, code) = await CliSchemaInputs.ReadAsync(
+                pr.GetValue(schemaFiles), pr.InvocationConfiguration.Error, allowProto: false).ConfigureAwait(false);
+            if (code != 0) return code;
+            // Opened here, not in the helper: an AsyncLocal set inside an
+            // async method does not survive its return (#654).
+            using (given is null ? null : SchemaUploadStore.EnterExplicit(given))
+            {
+                var cli = BuildCliOptions(
+                    pr, url, plaintext, verbose, compact, data, headers, pr.GetValue(target));
+                // Explicit --protocol beats the hint BuildCliOptions parsed
+                // off the URL; a hint is a convenience, the flag is a
+                // statement.
+                var explicitProtocol = pr.GetValue(protocol);
+                if (!string.IsNullOrEmpty(explicitProtocol)) cli.Protocol = explicitProtocol;
+                cli.Stream = pr.GetValue(stream);
+                ApplyDescriptorSet(pr, grpcDescriptorSet, cli);
+                cli.Vars.AddRange(pr.GetValue(vars) ?? []);
+                cli.VarFiles.AddRange(pr.GetValue(varFiles) ?? []);
+                return await CliHandler.CallAsync(cli,
+                    pr.InvocationConfiguration.Output, pr.InvocationConfiguration.Error, ct).ConfigureAwait(false);
+            }
         });
         return cmd;
     }

@@ -94,6 +94,50 @@ internal static partial class SchemaUploadStore
     /// <summary>One stored document, as its callers want it.</summary>
     internal sealed record StoredSchema(string Id, string Content, string SourceName);
 
+    /// <summary>A document the caller handed over instead of storing.</summary>
+    internal sealed record ExplicitSchema(string Kind, string Content, string SourceName);
+
+    private static readonly AsyncLocal<IReadOnlyList<ExplicitSchema>?> s_explicit = new();
+
+    /// <summary>
+    /// Serve reads for the rest of this call from <paramref name="schemas"/>
+    /// rather than from disk.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The command line's shape, and the reason it does not want the one
+    /// above. A workbench upload is stored because the person will come back
+    /// to it tomorrow; a CLI run is one invocation whose inputs are named on
+    /// the command line, and in CI the schema is a file in the repository
+    /// already. Pointing such a run at a workspace would make it read another
+    /// process's state to find something the caller could simply have named.
+    /// </para>
+    /// <para>
+    /// Reads only. <see cref="Add"/> and <see cref="Clear"/> ignore this and
+    /// go to disk, because a command that was handed its schemas has nothing
+    /// to store and no business clearing what somebody else uploaded.
+    /// </para>
+    /// </remarks>
+    internal static IDisposable EnterExplicit(IReadOnlyList<ExplicitSchema> schemas)
+    {
+        ArgumentNullException.ThrowIfNull(schemas);
+        var previous = s_explicit.Value;
+        s_explicit.Value = schemas;
+        return new RestoreExplicit(previous);
+    }
+
+    private sealed class RestoreExplicit(IReadOnlyList<ExplicitSchema>? previous) : IDisposable
+    {
+        private bool _done;
+
+        public void Dispose()
+        {
+            if (_done) return;
+            _done = true;
+            s_explicit.Value = previous;
+        }
+    }
+
     private sealed record IndexEntry(
         [property: JsonPropertyName("id")] string Id,
         [property: JsonPropertyName("file")] string File,
@@ -151,9 +195,21 @@ internal static partial class SchemaUploadStore
         return id;
     }
 
-    /// <summary>Every stored document of one kind, in upload order.</summary>
+    /// <summary>
+    /// Every document of one kind: the ones the caller handed over when a
+    /// scope from <see cref="EnterExplicit"/> is open, otherwise the stored
+    /// ones in upload order.
+    /// </summary>
     internal static IReadOnlyList<StoredSchema> GetAll(string kind)
     {
+        if (s_explicit.Value is { } given)
+        {
+            return given
+                .Where(s => string.Equals(s.Kind, kind, StringComparison.OrdinalIgnoreCase))
+                .Select(s => new StoredSchema(ExplicitId(s), s.Content, s.SourceName))
+                .ToArray();
+        }
+
         var root = RootPath();
 
         lock (DiskLock)
@@ -274,4 +330,22 @@ internal static partial class SchemaUploadStore
 
     private static string DefaultExtension(string kind)
         => string.Equals(kind, ProtoKind, StringComparison.OrdinalIgnoreCase) ? ".proto" : ".json";
+
+    /// <summary>
+    /// An id for a handed-over document, derived from its name and content.
+    /// </summary>
+    /// <remarks>
+    /// Callers cache parses against these ids (see <c>ProtoUploadStore</c>).
+    /// The name alone would let a second call with the same file name but
+    /// different content read the first one's parse back — a per-process CLI
+    /// never sees that, but a host or a test in one process would.
+    /// </remarks>
+    private static string ExplicitId(ExplicitSchema schema)
+    {
+        var digest = System.Security.Cryptography.SHA256.HashData(
+            System.Text.Encoding.UTF8.GetBytes(schema.SourceName + " " + schema.Content));
+        // Upper-case hex: the id is compared, never lower-cased for display,
+        // and CA1308 prefers the direction that cannot lose a character.
+        return "schema_" + Convert.ToHexString(digest, 0, 8);
+    }
 }

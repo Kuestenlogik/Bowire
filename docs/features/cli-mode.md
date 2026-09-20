@@ -15,6 +15,8 @@ A command-line interface for scripting, automation, and quick exploration withou
 bowire discover --url https://api.example.com
 bowire discover --url https://api.example.com -v      # verbose: list methods too
 bowire discover --url rest@https://api.example.com    # pin one plugin, skip the rest
+bowire discover --schema ./openapi.yaml               # from a file, no server needed
+bowire discover --schema ./routeguide.proto --schema ./openapi.yaml
 ```
 
 Probes the URL with **every** loaded protocol plugin in parallel and prints
@@ -41,6 +43,30 @@ endpoint and the `bowire.discover` MCP tool use, so the terminal and the
 workbench can never disagree about what happened. See
 [Auto-discovery → When discovery finds nothing](auto-discovery.md#when-discovery-finds-nothing)
 for the outcome vocabulary.
+
+#### Discovering from a file
+
+`--schema` points discovery at a document on disk — a `.proto`, or an OpenAPI /
+Swagger `.json` / `.yaml` / `.yml`. Repeatable, and it works with or without a
+`--url`: a schema and a live server merge, with the server winning a name
+clash because it describes itself more currently than a saved file does.
+
+The workbench's equivalent is dropping the file on the sidebar, which
+**stores** it under your identity — you come back to it tomorrow. The CLI
+names the file instead, and that is deliberate: a pipeline that read an
+uploaded schema would depend on state another process wrote, on a machine it
+does not control, to find something the job could simply have said. In CI the
+schema is in the repository already.
+
+An uploaded schema is still reachable from the terminal when no `--schema` is
+given — `bowire discover` reads what the calling identity has uploaded
+without a workspace selected. A schema uploaded *into a workspace* is not
+read; name the file.
+
+For gRPC, `list`, `describe` and `call` take **`--descriptor-set <file.pb>`**
+instead — the compiled `FileDescriptorSet` carries more than a `.proto` does.
+Passing `--schema x.proto` to one of those is refused with that pointer rather
+than accepted and quietly ignored.
 
 ### List Services
 
@@ -200,6 +226,8 @@ cannot quietly stop being runnable.
 | `--env-file <path>` | `call` | dotenv-style KEY=VALUE file for the resolver (repeatable; `--var` wins) |
 | `--compact` | `call` | One-line JSON output for piping |
 | `-plaintext` | all | Use plaintext (no TLS) |
+| `--schema <path>` | `discover` | Discover from a schema file: `.proto`, or OpenAPI `.json` / `.yaml` / `.yml`. Repeatable; works with or without `--url`. Accepted on `list` / `describe` / `call` for OpenAPI only — use `--descriptor-set` for protobuf there |
+| `--descriptor-set <path>` | `list`, `describe`, `call` | Compiled protobuf `FileDescriptorSet` (`.pb`) for gRPC without server reflection |
 | `-v, --verbose` | `list`, `discover` | Verbose output |
 
 ## Exit Codes

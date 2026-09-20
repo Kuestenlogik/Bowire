@@ -281,6 +281,72 @@ public sealed class SchemaUploadStoreTests : IDisposable
         Assert.Empty(all);
     }
 
+    // ---- handed over instead of stored ----
+
+    [Fact]
+    public void Documents_Handed_Over_Replace_What_Is_On_Disk()
+    {
+        // The CLI's case: one invocation whose inputs were named on the line.
+        // Replacing rather than merging is the point — a pipeline that said
+        // which schema to use should not also get whatever this machine's
+        // identity happens to have uploaded.
+        SchemaUploadStore.Add(SchemaUploadStore.ProtoKind, Proto, "stored.proto");
+
+        using (SchemaUploadStore.EnterExplicit(
+            [new SchemaUploadStore.ExplicitSchema(SchemaUploadStore.ProtoKind, Proto, "named.proto")]))
+        {
+            var one = Assert.Single(SchemaUploadStore.GetAll(SchemaUploadStore.ProtoKind));
+            Assert.Equal("named.proto", one.SourceName);
+        }
+
+        Assert.Equal("stored.proto",
+            Assert.Single(SchemaUploadStore.GetAll(SchemaUploadStore.ProtoKind)).SourceName);
+    }
+
+    [Fact]
+    public void A_Handed_Over_Set_Is_Still_Split_By_Kind()
+    {
+        using var _ = SchemaUploadStore.EnterExplicit([
+            new SchemaUploadStore.ExplicitSchema(SchemaUploadStore.ProtoKind, Proto, "a.proto"),
+            new SchemaUploadStore.ExplicitSchema(SchemaUploadStore.OpenApiKind, "{}", "b.json"),
+        ]);
+
+        Assert.Equal("a.proto", Assert.Single(SchemaUploadStore.GetAll(SchemaUploadStore.ProtoKind)).SourceName);
+        Assert.Equal("b.json", Assert.Single(SchemaUploadStore.GetAll(SchemaUploadStore.OpenApiKind)).SourceName);
+    }
+
+    [Fact]
+    public void Same_Name_Different_Content_Are_Different_Documents()
+    {
+        // Callers cache their parse against these ids. A name-only id would
+        // let a second run read the first one's parse back.
+        string IdOf(string content)
+        {
+            using var _ = SchemaUploadStore.EnterExplicit(
+                [new SchemaUploadStore.ExplicitSchema(SchemaUploadStore.ProtoKind, content, "same.proto")]);
+            return Assert.Single(SchemaUploadStore.GetAll(SchemaUploadStore.ProtoKind)).Id;
+        }
+
+        Assert.NotEqual(IdOf(Proto), IdOf(Proto + "\n// changed"));
+        Assert.Equal(IdOf(Proto), IdOf(Proto));
+    }
+
+    [Fact]
+    public void Handing_Documents_Over_Does_Not_Touch_What_Is_Stored()
+    {
+        // Reads only: a command that was handed its schemas has nothing to
+        // store and no business clearing what somebody else uploaded.
+        SchemaUploadStore.Add(SchemaUploadStore.ProtoKind, Proto, "stored.proto");
+
+        using (SchemaUploadStore.EnterExplicit([]))
+        {
+            Assert.Empty(SchemaUploadStore.GetAll(SchemaUploadStore.ProtoKind));
+        }
+
+        Assert.True(File.Exists(Path.Combine(SchemaUploadStore.RootPath(), "stored.proto")));
+        Assert.Single(SchemaUploadStore.GetAll(SchemaUploadStore.ProtoKind));
+    }
+
     [Fact]
     public void Nothing_Uploaded_Is_An_Empty_List_And_No_Directory_Demanded()
     {
