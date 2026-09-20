@@ -279,14 +279,26 @@ public static class BowireDiscoveryProbe
     {
         if (!ProtoUploadStore.HasUploads) return probed;
 
-        var uploaded = ProtoUploadStore.GetServices();
-        if (uploaded.Count == 0) return probed;
+        var cached = ProtoUploadStore.GetServices();
+        if (cached.Count == 0) return probed;
 
-        foreach (var svc in uploaded)
-        {
-            svc.IsUploaded = true;
-            svc.OriginUrl ??= serverUrl;
-        }
+        // Copies, because that list is the store's parse cache and every
+        // caller gets the same objects. Stamping the origin on them in place
+        // meant the first request to arrive decided it for all of them, for
+        // good: the workbench asks twice per load, once without a serverUrl,
+        // and whichever landed first won. When that was the URL-less one the
+        // service was pinned to "" — `??=` does not overwrite an empty string
+        // — and stayed there for every URL, every workspace and every surface
+        // afterwards. It showed up as a sidebar that listed an uploaded
+        // schema only sometimes, but OriginUrl is what routes an invocation,
+        // so the same pin sends a call to the wrong host in a multi-URL setup.
+        var uploaded = cached
+            .Select(s => s with
+            {
+                IsUploaded = true,
+                OriginUrl = string.IsNullOrEmpty(serverUrl) ? s.OriginUrl : s.OriginUrl ?? serverUrl,
+            })
+            .ToList();
 
         var merged = new List<BowireServiceInfo>(uploaded);
         var taken = new HashSet<string>(uploaded.Select(s => s.Name), StringComparer.Ordinal);

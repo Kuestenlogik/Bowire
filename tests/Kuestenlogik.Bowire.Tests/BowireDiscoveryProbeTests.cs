@@ -511,6 +511,54 @@ public class BowireDiscoveryProbeTests
     }
 
     [Fact]
+    public async Task RunAsync_Gives_Each_Call_Its_Own_Origin_Url()
+    {
+        // The store hands out its parse cache, so every caller gets the same
+        // objects. Stamping the origin on them in place let the first request
+        // to arrive decide it for all of them: the workbench asks twice per
+        // load, once without a serverUrl, and when that one landed first the
+        // service was pinned to "" for every URL afterwards — `??=` does not
+        // overwrite an empty string. It looked like a sidebar that listed an
+        // uploaded schema only sometimes; OriginUrl is what routes an
+        // invocation, so the same pin sends a call to the wrong host.
+        var root = Path.Combine(Path.GetTempPath(), "bowire-origin-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        using (Kuestenlogik.Bowire.Auth.BowireUserContext.Enter(
+            new Kuestenlogik.Bowire.Auth.DefaultBowireUserStore(root)))
+        {
+            ProtoUploadStore.Clear();
+            ProtoUploadStore.AddAndParse(BeaconProto, "beacon.proto");
+            try
+            {
+                // The URL-less probe first: that is the order that used to poison it.
+                var blank = await BowireDiscoveryProbe.RunAsync(
+                    new BowireProtocolRegistry(), "", pluginHint: null,
+                    showInternalServices: false, perProbeCeiling: Ceiling,
+                    ct: TestContext.Current.CancellationToken);
+                Assert.Null(Assert.Single(blank.Services).OriginUrl);
+
+                var named = await BowireDiscoveryProbe.RunAsync(
+                    new BowireProtocolRegistry(), "https://api.example.com", pluginHint: null,
+                    showInternalServices: false, perProbeCeiling: Ceiling,
+                    ct: TestContext.Current.CancellationToken);
+                Assert.Equal("https://api.example.com", Assert.Single(named.Services).OriginUrl);
+
+                // And a second URL is not answered with the first one's.
+                var other = await BowireDiscoveryProbe.RunAsync(
+                    new BowireProtocolRegistry(), "https://other.example.com", pluginHint: null,
+                    showInternalServices: false, perProbeCeiling: Ceiling,
+                    ct: TestContext.Current.CancellationToken);
+                Assert.Equal("https://other.example.com", Assert.Single(other.Services).OriginUrl);
+            }
+            finally
+            {
+                ProtoUploadStore.Clear();
+                try { Directory.Delete(root, recursive: true); } catch (IOException) { }
+            }
+        }
+    }
+
+    [Fact]
     public async Task RunAsync_Leaves_The_Common_Path_Untouched()
     {
         // Nothing uploaded is the overwhelmingly common case; it must not

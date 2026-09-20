@@ -34,11 +34,20 @@ internal static class ProtoUploadStore
     /// Get all services discovered from uploaded proto files.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// The cache is keyed on the directory plus the ids it holds, not merely
     /// held until someone remembers to invalidate it. Anything that changes
     /// the answer — a different identity, a different workspace, an upload
     /// from the CLI while this process is running — changes the key, which is
     /// the property the old process-wide list could not have.
+    /// </para>
+    /// <para>
+    /// <b>The returned objects are the cache.</b> Every caller gets the same
+    /// instances, so a caller that stamps per-request state on them — an
+    /// origin URL, a flag — decides it for everyone, and the first request to
+    /// arrive wins for the lifetime of the entry. Copy before annotating;
+    /// <see cref="BowireServiceInfo"/> is a record, so <c>with</c> is enough.
+    /// </para>
     /// </remarks>
     public static List<BowireServiceInfo> GetServices()
     {

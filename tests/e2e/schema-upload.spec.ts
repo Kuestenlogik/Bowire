@@ -12,19 +12,30 @@ import { test, expect, type Page } from '@playwright/test';
  * it list everything twice — so the merged list is what these assert, read
  * back from the page.
  *
- * Two things are deliberately *not* asserted here, and both are honest gaps
- * rather than oversights:
+ * One real bug came out of writing this. The first version asserted on the
+ * Explore sidebar and flaked: the same sequence against the same server
+ * listed the uploaded schema sometimes and not others.
+ * `ProtoUploadStore.GetServices()` hands out its parse cache, the merge
+ * stamped the origin URL onto those shared objects, and the workbench asks
+ * twice per load — once without a `serverUrl`. Whichever landed first decided
+ * the origin for every request after it, and when that was the URL-less one
+ * the service was pinned to `""` for good, because `??=` does not overwrite
+ * an empty string. OriginUrl is what routes an invocation, so the same pin
+ * also sends a call to the wrong host in a multi-URL setup. That is fixed by
+ * copying before annotating, and pinned by
+ * `BowireDiscoveryProbeTests.RunAsync_Gives_Each_Call_Its_Own_Origin_Url`.
+ *
+ * Two things are still not asserted here, and both are gaps rather than
+ * oversights:
  *
  * - The drop zone's file chooser. That control lives in the workspace's
  *   Sources detail, several clicks deep behind a drawer; pinning that
  *   navigation would make this spec fail on a layout change rather than on
- *   the behaviour it is about. The upload below is the same POST the drop
- *   zone makes, name and all.
- * - Whether the uploaded service renders in the Explore sidebar. It does,
- *   sometimes — and sometimes the same sequence against the same server
- *   leaves it out while `/api/services` plainly returns it. That is an open
- *   question about the sidebar, not about the merge, and a test that flakes
- *   is worse than one that admits its scope.
+ *   the behaviour it is about. The upload below is the same POST it makes.
+ * - The sidebar itself. Driven directly it now renders the uploaded methods
+ *   on five runs out of five; driven through this harness it did not, and the
+ *   difference is not yet understood. A test that passes for a reason nobody
+ *   can name is worth less than an admitted gap.
  *
  * Driven against the workbench on :5191, pointed at the SOAP sample on :5195.
  */
