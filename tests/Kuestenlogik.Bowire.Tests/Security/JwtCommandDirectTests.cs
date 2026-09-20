@@ -212,4 +212,69 @@ public sealed class JwtCommandDirectTests
         var b64 = segment.Replace('-', '+').Replace('_', '/') + new string('=', pad);
         return Convert.FromBase64String(b64);
     }
+
+    // ---- a token that is not one (#found by CLI fuzzing) ----
+
+    [Fact]
+    public void A_Segment_That_Is_Not_Base64url_Is_Reported_Not_Thrown()
+    {
+        // `bowire jwt decode not.a.jwt` used to print a header and then throw
+        // System.FormatException out of the command — a .NET stack trace under
+        // a half-finished report, for a mistyped token. Three dot-separated
+        // segments passed the split, and `a` is a 4n+1 base64url length that
+        // no padding can rescue.
+        var (code, stdout, stderr) = Capture((o, e) => JwtCommand.RunDecodeAsync("not.a.jwt", o, e));
+
+        Assert.Equal(1, code);
+        Assert.Contains("Could not parse token", stderr, StringComparison.Ordinal);
+        // Nothing half-printed: the failure is decided before the report starts.
+        Assert.DoesNotContain("Header:", stdout, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void The_Message_Matches_What_Analyze_Says_About_The_Same_Token()
+    {
+        // Two decoders for one format is what let this through: the analyzer
+        // rejected a 4n+1 segment outright and the command padded it to four.
+        // They now fail for the same reason and say the same thing.
+        var (_, _, stderr) = Capture((o, e) => JwtCommand.RunDecodeAsync("not.a.jwt", o, e));
+
+        Assert.Contains("Invalid base64url length.", stderr, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("a.b.c")]
+    [InlineData("!!!.!!!.x")]
+    [InlineData("....")]
+    public void No_Shape_Of_Rubbish_Escapes_As_An_Exception(string token)
+    {
+        var (code, _, stderr) = Capture((o, e) => JwtCommand.RunDecodeAsync(token, o, e));
+
+        Assert.Equal(1, code);
+        Assert.NotEqual("", stderr.Trim());
+    }
+
+    [Fact]
+    public void A_Segment_That_Decodes_But_Is_Not_Json_Says_So()
+    {
+        // "aGVsbG8" is valid base64url for "hello". Printing that under
+        // "Header:" with no comment reads as "this is the header", and a JWT
+        // header is JSON by definition. The bytes still print — seeing what
+        // is actually there is the point of a decoder — but not unremarked.
+        var (code, stdout, _) = Capture((o, e) => JwtCommand.RunDecodeAsync("aGVsbG8.aGVsbG8.x", o, e));
+
+        Assert.Equal(0, code);
+        Assert.Contains("hello", stdout, StringComparison.Ordinal);
+        Assert.Contains("it is not JSON", stdout, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_Real_Token_Still_Decodes_Without_A_Remark()
+    {
+        var (code, stdout, _) = Capture((o, e) => JwtCommand.RunDecodeAsync(Hs256Token, o, e));
+
+        Assert.Equal(0, code);
+        Assert.Contains("\"alg\": \"HS256\"", stdout, StringComparison.Ordinal);
+        Assert.DoesNotContain("it is not JSON", stdout, StringComparison.Ordinal);
+    }
 }

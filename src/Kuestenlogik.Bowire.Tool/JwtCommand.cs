@@ -62,12 +62,25 @@ internal static class JwtCommand
             return 1;
         }
 
+        // Both segments before anything is printed. Decoding them inline used
+        // to print a header, then throw FormatException out of the command on
+        // the payload — a .NET stack trace under a half-finished report, for
+        // an input as ordinary as a mistyped token.
+        if (!TryDecodeJsonSegment(headerSeg, out var headerJson, out var decodeErr)
+            || !TryDecodeJsonSegment(payloadSeg, out var payloadJson, out decodeErr))
+        {
+            await io.Err.WriteLineAsync($"  Could not parse token: {decodeErr}").ConfigureAwait(false);
+            return 1;
+        }
+
         io.OutLine();
         io.OutLine("  Header:");
-        io.OutLine(IndentJson(DecodeJsonSegment(headerSeg)));
+        io.OutLine(IndentJson(headerJson));
+        NoteIfNotJson(io, "Header", headerJson);
         io.OutLine();
         io.OutLine("  Payload:");
-        io.OutLine(IndentJson(DecodeJsonSegment(payloadSeg)));
+        io.OutLine(IndentJson(payloadJson));
+        NoteIfNotJson(io, "Payload", payloadJson);
         io.OutLine();
         io.OutLine($"  Signature: {(string.IsNullOrEmpty(signatureSeg) ? "(empty — alg:none)" : signatureSeg.Length + " base64url chars")}");
         io.OutLine();
@@ -243,6 +256,62 @@ internal static class JwtCommand
     {
         var bytes = Base64UrlDecode(segment);
         return Encoding.UTF8.GetString(bytes);
+    }
+
+    /// <summary>
+    /// Decode one segment, or say why it cannot be decoded.
+    /// </summary>
+    /// <remarks>
+    /// The wording matches <c>JwtSecurityAnalyzer</c>, which has always been
+    /// the strict one: it rejects a length of <c>4n+1</c> outright, because no
+    /// amount of padding makes that a base64 group, and wraps the rest in a
+    /// try. This decoder is its looser twin — it padded a <c>4n+1</c> segment
+    /// to four and handed <c>Convert</c> something it refuses. Two decoders
+    /// for one format, and the command line used the one without the guard.
+    /// </remarks>
+    private static bool TryDecodeJsonSegment(string segment, out string json, out string error)
+    {
+        json = string.Empty;
+        error = string.Empty;
+
+        var s = segment.Replace('-', '+').Replace('_', '/');
+        switch (s.Length % 4)
+        {
+            case 2: s += "=="; break;
+            case 3: s += "="; break;
+            case 1:
+                error = "Invalid base64url length.";
+                return false;
+        }
+
+        try
+        {
+            json = Encoding.UTF8.GetString(Convert.FromBase64String(s));
+            return true;
+        }
+        catch (FormatException ex)
+        {
+            error = ex.Message;
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Say so when a segment decoded but is not JSON.
+    /// </summary>
+    /// <remarks>
+    /// A JWT's header and payload are JSON by definition, so printing the
+    /// bytes under "Header:" with no comment reads as "this is the header".
+    /// The bytes still print — this is a debugging aid and seeing what is
+    /// actually there is the point — but not as if they were a claim set.
+    /// </remarks>
+    private static void NoteIfNotJson(CommandIo io, string what, string decoded)
+    {
+        try { using var _ = JsonDocument.Parse(decoded); }
+        catch (JsonException)
+        {
+            io.OutLine($"  ({what} decoded, but it is not JSON — a JWT segment should be.)");
+        }
     }
 
     private static byte[] Base64UrlDecode(string segment)
