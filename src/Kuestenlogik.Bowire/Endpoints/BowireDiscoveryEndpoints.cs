@@ -17,6 +17,50 @@ namespace Kuestenlogik.Bowire.Endpoints;
 /// </summary>
 internal static class BowireDiscoveryEndpoints
 {
+    /// <summary>
+    /// Whether this request can answer an empty list without probing at all.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The first-run shortcut: a standalone tool launched without <c>--url</c>,
+    /// with no schema uploads or sources to consult and no runtime URL on the
+    /// request, has genuinely nothing to discover. Answering immediately keeps
+    /// first paint snappy — without it the gRPC reflection path tries to
+    /// handshake with the local Bowire host, which ships no gRPC services,
+    /// wedges for ~10 s and then fails. The <c>serverUrl</c> check covers URLs
+    /// added at runtime via the sidebar (#82); the <c>ServerUrls</c> check
+    /// covers <c>--url</c> on the command line.
+    /// </para>
+    /// <para>
+    /// <b>Both upload stores, not just the proto one.</b> The drop zone takes a
+    /// <c>.proto</c> and an OpenAPI document through the same control, and
+    /// asking only about protos meant that dropping a <c>petstore.yaml</c> into
+    /// a workbench with no URL configured returned an empty list without
+    /// probing: the document was stored, the REST plugin would have read it,
+    /// and the shortcut made sure it never got the chance. A <c>.proto</c> in
+    /// the same situation worked, so the sidebar's answer depended on which
+    /// kind of file you dragged — and it said nothing either way.
+    /// </para>
+    /// <para>
+    /// Its own method so the decision can be exercised directly. Through the
+    /// endpoint it cannot be: the shortcut only applies to a standalone host,
+    /// and in an in-process test server the REST plugin's embedded discovery
+    /// finds the harness's own routes, so the list is never empty whether this
+    /// returns true or false (#732).
+    /// </para>
+    /// </remarks>
+    internal static bool NothingToDiscover(BowireOptions options, string? serverUrl)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+
+        return options.Mode == BowireMode.Standalone
+            && options.ServerUrls.Count == 0
+            && options.ProtoSources.Count == 0
+            && !ProtoUploadStore.HasUploads
+            && !OpenApiUploadStore.HasUploads
+            && string.IsNullOrEmpty(serverUrl);
+    }
+
     public static IEndpointRouteBuilder MapBowireDiscoveryEndpoints(
         this IEndpointRouteBuilder endpoints, BowireOptions options, string basePath)
     {
@@ -131,30 +175,7 @@ internal static class BowireDiscoveryEndpoints
                 // plugin reads, not a string it dials.
             }
 
-            // Standalone tool launched without --url and with no schema
-            // uploads / sources to consult AND no runtime URL in the
-            // request: there is genuinely nothing to discover. Returning
-            // an empty list immediately keeps the first-run UI snappy —
-            // without this the gRPC reflection path tries to handshake
-            // with the local Bowire host (which doesn't ship gRPC
-            // services), wedges for ~10 s, then fails. The serverUrl
-            // check covers URLs added at runtime via the sidebar (#82);
-            // the ServerUrls.Count check covers --url on the command line.
-            //
-            // Both upload stores, not just the proto one. The drop zone takes
-            // a .proto and an OpenAPI document through the same control, and
-            // asking only about protos meant that dropping a petstore.yaml
-            // into a workbench with no URL configured returned an empty list
-            // without probing at all — the document was stored, the REST
-            // plugin would have read it, and the shortcut made sure it never
-            // got the chance. A .proto in the same situation worked, so the
-            // sidebar's answer depended on which kind of file you dragged.
-            if (options.Mode == BowireMode.Standalone
-                && options.ServerUrls.Count == 0
-                && options.ProtoSources.Count == 0
-                && !ProtoUploadStore.HasUploads
-                && !OpenApiUploadStore.HasUploads
-                && string.IsNullOrEmpty(serverUrl))
+            if (NothingToDiscover(options, serverUrl))
             {
                 // Nothing was probed, so the envelope's attempts array is
                 // empty — but present, so an opted-in client has one shape

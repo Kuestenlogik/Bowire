@@ -3789,6 +3789,14 @@ var railName = opts.railLabel || t('prereq.thisRail');
             className: 'bowire-tree-row'
                 + (node.selected ? ' selected' : '')
                 + (node.active ? ' active' : ''),
+            // #733 — the node's own id, in the DOM. Every tree node already
+            // has one (`ws:<id>:sources`, and so on) and nothing carried it
+            // out, so the only way to address a row was its translated label
+            // or its position. A browser test for the schema drop zone could
+            // not reach it at all: that control lives behind this tree, and
+            // pinning a click path through translated text would fail on a
+            // wording change rather than on the behaviour under test.
+            'data-tree-node': node.id || null,
             style: 'padding-left:' + (8 + depth * 14) + 'px',
             onClick: function (e) {
                 if (typeof node.onClick === 'function') node.onClick(e);

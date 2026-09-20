@@ -61,9 +61,20 @@ export default defineConfig({
     // engine with different stable channels — a rendering or API gap
     // between them is exactly the kind of thing a Chromium-only run misses.
     // Run one with `--project=msedge`.
+    // The viewport is repeated per project on purpose. A device preset brings
+    // its own (1280x720), and project-level `use` wins over the shared block
+    // above — so the 1440x900 declared there never applied to either project.
+    // It matters: at 720 the rail strip drops entries, and a spec that clicks
+    // one fails with "element is not visible" and no hint why.
     projects: [
-        { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
-        { name: 'msedge', use: { ...devices['Desktop Edge'], channel: 'msedge' } }
+        {
+            name: 'chromium',
+            use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 } },
+        },
+        {
+            name: 'msedge',
+            use: { ...devices['Desktop Edge'], channel: 'msedge', viewport: { width: 1440, height: 900 } },
+        },
     ],
     // reuseExistingServer keeps a dev instance already on :5180 (local
     // iterations) rather than fighting over the port; in CI it always
