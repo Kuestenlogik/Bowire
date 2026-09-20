@@ -168,7 +168,7 @@ jobs:
         # from forks, so the upload would fail noisily for outside
         # contributors.
         if: ${{ !github.event.pull_request.head.repo.fork }}
-        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: artifacts/coverage/merged/Cobertura.xml
@@ -183,7 +183,7 @@ jobs:
         # entry re-includes exactly those files for this upload only.
         # Same fork guard as the C# upload above.
         if: ${{ !github.event.pull_request.head.repo.fork }}
-        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: artifacts/coverage/js-lcov.info
