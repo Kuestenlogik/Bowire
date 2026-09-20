@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Text;
+using System.Text.Json;
+using System.Xml;
 using System.Xml.Linq;
 
 namespace Kuestenlogik.Bowire.Protocol.Soap;
@@ -32,10 +34,12 @@ internal static class SoapEnvelopeBuilder
     /// element. Empty string means "no namespace" (rare; mostly for
     /// hand-rolled mocks).</param>
     /// <param name="bodyXml">
-    /// Payload shape — if the string parses as XML it's inlined inside
-    /// the operation element verbatim (caller supplies their own
-    /// namespace-correct arguments). Otherwise it's treated as plain
-    /// text content of the operation element.
+    /// Payload shape — a JSON object becomes one child element per
+    /// property, in the operation's own namespace, which is what the
+    /// workbench form produces. Otherwise, if the string parses as XML
+    /// it's inlined inside the operation element verbatim (caller
+    /// supplies their own namespace-correct arguments). Anything else is
+    /// treated as plain text content of the operation element.
     /// </param>
     /// <param name="soapVersion">"1.2" picks the WS-I SOAP 1.2 envelope
     /// namespace; anything else (including null) → SOAP 1.1.</param>
@@ -58,19 +62,31 @@ internal static class SoapEnvelopeBuilder
 
         if (!string.IsNullOrWhiteSpace(bodyXml))
         {
-            try
+            // JSON first, and that order is the whole fix. The workbench form
+            // produces a JSON object — that is what this type's summary has
+            // always said it wraps — but the XML branch below *accepts* JSON
+            // without complaining: `<root>{"a":2}</root>` is well-formed XML
+            // whose content happens to be a text node. So every SOAP call from
+            // the workbench used to arrive as <Add>{"a":2,"b":3}</Add>, the
+            // server found none of the parts it was looking for, and answered
+            // 200 with a result computed from defaults. A wrong number, never
+            // an error.
+            if (!TryAppendJsonArguments(opElement, bodyXml, targetNamespace))
             {
-                // Accept a full XML fragment as the operation's child
-                // payload — keeps callers in control of namespace + part
-                // ordering. Wrap in a synthetic root because XDocument
-                // refuses bare fragments.
-                var doc = XDocument.Parse("<root>" + bodyXml + "</root>");
-                foreach (var n in doc.Root!.Nodes())
-                    opElement.Add(n);
-            }
-            catch (System.Xml.XmlException)
-            {
-                opElement.Value = bodyXml;
+                try
+                {
+                    // Accept a full XML fragment as the operation's child
+                    // payload — keeps callers in control of namespace + part
+                    // ordering. Wrap in a synthetic root because XDocument
+                    // refuses bare fragments.
+                    var doc = XDocument.Parse("<root>" + bodyXml + "</root>");
+                    foreach (var n in doc.Root!.Nodes())
+                        opElement.Add(n);
+                }
+                catch (System.Xml.XmlException)
+                {
+                    opElement.Value = bodyXml;
+                }
             }
         }
 
@@ -79,6 +95,104 @@ internal static class SoapEnvelopeBuilder
             new XElement(soap + "Body", opElement));
 
         return new XDeclaration("1.0", "utf-8", null) + envelope.ToString();
+    }
+
+    /// <summary>
+    /// Turn the form's JSON object into the operation's child elements.
+    /// Returns false when the payload is not a JSON object, so the caller
+    /// can fall through to the XML-fragment path.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The children go in the operation's own namespace rather than in no
+    /// namespace. A document/literal WSDL puts its parts there, and XLinq
+    /// renders them under the parent's default declaration —
+    /// <c>&lt;Add xmlns="…"&gt;&lt;a&gt;2&lt;/a&gt;&lt;/Add&gt;</c> — which is
+    /// the shape a server answers in. Unqualified children are what a
+    /// hand-rolled mock tolerates and a real stack rejects.
+    /// </para>
+    /// <para>
+    /// An array repeats its element name, which is how a WSDL expresses a
+    /// <c>maxOccurs</c> part. A nested object nests. A null writes an empty
+    /// element rather than being dropped: "the caller named this part and
+    /// left it blank" and "the caller never mentioned it" are different
+    /// things to a server, and only one of them is what a blank form field
+    /// means.
+    /// </para>
+    /// </remarks>
+    private static bool TryAppendJsonArguments(XElement opElement, string payload, string targetNamespace)
+    {
+        var trimmed = payload.TrimStart();
+        if (trimmed.Length == 0 || trimmed[0] != '{') return false;
+
+        JsonElement root;
+        try
+        {
+            using var doc = JsonDocument.Parse(payload);
+            if (doc.RootElement.ValueKind != JsonValueKind.Object) return false;
+            root = doc.RootElement.Clone();
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
+
+        foreach (var property in root.EnumerateObject())
+            AppendJsonValue(opElement, property.Name, property.Value, targetNamespace);
+
+        return true;
+    }
+
+    private static void AppendJsonValue(XElement parent, string name, JsonElement value, string ns)
+    {
+        if (!IsUsableElementName(name)) return;
+
+        if (value.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var item in value.EnumerateArray())
+                AppendJsonValue(parent, name, item, ns);
+            return;
+        }
+
+        var child = string.IsNullOrEmpty(ns)
+            ? new XElement(name)
+            : new XElement((XNamespace)ns + name);
+
+        if (value.ValueKind == JsonValueKind.Object)
+        {
+            foreach (var property in value.EnumerateObject())
+                AppendJsonValue(child, property.Name, property.Value, ns);
+        }
+        else if (value.ValueKind != JsonValueKind.Null)
+        {
+            child.Value = value.ValueKind == JsonValueKind.String
+                ? value.GetString() ?? string.Empty
+                : value.GetRawText();
+        }
+
+        parent.Add(child);
+    }
+
+    /// <summary>
+    /// Whether a JSON property name can be an element name at all.
+    /// </summary>
+    /// <remarks>
+    /// A JSON key is any string; an XML name is not. Skipping the ones that
+    /// cannot be written beats throwing: the rest of the payload still
+    /// reaches the server, and the part that could not be expressed is
+    /// missing from a request the operator can read back in the console.
+    /// </remarks>
+    private static bool IsUsableElementName(string name)
+    {
+        if (string.IsNullOrEmpty(name)) return false;
+        try
+        {
+            return XmlConvert.VerifyName(name) == name;
+        }
+        catch (System.Xml.XmlException)
+        {
+            return false;
+        }
     }
 
     /// <summary>

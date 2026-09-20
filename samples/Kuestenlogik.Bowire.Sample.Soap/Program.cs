@@ -4,7 +4,7 @@
 //     soap-catalogue.json seeds the Sources rail with this host's WSDL,
 //     so Bowire surfaces the four Calculator operations.
 //   * Separate — it is a real SOAP endpoint, so point an external
-//     workbench or `bowire --url soap@http://localhost:5180/Calculator.asmx?wsdl`
+//     workbench or `bowire --url soap@http://localhost:5195/Calculator.asmx?wsdl`
 //     at it.
 //
 // Hand-rolled SOAP over HTTP (no SoapCore/WCF): Add, Subtract, Multiply,
@@ -12,7 +12,7 @@
 //
 // Run:
 //   dotnet run --project samples/Kuestenlogik.Bowire.Sample.Soap
-//   → open http://localhost:5180/bowire
+//   → open http://localhost:5195/bowire
 
 using System.Globalization;
 using System.Xml.Linq;
@@ -23,7 +23,14 @@ const string ServiceNamespace = "http://example.com/calc";
 const string EndpointPath = "/Calculator.asmx";
 
 var builder = WebApplication.CreateBuilder(args);
-builder.WebHost.UseUrls("http://localhost:5180");
+// 5195, not 5180: that is the standalone workbench's own address
+// (docs/testing/manual-walkthrough.md, docs/features/rail-strip.md), and this
+// sample is meant to be explored *with* one — README says so, and so does
+// docs/protocols/soap.md. Sharing the port meant the two could never run
+// together. Worse, playwright.config.ts starts the workbench on 5180 with
+// reuseExistingServer, so with this sample up the whole e2e suite would have
+// quietly run against the sample's embedded workbench instead.
+builder.WebHost.UseUrls("http://localhost:5195");
 
 builder.Services.AddBowire();
 builder.Services.AddBowireCatalogue(builder.Configuration);

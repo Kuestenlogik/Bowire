@@ -63,4 +63,4 @@ below.
 
 ## Sample
 
-A hand-rolled SOAP-1.1 Calculator service (no WCF dependency) lives at [`samples/Kuestenlogik.Bowire.Sample.Soap`](https://github.com/Kuestenlogik/Bowire/tree/main/samples/Kuestenlogik.Bowire.Sample.Soap) — `dotnet run`, then open the embedded workbench at <http://localhost:5180/bowire> or point an external one at `http://localhost:5180/Calculator.asmx?wsdl`.
+A hand-rolled SOAP-1.1 Calculator service (no WCF dependency) lives at [`samples/Kuestenlogik.Bowire.Sample.Soap`](https://github.com/Kuestenlogik/Bowire/tree/main/samples/Kuestenlogik.Bowire.Sample.Soap) — `dotnet run`, then open the embedded workbench at <http://localhost:5195/bowire> or point an external one at `http://localhost:5195/Calculator.asmx?wsdl`.

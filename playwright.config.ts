@@ -38,8 +38,14 @@ export default defineConfig({
         ignoreHTTPSErrors: true,
         viewport: { width: 1440, height: 900 }
     },
+    // Edge alongside the bundled Chromium: the workbench ships to Windows
+    // desktops where Edge is what people have, and the two are the same
+    // engine with different stable channels — a rendering or API gap
+    // between them is exactly the kind of thing a Chromium-only run misses.
+    // Run one with `--project=msedge`.
     projects: [
-        { name: 'chromium', use: { ...devices['Desktop Chrome'] } }
+        { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+        { name: 'msedge', use: { ...devices['Desktop Edge'], channel: 'msedge' } }
     ],
     // reuseExistingServer keeps a dev instance already on :5180 (local
     // iterations) rather than fighting over the port; in CI it always
@@ -64,6 +70,25 @@ export default defineConfig({
         {
             command: 'dotnet run --project samples/Kuestenlogik.Bowire.Sample.Sse -c Release',
             url: 'http://localhost:5186/bowire',
+            timeout: 180_000,
+            reuseExistingServer: !process.env.CI
+        },
+        // soap-invoke.spec.ts drives a request form all the way to a server
+        // that answers with a computed value — the one assertion that catches
+        // an envelope which dropped its arguments. That needs a workbench
+        // already pointed at the WSDL, so it gets one of its own on 5191
+        // rather than changing the shared instance on 5180, whose empty-state
+        // specs depend on having no URL configured.
+        {
+            command: 'dotnet run --project samples/Kuestenlogik.Bowire.Sample.Soap -c Release',
+            url: 'http://localhost:5195/bowire',
+            timeout: 180_000,
+            reuseExistingServer: !process.env.CI
+        },
+        {
+            command: 'dotnet run --project src/Kuestenlogik.Bowire.Tool -c Release -- '
+                + '--port 5191 --no-browser --url soap@http://localhost:5195/Calculator.asmx?wsdl',
+            url: 'http://localhost:5191/',
             timeout: 180_000,
             reuseExistingServer: !process.env.CI
         }

@@ -19,10 +19,10 @@ the sample stays portable across .NET LTS boundaries.
 dotnet run --project samples/Kuestenlogik.Bowire.Sample.Soap
 ```
 
-- Embedded workbench: <http://localhost:5180/bowire> — `Calculator` is
+- Embedded workbench: <http://localhost:5195/bowire> — `Calculator` is
   already in the Sources rail.
 - As a separate target:
 
   ```pwsh
-  bowire --url soap@http://localhost:5180/Calculator.asmx?wsdl
+  bowire --url soap@http://localhost:5195/Calculator.asmx?wsdl
   ```
