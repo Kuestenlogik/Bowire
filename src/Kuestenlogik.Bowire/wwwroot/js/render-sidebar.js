@@ -706,25 +706,8 @@
                 input.multiple = true;
                 input.onchange = async function () {
                     if (!input.files || input.files.length === 0) return;
-                    var protoCount = 0, openapiCount = 0;
-                    for (var file of input.files) {
-                        var content = await file.text();
-                        var lower = file.name.toLowerCase();
-                        var endpoint;
-                        if (lower.endsWith('.proto')) {
-                            endpoint = '/api/proto/upload?name=' + encodeURIComponent(file.name) + workspaceParam(true);
-                            protoCount++;
-                        } else {
-                            // .json / .yaml / .yml — treat as OpenAPI/Swagger
-                            endpoint = '/api/openapi/upload?name=' + encodeURIComponent(file.name) + workspaceParam(true);
-                            openapiCount++;
-                        }
-                        await fetch(config.prefix + endpoint, { method: 'POST', body: content });
-                    }
-                    var msg = [];
-                    if (protoCount > 0) msg.push(protoCount + ' .proto');
-                    if (openapiCount > 0) msg.push(openapiCount + ' OpenAPI');
-                    toast(msg.join(' + ') + ' imported', 'success');
+                    var summary = summariseSchemaUpload(await uploadSchemaFiles(input.files));
+                    toast(summary.text, summary.level);
                     fetchServices();
                 };
                 input.click();
@@ -3723,25 +3706,9 @@
         input.multiple = true;
         input.onchange = async function () {
             if (!input.files || input.files.length === 0) return;
-            var protoCount = 0, openapiCount = 0;
             try {
-                for (var file of input.files) {
-                    var content = await file.text();
-                    var lower = file.name.toLowerCase();
-                    var endpoint;
-                    if (lower.endsWith('.proto')) {
-                        endpoint = '/api/proto/upload?name=' + encodeURIComponent(file.name) + workspaceParam(true);
-                        protoCount++;
-                    } else {
-                        endpoint = '/api/openapi/upload?name=' + encodeURIComponent(file.name) + workspaceParam(true);
-                        openapiCount++;
-                    }
-                    await fetch(config.prefix + endpoint, { method: 'POST', body: content });
-                }
-                var parts = [];
-                if (protoCount > 0) parts.push(protoCount + ' .proto');
-                if (openapiCount > 0) parts.push(openapiCount + ' OpenAPI');
-                if (typeof toast === 'function') toast(parts.join(' + ') + ' imported', 'success');
+                var summary = summariseSchemaUpload(await uploadSchemaFiles(input.files));
+                if (typeof toast === 'function') toast(summary.text, summary.level);
                 if (typeof fetchServices === 'function') fetchServices();
             } catch (err) {
                 console.error('[bowire-sources-ctx] schema upload failed', err);

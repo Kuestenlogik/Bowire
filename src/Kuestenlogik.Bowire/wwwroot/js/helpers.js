@@ -107,6 +107,100 @@
     }
 
     /**
+     * What a batch of schema uploads actually did, as a message.
+     *
+     * The drop zone used to count the files it *posted* and announce them as
+     * imported, in green, without reading a single response. So dropping a
+     * `.proto` with a syntax error said "1 .proto imported" and imported
+     * nothing; so did an empty file, which the server refuses with 400; so
+     * did a server error. The one case the operator most needs to hear about
+     * was the one dressed up as success.
+     *
+     * `results` are `{ name, kind, ok, status, imported }` — `imported` is the
+     * service count the proto endpoint returns, and null for OpenAPI, which is
+     * stored raw and only parsed later during discovery.
+     */
+    function summariseSchemaUpload(results) {
+        var rows = results || [];
+        if (rows.length === 0) return { text: '', level: 'info' };
+
+        var failed = rows.filter(function (r) { return !r.ok; });
+        if (failed.length > 0) {
+            return {
+                level: 'error',
+                text: t('sidebar.upload.failed', {
+                    names: failed.map(function (r) { return r.name; }).join(', '),
+                }),
+            };
+        }
+
+        // A proto the server read but found no service in. Not an error — the
+        // file arrived and is stored — but calling it an import would be the
+        // same lie in a quieter voice.
+        var empty = rows.filter(function (r) { return r.kind === 'proto' && r.imported === 0; });
+        var protos = rows.filter(function (r) { return r.kind === 'proto'; }).length;
+        var openapis = rows.length - protos;
+        var services = rows.reduce(function (sum, r) { return sum + (r.imported || 0); }, 0);
+
+        var parts = [];
+        if (protos > 0) parts.push(protos + ' .proto');
+        if (openapis > 0) parts.push(openapis + ' OpenAPI');
+
+        if (empty.length === protos && protos > 0 && openapis === 0) {
+            return {
+                level: 'warning',
+                text: t('sidebar.upload.noServices', {
+                    names: empty.map(function (r) { return r.name; }).join(', '),
+                }),
+            };
+        }
+
+        return {
+            level: 'success',
+            text: t('sidebar.upload.imported', {
+                files: parts.join(' + '),
+                services: String(services),
+            }),
+        };
+    }
+
+    /**
+     * Post each file to the endpoint its extension implies and report what
+     * came back. `post` is injectable so the summary above can be exercised
+     * without a browser.
+     */
+    async function uploadSchemaFiles(files, post) {
+        var send = post || function (url, body) {
+            return fetch(url, { method: 'POST', body: body });
+        };
+        var results = [];
+        for (var file of files) {
+            var content = await file.text();
+            var isProto = file.name.toLowerCase().endsWith('.proto');
+            var kind = isProto ? 'proto' : 'openapi';
+            var endpoint = (isProto ? '/api/proto/upload?name=' : '/api/openapi/upload?name=')
+                + encodeURIComponent(file.name) + workspaceParam(true);
+
+            var ok = false, status = 0, imported = null;
+            try {
+                var resp = await send(config.prefix + endpoint, content);
+                status = resp.status;
+                ok = resp.ok;
+                if (ok) {
+                    var body = await resp.json().catch(function () { return null; });
+                    if (body && typeof body.imported === 'number') imported = body.imported;
+                }
+            } catch {
+                // A network failure is a failure to import, and the operator
+                // has to hear it in the same breath as the successes.
+                ok = false;
+            }
+            results.push({ name: file.name, kind: kind, ok: ok, status: status, imported: imported });
+        }
+        return results;
+    }
+
+    /**
      * Per-service variant: routes invocations to the URL the service was
      * discovered from. Multi-URL setups depend on this so a method from
      * "https://api-a.com" doesn't accidentally fire against "https://api-b.com".

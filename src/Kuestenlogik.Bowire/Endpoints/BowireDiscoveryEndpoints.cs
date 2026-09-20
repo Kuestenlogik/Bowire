@@ -131,7 +131,7 @@ internal static class BowireDiscoveryEndpoints
                 // plugin reads, not a string it dials.
             }
 
-            // Standalone tool launched without --url and with no proto
+            // Standalone tool launched without --url and with no schema
             // uploads / sources to consult AND no runtime URL in the
             // request: there is genuinely nothing to discover. Returning
             // an empty list immediately keeps the first-run UI snappy —
@@ -140,10 +140,20 @@ internal static class BowireDiscoveryEndpoints
             // services), wedges for ~10 s, then fails. The serverUrl
             // check covers URLs added at runtime via the sidebar (#82);
             // the ServerUrls.Count check covers --url on the command line.
+            //
+            // Both upload stores, not just the proto one. The drop zone takes
+            // a .proto and an OpenAPI document through the same control, and
+            // asking only about protos meant that dropping a petstore.yaml
+            // into a workbench with no URL configured returned an empty list
+            // without probing at all — the document was stored, the REST
+            // plugin would have read it, and the shortcut made sure it never
+            // got the chance. A .proto in the same situation worked, so the
+            // sidebar's answer depended on which kind of file you dragged.
             if (options.Mode == BowireMode.Standalone
                 && options.ServerUrls.Count == 0
                 && options.ProtoSources.Count == 0
                 && !ProtoUploadStore.HasUploads
+                && !OpenApiUploadStore.HasUploads
                 && string.IsNullOrEmpty(serverUrl))
             {
                 // Nothing was probed, so the envelope's attempts array is

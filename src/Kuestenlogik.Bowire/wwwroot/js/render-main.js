@@ -3953,24 +3953,8 @@
     // seam for every schema source — the difference is which surface
     // the operator triggers it from.
     async function _uploadSourcesSchemaFiles(files) {
-        var protoCount = 0, openapiCount = 0;
-        for (var file of files) {
-            var content = await file.text();
-            var lower = file.name.toLowerCase();
-            var endpoint;
-            if (lower.endsWith('.proto')) {
-                endpoint = '/api/proto/upload?name=' + encodeURIComponent(file.name) + workspaceParam(true);
-                protoCount++;
-            } else {
-                endpoint = '/api/openapi/upload?name=' + encodeURIComponent(file.name) + workspaceParam(true);
-                openapiCount++;
-            }
-            await fetch(config.prefix + endpoint, { method: 'POST', body: content });
-        }
-        var msg = [];
-        if (protoCount > 0) msg.push(protoCount + ' .proto');
-        if (openapiCount > 0) msg.push(openapiCount + ' OpenAPI');
-        toast(msg.join(' + ') + ' imported', 'success');
+        var summary = summariseSchemaUpload(await uploadSchemaFiles(files));
+        toast(summary.text, summary.level);
         if (typeof fetchServices === 'function') fetchServices();
     }
 
