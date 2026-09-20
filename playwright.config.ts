@@ -1,4 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
+import { mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
 /**
  * Bowire Playwright E2E config.
@@ -17,6 +20,21 @@ import { defineConfig, devices } from '@playwright/test';
 // instance via BOWIRE_BASE_URL, so `npm run test:e2e` works from a clean
 // checkout with no manual `dotnet run` step first.
 const BASE_URL = process.env.BOWIRE_BASE_URL || 'http://localhost:5180';
+
+// A storage root of the run's own (#638 fallout). The suite drives real
+// endpoints, and the servers it spawns wrote into the developer's own
+// ~/.bowire: plugin-visibility.spec.ts hid a protocol there and never put it
+// back, so the workbench a person opened afterwards was missing AMQP — and
+// the spec itself failed on every run after the first, because the protocol
+// it sets out to hide was already hidden. BOWIRE_DATA_DIR is read in exactly
+// one place (BowirePathResolver), so pointing the spawned servers at a temp
+// directory moves every store at once.
+//
+// Only the servers this config starts. A dev who points the run at their own
+// instance with BOWIRE_BASE_URL keeps their storage, which is the point of
+// that variable.
+const DATA_DIR = mkdtempSync(join(tmpdir(), 'bowire-e2e-'));
+const serverEnv = { ...process.env, BOWIRE_DATA_DIR: DATA_DIR };
 
 export default defineConfig({
     testDir: './tests/e2e',
@@ -65,13 +83,15 @@ export default defineConfig({
             command: 'dotnet run --project src/Kuestenlogik.Bowire.Tool -c Release -- --port 5180 --no-browser',
             url: BASE_URL,
             timeout: 180_000,
-            reuseExistingServer: !process.env.CI
+            reuseExistingServer: !process.env.CI,
+            env: serverEnv
         }]),
         {
             command: 'dotnet run --project samples/Kuestenlogik.Bowire.Sample.Sse -c Release',
             url: 'http://localhost:5186/bowire',
             timeout: 180_000,
-            reuseExistingServer: !process.env.CI
+            reuseExistingServer: !process.env.CI,
+            env: serverEnv
         },
         // soap-invoke.spec.ts drives a request form all the way to a server
         // that answers with a computed value — the one assertion that catches
@@ -83,14 +103,16 @@ export default defineConfig({
             command: 'dotnet run --project samples/Kuestenlogik.Bowire.Sample.Soap -c Release',
             url: 'http://localhost:5195/bowire',
             timeout: 180_000,
-            reuseExistingServer: !process.env.CI
+            reuseExistingServer: !process.env.CI,
+            env: serverEnv
         },
         {
             command: 'dotnet run --project src/Kuestenlogik.Bowire.Tool -c Release -- '
                 + '--port 5191 --no-browser --url soap@http://localhost:5195/Calculator.asmx?wsdl',
             url: 'http://localhost:5191/',
             timeout: 180_000,
-            reuseExistingServer: !process.env.CI
+            reuseExistingServer: !process.env.CI,
+            env: serverEnv
         }
     ]
 });
