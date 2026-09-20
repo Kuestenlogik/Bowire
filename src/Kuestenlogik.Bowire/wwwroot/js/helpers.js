@@ -78,6 +78,35 @@
     }
 
     /**
+     * Build the workspace half of a query — `workspaceId`, plus `storageRoot`
+     * for a git-native workspace. Empty when no workspace is active, which is
+     * the ordinary case for the CLI and for an embedded host that never
+     * adopted workspaces.
+     *
+     * Pass `prefix: true` when the URL already carries a query.
+     *
+     * Why discovery and invoke need it, and did not have it: the server enters
+     * the per-workspace scope from these two query parameters, on every route
+     * (BowireApiEndpoints, #640). Settings pages sent them and worked; the two
+     * calls that actually reach a plugin did not, so `DiscoverAsync` and
+     * `InvokeAsync` ran with no workspace and every plugin setting fell back
+     * to its declared default. The feature looked wired from the settings page
+     * and did nothing where it was meant to apply — a SOAP call with
+     * `defaultSoapVersion = 1.2` set on the workspace still went out as 1.1.
+     * Uploaded schemas (#654) resolve through the same scope, so they have to
+     * travel together: a schema uploaded in one workspace and a discovery that
+     * names none would read two different directories.
+     */
+    function workspaceParam(prefix) {
+        var wsId = (typeof activeWorkspaceId === 'string' && activeWorkspaceId) ? activeWorkspaceId : '';
+        if (!wsId) return '';
+        var ws = (typeof activeWorkspace === 'function') ? activeWorkspace() : null;
+        var sep = prefix ? '&' : '?';
+        return sep + 'workspaceId=' + encodeURIComponent(wsId)
+            + (ws && ws.storageRoot ? '&storageRoot=' + encodeURIComponent(ws.storageRoot) : '');
+    }
+
+    /**
      * Per-service variant: routes invocations to the URL the service was
      * discovered from. Multi-URL setups depend on this so a method from
      * "https://api-a.com" doesn't accidentally fire against "https://api-b.com".

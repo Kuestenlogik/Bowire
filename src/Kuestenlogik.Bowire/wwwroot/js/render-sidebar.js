@@ -712,11 +712,11 @@
                         var lower = file.name.toLowerCase();
                         var endpoint;
                         if (lower.endsWith('.proto')) {
-                            endpoint = '/api/proto/upload?name=' + encodeURIComponent(file.name);
+                            endpoint = '/api/proto/upload?name=' + encodeURIComponent(file.name) + workspaceParam(true);
                             protoCount++;
                         } else {
                             // .json / .yaml / .yml — treat as OpenAPI/Swagger
-                            endpoint = '/api/openapi/upload?name=' + encodeURIComponent(file.name);
+                            endpoint = '/api/openapi/upload?name=' + encodeURIComponent(file.name) + workspaceParam(true);
                             openapiCount++;
                         }
                         await fetch(config.prefix + endpoint, { method: 'POST', body: content });
@@ -749,8 +749,8 @@
                     title: t('sidebar.upload.clearTitle'),
                     onClick: async function () {
                         await Promise.all([
-                            fetch(config.prefix + '/api/proto/upload', { method: 'DELETE' }),
-                            fetch(config.prefix + '/api/openapi/upload', { method: 'DELETE' })
+                            fetch(config.prefix + '/api/proto/upload' + workspaceParam(false), { method: 'DELETE' }),
+                            fetch(config.prefix + '/api/openapi/upload' + workspaceParam(false), { method: 'DELETE' })
                         ]);
                         toast(t('sidebar.upload.cleared'), 'success');
                         fetchServices();
@@ -3730,10 +3730,10 @@
                     var lower = file.name.toLowerCase();
                     var endpoint;
                     if (lower.endsWith('.proto')) {
-                        endpoint = '/api/proto/upload?name=' + encodeURIComponent(file.name);
+                        endpoint = '/api/proto/upload?name=' + encodeURIComponent(file.name) + workspaceParam(true);
                         protoCount++;
                     } else {
-                        endpoint = '/api/openapi/upload?name=' + encodeURIComponent(file.name);
+                        endpoint = '/api/openapi/upload?name=' + encodeURIComponent(file.name) + workspaceParam(true);
                         openapiCount++;
                     }
                     await fetch(config.prefix + endpoint, { method: 'POST', body: content });

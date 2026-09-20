@@ -32,9 +32,10 @@ async function openCalculator(page: Page): Promise<void> {
     await page.waitForSelector('#bowire-app', { timeout: 30_000 });
 
     // The workbench opens on Home; the service list lives in Explore.
-    await page.getByText('Dienste erkunden', { exact: false }).first()
-        .or(page.getByText('Explore services', { exact: false }).first())
-        .click();
+    // The rail button rather than the Home shortcut: the shortcut is part of
+    // the welcome card, which is not there once a workspace exists — and not
+    // there in the same shape when none does.
+    await page.locator('.bowire-rail-btn[data-rail-mode-id="discover"]').click();
 
     await expect(page.locator('.bowire-method-item').first()).toBeVisible({ timeout: 30_000 });
 }

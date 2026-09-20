@@ -81,7 +81,10 @@
     // still understands.
     function _servicesQuery(url) {
         var q = (url === undefined) ? '' : serverUrlParam(false, url);
-        return q + (q ? '&' : '?') + 'includeAttempts=1';
+        // The workspace rides along so a plugin asked for a setting inside
+        // DiscoverAsync knows whose it is, and so an uploaded schema is read
+        // from the workspace it was uploaded into.
+        return q + (q ? '&' : '?') + 'includeAttempts=1' + workspaceParam(true);
     }
 
     // Read a 200 body in either shape and file its attempts under `key`.
@@ -809,7 +812,8 @@
             }
 
             // Route to the URL the service was discovered from (multi-URL safety)
-            const resp = await fetch(`${config.prefix}/api/invoke${serverUrlParamForService(selectedService, false, selectedMethod)}`, {
+            const _urlParam = serverUrlParamForService(selectedService, false, selectedMethod);
+            const resp = await fetch(`${config.prefix}/api/invoke${_urlParam}${workspaceParam(_urlParam.length > 0)}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -1014,7 +1018,7 @@
         var metadataParam = metadata && Object.keys(metadata).length > 0
             ? `&metadata=${encodeURIComponent(JSON.stringify(metadata))}`
             : '';
-        const url = `${config.prefix}/api/invoke/stream?service=${encodeURIComponent(service)}&method=${encodeURIComponent(method)}&messages=${encodeURIComponent(messagesJson)}${protocolParam}${metadataParam}${serverUrlParamForService(selectedService, true, selectedMethod)}`;
+        const url = `${config.prefix}/api/invoke/stream?service=${encodeURIComponent(service)}&method=${encodeURIComponent(method)}&messages=${encodeURIComponent(messagesJson)}${protocolParam}${metadataParam}${serverUrlParamForService(selectedService, true, selectedMethod)}${workspaceParam(true)}`;
 
         var fullName = service + '/' + method;
         addConsoleEntry({ type: 'request', method: fullName, status: 'Streaming', body: messages[0] || '{}' });  // i18n-exempt: the action log stores rendered text, see #689

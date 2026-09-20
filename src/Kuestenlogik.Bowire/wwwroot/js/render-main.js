@@ -3959,10 +3959,10 @@
             var lower = file.name.toLowerCase();
             var endpoint;
             if (lower.endsWith('.proto')) {
-                endpoint = '/api/proto/upload?name=' + encodeURIComponent(file.name);
+                endpoint = '/api/proto/upload?name=' + encodeURIComponent(file.name) + workspaceParam(true);
                 protoCount++;
             } else {
-                endpoint = '/api/openapi/upload?name=' + encodeURIComponent(file.name);
+                endpoint = '/api/openapi/upload?name=' + encodeURIComponent(file.name) + workspaceParam(true);
                 openapiCount++;
             }
             await fetch(config.prefix + endpoint, { method: 'POST', body: content });
