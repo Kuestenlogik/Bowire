@@ -213,4 +213,77 @@ public sealed class BowirePluginSettingsTests : IDisposable
 
         Assert.Null(BowirePluginSettingsScope.Current);
     }
+
+    [Fact]
+    public void AValueAnotherProcessWroteIsNotHiddenByTheCache()
+    {
+        // The cache was filled on first read and never questioned again, so a
+        // value written by anything other than this process stayed invisible
+        // until restart. That is not a corner: the workbench and
+        // `bowire mcp serve` beside it are a documented pair on one identity,
+        // and a git-native workspace's plugin-settings.json arrives by
+        // checkout, not by this process writing it.
+        //
+        // Measured against the running workbench before the fix: the file said
+        // 1.1, the settings endpoint answered 1.2, and the SOAP envelope went
+        // out as 1.2.
+        var store = new BowirePluginSettingsStore();
+
+        using var _ = BowirePluginSettingsScope.Enter("ws_outside");
+        store.Set(Dis, "probeDuration", "5");
+        Assert.Equal("5", store.GetValue(Dis, "probeDuration"));
+
+        WriteSettingsFileDirectly("ws_outside", """{"dis":{"probeDuration":"9"}}""");
+
+        Assert.Equal("9", store.GetValue(Dis, "probeDuration"));
+    }
+
+    [Fact]
+    public void ADeletedSettingsFileFallsBackToTheDeclaredDefault()
+    {
+        // The other direction, and the one a stamp comparison gets wrong if it
+        // treats "gone" as "unchanged": a workspace whose file was removed has
+        // no overrides, not the last ones this process happened to read.
+        var store = new BowirePluginSettingsStore();
+
+        using var _ = BowirePluginSettingsScope.Enter("ws_removed");
+        store.Set(Dis, "probeDuration", "5");
+        Assert.Equal("5", store.GetValue(Dis, "probeDuration"));
+
+        File.Delete(SettingsFileFor("ws_removed"));
+
+        Assert.Null(store.GetValue(Dis, "probeDuration"));
+    }
+
+    [Fact]
+    public void AWriteOfTheSameLengthIsStillNoticed()
+    {
+        // "1.1" to "1.2" keeps the byte count, which is the ordinary shape of
+        // an edit here. A stamp built on length alone would miss it, and one
+        // built on a coarse timestamp could too.
+        var store = new BowirePluginSettingsStore();
+
+        using var _ = BowirePluginSettingsScope.Enter("ws_samelength");
+        store.Set(Dis, "probeDuration", "111");
+        Assert.Equal("111", store.GetValue(Dis, "probeDuration"));
+
+        WriteSettingsFileDirectly("ws_samelength", """{"dis":{"probeDuration":"222"}}""");
+
+        Assert.Equal("222", store.GetValue(Dis, "probeDuration"));
+    }
+
+    private static string SettingsFileFor(string workspaceId)
+        => BowireUserContext.GetWorkspacePath(workspaceId, null, "plugin-settings.json");
+
+    /// <summary>Stand in for a second process editing the file.</summary>
+    private static void WriteSettingsFileDirectly(string workspaceId, string json)
+    {
+        var path = SettingsFileFor(workspaceId);
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        File.WriteAllText(path, json);
+
+        // The filesystem's timestamp resolution is coarser than this test is
+        // fast, so nudge the stamp the way a real edit seconds later would.
+        File.SetLastWriteTimeUtc(path, DateTime.UtcNow.AddSeconds(1));
+    }
 }

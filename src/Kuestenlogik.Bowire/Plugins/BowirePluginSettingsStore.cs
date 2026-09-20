@@ -43,6 +43,26 @@ public sealed class BowirePluginSettingsStore : IBowirePluginSettings
     private readonly Dictionary<string, Dictionary<string, Dictionary<string, string>>> _byPath =
         new(StringComparer.Ordinal);
 
+    /// <summary>
+    /// What the file looked like when its entry in <see cref="_byPath"/> was
+    /// read: last write time and length.
+    /// </summary>
+    /// <remarks>
+    /// Without this the cache is filled once and never questioned, so a value
+    /// another process wrote is invisible until this one restarts. That is not
+    /// a corner: the workbench and <c>bowire mcp serve</c> beside it are a
+    /// documented pair on one identity, and a git-native workspace's
+    /// <c>plugin-settings.json</c> arrives by checkout rather than by this
+    /// process writing it. Measured before this: the file said 1.1, the
+    /// running workbench answered 1.2, and sent 1.2 on the wire.
+    ///
+    /// A stat per lookup rather than a parse per lookup — the file is small,
+    /// but it is read on every plugin-setting question, and discovery asks
+    /// several.
+    /// </remarks>
+    private readonly Dictionary<string, (DateTime WrittenUtc, long Length)> _stampByPath =
+        new(StringComparer.Ordinal);
+
     /// <inheritdoc />
     public string? GetValue(string pluginId, string key)
     {
@@ -119,6 +139,9 @@ public sealed class BowirePluginSettingsStore : IBowirePluginSettings
             }
 
             Persist(path, all);
+            // Our own write moves the stamp, and without this the very next
+            // read would discard a cache entry it just proved correct.
+            _stampByPath[path] = StampOf(path);
             return true;
         }
     }
@@ -129,7 +152,7 @@ public sealed class BowirePluginSettingsStore : IBowirePluginSettings
     /// </summary>
     internal void ResetForTests()
     {
-        lock (_gate) { _byPath.Clear(); }
+        lock (_gate) { _byPath.Clear(); _stampByPath.Clear(); }
     }
 
     /// <summary>
@@ -155,9 +178,49 @@ public sealed class BowirePluginSettingsStore : IBowirePluginSettings
         }
     }
 
-    /// <summary>The cached values for <paramref name="path"/>. Callers hold the gate.</summary>
+    /// <summary>
+    /// The values for <paramref name="path"/>, re-read when the file changed
+    /// under us. Callers hold the gate.
+    /// </summary>
     private Dictionary<string, Dictionary<string, string>> Load(string path)
-        => _byPath.TryGetValue(path, out var cached) ? cached : _byPath[path] = LoadFromDisk(path);
+    {
+        var stamp = StampOf(path);
+        if (_byPath.TryGetValue(path, out var cached)
+            && _stampByPath.TryGetValue(path, out var seen)
+            && seen == stamp)
+        {
+            return cached;
+        }
+
+        var fresh = LoadFromDisk(path);
+        _byPath[path] = fresh;
+        _stampByPath[path] = stamp;
+        return fresh;
+    }
+
+    /// <summary>
+    /// The file's identity for cache purposes, or a zero stamp when it is not
+    /// there.
+    /// </summary>
+    /// <remarks>
+    /// Time and length together, because a write that keeps the length is
+    /// ordinary here — flipping <c>"1.1"</c> to <c>"1.2"</c> does exactly
+    /// that — and a filesystem whose timestamp resolution is coarse would
+    /// otherwise hide it. An unreadable file reports the zero stamp, which
+    /// forces a re-read next time rather than freezing whatever was cached.
+    /// </remarks>
+    private static (DateTime WrittenUtc, long Length) StampOf(string path)
+    {
+        try
+        {
+            var info = new FileInfo(path);
+            return info.Exists ? (info.LastWriteTimeUtc, info.Length) : (default, -1L);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return (default, -1L);
+        }
+    }
 
     private static Dictionary<string, Dictionary<string, string>> LoadFromDisk(string path)
     {

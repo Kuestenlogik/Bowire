@@ -343,7 +343,7 @@ internal static partial class SchemaUploadStore
     private static string ExplicitId(ExplicitSchema schema)
     {
         var digest = System.Security.Cryptography.SHA256.HashData(
-            System.Text.Encoding.UTF8.GetBytes(schema.SourceName + " " + schema.Content));
+            System.Text.Encoding.UTF8.GetBytes(schema.SourceName + "\u0000" + schema.Content));
         // Upper-case hex: the id is compared, never lower-cased for display,
         // and CA1308 prefers the direction that cannot lose a character.
         return "schema_" + Convert.ToHexString(digest, 0, 8);
