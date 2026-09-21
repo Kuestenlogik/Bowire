@@ -287,7 +287,21 @@ internal static class McpServeCommand
         // so a dev who runs `bowire mcp serve --bind http` and embeds
         // the adapter in the same process gets coexistence + the
         // manifest endpoint for free.
-        app.MapBowireMcp(McpPathPrefix);
+        try
+        {
+            app.MapBowireMcp(McpPathPrefix);
+        }
+        catch (InvalidOperationException ex)
+        {
+            // A wiring fault — a service the mount needs that the chosen
+            // branch above did not register (#731 was exactly that), or a
+            // prefix that collides with an adapter already mounted here.
+            // The operator gets the reason on one line; the stack trace of
+            // an ASP.NET mount says nothing they can act on.
+            return await Fail(
+                $"[bowire-mcp] cannot mount the MCP endpoint at {McpPathPrefix}: {ex.Message}",
+                cfg.Io).ConfigureAwait(false);
+        }
 
         if (addressNote is not null)
         {
@@ -330,6 +344,13 @@ internal static class McpServeCommand
         catch (OperationCanceledException)
         {
             await app.StopAsync(TimeSpan.FromSeconds(1)).ConfigureAwait(false);
+        }
+        catch (IOException ex)
+        {
+            // Kestrel could not bind — almost always the port, and the
+            // operator picked it. Naming it beats a bind stack trace.
+            return await Fail(
+                $"[bowire-mcp] cannot listen: {ex.Message}", cfg.Io).ConfigureAwait(false);
         }
         return 0;
     }

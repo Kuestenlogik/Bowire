@@ -1,6 +1,9 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Globalization;
+using System.Net;
+using System.Net.Sockets;
 using Kuestenlogik.Bowire.App;
 using Kuestenlogik.Bowire.Mcp;
 
@@ -234,6 +237,56 @@ public sealed class McpServeCommandTests
             stdout: TextWriter.Null, stderr: TextWriter.Null,
             ct: cts.Token);
         Assert.Equal(0, rc);
+    }
+
+    [Fact]
+    public async Task RunAsync_DefaultHttpRunner_Port_In_Use_Ends_As_A_Message_Not_A_Stack_Trace()
+    {
+        // #730's third criterion. The port is the one thing the operator
+        // chose, and a taken one used to end this command in an unhandled
+        // IOException — the same shape the missing registry produced.
+        //
+        // Both loopback addresses have to be occupied: --port resolves to
+        // "localhost", which Kestrel treats as 127.0.0.1 *and* [::1], and it
+        // only gives up when neither can be had. A single wildcard listener
+        // is not enough either — Windows lets a later socket bind the more
+        // specific address underneath it.
+        var port = GetFreePort();
+        using var v4 = new TcpListener(IPAddress.Loopback, port);
+        using var v6 = new TcpListener(IPAddress.IPv6Loopback, port);
+        v4.Start();
+        v6.Start();
+
+        // A deadline of its own: if the bind ever succeeds again this test
+        // must fail on the return code, not hang on a server that runs.
+        using var deadline = CancellationTokenSource.CreateLinkedTokenSource(
+            TestContext.Current.CancellationToken);
+        deadline.CancelAfter(TimeSpan.FromSeconds(30));
+
+        using var stderr = new StringWriter();
+        try
+        {
+            var rc = await McpServeCommand.RunAsync(
+                bind: "http",
+                port: port,
+                allowArbitraryUrls: false,
+                noEnvAllowlist: true,
+                stdout: TextWriter.Null, stderr: stderr,
+                ct: deadline.Token);
+
+            Assert.Equal(2, rc);
+            var text = stderr.ToString();
+            Assert.Contains("cannot listen", text, StringComparison.Ordinal);
+            // Names the port, so the operator knows which one to change.
+            Assert.Contains(port.ToString(CultureInfo.InvariantCulture), text, StringComparison.Ordinal);
+            // A message, not a stack trace.
+            Assert.DoesNotContain("   at ", text, StringComparison.Ordinal);
+        }
+        finally
+        {
+            v4.Stop();
+            v6.Stop();
+        }
     }
 
     private static int GetFreePort()
