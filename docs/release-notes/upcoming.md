@@ -1,4 +1,5 @@
 ---
+# The release's `#` heading. A sentence about this delivery, not the version.
 title: <fill in before the tag>
 version: 2.8.0
 ---

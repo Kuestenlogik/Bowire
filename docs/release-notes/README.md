@@ -22,8 +22,12 @@ releases with attached files.
 
 1. **Before the tag.** Make sure `upcoming.md` is curated — every
    real highlight has a paragraph, breaking changes are listed under
-   their own section, the front-matter `title:` reads well as the
-   release title (the `v1.6.1` style: `OIDC auth + MCP resources/prompts`).
+   their own section, and the front-matter `title:` reads well as a
+   headline, because it **is** the release's `#` heading (the `v1.6.1`
+   style: `OIDC auth + MCP resources/prompts`). The pipeline refuses to
+   publish without one: a title that only repeats the version — v2.6.0
+   went out with `Bowire v2.6.0` — says nothing the tag does not, and
+   the gate treats it as missing.
 2. **Push the tag.** `release.yml` reads `upcoming.md` as the
    editorial body when present, falls back to the legacy "Draft
    release on GitHub" path otherwise (v2.0 used the legacy path).
@@ -44,6 +48,26 @@ derives every version from the git tag at build time; see
 > `docs/release-notes/<tag>.md` and that file existed both times — but the
 > fallback to `upcoming.md` would have published them again. If you skip
 > the rename, at least reset the file.
+
+## The title, and what the release is called
+
+The GitHub release is named after its **version and nothing else** — `2.7.0`. The
+Releases list truncates the name to about that width, so anything beside the number
+is unreadable where it is shown and redundant where it is not.
+
+What the delivery is about goes into the body, as the `#` heading above the
+sections ([`scripts/ci/release-body.mjs`](../../scripts/ci/release-body.mjs) composes
+it from the front-matter `title:`). Two things fall out of that:
+
+- The notes no longer start at `##`. The sections sit under the heading of the
+  document they open, which is where they belonged.
+- The heading names the **delivery**, not the section it came from. The milestone's
+  theme used to be the release title, from the days when a milestone *was* a
+  delivery; a milestone is a section now, and v2.8.0 and v2.8.1 out of the same one
+  would have carried the same words.
+
+A body that already opens with its own `#` is published as written — the file is
+then the author's to arrange, and a heading above the first would be two titles.
 
 ## The change list under the body
 

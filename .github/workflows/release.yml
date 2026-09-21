@@ -97,9 +97,18 @@ jobs:
           FILE_BODY=""
           for candidate in "docs/release-notes/${TAG}.md" "docs/release-notes/upcoming.md"; do
             if [[ -f "$candidate" ]]; then
-              # Strip any YAML front-matter so the body downstream is pure
-              # markdown ready to land in the release body verbatim.
-              CANDIDATE_BODY=$(awk 'BEGIN{fm=0} /^---$/{fm++; next} fm<2{next} {print}' "$candidate")
+              # Same composition as the publish step below, so the gate judges what
+              # will actually be published rather than a different shape of it.
+              CANDIDATE_BODY=$(node scripts/ci/release-body.mjs "$candidate")
+              # The title is the release's `#` heading now, so a missing or
+              # placeholder one is as much of a hole as an empty body. v2.6.0 went
+              # out with "Bowire v2.6.0" in its front-matter, which as a heading
+              # says nothing the tag does not.
+              if [[ -z "$(node scripts/ci/release-body.mjs --title "$candidate")" ]]; then
+                echo "::error::${candidate} has no usable front-matter title — it is the release's heading."
+                echo "  Set 'title:' to a sentence about this delivery, not to the version."
+                exit 1
+              fi
               # Placeholder detection MUST match the publish step below
               # ("Pull editorial body"), which counts `### ` subsections.
               # A looser test here passed the gate on a template body the
@@ -131,7 +140,7 @@ jobs:
             echo ""
             echo "Or, legacy path (v2.0 compatible):"
             echo "  gh release create ${TAG} --repo ${{ github.repository }} --draft \\"
-            echo "    --title '${TAG} — <theme>' --notes-file path/to/notes.md"
+            echo "    --title '${TAG#v}' --notes-file path/to/notes.md"
             echo ""
             echo "The publish step below promotes the file body or the draft."
             exit 1
@@ -695,7 +704,11 @@ jobs:
             if [[ -f "$candidate" ]]; then
               # Strip YAML front-matter; the body downstream is pure
               # markdown that lands as-is in the release.
-              CANDIDATE_BODY=$(awk 'BEGIN{fm=0} /^---$/{fm++; next} fm<2{next} {print}' "$candidate")
+              # The published shape: front-matter off, and the delivery's own title
+              # from that front-matter as the one `#` the sections sit under. The
+              # notes used to start at `##`, which made the sections the top level
+              # — a level lower than the document they open.
+              CANDIDATE_BODY=$(node scripts/ci/release-body.mjs "$candidate")
               # Placeholder detection: a release-notes file is "real"
               # only when it carries at least one `### <heading>` —
               # i.e. a populated Highlights / Breaking subsection.
@@ -770,14 +783,16 @@ jobs:
           cat release-body.md
           echo "----- end -----"
 
-      # The release-title theme comes from the milestone(s) this release
-      # ships. Milestones are ordered work sections `M<n> — <theme>`
-      # (docs/contributing/project-board.md, "Milestones and releases");
-      # the version number is chosen at the cut, so the tag names the
-      # milestones in its message and scripts/ci/resolve-milestone.mjs
-      # reads them (falling back to a `v<base> — …` title for old tags,
-      # then to the frontmost complete section). Empty → bare title, so
-      # the pipeline never crashes on a half-set-up milestone.
+      # The release is named after its version and nothing else. It used to
+      # carry the milestone's theme beside it, from the days when a
+      # milestone was a delivery — it is a section now, so v2.8.0 and
+      # v2.8.1 would have been given the same words. The Releases list
+      # truncates the name to about a version's width anyway; what the
+      # delivery is about is the `#` heading of the body, taken from the
+      # notes' own front-matter (scripts/ci/release-body.mjs).
+      #
+      # resolve-milestone.mjs still runs: the milestones it names are the
+      # ones this cut closes.
       - name: Resolve release title from milestone
         id: title
         env:
@@ -786,14 +801,8 @@ jobs:
           TAG="${GITHUB_REF_NAME}"
           # Never fail the release over its title: a resolver error is a bare title, said in the log.
           node scripts/ci/resolve-milestone.mjs "$TAG" > resolved.json || echo '{"theme":"","numbers":""}' > resolved.json
-          THEME=$(node -e "process.stdout.write(JSON.parse(require('fs').readFileSync('resolved.json','utf8')).theme || '')" || true)
           NUMBERS=$(node -e "process.stdout.write(JSON.parse(require('fs').readFileSync('resolved.json','utf8')).numbers || '')" || true)
-          if [[ -n "$THEME" ]]; then
-            echo "title=${TAG} — ${THEME}" >> "$GITHUB_OUTPUT"
-          else
-            echo "::notice::No milestone resolved for ${TAG} — release title will be bare ${TAG}."
-            echo "title=${TAG}" >> "$GITHUB_OUTPUT"
-          fi
+          echo "title=$(node -e "process.stdout.write(process.argv[1].replace(/^v/, ''))" "$TAG")" >> "$GITHUB_OUTPUT"
           echo "milestones=${NUMBERS}" >> "$GITHUB_OUTPUT"
           TITLES=$(node -e "process.stdout.write(JSON.parse(require('fs').readFileSync('resolved.json','utf8')).milestones || '')" || true)
           echo "milestone_titles=${TITLES}" >> "$GITHUB_OUTPUT"

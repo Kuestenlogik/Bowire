@@ -1,5 +1,6 @@
 ---
-title: <short theme — keep it under 60 chars; v1.6.1 style>
+# The release's `#` heading: a sentence about this delivery, not the version.
+title: <what this delivery is about — under 60 chars; v1.6.1 style>
 version: <X.Y.Z, no leading v>
 ---
 
