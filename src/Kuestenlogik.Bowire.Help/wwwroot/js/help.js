@@ -46,8 +46,13 @@
             .catch(function () { /* leave empty; UI handles 0-topics */ });
     }
 
+    // Resolves to whether the topic was found (#736). Click handlers
+    // ignore it — they pass an id off the list, which by construction
+    // exists. A deep link does not: `?topic=` carries whatever somebody
+    // typed, and landing on the topic picker without a word reads as
+    // "this is the page you were sent to".
     function helpLoadTopic(id) {
-        if (!id) return Promise.resolve();
+        if (!id) return Promise.resolve(false);
         return fetch(config.prefix + '/api/help/topic/' + encodeURIComponent(id))
             .then(function (r) { return r.ok ? r.json() : null; })
             .then(function (data) {
@@ -58,8 +63,9 @@
                     helpSelectedTopic = null;
                 }
                 render();
+                return !!(data && data.id);
             })
-            .catch(function () { /* leave whatever was loaded */ });
+            .catch(function () { /* leave whatever was loaded */ return false; });
     }
 
     // #324 — Help moved out of the right-side drawer into a full rail
@@ -70,8 +76,10 @@
     // reference them (palette suggestions, landing CTA, rail-internal
     // 'Help on this rail' buttons) don't break — they now route into
     // the rail instead of opening the drawer.
+    // Returns a promise resolving to whether the requested topic is the
+    // one now showing (#736), so a deep-link caller can say otherwise.
     function openHelpRail(targetId) {
-        if (!helpAvailable) return;
+        if (!helpAvailable) return Promise.resolve(false);
         // Remember the rail the operator came from so the rail-internal
         // "Back" affordance + the standalone-page-template "Back to
         // Bowire" anchor have somewhere to return to. Recorded only
@@ -82,13 +90,13 @@
         }
         railMode = 'help';
         try { localStorage.setItem('bowire_rail_mode', 'help'); } catch { /* ignore */ }
-        helpEnsureTopicsLoaded().then(function () {
+        return helpEnsureTopicsLoaded().then(function () {
             var wanted = targetId || helpSelectedId || helpResolveContextualTopicId();
             if (wanted !== helpSelectedId || !helpSelectedTopic) {
-                helpLoadTopic(wanted);
-            } else {
-                render();
+                return helpLoadTopic(wanted);
             }
+            render();
+            return true;
         });
     }
 

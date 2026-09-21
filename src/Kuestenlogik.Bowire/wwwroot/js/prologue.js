@@ -1934,22 +1934,34 @@
      *   stored mode standing.
      */
     function _railDeepLinkFrom(search, knownIds) {
-        var raw = null;
-        try { raw = new URLSearchParams(search || '').get('rail'); }
-        catch { raw = null; }
-        if (raw === null) return { requested: null, id: null, status: 'none' };
+        var params = null;
+        try { params = new URLSearchParams(search || ''); }
+        catch { params = null; }
+        var raw = params ? params.get('rail') : null;
+        // #736 — `topic` travels with the rail, and is read only when the
+        // link names Help (init.js checks that). A bare `?topic=` belongs
+        // to whoever put it there — an MQTT topic in a shared request link,
+        // say — and Bowire has no business claiming the name.
+        var topicRaw = params ? params.get('topic') : null;
+        var topic = (typeof topicRaw === 'string' && topicRaw.trim())
+            ? topicRaw.trim() : null;
+        if (raw === null) {
+            return { requested: null, id: null, status: 'none', topic: null };
+        }
         var requested = String(raw).trim();
         // `?rail=` with nothing after it is a typo, not a request for the
         // default — saying so beats landing somewhere unexplained.
-        if (!requested) return { requested: '', id: null, status: 'unknown' };
+        if (!requested) {
+            return { requested: '', id: null, status: 'unknown', topic: topic };
+        }
         var ids = Array.isArray(knownIds) ? knownIds : [];
         if (ids.indexOf(requested) >= 0) {
-            return { requested: requested, id: requested, status: 'known' };
+            return { requested: requested, id: requested, status: 'known', topic: topic };
         }
         if (_RETIRED_RAIL_IDS.indexOf(requested) >= 0) {
-            return { requested: requested, id: requested, status: 'retired' };
+            return { requested: requested, id: requested, status: 'retired', topic: topic };
         }
-        return { requested: requested, id: null, status: 'unknown' };
+        return { requested: requested, id: null, status: 'unknown', topic: topic };
     }
 
     /** The rail ids this build ships, off the boot config. */

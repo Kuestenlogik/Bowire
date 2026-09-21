@@ -15,7 +15,7 @@ The v2.0 drawer was a side-panel that overlapped the workbench. v2.1 promoted He
 
 1. **Drawers don't survive a rail switch.** Closing the drawer on top of the Discover rail and then switching to Compose lost the operator's reading context. The rail surfaces persist their state across rail switches like any other.
 2. **Larger reading surface.** A drawer is cramped; a rail gets the full main pane plus a configurable splitter to widen the topic tree.
-3. **Deep-linkable.** `?rail=help&topic=workspaces` lands directly on the Workspaces topic — useful for chat links and onboarding tours.
+3. **Deep-linkable.** `?rail=help&topic=features/workspaces` lands directly on the Workspaces topic — useful for chat links and onboarding tours.
 
 The v2.0 `help drawer` API is gone; no migration shim ships because the contract was internal-only.
 
@@ -26,6 +26,8 @@ Three ways:
 - Click the **Help** icon in the rail strip (typically the bottom group).
 - Press the keyboard shortcut bound to `rail: help` (default unbound — see [Keyboard shortcuts](keyboard-shortcuts.md)).
 - Deep-link via `?rail=help` (optionally `&topic=<topic-id>`).
+
+The topic id is the topic's path without the `.md`, category included — `features/workspaces`, `ui-guide/sidebar`, `index`. It is the same id the standalone page uses (`/help/topic/<id>`), so the link in the topic's own undock button is a deep link you can copy. `topic` is read only when the link also names the Help rail: a `?topic=` on its own belongs to whoever put it there, and Bowire leaves it alone. A topic id this build doesn't have leaves the topic list showing and says which id was asked for (#736); it is not swallowed, because a link that quietly lands on the picker reads as the page it was sent to.
 
 The first time Help is opened in a workspace, the operator lands on the **Home** topic — a short index that points at the high-traffic surfaces (Discover, Compose, Workspaces, Recordings, Help itself).
 

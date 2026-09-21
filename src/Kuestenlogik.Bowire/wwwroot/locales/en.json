@@ -3677,5 +3677,6 @@
   // #735 — the `?rail=` deep link. {id} is the id from the URL, verbatim;
   // {rail} is the name of the rail actually showing.
   "deeplink.rail.unknown": "No rail called '{id}' in this workbench — showing {rail} instead.",
-  "deeplink.rail.moved": "The '{id}' rail was retired; its surface now lives in {rail}."
+  "deeplink.rail.moved": "The '{id}' rail was retired; its surface now lives in {rail}.",
+  "deeplink.topic.unknown": "No help topic called '{id}' — showing the topic list instead."
 }

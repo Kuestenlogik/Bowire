@@ -1032,6 +1032,26 @@
                             _railDeepLinkNotice.kind === 'unknown' ? 'warning' : 'info');
                     }
                 } catch (e) { console.warn('[bowire] rail deep-link notice failed', e); }
+
+                // #736 — the other half of the documented link:
+                // `?rail=help&topic=<id>` opens that topic, not the topic
+                // picker. Read only when the link actually landed on Help,
+                // so a `topic` parameter that belongs to somebody else's
+                // URL is left alone. openHelpRail is the canonical entry
+                // point (it loads the topic list first); it exists only
+                // when the Help package is installed, and a link naming a
+                // rail this build lacks was already reported above.
+                try {
+                    var _wantedTopic = _railDeepLink && _railDeepLink.topic;
+                    if (_wantedTopic && railMode === 'help'
+                        && typeof openHelpRail === 'function') {
+                        Promise.resolve(openHelpRail(_wantedTopic)).then(function (found) {
+                            if (!found) {
+                                toast(t('deeplink.topic.unknown', { id: _wantedTopic }), 'warning');
+                            }
+                        });
+                    }
+                } catch (e) { console.warn('[bowire] help topic deep-link failed', e); }
             });
 
             // #136 / #537 — load the catalogue BEFORE the first

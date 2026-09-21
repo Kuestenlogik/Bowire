@@ -143,6 +143,41 @@ test('a build that ships no rail list refuses rather than throws', () => {
     assert.equal(resolveDeepLink('?rail=compose', undefined).status, 'unknown');
 });
 
+// ---- #736: the topic that travels with ?rail=help ----------------------
+
+test('a topic travels alongside the rail', () => {
+    const r = resolveDeepLink('?rail=help&topic=features/workspace', ['help']);
+    assert.equal(r.id, 'help');
+    assert.equal(r.topic, 'features/workspace');
+});
+
+test('the topic is trimmed and survives either parameter order', () => {
+    assert.equal(resolveDeepLink('?topic=%20index%20&rail=help', ['help']).topic, 'index');
+});
+
+test('no topic parameter means no topic, not an empty one', () => {
+    // init.js branches on truthiness; an empty string here would send the
+    // help rail off to load a topic called nothing.
+    assert.equal(resolveDeepLink('?rail=help', ['help']).topic, null);
+    assert.equal(resolveDeepLink('?rail=help&topic=', ['help']).topic, null);
+    assert.equal(resolveDeepLink('?rail=help&topic=%20%20', ['help']).topic, null);
+});
+
+test('a topic without a rail is left to whoever put it there', () => {
+    // 'topic' is not a name Bowire owns — an MQTT topic in a shared request
+    // link carries it too. Without ?rail= there is no deep link at all, and
+    // claiming the parameter would mean warning about somebody else's URL.
+    const r = resolveDeepLink('?topic=sensors/outdoor', ['help']);
+    assert.equal(r.status, 'none');
+    assert.equal(r.topic, null);
+});
+
+test('a topic still travels with a rail that is not Help', () => {
+    // Filtering by rail belongs to the caller, which checks the rail it
+    // actually landed on after the retired-id migration — not to the parse.
+    assert.equal(resolveDeepLink('?rail=compose&topic=index', ['compose']).topic, 'index');
+});
+
 test('the boot code adopts the deep link over the stored rail', () => {
     // Read off the source: the stored value is only consulted in the else
     // branch. Asserted here because it is the whole point of the ticket —

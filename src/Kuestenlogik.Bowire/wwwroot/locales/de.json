@@ -3677,5 +3677,6 @@
   // #735 — der Direkteinstieg über `?rail=`. {id} ist die Kennung aus der
   // Adresse, unverändert; {rail} der Name der Leiste, die zu sehen ist.
   "deeplink.rail.unknown": "Keine Leiste namens '{id}' in dieser Werkbank — zu sehen ist {rail}.",
-  "deeplink.rail.moved": "Die Leiste '{id}' gibt es nicht mehr; ihre Oberfläche steckt jetzt in {rail}."
+  "deeplink.rail.moved": "Die Leiste '{id}' gibt es nicht mehr; ihre Oberfläche steckt jetzt in {rail}.",
+  "deeplink.topic.unknown": "Kein Hilfe-Thema namens '{id}' — zu sehen ist die Themenliste."
 }
