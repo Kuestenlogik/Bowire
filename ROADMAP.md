@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### M1 — Localisation, layout and the test pillar *(due 2026-11-03)*
 
-**31/53 done** · 1 in progress · 21 backlog
+**32/53 done** · 1 in progress · 20 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -36,7 +36,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [92](https://github.com/Kuestenlogik/Bowire.Samples/issues/92) | Samples | [Ship each sample as its own ready-to-run download](#issue-kuestenlogik-bowire-samples-92) | ⬜ Backlog | `area:docs` |
 | [583](https://github.com/Kuestenlogik/Bowire/issues/583) | Bowire | [Design-time lint: naming/PII rules, inline workbench hints, test --suite=lint](#issue-kuestenlogik-bowire-583) | ⬜ Backlog | `area:multi` |
 | [639](https://github.com/Kuestenlogik/Bowire/issues/639) | Bowire | [SCIM: live Okta and Entra ID provisioning round-trips](#issue-kuestenlogik-bowire-639) | ⬜ Backlog | `area:workbench` |
-| [689](https://github.com/Kuestenlogik/Bowire/issues/689) | Bowire | [Action-log entries store rendered English text instead of a key](#issue-kuestenlogik-bowire-689) | ⬜ Backlog | `area:workbench` |
 | [690](https://github.com/Kuestenlogik/Bowire/issues/690) | Bowire | [Translate the CLI help surface, or decide not to](#issue-kuestenlogik-bowire-690) | ⬜ Backlog | `area:cli` |
 | [47](https://github.com/Kuestenlogik/Bowire/issues/47) | Bowire | [Sidebar display: method name vs path toggle](#issue-kuestenlogik-bowire-47) | ✅ Done | `area:workbench` |
 | [95](https://github.com/Kuestenlogik/Bowire/issues/95) | Bowire | [Header Library: named, scoped, toggleable header sets](#issue-kuestenlogik-bowire-95) | ✅ Done | `area:workbench` |
@@ -57,6 +56,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [666](https://github.com/Kuestenlogik/Bowire/issues/666) | Bowire | [plugin install suggests a re-run its own already-installed guard blocks](#issue-kuestenlogik-bowire-666) | ✅ Done | `area:plugin-sdk` |
 | [684](https://github.com/Kuestenlogik/Bowire/issues/684) | Bowire | [Starting Bowire on an occupied port crashes with an unhandled exception instead of opening the running workbench](#issue-kuestenlogik-bowire-684) | ✅ Done | `area:cli` |
 | [686](https://github.com/Kuestenlogik/Bowire/issues/686) | Bowire | [el() turns a false boolean attribute into a set attribute, so disabled: false disables the control](#issue-kuestenlogik-bowire-686) | ✅ Done | `area:workbench` |
+| [689](https://github.com/Kuestenlogik/Bowire/issues/689) | Bowire | [Action-log entries store rendered English text instead of a key](#issue-kuestenlogik-bowire-689) | ✅ Done | `area:workbench` |
 | [691](https://github.com/Kuestenlogik/Bowire/issues/691) | Bowire | [i18n: plugin settings and protocol descriptions come from the backend, already in English](#issue-kuestenlogik-bowire-691) | ✅ Done | `area:plugin-sdk` |
 | [692](https://github.com/Kuestenlogik/Bowire/issues/692) | Bowire | [A sidecar manifest cannot name an interpreter: the executable never resolves through PATH](#issue-kuestenlogik-bowire-692) | ✅ Done | `area:plugin-sdk` |
 | [693](https://github.com/Kuestenlogik/Bowire/issues/693) | Bowire | [A sidecar's settings() reaches nothing: the host never reads them](#issue-kuestenlogik-bowire-693) | ✅ Done | `area:plugin-sdk` |
@@ -315,12 +315,6 @@ Each sample downloadable on its own, built and ready to run, from the repo's Rel
 
 Split from #96 so the SCIM surface can ship on its own merits. [[more]](https://github.com/Kuestenlogik/Bowire/issues/639)
 
-#### <a id="issue-kuestenlogik-bowire-689"></a>⬜ Backlog · [#689](https://github.com/Kuestenlogik/Bowire/issues/689) Action-log entries store rendered English text instead of a key
-
-> `area:workbench`
-
-The Activity drawer renders text that was translated once, when the action happened, and then stored. Switching the interface language afterwards leaves every existing entry in the old language, and an entry made before a translation existed stays English for ever. [[more]](https://github.com/Kuestenlogik/Bowire/issues/689)
-
 #### <a id="issue-kuestenlogik-bowire-690"></a>⬜ Backlog · [#690](https://github.com/Kuestenlogik/Bowire/issues/690) Translate the CLI help surface, or decide not to
 
 > `area:cli`
@@ -440,6 +434,12 @@ Starting Bowire while an instance is already listening does not fail gracefully 
 > `area:workbench`
 
 `el()` in `helpers.js` skips `undefined` and `null` and routes everything else through `setAttribute`: [[more]](https://github.com/Kuestenlogik/Bowire/issues/686)
+
+#### <a id="issue-kuestenlogik-bowire-689"></a>✅ Done · [#689](https://github.com/Kuestenlogik/Bowire/issues/689) Action-log entries store rendered English text instead of a key
+
+> `area:workbench`
+
+The Activity drawer renders text that was translated once, when the action happened, and then stored. Switching the interface language afterwards leaves every existing entry in the old language, and an entry made before a translation existed stays English for ever. [[more]](https://github.com/Kuestenlogik/Bowire/issues/689)
 
 #### <a id="issue-kuestenlogik-bowire-691"></a>✅ Done · [#691](https://github.com/Kuestenlogik/Bowire/issues/691) i18n: plugin settings and protocol descriptions come from the backend, already in English
 
