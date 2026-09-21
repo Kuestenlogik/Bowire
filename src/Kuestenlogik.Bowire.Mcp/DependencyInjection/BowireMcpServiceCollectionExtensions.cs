@@ -243,6 +243,16 @@ public static class BowireMcpServiceCollectionExtensions
         // IAsyncDisposable.DisposeAsync, which closes the parent client.
         services.AddSingleton(_ => new BowireForwardingMcpTransport(parentEndpoint, bearerToken));
 
+        // The same registry AddBowireMcp puts in, because MapBowireMcp asks
+        // for it and a forwarder is mounted with MapBowireMcp like any other
+        // server. Without it `bowire mcp serve --bind http --attach …` died
+        // on startup with "No service for type BowireMcpEndpointRegistry" —
+        // forwarder mode over HTTP was not degraded, it could not start at
+        // all. Each flag alone worked, which is why it went unnoticed: the
+        // stdio path never maps an endpoint, and the HTTP path without
+        // --attach goes through AddBowireMcp.
+        services.TryAddSingleton<BowireMcpEndpointRegistry>();
+
         return services
             .AddMcpServer(o =>
             {

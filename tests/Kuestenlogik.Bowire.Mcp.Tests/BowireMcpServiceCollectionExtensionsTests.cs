@@ -126,6 +126,23 @@ public class BowireMcpServiceCollectionExtensionsTests
     }
 
     [Fact]
+    public async Task AddBowireMcpForwarder_Registers_The_Endpoint_Registry_MapBowireMcp_Asks_For()
+    {
+        // #731. A forwarder is mounted with MapBowireMcp like any other
+        // server, and MapBowireMcp resolves this registry with
+        // GetRequiredService — so a container without it throws at startup
+        // rather than degrading. AddBowireMcp has always registered it; the
+        // forwarder path did not, and nothing asked until the two flags met.
+        var services = new ServiceCollection();
+
+        services.AddBowireMcpForwarder(new Uri("http://localhost:5081/mcp"));
+        await using var sp = services.BuildServiceProvider();
+
+        var registry = sp.GetRequiredService<BowireMcpEndpointRegistry>();
+        Assert.Same(registry, sp.GetRequiredService<BowireMcpEndpointRegistry>());
+    }
+
+    [Fact]
     public async Task AddBowireMcp_ServerInfo_ConfigureCallback_Sets_Bowire_Identity()
     {
         var services = new ServiceCollection();

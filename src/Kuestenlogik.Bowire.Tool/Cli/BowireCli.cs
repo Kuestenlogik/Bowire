@@ -1243,11 +1243,11 @@ internal static class BowireCli
         var noConfirm = new Option<bool>("--no-confirm")
         { Description = "Skip the two-step pending-confirmation gate on mutator tools (bowire.mock.start, bowire.record.start). Use when the agent host already enforces approvals." };
         var attach = new Option<string?>("--attach")
-        { Description = "Forwarder mode (#286): relay every incoming MCP request to a parent Bowire MCP endpoint. Accepts host:port shorthand (expanded to http://host:port/bowire/mcp) or an absolute http(s) URI. Mutually exclusive in spirit with --allow-arbitrary-urls / --allow-invoke / --no-confirm — those configure the *local* tool registry, which forwarder mode skips entirely." };
+        { Description = "Forwarder mode (#286): relay every incoming MCP request to a parent Bowire MCP endpoint. Accepts host:port shorthand — expanded to http://host:port/mcp, where `bowire mcp serve --bind http` listens — or an absolute http(s) URI, which is what an embedded parent needs (those mount Bowire under /bowire/ and serve /bowire/mcp). Mutually exclusive in spirit with --allow-arbitrary-urls / --allow-invoke / --no-confirm — those configure the *local* tool registry, which forwarder mode skips entirely." };
         var attachToken = new Option<string?>("--attach-token")
         { Description = "Bearer token attached to every outbound request to the parent (Authorization: Bearer <token>). Required when the parent was started with --token <secret>." };
         var token = new Option<string?>("--token")
-        { Description = "Require Authorization: Bearer <secret> on every inbound /bowire/mcp request (--bind http only). Pair with --attach-token on the child." };
+        { Description = "Require Authorization: Bearer <secret> on every inbound /mcp request (--bind http only). Pair with --attach-token on the child." };
 
         var serve = new Command("serve", "Run Bowire as an MCP server (AI-agent bridge).");
         serve.Add(bind); serve.Add(port); serve.Add(allowArbitrary); serve.Add(noEnvAllowlist);

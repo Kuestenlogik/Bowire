@@ -47,8 +47,9 @@ public sealed class BowireForwardingMcpTransport : IAsyncDisposable
     /// Build a forwarder targeting the given parent MCP endpoint URI.
     /// </summary>
     /// <param name="parentEndpoint">
-    /// HTTP(S) URI of the parent Bowire MCP endpoint (e.g.
-    /// <c>http://localhost:5198/bowire/mcp</c>).
+    /// HTTP(S) URI of the parent Bowire MCP endpoint — <c>/mcp</c> for a
+    /// standalone parent, <c>/bowire/mcp</c> for an embedded one (e.g.
+    /// <c>http://localhost:5198/mcp</c>).
     /// </param>
     /// <param name="bearerToken">
     /// Optional bearer token to attach to every request to the parent
@@ -79,9 +80,11 @@ public sealed class BowireForwardingMcpTransport : IAsyncDisposable
     /// Parse the documented <c>--attach</c> argument shapes into a
     /// concrete parent MCP endpoint URI. Accepts:
     /// <list type="bullet">
-    ///   <item><c>host:port</c> — expanded to <c>http://host:port/bowire/mcp</c>
-    ///         (the path Bowire's HTTP-bind serves MCP at).</item>
-    ///   <item>An absolute <c>http(s)</c> URI — used as-is.</item>
+    ///   <item><c>host:port</c> — expanded to <c>http://host:port/mcp</c>,
+    ///         where <c>bowire mcp serve --bind http</c> listens.</item>
+    ///   <item>An absolute <c>http(s)</c> URI — used as-is. This is how an
+    ///         embedded parent is reached: those mount Bowire under
+    ///         <c>/bowire/</c> and serve <c>/bowire/mcp</c>.</item>
     /// </list>
     /// Returns <c>false</c> + a human-readable reason for malformed input;
     /// the caller surfaces the message to the operator.
@@ -103,12 +106,23 @@ public sealed class BowireForwardingMcpTransport : IAsyncDisposable
             endpoint = parsed;
             return true;
         }
-        // host:port shorthand — Bowire's HTTP-bind mounts MCP at
-        // /bowire/mcp so we expand to that without forcing the operator
-        // to type it. We restrict the shorthand to a literal "host:port"
-        // (no slashes, no extra colons) so a malformed input like
-        // "ftp://parent/" doesn't sneak through after the http(s) check
-        // rejected it.
+        // host:port shorthand — expanded to the path `bowire mcp serve
+        // --bind http` actually listens on, which is /mcp. The standalone CLI
+        // mounts the workbench at "/", so its MCP endpoint has no /bowire/
+        // prefix; only an embedded host, which mounts Bowire under /bowire/,
+        // serves /bowire/mcp.
+        //
+        // This used to expand to /bowire/mcp, and the comment here said the
+        // HTTP bind mounted it there while McpServeCommand said the opposite
+        // a few files away. Measured against one running parent: /mcp
+        // answered 200 and /bowire/mcp answered 404. The shorthand is the
+        // advertised way to attach, and it was the only broken one — the
+        // absolute form always worked, and it stays the way to reach an
+        // embedded parent.
+        //
+        // We restrict the shorthand to a literal "host:port" (no slashes, no
+        // extra colons) so a malformed input like "ftp://parent/" doesn't
+        // sneak through after the http(s) check rejected it.
         if (LooksLikeHostPort(trimmed)
             && Uri.TryCreate($"http://{trimmed}", UriKind.Absolute, out var shorthand)
             && shorthand.Scheme == Uri.UriSchemeHttp
@@ -116,7 +130,7 @@ public sealed class BowireForwardingMcpTransport : IAsyncDisposable
             && !string.IsNullOrWhiteSpace(shorthand.Host)
             && (shorthand.AbsolutePath == "/" || shorthand.AbsolutePath.Length == 0))
         {
-            endpoint = new Uri($"http://{shorthand.Host}:{shorthand.Port}/bowire/mcp");
+            endpoint = new Uri($"http://{shorthand.Host}:{shorthand.Port}/mcp");
             return true;
         }
         error = $"--attach: '{raw}' is neither host:port nor an absolute http(s) URI.";

@@ -82,6 +82,34 @@ public sealed class BowireForwardingMcpTransportTests
         return new ParentHandle(app, new Uri($"http://127.0.0.1:{port}/bowire/mcp"), port);
     }
 
+    /// <summary>
+    /// A parent mounted the way `bowire mcp serve --bind http` mounts it:
+    /// through <see cref="BowireMcpEndpointRouteBuilderExtensions.MapBowireMcp"/>
+    /// at <c>/mcp</c>, because the standalone CLI puts the workbench at "/"
+    /// and its MCP endpoint carries no /bowire/ prefix. The other helper
+    /// mounts an embedded-shaped parent at /bowire/mcp with the SDK's own
+    /// MapMcp, which is a different route and a different code path.
+    /// </summary>
+    private static async Task<ParentHandle> StartCliShapedParentAsync(CancellationToken ct = default)
+    {
+        ForwardingTestCountingTools.Reset();
+
+        var builder = WebApplication.CreateBuilder();
+        builder.Logging.ClearProviders();
+        builder.WebHost.UseUrls(LoopbackHost.AnyPort);
+
+        builder.Services
+            .AddBowireMcp(o => { o.LoadAllowlistFromEnvironments = false; })
+            .WithHttpTransport(o => o.Stateless = true)
+            .WithTools<ForwardingTestCountingTools>();
+
+        var app = builder.Build();
+        app.MapBowireMcp("/mcp");
+        await app.StartAsync(ct);
+        var port = LoopbackHost.Port(app.Services);
+        return new ParentHandle(app, new Uri($"http://127.0.0.1:{port}/mcp"), port);
+    }
+
     private sealed record ChildHandle(WebApplication App, Uri McpEndpoint) : IAsyncDisposable
     {
         public ValueTask DisposeAsync() => App.DisposeAsync();
@@ -103,6 +131,30 @@ public sealed class BowireForwardingMcpTransportTests
         await app.StartAsync(ct);
         return new ChildHandle(
             app, new Uri($"{LoopbackHost.BaseAddress(app.Services)}/bowire/mcp"));
+    }
+
+    /// <summary>
+    /// A forwarder child wired exactly as <c>bowire mcp serve --bind http
+    /// --attach …</c> wires it: <see cref="BowireMcpServiceCollectionExtensions.AddBowireMcpForwarder"/>
+    /// plus <c>MapBowireMcp("/mcp")</c>. The other child helper mounts with
+    /// the SDK's <c>MapMcp</c>, which asks the container for nothing — which
+    /// is why it could not see #731.
+    /// </summary>
+    private static async Task<ChildHandle> StartCliShapedForwarderChildAsync(
+        Uri parentEndpoint, string? attachToken = null, CancellationToken ct = default)
+    {
+        var builder = WebApplication.CreateBuilder();
+        builder.Logging.ClearProviders();
+        builder.WebHost.UseUrls(LoopbackHost.AnyPort);
+
+        builder.Services
+            .AddBowireMcpForwarder(parentEndpoint, attachToken)
+            .WithHttpTransport(o => o.Stateless = true);
+
+        var app = builder.Build();
+        app.MapBowireMcp("/mcp");
+        await app.StartAsync(ct);
+        return new ChildHandle(app, new Uri($"{LoopbackHost.BaseAddress(app.Services)}/mcp"));
     }
 
     private static async Task<McpClient> ConnectClientAsync(Uri endpoint, CancellationToken ct)
@@ -310,14 +362,101 @@ public sealed class BowireForwardingMcpTransportTests
         await forwarder.DisposeAsync();
     }
 
+    // ---- the combination the CLI actually runs (#730, #731) ----------
+    //
+    // Both flags were covered on their own and both worked on their own:
+    // stdio + --attach never maps an endpoint, and --bind http without
+    // --attach goes through AddBowireMcp, which registers the endpoint
+    // registry. Together they did not start at all. The helpers above
+    // mount with the SDK's MapMcp, which asks the container for nothing,
+    // so no test in this file could have seen it.
+
+    [Fact]
+    public async Task Forwarder_Over_Http_Starts_When_Mounted_The_Way_The_Cli_Mounts_It()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var parent = await StartCliShapedParentAsync(ct);
+
+        // #731: this line threw "No service for type
+        // 'Kuestenlogik.Bowire.Mcp.BowireMcpEndpointRegistry' has been
+        // registered" before AddBowireMcpForwarder registered it, so
+        // `bowire mcp serve --bind http --attach …` died on startup.
+        await using var child = await StartCliShapedForwarderChildAsync(parent.McpEndpoint, ct: ct);
+
+        await using var client = await ConnectClientAsync(child.McpEndpoint, ct);
+        var tools = await client.ListToolsAsync(cancellationToken: ct);
+        Assert.Contains(tools, t => t.Name == "test.echo");
+
+        var result = await client.CallToolAsync(
+            "test.echo",
+            new Dictionary<string, object?> { ["message"] = "combined" },
+            cancellationToken: ct);
+        Assert.Equal("echo:combined", result.Content.OfType<TextContentBlock>().First().Text);
+        // The call ran on the parent, not on the child: the child registers
+        // no tools of its own.
+        Assert.Equal(1, ForwardingTestCountingTools.EchoCalls);
+    }
+
+    [Fact]
+    public async Task Forwarder_Over_Http_Also_Serves_The_Mcp_Manifest()
+    {
+        // MapBowireMcp mounts the manifest alongside the server, and the
+        // registry is what records the entry. A forwarder that registered
+        // the type but never reached Register would still answer tools;
+        // the manifest is where the mount is visible.
+        var ct = TestContext.Current.CancellationToken;
+        await using var parent = await StartCliShapedParentAsync(ct);
+        await using var child = await StartCliShapedForwarderChildAsync(parent.McpEndpoint, ct: ct);
+
+        using var http = new HttpClient();
+        var manifest = await http.GetStringAsync(
+            new Uri($"{LoopbackHost.BaseAddress(child.App.Services)}{BowireMcpEndpointRouteBuilderExtensions.ManifestPath}"),
+            ct);
+
+        Assert.Contains("\"/mcp\"", manifest, StringComparison.Ordinal);
+        Assert.Contains("server", manifest, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task The_Attach_Shorthand_Reaches_A_Parent_Started_By_The_Cli()
+    {
+        // #730: the documented shorthand `--attach host:port` expanded to
+        // /bowire/mcp while the CLI's own HTTP bind listens on /mcp, so the
+        // advertised form pointed at a 404. Asserted against a running
+        // parent rather than against the expansion string, because the
+        // InlineData test passed just as happily with the wrong path.
+        var ct = TestContext.Current.CancellationToken;
+        await using var parent = await StartCliShapedParentAsync(ct);
+
+        var ok = BowireForwardingMcpTransport.TryParseAttachEndpoint(
+            $"127.0.0.1:{parent.Port}", out var endpoint, out var error);
+        Assert.True(ok, error);
+
+        await using var child = await StartCliShapedForwarderChildAsync(endpoint!, ct: ct);
+        await using var client = await ConnectClientAsync(child.McpEndpoint, ct);
+
+        var tools = await client.ListToolsAsync(cancellationToken: ct);
+        Assert.Contains(tools, t => t.Name == "test.echo");
+    }
+
     // ---- attach-endpoint parsing -------------------------------------
     // (Exercises the CLI helper through the public surface.)
 
+    // The shorthand expands to /mcp, which is where `bowire mcp serve --bind
+    // http` listens — the standalone CLI mounts the workbench at "/", so its
+    // MCP endpoint carries no /bowire/ prefix. It used to expand to
+    // /bowire/mcp, and this test pinned that: measured against one running
+    // parent, /mcp answered 200 and /bowire/mcp answered 404, so the only
+    // advertised way to attach was the broken one.
+    //
+    // The absolute forms below are how an embedded parent is reached; those
+    // do mount under /bowire/ and must keep passing through untouched.
     [Theory]
-    [InlineData("localhost:5198", "http://localhost:5198/bowire/mcp")]
-    [InlineData("127.0.0.1:5081", "http://127.0.0.1:5081/bowire/mcp")]
+    [InlineData("localhost:5198", "http://localhost:5198/mcp")]
+    [InlineData("127.0.0.1:5081", "http://127.0.0.1:5081/mcp")]
     [InlineData("http://parent.local:6000/bowire/mcp", "http://parent.local:6000/bowire/mcp")]
     [InlineData("https://parent.example.com/bowire/mcp", "https://parent.example.com/bowire/mcp")]
+    [InlineData("http://parent.local:6000/mcp", "http://parent.local:6000/mcp")]
     public void TryParseAttachEndpoint_Accepts_Documented_Forms(string raw, string expected)
     {
         var ok = BowireForwardingMcpTransport.TryParseAttachEndpoint(raw, out var uri, out _);
