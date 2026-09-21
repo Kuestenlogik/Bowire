@@ -23,6 +23,28 @@ export const order = t => { const m = /^M(\d+)/.exec(t); return m ? Number(m[1])
 export const theme = t => t.replace(/^(?:M\d+|v[\w.-]+)\s*(?:[—-]\s*)?/, '').trim();
 
 /**
+ * Whether a milestone title names this version: either exactly (`v2.7`) or followed by a theme
+ * (`v2.7 — Geospatial map`).
+ *
+ * Written without building a pattern out of the version on purpose. It used to be
+ * `new RegExp('^' + candidate.replace(/\./g, '\\.') + ...)`, which escaped the dots and nothing
+ * else: a tag carrying a backslash or any other metacharacter went into the pattern as syntax,
+ * so the match could be widened or the resolver made to throw by the name of a tag. CodeQL
+ * flagged both halves of that (js/regex-injection, js/incomplete-sanitization) and it is the
+ * kind of escaping that is never finished — comparing strings and matching a *constant*
+ * pattern against what is left has nothing to escape.
+ */
+export function titleNamesVersion(title, version) {
+  const t = String(title ?? '');
+  const v = String(version ?? '');
+  if (!v) return false;
+  if (t === v) return true;
+  if (!t.startsWith(v)) return false;
+  // The separator and theme, as a fixed pattern: nothing from the input reaches it.
+  return /^\s+[—-]\s+.+$/.test(t.slice(v.length));
+}
+
+/**
  * The three rules, with nothing to read from disk or the network: `milestones` is the repo's
  * milestone list as the API returns it, `tagMessage` the annotated tag's body (empty when the
  * tag does not exist yet). Returns the sections and, for the log, which rule found them.
@@ -43,7 +65,7 @@ export function resolve(tag, milestones, tagMessage = '') {
   // 2. the old convention: version in the title
   if (chosen.length === 0) {
     for (const candidate of [`v${base}`, `v${majMin}`]) {
-      const hit = milestones.find(m => new RegExp(`^${candidate.replace(/\./g, '\\.')}(\\s+[—-]\\s+.+)?$`).test(m.title));
+      const hit = milestones.find(m => titleNamesVersion(m.title, candidate));
       if (hit) { chosen = [hit]; how = `title starts with ${candidate}`; break; }
     }
   }

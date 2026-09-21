@@ -16,7 +16,7 @@ import { dirname, resolve as resolvePath } from 'node:path';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const script = resolvePath(__dirname, '../../../scripts/ci/resolve-milestone.mjs');
-const { resolve, outputs, theme, order } = await import(pathToFileURL(script).href);
+const { resolve, outputs, theme, order , titleNamesVersion } = await import(pathToFileURL(script).href);
 
 const ms = (title, { state = 'open', open_issues = 0 } = {}) => ({ title, state, open_issues });
 const titles = r => r.chosen.map(m => m.title);
@@ -58,11 +58,68 @@ describe('rule 1 — the tag message names the sections', () => {
     });
 });
 
+describe('titleNamesVersion — the match, without a pattern built from the tag', () => {
+    // The version used to be interpolated into a RegExp with only its dots escaped, so anything
+    // else a tag carried arrived as pattern syntax. Two CodeQL findings said so
+    // (js/regex-injection, js/incomplete-sanitization); these say what it cost.
+
+    it('matches the version alone and the version with a theme', () => {
+        assert.ok(titleNamesVersion('v2.7', 'v2.7'));
+        assert.ok(titleNamesVersion('v2.7 — Geospatial map', 'v2.7'));
+        assert.ok(titleNamesVersion('v2.7 - Geospatial map', 'v2.7'));
+    });
+
+    it('does not take a longer version for the one it was asked about', () => {
+        // v2.6 must not claim v2.6.1's milestone: they are two deliveries.
+        assert.ok(!titleNamesVersion('v2.6.1 — a patch of its own', 'v2.6'));
+    });
+
+    it('wants a theme after the separator, not a dangling dash', () => {
+        assert.ok(!titleNamesVersion('v2.7 — ', 'v2.7'));
+        assert.ok(!titleNamesVersion('v2.7x', 'v2.7'));
+    });
+
+    it('reads a metacharacter as a character, not as syntax', () => {
+        // The dot was escaped, so this one already held; the rest did not.
+        assert.ok(!titleNamesVersion('v2X7 — theme', 'v2.7'));
+        // A tag like `v2.\d` would have matched every 2.x milestone.
+        assert.ok(!titleNamesVersion('v2.7 — theme', 'v2.\\d'));
+        assert.ok(!titleNamesVersion('v2.7 — theme', 'v2.(7|8)'));
+        assert.ok(!titleNamesVersion('v2.7 — theme', '.*'));
+    });
+
+    it('does not throw on a version that is not a valid pattern', () => {
+        // `new RegExp('^v2.7[')` threw, and a resolver that throws hands the release no theme
+        // at all. Now it is a string comparison and simply says no.
+        assert.doesNotThrow(() => titleNamesVersion('v2.7 — theme', 'v2.7['));
+        assert.ok(!titleNamesVersion('v2.7 — theme', 'v2.7['));
+    });
+
+    it('says no to an empty version rather than matching everything', () => {
+        assert.ok(!titleNamesVersion('v2.7 — theme', ''));
+        assert.ok(!titleNamesVersion('v2.7 — theme', null));
+    });
+});
+
 describe('rule 2 — the old convention, version in the title', () => {
     it('matches a bare version title', () => {
         const r = resolve('v2.7.0', [ms('v2.7'), M1], '');
         assert.deepEqual(titles(r), ['v2.7']);
         assert.match(r.how, /title starts with v2\.7/);
+    });
+
+    it('does not let a tag full of pattern syntax claim a milestone', () => {
+        // The call site, not the helper: rule 2 derives its candidates from the tag, so a tag
+        // named `v2.(7|8).0` used to reach the matcher as an alternation and match `v2.7 — …`.
+        // The tag is a command-line argument, which is what CodeQL called regex injection.
+        const r = resolve('v2.(7|8).0', [ms('v2.7 — Geospatial map')], '');
+        assert.notDeepEqual(titles(r), ['v2.7 — Geospatial map']);
+    });
+
+    it('does not fall over a tag that is not a valid pattern', () => {
+        // `new RegExp('^v2.7[')` threw, and a throwing resolver leaves the release without a
+        // theme. Nothing here compiles a pattern, so there is nothing to throw.
+        assert.doesNotThrow(() => resolve('v2.7[.0', [ms('v2.7 — Geospatial map')], ''));
     });
 
     it('matches a version title with a theme tail', () => {
