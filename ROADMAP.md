@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### M1 — Localisation, layout and the test pillar *(due 2026-11-03)*
 
-**32/54 done** · 1 in progress · 21 backlog
+**31/53 done** · 1 in progress · 21 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -50,7 +50,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [365](https://github.com/Kuestenlogik/Bowire/issues/365) | Bowire | [Contract testing + workspace-id: run a workbench-stored workspace's suite by id](#issue-kuestenlogik-bowire-365) | ✅ Done | `area:workbench` |
 | [366](https://github.com/Kuestenlogik/Bowire/issues/366) | Bowire | [Test-pillar UI polish: snapshot diff/approve, data-driven results view, mock frame-drop faults](#issue-kuestenlogik-bowire-366) | ✅ Done | `area:workbench` |
 | [486](https://github.com/Kuestenlogik/Bowire/issues/486) | Bowire | [Security rail: manual OAST/pen-test surface — generate a callback payload + watch interactions live](#issue-kuestenlogik-bowire-486) | ✅ Done | `area:security` |
-| [535](https://github.com/Kuestenlogik/Bowire/issues/535) | Bowire | [Embedded first run should land on Discover, not on a workspace-creation gate](#issue-kuestenlogik-bowire-535) | ✅ Done | `area:workbench` |
 | [654](https://github.com/Kuestenlogik/Bowire/issues/654) | Bowire | [Uploaded schemas live in a process-wide static — lost on restart, shared between identities, invisible to the CLI](#issue-kuestenlogik-bowire-654) | ✅ Done | `area:multi` |
 | [663](https://github.com/Kuestenlogik/Bowire/issues/663) | Bowire | [Lint's response-shape rules cannot fire on REST — discovery populates no output fields](#issue-kuestenlogik-bowire-663) | ✅ Done | `area:cli` |
 | [664](https://github.com/Kuestenlogik/Bowire/issues/664) | Bowire | [Method-name form on /api/invoke is not uniform across plugins](#issue-kuestenlogik-bowire-664) | ✅ Done | `area:workbench` |
@@ -73,7 +72,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### M2 — MCP completion + agent hub *(due 2026-11-24)*
 
-**1/7 done** · 6 backlog
+**0/6 done** · 6 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -83,7 +82,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [177](https://github.com/Kuestenlogik/Bowire/issues/177) | Bowire | [AI-assisted service scaffolding — schema + stub + collection + test](#issue-kuestenlogik-bowire-177) | ⬜ Backlog | `area:workbench` |
 | [313](https://github.com/Kuestenlogik/Bowire/issues/313) | Bowire | [Parallel sessions Phase 3 — hardening (allowlist + audit log + agent-hub discovery)](#issue-kuestenlogik-bowire-313) | ⬜ Backlog | `area:security` |
 | [613](https://github.com/Kuestenlogik/Bowire/issues/613) | Bowire | [Move the VS Code Marketplace publish off PATs to Entra ID before 2026-12-01](#issue-kuestenlogik-bowire-613) | ⬜ Backlog | `area:cli` |
-| [37](https://github.com/Kuestenlogik/Bowire/issues/37) | Bowire | [Bowire.Mcp — remaining tools + adapter modes](#issue-kuestenlogik-bowire-37) | ✅ Done | `area:mcp` |
 
 ### M3 — Discoverability: the pitch, the directories, the star ask *(due 2026-12-14)*
 
@@ -110,7 +108,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### M5 — Cleanups + breaking-change cuts *(due 2027-02-23)*
 
-**2/26 done** · 24 backlog
+**1/25 done** · 24 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -138,7 +136,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [529](https://github.com/Kuestenlogik/Bowire/issues/529) | Bowire | [OData plugin: EDM functions and actions are never discovered (class doc claims they are)](#issue-kuestenlogik-bowire-529) | ⬜ Backlog | `area:plugin-sdk` |
 | [584](https://github.com/Kuestenlogik/Bowire/issues/584) | Bowire | [Secrets redaction: extend to HTML report, snapshot files, and recordings](#issue-kuestenlogik-bowire-584) | ⬜ Backlog |  |
 | [611](https://github.com/Kuestenlogik/Bowire/issues/611) | Bowire | [Sidecar: add gRPC as a third transport alongside stdio and HTTP](#issue-kuestenlogik-bowire-611) | ⬜ Backlog |  |
-| [215](https://github.com/Kuestenlogik/Bowire/issues/215) | Bowire | [Test infra: IProcessLauncher seam in PluginManager to cover dotnet-shell-out paths](#issue-kuestenlogik-bowire-215) | ✅ Done | `area:plugin-sdk` |
 | [357](https://github.com/Kuestenlogik/Bowire/issues/357) | Bowire | [AsyncAPI binding resolvers are a facade — 8 resolvers throw NotImplementedException](#issue-kuestenlogik-bowire-357) | ✅ Done | `area:plugin-sdk` |
 
 ### M6 — Interop and migration *(due 2027-03-30)*
@@ -402,12 +399,6 @@ Follow-ups collecting the workbench-UI remainders from the shipped test-pillar f
 
 The `app.interactsh.com` analog, as a **sub-tab of the Security rail** — the workflow the OAST work so far does not cover. [[more]](https://github.com/Kuestenlogik/Bowire/issues/486)
 
-#### <a id="issue-kuestenlogik-bowire-535"></a>✅ Done · [#535](https://github.com/Kuestenlogik/Bowire/issues/535) Embedded first run should land on Discover, not on a workspace-creation gate
-
-> `area:workbench`
-
-Feasible and small. Everything the proposal assumes already exists: `BowireOptions.AutoCreateInitialWorkspace` (BowireOptions.cs:133) is emitted into `window.__BOWIRE_CONFIG__` by BowireHtmlGenerator.cs:271 and consumed by the boot seed in prologue.js:1999-2017; embedded-vs-standalone is decided onc … [[more]](https://github.com/Kuestenlogik/Bowire/issues/535)
-
 #### <a id="issue-kuestenlogik-bowire-654"></a>✅ Done · [#654](https://github.com/Kuestenlogik/Bowire/issues/654) Uploaded schemas live in a process-wide static — lost on restart, shared between identities, invisible to the CLI
 
 > `area:multi`
@@ -549,12 +540,6 @@ Follow-up from #132 Phase 2 (shipped in `ecbfa9e`). Phase 2 wired the wire shape
 > `area:cli`
 
 > **Hard deadline: 2026-12-01.** Azure DevOps stops supporting Personal Access Tokens scoped to *all accessible organizations* on that date. That scope is what `vsce publish` has traditionally required. [[more]](https://github.com/Kuestenlogik/Bowire/issues/613)
-
-#### <a id="issue-kuestenlogik-bowire-37"></a>✅ Done · [#37](https://github.com/Kuestenlogik/Bowire/issues/37) Bowire.Mcp — remaining tools + adapter modes
-
-> `area:mcp`
-
-> **Status:** done. The architecture diverges from the original plan — the body below reflects what actually shipped; the historical plan is in the issue history. [[more]](https://github.com/Kuestenlogik/Bowire/issues/37)
 
 ### M3 — Discoverability: the pitch, the directories, the star ask *(due 2026-12-14)*
 
@@ -755,12 +740,6 @@ The `.Scanner` suffix under-describes what the package has become. It started as
 #### <a id="issue-kuestenlogik-bowire-611"></a>⬜ Backlog · [#611](https://github.com/Kuestenlogik/Bowire/issues/611) Sidecar: add gRPC as a third transport alongside stdio and HTTP
 
 Sidecars speak JSON-RPC 2.0 over two transports today: `stdio` (NDJSON) and `http` (POST + SSE). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/611)
-
-#### <a id="issue-kuestenlogik-bowire-215"></a>✅ Done · [#215](https://github.com/Kuestenlogik/Bowire/issues/215) Test infra: IProcessLauncher seam in PluginManager to cover dotnet-shell-out paths
-
-> `area:plugin-sdk`
-
-> **Status:** obsolete, not done. The premise no longer holds — the body below records why; the original proposal is in the issue history. [[more]](https://github.com/Kuestenlogik/Bowire/issues/215)
 
 #### <a id="issue-kuestenlogik-bowire-357"></a>✅ Done · [#357](https://github.com/Kuestenlogik/Bowire/issues/357) AsyncAPI binding resolvers are a facade — 8 resolvers throw NotImplementedException
 
