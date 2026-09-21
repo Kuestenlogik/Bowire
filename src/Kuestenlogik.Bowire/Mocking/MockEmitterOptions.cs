@@ -35,5 +35,12 @@ public sealed class MockEmitterOptions
     /// on repeat. Has no effect on request-driven replay paths — those
     /// are handled by the mock server's matcher, not by emitters.
     /// </summary>
+    /// <remarks>
+    /// An emitter that honours this is expected to bound the cycle by the
+    /// recording's own duration rather than starting over the instant the
+    /// last frame is out (#708): <see cref="ReplaySpeed"/> says how fast
+    /// the frames go, not how often the recording repeats, and the two
+    /// together must not add up to an unbounded publish rate.
+    /// </remarks>
     public bool Loop { get; set; }
 }

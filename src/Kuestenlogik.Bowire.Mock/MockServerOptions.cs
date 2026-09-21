@@ -251,6 +251,14 @@ public sealed class MockServerOptions
     /// one-shot (emitter stops after the last step) so integration
     /// tests don't observe phantom repeats. CLI: <c>--loop</c>.
     /// </summary>
+    /// <remarks>
+    /// One cycle lasts as long as the recording covers, divided by
+    /// <see cref="ReplaySpeed"/>, and never less than a second (#708).
+    /// <see cref="ReplaySpeed"/> paces the frames inside a run; it does
+    /// not decide how often the run repeats, so <c>ReplaySpeed = 0</c>
+    /// together with this flag emits every frame immediately and still
+    /// leaves the recording worth the span it captured.
+    /// </remarks>
     public bool Loop { get; init; }
 
     /// <summary>

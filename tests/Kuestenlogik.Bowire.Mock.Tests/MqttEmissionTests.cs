@@ -273,6 +273,108 @@ public sealed class MqttEmissionTests : IDisposable
     }
 
     [Fact]
+    public async Task Loop_With_Speed_Zero_Does_Not_Publish_Without_A_Bound()
+    {
+        // #708. The recording spans 1 ms and the frames are unpaced, so
+        // before the cycle floor the emitter went round as fast as the CPU
+        // allowed — thousands of publishes a second, for as long as the mock
+        // was up. Both switches are documented on their own; their product
+        // was described nowhere.
+        //
+        // Asserted as an order of magnitude rather than an exact rate: the
+        // bounded emitter produces two publishes per cycle at one cycle per
+        // second, the unbounded one produced thousands. Anything in between
+        // does not exist, so a generous ceiling is not a weak assertion —
+        // it is one that cannot flake on a loaded machine.
+        var recording = new
+        {
+            id = "rec_mqtt_flood",
+            name = "mqtt loop rate",
+            recordingFormatVersion = 2,
+            steps = new[]
+            {
+                new
+                {
+                    id = "step_a", capturedAt = 1_000L,
+                    protocol = "mqtt", service = "sensors", method = "rate/a",
+                    methodType = "Unary", body = "A",
+                    messages = new[] { "A" },
+                    metadata = (Dictionary<string, string>?)null,
+                    status = "OK", durationMs = 0L, response = (string?)null
+                },
+                new
+                {
+                    id = "step_b", capturedAt = 1_001L,
+                    protocol = "mqtt", service = "sensors", method = "rate/b",
+                    methodType = "Unary", body = "B",
+                    messages = new[] { "B" },
+                    metadata = (Dictionary<string, string>?)null,
+                    status = "OK", durationMs = 0L, response = (string?)null
+                }
+            }
+        };
+
+        var path = Path.Combine(_tempDir, "mqtt-rate.json");
+        await File.WriteAllTextAsync(path, JsonSerializer.Serialize(recording), TestContext.Current.CancellationToken);
+
+        await using var server = await MockServer.StartAsync(
+            new MockServerOptions
+            {
+                RecordingPath = path,
+                Port = 0,
+                TransportPorts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase) { ["mqtt"] = 0 },
+                TransportHosts = new IBowireMockTransportHost[] { new MqttMockTransportHost() },
+                Watch = false,
+                ReplaySpeed = 0,
+                Loop = true
+            },
+            TestContext.Current.CancellationToken);
+
+        var factory = new MqttClientFactory();
+        using var subscriber = factory.CreateMqttClient();
+        var count = 0;
+        var first = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        subscriber.ApplicationMessageReceivedAsync += _ =>
+        {
+            Interlocked.Increment(ref count);
+            first.TrySetResult(true);
+            return Task.CompletedTask;
+        };
+
+        await subscriber.ConnectAsync(
+            factory.CreateClientOptionsBuilder()
+                .WithTcpServer("127.0.0.1", server.TransportPorts["mqtt"])
+                .WithClientId("bowire-mqtt-rate")
+                .Build(),
+            TestContext.Current.CancellationToken);
+        await subscriber.SubscribeAsync(
+            factory.CreateSubscribeOptionsBuilder().WithTopicFilter("rate/#").Build(),
+            TestContext.Current.CancellationToken);
+
+        // Count from the first publish, not from the subscribe: the emitter
+        // waits for a subscriber (or its startup grace) before it starts, and
+        // measuring across that wait would understate the rate.
+        await first.Task.WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
+        Interlocked.Exchange(ref count, 0);
+        var window = TimeSpan.FromSeconds(3);
+        await Task.Delay(window, TestContext.Current.CancellationToken);
+        var observed = Volatile.Read(ref count);
+
+        await subscriber.DisconnectAsync(cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.True(observed <= 50,
+            $"The looped emitter published {observed} times in {window.TotalSeconds} s. "
+            + "A cycle is meant to last at least as long as the recording, and never "
+            + "less than MqttProactiveEmitter.MinimumCycle.");
+
+        // And it did keep going: an emitter that stopped after the first pass
+        // would satisfy the ceiling above without meaning anything.
+        Assert.True(observed >= 2,
+            $"The looped emitter published {observed} times in {window.TotalSeconds} s — "
+            + "it stopped rather than slowed down.");
+    }
+
+    [Fact]
     public async Task TopicTemplate_DynamicTokenInTopic_SubstitutedBeforePublish()
     {
         // Recorded topic carries a ${uuid} token; the emitter should

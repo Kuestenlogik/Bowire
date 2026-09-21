@@ -1065,7 +1065,7 @@ internal static class BowireCli
         };
         var loop = new Option<bool>("--loop")
         {
-            Description = "Loop proactive emitters indefinitely.",
+            Description = "Loop proactive emitters indefinitely. One cycle lasts as long as the recording (divided by --replay-speed, never under a second), so a loop cannot outpace what was captured.",
             DefaultValueFactory = _ => cfg.GetValue<bool>("Bowire:Mock:Loop")
         };
         var autoInstall = new Option<bool>("--auto-install")

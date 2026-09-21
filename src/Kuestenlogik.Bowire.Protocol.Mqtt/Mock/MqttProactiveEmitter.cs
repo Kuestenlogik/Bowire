@@ -144,10 +144,60 @@ public sealed class MqttProactiveEmitter : IAsyncDisposable
         _ => System.Text.Json.JsonSerializer.Serialize(frame.Data),
     };
 
+    // #708 — the shortest a loop cycle may take. Pacing inside a run and
+    // pacing between runs were two different things, and only the first
+    // one existed: `--replay-speed 0 --loop` published as fast as the CPU
+    // allowed, for ever. Both switches are documented on their own and
+    // both are sensible; their product was described nowhere.
+    //
+    // A cycle now lasts as long as the recording it replays, so "play the
+    // frames as fast as you like" still leaves the recording worth N
+    // seconds of traffic. An unbounded rate is something to ask for, not
+    // something to fall into by combining two other switches.
+    //
+    // The floor is what makes that true for short recordings. A two-step
+    // capture spanning 1 ms would otherwise loop a thousand times a second
+    // — at any speed, including the default 1.0, where the same flood has
+    // always been possible and simply went unnoticed. One second is the
+    // smallest unit in which "N seconds of traffic" means anything, and a
+    // looped sub-second recording is a heartbeat, for which one per second
+    // is the ordinary rate.
+    internal static readonly TimeSpan MinimumCycle = TimeSpan.FromSeconds(1);
+
+    /// <summary>
+    /// How long one loop cycle should take, in milliseconds: the recording's
+    /// own span under the current pacing, never below
+    /// <see cref="MinimumCycle"/>.
+    /// </summary>
+    /// <param name="spanMs">
+    /// Offset of the last emission, i.e. the recording's duration.
+    /// </param>
+    /// <param name="speed">
+    /// <c>MockEmitterOptions.ReplaySpeed</c>. At <c>0</c> the frames inside
+    /// the run are not paced at all; the cycle still stands for the span the
+    /// recording covers.
+    /// </param>
+    internal static long CycleLengthMs(long spanMs, double speed)
+    {
+        if (spanMs < 0) spanMs = 0;
+        // Above 1.0 the run is compressed and the cycle compresses with it,
+        // so a faster replay stays faster end to end. At or below 0 there is
+        // no factor to divide by and the span stands as captured.
+        var paced = speed > 0
+            ? (long)Math.Round(spanMs / speed, MidpointRounding.AwayFromZero)
+            : spanMs;
+        return Math.Max(paced, (long)MinimumCycle.TotalMilliseconds);
+    }
+
     private async Task RunAsync(CancellationToken ct)
     {
         var emissions = BuildSchedule();
         if (emissions.Count == 0) return;
+
+        // The recording's own duration: offsets are relative to the first
+        // step, so the last one is the span. Read once — the schedule does
+        // not change between cycles.
+        var cycleLengthMs = CycleLengthMs(emissions[^1].OffsetMs, _speed);
 
         // Wait for the first subscriber OR the backstop timeout. Either
         // way we proceed to emit — but the subscribe-triggered path
@@ -185,8 +235,21 @@ public sealed class MqttProactiveEmitter : IAsyncDisposable
 
                 await EmitAsync(emission, ct);
             }
+
+            if (!_loop) return;
+
+            // Hold the cycle open for what the recording is worth. With the
+            // frames paced (speed > 0) the run has usually taken that long
+            // already and this waits for nothing; with speed 0 it is the
+            // only thing standing between `--loop` and an unbounded rate.
+            var remaining = cycleLengthMs - (Environment.TickCount64 - scheduleStartTicks);
+            if (remaining > 0)
+            {
+                try { await Task.Delay(TimeSpan.FromMilliseconds(remaining), ct); }
+                catch (OperationCanceledException) { return; }
+            }
         }
-        while (_loop && !ct.IsCancellationRequested);
+        while (!ct.IsCancellationRequested);
     }
 
     private async Task EmitAsync(Emission emission, CancellationToken ct)

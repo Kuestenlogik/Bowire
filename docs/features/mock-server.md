@@ -321,6 +321,8 @@ Ports:
 
 The emitter applies a short 250 ms grace period before the first publish so a subscriber that hasn't completed its `CONNECT` + `SUBSCRIBE` round-trip doesn't miss the opening burst on non-retained topics. The full replay uses `MockOptions.ReplaySpeed` for pacing — `0` fires everything after the grace period instantly, `1.0` respects the original wall-clock deltas between `capturedAt` timestamps.
 
+With `MockOptions.Loop` the emitter starts over after the last publish. `ReplaySpeed` paces the frames *inside* a run; what paces the runs themselves is the recording's own duration: a cycle lasts as long as the recording covers, divided by the speed, and never less than one second. So `--replay-speed 0 --loop` plays every frame immediately and still leaves the recording worth N seconds of traffic, rather than publishing as fast as the CPU allows (#708) — an unbounded rate is something to ask for, not something to fall into by combining two switches. The one-second floor is what makes that hold for a recording that spans a few milliseconds; a looped capture that short is a heartbeat, and one beat per second is the ordinary rate for one.
+
 Connect with any MQTT client:
 
 ```csharp
