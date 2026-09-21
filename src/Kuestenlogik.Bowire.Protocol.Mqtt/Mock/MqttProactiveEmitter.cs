@@ -24,23 +24,39 @@ public sealed class MqttProactiveEmitter : IAsyncDisposable
     private readonly BowireRecording _recording;
     private readonly double _speed;
     private readonly bool _loop;
+    private readonly TimeSpan? _loopInterval;
     private readonly ILogger _logger;
     private readonly CancellationTokenSource _cts = new();
     private readonly TaskCompletionSource _firstSubscribeSignal =
         new(TaskCreationOptions.RunContinuationsAsynchronously);
     private Task? _schedulerTask;
 
+    /// <param name="broker">The embedded broker the recording is injected into.</param>
+    /// <param name="recording">The capture whose MQTT steps are replayed.</param>
+    /// <param name="speed">
+    /// Frame pacing inside one run: <c>1.0</c> keeps the captured cadence,
+    /// <c>0</c> emits every frame immediately.
+    /// </param>
+    /// <param name="logger">Logger scoped to the mock server.</param>
+    /// <param name="loop">Replay the recording on repeat while the mock is up.</param>
+    /// <param name="loopInterval">
+    /// Explicit cycle length for <paramref name="loop"/> mode, or
+    /// <c>null</c> to pace cycles by the recording's own duration (#708).
+    /// <see cref="TimeSpan.Zero"/> asks for no pacing at all.
+    /// </param>
     public MqttProactiveEmitter(
         MqttServer broker,
         BowireRecording recording,
         double speed,
         ILogger logger,
-        bool loop = false)
+        bool loop = false,
+        TimeSpan? loopInterval = null)
     {
         _broker = broker;
         _recording = recording;
         _speed = speed;
         _loop = loop;
+        _loopInterval = loopInterval;
         _logger = logger;
     }
 
@@ -177,8 +193,23 @@ public sealed class MqttProactiveEmitter : IAsyncDisposable
     /// the run are not paced at all; the cycle still stands for the span the
     /// recording covers.
     /// </param>
-    internal static long CycleLengthMs(long spanMs, double speed)
+    /// <param name="explicitInterval">
+    /// <c>MockEmitterOptions.LoopInterval</c>: what the operator asked for,
+    /// used as given. It overrides both the recording's span and the floor
+    /// — including <see cref="TimeSpan.Zero"/>, which is how an unbounded
+    /// rate is requested. A negative value is treated as zero, because a
+    /// negative wait is no wait.
+    /// </param>
+    internal static long CycleLengthMs(long spanMs, double speed, TimeSpan? explicitInterval = null)
     {
+        if (explicitInterval is { } asked)
+        {
+            // No floor here on purpose. The floor exists so nobody falls into
+            // an unbounded rate; somebody who names one has not fallen into
+            // anything.
+            var ms = (long)asked.TotalMilliseconds;
+            return ms > 0 ? ms : 0;
+        }
         if (spanMs < 0) spanMs = 0;
         // Above 1.0 the run is compressed and the cycle compresses with it,
         // so a faster replay stays faster end to end. At or below 0 there is
@@ -197,7 +228,16 @@ public sealed class MqttProactiveEmitter : IAsyncDisposable
         // The recording's own duration: offsets are relative to the first
         // step, so the last one is the span. Read once — the schedule does
         // not change between cycles.
-        var cycleLengthMs = CycleLengthMs(emissions[^1].OffsetMs, _speed);
+        var cycleLengthMs = CycleLengthMs(emissions[^1].OffsetMs, _speed, _loopInterval);
+        if (_loop && cycleLengthMs == 0)
+        {
+            // Said out loud, once, because the effect is a saturated broker
+            // and a log that otherwise looks like a mock behaving normally.
+            _logger.LogWarning(
+                "mqtt-emit: --loop-interval-ms 0 — republishing this recording "
+                + "with no pacing between cycles, as fast as this machine manages, "
+                + "until the mock stops.");
+        }
 
         // Wait for the first subscriber OR the backstop timeout. Either
         // way we proceed to emit — but the subscribe-triggered path

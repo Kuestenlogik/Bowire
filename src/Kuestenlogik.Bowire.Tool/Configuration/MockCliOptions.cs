@@ -132,6 +132,17 @@ internal sealed class MockCliOptions
     public bool Loop { get; set; }
 
     /// <summary>
+    /// Length of one loop cycle in milliseconds, when the operator says it
+    /// rather than letting the recording decide (#708). <c>null</c>
+    /// (default) paces cycles by the recording's own duration, never under
+    /// a second; <c>0</c> asks for no pacing at all — the mock republishes
+    /// as fast as the machine manages until it is stopped. Ignored without
+    /// <see cref="Loop"/>. Bound from <c>--loop-interval-ms</c> /
+    /// <c>Bowire:Mock:LoopIntervalMs</c>.
+    /// </summary>
+    public int? LoopIntervalMs { get; set; }
+
+    /// <summary>
     /// When <c>true</c>, <c>bowire mock</c> resolves and installs any
     /// protocol plugin the recording references but the host doesn't
     /// have, then continues. Without the flag, the same situation is a

@@ -74,6 +74,65 @@ public sealed class MqttEmitterCycleTests
         Assert.True(MqttProactiveEmitter.CycleLengthMs(60_000, 1.0) > Floor);
     }
 
+    // ---- the explicit interval, for somebody who wants the rate ----------
+    //
+    // The default refuses an unbounded rate; this is how it is asked for.
+    // Which is the point of the whole change: a flood should be a decision,
+    // not the product of two switches that each say something else.
+
+    [Fact]
+    public void An_Explicit_Interval_Is_Used_As_Given()
+    {
+        Assert.Equal(250, MqttProactiveEmitter.CycleLengthMs(30_000, 1.0, TimeSpan.FromMilliseconds(250)));
+    }
+
+    [Fact]
+    public void An_Explicit_Interval_Beats_The_Recording_In_Both_Directions()
+    {
+        // Shorter than the recording: the frames still pace the run, so the
+        // cycle simply does not wait at the end.
+        Assert.Equal(500, MqttProactiveEmitter.CycleLengthMs(30_000, 1.0, TimeSpan.FromMilliseconds(500)));
+        // Longer: a one-second recording repeated every ten seconds.
+        Assert.Equal(10_000, MqttProactiveEmitter.CycleLengthMs(1_000, 1.0, TimeSpan.FromSeconds(10)));
+    }
+
+    [Fact]
+    public void An_Explicit_Interval_Is_Not_Divided_By_The_Speed()
+    {
+        // The speed paces frames inside the run. An interval the operator
+        // typed is an answer about cycles, and halving it behind their back
+        // would make --loop-interval-ms mean something else per speed.
+        Assert.Equal(1_000, MqttProactiveEmitter.CycleLengthMs(30_000, 2.0, TimeSpan.FromSeconds(1)));
+        Assert.Equal(1_000, MqttProactiveEmitter.CycleLengthMs(30_000, 0, TimeSpan.FromSeconds(1)));
+    }
+
+    [Fact]
+    public void Zero_Asks_For_No_Pacing_And_Gets_It()
+    {
+        // The floor does not apply here. It exists so nobody falls into an
+        // unbounded rate; somebody who typed 0 has not fallen into anything.
+        Assert.Equal(0, MqttProactiveEmitter.CycleLengthMs(30_000, 1.0, TimeSpan.Zero));
+        Assert.Equal(0, MqttProactiveEmitter.CycleLengthMs(1, 0, TimeSpan.Zero));
+        Assert.True(MqttProactiveEmitter.CycleLengthMs(1, 0, TimeSpan.Zero) < Floor);
+    }
+
+    [Fact]
+    public void A_Negative_Interval_Is_Zero_Rather_Than_A_Negative_Wait()
+    {
+        // The CLI rejects a negative --loop-interval-ms; the API cannot, and
+        // a negative wait is no wait, so it lands where it reads.
+        Assert.Equal(0, MqttProactiveEmitter.CycleLengthMs(30_000, 1.0, TimeSpan.FromMilliseconds(-5)));
+    }
+
+    [Fact]
+    public void Sub_Millisecond_Intervals_Round_Down_To_No_Pacing()
+    {
+        // TimeSpan carries ticks; the wait is in whole milliseconds. Anything
+        // under one is nothing, and pretending otherwise would be a busy loop
+        // that claims to be paced.
+        Assert.Equal(0, MqttProactiveEmitter.CycleLengthMs(30_000, 1.0, TimeSpan.FromTicks(5_000)));
+    }
+
     [Theory]
     [InlineData(-1)]
     [InlineData(long.MinValue)]

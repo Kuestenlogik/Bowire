@@ -91,7 +91,8 @@ internal static class BowireConfiguration
         ["--no-watch"] = "Bowire:_NoWatch",
         ["--stateful"] = "Bowire:_Stateful",
         ["--stateful-once"] = "Bowire:_StatefulOnce",
-        ["--loop"] = "Bowire:_Loop"
+        ["--loop"] = "Bowire:_Loop",
+        ["--loop-interval-ms"] = "Bowire:_LoopIntervalMs"
     };
 
     /// <summary>

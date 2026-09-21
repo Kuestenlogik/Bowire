@@ -79,7 +79,8 @@ public sealed class MqttMockTransportHost : IBowireMockTransportHost, IAsyncDisp
         await _broker.StartAsync().ConfigureAwait(false);
 
         _emitter = new MqttProactiveEmitter(
-            _broker, recording, context.ReplaySpeed, context.Logger, loop: context.Loop);
+            _broker, recording, context.ReplaySpeed, context.Logger,
+            loop: context.Loop, loopInterval: context.LoopInterval);
         _emitter.Start();
 
         // Reactive subscribe-match-respond. Only hooks the intercept

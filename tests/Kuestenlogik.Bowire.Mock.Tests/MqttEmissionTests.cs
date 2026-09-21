@@ -375,6 +375,88 @@ public sealed class MqttEmissionTests : IDisposable
     }
 
     [Fact]
+    public async Task Loop_Interval_Zero_Publishes_Without_A_Bound_Because_It_Was_Asked_For()
+    {
+        // #708. The counterpart to the test above: the default refuses an
+        // unbounded rate, and this is the switch that asks for one. Without
+        // this test the bound could be asserted while the escape hatch
+        // quietly did nothing — which is the same class of defect, one
+        // switch further along.
+        var recording = new
+        {
+            id = "rec_mqtt_unbounded",
+            name = "mqtt unbounded loop",
+            recordingFormatVersion = 2,
+            steps = new[]
+            {
+                new
+                {
+                    id = "step_a", capturedAt = 1_000L,
+                    protocol = "mqtt", service = "sensors", method = "unbounded/a",
+                    methodType = "Unary", body = "A",
+                    messages = new[] { "A" },
+                    metadata = (Dictionary<string, string>?)null,
+                    status = "OK", durationMs = 0L, response = (string?)null
+                }
+            }
+        };
+
+        var path = Path.Combine(_tempDir, "mqtt-unbounded.json");
+        await File.WriteAllTextAsync(path, JsonSerializer.Serialize(recording), TestContext.Current.CancellationToken);
+
+        await using var server = await MockServer.StartAsync(
+            new MockServerOptions
+            {
+                RecordingPath = path,
+                Port = 0,
+                TransportPorts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase) { ["mqtt"] = 0 },
+                TransportHosts = new IBowireMockTransportHost[] { new MqttMockTransportHost() },
+                Watch = false,
+                ReplaySpeed = 0,
+                Loop = true,
+                LoopInterval = TimeSpan.Zero
+            },
+            TestContext.Current.CancellationToken);
+
+        var factory = new MqttClientFactory();
+        using var subscriber = factory.CreateMqttClient();
+        var count = 0;
+        var first = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        subscriber.ApplicationMessageReceivedAsync += _ =>
+        {
+            Interlocked.Increment(ref count);
+            first.TrySetResult(true);
+            return Task.CompletedTask;
+        };
+
+        await subscriber.ConnectAsync(
+            factory.CreateClientOptionsBuilder()
+                .WithTcpServer("127.0.0.1", server.TransportPorts["mqtt"])
+                .WithClientId("bowire-mqtt-unbounded")
+                .Build(),
+            TestContext.Current.CancellationToken);
+        await subscriber.SubscribeAsync(
+            factory.CreateSubscribeOptionsBuilder().WithTopicFilter("unbounded/#").Build(),
+            TestContext.Current.CancellationToken);
+
+        await first.Task.WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
+        Interlocked.Exchange(ref count, 0);
+        // One second, because this deliberately saturates a broker and the
+        // suite has to get on with its day.
+        await Task.Delay(TimeSpan.FromSeconds(1), TestContext.Current.CancellationToken);
+        var observed = Volatile.Read(ref count);
+
+        await subscriber.DisconnectAsync(cancellationToken: TestContext.Current.CancellationToken);
+
+        // The bounded emitter would manage one publish in this window (a
+        // one-step recording, one cycle per second). Hundreds can only come
+        // from the pacing being gone, which is what was asked for.
+        Assert.True(observed > 100,
+            $"LoopInterval = Zero published {observed} times in a second. "
+            + "That is the bounded rate, so the switch did not reach the emitter.");
+    }
+
+    [Fact]
     public async Task TopicTemplate_DynamicTokenInTopic_SubstitutedBeforePublish()
     {
         // Recorded topic carries a ${uuid} token; the emitter should

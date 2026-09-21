@@ -82,9 +82,15 @@ public interface IBowireMockTransportHost
 /// <param name="ReplaySpeed">Playback speed multiplier — 1.0 preserves cadence, 0 emits everything immediately.</param>
 /// <param name="Loop">When <c>true</c>, proactive transports replay their captured stream indefinitely.</param>
 /// <param name="Logger">Logger scoped to the mock server; transports should log under it for unified output.</param>
+/// <param name="LoopInterval">Explicit length of one loop cycle, or <c>null</c> to pace cycles by the recording's own duration; <c>TimeSpan.Zero</c> asks for no pacing at all (#708).</param>
 public sealed record MockTransportContext(
     System.Net.IPAddress Host,
     int RequestedPort,
     double ReplaySpeed,
     bool Loop,
-    ILogger Logger);
+    ILogger Logger,
+    TimeSpan? LoopInterval = null);
+
+// LoopInterval is optional and last so a transport host built against the
+// earlier shape still compiles: null means "pace cycles by the recording",
+// which is what every host did before anyone could say otherwise (#708).

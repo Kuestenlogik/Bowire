@@ -43,4 +43,20 @@ public sealed class MockEmitterOptions
     /// together must not add up to an unbounded publish rate.
     /// </remarks>
     public bool Loop { get; set; }
+
+    /// <summary>
+    /// How long one loop cycle should take, when the operator wants to say
+    /// it rather than let the recording decide (#708). <c>null</c> (default)
+    /// means the recording's own duration under <see cref="ReplaySpeed"/>,
+    /// with a floor; <see cref="TimeSpan.Zero"/> means no pacing between
+    /// cycles at all — the emitter starts over the instant the last frame
+    /// is out, at whatever rate the machine manages.
+    /// </summary>
+    /// <remarks>
+    /// An unbounded publish rate is a thing to ask for, which is what this
+    /// is: it used to fall out of <c>ReplaySpeed = 0</c> together with
+    /// <see cref="Loop"/>, where nobody had asked for it and nothing said
+    /// it would happen. Ignored when <see cref="Loop"/> is <c>false</c>.
+    /// </remarks>
+    public TimeSpan? LoopInterval { get; set; }
 }

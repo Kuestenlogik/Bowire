@@ -170,6 +170,9 @@ internal static class MockCommand
                 ReplaySpeed = cli.ReplaySpeed,
                 ControlToken = cli.ControlToken,
                 Loop = cli.Loop,
+                LoopInterval = cli.LoopIntervalMs is { } ms
+                    ? TimeSpan.FromMilliseconds(ms)
+                    : null,
                 Emitters = emitters,
                 TransportHosts = transportHosts,
                 SchemaSources = schemaSources,

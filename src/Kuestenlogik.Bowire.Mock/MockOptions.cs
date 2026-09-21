@@ -165,6 +165,15 @@ public sealed class MockOptions
     public bool Loop { get; set; }
 
     /// <summary>
+    /// Explicit loop-cycle length for proactive emitters, or <c>null</c>
+    /// (default) to let each emitter pace cycles by the recording's own
+    /// duration. <see cref="TimeSpan.Zero"/> asks for no pacing at all
+    /// — see <see cref="MockEmitterOptions.LoopInterval"/> (#708).
+    /// Propagated from <see cref="MockServerOptions.LoopInterval"/>.
+    /// </summary>
+    public TimeSpan? LoopInterval { get; set; }
+
+    /// <summary>
     /// Optional sink that receives one <see cref="MockRequestEntry"/>
     /// per request after the response is written (#57). The workbench-
     /// driven mock registry wires a bounded <see cref="MockRequestLog"/>
@@ -196,5 +205,6 @@ public sealed class MockOptions
     {
         ReplaySpeed = ReplaySpeed,
         Loop = Loop,
+        LoopInterval = LoopInterval,
     };
 }

@@ -443,6 +443,7 @@ public sealed class MockServer : IAsyncDisposable
                     CaptureMissPath = _options.CaptureMissPath,
                     ControlToken = _options.ControlToken,
                     Loop = _options.Loop,
+                    LoopInterval = _options.LoopInterval,
                     PassThroughOnMiss = false
                 };
                 foreach (var emitter in _options.Emitters)
@@ -576,7 +577,8 @@ public sealed class MockServer : IAsyncDisposable
                     RequestedPort: requestedPort,
                     ReplaySpeed: _options.ReplaySpeed,
                     Loop: _options.Loop,
-                    Logger: logger);
+                    Logger: logger,
+                    LoopInterval: _options.LoopInterval);
 
                 try
                 {

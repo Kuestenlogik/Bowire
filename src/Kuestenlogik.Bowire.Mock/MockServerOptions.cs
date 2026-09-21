@@ -262,6 +262,23 @@ public sealed class MockServerOptions
     public bool Loop { get; init; }
 
     /// <summary>
+    /// Say how long a loop cycle lasts instead of letting the recording
+    /// decide (#708). <c>null</c> (default) is the recording's own duration
+    /// under <see cref="ReplaySpeed"/>, never under a second.
+    /// <see cref="TimeSpan.Zero"/> removes the pacing between cycles
+    /// entirely: the emitter publishes as fast as the machine manages, for
+    /// as long as the mock is up. CLI: <c>--loop-interval-ms</c>.
+    /// </summary>
+    /// <remarks>
+    /// That unbounded rate is the one thing the default deliberately
+    /// refuses, so it has a switch of its own rather than falling out of
+    /// <c>ReplaySpeed = 0</c> plus <see cref="Loop"/>. Load generators make
+    /// the rate explicit; this is the same idea. Ignored without
+    /// <see cref="Loop"/> — there are no cycles to pace.
+    /// </remarks>
+    public TimeSpan? LoopInterval { get; init; }
+
+    /// <summary>
     /// Extension point for plugin-contributed broadcast emitters
     /// (DIS, DDS, raw-UDP multicast, ...). The mock server iterates
     /// this list after HTTP startup, calls

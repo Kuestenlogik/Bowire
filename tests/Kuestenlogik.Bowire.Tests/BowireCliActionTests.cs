@@ -171,6 +171,33 @@ public sealed class BowireCliActionTests : IDisposable
     }
 
     [Fact]
+    public async Task MockSubcommand_NegativeLoopInterval_RejectedAtParse()
+    {
+        // #708 — --loop-interval-ms 0 is the one way to ask for an unbounded
+        // publish rate, so the value has to be read carefully. A negative one
+        // would reach Task.Delay as "no wait" and hand out that same unbounded
+        // rate to somebody who typed something else entirely.
+        var schema = SafePath.Combine(_tempDir, "anything.yaml");
+        await File.WriteAllTextAsync(schema, "openapi: 3.0.0", TestContext.Current.CancellationToken);
+
+        using var stderr = new StringWriter();
+        var rc = await BowireCli.RunAsync(
+            ["mock",
+                "--schema", schema,
+                "--host", "127.0.0.1",
+                "--port", "6000",
+                "--no-watch",
+                "--loop",
+                "--loop-interval-ms", "-1"],
+            EmptyConfig(),
+            plugins: TestPluginLoaders.None(), stdout: null, stderr: stderr,
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal(1, rc);
+        Assert.Contains("loop-interval-ms", stderr.ToString(), StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public async Task TestSubcommand_NoCollectionPath_ReturnsUsageExit()
     {
         // Test action lambda builds TestCliOptions and calls

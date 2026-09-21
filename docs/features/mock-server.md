@@ -323,6 +323,16 @@ The emitter applies a short 250 ms grace period before the first publish so a su
 
 With `MockOptions.Loop` the emitter starts over after the last publish. `ReplaySpeed` paces the frames *inside* a run; what paces the runs themselves is the recording's own duration: a cycle lasts as long as the recording covers, divided by the speed, and never less than one second. So `--replay-speed 0 --loop` plays every frame immediately and still leaves the recording worth N seconds of traffic, rather than publishing as fast as the CPU allows (#708) — an unbounded rate is something to ask for, not something to fall into by combining two switches. The one-second floor is what makes that hold for a recording that spans a few milliseconds; a looped capture that short is a heartbeat, and one beat per second is the ordinary rate for one.
 
+`--loop-interval-ms` (`MockServerOptions.LoopInterval`) says the cycle length instead of letting the recording decide:
+
+| Value | One cycle lasts |
+|---|---|
+| unset (default) | the recording's own span ÷ `ReplaySpeed`, never under a second |
+| `5000` | five seconds, whatever the recording spans |
+| `0` | nothing — the next cycle starts the instant the last frame is out |
+
+`0` is the unbounded rate the default refuses. It is a switch of its own rather than a side effect of `ReplaySpeed = 0` because a load generator makes its rate explicit and a replay tool keeps the captured timing; on neither is "as fast as possible, for ever" something you arrive at by accident. Choosing it logs a warning at startup, since the effect is a saturated broker and a log that otherwise looks like a mock behaving normally. The value is used as given: it is an answer about cycles, so `ReplaySpeed` does not divide it. Without `--loop` there are no cycles to pace and it is ignored.
+
 Connect with any MQTT client:
 
 ```csharp

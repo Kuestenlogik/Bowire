@@ -1065,9 +1065,30 @@ internal static class BowireCli
         };
         var loop = new Option<bool>("--loop")
         {
-            Description = "Loop proactive emitters indefinitely. One cycle lasts as long as the recording (divided by --replay-speed, never under a second), so a loop cannot outpace what was captured.",
+            Description = "Loop proactive emitters indefinitely. One cycle lasts as long as the recording (divided by --replay-speed, never under a second), so a loop cannot outpace what was captured; --loop-interval-ms says otherwise.",
             DefaultValueFactory = _ => cfg.GetValue<bool>("Bowire:Mock:Loop")
         };
+        // #708 — nullable, and no default factory: an unset interval has to
+        // stay distinguishable from one the operator typed, because 0 is the
+        // one value that asks for an unbounded rate and it cannot be a
+        // default that nobody chose.
+        var loopInterval = new Option<int?>("--loop-interval-ms")
+        {
+            Description = "Length of one --loop cycle in milliseconds. "
+                + "Unset paces cycles by the recording's own duration (never under a second); "
+                + "0 removes the pacing entirely and republishes as fast as this machine manages.",
+            DefaultValueFactory = _ =>
+            {
+                var configured = cfg["Bowire:Mock:LoopIntervalMs"];
+                return int.TryParse(configured, System.Globalization.NumberStyles.Integer,
+                    System.Globalization.CultureInfo.InvariantCulture, out var ms) ? ms : null;
+            }
+        };
+        loopInterval.Validators.Add(r =>
+        {
+            var v = r.GetValue(loopInterval);
+            if (v is < 0) r.AddError("--loop-interval-ms cannot be negative.");
+        });
         var autoInstall = new Option<bool>("--auto-install")
         {
             Description = "Auto-install missing protocol plugins.",
@@ -1145,7 +1166,7 @@ internal static class BowireCli
         cmd.Add(recording); cmd.Add(schema); cmd.Add(grpcSchema); cmd.Add(graphqlSchema);
         cmd.Add(port); cmd.Add(host); cmd.Add(https); cmd.Add(httpsPort);
         cmd.Add(cert); cmd.Add(certPassword); cmd.Add(proxy); cmd.Add(proxyRecord); cmd.Add(select); cmd.Add(noWatch);
-        cmd.Add(stateful); cmd.Add(statefulOnce); cmd.Add(loop); cmd.Add(autoInstall);
+        cmd.Add(stateful); cmd.Add(statefulOnce); cmd.Add(loop); cmd.Add(loopInterval); cmd.Add(autoInstall);
         cmd.Add(chaos); cmd.Add(faults); cmd.Add(captureMiss); cmd.Add(controlToken); cmd.Add(mockConfig); cmd.Add(requireAuth);
         cmd.SetAction(async (pr, ct) =>
         {
@@ -1200,6 +1221,7 @@ internal static class BowireCli
                 Stateful = pr.GetValue(stateful),
                 StatefulOnce = pr.GetValue(statefulOnce),
                 Loop = pr.GetValue(loop),
+                LoopIntervalMs = pr.GetValue(loopInterval),
                 AutoInstall = pr.GetValue(autoInstall),
                 Chaos = pr.GetValue(chaos),
                 FaultsPath = pr.GetValue(faults),
