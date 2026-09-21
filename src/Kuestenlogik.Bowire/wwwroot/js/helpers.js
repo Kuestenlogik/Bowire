@@ -4010,7 +4010,11 @@ var railName = opts.railLabel || t('prereq.thisRail');
             && typeof recordAction === 'function') {
             recordAction({
                 kind: options.logAction.kind || 'unknown',
-                title: options.logAction.title || message,
+                // #689 — pass the key through when the caller has one; the rendered
+                // message is the fallback for a toast that only has a sentence.
+                titleKey: options.logAction.titleKey || null,
+                titleParams: options.logAction.titleParams || null,
+                title: options.logAction.titleKey ? null : (options.logAction.title || message),
                 rail: options.logAction.rail || null,
                 undoSpec: options.logAction.undoSpec || null,
                 undo: options.undo,

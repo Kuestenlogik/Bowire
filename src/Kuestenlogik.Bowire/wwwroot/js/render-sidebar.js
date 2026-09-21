@@ -2791,7 +2791,8 @@
                                     logAction: {
                                         kind: 'workspace-rename',
                                         rail: 'workspaces',
-                                        title: 'Renamed workspace "' + prevName + '" → "' + renamed + '"',  // i18n-exempt: the action log stores rendered text, see #689
+                                        titleKey: 'actionLog.workspaceRenamed',
+                                        titleParams: { from: prevName, to: renamed },
                                         undoSpec: { workspaceId: wsId, prevName: prevName, nextName: renamed }
                                     }
                                 });
@@ -2934,7 +2935,8 @@
                                 logAction: {
                                     kind: 'workspace-delete',
                                     rail: 'workspaces',
-                                    title: 'Deleted workspace "' + snapshotName + '"',  // i18n-exempt: the action log stores rendered text, see #689
+                                    titleKey: 'actionLog.workspaceDeleted',
+                                    titleParams: { name: snapshotName },
                                     undoSpec: {
                                         workspaceId: wsId,
                                         // W2a: snapshot carried inline so

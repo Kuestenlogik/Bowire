@@ -3660,7 +3660,8 @@ textContent: t(discoveryState.entryCount === 1
                         },
                         logAction: {
                             kind: 'settings-reset', rail: 'settings',
-                            title: 'Reset all settings (' + keyCount + ' keys snapshotted)',  // i18n-exempt: the action log stores rendered text, see #689
+                            titleKey: 'actionLog.settingsReset',
+                            titleParams: { count: keyCount },
                             undoSpec: { entries: snapshot }
                         }
                     });
@@ -3691,7 +3692,8 @@ textContent: t(discoveryState.entryCount === 1
                     toast(t('settings.data.historyCleared'), 'success', {
                         undo: function () { restoreHistory(backup); },
                         logAction: { kind: 'history-clear', rail: 'settings',
-                            title: 'Cleared call history (' + (Array.isArray(backup) ? backup.length : 0) + ' entries)',  // i18n-exempt: the action log stores rendered text, see #689
+                            titleKey: 'actionLog.historyCleared',
+                            titleParams: { count: Array.isArray(backup) ? backup.length : 0 },
                             undoSpec: { entries: backup },
                             redo: function () { clearHistory(); } }
                     });
@@ -3711,7 +3713,8 @@ textContent: t(discoveryState.entryCount === 1
                     toast(t('settings.data.favoritesCleared'), 'success', {
                         undo: function () { try { localStorage.setItem(wsKey(FAVORITES_KEY), JSON.stringify(backup)); } catch {} render(); },
                         logAction: { kind: 'favorites-clear', rail: 'settings',
-                            title: 'Cleared favorites (' + (Array.isArray(backup) ? backup.length : 0) + ' entries)',  // i18n-exempt: the action log stores rendered text, see #689
+                            titleKey: 'actionLog.favoritesCleared',
+                            titleParams: { count: Array.isArray(backup) ? backup.length : 0 },
                             undoSpec: { entries: backup },
                             redo: function () { try { localStorage.removeItem(wsKey(FAVORITES_KEY)); } catch {} render(); } }
                     });
@@ -3776,7 +3779,8 @@ textContent: t(discoveryState.entryCount === 1
                         },
                         logAction: {
                             kind: 'recordings-clear', rail: 'recordings',
-                            title: 'Cleared recordings (' + snapshot.length + ' entries)',  // i18n-exempt: the action log stores rendered text, see #689
+                            titleKey: 'actionLog.recordingsCleared',
+                            titleParams: { count: snapshot.length },
                             undoSpec: { entries: snapshot }
                         }
                     });
@@ -3836,7 +3840,8 @@ textContent: t(discoveryState.entryCount === 1
                         },
                         logAction: {
                             kind: 'collections-clear', rail: 'collections',
-                            title: 'Cleared collections (' + snapshot.length + ' entries)',  // i18n-exempt: the action log stores rendered text, see #689
+                            titleKey: 'actionLog.collectionsCleared',
+                            titleParams: { count: snapshot.length },
                             undoSpec: { entries: snapshot }
                         }
                     });

@@ -879,7 +879,13 @@
                     id: e.id,
                     ts: e.ts,
                     kind: e.kind,
-                    title: e.title,
+                    // #689 — the key and its data, not the sentence. A rendered
+                    // title freezes whichever language was active when the action
+                    // happened, and nothing afterwards knows what it once meant.
+                    titleKey: e.titleKey || null,
+                    titleParams: e.titleParams || null,
+                    // Entries written before the change carry this and no key.
+                    title: e.title || null,
                     rail: e.rail || null,
                     undoSpec: e.undoSpec || null,
                     status: e.status === 'available' ? 'available' : e.status
@@ -888,6 +894,27 @@
             localStorage.setItem(wsKey(ACTION_LOG_KEY), JSON.stringify(slim));
         } catch { /* quota / disabled — non-fatal */ }
     }
+    /**
+     * What an action-log entry reads as, resolved now rather than when it happened
+     * (#689).
+     *
+     * The drawer used to paint `entry.title`, a sentence translated once and written
+     * to storage. Switching the interface language left every existing row in the old
+     * one, and a row recorded before a translation existed stayed English for good.
+     * A translated string written into data is worse than an untranslated one: it
+     * freezes a language, it travels through a `.bww` export into somebody else's
+     * workspace, and nothing can correct it later because nothing knows what it meant.
+     *
+     * Entries from before this carry `title` and no key; they keep rendering verbatim,
+     * which is the most that can be done for them. The log is not migrated — it is a
+     * rolling window, and the old rows age out on their own.
+     */
+    function actionTitle(entry) {
+        if (!entry) return '';
+        if (entry.titleKey) return t(entry.titleKey, entry.titleParams || undefined);
+        return entry.title || entry.kind || '';
+    }
+
     function recordAction(opts) {
         if (!opts) return null;
         // Either a runtime closure or a resolvable spec is required.
@@ -897,7 +924,17 @@
             id: 'act_' + Math.random().toString(36).slice(2, 10),
             ts: Date.now(),
             kind: opts.kind || 'unknown',
-            title: opts.title || opts.kind || 'Action',
+            // #689 — `titleKey` + `titleParams` is the shape to use. `title` stays
+            // for the entries already in storage and for a caller that genuinely has
+            // no key; actionTitle() below reads whichever is there.
+            //
+            // The parameters are operator data — a workspace name, a count — and
+            // they are stored as data, interpolated when the row is painted. A
+            // workspace renamed afterwards still reads under its old name in the
+            // log, which is right: that is what the entry is about.
+            titleKey: opts.titleKey || null,
+            titleParams: opts.titleParams || null,
+            title: opts.title || null,
             rail: opts.rail || null,
             undoSpec: opts.undoSpec || null,
             undoFn: typeof opts.undo === 'function' ? opts.undo : null,
@@ -6709,7 +6746,8 @@
                 logAction: {
                     kind: 'collection-create',
                     rail: 'collections',
-                    title: 'Created collection "' + _colName + '"',  // i18n-exempt: the action log stores rendered text, see #689
+                    titleKey: 'actionLog.collectionCreated',
+                    titleParams: { name: _colName },
                     undoSpec: { collectionId: _colId },
                     // Mirror the collection-create resolver so in-session
                     // Ctrl+Shift+Z restores the collection from

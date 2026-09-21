@@ -3678,5 +3678,25 @@
   // {rail} is the name of the rail actually showing.
   "deeplink.rail.unknown": "No rail called '{id}' in this workbench — showing {rail} instead.",
   "deeplink.rail.moved": "The '{id}' rail was retired; its surface now lives in {rail}.",
-  "deeplink.topic.unknown": "No help topic called '{id}' — showing the topic list instead."
+  "deeplink.topic.unknown": "No help topic called '{id}' — showing the topic list instead.",
+
+  // #689 — the action log stores these as keys, not as sentences: a title written
+  // into storage freezes whichever language was active and travels into somebody
+  // else's workspace through a .bww export. The parameters are operator data and
+  // are interpolated when the row is painted.
+  "actionLog.workspaceCreated": "Created workspace \"{name}\"",
+  "actionLog.workspaceDeleted": "Deleted workspace \"{name}\"",
+  "actionLog.workspaceRenamed": "Renamed workspace \"{from}\" → \"{to}\"",
+  "actionLog.workspaceColour": "Changed workspace colour",
+  "actionLog.environmentCreated": "Created environment \"{name}\"",
+  "actionLog.environmentDeleted": "Deleted environment \"{name}\"",
+  "actionLog.collectionCreated": "Created collection \"{name}\"",
+  "actionLog.collectionDeleted": "Deleted collection \"{name}\"",
+  "actionLog.unfavorited": "Unfavorited {service} · {method}",
+  "actionLog.settingsReset": "Reset all settings ({count} keys snapshotted)",
+  "actionLog.historyCleared": "Cleared call history ({count} entries)",
+  "actionLog.favoritesCleared": "Cleared favorites ({count} entries)",
+  "actionLog.recordingsCleared": "Cleared recordings ({count} entries)",
+  "actionLog.collectionsCleared": "Cleared collections ({count} entries)",
+  "env.unnamed": "unnamed"
 }

@@ -1518,7 +1518,8 @@
                     toast(t('collections.deleted', { name: backup.name || t('collections.unnamed') }), 'info', {
                         undo: function () { collectionsList.push(backup); persistCollections(); render(); },
                         logAction: { kind: 'collection-delete',
-                            title: 'Deleted collection "' + (backup.name || 'unnamed') + '"' }  // i18n-exempt: the action log stores rendered text, see #689
+                            titleKey: 'actionLog.collectionDeleted',
+                            titleParams: { name: backup.name || t('collections.unnamed') } }
                     });
                 }, { title: t('collections.deleteHeading'), danger: true, confirmText: t('common.delete') });
             }

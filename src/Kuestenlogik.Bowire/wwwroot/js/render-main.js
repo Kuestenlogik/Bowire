@@ -1070,7 +1070,8 @@
                         toast(t('main.env.deleted', { name: backup.name || t('collections.unnamed') }), 'info', {
                             undo: function () { restoreEnvironment(backup); envSidebarSelectedId = backup.id; render(); },
                             logAction: { kind: 'env-delete',
-                                title: 'Deleted environment "' + (backup.name || 'unnamed') + '"',  // i18n-exempt: the action log stores rendered text, see #689
+                                titleKey: 'actionLog.environmentDeleted',
+                                titleParams: { name: backup.name || t('env.unnamed') },
                                 undoSpec: { env: backup } }
                         });
                     }, { title: t('sidebar.envs.deleteHeading'), danger: true, confirmText: t('common.delete') });
@@ -2086,7 +2087,8 @@
                                     recordAction({
                                         kind: 'workspace-rename',
                                         rail: 'workspaces',
-                                        title: 'Renamed workspace "' + prevName + '" → "' + v + '"',  // i18n-exempt: the action log stores rendered text, see #689
+                                        titleKey: 'actionLog.workspaceRenamed',
+                                        titleParams: { from: prevName, to: v },
                                         undoSpec: { workspaceId: targetId, prevName: prevName, nextName: v },
                                         undo: function () { renameWorkspace(targetId, prevName); render(); },
                                         redo: function () { renameWorkspace(targetId, v); render(); }
@@ -2472,7 +2474,7 @@
                                 recordAction({
                                     kind: 'workspace-color',
                                     rail: 'workspaces',
-                                    title: 'Changed workspace colour',  // i18n-exempt: the action log stores rendered text, see #689
+                                    titleKey: 'actionLog.workspaceColour',
                                     undoSpec: { workspaceId: targetId, prevColor: prevColor, nextColor: c },
                                     undo: function () {
                                         var w = workspaces.find(function (x) { return x.id === targetId; });
@@ -3080,7 +3082,8 @@
                                     logAction: {
                                         kind: 'workspace-delete',
                                         rail: 'workspaces',
-                                        title: 'Deleted workspace "' + snapshotName + '"',  // i18n-exempt: the action log stores rendered text, see #689
+                                        titleKey: 'actionLog.workspaceDeleted',
+                                        titleParams: { name: snapshotName },
                                         undoSpec: {
                                             workspaceId: wsId,
                                             workspace: sidechannel ? sidechannel.workspace : null,

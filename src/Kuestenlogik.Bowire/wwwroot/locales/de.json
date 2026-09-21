@@ -3678,5 +3678,25 @@
   // Adresse, unverändert; {rail} der Name der Leiste, die zu sehen ist.
   "deeplink.rail.unknown": "Keine Leiste namens '{id}' in dieser Werkbank — zu sehen ist {rail}.",
   "deeplink.rail.moved": "Die Leiste '{id}' gibt es nicht mehr; ihre Oberfläche steckt jetzt in {rail}.",
-  "deeplink.topic.unknown": "Kein Hilfe-Thema namens '{id}' — zu sehen ist die Themenliste."
+  "deeplink.topic.unknown": "Kein Hilfe-Thema namens '{id}' — zu sehen ist die Themenliste.",
+
+  // #689 — das Aktionsprotokoll legt Schlüssel ab, keine Sätze: ein geschriebener
+  // Titel friert die Sprache ein, die gerade aktiv war, und wandert über einen
+  // .bww-Export in fremde Arbeitsbereiche. Die Parameter sind Bedienerdaten und
+  // werden beim Zeichnen der Zeile eingesetzt.
+  "actionLog.workspaceCreated": "Arbeitsbereich „{name}“ angelegt",
+  "actionLog.workspaceDeleted": "Arbeitsbereich „{name}“ gelöscht",
+  "actionLog.workspaceRenamed": "Arbeitsbereich „{from}“ in „{to}“ umbenannt",
+  "actionLog.workspaceColour": "Farbe des Arbeitsbereichs geändert",
+  "actionLog.environmentCreated": "Umgebung „{name}“ angelegt",
+  "actionLog.environmentDeleted": "Umgebung „{name}“ gelöscht",
+  "actionLog.collectionCreated": "Sammlung „{name}“ angelegt",
+  "actionLog.collectionDeleted": "Sammlung „{name}“ gelöscht",
+  "actionLog.unfavorited": "{service} · {method} aus den Favoriten entfernt",
+  "actionLog.settingsReset": "Alle Einstellungen zurückgesetzt ({count} Schlüssel gesichert)",
+  "actionLog.historyCleared": "Aufrufverlauf geleert ({count} Einträge)",
+  "actionLog.favoritesCleared": "Favoriten geleert ({count} Einträge)",
+  "actionLog.recordingsCleared": "Aufzeichnungen geleert ({count} Einträge)",
+  "actionLog.collectionsCleared": "Sammlungen geleert ({count} Einträge)",
+  "env.unnamed": "ohne Namen"
 }

@@ -818,7 +818,8 @@
                 logAction: {
                     kind: 'environment-create',
                     rail: 'environments',
-                    title: 'Created environment "' + _envName + '"',  // i18n-exempt: the action log stores rendered text, see #689
+                    titleKey: 'actionLog.environmentCreated',
+                    titleParams: { name: _envName },
                     undoSpec: { env: snapshot },
                     redo: function () {
                         if (getEnvironments().find(function (e) { return e.id === snapshot.id; })) return;

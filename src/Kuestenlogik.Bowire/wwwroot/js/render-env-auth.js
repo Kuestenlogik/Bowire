@@ -415,7 +415,8 @@
                                     logAction: {
                                         kind: 'workspace-create',
                                         rail: 'workspaces',
-                                        title: 'Created workspace "' + _wsName + '"',  // i18n-exempt: the action log stores rendered text, see #689
+                                        titleKey: 'actionLog.workspaceCreated',
+                                        titleParams: { name: _wsName },
                                         undoSpec: { workspaceId: _wsId },
                                         // Redo restores from the trash bucket that
                                         // undo just dropped the workspace into —
@@ -1597,7 +1598,7 @@
             onClick: function () {
                 if (typeof undoLastAction === 'function') {
                     var u = undoLastAction();
-                    if (u && typeof toast === 'function') toast(t('actionLog.undone', { title: u.title }), 'info');
+                    if (u && typeof toast === 'function') toast(t('actionLog.undone', { title: actionTitle(u) }), 'info');
                     render();
                 }
             }
@@ -1611,7 +1612,7 @@
             onClick: function () {
                 if (typeof redoLastAction === 'function') {
                     var r = redoLastAction();
-                    if (r && typeof toast === 'function') toast(t('actionLog.redone', { title: r.title }), 'info');
+                    if (r && typeof toast === 'function') toast(t('actionLog.redone', { title: actionTitle(r) }), 'info');
                     render();
                 }
             }
@@ -1696,7 +1697,9 @@
                 var meta = el('div', { className: 'bowire-activity-meta' });
                 meta.appendChild(el('div', {
                     className: 'bowire-activity-title',
-                    textContent: entry.title
+                    // #689 — resolved here, so a language switch re-renders the row in
+                    // the new language instead of leaving it as it was written.
+                    textContent: actionTitle(entry)
                 }));
                 meta.appendChild(el('div', {
                     className: 'bowire-activity-time',
@@ -1719,11 +1722,11 @@
                                 if (entry.redoFn) actionLogRedoStack.unshift(entry);
                                 activitySelected.delete(entry.id);
                                 _persistActionLog();
-                                if (typeof toast === 'function') toast(t('actionLog.undone', { title: entry.title }), 'info');
+                                if (typeof toast === 'function') toast(t('actionLog.undone', { title: actionTitle(entry) }), 'info');
                                 render();
                             } catch (e) {
                                 console.warn('[actionLog] undo failed', entry.kind, e);
-                                if (typeof toast === 'function') toast(t('activity.undoFailed', { title: entry.title }), 'error');
+                                if (typeof toast === 'function') toast(t('activity.undoFailed', { title: actionTitle(entry) }), 'error');
                             }
                         }
                     }));
@@ -4103,7 +4106,7 @@
                 if (_undoDisabled) return;
                 if (typeof undoLastAction === 'function') {
                     var u = undoLastAction();
-                    if (u && typeof toast === 'function') toast(t('actionLog.undone', { title: u.title }), 'info');
+                    if (u && typeof toast === 'function') toast(t('actionLog.undone', { title: actionTitle(u) }), 'info');
                     render();
                 }
             }
@@ -4131,7 +4134,7 @@
                 if (_redoDisabled) return;
                 if (typeof redoLastAction === 'function') {
                     var r = redoLastAction();
-                    if (r && typeof toast === 'function') toast(t('actionLog.redone', { title: r.title }), 'info');
+                    if (r && typeof toast === 'function') toast(t('actionLog.redone', { title: actionTitle(r) }), 'info');
                     render();
                 }
             }
