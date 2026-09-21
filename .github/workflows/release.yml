@@ -799,14 +799,15 @@ jobs:
           echo "milestone_titles=${TITLES}" >> "$GITHUB_OUTPUT"
 
       # The board's Release field is the delivery a ticket shipped in — empty until here.
-      # Stamped on every *closed* item of the shipped milestones (main repo and the siblings
-      # that mirror them) that does not already carry a release; the milestone stays the
-      # section, which holds one delivery or several. Never fails the release.
+      # Stamped on every *closed* item that closed since the previous cut and does not already
+      # carry a release. Deliberately not scoped by milestone: a release ships what was merged
+      # since the one before it, and a ticket from another section goes out in it just the same
+      # — under the old milestone scoping those shipped unrecorded. The milestone stays the
+      # section, the field the delivery. Never fails the release.
       - name: Stamp the board's Release field
-        if: steps.title.outputs.milestone_titles != ''
         env:
           GH_TOKEN: ${{ secrets.BOWIRE_DISPATCH_TOKEN || secrets.RELEASE_PAT || secrets.GITHUB_TOKEN }}
-        run: node scripts/ci/stamp-release-field.mjs "${GITHUB_REF_NAME}" "${{ steps.title.outputs.milestone_titles }}"
+        run: node scripts/ci/stamp-release-field.mjs "${GITHUB_REF_NAME}"
 
       # SHA-256 for every asset this release ships. Until now a download
       # could not be verified at all: the only sha256 in this workflow is
