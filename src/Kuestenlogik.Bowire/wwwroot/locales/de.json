@@ -3672,5 +3672,10 @@
   "plugin.soap.description": "Ältere SOAP-Dienste — über die WSDL erkunden und mit einem Umschlag aufrufen.",
   "plugin.socketio.description": "Beidseitiger Ereignissender auf Engine.IO — aus der Node.js-Welt.",
   "plugin.sse.description": "Server-Sent Events — einen einseitig vom Server geschobenen Ereignisstrom abonnieren.",
-  "plugin.websocket.description": "Rohes WebSocket — beidseitiger Nachrichtenstrom, auf Wunsch mit ausgehandeltem Unterprotokoll."
+  "plugin.websocket.description": "Rohes WebSocket — beidseitiger Nachrichtenstrom, auf Wunsch mit ausgehandeltem Unterprotokoll.",
+
+  // #735 — der Direkteinstieg über `?rail=`. {id} ist die Kennung aus der
+  // Adresse, unverändert; {rail} der Name der Leiste, die zu sehen ist.
+  "deeplink.rail.unknown": "Keine Leiste namens '{id}' in dieser Werkbank — zu sehen ist {rail}.",
+  "deeplink.rail.moved": "Die Leiste '{id}' gibt es nicht mehr; ihre Oberfläche steckt jetzt in {rail}."
 }

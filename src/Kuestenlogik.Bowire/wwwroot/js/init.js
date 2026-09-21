@@ -1012,6 +1012,26 @@
                     loading.style.opacity = '0';
                     setTimeout(function () { loading.remove(); }, 300);
                 }
+
+                // #735 — a `?rail=` that named nothing this build has, or a
+                // retired id that got moved, says so here. Silence would
+                // read as "this is the rail you were sent to", and it is
+                // not. Reported after the first render on purpose: prologue
+                // decides the rail long before there is a DOM to toast in.
+                try {
+                    if (_railDeepLinkNotice) {
+                        var _landed = (typeof _railModeById === 'function')
+                            ? _railModeById(_railDeepLinkNotice.landed) : null;
+                        var _landedLabel = (_landed && _landed.label)
+                            || _railDeepLinkNotice.landed;
+                        toast(
+                            t(_railDeepLinkNotice.kind === 'unknown'
+                                ? 'deeplink.rail.unknown'
+                                : 'deeplink.rail.moved',
+                                { id: _railDeepLinkNotice.requested, rail: _landedLabel }),
+                            _railDeepLinkNotice.kind === 'unknown' ? 'warning' : 'info');
+                    }
+                } catch (e) { console.warn('[bowire] rail deep-link notice failed', e); }
             });
 
             // #136 / #537 — load the catalogue BEFORE the first

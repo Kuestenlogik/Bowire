@@ -70,7 +70,7 @@ Every rail responds to a `?rail=<id>` query string parameter on the workbench UR
 
 ```
 http://localhost:5180/?rail=compose
-http://localhost:5180/?rail=interceptor
+http://localhost:5180/?rail=intercept
 https://my-host.example/bowire?rail=workspaces
 ```
 
@@ -80,9 +80,13 @@ Useful for:
 - Linking from external documentation or a chat message straight to the right surface.
 - CI screenshot scripts that need a deterministic starting state.
 
-The deep-link path uses the rail's `Id` string (verbatim — case-sensitive, no spaces). Renames in Welle 2 ([#325](https://github.com/Kuestenlogik/Bowire/issues/325)) kept `Id` strings unchanged even when the package names changed, so old `?rail=compose` links keep working.
+The deep-link path uses the rail's `Id` string (verbatim — case-sensitive, no spaces). Surrounding whitespace is trimmed, so a link that picked up a `%20` on its way through a chat message still works. Renames in Welle 2 ([#325](https://github.com/Kuestenlogik/Bowire/issues/325)) kept `Id` strings unchanged even when the package names changed, so old `?rail=compose` links keep working.
 
-If the requested rail isn't loaded or isn't enabled, the workbench falls back to the operator's default rail (Home, or whatever the operator has pinned).
+The parameter outranks the rail the recipient last had open, and is persisted — otherwise a shared link would do nothing for anybody who has used the workbench before, and would be forgotten on the next reload.
+
+A rail that is loaded but hidden from the strip is still reachable this way: hiding the icon suppresses the button, not the surface.
+
+A retired id (`sources`, `collections`, `mocks`, `traffic`, …) lands on its successor and says which one — the same migration a stored rail mode goes through. An id this build doesn't have leaves the current rail standing and reports what was asked for; it is not silently swallowed, because a link that quietly lands on the last rail open reads as the one it was sent to.
 
 ## The strip itself
 

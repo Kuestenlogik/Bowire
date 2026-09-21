@@ -1900,8 +1900,79 @@
     // moment the operator picks any rail, so this is self-correcting and
     // no "was this a first run?" flag has to be threaded through boot.
     var _defaultRailMode = (uiMode === 'embedded') ? 'discover' : 'home';
-    try { railMode = localStorage.getItem('bowire_rail_mode') || _defaultRailMode; }
-    catch { railMode = _defaultRailMode; }
+
+    // #735 — `?rail=<id>` deep link. Documented in three places since the
+    // rail strip shipped and read by nothing: the parameter was parsed
+    // nowhere, so a link somebody shared opened whatever rail the recipient
+    // had left open. The stored mode is the recipient's own history; an id
+    // in the URL is a decision made now, so it wins — and it is persisted,
+    // because otherwise the next reload throws the shared link away.
+    //
+    // A deep link to a rail that is loaded but hidden from the strip works
+    // on purpose: hiding the icon suppresses the button, not the surface.
+    // Only an id this build does not have is refused, and out loud — see
+    // _railDeepLinkNotice below.
+    //
+    // Retired ids are not mapped here. They go through the same boot
+    // migration as a stored value a few lines down, so a link and a
+    // localStorage entry naming the same retired rail land on the same
+    // successor — one table, not two that can drift.
+    var _RETIRED_RAIL_IDS = [
+        'sources', 'environments', 'collections',
+        'mocks', 'traffic', 'proxy', 'intercepted'
+    ];
+
+    /**
+     * What `?rail=` asks for. Pure — reads no storage and sets nothing.
+     *
+     * @param {string} search Query string, with or without the leading '?'.
+     * @param {string[]} knownIds Rail ids this build ships.
+     * @returns {{requested: string|null, id: string|null, status: string}}
+     *   `status` is 'none' (no parameter at all), 'known' (a rail this
+     *   build has), 'retired' (an id the boot migration rewrites) or
+     *   'unknown'. `id` is what boot should adopt, or null to leave the
+     *   stored mode standing.
+     */
+    function _railDeepLinkFrom(search, knownIds) {
+        var raw = null;
+        try { raw = new URLSearchParams(search || '').get('rail'); }
+        catch { raw = null; }
+        if (raw === null) return { requested: null, id: null, status: 'none' };
+        var requested = String(raw).trim();
+        // `?rail=` with nothing after it is a typo, not a request for the
+        // default — saying so beats landing somewhere unexplained.
+        if (!requested) return { requested: '', id: null, status: 'unknown' };
+        var ids = Array.isArray(knownIds) ? knownIds : [];
+        if (ids.indexOf(requested) >= 0) {
+            return { requested: requested, id: requested, status: 'known' };
+        }
+        if (_RETIRED_RAIL_IDS.indexOf(requested) >= 0) {
+            return { requested: requested, id: requested, status: 'retired' };
+        }
+        return { requested: requested, id: null, status: 'unknown' };
+    }
+
+    /** The rail ids this build ships, off the boot config. */
+    function _configuredRailIds() {
+        try {
+            var cfg = (typeof window !== 'undefined' && window.__BOWIRE_CONFIG__) || {};
+            var rails = Array.isArray(cfg.rails) ? cfg.rails : [];
+            return rails
+                .map(function (r) { return r && r.id; })
+                .filter(function (id) { return typeof id === 'string' && id.length > 0; });
+        } catch { return []; }
+    }
+
+    var _railDeepLink = _railDeepLinkFrom(
+        (typeof window !== 'undefined' && window.location && window.location.search) || '',
+        _configuredRailIds());
+    if (_railDeepLink.id) {
+        railMode = _railDeepLink.id;
+        try { localStorage.setItem('bowire_rail_mode', railMode); } catch { /* ignore */ }
+    } else {
+        try { railMode = localStorage.getItem('bowire_rail_mode') || _defaultRailMode; }
+        catch { railMode = _defaultRailMode; }
+    }
     // Boot migration — the legacy 'sources' rail was retired in favour
     // of the Workspace-detail pane (workspaces own their sources now).
     // 'recordings' / 'environments' are still standalone rails, so they
@@ -2017,6 +2088,22 @@
             }
         }
     } catch { /* corrupt key — leave alone, isRailEnabled fallback handles it */ }
+    // #735 — what to tell the operator about the deep link, once there is
+    // a DOM to say it in (init.js). Two cases are worth a word: an id this
+    // build does not have, which would otherwise read as "this is the rail
+    // you were sent to" when it is merely the last one open; and a retired
+    // id the migration above moved, which lands somewhere the link did not
+    // name. A link that worked says nothing.
+    var _railDeepLinkNotice = null;
+    if (_railDeepLink.status === 'unknown') {
+        _railDeepLinkNotice = {
+            kind: 'unknown', requested: _railDeepLink.requested, landed: railMode
+        };
+    } else if (_railDeepLink.id && railMode !== _railDeepLink.id) {
+        _railDeepLinkNotice = {
+            kind: 'moved', requested: _railDeepLink.requested, landed: railMode
+        };
+    }
     // #133 Phase 2 — Mocks mode selection. Session-only;
     // re-derived from the live mocksList every render so a stopped
     // mock automatically deselects.

@@ -3672,5 +3672,10 @@
   "plugin.soap.description": "Legacy SOAP services — WSDL discovery + envelope invoke.",
   "plugin.socketio.description": "Engine.IO-based bidirectional event emitter — Node.js ecosystem.",
   "plugin.sse.description": "Server-Sent Events — subscribe to a one-way server-pushed event stream.",
-  "plugin.websocket.description": "Raw WebSocket — bidirectional message stream with optional sub-protocol negotiation."
+  "plugin.websocket.description": "Raw WebSocket — bidirectional message stream with optional sub-protocol negotiation.",
+
+  // #735 — the `?rail=` deep link. {id} is the id from the URL, verbatim;
+  // {rail} is the name of the rail actually showing.
+  "deeplink.rail.unknown": "No rail called '{id}' in this workbench — showing {rail} instead.",
+  "deeplink.rail.moved": "The '{id}' rail was retired; its surface now lives in {rail}."
 }
