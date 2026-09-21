@@ -7,6 +7,7 @@ using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using Kuestenlogik.Bowire.Interceptor;
+using Kuestenlogik.Bowire.Testing;
 using Kuestenlogik.Bowire.Recording;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -43,10 +44,11 @@ public sealed class BowireInterceptorMiddlewareTests
     /// carry who sent them, and that is the one thing that would settle it.
     /// </para>
     /// <para>
-    /// So the host writes down the remote endpoint, the connection id and
-    /// the user agent of everything that arrives, and the assertions print
-    /// it. Two flows on one connection id are ours. Two connections from
-    /// two remote ports, one with a user agent we never set, are not.
+    /// So the host writes down what arrives — remote endpoint, connection
+    /// id, user agent, and whether it carried this test's marker — and the
+    /// assertions print it. An unmarked request was not sent from here,
+    /// whatever path it landed on, and <see cref="ForeignArrivals"/> also
+    /// writes it to a file that outlives the run (#737).
     /// </para>
     /// <para>
     /// Keyed by the store because the helpers already receive it and the
@@ -81,24 +83,13 @@ public sealed class BowireInterceptorMiddlewareTests
 
         // Ahead of the interceptor so it sees requests the interceptor
         // skips too — an ignored path, a disabled run, and whatever else
-        // arrives on this port (#714).
+        // arrives on this port (#714, #737). The marker on this test's own
+        // client is what makes "not ours" a property of the request rather
+        // than a guess about paths; anything unmarked is also written to
+        // ForeignArrivals.ReportPath.
         var arrivals = new System.Collections.Concurrent.ConcurrentQueue<string>();
         s_arrivals.Add(app.Services.GetRequiredService<InterceptedFlowStore>(), arrivals);
-        app.Use(async (HttpContext ctx, RequestDelegate next) =>
-        {
-            arrivals.Enqueue(
-                $"{ctx.Request.Method} {ctx.Request.Path} "
-                + $"from {ctx.Connection.RemoteIpAddress}:{ctx.Connection.RemotePort} "
-                + $"conn={ctx.Connection.Id} "
-                + $"ua={(string?)ctx.Request.Headers.UserAgent ?? "(none)"} "
-                // The one mechanism in this repository that would send a
-                // loopback request somewhere it did not mean to: the
-                // reverse-proxy host forwards to a recorded upstream
-                // 127.0.0.1:port, and YARP stamps these on the way through.
-                // Set means the request was forwarded, not sent here.
-                + $"fwd={(string?)ctx.Request.Headers["X-Forwarded-For"] ?? "(none)"}");
-            await next(ctx);
-        });
+        app.UseArrivalLog(arrivals);
 
         app.UseBowireInterceptor(configure);
         app.MapGet("/api/hello", () => Results.Ok(new { greeting = "hi" }));
@@ -120,7 +111,12 @@ public sealed class BowireInterceptorMiddlewareTests
 
         await app.StartAsync(ct);
         var addr = app.Urls.First();
-        var http = new HttpClient { BaseAddress = new Uri(addr) };
+        // Marked, so the host can tell this test's traffic from anybody
+        // else's (#737). The marker is the test's own name, which travels
+        // into the report — a find names the test that was running rather
+        // than just a port.
+        var http = ForeignArrivals.MarkedClient(
+            addr, TestContext.Current.TestMethod?.MethodName ?? nameof(BowireInterceptorMiddlewareTests));
         var store = app.Services.GetRequiredService<InterceptedFlowStore>();
         var session = app.Services.GetRequiredService<BowireRecordingSession>();
         var mocks = app.Services.GetRequiredService<InterceptorMockStore>();
@@ -369,7 +365,8 @@ public sealed class BowireInterceptorMiddlewareTests
         await using var baseline = baselineBuilder.Build();
         baseline.MapGet("/api/hello", () => Results.Ok(new { greeting = "hi" }));
         await baseline.StartAsync(ct);
-        using var baselineHttp = new HttpClient { BaseAddress = new Uri(baseline.Urls.First()) };
+        using var baselineHttp = ForeignArrivals.MarkedClient(
+            baseline.Urls.First(), nameof(PassThrough_ReturnsIdenticalResponseAsBaseline));
         using var baselineResp = await baselineHttp.GetAsync(new Uri("/api/hello", UriKind.Relative), ct);
         var baselineBody = await baselineResp.Content.ReadAsStringAsync(ct);
         await baseline.StopAsync(ct);
