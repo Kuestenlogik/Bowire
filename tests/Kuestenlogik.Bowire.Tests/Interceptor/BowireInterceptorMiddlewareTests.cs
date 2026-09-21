@@ -125,6 +125,50 @@ public sealed class BowireInterceptorMiddlewareTests
         return mine[0];
     }
 
+    /// <summary>
+    /// No flow for this path — with the same message the positive helper
+    /// gives, because "it is not there" is the assertion most in need of
+    /// saying what was there instead (#714).
+    /// </summary>
+    private static void AssertNoFlowFor(InterceptedFlowStore store, string path)
+    {
+        var all = store.Snapshot();
+        Assert.True(all.All(f => f.Path != path),
+            $"Expected no flow for {path}, but one was recorded. "
+            + "All flows in this store: "
+            + string.Join(", ", all.Select(f => $"#{f.Id} {f.Method} {f.Path}")));
+    }
+
+    /// <summary>
+    /// Drive one request that IS recorded and wait for its flow, so a
+    /// following "nothing was recorded" assertion has something to stand on.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The flow is written after the response has been flushed to the client,
+    /// so nothing guarantees that a snapshot taken the moment the request
+    /// under test answers already carries it. Requests on one connection are
+    /// served in order, so once this barrier's flow is in, an earlier
+    /// request's would be too — which turns "not recorded" from a question
+    /// of timing into one the store can answer.
+    /// </para>
+    /// <para>
+    /// Measured, not assumed, and it cuts the other way than expected: with
+    /// the ignore rule removed the old immediate assertion failed three
+    /// times out of three, so the flow does land before the client's
+    /// response completes. It simply is not promised anywhere, and this is
+    /// cheaper than depending on it.
+    /// </para>
+    /// </remarks>
+    private static async Task RecordedBarrierAsync(
+        HttpClient http, InterceptedFlowStore store, CancellationToken ct)
+    {
+        using var barrier = await http.GetAsync(new Uri("/api/large", UriKind.Relative), ct);
+        Assert.Equal(HttpStatusCode.OK, barrier.StatusCode);
+        _ = await barrier.Content.ReadAsStringAsync(ct);
+        await WaitForFlowAsync(store, "/api/large", ct);
+    }
+
     [Fact]
     public async Task GetRequest_IsRecordedWithMethodAndStatus()
     {
@@ -180,7 +224,15 @@ public sealed class BowireInterceptorMiddlewareTests
 
         using var resp = await http.GetAsync(new Uri("/api/hello", UriKind.Relative), ct);
         Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
-        Assert.Empty(store.Snapshot());
+
+        // #714 — the assertion was that the store is empty, which is a claim
+        // about every request that reached this host rather than about the
+        // ignored one. That is the property the intermittent failure broke,
+        // and it is not one this test establishes. The barrier is the smaller
+        // point: it makes the moment of asking an ordering rather than a
+        // coincidence (see RecordedBarrierAsync).
+        await RecordedBarrierAsync(http, store, ct);
+        AssertNoFlowFor(store, "/api/hello");
     }
 
     [Fact]
@@ -193,6 +245,12 @@ public sealed class BowireInterceptorMiddlewareTests
 
         using var resp = await http.GetAsync(new Uri("/api/hello", UriKind.Relative), ct);
         Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+
+        // No barrier here, and Empty rather than "no flow for this path", on
+        // purpose: with the interceptor off nothing reaches the store at all,
+        // so there is no request — ours or anybody else's — whose flow could
+        // appear later or interfere. The other skip (#714) needed both; this
+        // one is the stronger statement and the one worth making.
         Assert.Empty(store.Snapshot());
     }
 
