@@ -30,6 +30,43 @@ namespace Kuestenlogik.Bowire.Tests.Interceptor;
 [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA5399:HttpClient created without enabling CheckCertificateRevocationList", Justification = "Loopback-only test traffic")]
 public sealed class BowireInterceptorMiddlewareTests
 {
+    /// <summary>
+    /// Every request each test host saw, as the connection saw it (#714).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The intermittent failure was two flows for one request, and the
+    /// conclusion drawn was "a second real request reached this host" —
+    /// which is sound — followed by "from a foreign client", which is not:
+    /// nothing in the evidence distinguishes a stranger from this test's own
+    /// client sending twice. The flows carry method and path; they do not
+    /// carry who sent them, and that is the one thing that would settle it.
+    /// </para>
+    /// <para>
+    /// So the host writes down the remote endpoint, the connection id and
+    /// the user agent of everything that arrives, and the assertions print
+    /// it. Two flows on one connection id are ours. Two connections from
+    /// two remote ports, one with a user agent we never set, are not.
+    /// </para>
+    /// <para>
+    /// Keyed by the store because the helpers already receive it and the
+    /// alternative is threading a sixth element through every call site of
+    /// <c>StartAsync</c>. A weak table so a finished test's host is still
+    /// collectable.
+    /// </para>
+    /// </remarks>
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<
+        InterceptedFlowStore, System.Collections.Concurrent.ConcurrentQueue<string>> s_arrivals = new();
+
+    private static string ArrivalsFor(InterceptedFlowStore store)
+    {
+        if (!s_arrivals.TryGetValue(store, out var log) || log.IsEmpty)
+        {
+            return "nothing recorded";
+        }
+        return string.Join(" | ", log);
+    }
+
     private static async Task<(WebApplication app, HttpClient http, InterceptedFlowStore store, BowireRecordingSession session, InterceptorMockStore mocks)> StartAsync(
         CancellationToken ct,
         Action<BowireInterceptorOptions>? configure = null)
@@ -41,6 +78,28 @@ public sealed class BowireInterceptorMiddlewareTests
         builder.Services.AddSingleton<BowireRecordingSession>();
 
         var app = builder.Build();
+
+        // Ahead of the interceptor so it sees requests the interceptor
+        // skips too — an ignored path, a disabled run, and whatever else
+        // arrives on this port (#714).
+        var arrivals = new System.Collections.Concurrent.ConcurrentQueue<string>();
+        s_arrivals.Add(app.Services.GetRequiredService<InterceptedFlowStore>(), arrivals);
+        app.Use(async (HttpContext ctx, RequestDelegate next) =>
+        {
+            arrivals.Enqueue(
+                $"{ctx.Request.Method} {ctx.Request.Path} "
+                + $"from {ctx.Connection.RemoteIpAddress}:{ctx.Connection.RemotePort} "
+                + $"conn={ctx.Connection.Id} "
+                + $"ua={(string?)ctx.Request.Headers.UserAgent ?? "(none)"} "
+                // The one mechanism in this repository that would send a
+                // loopback request somewhere it did not mean to: the
+                // reverse-proxy host forwards to a recorded upstream
+                // 127.0.0.1:port, and YARP stamps these on the way through.
+                // Set means the request was forwarded, not sent here.
+                + $"fwd={(string?)ctx.Request.Headers["X-Forwarded-For"] ?? "(none)"}");
+            await next(ctx);
+        });
+
         app.UseBowireInterceptor(configure);
         app.MapGet("/api/hello", () => Results.Ok(new { greeting = "hi" }));
         app.MapPost("/api/echo", async (HttpContext ctx) =>
@@ -121,7 +180,8 @@ public sealed class BowireInterceptorMiddlewareTests
         Assert.True(mine.Count == 1,
             $"Expected exactly one flow for {path}, saw {mine.Count}. "
             + "All flows in this store: "
-            + string.Join(", ", all.Select(f => $"#{f.Id} {f.Method} {f.Path}")));
+            + string.Join(", ", all.Select(f => $"#{f.Id} {f.Method} {f.Path}"))
+            + ". Everything that arrived on this port: " + ArrivalsFor(store));
         return mine[0];
     }
 
@@ -136,7 +196,8 @@ public sealed class BowireInterceptorMiddlewareTests
         Assert.True(all.All(f => f.Path != path),
             $"Expected no flow for {path}, but one was recorded. "
             + "All flows in this store: "
-            + string.Join(", ", all.Select(f => $"#{f.Id} {f.Method} {f.Path}")));
+            + string.Join(", ", all.Select(f => $"#{f.Id} {f.Method} {f.Path}"))
+            + ". Everything that arrived on this port: " + ArrivalsFor(store));
     }
 
     /// <summary>
