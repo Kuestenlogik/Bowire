@@ -213,7 +213,7 @@
     <!-- Microsoft.Extensions.AI.OpenAI: IChatClient for OpenAI + any
          OpenAI-compatible endpoint (OpenRouter, Azure OpenAI, &c.).
          Phase 3 of #25 routes cloud BYOK through this. -->
-    <PackageVersion Include="Microsoft.Extensions.AI.OpenAI" Version="10.10.0" />
+    <PackageVersion Include="Microsoft.Extensions.AI.OpenAI" Version="10.10.1" />
     <!-- Anthropic.SDK: community-maintained SDK with first-class
          Microsoft.Extensions.AI integration (the AnthropicClient().Messages
          property returns IChatClient directly). Phase 3 of #25 uses this
