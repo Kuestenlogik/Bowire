@@ -429,12 +429,33 @@ public sealed class GraphQLProtocolStreamingTests
                 _ = await ReceiveJsonAsync(ws, ctx.RequestAborted); // connection_init
                 await SendJsonAsync(ws, "{\"type\":\"connection_ack\"}", ctx.RequestAborted);
 
-                // Answer every subscribe with one frame carrying its own id,
-                // then complete it. Two subscribes arrive on this one socket.
-                for (var i = 0; i < 2; i++)
+                // Collect BOTH subscribes before answering either. Answering
+                // each as it arrived let the first subscription finish, and
+                // the pool close the socket it had just left idle, before the
+                // second attached — which then, correctly, opened a socket of
+                // its own. The test read that as a failure (Expected 1,
+                // Actual 2; seen locally and in CI on 2026-09-28). Holding the
+                // answers is what makes "both live at once" true rather than
+                // likely.
+                //
+                // The second receive has its own deadline: if the pool ever
+                // does open two sockets, each gets one subscribe, and waiting
+                // for a second one would hang the run instead of letting the
+                // socket count below say what happened.
+                var ids = new List<string?>();
+                ids.Add((await ReceiveJsonAsync(ws, ctx.RequestAborted)).GetProperty("id").GetString());
+                using (var second = CancellationTokenSource.CreateLinkedTokenSource(ctx.RequestAborted))
                 {
-                    var subscribe = await ReceiveJsonAsync(ws, ctx.RequestAborted);
-                    var id = subscribe.GetProperty("id").GetString();
+                    second.CancelAfter(TimeSpan.FromSeconds(5));
+                    try { ids.Add((await ReceiveJsonAsync(ws, second.Token)).GetProperty("id").GetString()); }
+                    catch (OperationCanceledException) when (!ctx.RequestAborted.IsCancellationRequested) { }
+                }
+
+                // Answered in reverse: a demultiplexer that handed frames out
+                // first-come-first-served would pass in arrival order.
+                ids.Reverse();
+                foreach (var id in ids)
+                {
                     await SendJsonAsync(ws,
                         "{\"type\":\"next\",\"id\":\"" + id + "\",\"payload\":{\"data\":{\"tick\":\"for-" + id + "\"}}}",
                         ctx.RequestAborted);
