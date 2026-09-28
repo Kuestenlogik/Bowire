@@ -12,11 +12,10 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### M1 — Localisation, layout and the test pillar *(due 2026-11-03)*
 
-**32/53 done** · 1 in progress · 20 backlog
+**33/53 done** · 20 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
-| [250](https://github.com/Kuestenlogik/Bowire/issues/250) | Bowire | [Unified Layout — within-tab split (Auto/drag/shortcut/per-tab) + cross-tab pane split with tab drag-and-drop](#issue-kuestenlogik-bowire-250) | 🟡 In progress | `area:workbench` |
 | [22](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/22) | Protocol.Dis | [Typed PDU envelope decoding beyond EntityState](#issue-kuestenlogik-bowire-protocol-dis-22) | ⬜ Backlog | `area:plugin-sdk` |
 | [23](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/23) | Protocol.Dis | [Entity-filtered stream drops non-EntityState PDUs](#issue-kuestenlogik-bowire-protocol-dis-23) | ⬜ Backlog | `area:plugin-sdk` |
 | [24](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/24) | Protocol.Dis | [Typed / re-decoded mock replay in DisMockEmitter](#issue-kuestenlogik-bowire-protocol-dis-24) | ⬜ Backlog | `area:plugin-sdk` |
@@ -43,6 +42,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [216](https://github.com/Kuestenlogik/Bowire/issues/216) | Bowire | [Test infra: WebApplicationFactory fixture for InvokeEndpoints + UnaryReplayer coverage](#issue-kuestenlogik-bowire-216) | ✅ Done | `area:workbench` |
 | [247](https://github.com/Kuestenlogik/Bowire/issues/247) | Bowire | [Schema graph designer — visualise discovered .proto / SDL / OpenAPI type graph for large schemas](#issue-kuestenlogik-bowire-247) | ✅ Done | `area:workbench` |
 | [249](https://github.com/Kuestenlogik/Bowire/issues/249) | Bowire | [Optional rail modules — Phase 2: Schema Designer ships as the first default-off opt-in module](#issue-kuestenlogik-bowire-249) | ✅ Done | `area:workbench` |
+| [250](https://github.com/Kuestenlogik/Bowire/issues/250) | Bowire | [Unified Layout — within-tab split (Auto/drag/shortcut/per-tab) + cross-tab pane split with tab drag-and-drop](#issue-kuestenlogik-bowire-250) | ✅ Done | `area:workbench` |
 | [251](https://github.com/Kuestenlogik/Bowire/issues/251) | Bowire | [Visual shelf — drag-and-drop holding area for cross-surface fragments (parallel to OS clipboard)](#issue-kuestenlogik-bowire-251) | ✅ Done | `area:workbench` |
 | [292](https://github.com/Kuestenlogik/Bowire/issues/292) | Bowire | [Request-builder: GraphQL layout (#291 Phase D follow-up)](#issue-kuestenlogik-bowire-292) | ✅ Done | `area:workbench` |
 | [311](https://github.com/Kuestenlogik/Bowire/issues/311) | Bowire | [Pluggable workbench: extract remaining rails (Phase G continuation)](#issue-kuestenlogik-bowire-311) | ✅ Done | `area:workbench` |
@@ -194,12 +194,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 ## Details
 
 ### M1 — Localisation, layout and the test pillar *(due 2026-11-03)*
-
-#### <a id="issue-kuestenlogik-bowire-250"></a>🟡 In progress · [#250](https://github.com/Kuestenlogik/Bowire/issues/250) Unified Layout — within-tab split (Auto/drag/shortcut/per-tab) + cross-tab pane split with tab drag-and-drop
-
-> `area:workbench`
-
-#135 shipped in v2.0 as a **within-tab** request/response split (vertical ↔ horizontal toggle). That feature predates the workbench tab system (#123). Now that tabs are first-class, the "split" concept has TWO orthogonal axes that operators need at different times, and #135 only covers one of them. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/250)
 
 #### <a id="issue-kuestenlogik-bowire-protocol-dis-22"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Dis#22](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/22) Typed PDU envelope decoding beyond EntityState
 
@@ -356,6 +350,12 @@ Bowire today renders a discovered schema as a flat tree (services → methods �
 > `area:workbench`
 
 Phase 2 of the optional-rail-modules effort (Phase 1 in #248 lands the plumbing in v2.1). After the toggle mechanic exists, v2.4 uses it for its FIRST real default-off rail module: the Schema Designer (#247). [[more]](https://github.com/Kuestenlogik/Bowire/issues/249)
+
+#### <a id="issue-kuestenlogik-bowire-250"></a>✅ Done · [#250](https://github.com/Kuestenlogik/Bowire/issues/250) Unified Layout — within-tab split (Auto/drag/shortcut/per-tab) + cross-tab pane split with tab drag-and-drop
+
+> `area:workbench`
+
+#135 shipped in v2.0 as a **within-tab** request/response split (vertical ↔ horizontal toggle). That feature predates the workbench tab system (#123). Now that tabs are first-class, the "split" concept has TWO orthogonal axes that operators need at different times, and #135 only covers one of them. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/250)
 
 #### <a id="issue-kuestenlogik-bowire-251"></a>✅ Done · [#251](https://github.com/Kuestenlogik/Bowire/issues/251) Visual shelf — drag-and-drop holding area for cross-surface fragments (parallel to OS clipboard)
 
