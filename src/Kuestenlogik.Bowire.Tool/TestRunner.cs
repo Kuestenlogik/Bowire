@@ -485,16 +485,14 @@ internal static class TestRunner
             kv => kv.Key,
             kv => SubstituteVars(kv.Value, environment));
 
-        // Pick the protocol — explicit override or first available
-        IBowireProtocol? protocol;
-        if (!string.IsNullOrEmpty(protocolId))
-        {
-            protocol = registry.GetById(protocolId);
-        }
-        else
-        {
-            protocol = registry.Protocols.Count > 0 ? registry.Protocols[0] : null;
-        }
+        // Pick the protocol — the one named, or the registry's default.
+        // #751 — "first available" used to mean registry.Protocols[0], and
+        // that is whichever assembly loaded first, not a default. The
+        // sibling flow runner had the same line and it made the same run
+        // pass on one machine and fail on another.
+        IBowireProtocol? protocol = string.IsNullOrEmpty(protocolId)
+            ? registry.DefaultProtocol()
+            : registry.GetById(protocolId);
 
         if (protocol is null)
         {
