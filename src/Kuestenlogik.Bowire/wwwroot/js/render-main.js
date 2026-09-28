@@ -772,7 +772,7 @@
             if (result.title) {
                 S.responseError = result;
                 runStatus = { status: 'Error', durationMs: result.duration_ms || 0 };  // i18n-exempt: status label, carried on the console entry and the run summary
-                addConsoleEntry({ type: 'error', method: fullName, status: 'Error', body: richErrorDetail(result, 'Request failed') });  // i18n-exempt: the action log stores rendered text, see #689
+                addConsoleEntry({ type: 'error', method: fullName, status: 'Error', body: richErrorDetail(result, t('console.body.requestFailed')) });  // i18n-exempt: status token, and what the row's colour is decided on
             } else {
                 S.responseData = result.response;
                 runStatus = { status: result.status, durationMs: result.duration_ms || 0 };
@@ -800,7 +800,7 @@
             }
         } catch (e) {
             S.responseError = e.message;
-            addConsoleEntry({ type: 'error', method: fullName, status: 'NetworkError', body: e.message });  // i18n-exempt: the action log stores rendered text, see #689
+            addConsoleEntry({ type: 'error', method: fullName, status: 'NetworkError', body: e.message });  // i18n-exempt: status token, and what the row's colour is decided on
         }
 
         S.isExecuting = false;

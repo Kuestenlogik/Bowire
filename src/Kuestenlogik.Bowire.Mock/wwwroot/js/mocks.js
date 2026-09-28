@@ -104,7 +104,8 @@
                     logAction: {
                         kind: 'mock-create',
                         rail: 'mocks',
-                        title: 'Created mock "' + _mockName + '"',  // i18n-exempt: the action log stores rendered text, see #689
+                        titleKey: 'actionLog.mockCreated',
+                        titleParams: { name: _mockName },
                         undoSpec: { mockId: summaryId, recording: recSnapshot, port: summaryPort },
                         redo: function () { startMockFromRecording(recSnapshot, summaryPort, true); }
                     }

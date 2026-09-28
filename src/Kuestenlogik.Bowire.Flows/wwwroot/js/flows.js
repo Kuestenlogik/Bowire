@@ -253,7 +253,8 @@
                 logAction: {
                     kind: 'flow-create',
                     rail: 'flows',
-                    title: 'Created flow "' + _flowName + '"',  // i18n-exempt: the action log stores rendered text, see #689
+                    titleKey: 'actionLog.flowCreated',
+                    titleParams: { name: _flowName },
                     undoSpec: { flow: snapshot },
                     redo: function () {
                         if (flowsList.find(function (f) { return f.id === snapshot.id; })) return;
@@ -1431,7 +1432,8 @@
                     toast(t('flows.deletedNamed', { name: backup.name || t('flows.unnamed') }), 'info', {
                         undo: function () { flowsList.push(backup); persistFlows(); flowEditorSelectedId = backup.id; render(); },
                         logAction: { kind: 'flow-delete',
-                            title: 'Deleted flow "' + (backup.name || 'unnamed') + '"',  // i18n-exempt: the action log stores rendered text, see #689
+                            titleKey: 'actionLog.flowDeleted',
+                            titleParams: { name: backup.name || t('env.unnamed') },
                             undoSpec: { flow: backup } }
                     });
                 }, { title: t('flows.delete'), danger: true, confirmText: t('common.delete') });

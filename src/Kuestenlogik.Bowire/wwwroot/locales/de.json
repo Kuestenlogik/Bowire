@@ -368,7 +368,7 @@
   "rollup.pathsPlaceholder": "Pfade zum Einlesen, durch Komma getrennt",
   "rollup.pathsTitle": "Dateien oder Verzeichnisse mit Bowire-Berichten. Verzeichnisse werden rekursiv durchlaufen.",
 
-  // Die Titel im Aktionsprotokoll ({title}) sind gespeicherte Daten und bleiben englisch, bis #689 sie auf Schluessel umstellt.
+  // Die Titel im Aktionsprotokoll ({title}) kommen als Schluessel herein und werden beim Zeichnen aufgeloest; hier steht nur der Rahmen um sie herum.
   "migration.title": "Vorhandene Arbeit übernehmen?",
   "migration.body.one": "Dieses Bowire hält die Arbeit jeder Person getrennt. Aus der Zeit davor liegt eine Datei{size} vor, die sich in Ihr Konto kopieren lässt.",
   "migration.body.many": "Dieses Bowire hält die Arbeit jeder Person getrennt. Aus der Zeit davor liegen {count} Dateien{size} vor, die sich in Ihr Konto kopieren lassen.",
@@ -966,7 +966,6 @@
   "sidebar.trash.deletedAt": "gelöscht {when}",
   "sidebar.upload.hint": ".proto für gRPC  ·  .json / .yaml für OpenAPI / Swagger",
 
-  // Der Titel im Aktionsprotokoll bleibt englisch - siehe #689.
   "sidebar.ws.settings": "Einstellungen des Arbeitsbereichs",
   "sidebar.ws.settingsTitle": "Die Einstellungen des Arbeitsbereichs öffnen",
   "sidebar.ws.renameTitle": "Arbeitsbereich umbenennen",
@@ -1190,7 +1189,6 @@
   "settings.data.resetAsk": "ALLE Bowire-Daten zurücksetzen (Verlauf, Favoriten, Umgebungen, Einstellungen)?\n\nDas Aktionsprotokoll hält einen Abzug von davor bereit, sodass Strg/Cmd+Z es zurückholt — aber nur bis die Seite neu lädt.",
   "settings.data.migrateHeading": "${} → {{}} umstellen",
 
-  // Die Titel im Aktionsprotokoll ({title}) bleiben englisch - #689.
   "topbar.editPins": "Anheftungen bearbeiten",
   "drop.title": "Auf einer Sammlung ablegen",
   "drop.cancelEsc": "Abbrechen (Esc)",
@@ -3698,5 +3696,46 @@
   "actionLog.favoritesCleared": "Favoriten geleert ({count} Einträge)",
   "actionLog.recordingsCleared": "Aufzeichnungen geleert ({count} Einträge)",
   "actionLog.collectionsCleared": "Sammlungen geleert ({count} Einträge)",
+  "actionLog.recordingCreated": "Aufzeichnung „{name}“ angelegt",
+  "actionLog.recordingDeleted": "Aufzeichnung „{name}“ gelöscht",
+  "actionLog.flowCreated": "Ablauf „{name}“ angelegt",
+  "actionLog.flowDeleted": "Ablauf „{name}“ gelöscht",
+  "actionLog.mockCreated": "Attrappe „{name}“ angelegt",
+
+  // #739 — die Konsole ist nicht das Aktionsprotokoll und speichert nichts, sie
+  // zeichnet aber bei jedem Durchgang neu, also kann eine Zeile einem
+  // Sprachwechsel folgen. Der Eintrag trägt den Schlüssel, die Zeile löst ihn
+  // auf. Literal bleibt, was Protokoll-Vokabular ist oder was ein Server selbst
+  // gesagt hat.
+  "console.noBodyToExpand": "Kein Inhalt zum Aufklappen",
+  "console.status.channelOpenFailed": "Kanal nicht geöffnet",
+  "console.status.sendFailed": "Senden fehlgeschlagen",
+  "console.status.benchmarkComplete": "Messung abgeschlossen",
+  "console.status.recordingStarted": "Aufzeichnung gestartet",
+  "console.status.recordingResumed": "Aufzeichnung fortgesetzt",
+  "console.status.recordingResumedEmpty": "Aufzeichnung fortgesetzt (leer)",
+  "console.status.recordingDropped": "Aufzeichnung verworfen (0 Schritte)",
+  "console.status.recordingStopped.one": "Aufzeichnung beendet ({count} Schritt)",
+  "console.status.recordingStopped.many": "Aufzeichnung beendet ({count} Schritte)",
+  "console.status.harAppended.one": "{count} HAR-Schritt angehängt",
+  "console.status.harAppended.many": "{count} HAR-Schritte angehängt",
+  "console.status.harImported.one": "{count} HAR-Schritt importiert",
+  "console.status.harImported.many": "{count} HAR-Schritte importiert",
+  "console.status.assertionsAdded.one": "{count} Testzusicherung ergänzt",
+  "console.status.assertionsAdded.many": "{count} Testzusicherungen ergänzt",
+  "console.status.mockRunning": "Attrappe läuft auf Port {port}",
+  "console.body.requestFailed": "Anfrage fehlgeschlagen",
+  "console.body.streamError": "Fehler im Datenstrom",
+  "console.body.channelOpened": "Kanal geöffnet",
+  "console.body.channelStreamError": "Fehler im Kanal-Datenstrom",
+  "console.body.mqttSubscribing": "Abonniert # auf {url} (bis zu 3 s) …",
+  "console.body.channelFrames": "({sent} gesendet, {received} empfangen)",
+  "console.body.benchmarkStarting.one": "{count} Aufruf startet (Parallelität {concurrency})",
+  "console.body.benchmarkStarting.many": "{count} Aufrufe starten (Parallelität {concurrency})",
+  "console.body.benchmarkOutcome": "{ok} OK / {failed} fehlgeschlagen",
+  // Als benannte Zahlen formuliert statt als Satz: die Zeile trägt zwei
+  // unabhängige Zählungen, und kein Schlüsselsatz, der beide beugt, bleibt
+  // lesbar. #688 ist die Stelle, an der die Pluralschicht dafür entsteht.
+  "console.body.benchmarkPlan": "Start · Phasen {phases} · Ziele {targets} · Modus {mode}",
   "env.unnamed": "ohne Namen"
 }

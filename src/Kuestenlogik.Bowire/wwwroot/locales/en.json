@@ -3698,5 +3698,45 @@
   "actionLog.favoritesCleared": "Cleared favorites ({count} entries)",
   "actionLog.recordingsCleared": "Cleared recordings ({count} entries)",
   "actionLog.collectionsCleared": "Cleared collections ({count} entries)",
+  "actionLog.recordingCreated": "Created recording \"{name}\"",
+  "actionLog.recordingDeleted": "Deleted recording \"{name}\"",
+  "actionLog.flowCreated": "Created flow \"{name}\"",
+  "actionLog.flowDeleted": "Deleted flow \"{name}\"",
+  "actionLog.mockCreated": "Created mock \"{name}\"",
+
+  // #739 — the console is not the action log and stores nothing, but it repaints
+  // on every draw, so a row can follow a language switch. The entry carries the
+  // key; the row resolves it. What stays a literal on the entry is protocol
+  // vocabulary and whatever a server said for itself.
+  "console.noBodyToExpand": "No body to expand",
+  "console.status.channelOpenFailed": "Channel open failed",
+  "console.status.sendFailed": "Send failed",
+  "console.status.benchmarkComplete": "Benchmark complete",
+  "console.status.recordingStarted": "Recording started",
+  "console.status.recordingResumed": "Recording resumed",
+  "console.status.recordingResumedEmpty": "Recording resumed (empty)",
+  "console.status.recordingDropped": "Recording dropped (0 steps)",
+  "console.status.recordingStopped.one": "Recording stopped ({count} step)",
+  "console.status.recordingStopped.many": "Recording stopped ({count} steps)",
+  "console.status.harAppended.one": "Appended {count} HAR step",
+  "console.status.harAppended.many": "Appended {count} HAR steps",
+  "console.status.harImported.one": "Imported {count} HAR step",
+  "console.status.harImported.many": "Imported {count} HAR steps",
+  "console.status.assertionsAdded.one": "Added {count} test assertion",
+  "console.status.assertionsAdded.many": "Added {count} test assertions",
+  "console.status.mockRunning": "Mock running on port {port}",
+  "console.body.requestFailed": "Request failed",
+  "console.body.streamError": "Stream error occurred",
+  "console.body.channelOpened": "Channel opened",
+  "console.body.channelStreamError": "Channel stream error",
+  "console.body.mqttSubscribing": "Subscribing to # at {url} (up to 3s)…",
+  "console.body.channelFrames": "({sent} sent, {received} received)",
+  "console.body.benchmarkStarting.one": "Starting {count} call (concurrency {concurrency})",
+  "console.body.benchmarkStarting.many": "Starting {count} calls (concurrency {concurrency})",
+  "console.body.benchmarkOutcome": "{ok} OK / {failed} failed",
+  // Written as labelled counts rather than as a sentence: the line carries two
+  // independent counts, and no key set that inflects both stays readable. #688
+  // is where the plural layer that would fix this properly lives.
+  "console.body.benchmarkPlan": "Starting · phases {phases} · targets {targets} · mode {mode}",
   "env.unnamed": "unnamed"
 }

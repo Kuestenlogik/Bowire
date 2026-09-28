@@ -243,7 +243,7 @@
             lastEmpty.createdAt = Date.now();
             recordingActiveId = lastEmpty.id;
             persistRecordings();
-            addConsoleEntry({ type: 'response', method: lastEmpty.name, status: 'Recording resumed (empty)' });  // i18n-exempt: the action log stores rendered text, see #689
+            addConsoleEntry({ type: 'response', method: lastEmpty.name, statusKey: 'console.status.recordingResumedEmpty' });
             render();
             return;
         }
@@ -270,7 +270,7 @@
         recordingsList.push(rec);
         recordingActiveId = rec.id;
         persistRecordings();
-        addConsoleEntry({ type: 'response', method: rec.name, status: 'Recording started' });  // i18n-exempt: the action log stores rendered text, see #689
+        addConsoleEntry({ type: 'response', method: rec.name, statusKey: 'console.status.recordingStarted' });
         // #194 — toast the create so the operator gets immediate
         // confirmation + a 4 s Undo affordance. logAction joins the
         // workbench-wide action log so Ctrl/Cmd+Z + the Activity drawer
@@ -291,7 +291,8 @@
                 logAction: {
                     kind: 'recording-create',
                     rail: 'recordings',
-                    title: 'Created recording "' + _recName + '"',  // i18n-exempt: the action log stores rendered text, see #689
+                    titleKey: 'actionLog.recordingCreated',
+                    titleParams: { name: _recName },
                     undoSpec: { recordingId: _recId },
                     // Mirror the recording-create resolver (prologue.js)
                     // so in-session Ctrl+Shift+Z restores from trash
@@ -333,7 +334,7 @@
             recordingManagerSelectedId = rec.id;
         }
         persistRecordings();
-        addConsoleEntry({ type: 'response', method: rec.name, status: 'Recording resumed' });  // i18n-exempt: the action log stores rendered text, see #689
+        addConsoleEntry({ type: 'response', method: rec.name, statusKey: 'console.status.recordingResumed' });
         render();
     }
 
@@ -393,9 +394,14 @@
         }
         persistRecordings();
         if (stepCount === 0) {
-            addConsoleEntry({ type: 'response', method: name, status: 'Recording dropped (0 steps)' });  // i18n-exempt: the action log stores rendered text, see #689
+            addConsoleEntry({ type: 'response', method: name, statusKey: 'console.status.recordingDropped' });
         } else {
-            addConsoleEntry({ type: 'response', method: name, status: 'Recording stopped (' + stepCount + ' step' + (stepCount !== 1 ? 's' : '') + ')' });  // i18n-exempt: the action log stores rendered text, see #689
+            addConsoleEntry({
+                type: 'response', method: name,
+                statusKey: stepCount === 1
+                    ? 'console.status.recordingStopped.one' : 'console.status.recordingStopped.many',
+                statusParams: { count: stepCount }
+            });
         }
         render();
     }
@@ -1257,7 +1263,12 @@
                 targetRec.steps = targetRec.steps.concat(steps);
                 persistRecordings();
                 if (typeof addConsoleEntry === 'function') {
-                    addConsoleEntry({ type: 'response', method: targetRec.name, status: 'Appended ' + steps.length + ' HAR steps' });  // i18n-exempt: the action log stores rendered text, see #689
+                    addConsoleEntry({
+                        type: 'response', method: targetRec.name,
+                        statusKey: steps.length === 1
+                            ? 'console.status.harAppended.one' : 'console.status.harAppended.many',
+                        statusParams: { count: steps.length }
+                    });
                 }
                 // #688 - one message, two shapes.
 toast(t(steps.length === 1 ? 'rec.appendedOne' : 'rec.appendedMany', {
@@ -1282,7 +1293,12 @@ description: t(steps.length === 1 ? 'rec.harImportedOne' : 'rec.harImportedMany'
             persistRecordings();
             if (typeof recordingManagerSelectedId !== 'undefined') recordingManagerSelectedId = rec.id;
             if (typeof addConsoleEntry === 'function') {
-                addConsoleEntry({ type: 'response', method: rec.name, status: 'Imported ' + steps.length + ' HAR steps' });  // i18n-exempt: the action log stores rendered text, see #689
+                addConsoleEntry({
+                    type: 'response', method: rec.name,
+                    statusKey: steps.length === 1
+                        ? 'console.status.harImported.one' : 'console.status.harImported.many',
+                    statusParams: { count: steps.length }
+                });
             }
             // #688 - one message, two shapes.
 toast(t(steps.length === 1 ? 'rec.importedOne' : 'rec.importedMany',
@@ -1583,7 +1599,8 @@ toast(t(steps.length === 1 ? 'rec.importedOne' : 'rec.importedMany',
             addConsoleEntry({
                 type: 'response',
                 method: rec.name,
-                status: 'Mock running on port ' + resp.body.port,  // i18n-exempt: the action log stores rendered text, see #689
+                statusKey: 'console.status.mockRunning',
+                statusParams: { port: resp.body.port },
                 body: url,
             });
             // #303 — advance the build-a-mock tour. Mirrors the same
@@ -1783,7 +1800,8 @@ toast(t(steps.length === 1 ? 'rec.importedOne' : 'rec.importedMany',
                             logAction: {
                                 kind: 'recording-delete',
                                 rail: 'recordings',
-                                title: 'Deleted recording "' + (snapshot.name || 'unnamed') + '"',  // i18n-exempt: the action log stores rendered text, see #689
+                                titleKey: 'actionLog.recordingDeleted',
+                                titleParams: { name: snapshot.name || t('env.unnamed') },
                                 undoSpec: { entry: snapshot, originalIdx: originalIdx },
                                 redo: function () { deleteRecording(snapshot.id); render(); }
                             }
@@ -1929,7 +1947,12 @@ toast(t(steps.length === 1 ? 'rec.importedOne' : 'rec.importedMany',
             title: t('rec.toTestsTitle'),
             onClick: function () {
                 var added = convertRecordingToTests(rec.id);
-                addConsoleEntry({ type: 'response', method: rec.name, status: 'Added ' + added + ' test assertions' });  // i18n-exempt: the action log stores rendered text, see #689
+                addConsoleEntry({
+                    type: 'response', method: rec.name,
+                    statusKey: added === 1
+                        ? 'console.status.assertionsAdded.one' : 'console.status.assertionsAdded.many',
+                    statusParams: { count: added }
+                });
                 render();
             }
         },

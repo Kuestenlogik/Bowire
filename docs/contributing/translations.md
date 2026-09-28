@@ -139,6 +139,36 @@ title: t(count === 1 ? 'main.presetsOne' : 'main.presetsMany', { count: count })
 
 Adding a key to `en.json` and not to the others is fine &mdash; the parity test only fails on keys a translation *has* that English does not, and on empty values in keys it does have. Translators catch up afterwards.
 
+### Text that is drawn later carries a key, not a sentence
+
+Two surfaces paint rows from entries that were made earlier: the Activity drawer and the Console.
+Neither one calls `t()` where the entry is created &mdash; the entry carries the key and the row
+resolves it when it is drawn.
+
+```js
+// no — whatever language is active now is the language this row is stuck in
+addConsoleEntry({ type: 'response', method: rec.name, status: t('console.status.recordingStarted') });
+
+// yes — the key and its data; the row resolves both when it paints
+addConsoleEntry({
+    type: 'response', method: rec.name,
+    statusKey: 'console.status.recordingStarted',
+});
+```
+
+The reasons differ, and both matter. The action log **stores** its entries, so a rendered sentence
+there freezes a language and travels into somebody else's workspace through a `.bww` export (#689).
+The console stores nothing &mdash; but it repaints on every draw, so a row written before a language
+switch can follow it, which a sentence never could (#739).
+
+The fields are `titleKey` / `titleParams` on an action-log entry, and `statusKey` / `statusParams`,
+`bodyKey` / `bodyParams` on a console entry. An entry with no key renders what it carries, which is
+right for a server's own message and for protocol vocabulary.
+
+One thing the console adds: **the row's colour is decided on the status token**, so a status that is
+vocabulary (`OK`, `Completed`, `Streaming`) stays a literal `status:` and keeps its exemption. Only
+the sentences move to a key.
+
 ## What stays English on purpose
 
 Not everything in the interface is Bowire's to translate. A word that names something *outside* Bowire's own text keeps its name:
@@ -241,11 +271,12 @@ Keys for the in-box protocols follow `plugin.<protocol-id>.<setting-key>.label` 
 
 `npm run i18n:report` prints zero. Every fragment that lands in the bundle &mdash; the core project and all eleven sibling packages &mdash; reads its text from the catalogue, and the ratchet in `untranslated-baseline.json` is an empty object, so the next literal anyone adds fails the build.
 
-What remains English is deliberate, and each instance says so on its own line with `// i18n-exempt: <reason>`. There are around 270, and they fall into five groups:
+What remains English is deliberate, and each instance says so on its own line with `// i18n-exempt: <reason>`. There are 252, and they fall into six groups:
 
 | Group | Why |
 |---|---|
-| Action-log and console entries | They store rendered text rather than a key, so a language switch would leave a mixed-language history. Fixing that is #689. |
+| Status tokens on console entries | `OK`, `Completed`, `Connected`, `Streaming`, `NetworkError`. The row's colour is decided on them, so they are identifiers as much as labels &mdash; and they are protocol vocabulary, not sentences. The sentences beside them do carry keys (#739). |
+| Stand-ins written into stored data | The call history's `(channel: 3 sent, 2 received)`, a recorded step's body, the schema-change log's `description updated`. They travel out through a `.bww` export, a HAR file or the server, so a translated one would be stored data in whichever language the session happened to run in. |
 | Run and replay status labels | They are the aggregation key for a run summary *and* are written verbatim into the CSV, k6-summary, OTLP and HTML-report exports. Translating one would change the artefact and break the grouping. |
 | Defaults written into data | `Workspace 2`, `New Environment`. These travel out through the `.bww` export into somebody else's Bowire, so a translated default would freeze one language into their workspace. |
 | Protocol, product and tool names | QoS, Retain, Bearer Token, OpenAPI, curl, grpcurl, MapLibre, Consul, the whole licence table. Covered by the rule above. |

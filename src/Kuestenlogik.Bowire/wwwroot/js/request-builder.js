@@ -2572,9 +2572,9 @@
                 historyOutcome.status = (result.status != null ? result.status : 'Error');  // i18n-exempt: status label, carried on the console entry and the run summary
                 historyOutcome.ok = false;
                 if (typeof addConsoleEntry === 'function') {
-                    addConsoleEntry({ type: 'error', method: fullName, status: 'Error',  // i18n-exempt: the action log stores rendered text, see #689
+                    addConsoleEntry({ type: 'error', method: fullName, status: 'Error',  // i18n-exempt: status token, and what the row's colour is decided on
                         body: typeof richErrorDetail === 'function'
-                            ? richErrorDetail(result, 'Request failed') : (result.detail || result.title) });
+                            ? richErrorDetail(result, t('console.body.requestFailed')) : (result.detail || result.title) });
                 }
             } else {
                 S.responseData = result.response;
@@ -2626,7 +2626,7 @@
             historyOutcome.ok = false;
             historyOutcome.durationMs = Math.round(performance.now() - historyStartMs);
             if (typeof addConsoleEntry === 'function') {
-                addConsoleEntry({ type: 'error', method: fullName, status: 'NetworkError', body: e.message });  // i18n-exempt: the action log stores rendered text, see #689
+                addConsoleEntry({ type: 'error', method: fullName, status: 'NetworkError', body: e.message });  // i18n-exempt: status token, and what the row's colour is decided on
             }
         }
 

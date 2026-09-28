@@ -97,8 +97,7 @@
         // Deliberately not translated. schemaChangeDetail() also feeds the
         // schema-change log, which is posted to the server and kept there,
         // so a translated phrase would be stored as data in whichever
-        // language the watcher happened to run in. Same shape as the
-        // action log - see #689.
+        // language the watcher happened to run in.
         var detail = schemaChangeDetail(ra, rb);
         var bits = [];
         if (detail) bits.push(detail);

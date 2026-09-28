@@ -758,10 +758,13 @@
         addConsoleEntry({
             type: 'request',
             method: displayName,
-            status: 'Benchmark',  // i18n-exempt: the action log stores rendered text, see #689
-            body: 'Starting ' + phases.length + ' phase' + (phases.length === 1 ? '' : 's')  // i18n-exempt: the action log stores rendered text, see #689
-                + ' · ' + spec.targets.length + ' target' + (spec.targets.length === 1 ? '' : 's')
-                + ' · mode ' + (spec.mode || 'sequential')
+            status: 'Benchmark',  // i18n-exempt: status token, and what the row's colour is decided on
+            bodyKey: 'console.body.benchmarkPlan',
+            bodyParams: {
+                phases: phases.length,
+                targets: spec.targets.length,
+                mode: spec.mode || 'sequential'
+            }
         });
         if (typeof onProgress === 'function') onProgress();
 
@@ -777,10 +780,11 @@
         addConsoleEntry({
             type: 'response',
             method: displayName,
-            status: benchmark.cancelled ? 'Cancelled' : 'Benchmark complete',  // i18n-exempt: the action log stores rendered text, see #689
+            status: benchmark.cancelled ? 'Cancelled' : undefined,  // i18n-exempt: status token, and what the row's colour is decided on
+            statusKey: benchmark.cancelled ? undefined : 'console.status.benchmarkComplete',
             durationMs: Math.round(totalMs),
-            // i18n-exempt: the action log stores rendered text, see #689
-            body: benchmark.success + ' OK / ' + benchmark.failure + ' failed'
+            bodyKey: 'console.body.benchmarkOutcome',
+            bodyParams: { ok: benchmark.success, failed: benchmark.failure }
         });
 
         var stats = computeBenchmarkStats();

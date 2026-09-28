@@ -6890,10 +6890,13 @@
             if (consoleTypeFilter.size > 0 && !consoleTypeFilter.has(e.type)) return false;
             if (cutoff && e.time < cutoff) return false;
             if (needle) {
+                // #739 — searched against the resolved text, not the key: the
+                // operator types what the row shows them.
+                var hayBody = e.bodyKey ? consoleBody(e) : e.body;
                 var hay = ((e.method || '') + ' '
-                    + (e.status || '') + ' '
+                    + consoleStatus(e) + ' '
                     + (e.type || '') + ' '
-                    + (typeof e.body === 'string' ? e.body : JSON.stringify(e.body || ''))
+                    + (typeof hayBody === 'string' ? hayBody : JSON.stringify(hayBody || ''))
                 ).toLowerCase();
                 if (hay.indexOf(needle) === -1) return false;
             }
@@ -6901,25 +6904,59 @@
         });
     }
 
+    /**
+     * The console's own text, resolved at paint time (#739).
+     *
+     * The console is not the action log and does not need its reasoning: nothing
+     * here reaches `localStorage` or a `.bww` export, so no language is frozen into
+     * anybody's data. What it does need is the other half — the drawer repaints on
+     * every draw, so a row written before a language switch can follow it, which a
+     * sentence translated at the call site never could.
+     *
+     * It also cannot be translated at the call site: `consoleEntryClass` reads the
+     * status to colour the row, so a German `status` would paint every response
+     * amber. The key is the stable thing; the sentence is what a reader sees.
+     *
+     * An entry with no key — protocol vocabulary like `Streaming`, or a server's own
+     * message — renders what it carries, which is what it is for.
+     */
+    function consoleStatus(entry) {
+        if (!entry) return '';
+        if (entry.statusKey) return t(entry.statusKey, entry.statusParams || undefined);
+        return entry.status || '';
+    }
+
+    /** @see consoleStatus — the same rule for the entry's body. */
+    function consoleBody(entry) {
+        if (!entry) return '';
+        if (entry.bodyKey) return t(entry.bodyKey, entry.bodyParams || undefined);
+        return entry.body || '';
+    }
+
     // Serialise a list of console entries as a downloadable plain-
     // text log. Each entry becomes "<time> <TYPE> <method> <status>
     // <duration> <body>" on one line; expanded bodies are pretty-
     // printed indented underneath.
+    //
+    // #739 — the download is a snapshot of what the operator is looking at, so it
+    // resolves the same way the rows do: the file reads in the language on screen.
     function serializeConsoleEntries(entries) {
         return entries.map(function (e) {
             var date = new Date(e.time).toISOString();
+            var status = consoleStatus(e);
+            var rawBody = e.bodyKey ? consoleBody(e) : e.body;
             var line = '[' + date + '] '
                 + String(e.type || '').toUpperCase()
                 + (e.method ? ' ' + e.method : '')
-                + (e.status ? ' ' + e.status : '')
+                + (status ? ' ' + status : '')
                 + (typeof e.durationMs === 'number' ? ' ' + e.durationMs + 'ms' : '');
             var body = '';
-            if (e.body) {
+            if (rawBody) {
                 try {
-                    var parsed = typeof e.body === 'string' ? JSON.parse(e.body) : e.body;
+                    var parsed = typeof rawBody === 'string' ? JSON.parse(rawBody) : rawBody;
                     body = JSON.stringify(parsed, null, 2);
                 } catch {
-                    body = String(e.body);
+                    body = String(rawBody);
                 }
             }
             return body ? line + '\n' + body : line;
@@ -7072,7 +7109,11 @@
         resetBenchmark({ n: n, concurrency: Math.max(1, Math.min(concurrency, 20)) });
         benchmark.running = true;
         benchmark.startTime = performance.now();
-        addConsoleEntry({ type: 'request', method: fullName, status: 'Benchmark', body: 'Starting ' + n + ' calls (concurrency ' + concurrency + ')' });  // i18n-exempt: the action log stores rendered text, see #689
+        addConsoleEntry({
+            type: 'request', method: fullName, status: 'Benchmark',  // i18n-exempt: status token, and what the row's colour is decided on
+            bodyKey: n === 1 ? 'console.body.benchmarkStarting.one' : 'console.body.benchmarkStarting.many',
+            bodyParams: { count: n, concurrency: concurrency }
+        });
         render();
 
         var nextIndex = 0;
@@ -7151,10 +7192,11 @@
         addConsoleEntry({
             type: 'response',
             method: fullName,
-            status: benchmark.cancelled ? 'Cancelled' : 'Benchmark complete',  // i18n-exempt: the action log stores rendered text, see #689
+            status: benchmark.cancelled ? 'Cancelled' : undefined,  // i18n-exempt: status token, and what the row's colour is decided on
+            statusKey: benchmark.cancelled ? undefined : 'console.status.benchmarkComplete',
             durationMs: Math.round(totalMs),
-            // i18n-exempt: the action log stores rendered text, see #689
-            body: benchmark.success + ' OK / ' + benchmark.failure + ' failed'
+            bodyKey: 'console.body.benchmarkOutcome',
+            bodyParams: { ok: benchmark.success, failed: benchmark.failure }
         });
         render();
     }

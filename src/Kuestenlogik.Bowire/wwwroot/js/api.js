@@ -385,10 +385,10 @@
                     } else if (a[key].deprecated !== b[key].deprecated) {
                         d.changedMethods.push({
                             service: name, key: key, type: 'deprecation',
-                            detail: a[key].deprecated ? 'marked deprecated' : 'deprecation removed'  // i18n-exempt: the schema-change log stores rendered text, see #689
+                            detail: a[key].deprecated ? 'marked deprecated' : 'deprecation removed'  // i18n-exempt: stored in the schema-change log, which is kept on the server
                         });
                     } else if (a[key].note !== b[key].note) {
-                        d.annotatedMethods.push({ service: name, key: key, detail: 'description updated' });  // i18n-exempt: the schema-change log stores rendered text, see #689
+                        d.annotatedMethods.push({ service: name, key: key, detail: 'description updated' });  // i18n-exempt: stored in the schema-change log, which is kept on the server
                     }
                 }
             }
@@ -543,7 +543,7 @@
                         var summary = schemaDeltaSummary(delta);
                         toast(t('schemaWatch.changed', { summary: summary }), 'info');
                         addConsoleEntry({
-                            type: 'response', method: 'Schema Watch', status: 'Changed',  // i18n-exempt: the action log stores rendered text, see #689
+                            type: 'response', method: 'Schema Watch', status: 'Changed',  // i18n-exempt: status token, and what the row's colour is decided on
                             body: summary + '\n' + schemaDeltaDetail(delta)
                         });
                     }
@@ -621,7 +621,10 @@
         // knows why it takes longer than HTTP-based protocols.
         var isMqtt = url.indexOf('mqtt') !== -1;
         if (isMqtt) {
-            addConsoleEntry({ type: 'request', method: 'MQTT Discovery', status: 'Scanning', body: 'Subscribing to # at ' + url + ' (up to 3s)...' });  // i18n-exempt: the action log stores rendered text, see #689
+            addConsoleEntry({
+                type: 'request', method: 'MQTT Discovery', status: 'Scanning',  // i18n-exempt: the protocol step and its state, not a sentence
+                bodyKey: 'console.body.mqttSubscribing', bodyParams: { url: url }
+            });
         }
         // Per-URL discovery timeout — stops one unreachable server
         // (TCP-refused, DNS-fail, hung HTTPS handshake) from wedging
@@ -828,7 +831,7 @@
             if (result.title) {
                 S.responseError = result;
                 S.statusInfo = { status: 'Error', durationMs: 0, responseSize: 0 };  // i18n-exempt: status label, carried on the console entry and the run summary
-                addConsoleEntry({ type: 'error', method: fullName, status: 'Error', body: richErrorDetail(result, 'Request failed') });  // i18n-exempt: the action log stores rendered text, see #689
+                addConsoleEntry({ type: 'error', method: fullName, status: 'Error', body: richErrorDetail(result, t('console.body.requestFailed')) });  // i18n-exempt: status token, and what the row's colour is decided on
             } else {
                 S.responseData = result.response;
                 captureResponse(result.response); // for ${response.X} chaining
@@ -947,7 +950,7 @@
         } catch (e) {
             S.responseError = e.message;
             S.statusInfo = { status: 'NetworkError', durationMs: 0 };  // i18n-exempt: status label, carried on the console entry and the run summary
-            addConsoleEntry({ type: 'error', method: fullName, status: 'NetworkError', body: e.message });  // i18n-exempt: the action log stores rendered text, see #689
+            addConsoleEntry({ type: 'error', method: fullName, status: 'NetworkError', body: e.message });  // i18n-exempt: status token, and what the row's colour is decided on
         }
 
         // v2.2 T3 — record this invocation in the per-workspace
@@ -1021,7 +1024,7 @@
         const url = `${config.prefix}/api/invoke/stream?service=${encodeURIComponent(service)}&method=${encodeURIComponent(method)}&messages=${encodeURIComponent(messagesJson)}${protocolParam}${metadataParam}${serverUrlParamForService(selectedService, true, selectedMethod)}${workspaceParam(true)}`;
 
         var fullName = service + '/' + method;
-        addConsoleEntry({ type: 'request', method: fullName, status: 'Streaming', body: messages[0] || '{}' });  // i18n-exempt: the action log stores rendered text, see #689
+        addConsoleEntry({ type: 'request', method: fullName, status: 'Streaming', body: messages[0] || '{}' });  // i18n-exempt: status token, and what the row's colour is decided on
 
         // Held in a local as well: the handlers below belong to THIS
         // source, and S.sseSource may already be another one, or null,
@@ -1147,7 +1150,7 @@
             }
             addConsoleEntry({
                 type: 'response', method: fullName, durationMs: elapsed,
-                status: failed ? statusText : 'Completed',  // i18n-exempt: the action log stores rendered text, see #689
+                status: failed ? statusText : 'Completed',  // i18n-exempt: status token, and what the row's colour is decided on
                 body: failed ? streamError.message : undefined
             });
 
@@ -1257,7 +1260,7 @@
                     outcome: 'error', errorMessage: t('main.streamErrorShort')
                 });
             }
-            addConsoleEntry({ type: 'error', method: fullName, status: 'Error', body: 'Stream error occurred', durationMs: elapsed });  // i18n-exempt: the action log stores rendered text, see #689
+            addConsoleEntry({ type: 'error', method: fullName, status: 'Error', bodyKey: 'console.body.streamError', durationMs: elapsed });  // i18n-exempt: status token, and what the row's colour is decided on
             render();
         });
     }

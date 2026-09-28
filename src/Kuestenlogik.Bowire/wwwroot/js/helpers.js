@@ -2056,11 +2056,11 @@
      * falls through to a single-line block carrying the string.
      */
     function richErrorDetail(result, fallback) {
-        // i18n-exempt (whole function): what this returns goes to
-        // addConsoleEntry, which stores rendered text rather than a key —
-        // the same #689 group its call sites are already marked with. The
-        // field names it labels (status, detail, type, instance) are
-        // problem+json's, not Bowire's.
+        // i18n-exempt (whole function): what it composes is the server's own
+        // problem+json — its title and detail, under that document's field names
+        // (status, detail, type, instance). None of it is Bowire's text. The one
+        // sentence that is Bowire's, the fallback title, arrives already resolved
+        // from the caller (#739).
         var lines = [];
         if (typeof result === 'string' && result) {
             return result;

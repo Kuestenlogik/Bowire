@@ -650,14 +650,13 @@
                         if (typeof render === 'function') render();
                     },
                     logAction: {
-                        // Not translated: recordAction persists the rendered
-                        // title, so a translated one would freeze the language
-                        // of the session that made the entry. #689 moves the
-                        // action log to keys resolved at render time.
+                        // The key and its data, never a rendered sentence: recordAction
+                        // persists what it is given, and actionTitle() resolves the key
+                        // when the row is painted.
                         kind: 'workspace-create',
                         rail: 'workspaces',
                         titleKey: 'actionLog.workspaceCreated',
-                    titleParams: { name: _wsName },
+                        titleParams: { name: _wsName },
                         undoSpec: { workspaceId: _wsId },
                         redo: function () {
                             if (typeof workspacesTrash === 'undefined' || !Array.isArray(workspacesTrash)) return;

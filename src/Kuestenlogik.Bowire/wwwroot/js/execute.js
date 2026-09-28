@@ -340,13 +340,20 @@
         return pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds()) + '.' + pad(d.getMilliseconds(), 3);
     }
 
-    function consoleEntryClass(type, status) {
+    // #739 — the row's colour is decided on the entry's stable token, never on
+    // what a reader sees. A status that carries a key is a sentence about an
+    // outcome ("Recording stopped", "Channel open failed"), which is the amber
+    // case; the bare tokens below are protocol vocabulary and stay as they are.
+    // Deciding on the rendered text instead would paint every response amber the
+    // moment the interface is not in English.
+    function consoleEntryClass(type, entry) {
         if (type === 'error') return 'error';
         if (type === 'request' || type === 'send') return 'request';
         if (type === 'stream') return 'stream';
         if (type === 'channel') return 'channel';
-        if (status === 'OK' || status === 'Completed' || status === 'Connected') return 'response ok';  // i18n-exempt: a CSS class name
-        if (status && status !== 'Streaming') return 'response warn';  // i18n-exempt: a CSS class name
+        var token = entry && (entry.statusKey || entry.status);
+        if (token === 'OK' || token === 'Completed' || token === 'Connected') return 'response ok';  // i18n-exempt: a CSS class name
+        if (token && token !== 'Streaming') return 'response warn';  // i18n-exempt: a CSS class name
         return 'response';
     }
 
@@ -414,7 +421,7 @@
         // full payload without losing selection.
         var row = el('div', {
             className: 'bowire-console-row '
-                + consoleEntryClass(entry.type, entry.status)
+                + consoleEntryClass(entry.type, entry)
                 + (isSel ? ' selected' : ''),
             'data-entry-id': String(entry.id),
             onClick: function (e) {
@@ -446,18 +453,23 @@
                 if (typeof render === 'function') render();
             }
         });
+        // #739 — resolved once, here, and used for every slot below. An entry
+        // carrying a key renders in the language on screen; one carrying a
+        // server's own message renders that message.
+        var statusText = consoleStatus(entry);
+        var bodyText = entry.bodyKey ? consoleBody(entry) : entry.body;
         var summary = el('div', { className: 'bowire-console-summary' });
         summary.appendChild(el('span', { className: 'bowire-console-time', textContent: formatConsoleTime(entry.time) }));
         summary.appendChild(el('span', { className: 'bowire-console-type', textContent: consoleTypeLabel(entry.type) }));
         summary.appendChild(el('span', { className: 'bowire-console-method', textContent: entry.method || '' }));
-        if (entry.status) {
-            summary.appendChild(el('span', { className: 'bowire-console-status', textContent: entry.status }));
+        if (statusText) {
+            summary.appendChild(el('span', { className: 'bowire-console-status', textContent: statusText }));
         }
         if (typeof entry.durationMs === 'number') {
             summary.appendChild(el('span', { className: 'bowire-console-duration', textContent: entry.durationMs + ' ms' }));
         }
-        if (entry.body) {
-            var preview = (typeof entry.body === 'string' ? entry.body : JSON.stringify(entry.body))
+        if (bodyText) {
+            var preview = (typeof bodyText === 'string' ? bodyText : JSON.stringify(bodyText))
                 .replace(/\s+/g, ' ');
             if (preview.length > 80) preview = preview.substring(0, 80) + '\u2026';
             summary.appendChild(el('span', { className: 'bowire-console-preview', textContent: preview }));
@@ -472,18 +484,18 @@
         // the browser's native tooltip. Click toggles the inline
         // expanded body the same way double-click on the row does.
         var fullBody = '';
-        if (entry.body) {
+        if (bodyText) {
             try {
-                var parsed = typeof entry.body === 'string' ? JSON.parse(entry.body) : entry.body;
+                var parsed = typeof bodyText === 'string' ? JSON.parse(bodyText) : bodyText;
                 fullBody = JSON.stringify(parsed, null, 2);
             } catch {
-                fullBody = String(entry.body);
+                fullBody = String(bodyText);
             }
         }
         summary.appendChild(el('button', {
             type: 'button',
             className: 'bowire-console-row-expand',
-            title: fullBody || 'No body to expand',
+            title: fullBody || t('console.noBodyToExpand'),
             'aria-label': entry.expanded ? t('console.collapseEntry') : t('console.expandEntry'),
             'aria-expanded': entry.expanded ? 'true' : 'false',
             textContent: entry.expanded ? '×' : '…',
@@ -507,13 +519,13 @@
             }
         }));
         row.appendChild(summary);
-        if (entry.expanded && entry.body) {
+        if (entry.expanded && bodyText) {
             var pretty;
             try {
-                var parsed = typeof entry.body === 'string' ? JSON.parse(entry.body) : entry.body;
+                var parsed = typeof bodyText === 'string' ? JSON.parse(bodyText) : bodyText;
                 pretty = JSON.stringify(parsed, null, 2);
             } catch {
-                pretty = String(entry.body);
+                pretty = String(bodyText);
             }
             row.appendChild(el('pre', { className: 'bowire-console-body-detail', textContent: pretty }));
         }
