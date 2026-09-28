@@ -119,7 +119,7 @@ internal static class LintCommand
     /// (silent when none is found). Returns the config (or null) and whether it
     /// failed to load.
     /// </summary>
-    private static async Task<(BowireLintConfig? Config, bool Failed)> LoadConfigAsync(string? rulesPath, TextWriter errW)
+    internal static async Task<(BowireLintConfig? Config, bool Failed)> LoadConfigAsync(string? rulesPath, TextWriter errW)
     {
         string? path;
         if (!string.IsNullOrWhiteSpace(rulesPath))
@@ -159,7 +159,7 @@ internal static class LintCommand
         return 0;
     }
 
-    private static BowireLintSeverity? ParseThreshold(string value)
+    internal static BowireLintSeverity? ParseThreshold(string value)
     {
         if (Eq(value, "info")) return BowireLintSeverity.Info;
         if (Eq(value, "low")) return BowireLintSeverity.Low;

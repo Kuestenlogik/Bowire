@@ -294,6 +294,19 @@ internal sealed class TestSarifMessage { [JsonPropertyName("text")] public strin
 internal sealed class TestSarifLocation
 {
     [JsonPropertyName("physicalLocation")] public TestSarifPhysicalLocation PhysicalLocation { get; init; } = new();
+    /// <summary>
+    /// Where in the API the result is — service / method / field — for the
+    /// lint suite (#583), whose findings have no line in any file. Null for
+    /// test results, so their SARIF stays exactly what it was.
+    /// </summary>
+    [JsonPropertyName("logicalLocations")] public List<TestSarifLogicalLocation>? LogicalLocations { get; init; }
+}
+
+internal sealed class TestSarifLogicalLocation
+{
+    [JsonPropertyName("name")] public string Name { get; init; } = "";
+    [JsonPropertyName("fullyQualifiedName")] public string FullyQualifiedName { get; init; } = "";
+    [JsonPropertyName("kind")] public string Kind { get; init; } = "member";
 }
 
 internal sealed class TestSarifPhysicalLocation

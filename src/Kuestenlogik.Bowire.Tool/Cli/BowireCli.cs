@@ -1424,7 +1424,7 @@ internal static class BowireCli
 
     // -------------------- test --------------------
 
-    private static Command BuildTestCommand(IConfiguration cfg)
+    internal static Command BuildTestCommand(IConfiguration cfg)
     {
         // v2.2 — accepts EITHER a recording (legacy v2.1 test-collection
         // shape) OR a Flow JSON document (T2 deliverable). The runner
@@ -1463,13 +1463,20 @@ internal static class BowireCli
         };
         var failOn = new Option<string>("--fail-on")
         {
-            Description = "Exit-code threshold: 'any' (default — non-zero on any failed check) or 'never' (run + report but always exit 0; a step error still exits 2).",
+            Description = "Exit-code threshold: 'any' (default — non-zero on any failed check) or 'never' (run + report but always exit 0; a step error still exits 2). With --suite lint also a severity — 'info', 'low', 'medium' or 'high' — as in `bowire lint --fail-on`.",
             DefaultValueFactory = _ => cfg["Bowire:Test:FailOn"] ?? "any",
         };
-        failOn.AcceptOnlyFromAmong("any", "never");
+        // #583 — the severities only mean something to --suite lint; the
+        // action refuses them for a test run rather than guessing.
+        failOn.AcceptOnlyFromAmong("any", "never", "info", "low", "medium", "high");
         var workspaceDir = new Option<string?>("--workspace")
         {
             Description = "Run every Flow JSON under a git-native workspace directory (its flows/ folder, or the directory itself). Aggregates pass/fail across all flows; the positional file is ignored.",
+        };
+        // #583 — the lint rules through the test runner's report sinks.
+        var suite = new Option<string?>("--suite")
+        {
+            Description = "What to run: 'tests' (default) or 'lint'. With 'lint' the positional argument is a snapshot file or a live URL, and the design-time rules run over it; --fail-on also takes a severity (info, low, medium, high), and --junit / --sarif / --annotations report the findings.",
         };
         var workspaceId = new Option<string?>("--workspace-id")
         {
@@ -1518,7 +1525,7 @@ internal static class BowireCli
         var cmd = new Command("test", "Run an assertion-based test suite. Accepts a recording JSON (v2.1 test-collection format) or a Flow JSON document (v2.2 — the T2 CI runner). Format auto-detected.");
         cmd.Add(collectionPath); cmd.Add(url); cmd.Add(report); cmd.Add(junit);
         cmd.Add(sarif); cmd.Add(annotations); cmd.Add(updateSnapshots);
-        cmd.Add(failOn); cmd.Add(workspaceDir); cmd.Add(workspaceId);
+        cmd.Add(failOn); cmd.Add(workspaceDir); cmd.Add(workspaceId); cmd.Add(suite);
         cmd.Add(baseUrl); cmd.Add(env); cmd.Add(envFile); cmd.Add(keyring); cmd.Add(aiSeed);
         cmd.Add(secret); cmd.Add(secretFile);
         cmd.SetAction(async (pr, _) =>
@@ -1549,6 +1556,41 @@ internal static class BowireCli
             // suffix) so a CI reporter can glob them.
             var wsDir = pr.GetValue(workspaceDir);
             var wsId = pr.GetValue(workspaceId);
+
+            // #583 — `--suite lint` is a different kind of run, not a variant
+            // of a test run, so it is decided before anything test-shaped.
+            var suiteName = pr.GetValue(suite);
+            if (!string.IsNullOrEmpty(suiteName)
+                && !string.Equals(suiteName, "tests", StringComparison.OrdinalIgnoreCase))
+            {
+                if (!string.Equals(suiteName, "lint", StringComparison.OrdinalIgnoreCase))
+                {
+                    await stderr.WriteLineAsync(
+                        $"bowire test: --suite '{suiteName}' is not one of tests, lint.").ConfigureAwait(false);
+                    return 2;
+                }
+                if (!string.IsNullOrEmpty(wsDir) || !string.IsNullOrEmpty(wsId))
+                {
+                    // A workspace is a set of flows; lint reads an API surface.
+                    // Accepting both would lint one and silently drop the other.
+                    await stderr.WriteLineAsync(
+                        "bowire test: --suite lint reads a snapshot or URL, not a workspace; drop --workspace / --workspace-id.")
+                        .ConfigureAwait(false);
+                    return 2;
+                }
+                return await LintSuiteRunner.RunAsync(options, stdout, stderr).ConfigureAwait(false);
+            }
+            if (!string.Equals(options.FailOn, "any", StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(options.FailOn, "never", StringComparison.OrdinalIgnoreCase))
+            {
+                // A test run has no severities. Reading "high" as "any" would
+                // gate on something the operator did not write.
+                await stderr.WriteLineAsync(
+                    $"bowire test: --fail-on '{options.FailOn}' is a lint severity; for a test run use 'any' or 'never', or add --suite lint.")
+                    .ConfigureAwait(false);
+                return 2;
+            }
+
             if (!string.IsNullOrEmpty(wsDir) && !string.IsNullOrEmpty(wsId))
             {
                 // Both name a workspace and they can name different ones.
