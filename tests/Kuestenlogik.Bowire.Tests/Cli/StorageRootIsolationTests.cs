@@ -37,11 +37,17 @@ public sealed class StorageRootIsolationTests : IDisposable
         File.WriteAllText(
             Path.Combine(_root, "workspaces.json"),
             """{"workspaces":[{"id":"harbor","name":"Harbour ops"}]}""");
+        // The step names its protocol. Without one the runner picks a default,
+        // and until DefaultProtocol() that default was "whichever assembly
+        // loaded first" — so this fixture's exit code was decided by the
+        // platform rather than by the store it read from, which is what this
+        // class is about. Green on Windows, red on the Linux runner.
         File.WriteAllText(
             Path.Combine(_root, "workspaces", "harbor", "flows.json"),
             """
             { "flows": [ { "id": "f1", "name": "Alpha", "nodes": [
-              { "id": "n1", "type": "request", "service": "S", "method": "M", "body": "{}" } ] } ] }
+              { "id": "n1", "type": "request", "protocol": "rest",
+                "service": "S", "method": "M", "body": "{}" } ] } ] }
             """);
     }
 
@@ -72,7 +78,11 @@ public sealed class StorageRootIsolationTests : IDisposable
         // used to be moved by the variable.
         var (exit, stdout, stderr) = await RunAsync("test", "--workspace-id", "harbor");
 
-        Assert.True(exit == 0, $"exit {exit}: {stderr}");
+        // stdout too, not just stderr: a run that ends 2 because a step
+        // errored writes nothing to stderr — the step is printed to stdout and
+        // the exit code is derived from it. Reporting only stderr left this
+        // failing in CI with an empty message for five days.
+        Assert.True(exit == 0, $"exit {exit}; stderr: {stderr}; stdout: {stdout}");
         Assert.Contains("Alpha", stdout, StringComparison.Ordinal);
     }
 
