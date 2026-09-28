@@ -12,28 +12,28 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### M1 — Localisation, layout and the test pillar *(due 2026-11-03)*
 
-**34/52 done** · 18 backlog
+**48/52 done** · 4 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
-| [22](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/22) | Protocol.Dis | [Typed PDU envelope decoding beyond EntityState](#issue-kuestenlogik-bowire-protocol-dis-22) | ⬜ Backlog | `area:plugin-sdk` |
-| [23](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/23) | Protocol.Dis | [Entity-filtered stream drops non-EntityState PDUs](#issue-kuestenlogik-bowire-protocol-dis-23) | ⬜ Backlog | `area:plugin-sdk` |
-| [24](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/24) | Protocol.Dis | [Typed / re-decoded mock replay in DisMockEmitter](#issue-kuestenlogik-bowire-protocol-dis-24) | ⬜ Backlog | `area:plugin-sdk` |
-| [25](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/25) | Protocol.Dis | [Minefield Data (ID 39): type the DataFilter-gated per-mine arrays](#issue-kuestenlogik-bowire-protocol-dis-25) | ⬜ Backlog | `area:plugin-sdk` |
-| [26](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/26) | Protocol.Dis | [Live Entity family: flag-gated compressed payload decoding](#issue-kuestenlogik-bowire-protocol-dis-26) | ⬜ Backlog | `area:plugin-sdk` |
-| [27](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/27) | Protocol.Akka | [ClusterClient transport for the standalone bowire CLI](#issue-kuestenlogik-bowire-protocol-akka-27) | ⬜ Backlog | `area:plugin-sdk` |
-| [28](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/28) | Protocol.Akka | [Mailbox-snapshot inspection (size + head messages)](#issue-kuestenlogik-bowire-protocol-akka-28) | ⬜ Backlog | `area:plugin-sdk` |
-| [29](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/29) | Protocol.Akka | [Per-actor throughput stats](#issue-kuestenlogik-bowire-protocol-akka-29) | ⬜ Backlog | `area:plugin-sdk` |
-| [30](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/30) | Protocol.Akka | [Typed payload via Akka serializer roundtrip](#issue-kuestenlogik-bowire-protocol-akka-30) | ⬜ Backlog | `area:plugin-sdk` |
-| [31](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/31) | Protocol.Akka | [Opt-in filter API from the Bowire UI (per actor path / message type)](#issue-kuestenlogik-bowire-protocol-akka-31) | ⬜ Backlog | `area:plugin-sdk` |
 | [32](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/32) | Protocol.Surgewave | [Embedded mode: resolve SDK from host DI + drop direct Confluent path](#issue-kuestenlogik-bowire-protocol-surgewave-32) | ⬜ Backlog | `area:plugin-sdk` |
-| [32](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/32) | Protocol.Akka | [Tell-from-Bowire — interactive duplex via OpenChannelAsync](#issue-kuestenlogik-bowire-protocol-akka-32) | ⬜ Backlog | `area:plugin-sdk` |
-| [33](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/33) | Protocol.Akka | [DeadLetter capture under the global default mailbox](#issue-kuestenlogik-bowire-protocol-akka-33) | ⬜ Backlog | `area:plugin-sdk` |
-| [34](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/34) | Protocol.Akka | [Docs drift: TappedMessage envelope field names & payload shape](#issue-kuestenlogik-bowire-protocol-akka-34) | ⬜ Backlog | `area:plugin-sdk` |
 | [34](https://github.com/Kuestenlogik/Bowire.Bootcamp/issues/34) | Bootcamp | [Ship each exercise as two downloads: the shell with its TODOs, and the solution](#issue-kuestenlogik-bowire-bootcamp-34) | ⬜ Backlog | `area:bootcamp` |
-| [36](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/36) | Protocol.Akka | [Multi-subscriber + mixed-mode integration tests](#issue-kuestenlogik-bowire-protocol-akka-36) | ⬜ Backlog | `area:plugin-sdk` |
 | [92](https://github.com/Kuestenlogik/Bowire.Samples/issues/92) | Samples | [Ship each sample as its own ready-to-run download](#issue-kuestenlogik-bowire-samples-92) | ⬜ Backlog | `area:docs` |
 | [639](https://github.com/Kuestenlogik/Bowire/issues/639) | Bowire | [SCIM: live Okta and Entra ID provisioning round-trips](#issue-kuestenlogik-bowire-639) | ⬜ Backlog | `area:workbench` |
+| [22](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/22) | Protocol.Dis | [Typed PDU envelope decoding beyond EntityState](#issue-kuestenlogik-bowire-protocol-dis-22) | ✅ Done | `area:plugin-sdk` |
+| [23](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/23) | Protocol.Dis | [Entity-filtered stream drops non-EntityState PDUs](#issue-kuestenlogik-bowire-protocol-dis-23) | ✅ Done | `area:plugin-sdk` |
+| [24](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/24) | Protocol.Dis | [Typed / re-decoded mock replay in DisMockEmitter](#issue-kuestenlogik-bowire-protocol-dis-24) | ✅ Done | `area:plugin-sdk` |
+| [25](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/25) | Protocol.Dis | [Minefield Data (ID 39): type the DataFilter-gated per-mine arrays](#issue-kuestenlogik-bowire-protocol-dis-25) | ✅ Done | `area:plugin-sdk` |
+| [26](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/26) | Protocol.Dis | [Live Entity family: flag-gated compressed payload decoding](#issue-kuestenlogik-bowire-protocol-dis-26) | ✅ Done | `area:plugin-sdk` |
+| [27](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/27) | Protocol.Akka | [ClusterClient transport for the standalone bowire CLI](#issue-kuestenlogik-bowire-protocol-akka-27) | ✅ Done | `area:plugin-sdk` |
+| [28](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/28) | Protocol.Akka | [Mailbox-snapshot inspection (size + head messages)](#issue-kuestenlogik-bowire-protocol-akka-28) | ✅ Done | `area:plugin-sdk` |
+| [29](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/29) | Protocol.Akka | [Per-actor throughput stats](#issue-kuestenlogik-bowire-protocol-akka-29) | ✅ Done | `area:plugin-sdk` |
+| [30](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/30) | Protocol.Akka | [Typed payload via Akka serializer roundtrip](#issue-kuestenlogik-bowire-protocol-akka-30) | ✅ Done | `area:plugin-sdk` |
+| [31](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/31) | Protocol.Akka | [Opt-in filter API from the Bowire UI (per actor path / message type)](#issue-kuestenlogik-bowire-protocol-akka-31) | ✅ Done | `area:plugin-sdk` |
+| [32](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/32) | Protocol.Akka | [Tell-from-Bowire — interactive duplex via OpenChannelAsync](#issue-kuestenlogik-bowire-protocol-akka-32) | ✅ Done | `area:plugin-sdk` |
+| [33](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/33) | Protocol.Akka | [DeadLetter capture under the global default mailbox](#issue-kuestenlogik-bowire-protocol-akka-33) | ✅ Done | `area:plugin-sdk` |
+| [34](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/34) | Protocol.Akka | [Docs drift: TappedMessage envelope field names & payload shape](#issue-kuestenlogik-bowire-protocol-akka-34) | ✅ Done | `area:plugin-sdk` |
+| [36](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/36) | Protocol.Akka | [Multi-subscriber + mixed-mode integration tests](#issue-kuestenlogik-bowire-protocol-akka-36) | ✅ Done | `area:plugin-sdk` |
 | [47](https://github.com/Kuestenlogik/Bowire/issues/47) | Bowire | [Sidebar display: method name vs path toggle](#issue-kuestenlogik-bowire-47) | ✅ Done | `area:workbench` |
 | [95](https://github.com/Kuestenlogik/Bowire/issues/95) | Bowire | [Header Library: named, scoped, toggleable header sets](#issue-kuestenlogik-bowire-95) | ✅ Done | `area:workbench` |
 | [117](https://github.com/Kuestenlogik/Bowire/issues/117) | Bowire | [i18n — extract every UI string; ship DE + EN catalogues](#issue-kuestenlogik-bowire-117) | ✅ Done | `area:workbench` |
@@ -195,101 +195,17 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### M1 — Localisation, layout and the test pillar *(due 2026-11-03)*
 
-#### <a id="issue-kuestenlogik-bowire-protocol-dis-22"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Dis#22](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/22) Typed PDU envelope decoding beyond EntityState
-
-> `area:plugin-sdk`
-
-`TryBuildEnvelope` only decodes **EntityState** into typed fields; every other PDU kind is surfaced as header + base64 `raw` only (`src/Kuestenlogik.Bowire.Protocol.Dis/BowireDisProtocol.cs:294-350`). … [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/22)
-
-#### <a id="issue-kuestenlogik-bowire-protocol-dis-23"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Dis#23](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/23) Entity-filtered stream drops non-EntityState PDUs
-
-> `area:plugin-sdk`
-
-On an entity-scoped subscription, any PDU that is not EntityState is dropped (`src/Kuestenlogik.Bowire.Protocol.Dis/BowireDisProtocol.cs:326-332` — "we don't attempt to route every PDU type by id here"). So a Fire/Detonation/Collision originating from the filtered entity never shows up in that entity's feed. [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/23)
-
-#### <a id="issue-kuestenlogik-bowire-protocol-dis-24"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Dis#24](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/24) Typed / re-decoded mock replay in DisMockEmitter
-
-> `area:plugin-sdk`
-
-`DisMockEmitter` currently ships captured PDU bytes verbatim (raw byte replay only — README "Status": "the emitter doesn't re-decode"). That is correct for faithful replay but blocks any replay-time manipulation. [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/24)
-
-#### <a id="issue-kuestenlogik-bowire-protocol-dis-25"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Dis#25](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/25) Minefield Data (ID 39): type the DataFilter-gated per-mine arrays
-
-> `area:plugin-sdk`
-
-Minefield Data currently keeps the DataFilter-gated optional per-mine arrays as an opaque `OptionalFieldsBlob` (`COVERAGE.md`, Family 8, ID 39): "bit-to-array mapping needs SISO test vectors to type safely." The rest of the PDU roundtrips typed. [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/25)
-
-#### <a id="issue-kuestenlogik-bowire-protocol-dis-26"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Dis#26](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/26) Live Entity family: flag-gated compressed payload decoding
-
-> `area:plugin-sdk`
-
-TSPI (66), Appearance (99), LE Fire (101) and LE Detonation (102) currently type the header + `LiveEntityId` and round-trip the compressed, bit-packed, flag-gated payload verbatim (`COVERAGE.md`, Family 11 — "flag-gated field decoding deferred; opendis7 reference impl also doesn't decode"). [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/26)
-
-#### <a id="issue-kuestenlogik-bowire-protocol-akka-27"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Akka#27](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/27) ClusterClient transport for the standalone bowire CLI
-
-> `area:plugin-sdk`
-
-**Roadmap:** 1.1.0 [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/27)
-
-#### <a id="issue-kuestenlogik-bowire-protocol-akka-28"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Akka#28](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/28) Mailbox-snapshot inspection (size + head messages)
-
-> `area:plugin-sdk`
-
-**Roadmap:** 1.1.0 [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/28)
-
-#### <a id="issue-kuestenlogik-bowire-protocol-akka-29"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Akka#29](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/29) Per-actor throughput stats
-
-> `area:plugin-sdk`
-
-**Roadmap:** 1.1.0 [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/29)
-
-#### <a id="issue-kuestenlogik-bowire-protocol-akka-30"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Akka#30](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/30) Typed payload via Akka serializer roundtrip
-
-> `area:plugin-sdk`
-
-**Roadmap:** 1.2.0 [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/30)
-
-#### <a id="issue-kuestenlogik-bowire-protocol-akka-31"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Akka#31](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/31) Opt-in filter API from the Bowire UI (per actor path / message type)
-
-> `area:plugin-sdk`
-
-**Roadmap:** 1.2.0 [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/31)
-
 #### <a id="issue-kuestenlogik-bowire-protocol-surgewave-32"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Surgewave#32](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/32) Embedded mode: resolve SDK from host DI + drop direct Confluent path
 
 > `area:plugin-sdk`
 
 Make this plugin drift-free against the Surgewave wire protocol in **both** deployment modes, and remove its direct `Confluent.*` dependency. [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/32)
 
-#### <a id="issue-kuestenlogik-bowire-protocol-akka-32"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Akka#32](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/32) Tell-from-Bowire — interactive duplex via OpenChannelAsync
-
-> `area:plugin-sdk`
-
-**Roadmap:** 1.2.0 [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/32)
-
-#### <a id="issue-kuestenlogik-bowire-protocol-akka-33"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Akka#33](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/33) DeadLetter capture under the global default mailbox
-
-> `area:plugin-sdk`
-
-When `BowireTapMailbox` is the global default mailbox, the `DeadLetterListener` spawn happens during root-guardian bootstrap and is swallowed (try/catch in the `BowireAkkaExtension` ctor), so dead-letter capture is silently disabled in that mode (documented in README + the sample `Program.cs`). … [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/33)
-
-#### <a id="issue-kuestenlogik-bowire-protocol-akka-34"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Akka#34](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/34) Docs drift: TappedMessage envelope field names & payload shape
-
-> `area:plugin-sdk`
-
-`COVERAGE.md` (envelope table) and `SMOKE.md` (sample JSON frame) show fields `RecipientPath` / `SenderPath` and a JSON-object `Payload`, but the actual record is `Recipient` / `Sender` (string) with a string `Payload` (`src/Kuestenlogik.Bowire.Protocol.Akka/TappedMessage.cs`). … [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/34)
-
 #### <a id="issue-kuestenlogik-bowire-bootcamp-34"></a>⬜ Backlog · [Kuestenlogik/Bowire.Bootcamp#34](https://github.com/Kuestenlogik/Bowire.Bootcamp/issues/34) Ship each exercise as two downloads: the shell with its TODOs, and the solution
 
 > `area:bootcamp`
 
 Two downloads per exercise, from the Releases page: [[more]](https://github.com/Kuestenlogik/Bowire.Bootcamp/issues/34)
-
-#### <a id="issue-kuestenlogik-bowire-protocol-akka-36"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Akka#36](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/36) Multi-subscriber + mixed-mode integration tests
-
-> `area:plugin-sdk`
-
-`COVERAGE.md` calls out the branch gap: the 0/1/many-subscriber paths in `BowireAkkaExtension` and the mixed mode (global default mailbox + per-actor `WithMailbox` override) are only covered by single-mode tests. … [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/36)
 
 #### <a id="issue-kuestenlogik-bowire-samples-92"></a>⬜ Backlog · [Kuestenlogik/Bowire.Samples#92](https://github.com/Kuestenlogik/Bowire.Samples/issues/92) Ship each sample as its own ready-to-run download
 
@@ -302,6 +218,90 @@ Each sample downloadable on its own, built and ready to run, from the repo's Rel
 > `area:workbench`
 
 Split from #96 so the SCIM surface can ship on its own merits. [[more]](https://github.com/Kuestenlogik/Bowire/issues/639)
+
+#### <a id="issue-kuestenlogik-bowire-protocol-dis-22"></a>✅ Done · [Kuestenlogik/Bowire.Protocol.Dis#22](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/22) Typed PDU envelope decoding beyond EntityState
+
+> `area:plugin-sdk`
+
+`TryBuildEnvelope` only decodes **EntityState** into typed fields; every other PDU kind is surfaced as header + base64 `raw` only (`src/Kuestenlogik.Bowire.Protocol.Dis/BowireDisProtocol.cs:294-350`). … [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/22)
+
+#### <a id="issue-kuestenlogik-bowire-protocol-dis-23"></a>✅ Done · [Kuestenlogik/Bowire.Protocol.Dis#23](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/23) Entity-filtered stream drops non-EntityState PDUs
+
+> `area:plugin-sdk`
+
+On an entity-scoped subscription, any PDU that is not EntityState is dropped (`src/Kuestenlogik.Bowire.Protocol.Dis/BowireDisProtocol.cs:326-332` — "we don't attempt to route every PDU type by id here"). So a Fire/Detonation/Collision originating from the filtered entity never shows up in that entity's feed. [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/23)
+
+#### <a id="issue-kuestenlogik-bowire-protocol-dis-24"></a>✅ Done · [Kuestenlogik/Bowire.Protocol.Dis#24](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/24) Typed / re-decoded mock replay in DisMockEmitter
+
+> `area:plugin-sdk`
+
+`DisMockEmitter` currently ships captured PDU bytes verbatim (raw byte replay only — README "Status": "the emitter doesn't re-decode"). That is correct for faithful replay but blocks any replay-time manipulation. [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/24)
+
+#### <a id="issue-kuestenlogik-bowire-protocol-dis-25"></a>✅ Done · [Kuestenlogik/Bowire.Protocol.Dis#25](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/25) Minefield Data (ID 39): type the DataFilter-gated per-mine arrays
+
+> `area:plugin-sdk`
+
+Minefield Data currently keeps the DataFilter-gated optional per-mine arrays as an opaque `OptionalFieldsBlob` (`COVERAGE.md`, Family 8, ID 39): "bit-to-array mapping needs SISO test vectors to type safely." The rest of the PDU roundtrips typed. [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/25)
+
+#### <a id="issue-kuestenlogik-bowire-protocol-dis-26"></a>✅ Done · [Kuestenlogik/Bowire.Protocol.Dis#26](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/26) Live Entity family: flag-gated compressed payload decoding
+
+> `area:plugin-sdk`
+
+TSPI (66), Appearance (99), LE Fire (101) and LE Detonation (102) currently type the header + `LiveEntityId` and round-trip the compressed, bit-packed, flag-gated payload verbatim (`COVERAGE.md`, Family 11 — "flag-gated field decoding deferred; opendis7 reference impl also doesn't decode"). [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/26)
+
+#### <a id="issue-kuestenlogik-bowire-protocol-akka-27"></a>✅ Done · [Kuestenlogik/Bowire.Protocol.Akka#27](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/27) ClusterClient transport for the standalone bowire CLI
+
+> `area:plugin-sdk`
+
+**Roadmap:** 1.1.0 → **shipped in v1.1.0** [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/27)
+
+#### <a id="issue-kuestenlogik-bowire-protocol-akka-28"></a>✅ Done · [Kuestenlogik/Bowire.Protocol.Akka#28](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/28) Mailbox-snapshot inspection (size + head messages)
+
+> `area:plugin-sdk`
+
+**Roadmap:** 1.1.0 → **shipped in v1.1.0** [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/28)
+
+#### <a id="issue-kuestenlogik-bowire-protocol-akka-29"></a>✅ Done · [Kuestenlogik/Bowire.Protocol.Akka#29](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/29) Per-actor throughput stats
+
+> `area:plugin-sdk`
+
+**Roadmap:** 1.1.0 → **shipped in v1.1.0** [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/29)
+
+#### <a id="issue-kuestenlogik-bowire-protocol-akka-30"></a>✅ Done · [Kuestenlogik/Bowire.Protocol.Akka#30](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/30) Typed payload via Akka serializer roundtrip
+
+> `area:plugin-sdk`
+
+**Roadmap:** 1.2.0 → **shipped in v1.1.0** [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/30)
+
+#### <a id="issue-kuestenlogik-bowire-protocol-akka-31"></a>✅ Done · [Kuestenlogik/Bowire.Protocol.Akka#31](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/31) Opt-in filter API from the Bowire UI (per actor path / message type)
+
+> `area:plugin-sdk`
+
+**Roadmap:** 1.2.0 → **shipped in v1.1.0** [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/31)
+
+#### <a id="issue-kuestenlogik-bowire-protocol-akka-32"></a>✅ Done · [Kuestenlogik/Bowire.Protocol.Akka#32](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/32) Tell-from-Bowire — interactive duplex via OpenChannelAsync
+
+> `area:plugin-sdk`
+
+**Roadmap:** 1.2.0 → **shipped in v1.1.0** [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/32)
+
+#### <a id="issue-kuestenlogik-bowire-protocol-akka-33"></a>✅ Done · [Kuestenlogik/Bowire.Protocol.Akka#33](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/33) DeadLetter capture under the global default mailbox
+
+> `area:plugin-sdk`
+
+When `BowireTapMailbox` is the global default mailbox, the `DeadLetterListener` spawn happens during root-guardian bootstrap and is swallowed (try/catch in the `BowireAkkaExtension` ctor), so dead-letter capture is silently disabled in that mode (documented in README + the sample `Program.cs`). … [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/33)
+
+#### <a id="issue-kuestenlogik-bowire-protocol-akka-34"></a>✅ Done · [Kuestenlogik/Bowire.Protocol.Akka#34](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/34) Docs drift: TappedMessage envelope field names & payload shape
+
+> `area:plugin-sdk`
+
+`COVERAGE.md` (envelope table) and `SMOKE.md` (sample JSON frame) show fields `RecipientPath` / `SenderPath` and a JSON-object `Payload`, but the actual record is `Recipient` / `Sender` (string) with a string `Payload` (`src/Kuestenlogik.Bowire.Protocol.Akka/TappedMessage.cs`). … [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/34)
+
+#### <a id="issue-kuestenlogik-bowire-protocol-akka-36"></a>✅ Done · [Kuestenlogik/Bowire.Protocol.Akka#36](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/36) Multi-subscriber + mixed-mode integration tests
+
+> `area:plugin-sdk`
+
+`COVERAGE.md` calls out the branch gap: the 0/1/many-subscriber paths in `BowireAkkaExtension` and the mixed mode (global default mailbox + per-actor `WithMailbox` override) are only covered by single-mode tests. … [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/36)
 
 #### <a id="issue-kuestenlogik-bowire-47"></a>✅ Done · [#47](https://github.com/Kuestenlogik/Bowire/issues/47) Sidebar display: method name vs path toggle
 
