@@ -34,7 +34,21 @@ const BASE_URL = process.env.BOWIRE_BASE_URL || 'http://localhost:5180';
 // instance with BOWIRE_BASE_URL keeps their storage, which is the point of
 // that variable.
 const DATA_DIR = mkdtempSync(join(tmpdir(), 'bowire-e2e-'));
-const serverEnv = { ...process.env, BOWIRE_DATA_DIR: DATA_DIR };
+// #740 — the suite is one client IP driving 59 specs, and Bowire throttles
+// /api/* at 600 requests per 60 s per IP (BrowserUiHost, after #637). A full
+// run goes past that, /api/protocols starts answering 429, and the workbench
+// quietly renders a Protocols page with nothing on it — which is how
+// plugin-visibility.spec.ts came to skip itself in every full run while
+// passing on its own.
+//
+// Off for the spawned servers only. The limiter exists for an abusive client
+// on a shared instance, which a test suite on loopback is not, and leaving it
+// on means the suite measures the limiter rather than the workbench.
+const serverEnv = {
+    ...process.env,
+    BOWIRE_DATA_DIR: DATA_DIR,
+    Bowire__RateLimit__Enabled: 'false',
+};
 
 export default defineConfig({
     testDir: './tests/e2e',

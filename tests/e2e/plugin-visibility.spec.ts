@@ -14,13 +14,94 @@ import { bootFresh } from './helpers';
  * there is always at least one row to act on. The spec takes whichever comes
  * first rather than naming one — which protocols ship is not what is under
  * test here.
+ *
+ * #740 — that claim used to sit above a `test.skip(rows.count() === 0)`,
+ * which is a switch for the case the sentence says cannot happen. In a full
+ * suite run it happened every time, and the run stayed green with both tests
+ * silently doing nothing; run alone the spec passed. A spec that checks
+ * nothing half the time is worse than one that is missing: it is in the list
+ * and reads like coverage.
+ *
+ * The cause is a race, not an absence. `protocols` is filled by a fetch of
+ * /api/protocols at the top of a discovery pass, and the Protocols page
+ * renders an empty card and returns when that list has not arrived yet
+ * (settings.js, `renderSettingsConfigureProtocols`). Alone the machine is
+ * idle and the list is there before the click; in a full run the shared
+ * workbench on :5180 is busy and it is not.
+ *
+ * So the switch is gone and the spec waits instead, which is both the right
+ * assertion and the fix. If the rows never arrive it fails and says what was
+ * on the page and what the server thinks it has loaded — because "a row was
+ * missing" on its own decides nothing, which is how this went unread once
+ * already.
  */
 test.describe('Per-identity protocol visibility (#638)', () => {
     test.beforeEach(async ({ page }) => {
         await bootFresh(page);
     });
 
-    async function openProtocols(page: import('@playwright/test').Page) {
+    type Pg = import('@playwright/test').Page;
+
+    /**
+     * What the page and the server say about protocols, for a failure message
+     * that is worth reading. Every part is best-effort: this runs when
+     * something is already wrong, and a diagnostic that throws replaces the
+     * finding with its own stack trace.
+     */
+    async function describeProtocolState(page: Pg): Promise<string> {
+        const parts: string[] = [];
+
+        const served = await page.evaluate(async () => {
+            try {
+                const prefix = (window as any).__BOWIRE_CONFIG__?.prefix ?? '';
+                const r = await fetch(prefix + '/api/protocols');
+                if (!r.ok) return `HTTP ${r.status}`;
+                const list = await r.json();
+                return Array.isArray(list)
+                    ? list.map((p: { id?: string }) => p?.id ?? '?').join(', ') || '(empty array)'
+                    : JSON.stringify(list);
+            } catch (e) { return 'fetch failed: ' + String(e); }
+        }).catch(() => '(could not ask the server)');
+        parts.push(`/api/protocols now: ${served}`);
+
+        // The empty card is the page saying "the list had not arrived" rather
+        // than "every protocol is hidden" — the two look identical from the
+        // row count alone, and they are different findings.
+        const emptyCard = await page.locator('.bowire-settings-section .bowire-empty-card')
+            .count().catch(() => -1);
+        parts.push(`empty-state cards on the page: ${emptyCard}`);
+
+        const disclosure = await page.locator('.bowire-settings-hidden-disclosure')
+            .textContent().catch(() => null);
+        parts.push(`hidden disclosure: ${disclosure ?? '(none)'}`);
+
+        const banner = await page.locator('.bowire-settings-plugin-health-banner')
+            .textContent().catch(() => null);
+        parts.push(`health banner: ${(banner ?? '(none)').replace(/\s+/g, ' ').trim()}`);
+
+        return parts.join(' | ');
+    }
+
+    /**
+     * The protocol rows, waited for rather than counted once.
+     *
+     * The wait is the point: the list arrives on a fetch, so counting on the
+     * first paint asks a question whose answer has not been written yet.
+     */
+    async function protocolRows(page: Pg) {
+        const rows = page.locator('.bowire-settings-plugin-row-with-lifecycle');
+        try {
+            await expect(rows.first()).toBeVisible({ timeout: 20_000 });
+        } catch {
+            throw new Error(
+                'No protocol row on the Protocols page after 20s. A fresh instance '
+                + 'loads the bundled protocols, so none is the finding rather than a '
+                + `reason to skip. State: ${await describeProtocolState(page)}`);
+        }
+        return rows;
+    }
+
+    async function openProtocols(page: Pg) {
         await page.locator('.bowire-rail-settings').click();
         await expect(page.locator('.bowire-settings-overlay')).toBeVisible();
         // The Plugins group header navigates to Protocols itself — its own
@@ -33,9 +114,8 @@ test.describe('Per-identity protocol visibility (#638)', () => {
     test('a protocol can be hidden, found again, and shown', async ({ page }) => {
         await openProtocols(page);
 
-        const rows = page.locator('.bowire-settings-plugin-row-with-lifecycle');
+        const rows = await protocolRows(page);
         const before = await rows.count();
-        test.skip(before === 0, 'no protocol plugins loaded in this instance');
 
         // Hover-reveal: the control is display:none until the pointer is on
         // the row, which is also the assertion that it is not a wall of
@@ -69,8 +149,7 @@ test.describe('Per-identity protocol visibility (#638)', () => {
     test('the choice survives a reload', async ({ page }) => {
         await openProtocols(page);
 
-        const rows = page.locator('.bowire-settings-plugin-row-with-lifecycle');
-        test.skip(await rows.count() === 0, 'no protocol plugins loaded in this instance');
+        const rows = await protocolRows(page);
 
         const firstRow = rows.first();
         await firstRow.hover();
