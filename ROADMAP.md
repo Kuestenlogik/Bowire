@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### M1 — Localisation, layout and the test pillar *(due 2026-11-03)*
 
-**34/53 done** · 19 backlog
+**34/52 done** · 18 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -34,7 +34,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [36](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/36) | Protocol.Akka | [Multi-subscriber + mixed-mode integration tests](#issue-kuestenlogik-bowire-protocol-akka-36) | ⬜ Backlog | `area:plugin-sdk` |
 | [92](https://github.com/Kuestenlogik/Bowire.Samples/issues/92) | Samples | [Ship each sample as its own ready-to-run download](#issue-kuestenlogik-bowire-samples-92) | ⬜ Backlog | `area:docs` |
 | [639](https://github.com/Kuestenlogik/Bowire/issues/639) | Bowire | [SCIM: live Okta and Entra ID provisioning round-trips](#issue-kuestenlogik-bowire-639) | ⬜ Backlog | `area:workbench` |
-| [690](https://github.com/Kuestenlogik/Bowire/issues/690) | Bowire | [Translate the CLI help surface, or decide not to](#issue-kuestenlogik-bowire-690) | ⬜ Backlog | `area:cli` |
 | [47](https://github.com/Kuestenlogik/Bowire/issues/47) | Bowire | [Sidebar display: method name vs path toggle](#issue-kuestenlogik-bowire-47) | ✅ Done | `area:workbench` |
 | [95](https://github.com/Kuestenlogik/Bowire/issues/95) | Bowire | [Header Library: named, scoped, toggleable header sets](#issue-kuestenlogik-bowire-95) | ✅ Done | `area:workbench` |
 | [117](https://github.com/Kuestenlogik/Bowire/issues/117) | Bowire | [i18n — extract every UI string; ship DE + EN catalogues](#issue-kuestenlogik-bowire-117) | ✅ Done | `area:workbench` |
@@ -140,7 +139,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### M6 — Interop and migration *(due 2027-03-30)*
 
-**0/9 done** · 9 backlog
+**0/10 done** · 10 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -153,6 +152,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [678](https://github.com/Kuestenlogik/Bowire/issues/678) | Bowire | [bowire get/post: URL-first verbs, HTTPie-style body notation, and --offline](#issue-kuestenlogik-bowire-678) | ⬜ Backlog | `area:cli` |
 | [687](https://github.com/Kuestenlogik/Bowire/issues/687) | Bowire | [Tray icon and no console window: give the running workbench a handle of its own](#issue-kuestenlogik-bowire-687) | ⬜ Backlog | `area:cli` |
 | [688](https://github.com/Kuestenlogik/Bowire/issues/688) | Bowire | [Plurals: the translation layer cannot express a sentence whose shape depends on a number](#issue-kuestenlogik-bowire-688) | ⬜ Backlog | `area:workbench` |
+| [690](https://github.com/Kuestenlogik/Bowire/issues/690) | Bowire | [Translate the CLI help surface, or decide not to](#issue-kuestenlogik-bowire-690) | ⬜ Backlog | `area:cli` |
 
 ### M7 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
 
@@ -302,12 +302,6 @@ Each sample downloadable on its own, built and ready to run, from the repo's Rel
 > `area:workbench`
 
 Split from #96 so the SCIM surface can ship on its own merits. [[more]](https://github.com/Kuestenlogik/Bowire/issues/639)
-
-#### <a id="issue-kuestenlogik-bowire-690"></a>⬜ Backlog · [#690](https://github.com/Kuestenlogik/Bowire/issues/690) Translate the CLI help surface, or decide not to
-
-> `area:cli`
-
-`bowire --help` is still English in every locale. The machinery it needs already exists — `BowireLocale` resolves `BOWIRE_LOCALE` / `LC_ALL` / `LANG` / the OS culture and reads the same catalogues the workbench does — but nothing in the help surface calls it yet. [[more]](https://github.com/Kuestenlogik/Bowire/issues/690)
 
 #### <a id="issue-kuestenlogik-bowire-47"></a>✅ Done · [#47](https://github.com/Kuestenlogik/Bowire/issues/47) Sidebar display: method name vs path toggle
 
@@ -802,6 +796,12 @@ Code export offers five to six target languages per protocol. Postman, Hoppscotc
 > `area:workbench`
 
 The translation layer from #117 substitutes `{name}` placeholders and nothing more. That is enough for a count *inside* a sentence: [[more]](https://github.com/Kuestenlogik/Bowire/issues/688)
+
+#### <a id="issue-kuestenlogik-bowire-690"></a>⬜ Backlog · [#690](https://github.com/Kuestenlogik/Bowire/issues/690) Translate the CLI help surface, or decide not to
+
+> `area:cli`
+
+`bowire --help` is still English in every locale. The machinery it needs already exists — `BowireLocale` resolves `BOWIRE_LOCALE` / `LC_ALL` / `LANG` / the OS culture and reads the same catalogues the workbench does — but nothing in the help surface calls it yet. [[more]](https://github.com/Kuestenlogik/Bowire/issues/690)
 
 ### M7 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
 
