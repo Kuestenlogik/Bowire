@@ -64,22 +64,6 @@ public sealed class BowireProtocolRegistry
             ?? _protocols.OrderBy(p => p.Id, StringComparer.Ordinal).First();
     }
 
-    /// <summary>
-    /// The one registered protocol when there is exactly one, otherwise
-    /// <c>null</c>.
-    /// </summary>
-    /// <remarks>
-    /// For the callers that ask for a named protocol and want to keep
-    /// working on a host that ships a single one — an embedded workbench
-    /// that references only the REST plugin answers a call that named
-    /// nothing, because there is nothing else it could have meant. With two
-    /// or more loaded there is no such reading, and substituting one for
-    /// another would dispatch the operator's gRPC call over MQTT and report
-    /// it as theirs.
-    /// </remarks>
-    public IBowireProtocol? SoleProtocol() =>
-        _protocols.Count == 1 ? _protocols[0] : null;
-
     public void Register(IBowireProtocol protocol) => _protocols.Add(protocol);
 
     /// <summary>

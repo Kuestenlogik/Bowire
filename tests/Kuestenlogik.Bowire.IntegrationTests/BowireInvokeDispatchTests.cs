@@ -43,12 +43,17 @@ public sealed class BowireInvokeDispatchTests : IDisposable
 {
     private readonly RecordingProtocol _plugin = new();
 
+    // #751 — the hint tests below pin "grpc" and used to be dispatched to
+    // _plugin anyway, because "the named protocol, else any" swapped one for
+    // the other. With that gone they need the plugin they actually name.
+    private readonly RecordingProtocol _grpc = new("grpc");
+
     public void Dispose() => BowireEndpointHelpers.ResetRegistry();
 
     /// <summary>A protocol plugin that answers OK and remembers the call.</summary>
-    private sealed class RecordingProtocol : IBowireProtocol
+    private sealed class RecordingProtocol(string id = "stub") : IBowireProtocol
     {
-        public string Id => "stub";
+        public string Id { get; } = id;
         public string Name => "Stub";
         public string IconSvg => "<svg/>";
 
@@ -104,10 +109,11 @@ public sealed class BowireInvokeDispatchTests : IDisposable
             CancellationToken ct = default) => Task.FromResult<IBowireChannel?>(null);
     }
 
-    private async Task<IHost> BuildHost(bool withPlugin = true)
+    private async Task<IHost> BuildHost(bool withPlugin = true, bool withGrpc = false)
     {
         var registry = new BowireProtocolRegistry();
         if (withPlugin) registry.Register(_plugin);
+        if (withGrpc) registry.Register(_grpc);
         BowireEndpointHelpers.SetRegistry(registry);
 
         var host = new HostBuilder()
@@ -238,17 +244,19 @@ public sealed class BowireInvokeDispatchTests : IDisposable
         // grpcweb@ pins the gRPC plugin and flips it to gRPC-Web. The flip
         // travels as a reserved metadata header, which is the only way the
         // plugin can tell the two apart.
-        using var host = await BuildHost();
+        using var host = await BuildHost(withGrpc: true);
 
         await Invoke(host,
             """{"protocol":"stub","service":"S","method":"M","messages":["{}"]}""",
             "grpcweb@https://api.example.com");
 
-        // The hint pins "grpc", which is not loaded here — dispatch falls back
-        // to the only registered plugin, and the transport bit is still on the
-        // metadata it receives.
-        Assert.NotNull(_plugin.Metadata);
-        Assert.Contains(_plugin.Metadata, kv => kv.Key.Contains("Transport", StringComparison.OrdinalIgnoreCase));
+        // The hint outranks the body's "stub": it pins gRPC, and the call goes
+        // there. It used to land on the stub instead — not because anything
+        // decided that, but because gRPC was missing and dispatch took what
+        // was left (#751).
+        Assert.NotNull(_grpc.Metadata);
+        Assert.Contains(_grpc.Metadata, kv => kv.Key.Contains("Transport", StringComparison.OrdinalIgnoreCase));
+        Assert.Null(_plugin.Metadata);
     }
 
     // ---- query-string API keys ----
@@ -366,6 +374,47 @@ public sealed class BowireInvokeDispatchTests : IDisposable
     }
 
     [Fact]
+    public async Task A_Protocol_That_Was_Named_And_Is_Not_Loaded_Is_Refused_Rather_Than_Swapped()
+    {
+        // #751 — the host has exactly one plugin, and the caller asked for a
+        // different one. Until this, "the named protocol, else any" handed the
+        // gRPC call to whatever was loaded and reported the answer as gRPC's.
+        // One plugin made that predictable; it did not make it right. A caller
+        // who named a transport gets that transport or an error.
+        using var host = await BuildHost();
+
+        var (status, body) = await Invoke(
+            host,
+            """{"protocol":"grpc","service":"S","method":"M","messages":["{}"]}""",
+            "https://api.example.com");
+
+        Assert.Equal(HttpStatusCode.BadGateway, status);
+        Assert.Equal("urn:bowire:invoke:no-plugin", body.GetProperty("type").GetString());
+        // And it names what IS there, because that is the whole remedy.
+        Assert.Contains("stub", body.GetProperty("detail").GetString()!, StringComparison.Ordinal);
+        // The plugin was not called. This is the half that matters: a refusal
+        // that still dispatched would pass every assertion above.
+        Assert.Null(_plugin.Service);
+    }
+
+    [Fact]
+    public async Task Naming_Nothing_Still_Reaches_The_One_Plugin_A_Host_Ships()
+    {
+        // The other reading, and the reason the fallback existed at all: an
+        // embedded host that references a single protocol package. The caller
+        // named nothing, so there is nothing to contradict.
+        using var host = await BuildHost();
+
+        var (status, _) = await Invoke(
+            host,
+            """{"service":"orders.v1.OrderService","method":"GetOrder","messages":["{}"]}""",
+            "https://api.example.com");
+
+        Assert.Equal(HttpStatusCode.OK, status);
+        Assert.Equal("orders.v1.OrderService", _plugin.Service);
+    }
+
+    [Fact]
     public async Task Transcoding_Without_The_Rest_Plugin_Names_The_Package_To_Install()
     {
         // 501 rather than 500: the feature is not broken, it is not installed.
@@ -473,13 +522,13 @@ public sealed class BowireInvokeDispatchTests : IDisposable
     public async Task A_Streaming_Hint_Is_Stripped_And_Its_Transport_Bit_Kept()
     {
         // The same rule as the unary path, re-derived from the query string.
-        using var host = await BuildHost();
+        using var host = await BuildHost(withGrpc: true);
 
         await Stream(host, "service=S&method=M&serverUrl=grpcweb%40https%3A%2F%2Fapi.example.com");
 
-        Assert.Equal("https://api.example.com", _plugin.ServerUrl);
-        Assert.NotNull(_plugin.Metadata);
-        Assert.Contains(_plugin.Metadata, kv => kv.Key.Contains("Transport", StringComparison.OrdinalIgnoreCase));
+        Assert.Equal("https://api.example.com", _grpc.ServerUrl);
+        Assert.NotNull(_grpc.Metadata);
+        Assert.Contains(_grpc.Metadata, kv => kv.Key.Contains("Transport", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]

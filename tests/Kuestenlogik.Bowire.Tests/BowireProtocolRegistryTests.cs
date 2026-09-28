@@ -237,34 +237,6 @@ public class BowireProtocolRegistryTests
         Assert.Null(new BowireProtocolRegistry().DefaultProtocol());
     }
 
-    [Fact]
-    public void SoleProtocol_IsTheOneWhenThereIsExactlyOne()
-    {
-        // The embedded host that references a single protocol plugin: a call
-        // that named nothing can only have meant this one.
-        var registry = new BowireProtocolRegistry();
-        registry.Register(new StubProtocol("rest", "REST"));
-
-        Assert.Equal("rest", registry.SoleProtocol()?.Id);
-    }
-
-    [Theory]
-    [InlineData(0)]
-    [InlineData(2)]
-    [InlineData(5)]
-    public void SoleProtocol_IsNullWhenThereIsNotExactlyOne(int count)
-    {
-        // With none there is nothing to pick, and with several there is no
-        // reading of "the protocol" that is not a guess — substituting one
-        // for another would send the caller's request over a transport they
-        // did not ask for and report the answer as theirs.
-        var registry = new BowireProtocolRegistry();
-        for (var i = 0; i < count; i++)
-            registry.Register(new StubProtocol("p" + i, "P" + i));
-
-        Assert.Null(registry.SoleProtocol());
-    }
-
     private class StubProtocol(string id, string name) : IBowireProtocol
     {
         public string Id { get; } = id;

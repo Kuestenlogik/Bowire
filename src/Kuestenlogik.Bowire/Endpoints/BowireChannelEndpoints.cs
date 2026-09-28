@@ -54,12 +54,17 @@ internal static class BowireChannelEndpoints
             body = body with { Metadata = channelMeta };
 
             var registry = BowireEndpointHelpers.GetRegistry();
-            // #751 — the named protocol, or the only one loaded when there is
-            // exactly one. Never "whichever registered first": that opened a
-            // channel on a transport the caller did not ask for, and which one
-            // depended on the assembly load order.
-            var protocol = registry.GetById(body.Protocol ?? "grpc")
-                ?? registry.SoleProtocol();
+            // #751 — the two readings, kept apart. A caller who NAMED a
+            // protocol gets that one or an error: substituting another
+            // transport for the one they asked for is how a gRPC call went
+            // out over MQTT and came back looking like an answer. A caller
+            // who named NOTHING gets gRPC where it is loaded (what this
+            // endpoint has always meant) and the registry's default
+            // otherwise — which is also what keeps a single-protocol
+            // embedded host answering.
+            var protocol = string.IsNullOrEmpty(body.Protocol)
+                ? (registry.GetById("grpc") ?? registry.DefaultProtocol())
+                : registry.GetById(body.Protocol);
 
             if (protocol is null)
                 return BowireEndpointHelpers.Problem(

@@ -179,12 +179,17 @@ internal static class BowireInvokeEndpoints
 
             // ---- Protocol-plugin dispatch (the normal path) ----
             var registry = BowireEndpointHelpers.GetRegistry();
-            // #751 — the named protocol, or the only one loaded when there is
-            // exactly one. Never "whichever registered first": with several
-            // loaded that dispatched the call over a transport nobody asked
-            // for, picked by the assembly load order.
-            var protocol = registry.GetById(body.Protocol ?? "grpc")
-                ?? registry.SoleProtocol();
+            // #751 — the two readings, kept apart. A caller who NAMED a
+            // protocol gets that one or an error: substituting another
+            // transport for the one they asked for is how a gRPC call went
+            // out over MQTT and came back looking like an answer. A caller
+            // who named NOTHING gets gRPC where it is loaded (what this
+            // endpoint has always meant) and the registry's default
+            // otherwise — which is also what keeps a single-protocol
+            // embedded host answering.
+            var protocol = string.IsNullOrEmpty(body.Protocol)
+                ? (registry.GetById("grpc") ?? registry.DefaultProtocol())
+                : registry.GetById(body.Protocol);
 
             if (protocol is null)
                 return BowireEndpointHelpers.Problem(
@@ -371,9 +376,10 @@ internal static class BowireInvokeEndpoints
             (serverUrl, metadata) = BowireEndpointHelpers.ApplyQueryAuthHints(serverUrl, metadata);
 
             var registry = BowireEndpointHelpers.GetRegistry();
-            // #751 — see the unary path above: named, or the sole one.
-            var protocol = registry.GetById(protocolId ?? "grpc")
-                ?? registry.SoleProtocol();
+            // #751 — see the unary path above: named means named.
+            var protocol = string.IsNullOrEmpty(protocolId)
+                ? (registry.GetById("grpc") ?? registry.DefaultProtocol())
+                : registry.GetById(protocolId);
 
             if (protocol is null)
             {
