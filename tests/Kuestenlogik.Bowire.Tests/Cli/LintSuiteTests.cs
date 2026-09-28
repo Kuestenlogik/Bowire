@@ -148,6 +148,77 @@ public sealed class LintSuiteTests : IDisposable
         Assert.Contains("workspace", stderr, StringComparison.Ordinal);
     }
 
+    // ---- #583: compatibility against a baseline ----
+
+    /// <summary>The same service as <see cref="Snapshot"/>, before it lost a method.</summary>
+    private string BaselineWithAnExtraMethod()
+    {
+        var current = JsonSerializer.Deserialize<List<BowireServiceInfo>>(
+            File.ReadAllText(Snapshot()), CliSchemaSnapshot.Json)!;
+        var svc = current[0];
+        var older = svc with
+        {
+            Methods = [.. svc.Methods, svc.Methods[0] with { Name = "CancelOrder", FullName = "orders.v1.OrderService/CancelOrder" }],
+        };
+        var path = Path.Combine(_dir, "baseline.json");
+        File.WriteAllText(path, JsonSerializer.Serialize(new List<BowireServiceInfo> { older }, CliSchemaSnapshot.Json));
+        return path;
+    }
+
+    [Fact]
+    public async Task A_Baseline_Adds_Compatibility_As_A_Rule_Of_Its_Own()
+    {
+        var baseline = BaselineWithAnExtraMethod();
+        var junit = Path.Combine(_dir, "compat.xml");
+        var (rc, stdout, _) = await Test(
+            "--suite", "lint", Snapshot(withSecret: false), "--baseline", baseline, "--fail-on", "high", "--junit", junit);
+
+        Assert.Equal(1, rc);
+        Assert.Contains("BWR-LINT-BREAKING-CHANGE", stdout, StringComparison.Ordinal);
+        var failing = XDocument.Load(junit).Descendants("testcase").Where(c => c.Element("failure") is not null).ToList();
+        var breaking = Assert.Single(failing);
+        Assert.Contains("BREAKING", breaking.Attribute("name")!.Value, StringComparison.Ordinal);
+        Assert.Contains("CancelOrder", breaking.Element("failure")!.Value, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Without_A_Baseline_There_Is_No_Compatibility_Case_That_Passes_For_Nothing()
+    {
+        var junit = Path.Combine(_dir, "plain.xml");
+        await Test("--suite", "lint", Snapshot(), "--junit", junit);
+        Assert.DoesNotContain(XDocument.Load(junit).Descendants("testcase"),
+            c => c.Attribute("name")!.Value.Contains("BREAKING", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task A_Baseline_On_A_Test_Run_Is_Refused()
+    {
+        var (rc, _, stderr) = await Test(Snapshot(), "--baseline", BaselineWithAnExtraMethod());
+        Assert.Equal(2, rc);
+        Assert.Contains("--suite lint", stderr, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Bowire_Lint_Reads_The_Baseline_Too_And_Refuses_One_It_Cannot_Read()
+    {
+        using var stdout = new StringWriter();
+        using var stderr = new StringWriter();
+        var rc = await LintCommand.RunAsync(Snapshot(withSecret: false), null, null, "high", null, null,
+            TestContext.Current.CancellationToken, stdout, stderr, BaselineWithAnExtraMethod());
+        Assert.Equal(1, rc);
+        Assert.Contains("CancelOrder", stdout.ToString(), StringComparison.Ordinal);
+
+        // Comparing against nothing would say "no breaking changes" — the one
+        // answer a missing baseline cannot give.
+        using var out2 = new StringWriter();
+        using var err2 = new StringWriter();
+        var missing = Path.Combine(_dir, "no-such-baseline.json");
+        var rc2 = await LintCommand.RunAsync(Snapshot(withSecret: false), null, null, "none", null, null,
+            TestContext.Current.CancellationToken, out2, err2, missing);
+        Assert.Equal(1, rc2);
+        Assert.Contains("baseline", err2.ToString(), StringComparison.Ordinal);
+    }
+
     // ---- the reports ----
 
     [Fact]

@@ -1478,6 +1478,10 @@ internal static class BowireCli
         {
             Description = "What to run: 'tests' (default) or 'lint'. With 'lint' the positional argument is a snapshot file or a live URL, and the design-time rules run over it; --fail-on also takes a severity (info, low, medium, high), and --junit / --sarif / --annotations report the findings.",
         };
+        var lintBaseline = new Option<string?>("--baseline")
+        {
+            Description = "With --suite lint: a snapshot file or URL to compare against; breaking changes since it are reported as BWR-LINT-BREAKING-CHANGE, as `bowire lint --baseline` does.",
+        };
         var workspaceId = new Option<string?>("--workspace-id")
         {
             Description = "Run the suite of a workspace the workbench saved, addressed by its id. Resolves through the workspace inventory, so a git-native workspace is found in its checkout. Use `bowire workspace list` to see the ids; the positional file is ignored.",
@@ -1525,7 +1529,7 @@ internal static class BowireCli
         var cmd = new Command("test", "Run an assertion-based test suite. Accepts a recording JSON (v2.1 test-collection format) or a Flow JSON document (v2.2 — the T2 CI runner). Format auto-detected.");
         cmd.Add(collectionPath); cmd.Add(url); cmd.Add(report); cmd.Add(junit);
         cmd.Add(sarif); cmd.Add(annotations); cmd.Add(updateSnapshots);
-        cmd.Add(failOn); cmd.Add(workspaceDir); cmd.Add(workspaceId); cmd.Add(suite);
+        cmd.Add(failOn); cmd.Add(workspaceDir); cmd.Add(workspaceId); cmd.Add(suite); cmd.Add(lintBaseline);
         cmd.Add(baseUrl); cmd.Add(env); cmd.Add(envFile); cmd.Add(keyring); cmd.Add(aiSeed);
         cmd.Add(secret); cmd.Add(secretFile);
         cmd.SetAction(async (pr, _) =>
@@ -1586,7 +1590,16 @@ internal static class BowireCli
                 var failOnGiven = pr.GetResult(failOn) is { Implicit: false }
                     || !string.IsNullOrEmpty(cfg["Bowire:Test:FailOn"]);
                 if (!failOnGiven) options.FailOn = "never";
+                options.Baseline = pr.GetValue(lintBaseline);
                 return await LintSuiteRunner.RunAsync(options, stdout, stderr).ConfigureAwait(false);
+            }
+            if (!string.IsNullOrEmpty(pr.GetValue(lintBaseline)))
+            {
+                // A test run has nothing to compare; ignoring it would let a job
+                // believe it gated on compatibility when it did not.
+                await stderr.WriteLineAsync(
+                    "bowire test: --baseline belongs to --suite lint.").ConfigureAwait(false);
+                return 2;
             }
             if (!string.Equals(options.FailOn, "any", StringComparison.OrdinalIgnoreCase)
                 && !string.Equals(options.FailOn, "never", StringComparison.OrdinalIgnoreCase))

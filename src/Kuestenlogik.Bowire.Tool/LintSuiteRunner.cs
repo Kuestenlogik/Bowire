@@ -68,10 +68,22 @@ internal static class LintSuiteRunner
         if (services is null) return 2;
 
         var linter = BowireSchemaLinter.CreateWithDiscoveredRules();
-        var findings = linter.Lint(services, config);
+        IReadOnlyList<BowireLintFinding> findings = linter.Lint(services, config);
         var rules = BowireSchemaLinter.DiscoverRules()
             .Where(r => config is null || config.IsEnabled(r.Id))
             .ToList();
+
+        // With a baseline, compatibility is one more rule in the same report —
+        // a JUnit case and a SARIF rule of its own, next to the design rules.
+        if (!string.IsNullOrWhiteSpace(cli.Baseline))
+        {
+            var breaking = await LintCommand.BaselineFindingsAsync(
+                cli.Baseline, null, services, config, stderr, ct).ConfigureAwait(false);
+            if (breaking is null) return 2;
+            findings = [.. findings, .. breaking];
+            if (config is null || config.IsEnabled(BowireBreakingChanges.RuleId))
+                rules.Add(BowireBreakingChanges.Rule);
+        }
 
         await stdout.WriteAsync(LintCommand.ToText(findings, LintCommand.ResponseCoverageNote(services)))
             .ConfigureAwait(false);

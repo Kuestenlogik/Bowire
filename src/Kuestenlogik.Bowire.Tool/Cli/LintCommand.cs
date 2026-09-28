@@ -53,6 +53,10 @@ internal static class LintCommand
         {
             Description = "Protocol plugin id for live-URL discovery (rest, grpc, graphql, ...). Ignored for snapshot files. Guessed from the URL scheme when unset.",
         };
+        var baselineOpt = new Option<string?>("--baseline")
+        {
+            Description = "A snapshot file or URL to compare against. Every breaking change since it — a removed service or method, a changed signature — is reported as BWR-LINT-BREAKING-CHANGE (High), the same classification `bowire diff --fail-on breaking` uses.",
+        };
         var rulesOpt = new Option<string?>("--rules")
         {
             Description = "Path to a .bowire/rules.json config (rule on/off + severity overrides). Auto-discovered by walking up from the current directory when unset.",
@@ -64,6 +68,7 @@ internal static class LintCommand
         lint.Add(failOnOpt);
         lint.Add(protocolOpt);
         lint.Add(rulesOpt);
+        lint.Add(baselineOpt);
         lint.SetAction(async (pr, ct) =>
             await RunAsync(
                 pr.GetValue(sourceArg) ?? "",
@@ -74,7 +79,8 @@ internal static class LintCommand
                 pr.GetValue(rulesOpt),
                 ct,
                 pr.InvocationConfiguration.Output,
-                pr.InvocationConfiguration.Error).ConfigureAwait(false));
+                pr.InvocationConfiguration.Error,
+                pr.GetValue(baselineOpt)).ConfigureAwait(false));
 
         return lint;
     }
@@ -82,7 +88,8 @@ internal static class LintCommand
     internal static async Task<int> RunAsync(
         string source, string? format, string? output, string failOn, string? protocolId,
         string? rulesPath,
-        CancellationToken ct, TextWriter? stdout = null, TextWriter? stderr = null)
+        CancellationToken ct, TextWriter? stdout = null, TextWriter? stderr = null,
+        string? baseline = null)
     {
         var outW = stdout ?? Console.Out;
         var errW = stderr ?? Console.Error;
@@ -100,6 +107,9 @@ internal static class LintCommand
         if (services is null) return 1;
 
         var findings = BowireSchemaLinter.CreateWithDiscoveredRules().Lint(services, config);
+        var breaking = await BaselineFindingsAsync(baseline, protocolId, services, config, errW, ct).ConfigureAwait(false);
+        if (breaking is null) return 1;
+        if (breaking.Count > 0) findings = [.. findings, .. breaking];
         var note = ResponseCoverageNote(services);
 
         var rendered = format?.ToUpperInvariant() switch
@@ -148,6 +158,36 @@ internal static class LintCommand
             await errW.WriteLineAsync($"bowire lint: failed to read rules config '{path}': {ex.Message}").ConfigureAwait(false);
             return (null, true);
         }
+    }
+
+    /// <summary>
+    /// #583 — breaking changes since <paramref name="baseline"/>, or an empty
+    /// list when there is none. Null when the baseline could not be read: a
+    /// comparison that silently compared against nothing would report "no
+    /// breaking changes", which is the one answer it cannot give.
+    /// </summary>
+    internal static async Task<IReadOnlyList<BowireLintFinding>?> BaselineFindingsAsync(
+        string? baseline, string? protocolId, IReadOnlyList<BowireServiceInfo> current,
+        BowireLintConfig? config, TextWriter errW, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(baseline)) return [];
+
+        var before = await CliSchemaSnapshot.ResolveAsync(baseline, protocolId, errW, ct).ConfigureAwait(false);
+        if (before is null)
+        {
+            await errW.WriteLineAsync($"bowire lint: could not read the baseline '{baseline}'.").ConfigureAwait(false);
+            return null;
+        }
+        if (before.Count == 0)
+        {
+            // An empty baseline makes every service "new" and nothing
+            // "removed" — a clean compatibility report about nothing.
+            await errW.WriteLineAsync(
+                $"bowire lint: the baseline '{baseline}' has no services, so there is nothing to compare against.")
+                .ConfigureAwait(false);
+            return null;
+        }
+        return BowireBreakingChanges.Find(before, current, config);
     }
 
     // ---- gate -----------------------------------------------------------

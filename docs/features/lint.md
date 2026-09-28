@@ -151,6 +151,26 @@ rather than the other way round.
 step can pick up — including `bowire report rollup`, which reads lint output
 alongside contract, benchmark, scan and test reports.
 
+### Against a baseline
+
+`--baseline` adds compatibility to the same run. Every breaking change since
+the baseline becomes a finding of its own rule, `BWR-LINT-BREAKING-CHANGE`
+(High):
+
+```bash
+bowire lint https://api.example.com --baseline main-surface.json --fail-on high
+```
+
+What counts as breaking is exactly what `bowire diff --fail-on breaking` counts
+— a removed service, a removed method, a changed signature — because it is the
+same comparison. Added methods, deprecations and description edits are not
+breaking and produce nothing. `.bowire/rules.json` can switch the rule off or
+re-grade it like any other.
+
+A baseline that is not there, or that holds no services, is an error rather
+than an empty comparison: against nothing, nothing can have broken, and a
+clean report would be the one answer the run cannot give.
+
 ### Through the test runner
 
 A job that already collects JUnit and SARIF from `bowire test` can take the
@@ -166,6 +186,7 @@ bowire test --suite=lint surface.json --fail-on high --junit lint.xml --sarif li
 | `--junit` | one test case **per rule**, failing when that rule found something at or above the gate; findings below it are listed in the case's output. Per rule rather than per finding, so the number of test cases stays the same from run to run |
 | `--sarif` | every finding, at the level its severity maps to (High → error, Medium → warning, Low and Info → note), with service / method / field as a logical location |
 | `--annotations` | GitHub Actions annotations — findings at the gate as errors, the rest as warnings |
+| `--baseline` | as above — compatibility becomes one more JUnit case and SARIF rule, next to the design rules |
 
 `--fail-on` takes `bowire test`'s words (`any` fails on any finding, `never`
 only reports) and `bowire lint`'s severities. Without it the suite uses lint's
