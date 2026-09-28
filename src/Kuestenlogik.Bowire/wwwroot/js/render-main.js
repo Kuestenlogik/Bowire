@@ -5231,7 +5231,22 @@
         // #250 — one pane renders straight into main, as it always has;
         // two render side by side in a row, each in its own column.
         if (requestPanes.length < 2) {
-            renderTabSurface(requestPanes[0], main);
+            // #250 — with one pane `main` IS the pane surface, so the edge
+            // zones live on it. This is the case that matters most: it is the
+            // only way to reach two panes by dragging.
+            // Deliberately NOT .bowire-tab-pane: that class means "a pane
+            // column" and the pane tests count it to assert the split is not
+            // open. The drop surface is marked by the attribute instead, which
+            // is also what the hint styles key on.
+            var only = requestPanes[0];
+            main.setAttribute('data-pane-id', only.id);
+            main.addEventListener('dragover', function (e) { _paneDragOver(e, only); });
+            main.addEventListener('dragleave', function (e) {
+                if (e.currentTarget.contains(e.relatedTarget)) return;
+                e.currentTarget.removeAttribute('data-drop-zone');
+            });
+            main.addEventListener('drop', function (e) { _paneDrop(e, only); });
+            renderTabSurface(only, main);
             return main;
         }
         var row = el('div', { id: 'bowire-panes', className: 'bowire-panes' });
@@ -5253,7 +5268,19 @@
                 // Focus follows the pointer: whatever the operator touches
                 // in a pane makes that pane the one Ctrl+Enter, the
                 // sidebar and the shortcuts address.
-                onMousedown: function () { focusPane(pane.id); }
+                onMousedown: function () { focusPane(pane.id); },
+                // #250 — the edge zones. The zone travels as an attribute so
+                // the highlight is CSS's business and this stays about where
+                // the pointer is; `paneDropZone` owns the thresholds.
+                onDragOver: function (e) { _paneDragOver(e, pane); },
+                onDragLeave: function (e) {
+                    // Only when the pointer actually left the pane: dragleave
+                    // also fires crossing into a child, and clearing there
+                    // makes the hint flicker across every element inside.
+                    if (e.currentTarget.contains(e.relatedTarget)) return;
+                    e.currentTarget.removeAttribute('data-drop-zone');
+                },
+                onDrop: function (e) { _paneDrop(e, pane); }
             });
             renderTabSurface(pane, host);
             row.appendChild(host);
@@ -6214,7 +6241,32 @@
         // renders its own tab's method as usual.
         var paneFreeform = pane.id === focusedPaneId ? freeformRequest : null;
         if (!paneFreeform) {
-            var tabBar = el('div', { id: pid('bowire-request-tabs'), className: 'bowire-request-tabs' });
+            // #250 — the strip is a drop target of its own: a tab dropped on
+            // it joins that pane, whatever the pointer's x says. That is the
+            // gesture people reach for first, and reading the edge zones off a
+            // strip forty pixels tall would make it a coin toss.
+            var tabBar = el('div', {
+                id: pid('bowire-request-tabs'),
+                className: 'bowire-request-tabs',
+                onDragOver: function (e) {
+                    if (!draggingTabId) return;
+                    var dragged = tabById(draggingTabId);
+                    if (!dragged || dragged.paneId === pane.id) return;
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'move';
+                    e.currentTarget.classList.add('drop-target');
+                },
+                onDragLeave: function (e) {
+                    e.currentTarget.classList.remove('drop-target');
+                },
+                onDrop: function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.currentTarget.classList.remove('drop-target');
+                    var id = draggedTabId(e);
+                    if (id) dropTabOnPane(id, pane.id, 'center');
+                }
+            });
             var tabScroll = el('div', { className: 'bowire-request-tabs-scroll' });
             var strip = paneTabs(pane);
             for (var ti = 0; ti < strip.length; ti++) {
@@ -6267,6 +6319,29 @@
                         'data-tab-id': tab.id,
                         'data-protocol': proto,
                         'data-direction': dir,
+                        // #250 — a tab is draggable to another pane's strip or
+                        // to a pane's edge. The id travels on the dataTransfer
+                        // for the drop and in `draggingTabId` for the hover
+                        // highlight, because dataTransfer cannot be read during
+                        // dragover — only when the drop actually happens.
+                        draggable: true,
+                        onDragStart: function (e) {
+                            var id = e.currentTarget.dataset.tabId;
+                            if (!id) return;
+                            draggingTabId = id;
+                            e.currentTarget.classList.add('dragging');
+                            try {
+                                e.dataTransfer.effectAllowed = 'move';
+                                e.dataTransfer.setData('text/x-bowire-tab', id);
+                                // Firefox drops a drag that carries no text/plain.
+                                e.dataTransfer.setData('text/plain', id);
+                            } catch { /* a browser that refuses the payload still drags */ }
+                        },
+                        onDragEnd: function (e) {
+                            draggingTabId = null;
+                            e.currentTarget.classList.remove('dragging');
+                            clearPaneDropHints();
+                        },
                         onClick: function (e) {
                             var id = e.currentTarget.dataset.tabId;
                             if (id) switchTab(id);

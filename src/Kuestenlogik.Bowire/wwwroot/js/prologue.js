@@ -5505,6 +5505,118 @@
         resetTabViewState();
         render();
     }
+    // #250 — the tab in flight, or null. `dataTransfer` is readable only on
+    // drop, never during dragover, so the zone the pointer is over cannot be
+    // decided from the event alone; the highlight needs its own handle on
+    // what is being dragged.
+    let draggingTabId = null;
+
+    /// Where a tab dropped on a pane lands.
+    ///
+    /// `zone` is read off the pointer's position in the pane: the outer
+    /// quarters mean "open a pane on that side and put it there", the middle
+    /// means "into this pane's strip". Two panes is the maximum (see the note
+    /// on `requestPanes`), so once both exist every drop is a move — there is
+    /// no third place to open, and refusing the drop would leave the operator
+    /// holding a tab with nowhere to put it.
+    function dropTabOnPane(tabId, targetPaneId, zone) {
+        var tab = tabById(tabId);
+        var target = paneById(targetPaneId);
+        if (!tab || !target) return false;
+
+        var wantsNewPane = (zone === 'left' || zone === 'right')
+            && requestPanes.length < PANE_MAX;
+        if (!wantsNewPane) {
+            if (tab.paneId === target.id) return false;
+            var moved = moveTabToPane(tabId, target.id);
+            if (moved) { resetTabViewState(); render(); }
+            return moved;
+        }
+
+        // A lone tab has nothing to split away from: the pane it leaves would
+        // collapse in the same gesture and the operator would be back where
+        // they started, one animation later.
+        var source = paneById(tab.paneId);
+        if (source && paneTabs(source).length < 2) return false;
+
+        var fresh = { id: nextPaneId(), activeTab: null, width: 50 };
+        var at = requestPanes.indexOf(target);
+        requestPanes.splice(zone === 'left' ? at : at + 1, 0, fresh);
+        requestPanes.forEach(function (p) { p.width = 100 / requestPanes.length; });
+        moveTabToPane(tabId, fresh.id);
+        resetTabViewState();
+        render();
+        return true;
+    }
+
+    /// The drop zone a pointer at `clientX` is in, for a pane occupying
+    /// `rect`. The outer quarters are the split zones; a narrow pane would
+    /// otherwise be all edge and never offer the merge.
+    function paneDropZone(rect, clientX) {
+        if (!rect || !rect.width) return 'center';
+        var x = (clientX - rect.left) / rect.width;
+        if (x < 0.25) return 'left';
+        if (x > 0.75) return 'right';
+        return 'center';
+    }
+
+    /// The tab id off a drop, whichever channel carried it.
+    ///
+    /// The dataTransfer is the honest source — it is what the browser hands
+    /// over on drop, and the only one that survives a drag begun elsewhere.
+    /// `draggingTabId` is the fallback for a browser that returns an empty
+    /// payload, which some do when the drag never left the page.
+    function draggedTabId(e) {
+        var id = '';
+        try { id = e.dataTransfer.getData('text/x-bowire-tab') || ''; }
+        catch { /* some browsers throw when read outside a real drop */ }
+        if (!id) {
+            try { id = e.dataTransfer.getData('text/plain') || ''; } catch { /* same */ }
+        }
+        return tabById(id) ? id : (draggingTabId || null);
+    }
+
+    /// Take every drop hint off the page.
+    ///
+    /// dragleave does not fire reliably when a drag ends over a child node or
+    /// is cancelled with Escape, so the hints are also swept on dragend —
+    /// otherwise a pane keeps a highlight for a drop that never happened.
+    function clearPaneDropHints() {
+        var marked = document.querySelectorAll(
+            '.bowire-request-tabs.drop-target, [data-drop-zone]');
+        for (var i = 0; i < marked.length; i++) {
+            marked[i].classList.remove('drop-target');
+            marked[i].removeAttribute('data-drop-zone');
+        }
+    }
+
+    /// The two pane-surface drag handlers, shared by the one-pane and
+    /// two-pane shapes so the gesture cannot drift between them.
+    function _paneDragOver(e, pane) {
+        if (!draggingTabId) return;
+        var dragged = tabById(draggingTabId);
+        if (!dragged) return;
+        var zone = paneDropZone(e.currentTarget.getBoundingClientRect(), e.clientX);
+        // Dropping a tab back into the middle of its own pane is a no-op, and
+        // an accepted drop that does nothing reads as a bug. The edges are
+        // still live there: that is how a second pane is opened.
+        if (zone === 'center' && dragged.paneId === pane.id) {
+            e.currentTarget.removeAttribute('data-drop-zone');
+            return;
+        }
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        e.currentTarget.setAttribute('data-drop-zone', zone);
+    }
+
+    function _paneDrop(e, pane) {
+        e.preventDefault();
+        var zone = paneDropZone(e.currentTarget.getBoundingClientRect(), e.clientX);
+        e.currentTarget.removeAttribute('data-drop-zone');
+        var id = draggedTabId(e);
+        if (id) dropTabOnPane(id, pane.id, zone);
+    }
+
     function removePane(pane) {
         var idx = requestPanes.indexOf(pane);
         if (idx < 0 || requestPanes.length < 2) return;

@@ -6666,6 +6666,38 @@ lives at the right of the
 .bowire-tab-pane.focused > .bowire-request-tabs {
     box-shadow: inset 0 2px 0 var(--bowire-accent);
 }
+/* #250 — tab drag-and-drop between panes.
+   The dragged tab fades rather than disappears: a tab that vanishes reads as
+   "already moved", and the operator lets go over the wrong place. */
+.bowire-request-tab.dragging {
+    opacity: 0.4;
+}
+/* A strip that will take the drop. The inset line is the same shape the
+   focused pane uses, so "this is the one" looks the same either way. */
+.bowire-request-tabs.drop-target {
+    background: var(--bowire-surface-raised, rgba(127, 127, 127, 0.08));
+    box-shadow: inset 0 2px 0 var(--bowire-accent);
+}
+/* The edge zones. Drawn as an overlay on the pane rather than a border, so
+   the hint shows WHERE the pane would open — a left band means a pane opens
+   on the left — instead of just that something would happen. */
+[data-drop-zone] {
+    position: relative;
+}
+[data-drop-zone]::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    background: color-mix(in srgb, var(--bowire-accent) 18%, transparent);
+    border: 1px solid var(--bowire-accent);
+    pointer-events: none;   /* or the overlay eats the drop it is advertising */
+    z-index: 4;
+}
+[data-drop-zone="left"]::after  { left: 0; width: 50%; }
+[data-drop-zone="right"]::after { right: 0; width: 50%; }
+[data-drop-zone="center"]::after { left: 0; right: 0; }
+
 .bowire-panes-divider {
     flex: 0 0 1px;
     align-self: stretch;
