@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### M1 — Localisation, layout and the test pillar *(due 2026-11-03)*
 
-**33/53 done** · 20 backlog
+**34/53 done** · 19 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -33,7 +33,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [34](https://github.com/Kuestenlogik/Bowire.Bootcamp/issues/34) | Bootcamp | [Ship each exercise as two downloads: the shell with its TODOs, and the solution](#issue-kuestenlogik-bowire-bootcamp-34) | ⬜ Backlog | `area:bootcamp` |
 | [36](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/36) | Protocol.Akka | [Multi-subscriber + mixed-mode integration tests](#issue-kuestenlogik-bowire-protocol-akka-36) | ⬜ Backlog | `area:plugin-sdk` |
 | [92](https://github.com/Kuestenlogik/Bowire.Samples/issues/92) | Samples | [Ship each sample as its own ready-to-run download](#issue-kuestenlogik-bowire-samples-92) | ⬜ Backlog | `area:docs` |
-| [583](https://github.com/Kuestenlogik/Bowire/issues/583) | Bowire | [Design-time lint: naming/PII rules, inline workbench hints, test --suite=lint](#issue-kuestenlogik-bowire-583) | ⬜ Backlog | `area:multi` |
 | [639](https://github.com/Kuestenlogik/Bowire/issues/639) | Bowire | [SCIM: live Okta and Entra ID provisioning round-trips](#issue-kuestenlogik-bowire-639) | ⬜ Backlog | `area:workbench` |
 | [690](https://github.com/Kuestenlogik/Bowire/issues/690) | Bowire | [Translate the CLI help surface, or decide not to](#issue-kuestenlogik-bowire-690) | ⬜ Backlog | `area:cli` |
 | [47](https://github.com/Kuestenlogik/Bowire/issues/47) | Bowire | [Sidebar display: method name vs path toggle](#issue-kuestenlogik-bowire-47) | ✅ Done | `area:workbench` |
@@ -49,6 +48,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [365](https://github.com/Kuestenlogik/Bowire/issues/365) | Bowire | [Contract testing + workspace-id: run a workbench-stored workspace's suite by id](#issue-kuestenlogik-bowire-365) | ✅ Done | `area:workbench` |
 | [366](https://github.com/Kuestenlogik/Bowire/issues/366) | Bowire | [Test-pillar UI polish: snapshot diff/approve, data-driven results view, mock frame-drop faults](#issue-kuestenlogik-bowire-366) | ✅ Done | `area:workbench` |
 | [486](https://github.com/Kuestenlogik/Bowire/issues/486) | Bowire | [Security rail: manual OAST/pen-test surface — generate a callback payload + watch interactions live](#issue-kuestenlogik-bowire-486) | ✅ Done | `area:security` |
+| [583](https://github.com/Kuestenlogik/Bowire/issues/583) | Bowire | [Design-time lint: naming/PII rules, inline workbench hints, test --suite=lint](#issue-kuestenlogik-bowire-583) | ✅ Done | `area:multi` |
 | [654](https://github.com/Kuestenlogik/Bowire/issues/654) | Bowire | [Uploaded schemas live in a process-wide static — lost on restart, shared between identities, invisible to the CLI](#issue-kuestenlogik-bowire-654) | ✅ Done | `area:multi` |
 | [663](https://github.com/Kuestenlogik/Bowire/issues/663) | Bowire | [Lint's response-shape rules cannot fire on REST — discovery populates no output fields](#issue-kuestenlogik-bowire-663) | ✅ Done | `area:cli` |
 | [664](https://github.com/Kuestenlogik/Bowire/issues/664) | Bowire | [Method-name form on /api/invoke is not uniform across plugins](#issue-kuestenlogik-bowire-664) | ✅ Done | `area:workbench` |
@@ -297,12 +297,6 @@ Two downloads per exercise, from the Releases page: [[more]](https://github.com/
 
 Each sample downloadable on its own, built and ready to run, from the repo's Releases page — instead of "clone the whole repo, find the folder, work out which project to start". [[more]](https://github.com/Kuestenlogik/Bowire.Samples/issues/92)
 
-#### <a id="issue-kuestenlogik-bowire-583"></a>⬜ Backlog · [#583](https://github.com/Kuestenlogik/Bowire/issues/583) Design-time lint: naming/PII rules, inline workbench hints, test --suite=lint
-
-> `area:multi`
-
-#189 shipped the design-time lint core across **all three surfaces** — CLI (`bowire lint`), Web-UI (workbench Lint rail + `/api/lint`), and MCP (`bowire.lint`) — with a typed rule engine, 5 built-in rules, `.bowire/rules.json` config (toggles + severity overrides), and a plugin SPI (`IBowireLintRule … [[more]](https://github.com/Kuestenlogik/Bowire/issues/583)
-
 #### <a id="issue-kuestenlogik-bowire-639"></a>⬜ Backlog · [#639](https://github.com/Kuestenlogik/Bowire/issues/639) SCIM: live Okta and Entra ID provisioning round-trips
 
 > `area:workbench`
@@ -392,6 +386,12 @@ Follow-ups collecting the workbench-UI remainders from the shipped test-pillar f
 > `area:security`
 
 The `app.interactsh.com` analog, as a **sub-tab of the Security rail** — the workflow the OAST work so far does not cover. [[more]](https://github.com/Kuestenlogik/Bowire/issues/486)
+
+#### <a id="issue-kuestenlogik-bowire-583"></a>✅ Done · [#583](https://github.com/Kuestenlogik/Bowire/issues/583) Design-time lint: naming/PII rules, inline workbench hints, test --suite=lint
+
+> `area:multi`
+
+#189 shipped the design-time lint core across **all three surfaces** — CLI (`bowire lint`), Web-UI (workbench Lint rail + `/api/lint`), and MCP (`bowire.lint`) — with a typed rule engine, 5 built-in rules, `.bowire/rules.json` config (toggles + severity overrides), and a plugin SPI (`IBowireLintRule … [[more]](https://github.com/Kuestenlogik/Bowire/issues/583)
 
 #### <a id="issue-kuestenlogik-bowire-654"></a>✅ Done · [#654](https://github.com/Kuestenlogik/Bowire/issues/654) Uploaded schemas live in a process-wide static — lost on restart, shared between identities, invisible to the CLI
 
