@@ -6615,7 +6615,8 @@ lives at the right of the
 /* #250 — "Split right" on the strip. Same footprint as the "+" so the
    two read as one group of strip actions; solid rather than dashed
    because it acts on the tab that is there, not on one to come. */
-.bowire-request-tab-split {
+.bowire-request-tab-split,
+.bowire-request-tab-orient {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -6630,13 +6631,15 @@ lives at the right of the
     flex-shrink: 0;
     transition: color var(--bowire-transition), border-color var(--bowire-transition), background var(--bowire-transition);
 }
-.bowire-request-tab-split:hover:not(:disabled) {
+.bowire-request-tab-split:hover:not(:disabled),
+.bowire-request-tab-orient:hover {
     color: var(--bowire-text);
     border-color: var(--bowire-border);
     background: var(--bowire-surface-hover);
 }
 .bowire-request-tab-split:disabled { opacity: 0.35; cursor: default; }
-.bowire-request-tab-split svg { width: 14px; height: 14px; }
+.bowire-request-tab-split svg,
+.bowire-request-tab-orient svg { width: 14px; height: 14px; }
 
 /* #250 — two panes side by side. The row fills the main area; each pane
    is a column that lays out exactly like the single-pane main (strip,
@@ -6652,6 +6655,27 @@ lives at the right of the
     min-width: 0;
     overflow: hidden;
 }
+/* #250 Phase 2 — the stacked row. One orientation for every pane; the
+   shares stay the same, they just run down instead of across. */
+.bowire-panes.bowire-panes-column {
+    flex-direction: column;
+}
+.bowire-panes-column > .bowire-panes-divider {
+    flex: 0 0 1px;
+    align-self: stretch;
+    width: auto;
+    cursor: row-resize;
+}
+/* The hit area grows the other way too: thicker than the hairline, but on y. */
+.bowire-panes-column > .bowire-panes-divider::after {
+    top: -4px;
+    bottom: -4px;
+    left: 0;
+    right: 0;
+}
+body.bowire-panes-resizing-column { cursor: row-resize; user-select: none; }
+body.bowire-panes-resizing-column .bowire-panes-divider { background: var(--bowire-accent); }
+
 .bowire-tab-pane {
     flex: 1 1 50%;
     display: flex;
@@ -6697,6 +6721,9 @@ lives at the right of the
 [data-drop-zone="left"]::after  { left: 0; width: 50%; }
 [data-drop-zone="right"]::after { right: 0; width: 50%; }
 [data-drop-zone="center"]::after { left: 0; right: 0; }
+/* Stacked: the band covers the half the new pane would take, top or bottom. */
+[data-drop-zone="top"]::after    { left: 0; right: 0; bottom: 50%; }
+[data-drop-zone="bottom"]::after { left: 0; right: 0; top: 50%; }
 
 .bowire-panes-divider {
     flex: 0 0 1px;

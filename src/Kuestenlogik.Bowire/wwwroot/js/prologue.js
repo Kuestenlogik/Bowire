@@ -5370,22 +5370,31 @@
     let activeTabId = null;
 
     // ---- Panes (#250) ----
-    // The main area holds one or two panes side by side. Each pane has
+    // The main area holds up to three panes in one row. Each pane has
     // its own tab strip and its own active tab; a tab belongs to exactly
     // one pane (`tab.paneId`), and `requestTabs` stays the single ordered
     // registry — a pane's strip is the registry filtered by pane, in
     // registry order. `activeTabId`, `selectedMethod` and
-    // `selectedService` keep meaning "the tab in front": with two panes
-    // that is the active tab of the FOCUSED pane, which is where a
+    // `selectedService` keep meaning "the tab in front": with several
+    // panes that is the active tab of the FOCUSED pane, which is where a
     // sidebar click lands, what Ctrl+Enter runs, and what the action bar
-    // of the other pane is not.
+    // of the other panes is not.
     //
-    // Two panes at most. Three covers little the second does not, and
-    // the layout algebra of n panes (nesting, split down, drop targets on
-    // every edge) is exactly what this deliberately leaves out.
+    // A flat row, never a tree (Phase 2, decided 2026-09-28). All panes
+    // sit side by side or all are stacked — `paneOrientation` is one
+    // value for the whole row, switched on its own. Nesting (split one
+    // pane down, keep its neighbour beside it) is the layout algebra this
+    // still leaves out: a tree of rows and columns, a divider per node,
+    // drop targets on every edge of every leaf. Three covers comparing
+    // two endpoints while watching a third stream, which is what people
+    // split for.
     let requestPanes = [{ id: 'pane_1', activeTab: null, width: 50 }];
     let focusedPaneId = 'pane_1';
-    var PANE_MAX = 2;
+    // 'row' = side by side, 'column' = stacked. Meaningless with one pane,
+    // and reset to 'row' when the row folds back to one, so the gesture
+    // that opens the next split decides it afresh.
+    let paneOrientation = 'row';
+    var PANE_MAX = 3;
     var PANE_MIN_WIDTH_PCT = 20;
 
     function paneById(id) {
@@ -5418,11 +5427,17 @@
         }
         return null;
     }
-    function otherPane(pane) {
-        for (var i = 0; i < requestPanes.length; i++) {
-            if (requestPanes[i].id !== pane.id) return requestPanes[i];
-        }
-        return null;
+    /// The pane after `pane` in the row, or the one before it when it is
+    /// the last. With two panes that is simply "the other one"; with three
+    /// it is the one a tab moving on, or a pane folding away, hands over to.
+    function neighbourPane(pane) {
+        var i = requestPanes.indexOf(pane);
+        if (i < 0) return null;
+        return requestPanes[i + 1] || requestPanes[i - 1] || null;
+    }
+    /// Size every pane evenly — a fresh split, a pane gone, a pane added.
+    function evenPaneSizes() {
+        requestPanes.forEach(function (p) { p.width = 100 / requestPanes.length; });
     }
     function nextPaneId() {
         var n = 0;
@@ -5484,25 +5499,99 @@
         persistRequestTabs();
         return true;
     }
-    /// "Split right": a second pane opens beside the first, carrying the
-    /// tab. With two panes already, the tab moves to the other one — the
-    /// operator's intent is "this tab, over there", and there is exactly
-    /// one there.
-    function splitTabRight(tabId) {
+    /// Whether splitting this tab would open a pane — as opposed to
+    /// moving it on. The labels and the disabled state read this so the
+    /// control says what it will do.
+    function canSplitTab(tabId) {
+        var tab = tabById(tabId);
+        var source = tab ? paneById(tab.paneId) : null;
+        // A lone tab has nothing to split away from: its pane would fold
+        // in the same gesture and the operator would be back where they
+        // started, one animation later.
+        return !!source && requestPanes.length < PANE_MAX && paneTabs(source).length > 1;
+    }
+
+    /// Split a tab into a new pane beside its own, or — when that cannot
+    /// open one — move it on to the neighbouring pane.
+    ///
+    /// `axis` is 'row' (split right) or 'column' (split down), and only
+    /// counts while there is one pane: from two on, the row has an
+    /// orientation, and splitting adds to it. Turning the whole row is its
+    /// own control (`setPaneOrientation`) rather than a side effect of a
+    /// menu item that says "split".
+    ///
+    /// The move-on half is what keeps Ctrl+\ cycling a tab across the
+    /// panes: pressed on a lone tab it carries it to the neighbour, and a
+    /// pane left empty folds.
+    function splitTab(tabId, axis) {
         var tab = tabById(tabId);
         if (!tab) return;
         var source = paneById(tab.paneId);
-        var target = source ? otherPane(source) : null;
-        if (!target) {
-            if (requestPanes.length >= PANE_MAX) return;
-            // A lone tab has nothing to split away from.
-            if (source && paneTabs(source).length < 2) return;
-            target = { id: nextPaneId(), activeTab: null, width: 50 };
-            requestPanes.push(target);
-            requestPanes.forEach(function (p) { p.width = 100 / requestPanes.length; });
+        if (!source) return;
+        if (canSplitTab(tabId)) {
+            if (requestPanes.length === 1) paneOrientation = axis === 'column' ? 'column' : 'row';
+            var fresh = { id: nextPaneId(), activeTab: null, width: 50 };
+            requestPanes.splice(requestPanes.indexOf(source) + 1, 0, fresh);
+            evenPaneSizes();
+            moveTabToPane(tab.id, fresh.id);
+        } else {
+            var target = neighbourPane(source);
+            if (!target) return;
+            moveTabToPane(tab.id, target.id);
         }
-        moveTabToPane(tab.id, target.id);
         resetTabViewState();
+        render();
+    }
+    /// The pane actions in a tab's context menu.
+    ///
+    /// With one pane both directions are on offer, because that choice is
+    /// what sets the row's orientation. From two panes on, only the split
+    /// along the row is — the other direction would mean turning every pane,
+    /// and that is the orientation button's job, not a menu item's. Moving
+    /// is offered per destination: with three panes "the other pane" is two
+    /// panes, and naming them is shorter than explaining which one.
+    function paneMenuEntries(tabId) {
+        var tab = tabById(tabId);
+        if (!tab) return [];
+        var entries = [];
+        var splittable = canSplitTab(tabId);
+        var single = requestPanes.length === 1;
+        if (single || paneOrientation === 'row') {
+            entries.push({
+                label: t('main.tabs.splitRight'), icon: 'columns',
+                disabled: !splittable,
+                onClick: function () { splitTab(tabId, 'row'); }
+            });
+        }
+        if (single || paneOrientation === 'column') {
+            entries.push({
+                label: t('main.tabs.splitDown'), icon: 'rows',
+                disabled: !splittable,
+                onClick: function () { splitTab(tabId, 'column'); }
+            });
+        }
+        requestPanes.forEach(function (p, i) {
+            if (p.id === tab.paneId) return;
+            entries.push({
+                label: t('main.tabs.moveToPane', { n: i + 1 }),
+                onClick: function () {
+                    if (moveTabToPane(tabId, p.id)) { resetTabViewState(); render(); }
+                }
+            });
+        });
+        return entries;
+    }
+
+    /// Kept for the callers that only ever meant "along the row".
+    function splitTabRight(tabId) { splitTab(tabId, 'row'); }
+
+    /// Stack the panes, or put them side by side again. The sizes carry
+    /// over: they are shares of the row, whichever way it runs.
+    function setPaneOrientation(orientation) {
+        var next = orientation === 'column' ? 'column' : 'row';
+        if (next === paneOrientation || requestPanes.length < 2) return;
+        paneOrientation = next;
+        persistRequestTabs();
         render();
     }
     // #250 — the tab in flight, or null. `dataTransfer` is readable only on
@@ -5524,8 +5613,15 @@
         var target = paneById(targetPaneId);
         if (!tab || !target) return false;
 
-        var wantsNewPane = (zone === 'left' || zone === 'right')
-            && requestPanes.length < PANE_MAX;
+        var axis = (zone === 'left' || zone === 'right') ? 'row'
+            : (zone === 'top' || zone === 'bottom') ? 'column' : null;
+        // An edge only opens a pane while there is room, and — from two
+        // panes on — only along the row's orientation. paneDropZone never
+        // offers the others, so this is the same rule twice, kept here so
+        // a drop the hint did not advertise cannot open a pane anyway.
+        var wantsNewPane = axis !== null
+            && requestPanes.length < PANE_MAX
+            && (requestPanes.length === 1 || axis === paneOrientation);
         if (!wantsNewPane) {
             if (tab.paneId === target.id) return false;
             var moved = moveTabToPane(tabId, target.id);
@@ -5533,31 +5629,54 @@
             return moved;
         }
 
-        // A lone tab has nothing to split away from: the pane it leaves would
-        // collapse in the same gesture and the operator would be back where
-        // they started, one animation later.
+        // A lone tab dropped on its own pane's edge has nothing to split
+        // away from. Dropped on ANOTHER pane's edge it is a move to a new
+        // place in the row — its old pane folds, and that is the point.
         var source = paneById(tab.paneId);
-        if (source && paneTabs(source).length < 2) return false;
+        if (source === target && paneTabs(source).length < 2) return false;
 
+        if (requestPanes.length === 1) paneOrientation = axis;
         var fresh = { id: nextPaneId(), activeTab: null, width: 50 };
+        var before = zone === 'left' || zone === 'top';
         var at = requestPanes.indexOf(target);
-        requestPanes.splice(zone === 'left' ? at : at + 1, 0, fresh);
-        requestPanes.forEach(function (p) { p.width = 100 / requestPanes.length; });
+        requestPanes.splice(before ? at : at + 1, 0, fresh);
+        evenPaneSizes();
         moveTabToPane(tabId, fresh.id);
         resetTabViewState();
         render();
         return true;
     }
 
-    /// The drop zone a pointer at `clientX` is in, for a pane occupying
-    /// `rect`. The outer quarters are the split zones; a narrow pane would
-    /// otherwise be all edge and never offer the merge.
-    function paneDropZone(rect, clientX) {
-        if (!rect || !rect.width) return 'center';
-        var x = (clientX - rect.left) / rect.width;
-        if (x < 0.25) return 'left';
-        if (x > 0.75) return 'right';
-        return 'center';
+    /// The drop zone a pointer is in, for a pane occupying `rect`.
+    ///
+    /// Only zones that will actually do something are returned, because
+    /// the zone is also the hint on screen and a hint that promises a split
+    /// the drop will not make is a lie (it did, before Phase 2: with two
+    /// panes the band still showed while the drop only moved the tab).
+    ///   - one pane:  all four edges — this is how a row or a stack begins;
+    ///   - more:      the two edges along the row's orientation;
+    ///   - full row:  no edges at all, everything is "into this pane".
+    /// The outer quarters are the edges; a narrow pane would otherwise be
+    /// all edge and never offer the middle. In a corner the nearer edge
+    /// wins.
+    ///
+    /// Pure on purpose — the pane count and orientation come in as
+    /// arguments, so the rule can be tested without a workbench.
+    function paneDropZone(rect, clientX, clientY, paneCount, orientation) {
+        if (!rect || !rect.width || !rect.height) return 'center';
+        if (paneCount >= PANE_MAX) return 'center';
+        var fx = (clientX - rect.left) / rect.width;
+        var fy = (clientY - rect.top) / rect.height;
+        var candidates = [];
+        var horizontal = paneCount <= 1 || orientation !== 'column';
+        var vertical = paneCount <= 1 || orientation === 'column';
+        if (horizontal && fx < 0.25) candidates.push(['left', fx]);
+        if (horizontal && fx > 0.75) candidates.push(['right', 1 - fx]);
+        if (vertical && fy < 0.25) candidates.push(['top', fy]);
+        if (vertical && fy > 0.75) candidates.push(['bottom', 1 - fy]);
+        if (candidates.length === 0) return 'center';
+        candidates.sort(function (a, b) { return a[1] - b[1]; });
+        return candidates[0][0];
     }
 
     /// The tab id off a drop, whichever channel carried it.
@@ -5596,7 +5715,8 @@
         if (!draggingTabId) return;
         var dragged = tabById(draggingTabId);
         if (!dragged) return;
-        var zone = paneDropZone(e.currentTarget.getBoundingClientRect(), e.clientX);
+        var zone = paneDropZone(e.currentTarget.getBoundingClientRect(),
+            e.clientX, e.clientY, requestPanes.length, paneOrientation);
         // Dropping a tab back into the middle of its own pane is a no-op, and
         // an accepted drop that does nothing reads as a bug. The edges are
         // still live there: that is how a second pane is opened.
@@ -5611,7 +5731,8 @@
 
     function _paneDrop(e, pane) {
         e.preventDefault();
-        var zone = paneDropZone(e.currentTarget.getBoundingClientRect(), e.clientX);
+        var zone = paneDropZone(e.currentTarget.getBoundingClientRect(),
+            e.clientX, e.clientY, requestPanes.length, paneOrientation);
         e.currentTarget.removeAttribute('data-drop-zone');
         var id = draggedTabId(e);
         if (id) dropTabOnPane(id, pane.id, zone);
@@ -5621,9 +5742,10 @@
         var idx = requestPanes.indexOf(pane);
         if (idx < 0 || requestPanes.length < 2) return;
         requestPanes.splice(idx, 1);
-        // The survivor takes the whole width; a fresh split starts even.
-        requestPanes.forEach(function (p) { p.width = 100 / requestPanes.length; });
-        if (focusedPaneId === pane.id) focusedPaneId = requestPanes[0].id;
+        // The survivors share the room evenly; a fresh split starts even.
+        evenPaneSizes();
+        if (requestPanes.length === 1) paneOrientation = 'row';
+        if (focusedPaneId === pane.id) focusedPaneId = requestPanes[Math.min(idx, requestPanes.length - 1)].id;
     }
     /// The tab whose state object is `S`, if any — the way a stream
     /// callback or a DOM helper that only holds a state finds its pane.
@@ -5656,15 +5778,28 @@
         return document.getElementById('bowire-tab-pane-' + pane.id) || document;
     }
     function focusedSurfaceEl() { return surfaceEl(focusedPane()); }
-    function setPaneWidth(paneId, pct) {
-        var pane = paneById(paneId);
-        var other = pane ? otherPane(pane) : null;
-        if (!pane || !other) return;
-        pct = Math.max(PANE_MIN_WIDTH_PCT, Math.min(100 - PANE_MIN_WIDTH_PCT, pct));
-        pane.width = pct;
-        other.width = 100 - pct;
+    /// Move the boundary between a pane and the one after it.
+    ///
+    /// `leadShare` is the leading pane's share of the two together, 0-100 —
+    /// a divider only ever trades room between its two neighbours, and the
+    /// third pane keeps its size. Each side keeps at least the minimum,
+    /// measured against the whole row so a pane never shrinks below what
+    /// its tab strip needs.
+    function setPaneSplit(leadId, leadShare) {
+        var lead = paneById(leadId);
+        var i = requestPanes.indexOf(lead);
+        var trail = i >= 0 ? requestPanes[i + 1] : null;
+        if (!lead || !trail) return;
+        var pair = lead.width + trail.width;
+        var min = Math.min(PANE_MIN_WIDTH_PCT, pair / 2);
+        var w = pair * Math.max(0, Math.min(100, leadShare)) / 100;
+        w = Math.max(min, Math.min(pair - min, w));
+        lead.width = w;
+        trail.width = pair - w;
         persistRequestTabs();
     }
+    /// Kept for the two-pane callers: the leading pane's share of the row.
+    function setPaneWidth(paneId, pct) { setPaneSplit(paneId, pct); }
     // #123 — open-tab persistence. Save the (serviceKey, methodKey,
     // id) triplets to localStorage on every tab mutation; rehydrate
     // service/method object references lazily once discovery
@@ -5698,6 +5833,9 @@
                         return { id: p.id, activeTab: p.activeTab, width: p.width };
                     }),
                     focused: focusedPaneId,
+                    // Omitted side by side, so a split stored before Phase 2
+                    // and one stored after read the same.
+                    orientation: paneOrientation === 'column' ? 'column' : undefined,
                 }));
             } else {
                 localStorage.removeItem(wsKey('bowire_panes'));
@@ -5818,6 +5956,8 @@
             requestPanes.forEach(function (p) { p.width = Math.max(PANE_MIN_WIDTH_PCT, p.width * 100 / total); });
         }
         focusedPaneId = (saved && paneById(saved.focused)) ? saved.focused : requestPanes[0].id;
+        paneOrientation = (requestPanes.length > 1 && saved && saved.orientation === 'column')
+            ? 'column' : 'row';
     }
 
     let _tabIdCounter = 0;
@@ -6138,7 +6278,7 @@
             // Last tab of a pane: the pane collapses and the other one
             // takes the whole width — with its own active tab in front
             // whenever the closed tab was the one there.
-            var survivor = otherPane(pane);
+            var survivor = neighbourPane(pane);
             removePane(pane);
             if (wasInFront) {
                 focusPaneTab(survivor, null);

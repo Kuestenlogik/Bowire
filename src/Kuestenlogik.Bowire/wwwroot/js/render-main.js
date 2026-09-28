@@ -5249,14 +5249,24 @@
             renderTabSurface(only, main);
             return main;
         }
-        var row = el('div', { id: 'bowire-panes', className: 'bowire-panes' });
+        // #250 Phase 2 — one orientation for the whole row: side by side, or
+        // stacked. The class is the only thing that changes; the panes and
+        // their shares are the same either way.
+        var stacked = paneOrientation === 'column';
+        var row = el('div', {
+            id: 'bowire-panes',
+            className: 'bowire-panes' + (stacked ? ' bowire-panes-column' : '')
+        });
         requestPanes.forEach(function (pane, pi) {
             if (pi > 0) {
                 row.appendChild(el('div', {
-                    id: 'bowire-panes-divider',
+                    // The first divider keeps the id it always had, so a
+                    // two-pane workbench renders exactly what it did before.
+                    id: pi === 1 ? 'bowire-panes-divider' : 'bowire-panes-divider-' + pi,
                     className: 'bowire-panes-divider',
                     role: 'separator',
-                    'aria-orientation': 'vertical',
+                    // The separator's own orientation is across the row's.
+                    'aria-orientation': stacked ? 'horizontal' : 'vertical',
                     title: t('main.panes.resize')
                 }));
             }
@@ -5287,8 +5297,8 @@
         });
         main.appendChild(row);
         afterRender(function () {
-            var d = document.getElementById('bowire-panes-divider');
-            if (d) initPanesDivider(d);
+            var dividers = document.querySelectorAll('#bowire-panes > .bowire-panes-divider');
+            for (var di = 0; di < dividers.length; di++) initPanesDivider(dividers[di]);
         });
         return main;
     }
@@ -6356,7 +6366,6 @@
                             var idx = stripNow.findIndex(function (tab) { return tab.id === id; });
                             var hasOthers = stripNow.length > 1;
                             var hasRight = idx >= 0 && idx < stripNow.length - 1;
-                            var canSplit = requestPanes.length < PANE_MAX ? stripNow.length > 1 : true;
                             showContextMenu(e.clientX, e.clientY, [
                                 {
                                     label: t('common.close'),
@@ -6390,18 +6399,8 @@
                                         });
                                     }
                                 },
-                                { separator: true },
-                                {
-                                    // #250 — a second pane beside this one, carrying
-                                    // the tab; with two panes already, the tab moves
-                                    // over. A lone tab has nothing to split from.
-                                    label: requestPanes.length > 1
-                                        ? t('main.tabs.moveToOtherPane') : t('main.tabs.splitRight'),
-                                    icon: 'columns',
-                                    disabled: !canSplit,
-                                    onClick: function () { splitTabRight(id); }
-                                }
-                            ]);
+                                { separator: true }
+                            ].concat(paneMenuEntries(id)));
                         }
                     },
                         el('span', {
@@ -6444,15 +6443,38 @@
             // #250 — "Split right" on the strip: the toolbar route to a
             // second pane for operators who never open a tab's context
             // menu. Disabled while there is nothing to split from.
-            var stripCanSplit = requestPanes.length < PANE_MAX ? strip.length > 1 : (tab && strip.length > 0);
+            // Phase 2: the button says what it will do — split along the row
+            // while there is room and something to split from, otherwise
+            // move the tab on to the next pane.
             if (tab) {
+                var willSplit = canSplitTab(tab.id);
+                var canMove = requestPanes.length > 1;
+                var splitLabel = !willSplit
+                    ? t('main.tabs.moveToNextPane')
+                    : paneOrientation === 'column' && requestPanes.length > 1
+                        ? t('main.tabs.splitDown') : t('main.tabs.splitRight');
                 tabScroll.appendChild(el('button', {
                     className: 'bowire-request-tab-split',
-                    title: requestPanes.length > 1 ? t('main.tabs.moveToOtherPane') : t('main.tabs.splitRight'),
-                    'aria-label': requestPanes.length > 1 ? t('main.tabs.moveToOtherPane') : t('main.tabs.splitRight'),
-                    disabled: stripCanSplit ? undefined : true,
-                    onClick: function () { if (tab) splitTabRight(tab.id); },
+                    title: splitLabel,
+                    'aria-label': splitLabel,
+                    disabled: (willSplit || canMove) ? undefined : true,
+                    onClick: function () {
+                        if (tab) splitTab(tab.id, requestPanes.length > 1 ? paneOrientation : 'row');
+                    },
                     innerHTML: svgIcon('columns')
+                }));
+            }
+            // Turning the whole row: its own control, offered once there is a
+            // row to turn. Never a side effect of "split".
+            if (requestPanes.length > 1) {
+                var toStack = paneOrientation !== 'column';
+                var turnLabel = toStack ? t('main.panes.stack') : t('main.panes.sideBySide');
+                tabScroll.appendChild(el('button', {
+                    className: 'bowire-request-tab-orient',
+                    title: turnLabel,
+                    'aria-label': turnLabel,
+                    onClick: function () { setPaneOrientation(toStack ? 'column' : 'row'); },
+                    innerHTML: svgIcon(toStack ? 'rows' : 'columns')
                 }));
             }
             tabScroll.appendChild(el('button', {

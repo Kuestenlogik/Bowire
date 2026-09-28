@@ -56,11 +56,12 @@ async function twoTabsOneStreaming(page: Page): Promise<void> {
  * DataTransfer is shared across the three events, which is what a real drag
  * does and what the drop handler reads the tab id out of.
  *
- * `at` picks the zone: 0.1 is the left quarter, 0.9 the right, 0.5 the middle.
+ * `at` and `atY` pick the zone: (0.1, 0.5) is the left quarter, (0.5, 0.1)
+ * the top one, (0.5, 0.5) the middle.
  */
 async function dragTabOnto(
     page: Page, tab: import('@playwright/test').Locator,
-    target: import('@playwright/test').Locator, at = 0.5,
+    target: import('@playwright/test').Locator, at = 0.5, atY = 0.5,
 ): Promise<void> {
     const dt = await page.evaluateHandle(() => new DataTransfer());
     await tab.dispatchEvent('dragstart', { dataTransfer: dt });
@@ -68,7 +69,7 @@ async function dragTabOnto(
     const box = await target.boundingBox();
     if (!box) throw new Error('drop target has no box — it is not on the page');
     const clientX = Math.round(box.x + box.width * at);
-    const clientY = Math.round(box.y + box.height / 2);
+    const clientY = Math.round(box.y + box.height * atY);
 
     await target.dispatchEvent('dragover', { dataTransfer: dt, clientX, clientY });
     await target.dispatchEvent('drop', { dataTransfer: dt, clientX, clientY });
@@ -170,6 +171,125 @@ test.describe('Pane split (#250)', () => {
         // close button follows, reached by a different gesture.
         await expect(panes(page)).toHaveCount(0);
         await expect(page.locator('.bowire-request-tab')).toHaveCount(2);
+    });
+
+    // ---- Phase 2: three panes, one orientation ----
+
+    /** Three tabs: Ticker streaming, Status report, and a second Status report. */
+    async function threeTabs(page: Page): Promise<void> {
+        await twoTabsOneStreaming(page);
+        // The "+" pins the method in front into a fresh tab.
+        await page.locator('.bowire-request-tab-new').first().click();
+        await expect(page.locator('.bowire-request-tab')).toHaveCount(3);
+    }
+
+    /** Split twice from the strip: pane_1 → pane_2, then pane_1 again → a third. */
+    async function threePanes(page: Page): Promise<void> {
+        await threeTabs(page);
+        await page.locator('.bowire-request-tab-split').first().click();
+        await expect(panes(page)).toHaveCount(2);
+        await pane(page, 'pane_1').locator('.bowire-request-tab-split').click();
+        await expect(panes(page)).toHaveCount(3);
+    }
+
+    test('a tab dragged to the top edge stacks the panes', async ({ page }) => {
+        // "Split down", reached the way "split right" is: one pane offers all
+        // four edges, and the edge chosen sets the row's orientation.
+        await openWorkbench(page);
+        await twoTabsOneStreaming(page);
+
+        const status = page.locator('.bowire-request-tab', { hasText: 'Status report' }).first();
+        await dragTabOnto(page, status, page.locator('.bowire-main[data-pane-id]'), 0.5, 0.1);
+
+        await expect(panes(page)).toHaveCount(2);
+        await expect(page.locator('#bowire-panes')).toHaveClass(/bowire-panes-column/);
+        await expect(page.locator('#bowire-panes-divider')).toHaveAttribute('aria-orientation', 'horizontal');
+        // Dropped on the top edge, so the new pane is the upper one.
+        await expect(panes(page).nth(0).locator('.bowire-request-tab')).toContainText('Status report');
+        await expect(panes(page).nth(1).locator('.bowire-request-tab')).toContainText('Ticker');
+    });
+
+    test('three panes side by side, each reachable with Alt+1..3', async ({ page }) => {
+        await openWorkbench(page);
+        await threePanes(page);
+
+        // Two dividers, the first under the id it always had.
+        await expect(page.locator('#bowire-panes > .bowire-panes-divider')).toHaveCount(2);
+        await expect(page.locator('#bowire-panes-divider')).toHaveCount(1);
+        // Split from pane_1, so the new pane sits right of it — not at the end.
+        await expect(panes(page).nth(1)).toHaveAttribute('data-pane-id', 'pane_3');
+
+        // Alt+digit, not Ctrl+digit: Ctrl+1..9 still jumps between tabs.
+        await page.locator('body').click({ position: { x: 1, y: 1 } });
+        await page.keyboard.press('Alt+1');
+        await expect(panes(page).nth(0)).toHaveClass(/focused/);
+        await page.keyboard.press('Alt+3');
+        await expect(panes(page).nth(2)).toHaveClass(/focused/);
+        await expect(panes(page).nth(0)).not.toHaveClass(/focused/);
+    });
+
+    test('a full row offers no edge: a drop there moves the tab instead of opening a fourth pane', async ({ page }) => {
+        await openWorkbench(page);
+        await threePanes(page);
+
+        const moving = panes(page).nth(2).locator('.bowire-request-tab').first();
+        const name = (await moving.locator('.bowire-request-tab-name').textContent()) ?? '';
+        await dragTabOnto(page, moving, panes(page).nth(0), 0.05);
+
+        // Still three would be wrong too: the last pane lost its only tab and
+        // folds. Two panes, and the tab joined the first — which after two
+        // splits held Ticker alone.
+        await expect(panes(page)).toHaveCount(2);
+        const first = panes(page).nth(0).locator('.bowire-request-tab');
+        await expect(first).toHaveCount(2);
+        await expect(first.filter({ hasText: name })).toHaveCount(1);
+        await expect(first.filter({ hasText: 'Ticker' })).toHaveCount(1);
+    });
+
+    test('a divider trades room between its two neighbours only', async ({ page }) => {
+        // With two panes "the other pane" took whatever the divider gave up.
+        // With three, dragging the first divider must leave the third alone.
+        await openWorkbench(page);
+        await threePanes(page);
+
+        const basis = () => page.evaluate(() =>
+            [...document.querySelectorAll('#bowire-panes > .bowire-tab-pane')]
+                .map(p => parseFloat((p as HTMLElement).style.flexBasis)));
+        const before = await basis();
+
+        // Real mouse events here — the divider is a plain mousedown/move/up
+        // handler, not drag-and-drop.
+        const divider = page.locator('#bowire-panes-divider');
+        const box = await divider.boundingBox();
+        if (!box) throw new Error('divider not on the page');
+        await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+        await page.mouse.down();
+        await page.mouse.move(box.x - 120, box.y + box.height / 2, { steps: 6 });
+        await page.mouse.up();
+
+        await expect.poll(async () => (await basis())[0]).toBeLessThan(before[0] - 1);
+        const after = await basis();
+        expect(after[2], 'the third pane keeps its share').toBeCloseTo(before[2], 1);
+        expect(after[0] + after[1], 'the first two keep their total').toBeCloseTo(before[0] + before[1], 1);
+    });
+
+    test('the orientation turns the whole row, and survives a reload', async ({ page }) => {
+        await openWorkbench(page);
+        await threePanes(page);
+        const row = page.locator('#bowire-panes');
+        await expect(row).not.toHaveClass(/bowire-panes-column/);
+
+        await page.locator('.bowire-request-tab-orient').first().click();
+        await expect(row).toHaveClass(/bowire-panes-column/);
+        await expect(panes(page)).toHaveCount(3);
+
+        await page.reload({ waitUntil: 'domcontentloaded' });
+        await page.waitForSelector('#bowire-app', { timeout: 30_000 });
+        await expect(page.locator('#bowire-panes')).toHaveClass(/bowire-panes-column/);
+        await expect(panes(page)).toHaveCount(3);
+
+        await page.locator('.bowire-request-tab-orient').first().click();
+        await expect(page.locator('#bowire-panes')).not.toHaveClass(/bowire-panes-column/);
     });
 
     test('closing the last tab of a pane folds the split back into one pane', async ({ page }) => {

@@ -406,8 +406,25 @@
                     return;
                 }
             }
-            // #250 — Ctrl/Cmd+\ splits the active tab to the right (or
-            // moves it to the other pane when there already are two).
+            // #250 Phase 2 — Alt+1..3 focuses pane 1..3. Ctrl+1..9 stays
+            // with the tabs above: moving it would break a shortcut people
+            // already have in their hands. On macOS Option+digit types a
+            // character (¡ ™ £) in a text field, so there it only acts
+            // outside one; Windows and Linux type nothing and it acts
+            // everywhere. `e.code` rather than `e.key`, because with Option
+            // held `e.key` is the character, not the digit.
+            if (e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey
+                && /^Digit[1-9]$/.test(e.code || '')) {
+                var isMac = /Mac|iPhone|iPad/.test(navigator.platform || '');
+                var paneTarget = requestPanes[parseInt(e.code.slice(5), 10) - 1];
+                if (paneTarget && !(isMac && inText)) {
+                    e.preventDefault();
+                    focusPane(paneTarget.id);
+                    return;
+                }
+            }
+            // #250 — Ctrl/Cmd+\ splits the active tab along the row (or
+            // moves it on to the next pane when it cannot open one).
             // Ctrl/Cmd+Alt+\ is the within-tab split cycle; this one has
             // no Alt.
             if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey
