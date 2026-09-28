@@ -71,13 +71,21 @@ public sealed class LintSuiteTests : IDisposable
     // ---- the gate ----
 
     [Fact]
-    public async Task By_Default_Any_Finding_Fails_The_Run_As_Any_Test_Failure_Would()
+    public async Task By_Default_It_Reports_And_Passes_As_Bowire_Lint_Does()
     {
-        // `bowire test` fails on any failed check unless told otherwise; a lint
-        // finding is a failed check under that roof.
+        // Lint's default, not test's: adopting lint must not break a pipeline on
+        // the first run, and the Info-level naming rules find something in
+        // nearly every real API. Gating is something you write down.
         var (rc, stdout, _) = await Test("--suite", "lint", Snapshot());
-        Assert.Equal(1, rc);
+        Assert.Equal(0, rc);
         Assert.Contains("password", stdout, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Any_Written_Down_Fails_On_Any_Finding()
+    {
+        var (rc, _, _) = await Test("--suite", "lint", Snapshot(), "--fail-on", "any");
+        Assert.Equal(1, rc);
     }
 
     [Fact]

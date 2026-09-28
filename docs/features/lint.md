@@ -34,6 +34,32 @@ from the URL scheme when unset.
 | `BWR-LINT-MISSING-PAGINATION` | Medium | a method **returns a list** and takes no `page` / `limit` / `offset` / `cursor` parameter, and its response carries no continuation token |
 | `BWR-LINT-STRING-TIMESTAMP` | Low | a timestamp ships as a bare string rather than a typed instant |
 | `BWR-LINT-MISSING-VERSIONING` | Low | the service declares no version **and** no route carries a version marker such as `/v1/` |
+| `BWR-LINT-MIXED-METHOD-NAMING` | Info | a method's name follows a different convention than the rest of its service |
+| `BWR-LINT-MIXED-FIELD-NAMING` | Info | a field's name follows a different convention than the other fields of its service, request and response together |
+
+### The naming rules judge consistency, not a style
+
+Which convention is right depends on the protocol: gRPC methods are PascalCase,
+REST operation ids camelCase, protobuf fields snake_case. A rule that demanded
+one of them would be wrong for the others. What is wrong everywhere is a
+surface that **mixes** them — a payload with `created_at` next to `updatedAt`,
+a service with `GetOrder`, `ListOrders` and `cancelOrder`. So the naming rules
+take the service's own majority as the standard and name the outliers against
+it:
+
+```
+[INFO] BWR-LINT-MIXED-METHOD-NAMING  orders.v1.OrderService.cancelOrder
+       Method 'cancelOrder' is camelCase; the rest of this service is PascalCase (2 PascalCase, 1 camelCase).
+```
+
+A few names cannot tell and are left out of the count entirely: a single
+lower-case word (`status` is valid camelCase, snake_case and kebab-case at
+once), an acronym (`ID`), and a name that is not an identifier at all (the
+`GET_/pets/{id}` Bowire synthesises for a REST operation without an
+`operationId`). HTTP headers and cookies do not count towards field naming —
+kebab-case is the transport's convention there, not the API's. With no
+majority, the finding is raised once for the service rather than pinned on
+either half.
 
 ## What lint can see, and what it cannot
 
@@ -42,9 +68,9 @@ important thing to know before reading a lint result:
 
 | Protocol | Request fields | Response fields | Rules that can fire |
 |----------|----------------|-----------------|---------------------|
-| gRPC (reflection or descriptor set) | yes | yes | all five |
-| REST (OpenAPI document) | yes | yes, where the operation declares a 2xx JSON response schema | all five |
-| REST (embedded, ApiExplorer) | yes | yes, where the endpoint declares its response type | all five |
+| gRPC (reflection or descriptor set) | yes | yes | all |
+| REST (OpenAPI document) | yes | yes, where the operation declares a 2xx JSON response schema | all |
+| REST (embedded, ApiExplorer) | yes | yes, where the endpoint declares its response type | all |
 
 Against a gRPC target the descriptors carry full message types, so every rule
 evaluates. Against a REST target, the response shape comes from the OpenAPI
@@ -117,6 +143,29 @@ rather than the other way round.
 `--format json` or `markdown` with `--output <file>` writes a report a later
 step can pick up — including `bowire report rollup`, which reads lint output
 alongside contract, benchmark, scan and test reports.
+
+### Through the test runner
+
+A job that already collects JUnit and SARIF from `bowire test` can take the
+lint findings into the same reports:
+
+```bash
+bowire test --suite=lint surface.json --fail-on high --junit lint.xml --sarif lint.sarif
+```
+
+| Output | Shape |
+|--------|-------|
+| console | the same text report `bowire lint` prints |
+| `--junit` | one test case **per rule**, failing when that rule found something at or above the gate; findings below it are listed in the case's output. Per rule rather than per finding, so the number of test cases stays the same from run to run |
+| `--sarif` | every finding, at the level its severity maps to (High → error, Medium → warning, Low and Info → note), with service / method / field as a logical location |
+| `--annotations` | GitHub Actions annotations — findings at the gate as errors, the rest as warnings |
+
+`--fail-on` takes `bowire test`'s words (`any` fails on any finding, `never`
+only reports) and `bowire lint`'s severities. Without it the suite uses lint's
+default — report, and pass — for the same reason as above. Unlike `bowire lint`,
+a value it does not know is refused rather than read as "never": under
+`bowire test` the step is a gate, and a typo that quietly turns it green is
+the failure mode to avoid.
 
 ## In the workbench
 

@@ -33,6 +33,8 @@ public sealed class BowireSchemaLinter
         new MissingVersioningRule(),
         new PiiResponseFieldRule(),
         new StringTimestampFieldRule(),
+        new MixedMethodNamingRule(),
+        new MixedFieldNamingRule(),
     ];
 
     /// <summary>A linter loaded with the built-in <see cref="DefaultRules"/>.</summary>

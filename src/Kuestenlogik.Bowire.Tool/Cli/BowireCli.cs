@@ -1578,6 +1578,14 @@ internal static class BowireCli
                         .ConfigureAwait(false);
                     return 2;
                 }
+                // Lint's own default, not test's: `bowire lint` defaults to
+                // "none" so adopting it never breaks a pipeline on the first
+                // run (docs/features/lint.md), and with the Info-level naming
+                // rules a real API has findings on day one. Only when neither
+                // the flag nor Bowire:Test:FailOn says otherwise.
+                var failOnGiven = pr.GetResult(failOn) is { Implicit: false }
+                    || !string.IsNullOrEmpty(cfg["Bowire:Test:FailOn"]);
+                if (!failOnGiven) options.FailOn = "never";
                 return await LintSuiteRunner.RunAsync(options, stdout, stderr).ConfigureAwait(false);
             }
             if (!string.Equals(options.FailOn, "any", StringComparison.OrdinalIgnoreCase)
