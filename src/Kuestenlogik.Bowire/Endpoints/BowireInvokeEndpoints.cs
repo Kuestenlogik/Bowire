@@ -179,15 +179,21 @@ internal static class BowireInvokeEndpoints
 
             // ---- Protocol-plugin dispatch (the normal path) ----
             var registry = BowireEndpointHelpers.GetRegistry();
+            // #751 — the named protocol, or the only one loaded when there is
+            // exactly one. Never "whichever registered first": with several
+            // loaded that dispatched the call over a transport nobody asked
+            // for, picked by the assembly load order.
             var protocol = registry.GetById(body.Protocol ?? "grpc")
-                ?? (registry.Protocols.Count > 0 ? registry.Protocols[0] : null);
+                ?? registry.SoleProtocol();
 
             if (protocol is null)
                 return BowireEndpointHelpers.Problem(
                     type: "urn:bowire:invoke:no-plugin",
                     title: "No protocol plugin available to dispatch this call",
                     status: 502,
-                    detail: $"The requested protocol '{body.Protocol ?? "(default)"}' isn't loaded and no fallback is available. Install the matching plugin or pin a loaded one via the protocol@ URL hint.",
+                    detail: $"The requested protocol '{body.Protocol ?? "(default)"}' isn't loaded. "
+                        + BowireEndpointHelpers.LoadedProtocolsHint(registry)
+                        + " Install the matching plugin or pin a loaded one via the protocol@ URL hint.",
                     instance: "/api/invoke",
                     extensions: new Dictionary<string, object?> {
                         ["protocol"] = body.Protocol,
@@ -365,12 +371,19 @@ internal static class BowireInvokeEndpoints
             (serverUrl, metadata) = BowireEndpointHelpers.ApplyQueryAuthHints(serverUrl, metadata);
 
             var registry = BowireEndpointHelpers.GetRegistry();
+            // #751 — see the unary path above: named, or the sole one.
             var protocol = registry.GetById(protocolId ?? "grpc")
-                ?? (registry.Protocols.Count > 0 ? registry.Protocols[0] : null);
+                ?? registry.SoleProtocol();
 
             if (protocol is null)
             {
-                var errorData = JsonSerializer.Serialize(new { error = "No protocol plugin available." }, BowireEndpointHelpers.JsonOptions);
+                var errorData = JsonSerializer.Serialize(
+                    new
+                    {
+                        error = $"The requested protocol '{protocolId ?? "(default)"}' isn't loaded. "
+                            + BowireEndpointHelpers.LoadedProtocolsHint(registry),
+                    },
+                    BowireEndpointHelpers.JsonOptions);
                 await ctx.Response.WriteAsync($"event: error\ndata: {errorData}\n\n", ctx.RequestAborted);
                 return;
             }

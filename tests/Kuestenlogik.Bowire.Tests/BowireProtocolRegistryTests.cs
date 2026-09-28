@@ -188,6 +188,83 @@ public class BowireProtocolRegistryTests
     // by the integration tests instead, where it runs in a clean process
     // per fixture.
 
+    // ---- Which protocol, when the caller named none (#751) ----
+    //
+    // `Protocols[0]` used to stand in for "the default". Registration order
+    // is the order AppDomain.CurrentDomain.GetAssemblies() hands back, which
+    // is not an order at all — it moves with the operating system, the build
+    // configuration, and whatever ran earlier in the same process. Six call
+    // sites read it that way; one of them made `bowire test --workspace-id`
+    // pass on Windows and fail on the Linux CI runner for five days.
+
+    [Fact]
+    public void DefaultProtocol_IsRest_WhateverOrderTheRegistryWasFilledIn()
+    {
+        // Registered in a hostile order: REST last, behind ids that sort
+        // before it. Order must not decide this.
+        var registry = new BowireProtocolRegistry();
+        registry.Register(new StubProtocol("amqp", "AMQP"));
+        registry.Register(new StubProtocol("grpc", "gRPC"));
+        registry.Register(new StubProtocol("nats", "NATS"));
+        registry.Register(new StubProtocol("rest", "REST"));
+
+        Assert.Equal("rest", registry.DefaultProtocol()?.Id);
+    }
+
+    [Fact]
+    public void DefaultProtocol_WithoutRest_PicksTheSameOneTwiceRunning()
+    {
+        // A host without the REST plugin still has to be predictable. Two
+        // registries, same members, opposite insertion order, one answer.
+        var forwards = new BowireProtocolRegistry();
+        forwards.Register(new StubProtocol("nats", "NATS"));
+        forwards.Register(new StubProtocol("grpc", "gRPC"));
+        forwards.Register(new StubProtocol("amqp", "AMQP"));
+
+        var backwards = new BowireProtocolRegistry();
+        backwards.Register(new StubProtocol("amqp", "AMQP"));
+        backwards.Register(new StubProtocol("grpc", "gRPC"));
+        backwards.Register(new StubProtocol("nats", "NATS"));
+
+        Assert.Equal(forwards.DefaultProtocol()?.Id, backwards.DefaultProtocol()?.Id);
+        Assert.Equal("amqp", forwards.DefaultProtocol()?.Id);
+    }
+
+    [Fact]
+    public void DefaultProtocol_EmptyRegistry_IsNull()
+    {
+        // Callers turn this into a message. An exception here would be a crash.
+        Assert.Null(new BowireProtocolRegistry().DefaultProtocol());
+    }
+
+    [Fact]
+    public void SoleProtocol_IsTheOneWhenThereIsExactlyOne()
+    {
+        // The embedded host that references a single protocol plugin: a call
+        // that named nothing can only have meant this one.
+        var registry = new BowireProtocolRegistry();
+        registry.Register(new StubProtocol("rest", "REST"));
+
+        Assert.Equal("rest", registry.SoleProtocol()?.Id);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(2)]
+    [InlineData(5)]
+    public void SoleProtocol_IsNullWhenThereIsNotExactlyOne(int count)
+    {
+        // With none there is nothing to pick, and with several there is no
+        // reading of "the protocol" that is not a guess — substituting one
+        // for another would send the caller's request over a transport they
+        // did not ask for and report the answer as theirs.
+        var registry = new BowireProtocolRegistry();
+        for (var i = 0; i < count; i++)
+            registry.Register(new StubProtocol("p" + i, "P" + i));
+
+        Assert.Null(registry.SoleProtocol());
+    }
+
     private class StubProtocol(string id, string name) : IBowireProtocol
     {
         public string Id { get; } = id;

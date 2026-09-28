@@ -1275,9 +1275,13 @@ public sealed class BowireMcpTools
         return p is null ? Array.Empty<IBowireProtocol>() : [p];
     }
 
+    // #751 — an MCP client names a tool, not a transport, so when no
+    // protocol comes in the choice is ours alone. It used to be whichever
+    // assembly loaded first, which made the same tool call reach a different
+    // server on a different machine.
     private IBowireProtocol? ResolveProtocol(string? protocolId)
     {
         if (!string.IsNullOrWhiteSpace(protocolId)) return _registry.GetById(protocolId);
-        return _registry.Protocols.Count > 0 ? _registry.Protocols[0] : null;
+        return _registry.DefaultProtocol();
     }
 }

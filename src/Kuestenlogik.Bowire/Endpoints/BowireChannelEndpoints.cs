@@ -54,15 +54,20 @@ internal static class BowireChannelEndpoints
             body = body with { Metadata = channelMeta };
 
             var registry = BowireEndpointHelpers.GetRegistry();
+            // #751 — the named protocol, or the only one loaded when there is
+            // exactly one. Never "whichever registered first": that opened a
+            // channel on a transport the caller did not ask for, and which one
+            // depended on the assembly load order.
             var protocol = registry.GetById(body.Protocol ?? "grpc")
-                ?? (registry.Protocols.Count > 0 ? registry.Protocols[0] : null);
+                ?? registry.SoleProtocol();
 
             if (protocol is null)
                 return BowireEndpointHelpers.Problem(
                     type: "urn:bowire:invoke:no-plugin",
                     title: "No protocol plugin available to open a channel",
                     status: 502,
-                    detail: $"The requested protocol '{body.Protocol ?? "(default)"}' isn't loaded.",
+                    detail: $"The requested protocol '{body.Protocol ?? "(default)"}' isn't loaded. "
+                        + BowireEndpointHelpers.LoadedProtocolsHint(registry),
                     instance: "/api/channel/open",
                     extensions: new Dictionary<string, object?> { ["protocol"] = body.Protocol });
 

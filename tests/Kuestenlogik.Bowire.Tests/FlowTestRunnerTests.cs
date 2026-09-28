@@ -8,7 +8,6 @@ using System.Text;
 using System.Xml.Linq;
 using Kuestenlogik.Bowire.App;
 using Kuestenlogik.Bowire.App.Configuration;
-using Kuestenlogik.Bowire.Models;
 
 namespace Kuestenlogik.Bowire.Tests;
 
@@ -982,92 +981,6 @@ public sealed class FlowTestRunnerTests : IDisposable
 
         Assert.Equal(0, rc);
         Assert.Contains("Bowire Flow Test Runner", stdout.ToString(), StringComparison.Ordinal);
-    }
-
-    // ---- The protocol a step runs under when it names none ----
-    //
-    // This used to be registry.Protocols[0], and registration order is the
-    // order AppDomain.CurrentDomain.GetAssemblies() hands back — not an
-    // order at all. The same flow ran over a different transport on a
-    // different machine, and the run's exit code went with it: `bowire test
-    // --workspace-id` passed on Windows and failed on the Linux CI runner
-    // for five days, on commits that touched only ROADMAP.md.
-
-    [Fact]
-    public void DefaultProtocol_IsRest_WhateverOrderTheRegistryWasFilledIn()
-    {
-        // Registered in a hostile order: REST last, behind names that sort
-        // before it. Order must not decide this.
-        var registry = new BowireProtocolRegistry();
-        registry.Register(new NamedStubProtocol("amqp"));
-        registry.Register(new NamedStubProtocol("grpc"));
-        registry.Register(new NamedStubProtocol("nats"));
-        registry.Register(new NamedStubProtocol("rest"));
-
-        Assert.Equal("rest", FlowTestRunner.DefaultProtocol(registry)?.Id);
-    }
-
-    [Fact]
-    public void DefaultProtocol_WithoutRest_PicksTheSameOneTwiceRunning()
-    {
-        // A host without the REST plugin still has to be predictable. Two
-        // registries, same members, opposite insertion order, one answer.
-        var forwards = new BowireProtocolRegistry();
-        forwards.Register(new NamedStubProtocol("nats"));
-        forwards.Register(new NamedStubProtocol("grpc"));
-        forwards.Register(new NamedStubProtocol("amqp"));
-
-        var backwards = new BowireProtocolRegistry();
-        backwards.Register(new NamedStubProtocol("amqp"));
-        backwards.Register(new NamedStubProtocol("grpc"));
-        backwards.Register(new NamedStubProtocol("nats"));
-
-        Assert.Equal(
-            FlowTestRunner.DefaultProtocol(forwards)?.Id,
-            FlowTestRunner.DefaultProtocol(backwards)?.Id);
-        Assert.Equal("amqp", FlowTestRunner.DefaultProtocol(forwards)?.Id);
-    }
-
-    [Fact]
-    public void DefaultProtocol_EmptyRegistry_IsNull()
-    {
-        // The caller turns this into "protocol '<any>' not registered",
-        // which is a message; an exception here would be a crash.
-        Assert.Null(FlowTestRunner.DefaultProtocol(new BowireProtocolRegistry()));
-    }
-
-    /// <summary>A protocol that is nothing but its id — order is the subject here.</summary>
-    private sealed class NamedStubProtocol(string id) : IBowireProtocol
-    {
-        public string Id { get; } = id;
-        public string Name { get; } = id;
-        public string IconSvg => "<svg/>";
-
-        public Task<List<BowireServiceInfo>> DiscoverAsync(
-            string serverUrl, bool showInternalServices, CancellationToken ct = default)
-            => Task.FromResult(new List<BowireServiceInfo>());
-
-        public Task<InvokeResult> InvokeAsync(
-            string serverUrl, string service, string method,
-            List<string> jsonMessages, bool showInternalServices,
-            Dictionary<string, string>? metadata = null, CancellationToken ct = default)
-            => Task.FromResult(new InvokeResult(null, 0, "OK", new Dictionary<string, string>()));
-
-#pragma warning disable CS1998 // No-op stream stub
-        public async IAsyncEnumerable<string> InvokeStreamAsync(
-            string serverUrl, string service, string method,
-            List<string> jsonMessages, bool showInternalServices,
-            Dictionary<string, string>? metadata = null,
-            [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct = default)
-        {
-            yield break;
-        }
-#pragma warning restore CS1998
-
-        public Task<IBowireChannel?> OpenChannelAsync(
-            string serverUrl, string service, string method,
-            bool showInternalServices, Dictionary<string, string>? metadata = null,
-            CancellationToken ct = default) => Task.FromResult<IBowireChannel?>(null);
     }
 
     // ---- Helpers ----

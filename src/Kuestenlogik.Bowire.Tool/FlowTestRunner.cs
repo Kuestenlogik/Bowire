@@ -457,37 +457,6 @@ internal static class FlowTestRunner
         return exitCode;
     }
 
-    /// <summary>
-    /// The protocol a step runs under when it names none.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// This used to be <c>registry.Protocols[0]</c> — the first one that
-    /// happened to be registered. Registration order is the order
-    /// <c>AppDomain.CurrentDomain.GetAssemblies()</c> hands back, which is
-    /// not an order at all: the same flow file ran over REST on one machine
-    /// and over NATS on another, and the run's exit code went with it. That
-    /// is how `bowire test --workspace-id` came to pass on Windows and fail
-    /// on the Linux CI runner for five days, on commits that touched only
-    /// ROADMAP.md.
-    /// </para>
-    /// <para>
-    /// REST first because that is what the runner was built around and what
-    /// a step without a protocol has always meant in practice; the id-sorted
-    /// first is the fallback, so a host without the REST plugin still picks
-    /// the same protocol twice running. A flow the workbench wrote always
-    /// names its protocol — this is for the hand-written ones.
-    /// </para>
-    /// </remarks>
-    internal static IBowireProtocol? DefaultProtocol(BowireProtocolRegistry registry)
-    {
-        if (registry.Protocols.Count == 0) return null;
-        return registry.GetById("rest")
-            ?? registry.Protocols
-                .OrderBy(p => p.Id, StringComparer.Ordinal)
-                .First();
-    }
-
     private static async Task<FlowStepRunResult> RunStepAsync(
         FlowStep step, Dictionary<string, string> env, BowireProtocolRegistry registry,
         string? baseUrl, string? rowLabel, CancellationToken ct)
@@ -531,9 +500,12 @@ internal static class FlowTestRunner
             ? FlowVariableResolver.Resolve(step.ServerUrl, env)
             : (baseUrl ?? string.Empty);
 
+        // A flow the workbench wrote names its protocol; this is for the
+        // hand-written ones. The rule lives in the registry (#751) so every
+        // caller that has to pick one picks the same one.
         var protocolId = step.Protocol;
         IBowireProtocol? protocol = string.IsNullOrEmpty(protocolId)
-            ? DefaultProtocol(registry)
+            ? registry.DefaultProtocol()
             : registry.GetById(protocolId);
         if (protocol is null)
         {

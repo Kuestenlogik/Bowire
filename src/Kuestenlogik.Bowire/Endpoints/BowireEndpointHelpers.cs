@@ -230,6 +230,28 @@ internal static class BowireEndpointHelpers
 
         return merged;
     }
+    /// <summary>
+    /// Names the protocols that ARE loaded, for the message a caller reads
+    /// when the one they asked for is not (#751).
+    /// </summary>
+    /// <remarks>
+    /// Until #751 this case did not produce a message at all — the request
+    /// was quietly dispatched over whichever protocol had registered first,
+    /// so a gRPC call on a host without the gRPC plugin went out over MQTT
+    /// and came back as a normal answer. Refusing is the fix; naming what is
+    /// there is what makes the refusal actionable, since the whole remedy is
+    /// either to install a plugin or to name one of these.
+    /// </remarks>
+    public static string LoadedProtocolsHint(BowireProtocolRegistry registry)
+    {
+        ArgumentNullException.ThrowIfNull(registry);
+        if (registry.Protocols.Count == 0) return "No protocol plugins are loaded.";
+        var ids = string.Join(", ", registry.Protocols
+            .Select(p => p.Id)
+            .OrderBy(id => id, StringComparer.Ordinal));
+        return $"Loaded: {ids}.";
+    }
+
 
     /// <summary>
     /// Build an RFC 7807 problem+json response (#88). Every error path

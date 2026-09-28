@@ -1201,9 +1201,13 @@ public static class BowireAiEndpoints
                     var registry = sp.GetService<BowireProtocolRegistry>();
                     if (registry is null) return new { ok = false, error = "Protocol registry not available — Bowire core isn't wired." };
 
+                    // #751 — a service that does not name its protocol gets the
+                    // registry's default, not whichever assembly loaded first.
+                    // The model never sees a protocol name, so this choice is
+                    // entirely ours and has to be the same one twice running.
                     var protocol = svc.Protocol is not null
                         ? registry.GetById(svc.Protocol)
-                        : (registry.Protocols.Count > 0 ? registry.Protocols[0] : null);
+                        : registry.DefaultProtocol();
                     if (protocol is null) return new { ok = false, error = $"No protocol plugin loaded for '{svc.Protocol ?? "(default)"}'." };
 
                     var serverUrl = svc.OriginUrl ?? wbCtx.ServerUrls?.FirstOrDefault() ?? string.Empty;

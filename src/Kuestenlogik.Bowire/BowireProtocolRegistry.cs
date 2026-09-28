@@ -32,7 +32,53 @@ public sealed class BowireProtocolRegistry
 
     private readonly List<IBowireProtocol> _protocols = [];
 
+    /// <summary>
+    /// The protocols, in the order they were registered.
+    /// </summary>
+    /// <remarks>
+    /// Registration order is the order <see cref="AppDomain.GetAssemblies"/>
+    /// hands the assemblies back, which is not an order anybody promised:
+    /// it moves with the operating system, with the build configuration, and
+    /// with whatever ran earlier in the same process. Read this list to
+    /// enumerate or to search by id — never index it to mean "the default
+    /// one". That is <see cref="DefaultProtocol"/>, and the difference cost
+    /// five days of a red <c>main</c> nobody could see (#751).
+    /// </remarks>
     public IReadOnlyList<IBowireProtocol> Protocols => _protocols;
+
+    /// <summary>
+    /// The protocol to use when a caller named none, or <c>null</c> when
+    /// nothing is registered.
+    /// </summary>
+    /// <remarks>
+    /// REST when it is loaded — it is what an unqualified call has meant in
+    /// practice and what the runners were built around. Otherwise the first
+    /// by id, so a host without the REST plugin still answers the same way
+    /// twice running. Arbitrary, but the same arbitrary everywhere, which is
+    /// the whole point.
+    /// </remarks>
+    public IBowireProtocol? DefaultProtocol()
+    {
+        if (_protocols.Count == 0) return null;
+        return GetById("rest")
+            ?? _protocols.OrderBy(p => p.Id, StringComparer.Ordinal).First();
+    }
+
+    /// <summary>
+    /// The one registered protocol when there is exactly one, otherwise
+    /// <c>null</c>.
+    /// </summary>
+    /// <remarks>
+    /// For the callers that ask for a named protocol and want to keep
+    /// working on a host that ships a single one — an embedded workbench
+    /// that references only the REST plugin answers a call that named
+    /// nothing, because there is nothing else it could have meant. With two
+    /// or more loaded there is no such reading, and substituting one for
+    /// another would dispatch the operator's gRPC call over MQTT and report
+    /// it as theirs.
+    /// </remarks>
+    public IBowireProtocol? SoleProtocol() =>
+        _protocols.Count == 1 ? _protocols[0] : null;
 
     public void Register(IBowireProtocol protocol) => _protocols.Add(protocol);
 
