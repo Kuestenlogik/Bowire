@@ -3741,5 +3741,14 @@
   // unabhängige Zählungen, und kein Schlüsselsatz, der beide beugt, bleibt
   // lesbar. #688 ist die Stelle, an der die Pluralschicht dafür entsteht.
   "console.body.benchmarkPlan": "Start · Phasen {phases} · Ziele {targets} · Modus {mode}",
+  // #752 — die Protokollliste konnte nicht geladen werden. Getrennt von
+  // "keine Plugins installiert", was nur nach einer leeren Antwort stimmt.
+  "settings.protocols.loadError.throttled": "Der Server bremst gerade Anfragen, deshalb konnte die Protokollliste nicht geladen werden.",
+  "settings.protocols.loadError.throttledWait": "Der Server bremst gerade Anfragen, deshalb konnte die Protokollliste nicht geladen werden. In {seconds} s antwortet er wieder.",
+  "settings.protocols.loadError.failed": "Die Protokollliste konnte nicht geladen werden (HTTP {status}).",
+  "settings.protocols.loadError.unreachable": "Die Protokollliste konnte nicht geladen werden — der Server hat nicht geantwortet.",
+  "settings.protocols.loadError.stale": "Unten steht die Liste vom letzten erfolgreichen Laden.",
+  "settings.protocols.loadError.none": "Unten steht nichts, weil noch nichts geladen wurde — nicht, weil keine Plugins installiert sind.",
+  "settings.protocols.loadError.retry": "Erneut versuchen",
   "env.unnamed": "ohne Namen"
 }

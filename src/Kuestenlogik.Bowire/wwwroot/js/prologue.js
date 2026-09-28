@@ -421,6 +421,12 @@
 
     // ---- Protocol State ----
     let protocols = [];          // Available protocols [{id, name, icon}]
+    // #752 — why the last /api/protocols did not load, or null when it did.
+    // { status, retryAfter }: status 0 means the server did not answer at
+    // all; retryAfter is the throttle's own Retry-After in seconds, when it
+    // sent one. Kept apart from `protocols` so a failed pass can say so
+    // without throwing away a list an earlier pass loaded.
+    let protocolsLoadError = null;
     // /api/plugins/health snapshot. Populated lazily by settings.js
     // when the Plugins tab opens — the workbench surfaces failed
     // plugin loads (ContractMajorMismatch, ManifestMissing, …) as a

@@ -1124,13 +1124,20 @@
         // top. The data fetches kick off once per dialog open from
         // openSettings(), so we just consume the cache here.
         section.appendChild(renderPluginHealthBanner());
+        if (protocolsLoadError) section.appendChild(renderProtocolsLoadErrorBanner());
         section.appendChild(_renderPluginsActionBar('protocols'));
         if (pluginActionResult) {
             section.appendChild(renderPluginActionBanner(pluginActionResult));
         }
 
         if (!protocols || protocols.length === 0) {
-            section.appendChild(_renderEmptyExtensionPointCard(t('settings.ext.protocolPlugins')));
+            // #752 — "no protocol plugins" is only true after a list came
+            // back and was empty. After a refused request it is the one
+            // thing this page must not claim; the banner above says what
+            // actually happened.
+            if (!protocolsLoadError) {
+                section.appendChild(_renderEmptyExtensionPointCard(t('settings.ext.protocolPlugins')));
+            }
             // Still surface the installed-sibling list so the operator
             // sees what's on disk even when no protocol descriptors
             // have come back yet (e.g. plugin load failed — health
@@ -4648,6 +4655,50 @@ textContent: t(discoveryState.entryCount === 1
      * id, the loader's status enum, and the human-readable error
      * message — same shape /api/plugins/health surfaces.
      */
+    /// #752 — why the protocol list is missing or out of date.
+    ///
+    /// Three cases, because they need three different reactions: throttled
+    /// (wait, and here is how long — the host sends Retry-After), refused
+    /// with a status (something is wrong on the server), no answer at all
+    /// (something is wrong between here and there). And whether what is on
+    /// the page is an older list or none, since "these may be stale" and
+    /// "there is nothing here" are not the same news.
+    function renderProtocolsLoadErrorBanner() {
+        var err = protocolsLoadError;
+        if (!err) return el('div');
+        var headline = err.status === 429
+            ? (err.retryAfter
+                ? t('settings.protocols.loadError.throttledWait', { seconds: err.retryAfter })
+                : t('settings.protocols.loadError.throttled'))
+            : err.status > 0
+                ? t('settings.protocols.loadError.failed', { status: err.status })
+                : t('settings.protocols.loadError.unreachable');
+        var banner = el('div', {
+            className: 'bowire-settings-plugin-health bowire-settings-protocols-load-error',
+            role: 'status'
+        });
+        banner.appendChild(el('div', { className: 'bowire-settings-plugin-health-title', textContent: headline }));
+        banner.appendChild(el('div', {
+            className: 'bowire-settings-plugin-health-msg',
+            textContent: (protocols && protocols.length > 0)
+                ? t('settings.protocols.loadError.stale')
+                : t('settings.protocols.loadError.none')
+        }));
+        banner.appendChild(el('button', {
+            type: 'button',
+            className: 'bowire-settings-protocols-load-retry',
+            textContent: t('settings.protocols.loadError.retry'),
+            onClick: function () {
+                if (typeof fetchServices === 'function') {
+                    fetchServices().then(function () {
+                        if (typeof renderSettingsDialog === 'function') renderSettingsDialog();
+                    });
+                }
+            }
+        }));
+        return banner;
+    }
+
     function renderPluginHealthBanner() {
         var unhealthy = pluginHealth.filter(function (r) {
             return r.status !== 'Loaded' && r.status !== 'AlreadyLoaded';

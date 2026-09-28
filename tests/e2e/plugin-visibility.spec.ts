@@ -75,8 +75,8 @@ test.describe('Per-identity protocol visibility (#638)', () => {
             .textContent().catch(() => null);
         parts.push(`hidden disclosure: ${disclosure ?? '(none)'}`);
 
-        const banner = await page.locator('.bowire-settings-plugin-health-banner')
-            .textContent().catch(() => null);
+        const banner = await page.locator('.bowire-settings-plugin-health')
+            .allTextContents().then(t => t.join(' / ')).catch(() => null);
         parts.push(`health banner: ${(banner ?? '(none)').replace(/\s+/g, ' ').trim()}`);
 
         return parts.join(' | ');

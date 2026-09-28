@@ -3742,5 +3742,14 @@
   // independent counts, and no key set that inflects both stays readable. #688
   // is where the plural layer that would fix this properly lives.
   "console.body.benchmarkPlan": "Starting · phases {phases} · targets {targets} · mode {mode}",
+  // #752 — the protocol list could not be loaded. Kept apart from "no
+  // plugins installed", which is only true after a list came back empty.
+  "settings.protocols.loadError.throttled": "The server is throttling requests right now, so the protocol list could not be loaded.",
+  "settings.protocols.loadError.throttledWait": "The server is throttling requests right now, so the protocol list could not be loaded. It will answer again in {seconds} s.",
+  "settings.protocols.loadError.failed": "The protocol list could not be loaded (HTTP {status}).",
+  "settings.protocols.loadError.unreachable": "The protocol list could not be loaded — the server did not answer.",
+  "settings.protocols.loadError.stale": "What is shown below is the list from the last time it loaded.",
+  "settings.protocols.loadError.none": "Nothing is shown below because nothing has loaded yet — not because no plugins are installed.",
+  "settings.protocols.loadError.retry": "Try again",
   "env.unnamed": "unnamed"
 }

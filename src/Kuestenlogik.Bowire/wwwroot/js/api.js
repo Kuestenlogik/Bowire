@@ -123,6 +123,38 @@
     }
 
     // ---- API Calls ----
+    /// #752 — take one /api/protocols answer into `protocols`.
+    ///
+    /// Success replaces the list and clears the error. Anything else keeps
+    /// the list an earlier pass loaded — one refused request is not news
+    /// that the plugins went away — and records why, for the Protocols page
+    /// to say: the status (0 for no answer at all) and, from a throttle, its
+    /// Retry-After in seconds. A body that does not parse counts as no
+    /// answer; half a list is not a list.
+    async function applyProtocolsResponse(resp) {
+        if (resp && resp.ok) {
+            try {
+                var list = await resp.json();
+                if (Array.isArray(list)) {
+                    protocols = list;
+                    protocolsLoadError = null;
+                    return;
+                }
+            } catch (_) { /* falls through to "no answer" */ }
+            protocolsLoadError = { status: 0, retryAfter: null };
+            return;
+        }
+        if (!resp) {
+            protocolsLoadError = { status: 0, retryAfter: null };
+            return;
+        }
+        var retryAfter = parseInt((resp.headers && resp.headers.get('Retry-After')) || '', 10);
+        protocolsLoadError = {
+            status: resp.status,
+            retryAfter: isFinite(retryAfter) && retryAfter > 0 ? retryAfter : null
+        };
+    }
+
     async function fetchServices() {
         // Mark discovery in flight + clear stale errors so the empty-state
         // landing page (landing.js) can render the loading state and the
@@ -137,10 +169,18 @@
         render();
 
         // Fetch protocols list once — this is identity, doesn't depend on URL
-        try {
-            var protocolsResp = await fetch(`${config.prefix}/api/protocols`);
-            if (protocolsResp.ok) protocols = await protocolsResp.json();
-        } catch (_) { /* protocols endpoint optional */ }
+        //
+        // #752 — a failure is recorded, not swallowed. It used to leave
+        // `protocols` empty with nothing said, and the Protocols page then
+        // read exactly like "no plugins installed": the host throttles /api/*
+        // per client (#637), a busy session reaches the limit, and the list
+        // came back 429 into a silent empty page. A list an earlier pass
+        // loaded is kept — one refused request is not news that the plugins
+        // went away.
+        var protocolsResp = null;
+        try { protocolsResp = await fetch(`${config.prefix}/api/protocols`); }
+        catch (_) { /* no answer — applyProtocolsResponse says so */ }
+        await applyProtocolsResponse(protocolsResp);
 
         // Always run embedded discovery (no URL) first — this finds
         // gRPC (via reflection), SignalR (via hub metadata), REST (via
