@@ -43,7 +43,8 @@ public sealed class PiiResponseFieldRule : IBowireLintRule
         }
     }
 
-    private static IEnumerable<string> PiiFields(BowireMessageInfo? message, int depth)
+    // Shared with PiiErrorFieldRule (#583): one list of what counts as PII.
+    internal static IEnumerable<string> PiiFields(BowireMessageInfo? message, int depth)
     {
         if (message is null || depth > MaxDepth) yield break;
 
@@ -59,7 +60,7 @@ public sealed class PiiResponseFieldRule : IBowireLintRule
         }
     }
 
-    private static bool IsPii(string name)
+    internal static bool IsPii(string name)
     {
         var normalized = name.Replace("_", "", StringComparison.Ordinal)
                              .Replace("-", "", StringComparison.Ordinal);

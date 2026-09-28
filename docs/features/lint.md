@@ -31,6 +31,7 @@ from the URL scheme when unset.
 |---------|----------|-----------|
 | `BWR-LINT-SENSITIVE-RESPONSE` | High | a **response** field looks like a secret |
 | `BWR-LINT-PII-RESPONSE` | Medium | a **response** field looks like personal data — email, phone, SSN, date of birth, address, passport or tax id |
+| `BWR-LINT-PII-IN-ERROR` | Medium | a declared **error** response carries a field that looks like personal data — a validation error that echoes the `email` it rejected, a 404 that repeats the `phone` it looked up |
 | `BWR-LINT-MISSING-PAGINATION` | Medium | a method **returns a list** and takes no `page` / `limit` / `offset` / `cursor` parameter, and its response carries no continuation token |
 | `BWR-LINT-STRING-TIMESTAMP` | Low | a timestamp ships as a bare string rather than a typed instant |
 | `BWR-LINT-MISSING-VERSIONING` | Low | the service declares no version **and** no route carries a version marker such as `/v1/` |
@@ -66,11 +67,17 @@ either half.
 A rule can only inspect what discovery produced. This is the single most
 important thing to know before reading a lint result:
 
-| Protocol | Request fields | Response fields | Rules that can fire |
-|----------|----------------|-----------------|---------------------|
-| gRPC (reflection or descriptor set) | yes | yes | all |
-| REST (OpenAPI document) | yes | yes, where the operation declares a 2xx JSON response schema | all |
-| REST (embedded, ApiExplorer) | yes | yes, where the endpoint declares its response type | all |
+| Protocol | Request fields | Response fields | Error fields | Rules that can fire |
+|----------|----------------|-----------------|--------------|---------------------|
+| gRPC (reflection or descriptor set) | yes | yes | no | all but `PII-IN-ERROR` |
+| REST (OpenAPI document) | yes | yes, where the operation declares a 2xx JSON response schema | yes, every 4xx / 5xx / `default` response with a JSON schema | all |
+| REST (embedded, ApiExplorer) | yes | yes, where the endpoint declares its response type | no | all but `PII-IN-ERROR` |
+
+Errors are only visible where a schema declares them. gRPC reports an error as
+a status plus details typed at runtime, GraphQL as an untyped `errors` array,
+and neither says in the schema what an error will carry — so against those
+`BWR-LINT-PII-IN-ERROR` has nothing to read. A clean result there means
+"nothing declared", not "nothing leaks".
 
 Against a gRPC target the descriptors carry full message types, so every rule
 evaluates. Against a REST target, the response shape comes from the OpenAPI

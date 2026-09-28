@@ -323,7 +323,8 @@ public static class OpenApiDiscovery
             HttpPath = path,
             Summary = operation.Summary,
             Description = operation.Description,
-            Deprecated = operation.Deprecated
+            Deprecated = operation.Deprecated,
+            ErrorTypes = ExtractErrorTypes(operation)
         };
     }
 
@@ -377,6 +378,36 @@ public static class OpenApiDiscovery
         if (string.IsNullOrEmpty(fmt)) return false;
         return string.Equals(fmt, "binary", StringComparison.OrdinalIgnoreCase)
             || string.Equals(fmt, "byte", StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// The shapes this operation declares for its errors (#583): every 4xx,
+    /// 5xx, range (<c>4XX</c>) and <c>default</c> response with a JSON schema,
+    /// one message each, named after the status so a finding can say which.
+    /// Null rather than empty when there are none, so a snapshot of an API
+    /// that declares no errors stays byte-identical to one taken before this.
+    /// </summary>
+    private static List<BowireMessageInfo>? ExtractErrorTypes(OpenApiOperation operation)
+    {
+        if (operation.Responses is null) return null;
+        var errors = new List<BowireMessageInfo>();
+        foreach (var (code, response) in operation.Responses)
+        {
+            var isError = code.StartsWith('4') || code.StartsWith('5')
+                || string.Equals(code, "default", System.StringComparison.OrdinalIgnoreCase);
+            if (!isError || response.Content is null) continue;
+            foreach (var (contentType, mediaType) in response.Content)
+            {
+                if (mediaType.Schema is null) continue;
+                if (string.Equals(contentType, "application/json", System.StringComparison.OrdinalIgnoreCase) ||
+                    contentType.Contains("+json", System.StringComparison.OrdinalIgnoreCase))
+                {
+                    errors.Add(SchemaToMessage((operation.OperationId ?? "Operation") + "Error" + code, mediaType.Schema));
+                    break;
+                }
+            }
+        }
+        return errors.Count > 0 ? errors : null;
     }
 
     private static BowireMessageInfo ExtractOutputType(OpenApiOperation operation)

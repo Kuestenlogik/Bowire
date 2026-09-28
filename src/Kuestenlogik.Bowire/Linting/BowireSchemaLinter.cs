@@ -32,6 +32,7 @@ public sealed class BowireSchemaLinter
         new MissingPaginationRule(),
         new MissingVersioningRule(),
         new PiiResponseFieldRule(),
+        new PiiErrorFieldRule(),
         new StringTimestampFieldRule(),
         new MixedMethodNamingRule(),
         new MixedFieldNamingRule(),
