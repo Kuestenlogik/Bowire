@@ -58,6 +58,27 @@ internal static class CliSchemaSnapshot
             }
         }
 
+        // A path that is not there is a typo, not a URL. Handed to discovery it
+        // parses as a file URI (a Windows path does), the REST plugin finds no
+        // services behind it, and the caller gets an empty surface: `bowire
+        // lint` then reports "No findings" and exits 0 even under --fail-on
+        // info, `bowire diff` sees every service as new and nothing as broken.
+        // A CI step with a mistyped path stays green for good.
+        //
+        // Only what is unmistakably a path: an absolute file path, or a relative
+        // name ending in .json. Anything else still goes to discovery as before,
+        // so a scheme-less host or a protocol hint is not suddenly reported as a
+        // missing file.
+        var absolute = Uri.TryCreate(source, UriKind.Absolute, out var uri);
+        var looksLikePath = absolute
+            ? uri!.IsFile
+            : source.EndsWith(".json", StringComparison.OrdinalIgnoreCase);
+        if (looksLikePath)
+        {
+            await errW.WriteLineAsync($"Snapshot file not found: {source}").ConfigureAwait(false);
+            return null;
+        }
+
         return await DiscoverAsync(source, protocolId, errW, ct, descriptorSetPath).ConfigureAwait(false);
     }
 

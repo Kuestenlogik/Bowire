@@ -245,6 +245,25 @@ public sealed class LintCommandTests
         }
     }
 
+    [Theory]
+    [InlineData("does-not-exist.json")]
+    [InlineData("C:/does/not/exist/surface.json")]
+    public async Task A_Snapshot_Path_That_Is_Not_There_Fails_Instead_Of_Linting_Nothing(string missing)
+    {
+        // It used to reach discovery as a URL, come back as an empty surface,
+        // and report "No findings" with exit 0 — even under --fail-on info. A CI
+        // step with a mistyped path stayed green for good.
+        using var stdout = new StringWriter();
+        using var stderr = new StringWriter();
+
+        var rc = await LintCommand.RunAsync(missing, null, null, "info", null, null,
+            TestContext.Current.CancellationToken, stdout, stderr);
+
+        Assert.Equal(1, rc);
+        Assert.Contains("not found", stderr.ToString(), StringComparison.Ordinal);
+        Assert.DoesNotContain("No findings", stdout.ToString(), StringComparison.Ordinal);
+    }
+
     [Fact]
     public void The_Command_Exposes_The_Flags_Its_Usage_Line_Promises()
     {
