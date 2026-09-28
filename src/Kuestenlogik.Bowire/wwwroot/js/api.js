@@ -240,6 +240,10 @@
         // state on the next paint.
         isLoadingServices = false;
 
+        // #583 — lint the new surface in the background, so findings show on
+        // the methods themselves and not only in the Lint rail.
+        if (typeof scheduleLint === 'function') scheduleLint();
+
         // Protocol filter (multi-select via chips + popup) defaults to
         // empty = "show all". No auto-select here — if the user previously
         // saved a filter in localStorage (loaded on boot), protocolFilter

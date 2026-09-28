@@ -197,10 +197,21 @@ the failure mode to avoid.
 
 ## In the workbench
 
-The **Lint** rail runs the same rules over the active workspace's discovered
-surface and lists the findings, each one clickable through to the method it
-fired on. With nothing discovered yet the rail shows an empty state rather
-than an empty list.
+The rules run in the background after every discovery, so findings show where
+the method is, not only in a separate list:
+
+- **In the sidebar**, a method with a finding of Low or worse carries a `!`
+  pill in the colour of its worst finding. Info findings stay out of the
+  sidebar — a naming nit on half the rows would teach people to ignore the
+  pill.
+- **Under the method's header**, a strip names how many findings the method
+  has, folded to one line until opened. Opened, it lists each finding with its
+  field, message and rule, and every severity, Info included.
+- **The Lint rail** lists everything, service-level findings too. A finding on
+  a method opens that method with its findings unfolded. With nothing
+  discovered yet the rail shows an empty state rather than an empty list.
+
+An unchanged rediscovery does not lint again; a changed surface does.
 
 ## Related
 

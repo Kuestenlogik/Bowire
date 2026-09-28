@@ -6539,6 +6539,12 @@
         // freeform builder's title strip).
         if (header.firstChild && !paneFreeform) main.appendChild(header);
 
+        // #583 — design findings on this method, right under its name.
+        if (svc && method && !paneFreeform && typeof renderLintHints === 'function') {
+            var lintHints = renderLintHints(svc.name, method.name);
+            if (lintHints) main.appendChild(lintHints);
+        }
+
         // Proto-only warning banner
         if (svc && svc.source === 'proto') {
             var protoBanner = el('div', { className: 'bowire-proto-banner' },

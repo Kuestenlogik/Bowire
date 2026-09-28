@@ -3751,5 +3751,11 @@
   "settings.protocols.loadError.stale": "What is shown below is the list from the last time it loaded.",
   "settings.protocols.loadError.none": "Nothing is shown below because nothing has loaded yet — not because no plugins are installed.",
   "settings.protocols.loadError.retry": "Try again",
+  // #583 — lint findings where the method is.
+  "lint.hints.one": "{count} design finding on this method",
+  "lint.hints.many": "{count} design findings on this method",
+  "lint.hints.openRail": "Open in Lint",
+  "lint.pill.one": "{count} design finding (low or worse) — open the method",
+  "lint.pill.many": "{count} design findings (low or worse) — open the method",
   "env.unnamed": "unnamed"
 }

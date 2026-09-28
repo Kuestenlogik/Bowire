@@ -3750,5 +3750,11 @@
   "settings.protocols.loadError.stale": "Unten steht die Liste vom letzten erfolgreichen Laden.",
   "settings.protocols.loadError.none": "Unten steht nichts, weil noch nichts geladen wurde — nicht, weil keine Plugins installiert sind.",
   "settings.protocols.loadError.retry": "Erneut versuchen",
+  // #583 — Lint-Befunde dort, wo die Methode ist.
+  "lint.hints.one": "{count} Entwurfsbefund an dieser Methode",
+  "lint.hints.many": "{count} Entwurfsbefunde an dieser Methode",
+  "lint.hints.openRail": "In Lint öffnen",
+  "lint.pill.one": "{count} Entwurfsbefund (Low oder schlimmer) — Methode öffnen",
+  "lint.pill.many": "{count} Entwurfsbefunde (Low oder schlimmer) — Methode öffnen",
   "env.unnamed": "ohne Namen"
 }

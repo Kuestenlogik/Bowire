@@ -5735,6 +5735,10 @@ channel open). */
 .bowire-method-xf-pill-recording  { color: var(--bowire-danger, #ef4444); }
 .bowire-method-xf-pill-benchmark  { color: var(--bowire-warning, #f59e0b); }
 .bowire-method-xf-pill-preset     { color: var(--bowire-success, #22c55e); }
+/* #583 — design findings, coloured by the worst of them. */
+.bowire-method-xf-pill-lint-high   { color: var(--bowire-danger); }
+.bowire-method-xf-pill-lint-medium { color: var(--bowire-warning); }
+.bowire-method-xf-pill-lint-low    { color: var(--bowire-text-tertiary); }
 
 /* ---------- Sidebar view switch (Services | Favorites) ---------- */
 /* MudBlazor-style tabs: no individual borders or pill backgrounds,
@@ -26852,6 +26856,46 @@ not as the
 .bowire-lint-medium .bowire-lint-sev { color: var(--bowire-warning); }
 .bowire-lint-low .bowire-lint-sev { color: var(--bowire-text-tertiary); }
 .bowire-lint-info .bowire-lint-sev { color: var(--bowire-accent); }
+/* #583 — a method-level finding in the rail opens its method. */
+.bowire-lint-row.clickable { cursor: pointer; }
+.bowire-lint-row.clickable:hover,
+.bowire-lint-row.clickable:focus-visible { border-color: var(--bowire-accent); outline: none; }
+
+/* #583 — the strip under a method's header. One line until opened, so a
+   method with a naming nit does not push its request form down. The left
+   edge carries the worst severity's colour. */
+.bowire-lint-hints {
+    margin: 0 16px 8px;
+    border: 1px solid var(--bowire-border);
+    border-left-width: 3px;
+    border-radius: 6px;
+    background: var(--bowire-bg-subtle);
+    font-size: 12px;
+}
+.bowire-lint-hints-high   { border-left-color: var(--bowire-danger); }
+.bowire-lint-hints-medium { border-left-color: var(--bowire-warning); }
+.bowire-lint-hints-low    { border-left-color: var(--bowire-text-tertiary); }
+.bowire-lint-hints-info   { border-left-color: var(--bowire-accent); }
+.bowire-lint-hints-toggle {
+    display: flex; align-items: center; gap: 10px; width: 100%;
+    padding: 6px 10px; background: none; border: 0; cursor: pointer;
+    color: var(--bowire-text-secondary); text-align: left; font: inherit;
+}
+.bowire-lint-hints-toggle .bowire-lint-sev { flex: 0 0 auto; }
+.bowire-lint-hints-high   .bowire-lint-hints-toggle .bowire-lint-sev { color: var(--bowire-danger); }
+.bowire-lint-hints-medium .bowire-lint-hints-toggle .bowire-lint-sev { color: var(--bowire-warning); }
+.bowire-lint-hints-low    .bowire-lint-hints-toggle .bowire-lint-sev { color: var(--bowire-text-tertiary); }
+.bowire-lint-hints-info   .bowire-lint-hints-toggle .bowire-lint-sev { color: var(--bowire-accent); }
+.bowire-lint-hints-body { padding: 0 10px 8px; display: flex; flex-direction: column; gap: 6px; }
+.bowire-lint-hint { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; }
+.bowire-lint-hint .bowire-lint-sev { flex: 0 0 56px; }
+.bowire-lint-hint-field { font-size: 11px; }
+.bowire-lint-hint .bowire-lint-msg { flex: 1 1 280px; color: var(--bowire-text-primary); }
+.bowire-lint-hint .bowire-lint-rule { font-size: 10px; color: var(--bowire-text-tertiary); }
+.bowire-lint-hints-rail {
+    align-self: flex-start; background: none; border: 0; padding: 0;
+    color: var(--bowire-accent); cursor: pointer; font: inherit;
+}
 .bowire-lint-body { min-width: 0; }
 .bowire-lint-loc { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
 .bowire-lint-rule { font-size: 11px; color: var(--bowire-text-tertiary); }

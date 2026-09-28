@@ -310,7 +310,7 @@
             if (!svc || !mth) return;
             var key = svc + '|' + mth;
             var entry = idx.get(key);
-            if (!entry) { entry = { collections: 0, recordings: 0, benchmark: 0, presets: 0 }; idx.set(key, entry); }
+            if (!entry) { entry = { collections: 0, recordings: 0, benchmark: 0, presets: 0, lint: 0, lintWorst: null }; idx.set(key, entry); }
             entry[field] += (delta || 1);
         }
         // Collections: every saved item carries service + method.
@@ -368,6 +368,16 @@
                 }
             }
         } catch { /* ignore */ }
+        // #583 — lint findings of Low or worse, from the last background run.
+        try {
+            if (typeof lintIndex === 'function') {
+                lintIndex().forEach(function (v, key) {
+                    var parts = key.split('|');
+                    bump(parts[0], parts.slice(1).join('|'), 'lint', v.count);
+                    idx.get(key).lintWorst = v.worst;
+                });
+            }
+        } catch { /* ignore */ }
         return idx;
     }
 
@@ -379,7 +389,7 @@
         if (!xfIndex) return null;
         var entry = xfIndex.get(svcName + '|' + methodName);
         if (!entry) return null;
-        if (!entry.collections && !entry.recordings && !entry.benchmark && !entry.presets) return null;
+        if (!entry.collections && !entry.recordings && !entry.benchmark && !entry.presets && !entry.lint) return null;
         var strip = el('span', { className: 'bowire-method-xf-strip' });
         function pill(letter, count, hue, title, onClick) {
             var p = el('button', {
@@ -452,6 +462,13 @@
             pill('P', entry.presets, 'preset',
                 entry.presets + ' preset' + (entry.presets === 1 ? '' : 's') + ' for this method',
                 null);
+        }
+        // #583 — design findings, coloured by the worst of them. Opens the
+        // method with its findings unfolded under the header.
+        if (entry.lint) {
+            pill('!', entry.lint, 'lint-' + String(entry.lintWorst || 'Low').toLowerCase(),
+                t(entry.lint === 1 ? 'lint.pill.one' : 'lint.pill.many', { count: entry.lint }),
+                function () { openLintedMethod(svcName, methodName); });
         }
         return strip;
     }
