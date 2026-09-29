@@ -39,7 +39,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   const raw = process.argv[2];
   if (!raw) { console.error('usage: resolve-milestone.mjs <tag-or-version>'); process.exit(2); }
   const tag = raw.startsWith('v') ? raw : 'v' + raw;
-  const gh = (...a) => execFileSync('gh', a, { encoding: 'utf8' });
+  const gh = (...a) => execFileSync('gh', a, { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
   const repo = process.env.GITHUB_REPOSITORY ?? gh('repo', 'view', '--json', 'nameWithOwner', '-q', '.nameWithOwner').trim();
   const all = JSON.parse(gh('api', `repos/${repo}/milestones?state=all&per_page=100`));
   const chosen = resolve(tag, all, repo);

@@ -21,7 +21,7 @@ import { fileURLToPath } from 'node:url';
 import { planFor, productOfRepo, releaseOfVersion, view } from './release-plan.mjs';
 
 const ORG = 'Kuestenlogik', PROJECT = 2;
-const gh = (...a) => execFileSync('gh', a, { encoding: 'utf8' });
+const gh = (...a) => execFileSync('gh', a, { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
 
 /**
  * The release before this one, so "closed since" has a date. Read from the published releases
