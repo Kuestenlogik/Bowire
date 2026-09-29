@@ -28,6 +28,7 @@ internal sealed partial class BowireAgentPublisher : IAsyncDisposable
     private Task? _loop;
     private string? _agentId;
     private bool _lastFailed;
+    private Task<bool>? _pushing;
 
     public BowireAgentPublisher(BowireAgentOptions options, Func<BowireAgentRegistration> snapshot, ILogger logger, HttpMessageHandler? handler = null)
     {
@@ -63,7 +64,12 @@ internal sealed partial class BowireAgentPublisher : IAsyncDisposable
             using var timer = new PeriodicTimer(_options.HeartbeatInterval);
             do
             {
-                await PushOnceAsync(token).ConfigureAwait(false);
+                // Stopping cancels the wait between heartbeats, never a push in
+                // flight: a push cut off after it was sent can still register on
+                // the hub after the deregistration, and the agent would linger.
+                // The push has the client's own timeout.
+                _pushing = PushOnceAsync(CancellationToken.None);
+                await _pushing.ConfigureAwait(false);
             }
             while (await timer.WaitForNextTickAsync(token).ConfigureAwait(false));
         }, token);
@@ -125,11 +131,21 @@ internal sealed partial class BowireAgentPublisher : IAsyncDisposable
         catch (OperationCanceledException)
         {
         }
-        if (_agentId is null) return;
+        if (_pushing is not null)
+        {
+            try { await _pushing.ConfigureAwait(false); }
+            catch (OperationCanceledException) { }
+        }
+        if (_pushing is null) return;   // never pushed: nothing to take back
+        // The id is derived from service and instance, so it is known even
+        // when the answer to the first registration had not arrived yet —
+        // the hub may well have registered the agent already.
+        var snapshot = _snapshot();
+        var agentId = _agentId ?? BowireHubRegistry.AgentIdFor(snapshot.ServiceName, snapshot.InstanceId);
         try
         {
             using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(3));
-            using var request = new HttpRequestMessage(HttpMethod.Delete, HubBase + "/agents/" + Uri.EscapeDataString(_agentId));
+            using var request = new HttpRequestMessage(HttpMethod.Delete, HubBase + "/agents/" + Uri.EscapeDataString(agentId));
             Authorize(request);
             using var _ = await _http.SendAsync(request, timeout.Token).ConfigureAwait(false);
         }
