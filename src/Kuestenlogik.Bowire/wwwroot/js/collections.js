@@ -1120,7 +1120,13 @@
                 sourceName: state.sourceName,
                 sessionCount: state.sessionCount,
                 distributed: !!state.distributed,
-                hosts: Array.isArray(state.hosts) ? state.hosts.slice() : null
+                hosts: Array.isArray(state.hosts) ? state.hosts.slice() : null,
+                // #313 — what each executor did, a refusal included
+                // ("refused: requireSignedExecutor …"), so the history shows
+                // why a run had fewer hosts than it asked for.
+                hostSummaries: Array.isArray(state.hostSummaries)
+                    ? state.hostSummaries.map(function (h) { return Object.assign({}, h); })
+                    : null
             }
         };
         return {

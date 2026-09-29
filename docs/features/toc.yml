@@ -71,6 +71,8 @@
       href: flows.md
     - name: Performance graphs
       href: performance.md
+    - name: Parallel sessions
+      href: parallel-sessions.md
 
 - name: Workspace data
   items:
