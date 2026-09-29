@@ -68,15 +68,15 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### M3 — Discoverability: the pitch, the directories, the star ask *(due 2026-12-14)*
 
-**1/6 done** · 5 backlog
+**2/6 done** · 4 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [647](https://github.com/Kuestenlogik/Bowire/issues/647) | Bowire | [Lizenz entscheiden und je Projekt führen](#issue-kuestenlogik-bowire-647) | ⬜ Backlog | `area:multi` |
 | [668](https://github.com/Kuestenlogik/Bowire/issues/668) | Bowire | [Sharpen the one-line pitch, and carry the same sentence everywhere](#issue-kuestenlogik-bowire-668) | ⬜ Backlog | `area:site` |
-| [669](https://github.com/Kuestenlogik/Bowire/issues/669) | Bowire | [Ask for the star and the watch: README badge, in-product prompt, one-time CLI hint](#issue-kuestenlogik-bowire-669) | ⬜ Backlog | `area:multi` |
 | [670](https://github.com/Kuestenlogik/Bowire/issues/670) | Bowire | [Get listed where developers and models actually look](#issue-kuestenlogik-bowire-670) | ⬜ Backlog | `area:site` |
 | [671](https://github.com/Kuestenlogik/Bowire/issues/671) | Bowire | [Site: /alternatives/* landing pages, a changelog page, and the trust claim in the hero](#issue-kuestenlogik-bowire-671) | ⬜ Backlog | `area:site` |
+| [669](https://github.com/Kuestenlogik/Bowire/issues/669) | Bowire | [Ask for the star and the watch: README badge, in-product prompt, one-time CLI hint](#issue-kuestenlogik-bowire-669) | ✅ Done | `area:multi` |
 | [685](https://github.com/Kuestenlogik/Bowire/issues/685) | Bowire | [Desktop launch: a shortcut on every platform, no console window, and docs that say how to start Bowire](#issue-kuestenlogik-bowire-685) | ✅ Done | `area:multi` |
 
 ### M4 — Corporate networks: outbound proxy, Windows auth, cookies *(due 2027-01-11)*
@@ -437,12 +437,6 @@ Die Lizenzfrage für Bowire steht laut Lizenz- und Stufenkonzept aus („TBD"), 
 
 In every directory, every search result and every model-generated answer, Bowire gets **one line** next to its name. Ours is *"The multi-protocol API workbench."* It is accurate, and it names neither an opponent nor a problem. [[more]](https://github.com/Kuestenlogik/Bowire/issues/668)
 
-#### <a id="issue-kuestenlogik-bowire-669"></a>⬜ Backlog · [#669](https://github.com/Kuestenlogik/Bowire/issues/669) Ask for the star and the watch: README badge, in-product prompt, one-time CLI hint
-
-> `area:multi`
-
-Bowire has 8 stars, 1 fork and **0 watchers** after four months. That is not primarily a reach problem — it is that nobody who uses Bowire is ever asked. [[more]](https://github.com/Kuestenlogik/Bowire/issues/669)
-
 #### <a id="issue-kuestenlogik-bowire-670"></a>⬜ Backlog · [#670](https://github.com/Kuestenlogik/Bowire/issues/670) Get listed where developers and models actually look
 
 > `area:site`
@@ -454,6 +448,12 @@ Six credible competitors turned up during the competitive survey **via openalter
 > `area:site`
 
 Two structural gaps on bowire.io. Both cheap, neither risky. [[more]](https://github.com/Kuestenlogik/Bowire/issues/671)
+
+#### <a id="issue-kuestenlogik-bowire-669"></a>✅ Done · [#669](https://github.com/Kuestenlogik/Bowire/issues/669) Ask for the star and the watch: README badge, in-product prompt, one-time CLI hint
+
+> `area:multi`
+
+Bowire has 8 stars, 1 fork and **0 watchers** after four months. That is not primarily a reach problem — it is that nobody who uses Bowire is ever asked. [[more]](https://github.com/Kuestenlogik/Bowire/issues/669)
 
 #### <a id="issue-kuestenlogik-bowire-685"></a>✅ Done · [#685](https://github.com/Kuestenlogik/Bowire/issues/685) Desktop launch: a shortcut on every platform, no console window, and docs that say how to start Bowire
 
