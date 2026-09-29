@@ -59,7 +59,7 @@ Only `url` is required.
 | `http` | A remote URL returning the document above. Optional `Authorization` header. | core |
 | `consul` | A Consul agent's `/v1/catalog` API. Optional ACL token, datacenter and tag filter. | core |
 | `kubernetes` | A Kubernetes API server's `Service` objects. Auto-picks in-cluster service-account or kubeconfig credentials. | `Kuestenlogik.Bowire.Catalogue.Kubernetes` |
-| `agent` | A Bowire Agent hub aggregating several networks. | `Kuestenlogik.Bowire.Catalogue.Agent` |
+| `agent` | A Bowire [Agent hub](agent-hub.md): the services its live agents announce. | `Kuestenlogik.Bowire.Catalogue.Agent` |
 
 At most one provider is active per process — mixing two catalogues
 invites confusion about which one owns a row. To aggregate, put a small

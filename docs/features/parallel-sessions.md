@@ -49,6 +49,10 @@ Coordinator and executors append to `audit/parallel.jsonl` under the data direct
 
 The coordinator sends each executor the run's id in `X-Bowire-Parallel-Job`, and both sides record it as `job`, so a `dispatch` line and its executors' `run` lines join up. Every line carries `prevHash`, the SHA-256 of the line before it (64 zeros on the first): removing or editing a line breaks the chain at the next one. A chain cannot show lines cut off the end — keep the file where the process that writes it cannot also delete it if that matters.
 
+## Executors from a hub
+
+On a Bowire that is an [Agent hub](agent-hub.md), the dialog lists the live agents tagged `parallel-executor` under the Hosts field; a click adds one.
+
 ## Not yet
 
-Picking executors from a Bowire Agent hub instead of typing their URLs waits for the hub itself (#128). Mid-run failover to another executor and clock synchronisation across hosts are out of scope.
+Mid-run failover to another executor and clock synchronisation across hosts are out of scope.

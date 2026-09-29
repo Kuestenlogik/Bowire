@@ -3756,5 +3756,15 @@
   "lint.hints.openRail": "In Lint öffnen",
   "lint.pill.one": "{count} Entwurfsbefund (Low oder schlimmer) — Methode öffnen",
   "lint.pill.many": "{count} Entwurfsbefunde (Low oder schlimmer) — Methode öffnen",
-  "env.unnamed": "ohne Namen"
+  "env.unnamed": "ohne Namen",
+  "hub.agents.title": "Agents an diesem Hub ({count})",
+  "hub.agents.empty": "Noch hat sich kein Agent angemeldet. Ein Bowire, dessen Bowire:Agent:HubUrl hierher zeigt, erscheint innerhalb eines Heartbeats.",
+  "hub.agents.live": "Aktiv — Heartbeat pünktlich",
+  "hub.agents.stale": "Veraltet — seit drei Intervallen kein Heartbeat",
+  "hub.agents.lastSeen": "zuletzt gesehen {ago}",
+  "hub.agents.secondsAgo": "vor {count} s",
+  "hub.agents.minutesAgo": "vor {count} min",
+  "hub.agents.open": "Workbench öffnen",
+  "hub.executors.pick": "Executors aus dem Hub:",
+  "hub.executors.none": "Kein aktiver Agent im Hub trägt das Tag parallel-executor."
 }

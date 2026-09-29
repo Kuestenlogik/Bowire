@@ -3757,5 +3757,15 @@
   "lint.hints.openRail": "Open in Lint",
   "lint.pill.one": "{count} design finding (low or worse) — open the method",
   "lint.pill.many": "{count} design findings (low or worse) — open the method",
-  "env.unnamed": "unnamed"
+  "env.unnamed": "unnamed",
+  "hub.agents.title": "Agents in this hub ({count})",
+  "hub.agents.empty": "No agent has registered yet. A Bowire with Bowire:Agent:HubUrl pointing here shows up within one heartbeat.",
+  "hub.agents.live": "Live — heartbeat on time",
+  "hub.agents.stale": "Stale — no heartbeat for three intervals",
+  "hub.agents.lastSeen": "seen {ago}",
+  "hub.agents.secondsAgo": "{count} s ago",
+  "hub.agents.minutesAgo": "{count} min ago",
+  "hub.agents.open": "Open workbench",
+  "hub.executors.pick": "Executors from the hub:",
+  "hub.executors.none": "No live agent in the hub is tagged parallel-executor."
 }

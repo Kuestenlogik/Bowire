@@ -3,11 +3,16 @@
 
 using Kuestenlogik.Bowire.Auth;
 using Kuestenlogik.Bowire.Endpoints;
+using Kuestenlogik.Bowire.AgentHub;
 using Kuestenlogik.Bowire.Plugins;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting.Server;
+using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -180,6 +185,16 @@ internal static class BowireApiEndpoints
             // Kuestenlogik.Bowire.Help; they arrive through the seam below.
             .MapBowireCatalogueEndpoints(basePath);
 
+        // #128 - this Bowire as a hub (Bowire:Hub:Enabled) and/or as an
+        // agent of one (Bowire:Agent:HubUrl). The hub's /hub/* surface sits
+        // outside the workbench group: agents and catalogue readers are
+        // machines with the hub token, not signed-in users.
+        var config = endpoints.ServiceProvider.GetService<IConfiguration>();
+        var hubEnabled = BowireHubEndpoints.IsEnabled(config);
+        if (hubEnabled) endpoints.MapBowireHub();
+        bowireGroup.MapBowireHubWorkbenchEndpoints(basePath, hubEnabled);
+        StartAgent(endpoints.ServiceProvider, options, config, basePath, startupLogger);
+
         // #325 (v2.1) — Endpoint contributions discovered from sibling
         // packages. The Kuestenlogik.Bowire.Interceptor package
         // contributes /api/intercepted/* (+ /api/traffic/* alias) and
@@ -200,6 +215,40 @@ internal static class BowireApiEndpoints
             bowireGroup.RequireAuthorization(BowireAuthPolicies.Default);
             AuthGateLog.GateActive(startupLogger, authProvider.Name, authProvider.Id);
         }
+    }
+
+    /// <summary>
+    /// #128 - when a hub URL is configured, register with it once the host
+    /// listens (the callback URL needs the bound address) and deregister
+    /// when it stops.
+    /// </summary>
+    private static void StartAgent(IServiceProvider services, BowireOptions options, IConfiguration? config, string basePath, ILogger logger)
+    {
+        options.Agent.ApplyConfiguration(config);
+        if (string.IsNullOrWhiteSpace(options.Agent.HubUrl)) return;
+        var lifetime = services.GetService<IHostApplicationLifetime>();
+        if (lifetime is null) return;
+        var applicationName = services.GetService<IHostEnvironment>()?.ApplicationName;
+
+        BowireAgentPublisher? publisher = null;
+        lifetime.ApplicationStarted.Register(() =>
+        {
+            var callback = options.Agent.CallbackUrl
+                ?? BowireAgentPublisher.DeriveCallbackUrl(
+                    services.GetService<IServer>()?.Features.Get<IServerAddressesFeature>()?.Addresses.ToList() ?? [], basePath);
+            if (callback is null)
+            {
+                AgentLog.NoCallback(logger);
+                return;
+            }
+            var registration = BowireAgentPublisher.BuildRegistration(options, callback, applicationName);
+            publisher = new BowireAgentPublisher(options.Agent, () => registration, logger);
+            publisher.Start();
+        });
+        lifetime.ApplicationStopping.Register(() =>
+        {
+            publisher?.DisposeAsync().AsTask().Wait(TimeSpan.FromSeconds(5));
+        });
     }
 
     /// <summary>
@@ -268,4 +317,14 @@ internal static partial class AuthGateLog
         Level = LogLevel.Information,
         Message = "Bowire auth provider active: {Provider} ({Id}). Workbench API requires authentication.")]
     public static partial void GateActive(ILogger logger, string provider, string id);
+}
+
+/// <summary>Source-generated logger for the #128 agent start.</summary>
+internal static partial class AgentLog
+{
+    [LoggerMessage(
+        EventId = 1283,
+        Level = LogLevel.Warning,
+        Message = "Bowire:Agent:HubUrl is set but the host's address is unknown; set Bowire:Agent:CallbackUrl. Not registering with the hub.")]
+    public static partial void NoCallback(ILogger logger);
 }

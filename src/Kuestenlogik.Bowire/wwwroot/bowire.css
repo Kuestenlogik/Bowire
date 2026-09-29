@@ -27666,3 +27666,71 @@ not as the
 @media (prefers-reduced-motion: reduce) {
     .bowire-header-set-delete { transition: none; }
 }
+
+/* #128 - the hub's agent list and the executor picker. */
+.bowire-hub-agent {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--bowire-border-subtle);
+}
+.bowire-hub-agent-main {
+    flex: 1;
+    min-width: 0;
+}
+.bowire-hub-agent-name {
+    font-size: 13px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.bowire-hub-agent-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex: none;
+    background: var(--bowire-success, #3fb950);
+}
+.bowire-hub-agent.stale .bowire-hub-agent-dot {
+    background: var(--bowire-text-tertiary, #6a6a82);
+}
+.bowire-hub-agent.stale .bowire-hub-agent-name {
+    color: var(--bowire-text-secondary, #9898b0);
+}
+.bowire-hub-executors {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    margin-top: 6px;
+}
+.bowire-hub-executors .bowire-parallel-field-hint {
+    margin-top: 0;
+}
+.bowire-hub-executor-chip {
+    padding: 2px 8px;
+    border: 1px solid var(--bowire-border-subtle);
+    border-radius: var(--bowire-radius-sm);
+    background: var(--bowire-bg);
+    color: var(--bowire-text);
+    font-family: inherit;
+    font-size: 12px;
+    cursor: pointer;
+}
+.bowire-hub-executor-chip:hover {
+    border-color: var(--bowire-accent);
+}
+.bowire-hub-agent-open {
+    flex: none;
+    padding: 4px 10px;
+    border: 1px solid var(--bowire-border-subtle);
+    border-radius: var(--bowire-radius-sm);
+    background: var(--bowire-bg-elevated);
+    color: var(--bowire-text);
+    font-size: 12px;
+    text-decoration: none;
+}
+.bowire-hub-agent-open:hover {
+    border-color: var(--bowire-accent);
+}

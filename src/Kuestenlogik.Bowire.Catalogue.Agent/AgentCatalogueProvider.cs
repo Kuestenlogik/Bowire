@@ -12,31 +12,28 @@ namespace Kuestenlogik.Bowire.Catalogue.Agent;
 
 /// <summary>
 /// Sources Bowire's URL/service catalogue from a Bowire Agent hub
-/// (#305 Phase E / depends on #128). When the hub-side aggregator
-/// endpoint <c>GET {HubUrl}/hub/agents/catalogue</c> is live, this
-/// provider returns one <see cref="BowireCatalogueEntry"/> per
-/// registered-agent entry; until then it returns an empty list and
-/// keeps the workbench's "no catalogue" surface intact.
+/// (#305 Phase E). It reads the hub's <c>GET {HubUrl}/hub/agents/catalogue</c>
+/// (#128, <c>MapBowireHub</c>) and returns one
+/// <see cref="BowireCatalogueEntry"/> per entry of every live agent;
+/// without a hub URL it returns an empty list and keeps the workbench's
+/// "no catalogue" surface intact.
 /// </summary>
 /// <remarks>
 /// <para>
 /// The wire shape (see <see cref="HubCatalogueDocument"/>) is the
-/// contract the hub will publish — locked here so installations can
-/// validate their own aggregator response against
-/// <see cref="BowireAgentCatalogueOptions.StubResponse"/> before
-/// #128 ships. The provider's behaviour is intentionally simple:
+/// contract the hub publishes — locked here so an installation with
+/// its own aggregator can validate it against
+/// <see cref="BowireAgentCatalogueOptions.StubResponse"/>. The provider's behaviour is intentionally simple:
 /// merge each agent's entries into the catalogue, prefix every tag
 /// with the agent's id so operators can filter to a single agent in
 /// the workbench, and surface the agent's service name as the entry
 /// label when the entry doesn't carry its own.
 /// </para>
 /// <para>
-/// The bidirectional / push-delta path from the original #305 sketch
-/// (agent → hub WebSocket frames carrying catalogue diffs) is
-/// deferred. Phase E v1 is poll-based — the workbench's existing
-/// refresh-on-interval loop drives this provider exactly like the
-/// http / consul providers. Once #128 settles its hub WebSocket
-/// surface, a follow-up phase plugs a push-notify path on top.
+/// Agents push their registration to the hub; the workbench polls the
+/// hub's catalogue with its existing refresh-on-interval loop, exactly
+/// like the http / consul providers. A push-notify path from hub to
+/// workbench is not part of it.
 /// </para>
 /// </remarks>
 public sealed class AgentCatalogueProvider : IBowireCatalogueProvider
@@ -80,9 +77,8 @@ public sealed class AgentCatalogueProvider : IBowireCatalogueProvider
         var options = _optionsResolver();
 
         // Stub path: parse the configured JSON snapshot instead of
-        // hitting the wire. Lets installations validate their planned
-        // aggregator payload against the wire-shape contract before
-        // the hub-side endpoint from #128 ships.
+        // hitting the wire. Lets installations validate their own
+        // aggregator payload against the wire-shape contract.
         if (!string.IsNullOrWhiteSpace(options.StubResponse))
         {
             return ParseDocument(options.StubResponse!);
@@ -90,9 +86,7 @@ public sealed class AgentCatalogueProvider : IBowireCatalogueProvider
 
         if (string.IsNullOrWhiteSpace(options.HubUrl))
         {
-            // Hub not configured — until #128 lands the operator may
-            // have wired the provider purely for the wire-shape
-            // documentation. Treat as an empty catalogue, same as the
+            // Hub not configured: an empty catalogue, same as the
             // unconfigured-provider path.
             return Array.Empty<BowireCatalogueEntry>();
         }
@@ -187,9 +181,8 @@ public sealed class AgentCatalogueProvider : IBowireCatalogueProvider
         ReadCommentHandling = JsonCommentHandling.Skip,
     };
 
-    // === Wire shape — locked here so installations can validate
-    //     their planned aggregator response against the spec before
-    //     the hub-side endpoint from #128 ships. ===
+    // === Wire shape — what MapBowireHub serves (#128), locked here
+    //     so installations can validate their own aggregator against it. ===
 
     /// <summary>
     /// Top-level shape returned by the hub's

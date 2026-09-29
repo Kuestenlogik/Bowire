@@ -47,6 +47,7 @@ For the UI layout itself &mdash; rail strip, panes, action bar, theme &mdash; se
 - [Flows](flows.md) &mdash; visual pipelines with branching, loops, assertions, and response forwarding
 - [Performance graphs](performance.md) &mdash; repeat a call N times with latency percentiles (P50/P90/P99/P99.9)
 - [Parallel sessions](parallel-sessions.md) &mdash; a collection or recording as many concurrent sessions, on this host or spread across executors, with an allowlist, a token and a chained audit log
+- [Agent hub](agent-hub.md) &mdash; one Bowire lists the others: agents push their registration, the hub links to each workbench, serves the fleet as a catalogue and offers executors for parallel sessions
 
 ## Workspace data
 

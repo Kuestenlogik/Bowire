@@ -73,6 +73,8 @@
       href: performance.md
     - name: Parallel sessions
       href: parallel-sessions.md
+    - name: Agent hub
+      href: agent-hub.md
 
 - name: Workspace data
   items:

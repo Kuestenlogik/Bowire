@@ -186,6 +186,8 @@ public static class BowireServiceCollectionExtensions
         services.TryAddSingleton<BowireRecordingSession>();
         // #313 — the chained log of distributed parallel runs, next to the
         // impersonation audit log under the data root.
+        // #128 - the hub's agent list; only read when Bowire:Hub:Enabled.
+        services.TryAddSingleton<Kuestenlogik.Bowire.AgentHub.BowireHubRegistry>(_ => new Kuestenlogik.Bowire.AgentHub.BowireHubRegistry());
         services.TryAddSingleton(sp => new Kuestenlogik.Bowire.Parallel.BowireParallelAuditLog(
             (sp.GetService<IBowirePathResolver>() ?? BowirePaths.Current).Root(BowireStorageScope.Data)));
 

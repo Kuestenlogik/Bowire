@@ -9,9 +9,9 @@ namespace Kuestenlogik.Bowire.Catalogue.Agent;
 /// </summary>
 /// <remarks>
 /// <para>
-/// The agent hub itself is in flight (#128). The wire shape below is
-/// the contract this provider will speak once the hub ships its
-/// <c>GET {HubUrl}/hub/agents/catalogue</c> aggregator endpoint:
+/// The wire shape of the hub's <c>GET {HubUrl}/hub/agents/catalogue</c>
+/// (#128 — any Bowire with <c>Bowire:Hub:Enabled</c>, or
+/// <c>app.MapBowireHub()</c>):
 /// </para>
 /// <code>
 /// {
@@ -29,29 +29,23 @@ namespace Kuestenlogik.Bowire.Catalogue.Agent;
 /// }
 /// </code>
 /// <para>
-/// Until #128 lands the provider returns an empty list and logs at
-/// Debug level — the operator sees the same "no catalogue" surface
-/// the unconfigured-provider path produces. Installations that
-/// want to enable this provider today against a non-hub endpoint
-/// can do so via <see cref="StubResponse"/>, which the test seam
-/// uses to verify the wire-shape parsing.
+/// Only live agents are listed. Installations that serve this shape from
+/// something other than a Bowire hub can check it with
+/// <see cref="StubResponse"/>, which the test seam also uses.
 /// </para>
 /// </remarks>
 public sealed class BowireAgentCatalogueOptions
 {
     /// <summary>
-    /// URL of the Bowire Agent hub. Required once the hub-side
-    /// catalogue aggregator from #128 ships; the provider GETs
+    /// URL of the Bowire Agent hub; the provider GETs
     /// <c>{HubUrl}/hub/agents/catalogue</c> on every refresh.
     /// </summary>
     public string? HubUrl { get; set; }
 
     /// <summary>
-    /// Optional bootstrap token sent in the <c>Authorization</c>
-    /// header. The hub-side authn story for #128 is still
-    /// converging — Phase 1 is a shared bootstrap token (this field);
-    /// mTLS is the hardening step. Sent verbatim so the operator
-    /// picks the scheme.
+    /// The hub's token (<c>Bowire:Hub:Token</c>), sent as
+    /// <c>Authorization: Bearer …</c>. A hub with a token refuses
+    /// every call without it.
     /// </summary>
     public string? BootstrapToken { get; set; }
 
@@ -65,8 +59,7 @@ public sealed class BowireAgentCatalogueOptions
     /// Test seam: pre-canned JSON payload to feed the parser with.
     /// When set, the provider skips the HTTP call entirely and
     /// deserialises this string instead. Lets installations sanity-
-    /// check the wire-shape contract against a static JSON snapshot
-    /// before the hub-side aggregator from #128 is live.
+    /// check the wire-shape contract against a static JSON snapshot.
     /// </summary>
     public string? StubResponse { get; set; }
 }

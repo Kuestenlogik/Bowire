@@ -1089,6 +1089,11 @@
             // half-configured catalogue must not cost the operator their
             // whole workbench. Hosts with no catalogue pay one
             // always-200, non-contacting /api/catalogue/info round trip.
+            // #128 - the hub's agent list, for the workspace detail. Not
+            // awaited: nothing in discovery depends on it.
+            if (typeof fetchHubAgents === 'function') {
+                fetchHubAgents().then(function (info) { if (info && info.enabled) render(); });
+            }
             if (typeof initialCatalogueLoad === 'function') {
                 initialCatalogueLoad().then(fetchServices, fetchServices);
             } else {

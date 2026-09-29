@@ -244,6 +244,13 @@ public sealed class BowireOptions
     /// </para>
     /// </remarks>
     public string? MapBasemap { get; set; }
+
+    /// <summary>
+    /// Registers this Bowire with a central Bowire hub (#128). Off until
+    /// <see cref="AgentHub.BowireAgentOptions.HubUrl"/> is set here or as
+    /// <c>Bowire:Agent:HubUrl</c>.
+    /// </summary>
+    public AgentHub.BowireAgentOptions Agent { get; } = new();
 }
 
 /// <summary>

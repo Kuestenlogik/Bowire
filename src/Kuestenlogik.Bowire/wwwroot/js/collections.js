@@ -286,6 +286,8 @@
                 el('div', { className: 'bowire-parallel-section-label',
                     textContent: t('parallel.sectionLabel') }),
                 makeField(t('parallel.hostsLabel'), t('parallel.hostsHint'), hostsInput),
+                // #128 - executors a hub knows about, one click each.
+                typeof renderHubExecutorPicker === 'function' ? renderHubExecutorPicker(hostsInput) : null,
                 makeField(t('parallel.rampUpLabel'), t('parallel.rampUpHint'), rampUpInput),
                 makeField(t('parallel.failureLabel'), null, failureSelect),
                 makeField(t('parallel.envPoolLabel'), t('parallel.envPoolHint'), envPoolInput),

@@ -340,6 +340,9 @@
          discovery + sidebar surface picks them up. Must come before
          init.js so init.js can call initialCatalogueLoad() during boot. -->
     <BowireJsFragment Include="wwwroot\js\catalogue.js" />
+    <!-- #128 - the hub's agent list and the Parallel sessions executor
+         picker; a no-op on a Bowire that is not a hub. -->
+    <BowireJsFragment Include="wwwroot\js\hub.js" />
     <!--
       Frame-semantics framework + built-in widgets. extensions.js MUST
       come before any widget bundle so window.BowireExtensions.register

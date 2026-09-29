@@ -3301,6 +3301,12 @@
             }));
         }
 
+        // #128 - on a hub, the agents that registered with it. After the
+        // address block, not inside it: agents are other workbenches to
+        // open, not addresses this one discovers against.
+        var hubAgents = typeof renderHubAgentList === 'function' ? renderHubAgentList() : null;
+        if (hubAgents) section.appendChild(hubAgents);
+
         // Schema files — drop-zone for .proto / .openapi.json / .yaml.
         // Used to live in Workspace > Settings; moved here so Sources
         // is the single mount site for everything that introduces a
