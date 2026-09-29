@@ -381,6 +381,9 @@
                 });
             });
         }
+        // #669 — at the foot of the topic list. renderStarAsk lives in core's
+        // helpers.js; a host bundling an older core simply goes without.
+        if (typeof renderStarAsk === 'function') nav.appendChild(renderStarAsk('help'));
         return nav;
     }
 
@@ -392,7 +395,19 @@
     // BowireHelpEndpoints — a minimal HTML page (no JS, no rail
     // chrome) so a tab the operator left open survives a workbench
     // process restart.
+    // The rail strip's Help button only sets railMode; the topics are
+    // fetched by openHelpRail (F1, "Open docs", the ? icons). Arriving by
+    // the rail button left the list on "Loading..." for good, so the first
+    // render without topics starts the same load.
+    var _helpRailOpening = false;
+
     function renderHelpMain() {
+        if (!helpTopicsLoaded && !_helpRailOpening && typeof openHelpRail === 'function') {
+            _helpRailOpening = true;
+            setTimeout(function () {
+                openHelpRail().then(function () { _helpRailOpening = false; }, function () { _helpRailOpening = false; });
+            }, 0);
+        }
         var main = el('div', {
             id: 'bowire-main-help',
             className: 'bowire-main bowire-main-help'
