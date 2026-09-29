@@ -14,8 +14,9 @@ Concrete values live on the [Project board's field configuration](https://github
 | Field | Used for |
 |---|---|
 | **Status** | Kanban swim-lane: `Backlog` → `Next up` → `In progress` → `In review` → `Done`. The only field whose values are pinned by convention; everything else is editable. |
-| **Release** *(single-select)* | The **delivery a ticket shipped in** — `v2.7.0`, `v2.8.0`, … — stamped by the release pipeline (`scripts/ci/stamp-release-field.mjs`) on every **closed** item that closed since the previous cut, and **empty until then**: the version is chosen at the cut, not before (see [Milestones and releases](#milestones-and-releases)). It spans every repo on the board, so a sibling issue shows the product version it went out with. No lifecycle, independent of `Status`. |
-| **Milestone** *(built-in)* | The per-repo native milestone. On the **main repo** it is the section's **lifecycle anchor + definition**: `M<n> — <theme>`, `open` = planned, **`closed` = shipped**, plus the section's scope statement and due date. Closing the main-repo milestone drops the **whole cross-repo section** (main + siblings, grouped via the field) off the roadmap — one close ships the lot. The generator also reads it as a *fallback* for any item missing a Release. A sibling repo carries a **mirroring milestone with the same title** (`M1 — …` open, `v2.7` closed once shipped), so every ticket in every repo has a native milestone and the field and the milestone say the same thing. |
+| **Product** *(single-select, **mandatory**)* | The **artifact that ships the ticket**, and so the version line it counts in: `Bowire` (NuGet packages, tool, container — the 2.x line; the site and the docs travel with it), `VS Code` (the extension, its own 1.x line from the same repository), `Protocol.Akka`, `Protocol.Dis`, … `Sdk.Node`, … `Templates`, `Samples`, `Bootcamp`, `bowire-action`. A repository's own product is the default; the field matters where one repository ships more than one. See [Products, releases and milestones](#products-releases-and-milestones). |
+| **Release** *(text, **mandatory**)* | The **release the ticket is planned for**, in its product's count: `2.8`, `2.8.1`, `1.2`. Set when the ticket is planned — at the latest at triage — not at the cut. `2.8` means the minor release 2.8.0; a patch is planned as `2.8.1`. With `Product` it reads "Bowire 2.8", "Protocol.Akka 1.2". A text field on purpose: every product counts on its own, and one list of options for all of them was the confusion it replaces. (Boards cannot group by a text field; the roadmap groups by milestone, and `release:2.8` filters.) |
+| **Milestone** *(built-in)* | The **release** itself, in the ticket's repository: `v2.8 — <theme>`, or `<Product> v1.1 — <theme>` for a second product of the same repository (`VS Code v1.1 — …`). `open` = planned, **`closed` = shipped** (*"Ausgeliefert in v2.8.0"*), with the theme in the title and the due date on it. It must name the same release as the `Release` field. A milestone with nothing open is a release that is due. |
 | **Area** *(single-select, **mandatory**)* | Which component an issue belongs to (`workbench`, `cli`, `security`, `mcp`, `plugin-sdk`, `mock`, `docs`, `site`, `bootcamp`, `multi`). The *primary* axis for "show me everything affecting X" — should be set on every item (use `multi` only for genuinely cross-cutting work). Replaced the old `Track` field, which overlapped with it. |
 | **Effort** *(actual)* | `Low` / `Medium` / `High`. Same scale as the org-level `Issue.Effort` so the Project mirror carries the *actual* size of the work next to the *plan*. Used to spot oversized issues (`High` = consider splitting before starting) and to right-size milestones. Not a commitment, just a sanity check. |
 | **Start date** *(actual)* | First commit referencing `#N`. Backfilled by the roadmap-sync job from git history. Drives the Roadmap layout's left edge. |
@@ -35,22 +36,41 @@ Concrete values live on the [Project board's field configuration](https://github
 | **Priority** *(org issue field, on the issue)* | The order within a section | `Urgent` (now — blocks or burns) · `High` (this section) · `Medium` (the next section) · `Low` (someday) |
 | **Effort** *(org issue field)* | Planned size | `Low` (a day or less) · `Medium` (days) · `High` (a week or more — split it) |
 | **Effort (actual)** *(board field)* | What it turned out to be, set at Done | the same scale — plan next to actual, per issue (Bowire's design) |
-| **Milestone** *(built-in)* | The ordered work section | `M<n> — <themes>`; a sibling repo mirrors the product's sections as its own milestones |
-| **Release** *(board field, where the board has one)* | The version a ticket shipped in | `vX.Y`, stamped at the cut; empty while planned |
+| **Product** *(board field)* | The artifact that ships it | `Bowire`, `VS Code`, `Protocol.Akka`, … — the version line the ticket counts in |
+| **Release** *(board field)* | The release it is planned for | `2.8`, `2.8.1`, `1.2` — in the product's count, set when planned |
+| **Milestone** *(built-in)* | That release | `v2.8 — <theme>`; `<Product> v1.1 — <theme>` for a second product of one repository |
 | **Area** *(board field)* | The component | per product (`terrain`, `workbench`, `broker`, …); the `area:*` label says the same for issue search |
 | **Status** *(board field)* | Where the work sits in the flow | `Backlog` · `Next up` · `In progress` · `In review` · `Done` |
 | **Assignee** | Who holds it | never empty — unassigned means nobody decided |
 | **Parent issue** *(built-in sub-issues)* | Belongs to / depends on | an epic's slices are its sub-issues; "Folge von #N" in the text is not a link |
 
-**Order inside a section** is the `Priority` field, read by the roadmap generator; manual sorting on a board is the order of one view and nothing else — not on the ticket, not in the API, gone when the view is regrouped. Use it for the last fine ordering within a priority, never instead of one.
+**Order inside a release** is the `Priority` field, read by the roadmap generator; manual sorting on a board is the order of one view and nothing else — not on the ticket, not in the API, gone when the view is regrouped. Use it for the last fine ordering within a priority, never instead of one.
 
-## Milestones and releases
+## Products, releases and milestones
 
-Since 2026-09-19 (rolled out from here to the other Küstenlogik repositories) milestones and release versions are decoupled:
+Since 2026-09-29 a release is **planned**, not reconstructed after the fact.
 
-- A **milestone is an ordered work section** — `M1 — Localisation, layout and the test pillar`, `M2 — MCP completion + agent hub`, … Its description is one short statement of the themes it contains and ends with the scope rule: *"Umfang festgelegt am <date>: ein Ticket gehört hierher, wenn es in eines dieser Themen fällt — sonst in den nächsten Abschnitt."* A section does not grow: a ticket outside its themes goes to the next section, or a new section is opened behind the last (`M8 — Benchmark …` was opened that way). Every ticket gets a milestone (the main repo's section, or its mirror in a sibling repo) when it is created; the [field guard](../../.github/workflows/roadmap-field-guard.yml) lists every open item without one.
-- A **release gets its version number when it is cut**, by content (SemVer: a breaking cut bumps the major, a contract change the minor). A section ends in a release and may be cut from more than once: an **in-between** delivery ships what is closed so far and leaves the section open, the **last** one closes it. A second section that finished at the same time may ride along. The tag names the sections it ships in its message — `git tag -a v2.8.0 -m "Bowire v2.8.0 — M1 — Localisation, layout and the test pillar"` — and [`scripts/ci/resolve-milestone.mjs`](../../scripts/ci/resolve-milestone.mjs) reads them for the release title and the drafted notes (falling back to a `v<base> — …` milestone for old tags, then to the frontmost open section — the one being delivered from, finished or not). After the cut the pipeline stamps `Release = v2.8.0` on every **closed** item of the shipped milestones that does not already carry one. When the cut also finishes the section, the milestone is closed with *"Ausgeliefert in v2.8.0"*, the history reads as versions and the generator drops the shipped section from the roadmap.
-- **A section-closing release is due** = the frontmost open milestone has no open ticket, CI is green, no pull request is open. An **in-between release** is a judgement call instead of a condition: cut one when something closed is worth delivering before the section ends — `node scripts/ci/release.mjs cut v<next> M<n> --interim`, which ships what is closed, lists the rest under *Noch offen* in the notes and leaves the milestone open for the cut that does finish it. Without the flag a cut refuses while the section has an open ticket, which is what protects the section-closing one. `node scripts/ci/resolve-milestone.mjs v<next>` on a clean checkout names the section being delivered from either way, and says whether it read that from the tag or inferred it.
+- **Every ticket names three things, and they agree:** its `Product` (the artifact that ships it), the `Release` it is planned for in that product's count (`2.8`), and the milestone of that release (`v2.8 — <theme>`). The rules are code: [`scripts/ci/release-plan.mjs`](../../scripts/ci/release-plan.mjs).
+- **Each product counts on its own.** Bowire is at 2.x, the VS Code extension at 1.x, Protocol.Akka at 1.1, the SDKs at 0.x. A plugin repository's milestones are that plugin's releases (`v1.2 — …` in Bowire.Protocol.Akka); the main repository's milestones are Bowire's, plus a prefixed milestone for a second product it ships (`VS Code v1.1 — …`). The site and the docs have no version of their own and travel with Bowire.
+- **One release, one milestone.** The theme is in its title and becomes the heading of the release notes' story; the due date is on it. A ticket that does not fit the release it would land in moves to the next one.
+- **A release is due** when its milestone has nothing open. `node scripts/ci/release.mjs status` shows each open release of the repository's product, lowest first, and says which one is due.
+- **Patch releases** are planned like any other: a milestone `v2.8.1 — <theme>` and `Release = 2.8.1` on the tickets it fixes.
+
+The daily [field guard](../../.github/workflows/roadmap-field-guard.yml) runs [`check-board.mjs`](../../scripts/ci/check-board.mjs): every open issue of every product repository has to be on the board, with the three fields filled in and in agreement. It fails, and files a tracking issue, for any that is not.
+
+> **Why this changed back.** From 2026-09-19 milestones were ordered work sections (`M1 — …`) and `Release` was stamped at the cut, empty until then. Nothing then said when the next release was due: 2.8 waited three weeks behind 43 finished tickets, and the tickets of one release were only found after it. The sections were renamed into the releases they became (M1 and M2 → v2.8, M3 → v2.9, M4 → v2.10, M6 → v2.11, M7 → v2.12, M8 → v2.13, M5 → v3.0 — the breaking cut) and every ticket got its planned release; the old values survive in the `Release (alt)` field.
+
+### Releasing
+
+```bash
+node scripts/ci/release.mjs status          # which release is due
+node scripts/ci/release.mjs notes 2.8.0     # drafts docs/release-notes/v2.8.0.md from the plan
+# write the notes: a title that says what this release is, prose per ### section
+node scripts/ci/release.mjs cut 2.8.0 --dry-run
+node scripts/ci/release.mjs cut 2.8.0
+```
+
+`notes` lists the tickets planned for the release and done, grouped by area, and the ones that closed since the last tag without a plan. `cut` refuses while a planned ticket is open or the notes are still a draft; it gives the unplanned-but-shipped tickets this release, tags with a message naming the milestone, and closes the milestone. The [release pipeline](../../.github/workflows/release.yml) publishes on the tag with the notes as the body, and [`check-release-plan.mjs`](../../scripts/ci/check-release-plan.mjs) checks the board against the tag once more.
 
 ## Labels
 
@@ -68,7 +88,7 @@ The board ships with the default *All items* view. The four views below are the 
 ### 🗺 Roadmap
 
 - **Layout**: Roadmap
-- **Group by**: `Milestone` (the section; the siblings mirror it as their own milestones). `Release` groups shipped work by version.
+- **Group by**: `Milestone` (the release). `Product` groups by artifact; filter `release:2.8` for one release across repositories.
 - **Filter**: `Status` ≠ `Done`
 - **Use for**: "What is targeted for the next few releases?" — the public-facing release plan
 
@@ -95,7 +115,7 @@ The board ships with the default *All items* view. The four views below are the 
 
 ## Conventions
 
-- **One field per concept**: `Status` is the *where in the flow*, `Release` is the *when* (which product version), `Area` is the *component*, the issue **Type** is the *kind* (Bug / Feature / Task). `Status` and `Release` are independent axes — an item can target `v2.6` and still rest in `Backlog`. `Area` is mandatory from the start; `Release` becomes mandatory when the item is pulled out of `Backlog`. (The old `Track` field was dropped — it overlapped with `Area`.)
+- **One field per concept**: `Status` is the *where in the flow*, `Product` the *what ships it*, `Release` the *when* (in that product's count), `Area` the *component*, the issue **Type** the *kind* (Bug / Feature / Task). `Status` and `Release` are independent axes — an item can be planned for `2.9` and still rest in `Backlog`. `Area`, `Product`, `Release` and the milestone are set when the ticket is planned. (The old `Track` field was dropped — it overlapped with `Area`.)
 - **Labels duplicate fields on purpose**: GitHub issue search needs labels (`is:open label:area:security`). Project filters need fields. The two are kept in sync so an issue is findable from either side.
 - **`roadmap` label** flags items that are tracked on the board. Throwaway bug reports don't need it.
 - **`community-vote` label** marks feature requests where reactions on the issue are read as priority signal. Don't comment "+1" — react with 👍.
@@ -107,43 +127,28 @@ The board ships with the default *All items* view. The four views below are the 
 - Status transitions: `Backlog` → `Next up` → `In progress` → `In review` → `Done`. The last two are driven by PR state where possible.
 - Milestones are managed in [Settings → Issues → Milestones](https://github.com/Kuestenlogik/Bowire/milestones). When a milestone closes, its issues move out of the `Roadmap` view automatically and the milestone drops out of `ROADMAP.md` (whose changelog moves to GitHub Releases).
 
-### Every ticket names its milestone; `Release` is stamped at the cut
+### When you create an issue
 
-The roadmap is bucketed by **milestone** ([`generate-roadmap.mjs`](../../scripts/ci/generate-roadmap.mjs)): the ordered work section a ticket belongs to (`M1 — …`, `M2 — …`). A GitHub milestone is repo-scoped, and the product spans repos (main + siblings) — so a sibling repo **mirrors** the main repo's sections as its own milestones with the same titles, and a sibling issue (Akka, Dis, Surgewave, Samples, the SDKs) carries the mirror of the section it rides. That is what lets every ticket in every repo have a milestone, and the board group by it without a *No milestone* bucket.
+Put it on the board (the `roadmap` label does that on its own; without it, add it), and give it:
 
-`Release` is the **delivery a ticket shipped in** — `v2.6.2`, `v2.7.0`, … — stamped by the release pipeline on every **closed** item that closed since the previous cut ([`stamp-release-field.mjs`](../../scripts/ci/stamp-release-field.mjs)), and **empty until then**, because the version is chosen at the cut, not when the work is planned. A section is delivered in one release or several, which is what keeps this field from repeating the milestone — and what fixes its rules: the stamp is the **full version** (release notes are written per delivery, so `v2.8.0` and `v2.8.1` have to stay apart), **open tickets are skipped** (they ship in a later cut), **an existing stamp is never overwritten** (a ticket ships once; overwriting would drag every earlier ticket onto the newest cut), and the scope is **the window since the previous cut, not the milestone** — a release ships what was merged since the one before it, whatever section a ticket belongs to, and scoping by milestone left those tickets shipping unrecorded. A ticket that closed *before* this cut and carries no release is left alone rather than claimed: that is history from before the field existed, and the release notes of the day are its record. A sibling issue shows the **Bowire product version** it went out with, even though that repo tags its own artifact version autonomously via the [release cascade](../../.github/workflows/release.yml); the two differ by design.
+- **Product** — the artifact that ships it;
+- **Release** — the release it is planned for, in that product's count;
+- **the milestone of that release** — or open one (`v<next> — <theme>`) when it belongs in a release not planned yet.
 
-**Three axes, kept apart:**
-- **`Milestone` (native, mirrored into siblings)** → the section: `open` = planned, **`closed` = shipped** (*"Ausgeliefert in vX.Y.Z"*), plus themes, scope rule and due date. Closing the main-repo milestone (and its mirrors) drops the section off the roadmap.
-- **`Release` (field)** → the delivery a ticket shipped in, stamped at the cut; empty while planned, written once. One section, one or more deliveries. Spans repos. *No lifecycle*.
-- **Repo tag / NuGet version** → the artifact version. The **release scripts use the repo's own version** for packaging + release notes — never the `Release` field.
-
-**Enforced** by [`roadmap-field-guard.yml`](../../.github/workflows/roadmap-field-guard.yml), a daily (and on-demand) check that **fails** for any *open* item without a milestone and files a tracking issue, because a red scheduled run on its own is not a notification.
-
-**When you create an issue/ticket:** give it its milestone — the section whose scope statement it falls into, otherwise the next section or a new one behind the last. Leave `Release` alone; the cut fills it.
-
-> **Why the field is no longer the planning axis.** Until 2026-09-19 `Release` carried the planned product version (`v2.8`, …) because siblings had no milestone to carry it. Naming the version ahead of the cut is exactly what let "v0.4 done while v0.2 open" happen elsewhere in the organisation; with mirrored milestones the section lives where it belongs, and the field says only what has actually shipped.
-
-
+A ticket that is not planned for a release yet goes into the furthest open one and moves forward when it is picked up; "no release" is not a resting state — that is how releases stop being visible.
 
 ### Milestone title = release theme
 
 Every milestone's **title** carries the release headline directly: `vX.Y[.Z] — <theme>`. The theme is the same one that lands on the GitHub Release once the milestone tags, and it shows in the Project board's Roadmap view as the group heading (since Projects v2 reads the milestone title verbatim).
 
-Current milestones (as of v2.0 RC prep):
-- `v2.0 — Re-architected workbench shell + workspace = project folder`
-- `v2.1 — Scripting, variable resolver, throughput surface`
-- `v2.2 — Test pillar: assertions, CI runner, regression coverage`
-- `v2.3 — Security pillar: shift-left scanner, OWASP coverage, auth recording`
-- `v2.4 — Dev pillar: schema watch diff, mock-from-schema, side-by-side`
-- `v2.5 — Continuous integration: PR bot, project file, org dashboard`
+The open releases live on the [milestones page](https://github.com/Kuestenlogik/Bowire/milestones) and in [`ROADMAP.md`](../../ROADMAP.md); the shipped ones on [GitHub Releases](https://github.com/Kuestenlogik/Bowire/releases).
 
 **One concept per release.** Themes are 2-5 words, concrete enough that a reader knows what the cycle is about (`gRPC Connect` beats `protocol expansion`). Bundling two themes with `+` is allowed if both are equally weighted (v2.0 carries the shell refactor AND the workspace-as-project-folder pivot, both major) — but the default is one theme so the cycle has an obvious anchor.
 
 **Why pre-commit a theme at planning time:** the headline defines what the cycle is *about* — what we'd be embarrassed to ship without. It anchors the milestone discussion ("does this issue serve the theme?"), avoids the retrospective scramble of summarising whatever happened to land, and gives the team a one-line elevator pitch through the cycle. Mid-cycle pivots are fine — rename the milestone (GitHub keeps the audit trail).
 
 **Mechanical consequences:**
-- `release.yml` parses the matching milestone's title when creating the GitHub Release and uses the `<theme>` tail as `vX.Y.Z — <theme>`. No hand-editing of the release title required.
+- `resolve-milestone.mjs` finds the release's milestone by its version; the GitHub Release is named by the version alone, and the notes' front-matter title is its heading.
 - `scripts/ci/generate-roadmap.mjs` renders the full title as the section heading in `ROADMAP.md` so the offline view matches the Project board.
 - The milestone description stays free-form for slip context, stakeholder hints, &c. — no machinery parses it.
 - If the milestone title is bare (`v2.0` with no ` — <theme>` tail), the release falls back to a bare `vX.Y.Z` title and the roadmap section shows no theme — so missing themes are visible by their absence rather than crashing the pipeline.
@@ -156,7 +161,7 @@ The roadmap is wired to maintain itself once an issue lands with `label:roadmap`
 
 | Event | What happens |
 |---|---|
-| New issue with `roadmap` label | The Project's own **Auto-add to project** rule attaches it (Status defaults to `Backlog`, Release stays empty until triage) |
+| New issue with `roadmap` label | The Project's own **Auto-add to project** rule attaches it (Status defaults to `Backlog`); Product, Release and milestone are set at triage — the field guard lists it until they are |
 | Issue closed | `roadmap-sync.yml` regenerates `ROADMAP.md` from the Project + commits |
 | Issue title / label / milestone change | same — `roadmap-sync.yml` re-renders |
 | PR merged that uses `Closes #N` | Status flips to `Done` via Project workflow (UI-side, see below) |

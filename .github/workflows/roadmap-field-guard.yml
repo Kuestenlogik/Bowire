@@ -1,26 +1,19 @@
 name: Roadmap field guard
 
-# Every open item names the work section it belongs to — its milestone.
+# Every open ticket is planned: it is on the board and names its Product (the
+# artifact that ships it, and so the version line it counts in), the Release
+# it is planned for in that line (`2.8`) and the milestone of that release
+# (`v2.8 — <theme>`) — and the three agree. docs/contributing/project-board.md,
+# "Products, releases and milestones"; the rules are scripts/ci/release-plan.mjs.
 #
-# Since 2026-09-19 the board carries three axes: `Status` is where the work
-# sits in the flow, the `Milestone` is the ordered work section it belongs
-# to (M1, M2, … — mirrored into the sibling repos), and `Release` is the
-# version it shipped in, stamped at the cut and empty before. An open issue
-# without a milestone has skipped the one decision every ticket gets at
-# birth — that is the contradiction worth catching. (It used to check the
-# `Release` field once an item left Backlog; the version is no longer known
-# before the cut.)
+# From 2026-09-19 to 2026-09-29 the Release field was stamped at the cut and
+# empty before it. Nothing then said when the next release was due, and 2.8
+# waited three weeks behind 43 finished tickets. A release is planned again;
+# this guard is what keeps it planned. It also sweeps every product repository
+# for open issues that are not on the board at all: the board only adds issues
+# labelled `roadmap` on its own, and 20 of them had been missed.
 #
-# This guard used to demand "never empty" instead. That forced a placeholder
-# `Backlog` option onto the Release field — a category error, since a release
-# is a version and "backlog" is a place in the flow — and it protected
-# nothing: generate-roadmap.mjs already treated the placeholder and an empty
-# field identically. Worse, seeding every new item made the check vacuous:
-# nothing was ever empty, so the guard passed while untriaged work piled up.
-# Guarding the transition means something; guarding the birth did not.
-#
-# Runs daily + on demand. A red run means: give the listed items a version,
-# or push them back to Backlog.
+# Runs daily + on demand.
 
 on:
   schedule:
@@ -37,105 +30,49 @@ permissions:
 
 jobs:
   guard:
-    name: Every open item names its milestone
+    name: Every open ticket is planned
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ secrets.BOWIRE_DISPATCH_TOKEN }}
     steps:
-      # Needed for the local composite action below — a `uses: ./…` step has
-      # nothing to resolve without the repo on disk.
+      # Also needed for the local composite action below.
       - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
 
-      - name: Find open items with no milestone
+      - name: Check the plan
         id: scan
         run: |
-          gh api graphql --paginate -f query='
-            query($endCursor: String) {
-              organization(login: "Kuestenlogik") {
-                projectV2(number: 2) {
-                  items(first: 100, after: $endCursor) {
-                    pageInfo { hasNextPage endCursor }
-                    nodes {
-                      content {
-                        __typename
-                        ... on Issue { number state url milestone { title } repository { nameWithOwner } }
-                      }
-                      status: fieldValueByName(name: "Status") {
-                        ... on ProjectV2ItemFieldSingleSelectValue { name }
-                      }
-                    }
-                  }
-                }
-              }
-            }' > pages.json
-
-          # A violation is an OPEN issue without a milestone, wherever it sits
-          # in the flow: the section is decided when the ticket is born, and
-          # the sibling repos mirror the main repo's sections as their own
-          # milestones, so "no milestone" is never a legitimate resting state.
-          jq -rs '[ .[].data.organization.projectV2.items.nodes[]
-                    | select(.content.__typename == "Issue" and .content.state == "OPEN")
-                    | select(.content.milestone == null)
-                    | "\(.content.repository.nameWithOwner)#\(.content.number)\t\(.content.url)\t\(.status.name // "unset")" ]
-                  | .[]' pages.json > offenders.txt || true
-
-          COUNT=$(grep -c . offenders.txt || true)
-          if [ "${COUNT:-0}" -eq 0 ]; then
-            echo "✅ Every open item names its milestone." >> "$GITHUB_STEP_SUMMARY"
-            exit 0
-          fi
-
+          set +e
+          node scripts/ci/check-board.mjs --markdown > offenders.md
+          code=$?
+          set -e
+          cat offenders.md >> "$GITHUB_STEP_SUMMARY"
+          if [ "$code" -eq 0 ]; then exit 0; fi
           {
-            echo "## ❌ $COUNT open item(s) without a milestone"
-            echo ""
-            echo "These name no work section. Give each one the milestone it"
-            echo "belongs to (a sibling repo mirrors the main repo's sections"
-            echo "as its own milestones), or close it:"
-            echo ""
-            while IFS=$'\t' read -r ref url status; do
-              [ -z "$ref" ] && continue
-              echo "- [\`$ref\`]($url) — Status: \`$status\`"
-            done < offenders.txt
-          } >> "$GITHUB_STEP_SUMMARY"
-
-          # Also hand the list to the next step, which files it where someone
-          # will actually see it.
-          {
-            while IFS=$'\t' read -r ref url status; do
-              [ -z "$ref" ] && continue
-              echo "- $ref (Status: $status) — $url"
-            done < offenders.txt
-          } > offenders.md
-          {
-            echo "count=$COUNT"
+            echo "count=$(grep -c '^- ' offenders.md)"
             echo "offenders<<EOF"
             cat offenders.md
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
           exit 1
 
-      # A red scheduled run is not a notification. This guard went red on four
-      # consecutive days in August 2026 with three untriaged items on the
-      # board, and nobody noticed — a daily cron failing in the Actions tab
-      # looks exactly like a daily cron nobody opened. The same lesson as the
-      # publish channels (#237), so the same remedy: leave a mark that
-      # outlives the run.
+      # A red scheduled run is not a notification: this guard once went red on
+      # four consecutive days and nobody noticed. The tracking issue outlives
+      # the run.
       - name: File a tracking issue
         if: failure() && steps.scan.outputs.count != ''
         uses: ./.github/actions/publish-failure-issue
         with:
           channel: roadmap-release-field
           hint: |
-            These open items name no milestone. The milestone is the work
-            section a ticket belongs to (M1, M2, … — docs/contributing/
-            project-board.md, "Milestones and releases"); it is decided when
-            the ticket is born, and an item without one does not appear on
-            the roadmap `scripts/ci/generate-roadmap.mjs` renders.
+            These open tickets are not planned. Each one needs to be on the
+            board with Product, Release and the milestone of that release,
+            and the three have to agree (docs/contributing/project-board.md,
+            "Products, releases and milestones").
 
             ${{ steps.scan.outputs.offenders }}
 
-            Give each one the milestone it belongs to — a sibling repo
-            mirrors the main repo's sections as its own milestones — or close
-            it. The `Release` field stays empty until the cut stamps the
-            version.
+            Put the ticket on the board, fill in what is missing, or close it.
           token: ${{ secrets.BOWIRE_DISPATCH_TOKEN }}

@@ -1,92 +1,26 @@
 #!/usr/bin/env node
-// Which milestone(s) a release ships — and therefore its theme (docs/contributing/project-board.md,
-// "Milestones and releases"). Milestones are ordered work sections `M<n> — <theme>`; a release
-// gets its version number only when it is cut, so the number cannot find the milestone. The
-// release names it instead, and this script reads that in three places, in order:
-//
-//   1. The annotated tag's message (`git tag -a v2.8.0 -m "Bowire v2.8.0 — M1 — …"`): every
-//      `M<n>` token in it is a shipped milestone.
-//   2. A milestone whose title starts with the version (`v2.8 — …`), for tags cut under the
-//      old convention.
-//   3. The frontmost open milestone — the section being delivered from. A release is cut at the
-//      end of a section and may be cut in between, so the section is not required to be finished;
-//      when it is not, the resolution is an inference and says so.
+// Which milestone a release ships (docs/contributing/project-board.md, "Products, releases and
+// milestones"). A milestone is a release again — `v2.8 — <theme>` — so the version finds it: the
+// milestone of this repository's product whose version is the tag's (`v2.8` for v2.8.0,
+// `v2.8.1` for v2.8.1). Nothing is inferred; a tag without its milestone resolves to nothing and
+// says so, because that is a release nobody planned.
 //
 // Usage: node scripts/ci/resolve-milestone.mjs <tag-or-version>
 // Prints GitHub Actions outputs: milestones (titles, `|`-separated), milestone (the first),
-// theme (the titles' tails joined with " + "), numbers (M-numbers, space-separated). Needs
-// GH_TOKEN / the gh CLI signed in and the tag fetched (fetch-depth: 0).
+// theme (the themes joined with " + "), numbers (milestone numbers, space-separated).
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { parseMilestone, productOfRepo, releaseMatches } from './release-plan.mjs';
 
-export const order = t => { const m = /^M(\d+)/.exec(t); return m ? Number(m[1]) : Number.POSITIVE_INFINITY; };
-export const theme = t => t.replace(/^(?:M\d+|v[\w.-]+)\s*(?:[—-]\s*)?/, '').trim();
+export const theme = t => parseMilestone(t)?.theme ?? '';
 
-/**
- * Whether a milestone title names this version: either exactly (`v2.7`) or followed by a theme
- * (`v2.7 — Geospatial map`).
- *
- * Written without building a pattern out of the version on purpose. It used to be
- * `new RegExp('^' + candidate.replace(/\./g, '\\.') + ...)`, which escaped the dots and nothing
- * else: a tag carrying a backslash or any other metacharacter went into the pattern as syntax,
- * so the match could be widened or the resolver made to throw by the name of a tag. CodeQL
- * flagged both halves of that (js/regex-injection, js/incomplete-sanitization) and it is the
- * kind of escaping that is never finished — comparing strings and matching a *constant*
- * pattern against what is left has nothing to escape.
- */
-export function titleNamesVersion(title, version) {
-  const t = String(title ?? '');
-  const v = String(version ?? '');
-  if (!v) return false;
-  if (t === v) return true;
-  if (!t.startsWith(v)) return false;
-  // The separator and theme, as a fixed pattern: nothing from the input reaches it.
-  return /^\s+[—-]\s+.+$/.test(t.slice(v.length));
-}
-
-/**
- * The three rules, with nothing to read from disk or the network: `milestones` is the repo's
- * milestone list as the API returns it, `tagMessage` the annotated tag's body (empty when the
- * tag does not exist yet). Returns the sections and, for the log, which rule found them.
- */
-export function resolve(tag, milestones, tagMessage = '') {
-  const base = tag.replace(/^v/, '').replace(/-.*$/, '');
-  const majMin = base.split('.').slice(0, 2).join('.');
-  let chosen = [];
-  let how = '';
-
-  // 1. the tag message
-  const numbers = [...new Set([...tagMessage.matchAll(/\bM(\d+)\b/g)].map(m => Number(m[1])))];
-  if (numbers.length) {
-    chosen = numbers.map(n => milestones.find(m => order(m.title) === n)).filter(Boolean);
-    how = `tag message names ${numbers.map(n => 'M' + n).join(', ')}`;
-  }
-
-  // 2. the old convention: version in the title
-  if (chosen.length === 0) {
-    for (const candidate of [`v${base}`, `v${majMin}`]) {
-      const hit = milestones.find(m => titleNamesVersion(m.title, candidate));
-      if (hit) { chosen = [hit]; how = `title starts with ${candidate}`; break; }
-    }
-  }
-
-  // 3. the frontmost section — the one being delivered from
-  //
-  // An in-between cut ships from a section that still has open tickets, so requiring the frontmost
-  // section to be finished would make this fall through for exactly that case and hand the release
-  // no theme at all. It resolves either way; only the confidence differs, and the log says which.
-  if (chosen.length === 0) {
-    const open = milestones.filter(m => m.state === 'open' && Number.isFinite(order(m.title))).sort((a, b) => order(a.title) - order(b.title));
-    const front = open[0];
-    if (front) {
-      chosen = [front];
-      const name = front.title.split(' ')[0];
-      how = front.open_issues === 0
-        ? `frontmost milestone ${name} is complete`
-        : `frontmost milestone ${name} is the one in progress — inferred, ${front.open_issues} ticket(s) still open`;
-    }
-  }
-  return { chosen, how, base, majMin };
+/** The milestones of `repo`'s product that `tag` delivers. */
+export function resolve(tag, milestones, repo) {
+  const product = productOfRepo(repo);
+  return milestones.filter(m => {
+    const p = parseMilestone(m.title);
+    return p && (p.product ?? productOfRepo(repo)) === product && releaseMatches(p.version, tag);
+  });
 }
 
 /** The four GitHub Actions outputs, empty when nothing resolved. */
@@ -96,7 +30,7 @@ export function outputs(chosen) {
         milestones: chosen.map(m => m.title).join('|'),
         milestone: chosen[0].title,
         theme: chosen.map(m => theme(m.title)).filter(Boolean).join(' + '),
-        numbers: chosen.map(m => m.title.split(' ')[0]).join(' '),
+        numbers: chosen.map(m => String(m.number)).join(' '),
       }
     : { milestones: '', milestone: '', theme: '', numbers: '' };
 }
@@ -108,13 +42,9 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   const gh = (...a) => execFileSync('gh', a, { encoding: 'utf8' });
   const repo = process.env.GITHUB_REPOSITORY ?? gh('repo', 'view', '--json', 'nameWithOwner', '-q', '.nameWithOwner').trim();
   const all = JSON.parse(gh('api', `repos/${repo}/milestones?state=all&per_page=100`));
-  let message = '';
-  try { message = execFileSync('git', ['tag', '-l', '--format=%(contents)', tag], { encoding: 'utf8' }); } catch { /* no such tag locally */ }
-
-  const { chosen, how, base, majMin } = resolve(tag, all, message);
+  const chosen = resolve(tag, all, repo);
   const out = outputs(chosen);
-
-  console.error(chosen.length ? `Resolved for ${tag}: ${out.milestones} (${how})` : `::warning::No milestone resolved for ${tag}: the tag message names none, no title starts with v${base}/v${majMin}, and there is no open section to deliver from.`);
+  console.error(chosen.length ? `Resolved for ${tag}: ${out.milestones}` : `::warning::No milestone for ${tag}: no milestone of ${productOfRepo(repo)} is titled v${tag.slice(1).replace(/-.*$/, '').replace(/\.0$/, '')} — a release nobody planned.`);
   if (process.env.GITHUB_OUTPUT) {
     execFileSync('sh', ['-c', `printf '%s\\n' "$LINES" >> "$GITHUB_OUTPUT"`], { env: { ...process.env, LINES: Object.entries(out).map(([k, v]) => `${k}=${v}`).join('\n') } });
   }

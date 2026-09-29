@@ -1,41 +1,33 @@
 #!/usr/bin/env node
-// Release bookkeeping — one tool, the same in every Küstenlogik repository.
+// Release bookkeeping for a product on the Bowire board (docs/contributing/project-board.md,
+// "Products, releases and milestones"). The rules live in release-plan.mjs; this is the part
+// that talks to GitHub.
 //
-// Milestones are ordered work sections `M<n> — <theme>`; a release gets its version number
-// only when it is cut and names the sections it ships. A section is delivered in one release or
-// several — the last cut finishes it, an `--interim` cut before that ships what is closed so far
-// and leaves it open. A sibling repository on the product's board mirrors the sections as its own
-// milestones (same titles); the board's Release field, where the board has one, carries the
-// delivery a ticket shipped in: the full version, closed tickets only, written once.
+// A release is planned, not reconstructed: every ticket names its Product, the Release it is
+// planned for (`2.8`) and the milestone of that release (`v2.8 — <theme>`). A milestone with
+// nothing open is a release that is due.
 //
-//   status                              The sections in order with open/closed counts (main repo
-//                                       and its mirrors), whether a release is due — the frontmost
-//                                       section has no open ticket left — and what blocks it.
-//   notes <version> [<section>…]        Drafts the notes for the sections (default: the frontmost
-//                                       complete ones): header naming them, the closed tickets of
-//                                       the main repo AND of every sibling that mirrors the section,
-//                                       grouped by repository, type (Feature / Bug / Task) and area,
-//                                       what is not in, and what closed since the last tag outside
-//                                       the shipped sections. Writes artifacts/release/<tag>.md.
-//                                       --highlights prints only the grouped ticket list.
-//   cut <version> [<section>…] [--interim] [--dry-run]
-//                                       Refuses while a shipped section (or a mirror) has an open
-//                                       ticket — --interim overrides that for an in-between
-//                                       delivery; tags with a message naming the sections and
-//                                       pushes; publishes the drafted notes as the GitHub release
-//                                       unless a release pipeline (.github/workflows/release.yml)
-//                                       does that on the tag; closes the sections and their mirrors
-//                                       with "Ausgeliefert in <tag>" — but only those with nothing
-//                                       left open; stamps the board's Release field on every closed
-//                                       item that does not already carry one.
+//   status                      The product's open releases, lowest first, with what is still
+//                               open in each, and which one is due.
+//   notes <version>             Drafts docs/release-notes/v<version>.md from the plan — the
+//                               tickets planned for this release, grouped by area — unless the
+//                               file exists (--force rewrites it). Prints what is still open and
+//                               what closed since the last tag without a plan, for checking.
+//   cut <version> [--dry-run]   Refuses while a planned ticket is open or the notes are still a
+//                               draft; claims the tickets that closed since the last tag without
+//                               a release; tags with a message naming the milestone and pushes
+//                               (the release pipeline publishes on the tag); closes the release's
+//                               milestone.
 //
-// Needs the gh CLI signed in (project scope for the board). Sections are given as M-number ("M1")
-// or full title.
+// Options: --product <name> (default: the repository's product), --since <tag> (default: the
+// latest tag). Needs the gh CLI signed in, with project scope for the board.
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
+import { mkdirSync, writeFileSync, existsSync, readFileSync } from 'node:fs';
+import { dirname } from 'node:path';
+import { planFor, releases, releaseOfVersion, productOfRepo, view, parseMilestone, releaseMatches } from './release-plan.mjs';
 
 const [command, ...rest] = process.argv.slice(2);
-const valued = new Set(['--since']);
+const valued = new Set(['--since', '--product']);
 const flags = new Set(), args = [], opts = new Map();
 for (let i = 0; i < rest.length; i++) {
   if (valued.has(rest[i])) opts.set(rest[i], rest[++i]);
@@ -51,235 +43,127 @@ const graphql = (query, vars = {}) => {
 };
 const git = (...a) => execFileSync('git', a, { encoding: 'utf8' }).trim();
 
+const ORG = 'Kuestenlogik', PROJECT = 2;
 const repo = gh('repo', 'view', '--json', 'nameWithOwner', '-q', '.nameWithOwner').trim();
-const [owner, name] = repo.split('/');
-const order = t => { const m = /^M(\d+)/.exec(t ?? ''); return m ? Number(m[1]) : null; };
-const themeOf = t => t.replace(/^(?:M\d+|v[\w.-]+)\s*(?:[—-]\s*)?/, '').trim();
+const product = opts.get('--product') ?? productOfRepo(repo);
+if (!product) { console.error(`${repo} is not a product on the board — pass --product`); process.exit(2); }
 
-// ── the board, when the repo has one ─────────────────────────────────────────
+// ── the board ────────────────────────────────────────────────────────────────
 function board() {
-  const d = graphql(`{ repository(owner: "${owner}", name: "${name}") { projectsV2(first: 5) { nodes { id number title fields(first: 30) { nodes { ... on ProjectV2SingleSelectField { id name options { id name } } } } } } } }`);
-  const p = d.repository.projectsV2.nodes[0];
-  if (!p) return null;
-  const field = n => p.fields.nodes.find(f => f?.name === n) ?? null;
-  return { id: p.id, number: p.number, title: p.title, release: field('Release'), area: field('Area') };
+  const d = graphql(`{ organization(login: "${ORG}") { projectV2(number: ${PROJECT}) { id fields(first: 40) { nodes { ... on ProjectV2FieldCommon { id name } } } } } }`);
+  const p = d.organization.projectV2;
+  const field = n => p.fields.nodes.find(f => f?.name === n)?.id ?? null;
+  return { id: p.id, release: field('Release') };
 }
-function boardItems(b) {
+function boardItems() {
   const items = [];
   let cursor = null;
-  while (true) {
-    const d = graphql(`query($c: String) { node(id: "${b.id}") { ... on ProjectV2 { items(first: 100, after: $c) { pageInfo { hasNextPage endCursor } nodes { id
-      release: fieldValueByName(name: "Release") { ... on ProjectV2ItemFieldSingleSelectValue { name } }
+  for (;;) {
+    const d = graphql(`query($c: String) { organization(login: "${ORG}") { projectV2(number: ${PROJECT}) { items(first: 100, after: $c) { pageInfo { hasNextPage endCursor } nodes { id
+      product: fieldValueByName(name: "Product") { ... on ProjectV2ItemFieldSingleSelectValue { name } }
+      release: fieldValueByName(name: "Release") { ... on ProjectV2ItemFieldTextValue { text } }
       area: fieldValueByName(name: "Area") { ... on ProjectV2ItemFieldSingleSelectValue { name } }
-      content { __typename ... on Issue { number title state closedAt url issueType { name } milestone { title } repository { nameWithOwner } labels(first: 10) { nodes { name } } } } } } } } }`, cursor ? { c: cursor } : {});
-    const page = d.node.items;
-    for (const n of page.nodes) if (n.content?.__typename === 'Issue') items.push(n);
-    if (!page.pageInfo.hasNextPage) break;
+      content { __typename ... on Issue { number title state stateReason closedAt url issueType { name } milestone { title } repository { nameWithOwner } } } } } } } }`, cursor ? { c: cursor } : {});
+    const page = d.organization.projectV2.items;
+    for (const n of page.nodes) if (n.content?.__typename === 'Issue') items.push(view(n));
+    if (!page.pageInfo.hasNextPage) return items;
     cursor = page.pageInfo.endCursor;
   }
-  return items;
 }
-
-// ── sections ─────────────────────────────────────────────────────────────────
-function sections() {
-  return ghJson('api', `repos/${repo}/milestones?state=all&per_page=100`)
-    .filter(m => order(m.title) !== null)
-    .sort((a, b) => order(a.title) - order(b.title));
-}
-function resolve(names, all) {
-  return names.map(n => all.find(m => m.title === n || m.title.startsWith(n + ' '))
-    ?? (() => { throw new Error(`no section '${n}' — have: ${all.map(m => m.title).join(', ')}`); })());
-}
-/** The mirrors of a section in the sibling repos on the board: same title. */
-function mirrors(title, b) {
-  if (!b) return [];
-  const repos = new Set(boardItems(b).map(i => i.content.repository.nameWithOwner).filter(r => r !== repo));
-  const out = [];
-  for (const r of repos) {
-    const m = ghJson('api', `repos/${r}/milestones?state=all&per_page=100`).find(x => x.title === title);
-    if (m) out.push({ repo: r, ...m });
-  }
-  return out;
-}
+const milestones = () => ghJson('api', `repos/${repo}/milestones?state=all&per_page=100`);
+const ref = it => `${it.repo === repo ? '' : it.repo}#${it.number}`;
+const lastTag = () => opts.get('--since') ?? (() => { try { return git('describe', '--tags', '--abbrev=0'); } catch { return null; } })();
+const tagDate = tag => tag ? git('log', '-1', '--format=%cI', tag) : null;
 
 // ── status ───────────────────────────────────────────────────────────────────
 if (command === 'status') {
-  const b = board();
-  const open = sections().filter(m => m.state === 'open');
-  let due = null;
-  for (const m of open) {
-    const mir = mirrors(m.title, b);
-    const openTotal = m.open_issues + mir.reduce((s, x) => s + x.open_issues, 0);
-    const closedTotal = m.closed_issues + mir.reduce((s, x) => s + x.closed_issues, 0);
-    console.log(`${m.title.padEnd(56)} ${(openTotal === 0 ? 'complete' : `${openTotal} open`).padStart(10)} · ${closedTotal} closed${mir.length ? ` · mirrored in ${mir.length} repo(s)` : ''}`);
-    if (!due && openTotal === 0) due = m;
+  const items = boardItems();
+  const list = releases(milestones(), repo, product, items);
+  if (list.length === 0) { console.log(`No open release of ${product}.`); process.exit(0); }
+  for (const r of list) {
+    console.log(`${r.milestone.title.padEnd(72)} ${(r.open === 0 ? 'ready' : `${r.open} open`).padStart(8)} · ${r.done} done`);
   }
+  const since = lastTag();
+  const { unplanned } = planFor(items, product, '0.0.0', tagDate(since));
   console.log('');
-  if (!due) {
-    const first = open[0];
-    if (!first) { console.log('No open section.'); process.exit(0); }
-    console.log(`No release due: ${first.title} still has open ticket(s):`);
-    for (const i of ghJson('issue', 'list', '--repo', repo, '--state', 'open', '--milestone', first.title, '--limit', '200', '--json', 'number,title')) console.log(`  #${i.number} ${i.title}`);
-    for (const mir of mirrors(first.title, b)) for (const i of ghJson('issue', 'list', '--repo', mir.repo, '--state', 'open', '--milestone', mir.title, '--limit', '200', '--json', 'number,title')) console.log(`  ${mir.repo}#${i.number} ${i.title}`);
-  } else {
-    const prs = ghJson('pr', 'list', '--repo', repo, '--state', 'open', '--json', 'number');
-    console.log(`Release due: ${due.title} is complete.${prs.length ? ` ${prs.length} open pull request(s) first.` : ''}`);
-    console.log(`Next: node ${process.argv[1].replace(/\\/g, '/').replace(/^.*\/(scripts\/)/, '$1')} notes <version> ${due.title.split(' ')[0]}`);
-  }
+  const due = list.find(r => r.open === 0 && r.done > 0);
+  if (due) console.log(`Release due: ${product} v${due.version} (${due.milestone.title}). Next: node scripts/ci/release.mjs notes ${due.version}.0`);
+  else console.log(`No release due: v${list[0].version} still has ${list[0].open} open ticket(s).`);
+  if (unplanned.length) console.log(`\n${unplanned.length} ticket(s) closed since ${since} without a release — the next cut claims them:\n${unplanned.map(it => `  ${ref(it)} ${it.title}`).join('\n')}`);
   process.exit(0);
 }
 
 // ── notes / cut ──────────────────────────────────────────────────────────────
 if (command === 'notes' || command === 'cut') {
-  const [version, ...names] = args;
-  if (!version) { console.error('usage: release.mjs notes|cut <version> [<section>…] [--interim]'); process.exit(2); }
-  const all = sections();
-  const b = board();
-  let chosen = names.length ? resolve(names, all) : [];
-  if (chosen.length === 0) {
-    // Default: the frontmost complete section, and the next ones while they are complete too.
-    for (const m of all.filter(m => m.state === 'open')) {
-      const openTotal = m.open_issues + mirrors(m.title, b).reduce((s, x) => s + x.open_issues, 0);
-      if (openTotal === 0) chosen.push(m); else break;
-    }
-    if (chosen.length === 0) { console.error('No complete section to ship — name one explicitly.'); process.exit(1); }
-  }
-  const titles = chosen.map(m => m.title);
-  const tag = version.startsWith('v') ? version : 'v' + version;
-  // The stamp names the delivery: release notes are written per cut, so v2.8.0 and v2.8.1
-  // have to stay apart. A prerelease stamps the version it previews.
-  const shippedVersion = 'v' + tag.slice(1).replace(/-.*$/, '');
-  const since = opts.get('--since') ?? (() => { try { return git('describe', '--tags', '--abbrev=0'); } catch { return null; } })();
-  const notesPath = `artifacts/release/${tag}.md`;
+  const [raw] = args;
+  if (!raw) { console.error('usage: release.mjs notes|cut <version> [--dry-run] [--force]'); process.exit(2); }
+  const version = raw.replace(/^v/, '');
+  const tag = `v${version}`;
+  const release = releaseOfVersion(version);
+  const items = boardItems();
+  const since = lastTag();
+  const { shipped, stillOpen, unplanned } = planFor(items, product, version, tagDate(since));
+  const ms = milestones().filter(m => { const p = parseMilestone(m.title); return p && (p.product ?? productOfRepo(repo)) === product && releaseMatches(p.version, version); });
+  const notesPath = `docs/release-notes/${tag}.md`;
 
-  // What ships: closed issues of the sections in this repo, and of their mirrors via the board.
-  const shipped = [];
-  const stillOpen = [];
-  for (const m of chosen) {
-    // GraphQL rather than `gh issue list`: the issue type is not reachable from the latter.
-    let cursor = null;
-    while (true) {
-      const d = graphql(`query($c: String) { repository(owner: "${owner}", name: "${name}") { milestone(number: ${m.number}) { issues(first: 100, after: $c, states: [OPEN, CLOSED]) { pageInfo { hasNextPage endCursor } nodes { number title state url issueType { name } labels(first: 10) { nodes { name } } } } } } }`, cursor ? { c: cursor } : {});
-      const page = d.repository.milestone.issues;
-      for (const i of page.nodes) (i.state === 'CLOSED' ? shipped : stillOpen).push({ repo, number: i.number, title: i.title, url: i.url, labels: i.labels.nodes.map(l => l.name), type: i.issueType?.name ?? null, area: null });
-      if (!page.pageInfo.hasNextPage) break;
-      cursor = page.pageInfo.endCursor;
-    }
-  }
-  if (b) {
-    for (const it of boardItems(b)) {
-      const c = it.content;
-      if (!titles.includes(c.milestone?.title ?? '') || c.repository.nameWithOwner === repo) continue;
-      (c.state === 'CLOSED' ? shipped : stillOpen).push({ repo: c.repository.nameWithOwner, number: c.number, title: c.title, url: c.url, labels: c.labels.nodes.map(l => l.name), type: c.issueType?.name ?? null, area: it.area?.name ?? null });
-    }
-    // Types and areas for the main repo's issues come from the board too, where they are.
-    const byNumber = new Map(boardItems(b).filter(it => it.content.repository.nameWithOwner === repo).map(it => [it.content.number, it]));
-    for (const s of shipped) if (s.repo === repo && byNumber.has(s.number)) { const it = byNumber.get(s.number); s.type ??= it.content.issueType?.name ?? null; s.area = it.area?.name ?? null; }
-  }
-  const areaOf = s => s.area ?? s.labels.filter(l => l.startsWith('area:')).map(l => l.slice(5)).sort().join(' · ') ?? '';
-  const typeOf = s => s.type ?? (/^Epic\b/i.test(s.title) ? 'Feature' : 'Feature');
-  const grouped = new Map();
-  for (const s of shipped) {
-    const key = `${s.repo === repo ? '' : s.repo.split('/')[1] + ' · '}${typeOf(s)}`;
-    if (!grouped.has(key)) grouped.set(key, []);
-    grouped.get(key).push(`#${s.number} ${s.title}${areaOf(s) ? ` _(${areaOf(s)})_` : ''}${s.repo === repo ? '' : ` — ${s.url}`}`);
-  }
-  const typeRank = k => /Feature$/.test(k) ? 0 : /Bug$/.test(k) ? 1 : 2;
-  const keys = [...grouped.keys()].sort((a, c) => (a.includes(' · ') ? 1 : 0) - (c.includes(' · ') ? 1 : 0) || a.localeCompare(c) || typeRank(a) - typeRank(c));
-
-  if (flags.has('--highlights')) {
-    for (const k of keys) { console.log(`### ${k}`); console.log(''); for (const l of grouped.get(k)) console.log(`- ${l}`); console.log(''); }
-    process.exit(0);
-  }
+  for (const it of stillOpen) console.error(`still open, planned for ${release}: ${ref(it)} ${it.title}`);
+  if (unplanned.length) console.error(`closed since ${since} without a release (this cut claims them):\n${unplanned.map(it => `  ${ref(it)} ${it.title}`).join('\n')}`);
 
   if (command === 'notes') {
-    for (const s of stillOpen) console.error(`WARNING: still open: ${s.repo}#${s.number} ${s.title}`);
-    let md = `${name} ${tag} — enthält ${titles.join(', ')}.${since ? ` ${git('rev-list', '--count', `${since}..HEAD`)} Commits seit ${since}.` : ''}\n\n## Themen\n\n`;
-    for (const k of keys) md += `### ${k}\n\n${grouped.get(k).map(l => `- ${l}`).join('\n')}\n\n`;
-    // What is still open in a shipped section belongs in the notes of an in-between delivery:
-    // the header says "enthält <section>", and without this the reader would take that literally.
-    if (stillOpen.length) md += `## Noch offen in ${titles.join(', ')}\n\n${stillOpen.map(s => `- ${s.repo === repo ? '' : s.repo}#${s.number} ${s.title}`).join('\n')}\n\n`;
-    const others = all.filter(m => m.state === 'open' && !chosen.includes(m));
-    if (others.length) md += `## Nicht drin\n\n${others.map(m => `- ${m.title}: ${m.open_issues} offen`).join('\n')}\n\n`;
-    if (since) {
-      const sinceDate = git('log', '-1', '--format=%cI', since).slice(0, 10);
-      const stray = ghJson('issue', 'list', '--repo', repo, '--state', 'closed', '--limit', '500', '--search', `closed:>${sinceDate}`, '--json', 'number,title,milestone')
-        .filter(i => !titles.includes(i.milestone?.title ?? ''));
-      if (stray.length) md += `## Seit ${since} geschlossen, aber nicht in diesen Abschnitten (prüfen)\n\n${stray.map(i => `- #${i.number} ${i.title}${i.milestone ? ` (${i.milestone.title})` : ' (ohne Meilenstein)'}`).join('\n')}\n`;
+    if (existsSync(notesPath) && !flags.has('--force')) {
+      console.log(`${notesPath} exists — edit it, or pass --force to draft it again.`);
+      process.exit(0);
     }
-    mkdirSync('artifacts/release', { recursive: true });
+    // Grouped by area: the notes are read by feature, not by ticket type.
+    const groups = new Map();
+    for (const it of [...shipped, ...unplanned]) {
+      const key = it.area ?? 'other';
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(it);
+    }
+    let md = `---\n# The release's \`#\` heading. A sentence about this delivery, not the version.\ntitle: <fill in before the tag>\nversion: ${version}\n---\n\n`;
+    md += `<One-sentence frame for what ${product} ${version} is about.>\n\n`;
+    md += `<!-- Drafted by scripts/ci/release.mjs from the plan: Product ${product}, Release ${release}${ms.length ? `, milestone ${ms.map(m => m.title).join(' + ')}` : ''}.\n     ${shipped.length} planned ticket(s) done, ${unplanned.length} closed without a plan since ${since ?? 'the start'}.\n     Turn the lists into prose. Keep at least one ### heading: the pipeline counts them. -->\n\n`;
+    for (const [area, list] of [...groups.entries()].sort((a, b) => a[0].localeCompare(b[0]))) {
+      md += `## ${area}\n\n### <headline>\n\n${list.sort((a, b) => a.number - b.number).map(it => `- ${it.title} ([${ref(it)}](${it.url}))`).join('\n')}\n\n`;
+    }
+    mkdirSync(dirname(notesPath), { recursive: true });
     writeFileSync(notesPath, md);
-    console.log(md);
-    console.log(`→ ${notesPath}  (edit, then: node ${process.argv[1].replace(/\\/g, '/').replace(/^.*\/(scripts\/)/, '$1')} cut ${version} ${names.join(' ')})`);
+    console.log(`→ ${notesPath}: ${shipped.length + unplanned.length} ticket(s) in ${groups.size} group(s). Write it, then: node scripts/ci/release.mjs cut ${version}`);
     process.exit(0);
   }
 
   // cut
-  //
-  // A section is delivered in one release or several. The default cut is the one that finishes a
-  // section, and an open ticket in it means the cut is premature — so it refuses. An in-between
-  // delivery is the other case and has to say so: `--interim` ships what is closed, lists the rest
-  // as not included, and leaves the milestone open for the cut that does finish it.
-  const interim = flags.has('--interim');
-  if (stillOpen.length && !interim) {
-    for (const s of stillOpen) console.error(`${s.repo}#${s.number} is still open`);
-    console.error('Not cutting. Pass --interim to deliver what is closed and keep the section open.');
+  if (product !== productOfRepo(repo)) { console.error(`cut tags this repository; ${product} is released by its own pipeline.`); process.exit(2); }
+  if (stillOpen.length) { console.error(`Not cutting: ${stillOpen.length} ticket(s) planned for ${release} are open. Finish them or move them to a later release.`); process.exit(1); }
+  if (!existsSync(notesPath)) { console.error(`no ${notesPath} — run 'notes ${version}' and write it first`); process.exit(2); }
+  const notes = readFileSync(notesPath, 'utf8');
+  if (/title:\s*<fill in/.test(notes) || /<headline>/.test(notes) || !/^### /m.test(notes)) {
+    console.error(`${notesPath} is still a draft: it needs a real title, no <headline> placeholders, and at least one ### section.`);
     process.exit(1);
   }
-  if (stillOpen.length) console.log(`[interim] ${stillOpen.length} ticket(s) stay open for a later cut of ${titles.join(', ')}`);
-  if (!existsSync(notesPath)) { console.error(`no ${notesPath} — run 'notes' first`); process.exit(2); }
   const dry = flags.has('--dry-run');
   const say = s => console.log((dry ? '[dry-run] ' : '') + s);
-  const message = `${name} ${tag} — ${titles.join(', ')}`;
+
+  // A ticket that shipped without a plan is claimed now, so the board says what went out.
+  if (unplanned.length) {
+    const b = board();
+    say(`set Release = ${release} on ${unplanned.length} ticket(s) that closed without one`);
+    if (!dry) for (const it of unplanned) gh('project', 'item-edit', '--project-id', b.id, '--id', it.id, '--field-id', b.release, '--text', release);
+  }
+  const message = `${repo.split('/')[1]} ${tag} — ${ms.length ? ms.map(m => m.title).join(' + ') : release}`;
   say(`git tag -a ${tag} -m "${message}" && git push origin ${tag}`);
   if (!dry) { git('tag', '-a', tag, '-m', message); git('push', 'origin', tag); }
-  if (existsSync('.github/workflows/release.yml')) {
-    say('release pipeline (.github/workflows/release.yml) publishes on the tag; the drafted notes are its editorial body');
-  } else {
-    say(`gh release create ${tag} --notes-file ${notesPath}`);
-    if (!dry) gh('release', 'create', tag, '--repo', repo, '--title', `${name} ${tag}`, '--notes-file', notesPath);
+  if (existsSync('.github/workflows/release.yml')) say('the release pipeline publishes on the tag, with ' + notesPath + ' as its body');
+  else { say(`gh release create ${tag} --notes-file ${notesPath}`); if (!dry) gh('release', 'create', tag, '--repo', repo, '--title', version, '--notes-file', notesPath); }
+  for (const m of ms) {
+    if (m.open_issues > 0) { say(`keep '${m.title}' open: ${m.open_issues} issue(s) still in it`); continue; }
+    say(`close '${m.title}': Ausgeliefert in ${tag}`);
+    if (!dry) gh('api', '-X', 'PATCH', `repos/${repo}/milestones/${m.number}`, '-f', 'state=closed', '-f', `description=${(m.description ?? '').trim()} Ausgeliefert in ${tag}.`.trim());
   }
-  // Only the cut that finishes a section closes it. A section may be delivered from more than
-  // once, and an in-between cut that closed the milestone would drop the section off the roadmap
-  // with its remaining tickets still open.
-  for (const m of chosen) {
-    const targets = [{ repo, ...m }, ...mirrors(m.title, b)];
-    const openTotal = targets.reduce((sum, t) => sum + t.open_issues, 0);
-    if (openTotal > 0) {
-      say(`keep milestone '${m.title}' open: ${openTotal} ticket(s) left — ${tag} delivers from it, it does not finish it`);
-      continue;
-    }
-    for (const target of targets) {
-      say(`close ${target.repo} milestone '${target.title}': Ausgeliefert in ${tag}`);
-      if (!dry) gh('api', '-X', 'PATCH', `repos/${target.repo}/milestones/${target.number}`, '-f', 'state=closed', '-f', `description=${(target.description ?? '').trim()} Ausgeliefert in ${tag}.`);
-    }
-  }
-  if (b?.release) {
-    let option = b.release.options.find(o => o.name === shippedVersion);
-    say(`stamp Release = ${shippedVersion} on every closed board item of ${titles.join(', ')}`);
-    if (!dry) {
-      if (!option) {
-        const inner = [{ name: shippedVersion }, ...b.release.options].map(o => `{${o.id ? `id: "${o.id}", ` : ''}name: ${JSON.stringify(o.name)}, color: GRAY, description: ${JSON.stringify(o.id ? '' : `Ausgeliefert als ${tag}`)}}`).join(',');
-        graphql(`mutation { updateProjectV2Field(input: {fieldId: "${b.release.id}", name: "Release", singleSelectOptions: [${inner}]}) { projectV2Field { ... on ProjectV2SingleSelectField { id } } } }`);
-        option = board().release.options.find(o => o.name === shippedVersion);
-      }
-      // Closed only: an open ticket has not shipped. First stamp wins: a ticket ships once, and
-      // overwriting would drag every earlier ticket of the section onto the newest cut — which
-      // would leave the field saying no more than the milestone already says.
-      let n = 0, held = 0, earlier = 0;
-      for (const it of boardItems(b)) {
-        if (!titles.includes(it.content.milestone?.title ?? '')) continue;
-        if (it.content.state !== 'CLOSED') { held++; continue; }
-        if (it.release?.name) { if (it.release.name !== shippedVersion) earlier++; continue; }
-        gh('project', 'item-edit', '--project-id', b.id, '--id', it.id, '--field-id', b.release.id, '--single-select-option-id', option.id); n++;
-      }
-      console.log(`stamped ${n} item(s)` + (held ? `, ${held} still open` : '') + (earlier ? `, ${earlier} shipped earlier` : ''));
-    }
-  }
-  const bump = existsSync('Directory.Build.props') ? readFileSync('Directory.Build.props', 'utf8').match(/<Version>([^<]+)<\/Version>/)?.[1] : null;
-  console.log(bump ? `\nmain still says ${bump}: bump <Version> in Directory.Build.props to the next preview and commit.` : '\nBump the version on main to the next preview and commit.');
+  console.log(`\nNext: set version in docs/release-notes/upcoming.md to the next release, and plan it — every ticket names Product, Release and milestone.`);
   process.exit(0);
 }
 
-console.error('usage: release.mjs status | notes <version> [<section>…] [--highlights] | cut <version> [<section>…] [--interim] [--dry-run]');
+console.error('usage: release.mjs status | notes <version> [--force] | cut <version> [--dry-run]   (--product <name>, --since <tag>)');
 process.exit(2);

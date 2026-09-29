@@ -783,16 +783,13 @@ jobs:
           cat release-body.md
           echo "----- end -----"
 
-      # The release is named after its version and nothing else. It used to
-      # carry the milestone's theme beside it, from the days when a
-      # milestone was a delivery — it is a section now, so v2.8.0 and
-      # v2.8.1 would have been given the same words. The Releases list
-      # truncates the name to about a version's width anyway; what the
+      # The release is named after its version and nothing else. The Releases
+      # list truncates the name to about a version's width anyway; what the
       # delivery is about is the `#` heading of the body, taken from the
       # notes' own front-matter (scripts/ci/release-body.mjs).
       #
-      # resolve-milestone.mjs still runs: the milestones it names are the
-      # ones this cut closes.
+      # resolve-milestone.mjs names the release's milestone (`v2.8 — …`),
+      # found by the version; a tag without one warns — nobody planned it.
       - name: Resolve release title from milestone
         id: title
         env:
@@ -807,16 +804,15 @@ jobs:
           TITLES=$(node -e "process.stdout.write(JSON.parse(require('fs').readFileSync('resolved.json','utf8')).milestones || '')" || true)
           echo "milestone_titles=${TITLES}" >> "$GITHUB_OUTPUT"
 
-      # The board's Release field is the delivery a ticket shipped in — empty until here.
-      # Stamped on every *closed* item that closed since the previous cut and does not already
-      # carry a release. Deliberately not scoped by milestone: a release ships what was merged
-      # since the one before it, and a ticket from another section goes out in it just the same
-      # — under the old milestone scoping those shipped unrecorded. The milestone stays the
-      # section, the field the delivery. Never fails the release.
-      - name: Stamp the board's Release field
+      # The board plans releases: every ticket carries Product and the Release it is planned
+      # for (docs/contributing/project-board.md). This checks the plan against the tag — a
+      # planned ticket still open did not ship and is warned about; a ticket that closed since
+      # the previous release without a plan went out in this one and gets its release. Never
+      # fails the release.
+      - name: Check the release plan on the board
         env:
           GH_TOKEN: ${{ secrets.BOWIRE_DISPATCH_TOKEN || secrets.RELEASE_PAT || secrets.GITHUB_TOKEN }}
-        run: node scripts/ci/stamp-release-field.mjs "${GITHUB_REF_NAME}"
+        run: node scripts/ci/check-release-plan.mjs "${GITHUB_REF_NAME}"
 
       # SHA-256 for every asset this release ships. Until now a download
       # could not be verified at all: the only sha256 in this workflow is

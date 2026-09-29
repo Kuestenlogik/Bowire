@@ -36,6 +36,7 @@
 import { execSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
 import process from "node:process";
+import { parseMilestone, productOfRepo, compareVersions } from "./release-plan.mjs";
 
 function resolveToken() {
     if (process.env.GH_TOKEN) return process.env.GH_TOKEN;
@@ -86,6 +87,10 @@ query($org: String!, $number: Int!, $cursor: String) {
               ... on ProjectV2ItemFieldSingleSelectValue {
                 name
                 field { ... on ProjectV2SingleSelectField { name } }
+              }
+              ... on ProjectV2ItemFieldTextValue {
+                text
+                field { ... on ProjectV2Field { name } }
               }
             }
           }
@@ -138,8 +143,9 @@ async function fetchAllItems() {
 // so we look each one up by field-name.
 function fieldValue(item, fieldName) {
     for (const fv of item.fieldValues.nodes) {
-        if (fv.__typename !== "ProjectV2ItemFieldSingleSelectValue") continue;
-        if (fv.field?.name === fieldName) return fv.name;
+        if (fv.field?.name !== fieldName) continue;
+        if (fv.__typename === "ProjectV2ItemFieldSingleSelectValue") return fv.name;
+        if (fv.__typename === "ProjectV2ItemFieldTextValue") return fv.text;
     }
     return null;
 }
@@ -160,36 +166,28 @@ function statusLabel(item) {
     return fieldValue(item, "Status") || "Open";
 }
 
-// Convention since 2026-09-19: milestones are ordered work sections
-// `M<n> — <theme>` (docs/contributing/project-board.md, "Milestones and
-// releases"); the release version is chosen at the cut. The former
-// `vX.Y[.Z][-rc.N] — <theme>` form is still parsed for old milestones and
-// for the board's Release field. Falls back to `{ version: title }` for
-// anything else so legacy titles still bucket cleanly.
-function parseMilestoneTitle(title) {
-    if (!title) return { version: null, theme: null };
-    const m = title.match(/^(M\d+|v[\d.]+(?:-[\w.]+)?)\s*(?:[—-]\s*(.+))?$/);
-    if (!m) return { version: title, theme: null };
-    return { version: m[1], theme: m[2] ? m[2].trim() : null };
+// A roadmap bucket is a release of a product (docs/contributing/project-board.md, "Products,
+// releases and milestones"): `v2.8` for Bowire, `VS Code v1.1` or `Protocol.Akka v1.2` for the
+// others. Items land in it by their Product + Release fields; the open milestone of that release
+// supplies the theme and the due date.
+function releaseLabel(product, version) {
+    if (!product || !version) return null;
+    return product === "Bowire" ? `v${version}` : `${product} v${version}`;
 }
 
-// Sort key for milestone versions: sections `M<n>` in their order, then
-// semver-ish for the old `vX.Y` form. Drives the order in which milestones
-// appear in both the overview and detail sections.
-function semverKey(v) {
-    if (!v) return [Number.MAX_SAFE_INTEGER];
-    const section = v.match(/^M(\d+)$/);
-    if (section) return [0, parseInt(section[1], 10)];
-    const m = v.match(/^v(\d+)(?:\.(\d+))?(?:\.(\d+))?(?:-(\w+)\.(\d+))?/);
-    if (!m) return [Number.MAX_SAFE_INTEGER];
-    return [
-        1,
-        parseInt(m[1] || "0", 10),
-        parseInt(m[2] || "0", 10),
-        parseInt(m[3] || "0", 10),
-        m[4] ? 0 : 1, // pre-release sorts before final
-        parseInt(m[5] || "0", 10),
-    ];
+// `v2.8`, `VS Code v1.1` -> { product, version }; Bowire first, then the others by name, each by version.
+function splitLabel(label) {
+    const m = /^(?:(.+?) )?v(\d+(?:\.\d+)*)$/.exec(label ?? "");
+    return m ? { product: m[1] ?? "Bowire", version: m[2] } : { product: "~", version: "0" };
+}
+function compareLabels(a, b) {
+    const x = splitLabel(a), y = splitLabel(b);
+    if (x.product !== y.product) {
+        if (x.product === "Bowire") return -1;
+        if (y.product === "Bowire") return 1;
+        return x.product.localeCompare(y.product);
+    }
+    return compareVersions(x.version, y.version);
 }
 
 function compareKeys(a, b) {
@@ -201,25 +199,17 @@ function compareKeys(a, b) {
     return 0;
 }
 
-// An item's roadmap version. The board's "Release" single-select
-// field is the canonical axis — it spans every repo (the cross-repo grouping
-// that a native, repo-scoped milestone can't express) and is decoupled from
-// each repo's own semver line (a sibling still tags its own patch via the
-// release cascade; the field carries the *product* release the work targets).
-// A repo milestone is only the fallback for an item not yet carrying the
-// field. Unset + no milestone → null (unscheduled).
-//
-// "Release" holds a version or nothing. It used to also offer a "Backlog"
-// option, which was a category error — a release is a version, and "Backlog"
-// is a place in the workflow, which is what the Status field is for. The
-// value existed only to keep the field non-empty for a guard that demanded
-// it, and it protected nothing: an unset field already landed in the same
-// unscheduled bucket, exactly as the line below it did. Both paths lead here.
+function itemProduct(item) {
+    return fieldValue(item, "Product") ?? productOfRepo(item.content.repository?.nameWithOwner);
+}
+
+// An item's roadmap bucket: its Product and planned Release. The milestone is the fallback for
+// an item whose Release is not filled in yet — it names the same release.
 function itemVersion(item) {
-    const field = fieldValue(item, "Release");
-    if (field) return parseMilestoneTitle(field).version || field;
-    const ms = item.content.milestone;
-    if (ms) return parseMilestoneTitle(ms.title).version || ms.title;
+    const release = fieldValue(item, "Release");
+    if (release) return releaseLabel(itemProduct(item), release.split(".").slice(0, release.split(".")[2] === "0" ? 2 : 3).join("."));
+    const ms = item.content.milestone ? parseMilestone(item.content.milestone.title) : null;
+    if (ms) return releaseLabel(ms.product ?? productOfRepo(item.content.repository?.nameWithOwner), ms.version);
     return null;
 }
 
@@ -236,8 +226,10 @@ function classify(items) {
     for (const item of items) {
         const ms = item.content?.milestone;
         if (!ms || ms.state !== "OPEN") continue;
-        const { version, theme } = parseMilestoneTitle(ms.title);
-        if (!version) continue;
+        const parsed = parseMilestone(ms.title);
+        if (!parsed) continue;
+        const version = releaseLabel(parsed.product ?? productOfRepo(item.content.repository?.nameWithOwner), parsed.version);
+        const theme = parsed.theme;
         const m = meta.get(version) || {};
         if (theme && !m.theme) m.theme = theme;
         if (ms.dueOn && !m.dueOn) m.dueOn = ms.dueOn;
@@ -470,8 +462,7 @@ function render(groups) {
     lines.push("");
 
     // Sort version buckets by semver
-    const milestones = [...groups.byMilestone.values()].sort((a, b) =>
-        compareKeys(semverKey(a.version), semverKey(b.version)));
+    const milestones = [...groups.byMilestone.values()].sort((a, b) => compareLabels(a.version, b.version));
 
     // ---- Pass 1: Overview ----
     // Per milestone, just a flat status + #ref + title list so you can
