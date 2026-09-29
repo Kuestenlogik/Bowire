@@ -54,15 +54,15 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### M2 — MCP completion + agent hub *(due 2026-11-24)*
 
-**3/7 done** · 4 backlog
+**4/7 done** · 3 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
-| [110](https://github.com/Kuestenlogik/Bowire/issues/110) | Bowire | [Site: surface the AI assistant in the launch wizard + quickstart](#issue-kuestenlogik-bowire-110) | ⬜ Backlog | `area:site` |
 | [177](https://github.com/Kuestenlogik/Bowire/issues/177) | Bowire | [AI-assisted service scaffolding — schema + stub + collection + test](#issue-kuestenlogik-bowire-177) | ⬜ Backlog | `area:workbench` |
 | [613](https://github.com/Kuestenlogik/Bowire/issues/613) | Bowire | [Move the VS Code Marketplace publish off PATs to Entra ID before 2026-12-01](#issue-kuestenlogik-bowire-613) | ⬜ Backlog | `area:cli` |
 | [639](https://github.com/Kuestenlogik/Bowire/issues/639) | Bowire | [SCIM: live Okta and Entra ID provisioning round-trips](#issue-kuestenlogik-bowire-639) | ⬜ Backlog | `area:workbench` |
 | [46](https://github.com/Kuestenlogik/Bowire/issues/46) | Bowire | [MCP server-side notifications via SDK notification handlers](#issue-kuestenlogik-bowire-46) | ✅ Done | `area:mcp` |
+| [110](https://github.com/Kuestenlogik/Bowire/issues/110) | Bowire | [Site: surface the AI assistant in the launch wizard + quickstart](#issue-kuestenlogik-bowire-110) | ✅ Done | `area:site` |
 | [128](https://github.com/Kuestenlogik/Bowire/issues/128) | Bowire | [Bowire Agent — register embedded instances with a central hub](#issue-kuestenlogik-bowire-128) | ✅ Done | `area:multi` |
 | [313](https://github.com/Kuestenlogik/Bowire/issues/313) | Bowire | [Parallel sessions Phase 3 — hardening (allowlist + audit log + agent-hub discovery)](#issue-kuestenlogik-bowire-313) | ✅ Done | `area:security` |
 
@@ -381,12 +381,6 @@ Ein intermittierender Fehlschlag, der seit dem #314-Kommentar als „unrelated s
 
 ### M2 — MCP completion + agent hub *(due 2026-11-24)*
 
-#### <a id="issue-kuestenlogik-bowire-110"></a>⬜ Backlog · [#110](https://github.com/Kuestenlogik/Bowire/issues/110) Site: surface the AI assistant in the launch wizard + quickstart
-
-> `area:site`
-
-v1.9 ships the AI workbench in a real way — chat grounded in workbench state (#89 Phase 1), MCP-style tool calling (#108, #109), AI-assisted security (#59-#63). The "Straight into the water" launch wizard on bowire.io still onboards users as if AI is invisible. [[more]](https://github.com/Kuestenlogik/Bowire/issues/110)
-
 #### <a id="issue-kuestenlogik-bowire-177"></a>⬜ Backlog · [#177](https://github.com/Kuestenlogik/Bowire/issues/177) AI-assisted service scaffolding — schema + stub + collection + test
 
 > `area:workbench`
@@ -410,6 +404,12 @@ Split from #96 so the SCIM surface can ship on its own merits. [[more]](https://
 > `area:mcp`
 
 When an MCP tool call is in flight, the server can emit `notifications/message` (logging) and `notifications/progress` updates. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/46)
+
+#### <a id="issue-kuestenlogik-bowire-110"></a>✅ Done · [#110](https://github.com/Kuestenlogik/Bowire/issues/110) Site: surface the AI assistant in the launch wizard + quickstart
+
+> `area:site`
+
+v1.9 ships the AI workbench in a real way — chat grounded in workbench state (#89 Phase 1), MCP-style tool calling (#108, #109), AI-assisted security (#59-#63). The "Straight into the water" launch wizard on bowire.io still onboards users as if AI is invisible. [[more]](https://github.com/Kuestenlogik/Bowire/issues/110)
 
 #### <a id="issue-kuestenlogik-bowire-128"></a>✅ Done · [#128](https://github.com/Kuestenlogik/Bowire/issues/128) Bowire Agent — register embedded instances with a central hub
 
