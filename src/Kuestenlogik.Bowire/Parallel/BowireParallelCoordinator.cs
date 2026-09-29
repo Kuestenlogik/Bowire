@@ -47,9 +47,12 @@ internal static class BowireParallelCoordinator
         BowireParallelDistributedRequest request,
         IConfiguration? configuration,
         ILogger logger,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        BowireParallelPolicy? policy = null,
+        string? jobId = null)
     {
         ArgumentNullException.ThrowIfNull(request);
+        policy ??= BowireParallelPolicy.From(configuration);
 
         var hosts = (request.Hosts ?? [])
             .Select(h => (h ?? string.Empty).Trim().TrimEnd('/'))
@@ -66,8 +69,9 @@ internal static class BowireParallelCoordinator
         }
 
         var totalSessions = Math.Max(1, request.SessionCount);
-        var token = request.Token
-            ?? Environment.GetEnvironmentVariable("BOWIRE_PARALLEL_TOKEN");
+        // The request's token wins; otherwise Bowire:Parallel:Token or
+        // BOWIRE_PARALLEL_TOKEN (#313).
+        var token = request.Token ?? policy.Token;
 
         var overall = Stopwatch.StartNew();
 
@@ -106,6 +110,21 @@ internal static class BowireParallelCoordinator
                     }, null));
                 continue;
             }
+            // #313 — refused before anything is sent, so a token never goes
+            // out to an executor the policy would not have used.
+            if (policy.ExecutorRefusal(host) is { } refusal)
+            {
+                fanOutTasks[i] = Task.FromResult<(BowireParallelHostSummary, BowireParallelResponse?)>((
+                    new BowireParallelHostSummary
+                    {
+                        Host = host,
+                        SessionCount = hostSessions,
+                        FailCount = 0,
+                        Error = "refused: " + refusal,
+                    }, null));
+                continue;
+            }
+
             var perHostRequest = new BowireParallelLocalRequest
             {
                 Targets = request.Targets,
@@ -120,7 +139,7 @@ internal static class BowireParallelCoordinator
             // SendAsync is in flight. The analyzer can't model that
             // ownership transfer; suppress with the narrowest scope.
 #pragma warning disable CA2025
-            fanOutTasks[i] = CallHostAsync(http, host, perHostRequest, token, logger, cancellationToken);
+            fanOutTasks[i] = CallHostAsync(http, host, perHostRequest, token, jobId, logger, cancellationToken);
 #pragma warning restore CA2025
         }
 
@@ -182,6 +201,7 @@ internal static class BowireParallelCoordinator
         string host,
         BowireParallelLocalRequest body,
         string? token,
+        string? jobId,
         ILogger logger,
         CancellationToken cancellationToken)
     {
@@ -206,6 +226,10 @@ internal static class BowireParallelCoordinator
             if (!string.IsNullOrEmpty(token))
             {
                 req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            }
+            if (!string.IsNullOrEmpty(jobId))
+            {
+                req.Headers.TryAddWithoutValidation(Endpoints.BowireParallelEndpoints.JobHeader, jobId);
             }
             using var resp = await http.SendAsync(req, cancellationToken).ConfigureAwait(false);
             var responseBody = await resp.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);

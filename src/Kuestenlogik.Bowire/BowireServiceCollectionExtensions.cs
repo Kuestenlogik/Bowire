@@ -184,6 +184,10 @@ public static class BowireServiceCollectionExtensions
         // capture hook all share one source of truth. Pre-#285 the
         // state was browser localStorage-only; MCP couldn't reach it.
         services.TryAddSingleton<BowireRecordingSession>();
+        // #313 — the chained log of distributed parallel runs, next to the
+        // impersonation audit log under the data root.
+        services.TryAddSingleton(sp => new Kuestenlogik.Bowire.Parallel.BowireParallelAuditLog(
+            (sp.GetService<IBowirePathResolver>() ?? BowirePaths.Current).Root(BowireStorageScope.Data)));
 
         // #185 — durable per-workspace schema-change log. The schema
         // watch diffs in the browser; the singleton store is what lets
