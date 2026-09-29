@@ -151,7 +151,8 @@ if (command === 'notes' || command === 'cut') {
     say(`set Release = ${release} on ${unplanned.length} ticket(s) that closed without one`);
     if (!dry) for (const it of unplanned) gh('project', 'item-edit', '--project-id', b.id, '--id', it.id, '--field-id', b.release, '--text', release);
   }
-  const message = `${repo.split('/')[1]} ${tag} — ${ms.length ? ms.map(m => m.title).join(' + ') : release}`;
+  const themes = ms.map(m => parseMilestone(m.title)?.theme).filter(Boolean);
+  const message = `${repo.split('/')[1]} ${tag}${themes.length ? ` — ${themes.join(' + ')}` : ''}`;
   say(`git tag -a ${tag} -m "${message}" && git push origin ${tag}`);
   if (!dry) { git('tag', '-a', tag, '-m', message); git('push', 'origin', tag); }
   if (existsSync('.github/workflows/release.yml')) say('the release pipeline publishes on the tag, with ' + notesPath + ' as its body');
