@@ -1947,7 +1947,7 @@ document.querySelectorAll('[data-ai-picker]').forEach(function (host) {
                 'ext install kuestenlogik.bowire-vscode',
             runLang: 'bash',
             run: '# Command Palette (Ctrl+Shift+P / Cmd+Shift+P):\n' +
-                 'Bowire: Open Workbench',
+                 'Bowire: Open workbench',
             then:
                 'The workbench opens in an editor panel beside your code, and it drives a <code>bowire</code> CLI rather than bundling one &mdash; so the workbench in your editor, your terminal and your CI are the same binary reading the same collections.<br><br>It looks for that CLI in order: the <code>bowire.cliPath</code> setting, then <code>PATH</code>, then a <code>dotnet tool</code> install. Only if none of those find anything does it <em>offer</em> to fetch one into its own storage &mdash; never without being asked.',
             urlInput: false,

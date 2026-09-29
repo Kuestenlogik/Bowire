@@ -680,7 +680,22 @@ app.Run();</code></pre>
     <div class="quickstart-page-step-num">4</div>
     <div class="quickstart-page-step-body">
       <h2>Open the panel</h2>
-      <p class="features-block-lead">Run <strong>Bowire: Open Workbench</strong> from the Command Palette. The extension starts a Bowire, finds the port it bound, and mounts the workbench in an editor panel beside the code that serves the API &mdash; the same rails, the same discovery, no context switch to a browser.</p>
+      <p class="features-block-lead">Run <strong>Bowire: Open workbench</strong> from the Command Palette. The extension starts a Bowire, finds the port it bound, and mounts the workbench in an editor panel beside the code that serves the API &mdash; the same rails, the same discovery, no context switch to a browser.</p>
+    </div>
+  </article>
+
+  <!-- VS Code finish (#738) — the flag every path ends on. The boat
+       photo stands in for a screenshot: an editor panel is not something
+       the screenshot pipeline can capture. -->
+  <article class="quickstart-page-step quickstart-page-step-finish" id="vscode-afloat" data-path="vscode" hidden>
+    <div class="quickstart-page-step-num" aria-hidden="true">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22V4"/><path d="M4 4h13l-3 4 3 4H4"/></svg>
+    </div>
+    <div class="quickstart-page-step-body">
+      <h2>You're alongside</h2>
+      <p class="features-block-lead">The workbench sits in an editor panel next to the code that serves the API. Discovery, the rails and the shortcuts are the ones the standalone CLI has &mdash; it <em>is</em> that CLI, driven by the extension.</p>
+      <p>A collection you save there is a file in your repository, and it is the file <code>bowire test</code> reads in CI. If the panel stays empty, <strong>Bowire: Show resolved CLI</strong> names the binary it found, and the <strong>Bowire</strong> output channel shows what it started.</p>
+      {% include picture.html src="/assets/images/launch/tugboat.jpg" alt="Tugboat with the Bowire wordmark on its hull, working alongside a larger vessel" class="quickstart-page-step-screenshot" %}
     </div>
   </article>
 
@@ -748,6 +763,19 @@ $ bowire plugin install Kuestenlogik.Bowire.Auth.Oidc</code></pre>
         <pre><code>$ bowire users list                    # the slots on disk, and what each decided
 $ bowire users migrate ada@example.com # report only — nothing changes until --apply</code></pre>
       </div>
+    </div>
+  </article>
+
+  <!-- Multi-user finish (#738). -->
+  <article class="quickstart-page-step quickstart-page-step-finish" id="multiuser-afloat" data-path="multiuser" hidden>
+    <div class="quickstart-page-step-num" aria-hidden="true">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22V4"/><path d="M4 4h13l-3 4 3 4H4"/></svg>
+    </div>
+    <div class="quickstart-page-step-body">
+      <h2>All aboard</h2>
+      <p class="features-block-lead">Open Bowire and the identity provider asks who you are. After the login the header carries your name &mdash; <em>Signed in as &hellip;</em> &mdash; and the menu behind it says what the switch above set up: your work is stored separately from everyone else&rsquo;s.</p>
+      <p>Your workspaces, recordings, collections and plugin settings are yours; a colleague who signs in sees their own and not a trace of yours. The URLs the server was started with are the one thing everyone shares. <code>bowire users list</code> on the server shows the slots as they fill.</p>
+      {% include picture.html src="/assets/images/launch/passengership.jpg" alt="Cruise ship with the Bowire wordmark on the bow" class="quickstart-page-step-screenshot" %}
     </div>
   </article>
 
