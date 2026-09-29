@@ -16,6 +16,7 @@ For the UI layout itself &mdash; rail strip, panes, action bar, theme &mdash; se
 - [Help rail](help-rail.md) &mdash; in-workbench documentation with topic tree + server-rendered Markdown body
 - [Command palette](command-palette.md) &mdash; <kbd>/</kbd>-launcher for methods, workspaces, protocol filters
 - [Keyboard shortcuts](keyboard-shortcuts.md) &mdash; the full binding list
+- [AI assistant](ai-assistant.md) &mdash; a drawer that knows the method in front of you; local model, your own key, or an MCP host
 
 ## Making requests
 

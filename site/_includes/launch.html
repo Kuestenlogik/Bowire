@@ -1,5 +1,6 @@
 {% comment %}
-  Quickstart stepper — three steps from zero to running Bowire.
+  Quickstart stepper — four steps from zero to running Bowire; the third,
+  the AI assistant, is optional and starts skipped (#110).
 
   Step 1 ("Pick your boat") chooses the install + run mode by picking
   a ship metaphor: Sailboat (embedded in your ASP.NET app), Speedboat
@@ -23,7 +24,7 @@
 <section class="launch" id="launch">
   <div class="container">
     <h2 class="section-title">Straight into the water</h2>
-    <p class="section-subtitle">From zero to running in three steps. Pick the boat — install + run snippets tailor themselves.</p>
+    <p class="section-subtitle">From zero to running in a few steps. Pick the boat — install + run snippets tailor themselves.</p>
 
     <div class="launch-stepper" data-launch>
 
@@ -41,6 +42,11 @@
         <span class="launch-step-connector"></span>
         <button type="button" class="launch-step" data-step-indicator="3" role="tab" aria-selected="false" aria-disabled="true">
           <span class="launch-step-num"><span class="launch-step-num-digit">3</span></span>
+          <span class="launch-step-label">AI <small>(optional)</small></span>
+        </button>
+        <span class="launch-step-connector"></span>
+        <button type="button" class="launch-step" data-step-indicator="4" role="tab" aria-selected="false" aria-disabled="true">
+          <span class="launch-step-num"><span class="launch-step-num-digit">4</span></span>
           <span class="launch-step-label">Run</span>
         </button>
       </div>
@@ -63,6 +69,7 @@
                    loading="lazy" width="680" height="440">
             </div>
             <h3 class="launch-boat-name">Sailboat</h3>
+            <span class="launch-boat-ai" data-ai-badge title="The workbench carries an AI assistant — set it up in the AI step">&#10024; AI-assisted</span>
             <p class="launch-boat-mode">Embedded endpoint</p>
             <p class="launch-boat-desc">No engine of its own &mdash; sails with the host's wind. Bowire embeds into your ASP.NET app's process. Add <code>app.MapBowire()</code> and every endpoint is browsable at <code>/bowire</code> next to your own routes.</p>
           </button>
@@ -78,6 +85,7 @@
                    loading="lazy" width="680" height="440">
             </div>
             <h3 class="launch-boat-name">Speedboat</h3>
+            <span class="launch-boat-ai" data-ai-badge title="The workbench carries an AI assistant — set it up in the AI step">&#10024; AI-assisted</span>
             <p class="launch-boat-mode">Standalone app</p>
             <p class="launch-boat-desc">Installed as a global <code>dotnet tool</code> on your laptop. Point Bowire at any URL &mdash; staging gRPC in the morning, REST after lunch, WebSocket all afternoon.</p>
           </button>
@@ -93,6 +101,7 @@
                    loading="lazy" width="680" height="440">
             </div>
             <h3 class="launch-boat-name">Tugboat</h3>
+            <span class="launch-boat-ai" data-ai-badge title="The workbench carries an AI assistant — set it up in the AI step">&#10024; AI-assisted</span>
             <p class="launch-boat-mode">VS Code extension</p>
             <p class="launch-boat-desc">The workbench in a side panel, beside the code that serves the API. It drives the same <code>bowire</code> CLI as your terminal and your CI &mdash; so a collection you save in the editor is the file the pipeline reads.</p>
           </button>
@@ -126,6 +135,7 @@
                    loading="lazy" width="680" height="440">
             </div>
             <h3 class="launch-boat-name">Container ship</h3>
+            <span class="launch-boat-ai" data-ai-badge title="The workbench carries an AI assistant — set it up in the AI step">&#10024; AI-assisted</span>
             <p class="launch-boat-mode">Docker sidecar</p>
             <p class="launch-boat-desc">Bowire runs as its own container next to your services &mdash; a docker-compose service or a Kubernetes pod sidecar. Same workbench UI as the standalone CLI, every endpoint browsable from inside the cluster.</p>
           </button>
@@ -149,6 +159,7 @@
                    loading="lazy" width="680" height="440">
             </div>
             <h3 class="launch-boat-name">Cruise ship</h3>
+            <span class="launch-boat-ai" data-ai-badge title="The workbench carries an AI assistant — set it up in the AI step">&#10024; AI-assisted</span>
             <p class="launch-boat-mode">Multi-User host</p>
             <p class="launch-boat-desc">One Bowire, several authenticated passengers. Point it at any OIDC provider &mdash; Entra ID, Okta, Keycloak &mdash; and every identity gets its own slot on disk: workspaces, recordings, collections, plugin settings. SCIM keeps the roster in step.</p>
           </button>
@@ -195,8 +206,34 @@
         </div>
       </div>
 
-      <!-- Step 3: run — depending on boat, may include URL input -->
+      <!-- Step 3: the AI assistant, optional (#110). Skipped by default so
+           the short path stays short; "Yes" opens the same picker the
+           quickstart uses, and its choice lands in the run snippet. -->
       <div class="launch-panel" data-step-panel="3" role="tabpanel" aria-hidden="true">
+        <p class="launch-prompt">Want the AI assistant on?</p>
+        <div class="launch-ai-choice" data-ai-choice>
+          <button type="button" class="launch-ai-toggle" data-ai-toggle="yes" aria-pressed="false">Yes, set it up</button>
+          <button type="button" class="launch-ai-toggle selected" data-ai-toggle="skip" aria-pressed="true">Skip</button>
+        </div>
+        <p class="launch-ai-note" data-ai-skip-note>You can turn it on later under <strong>Settings &rarr; AI</strong> in the workbench.</p>
+        <p class="launch-ai-note" data-ai-none hidden>The mock server answers with what you recorded &mdash; it has no workbench, so there is no assistant to turn on. Skip ahead.</p>
+        {% include ai-picker.html id="launch" %}
+        <p class="launch-ai-note" data-ai-settings-note hidden>The extension drives a <code>bowire</code> CLI, so the choice goes into <strong>Settings &rarr; AI</strong> in its panel &mdash; the run step says where.</p>
+
+        <div class="launch-nav">
+          <button type="button" class="launch-nav-btn launch-nav-back" data-step-back>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+            Back
+          </button>
+          <button type="button" class="launch-nav-btn launch-nav-next" data-step-next>
+            Next
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Step 4: run — depending on boat, may include URL input -->
+      <div class="launch-panel" data-step-panel="4" role="tabpanel" aria-hidden="true">
         <p class="launch-prompt" data-launch-prompt-3>Run it.</p>
 
         <!-- Multi-URL target list — shown only for tester / mock / ai
@@ -221,12 +258,12 @@
         </div>
 
         <!-- Optional add-on toggles — currently just the MCP adapter
-             (for AI agents). Lives in step 3 because the effect lands
+             (for AI agents). Lives in the run step because the effect lands
              on the run snippet (--enable-mcp-adapter is a runtime
              flag, not part of the install pipeline). Shown when the
              picked boat's recipe declares an addons list (tester + ai
              today). Each ticked addon appends its runFlag to the
-             step-3 run snippet via the {ADDONS} placeholder. main.js
+             run-step snippet via the {ADDONS} placeholder. main.js
              renders the items into data-addons-list at recipe time. -->
         <div class="launch-addons" data-addons-host hidden>
           <p class="launch-addons-label">Optional add-ons:</p>

@@ -18,6 +18,13 @@ Bowire supports keyboard shortcuts for fast navigation and invocation without re
 | `r` | Repeat the last request |
 | `Ctrl+Enter` | Execute the current request |
 
+## Drawers
+
+| Shortcut | Action |
+|----------|--------|
+| `Ctrl/Cmd+Shift+A` | Open or close the [AI assistant](ai-assistant.md) |
+| `Ctrl/Cmd+Shift+S` | Open or close the security drawer |
+
 ## Search and Filter
 
 Press `/` to jump to the search input in the sidebar. Start typing to filter services and methods by name. The filter works across all protocols -- gRPC, SignalR, SSE, and any installed plugins.

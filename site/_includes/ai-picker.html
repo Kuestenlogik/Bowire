@@ -1,0 +1,51 @@
+{% comment %}
+  #110 — the AI provider picker, shared by the launch wizard and the
+  quickstart so the two cannot drift. Same fields, same order as the
+  workbench's Settings → AI: provider, endpoint, model, and for the cloud
+  providers a note on where the key goes (never into a snippet on a web
+  page).
+
+  Parameters:
+    target  — which snippet the picker renders when `snippet` is set:
+              cli (bowire flags) | docker (-e variables) | embedded
+              (Program.cs). The wizard renders the flags into its own run
+              snippet instead and leaves `snippet` off.
+    snippet — true to render the picker's own code block.
+
+  main.js wires every [data-ai-picker] (search "initAiPicker").
+{% endcomment %}
+<div class="ai-picker" data-ai-picker data-ai-target="{{ include.target | default: 'cli' }}">
+  <div class="ai-picker-row">
+    <label class="ai-picker-label" for="ai-provider-{{ include.id | default: 'x' }}">Provider</label>
+    <select class="ai-picker-input" id="ai-provider-{{ include.id | default: 'x' }}" data-ai-provider>
+      <option value="ollama" selected>Ollama (local)</option>
+      <option value="lmstudio">LM Studio (local)</option>
+      <option value="anthropic">Anthropic (your key)</option>
+      <option value="openai">OpenAI (your key)</option>
+      <option value="openrouter">OpenRouter (your key)</option>
+      <option value="mcp">An MCP host you already run</option>
+    </select>
+  </div>
+  <div class="ai-picker-row">
+    <label class="ai-picker-label" for="ai-endpoint-{{ include.id | default: 'x' }}">Endpoint</label>
+    <input type="text" class="ai-picker-input" id="ai-endpoint-{{ include.id | default: 'x' }}" data-ai-endpoint spellcheck="false">
+  </div>
+  <div class="ai-picker-row">
+    <label class="ai-picker-label" for="ai-model-{{ include.id | default: 'x' }}">Model</label>
+    <input type="text" class="ai-picker-input" id="ai-model-{{ include.id | default: 'x' }}" data-ai-model spellcheck="false">
+  </div>
+  <p class="ai-picker-privacy" data-ai-privacy></p>
+  {% if include.snippet %}
+  <div class="code-block ai-picker-snippet">
+    <div class="code-block-header">
+      <span class="code-block-lang" data-ai-snippet-lang>bash</span>
+      <span class="code-block-hint">edits live above</span>
+      <button type="button" class="copy-btn" data-ai-snippet-copy aria-label="Copy">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+      </button>
+    </div>
+    <pre><code data-ai-snippet></code></pre>
+  </div>
+  {% endif %}
+  <p class="ai-picker-note">Same fields as <strong>Settings &rarr; AI</strong> in the workbench &mdash; change any of them there later. A running Ollama or LM Studio is found on its own.</p>
+</div>

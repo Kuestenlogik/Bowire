@@ -42,13 +42,20 @@ any service URL without code changes.
     {
       "@type": "HowToStep",
       "position": 3,
+      "name": "Turn on the AI assistant (optional)",
+      "text": "Point Bowire at a local model (Ollama, LM Studio), your own key for Anthropic, OpenAI or OpenRouter, or an MCP host you already run. Three --ai-* flags, or later under Settings → AI.",
+      "url": "{{ '/quickstart.html#ai' | absolute_url }}"
+    },
+    {
+      "@type": "HowToStep",
+      "position": 4,
       "name": "Run it against your service",
       "text": "Point bowire at any URL. For gRPC enable Server Reflection, for REST drop in any swagger.json, the rest auto-discover.",
       "url": "{{ '/quickstart.html#run' | absolute_url }}"
     },
     {
       "@type": "HowToStep",
-      "position": 4,
+      "position": 5,
       "name": "Open the workbench",
       "text": "Bowire opens a browser tab with the workbench UI showing every discovered service and method, ready to invoke.",
       "url": "{{ '/quickstart.html#browse' | absolute_url }}"
@@ -293,9 +300,28 @@ bowire plugin install --file ./bundle/kl.bowire.protocol.kafka.2.3.0.nupkg \
     </div>
   </article>
 
-  <!-- Step 4 — Run -->
-  <article class="quickstart-page-step" id="run" data-path="standalone" hidden>
+  <!-- Step 4 — the AI assistant, optional (#110). Same picker as the
+       launch wizard on the home page (_includes/ai-picker.html), so the
+       two cannot drift; its snippet carries the --ai-* flags. -->
+  <article class="quickstart-page-step quickstart-page-step-optional" id="ai" data-path="standalone" hidden>
     <div class="quickstart-page-step-num">4</div>
+    <div class="quickstart-page-step-body">
+      <h2>Turn on the AI assistant <span class="quickstart-page-step-tag">optional</span></h2>
+      <p class="features-block-lead">The workbench carries an assistant that sees what you see &mdash; the method, its schema, the last response &mdash; and can call Bowire's own tools. It needs a model, and which one is your call:</p>
+      <ul>
+        <li><strong>Pull a model</strong> &mdash; <code>ollama pull llama3.2:3b</code> keeps everything on your machine. Or bring a key for Anthropic, OpenAI or OpenRouter, or an MCP host you already run.</li>
+        <li><strong>Point Bowire at it</strong> &mdash; the picker below writes the flags.</li>
+        <li><strong>Open the drawer</strong> &mdash; <kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd>A</kbd> in the workbench.</li>
+      </ul>
+      {% include ai-picker.html id="qs-cli" target="cli" snippet=true %}
+      <p>Skip it and nothing is lost: the assistant's rule-based hints work without a model, and <strong>Settings &rarr; AI</strong> takes the same choice whenever you want it.</p>
+      <a class="features-block-docs-link" href="{{ '/docs/features/ai-assistant.html' | relative_url }}">AI assistant docs &rarr;</a>
+    </div>
+  </article>
+
+  <!-- Step 5 — Run -->
+  <article class="quickstart-page-step" id="run" data-path="standalone" hidden>
+    <div class="quickstart-page-step-num">5</div>
     <div class="quickstart-page-step-body">
       <h2>Run it against your service</h2>
       <p class="features-block-lead">Point Bowire at any URL &mdash; your own ASP.NET app, a remote production service, an OpenAPI document on disk, anything. Multi-target works too: pass <code>--url</code> repeatedly to connect to several services in parallel.</p>
@@ -335,14 +361,15 @@ bowire plugin install --file ./bundle/kl.bowire.protocol.kafka.2.3.0.nupkg \
     </div>
   </article>
 
-  <!-- Step 5 — Open -->
+  <!-- Step 6 — Open -->
   <article class="quickstart-page-step" id="browse" data-path="standalone" hidden>
-    <div class="quickstart-page-step-num">5</div>
+    <div class="quickstart-page-step-num">6</div>
     <div class="quickstart-page-step-body">
       <h2>Open the workbench</h2>
       <p class="features-block-lead">Bowire opens a browser tab at <code>http://localhost:5080</code> (or whichever port you passed via <code>--port</code>).</p>
       <p>The sidebar shows every service the plugins discovered, grouped by URL when you connected to several. Click any method, drop in inputs (typed form or raw JSON, toggle with <kbd>f</kbd>), hit <kbd>Ctrl</kbd>+<kbd>Enter</kbd>, response renders in the right pane. Streaming responses show as a Wireshark-style frame list &mdash; each frame on its own row with status, size, and timing &mdash; so you can inspect a gRPC server-stream the same way you'd read a packet capture. Duplex protocols (WebSocket, SignalR hubs, gRPC bidi, MQTT subscriptions) open persistent channels with a send-composer on one side and incoming frames on the other.</p>
       <p>Every call lands on the request history for one-click replay. Switch the environment dropdown in the header to point the same call at staging / prod &mdash; variables substitute automatically, no copy-paste. Click <em>Record</em> to capture a sequence as a <code>.bwr</code> file the mock server or the security scanner can replay later.</p>
+      <p>If you turned the AI on, <kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd>A</kbd> opens the assistant &mdash; ask it what the method you are looking at does, or why the last call failed.</p>
       <a class="features-block-docs-link" href="{{ '/docs/ui-guide/index.html' | relative_url }}">Full UI guide &rarr;</a>
     </div>
   </article>
@@ -587,8 +614,20 @@ app.Run();</code></pre>
   </article>
 
   <!-- Step 4 — Run your app -->
-  <article class="quickstart-page-step" id="embed-run" data-path="embedded" hidden>
+  <!-- Step 4 — the AI assistant for an embedded host, optional (#110). -->
+  <article class="quickstart-page-step quickstart-page-step-optional" id="embed-ai" data-path="embedded" hidden>
     <div class="quickstart-page-step-num">4</div>
+    <div class="quickstart-page-step-body">
+      <h2>Turn on the AI assistant <span class="quickstart-page-step-tag">optional</span></h2>
+      <p class="features-block-lead">One more package and two lines. The provider comes from <code>Bowire:Ai</code> in your configuration; a key, where one is needed, from the environment.</p>
+      {% include ai-picker.html id="qs-embedded" target="embedded" snippet=true %}
+      <p>Your host already has an <code>IChatClient</code>? Register it before <code>AddBowireAi</code> and the assistant uses that one.</p>
+      <a class="features-block-docs-link" href="{{ '/docs/features/ai-assistant.html' | relative_url }}">AI assistant docs &rarr;</a>
+    </div>
+  </article>
+
+  <article class="quickstart-page-step" id="embed-run" data-path="embedded" hidden>
+    <div class="quickstart-page-step-num">5</div>
     <div class="quickstart-page-step-body">
       <h2>Run your app</h2>
       <p class="features-block-lead">Start your service the way you always do, then open <code>/bowire</code> alongside your normal API routes.</p>
@@ -733,7 +772,7 @@ $ bowire users migrate ada@example.com # report only — nothing changes until -
 <section class="features-page-cta features-page-cta-elevated">
   <div class="features-page-cta-inner">
     <h2 class="features-page-cta-title">From here</h2>
-    <p class="features-page-cta-lede">A few steps in, and you have a workbench running against any service in your stack. Four branches from here:</p>
+    <p class="features-page-cta-lede">A few steps in, and you have a workbench running against any service in your stack. Five branches from here:</p>
     <div class="features-page-cta-buttons">
       <a class="btn btn-secondary features-page-cta-btn" href="{{ '/features.html' | relative_url }}">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
@@ -748,6 +787,10 @@ $ bowire users migrate ada@example.com # report only — nothing changes until -
       <a class="btn btn-secondary features-page-cta-btn" href="{{ '/docs/' | relative_url }}">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
         Read the docs
+      </a>
+      <a class="btn btn-secondary features-page-cta-btn" href="{{ '/docs/features/ai-assistant.html' | relative_url }}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 5.8L20 11l-6.1 2.2L12 19l-1.9-5.8L4 11l6.1-2.2z"/></svg>
+        Try the AI assistant on your API
       </a>
       <a class="btn btn-secondary features-page-cta-btn" href="{{ '/downloads.html' | relative_url }}">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>

@@ -13,6 +13,8 @@
       href: command-palette.md
     - name: Keyboard shortcuts
       href: keyboard-shortcuts.md
+    - name: AI assistant
+      href: ai-assistant.md
 
 - name: Making requests
   items:

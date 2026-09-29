@@ -9332,3 +9332,117 @@ html[data-theme="light"] {
     background: color-mix(in srgb, var(--accent) 12%, transparent);
     border: 1px solid color-mix(in srgb, var(--accent) 28%, transparent);
 }
+
+/* #110 — the AI assistant on the launch wizard and the quickstart.
+   Badge on the boat cards, the Yes / Skip choice of the optional AI
+   step, and the provider picker both pages share
+   (_includes/ai-picker.html). */
+.launch-boat-ai {
+    display: inline-block;
+    align-self: flex-start;
+    margin: 2px 0 4px;
+    padding: 2px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--accent-light);
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+    border-radius: 999px;
+    cursor: pointer;
+}
+.launch-boat-ai:hover {
+    border-color: var(--accent);
+}
+
+.launch-ai-choice {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin: 0 0 14px;
+}
+.launch-ai-toggle {
+    padding: 8px 16px;
+    font: inherit;
+    font-size: 14px;
+    color: var(--text);
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    cursor: pointer;
+}
+.launch-ai-toggle.selected {
+    border-color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 14%, var(--bg-elevated));
+}
+.launch-ai-note {
+    margin: 0 0 18px;
+    text-align: center;
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+.ai-picker {
+    margin: 0 0 18px;
+    padding: 14px 16px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+}
+.ai-picker[hidden] {
+    display: none;
+}
+.ai-picker-row {
+    display: grid;
+    grid-template-columns: 90px 1fr;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+.ai-picker-label {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+.ai-picker-input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 7px 10px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--text);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+}
+select.ai-picker-input {
+    font-family: var(--font-sans);
+}
+.ai-picker-privacy {
+    margin: 10px 0;
+    padding: 8px 10px;
+    font-size: 13px;
+    color: var(--text);
+    border-left: 3px solid var(--warning);
+    background: color-mix(in srgb, var(--warning) 8%, transparent);
+    border-radius: 4px;
+}
+.ai-picker-privacy.ai-picker-privacy-local {
+    border-left-color: var(--success);
+    background: color-mix(in srgb, var(--success) 8%, transparent);
+}
+.ai-picker-snippet {
+    margin: 10px 0;
+}
+.ai-picker-note {
+    margin: 8px 0 0;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+@media (max-width: 560px) {
+    .ai-picker-row {
+        grid-template-columns: 1fr;
+        gap: 4px;
+    }
+}

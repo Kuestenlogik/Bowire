@@ -1729,6 +1729,166 @@ function createBowireCombobox(hostEl, allItems, defaultSelectedIds, placeholder,
     };
 }
 
+// ====================================================================
+// #110 — AI provider picker (site/_includes/ai-picker.html). Shared by
+// the launch wizard and the quickstart. Defaults, placeholders and the
+// privacy lines mirror the workbench's Settings → AI (settings.js), so
+// the page promises what the product does. A key never goes into a
+// snippet: the snippets name the variable and leave the value to the
+// reader's shell.
+// ====================================================================
+var BOWIRE_AI_PROVIDERS = {
+    ollama:     { endpoint: 'http://localhost:11434', model: 'llama3.2:3b', local: true,
+                  privacy: 'Prompts stay on this machine. Nothing leaves loopback.' },
+    lmstudio:   { endpoint: 'http://localhost:1234', model: '', modelHint: 'whatever LM Studio has loaded', local: true,
+                  privacy: 'Prompts stay on this machine. Nothing leaves loopback.' },
+    anthropic:  { endpoint: '', endpointHint: 'the SDK default', model: 'claude-opus-4-7', key: true,
+                  privacy: 'Prompts go to api.anthropic.com. Your API key stays on your machine; Küstenlogik never sees the key, prompts or responses.' },
+    openai:     { endpoint: 'https://api.openai.com/v1', model: 'gpt-4o-mini', key: true,
+                  privacy: 'Prompts go to api.openai.com. Your API key stays on your machine; Küstenlogik never sees the key, prompts or responses.' },
+    openrouter: { endpoint: 'https://openrouter.ai/api/v1', model: 'anthropic/claude-3.5-sonnet', key: true,
+                  privacy: 'Prompts go to openrouter.ai. Your API key stays on your machine; Küstenlogik never sees the key, prompts or responses.' },
+    mcp:        { endpoint: 'http://localhost:3845/mcp', endpointHint: 'an MCP URL, or stdio:claude mcp serve', model: '', modelHint: 'host-defined',
+                  privacy: 'Prompts go to the MCP host you configured; it owns the model, the auth and the rate limits. Küstenlogik never sees prompts or responses.' }
+};
+
+// Inside a container, localhost is the container. A local model server on
+// the host is reached as host.docker.internal instead.
+function bowireAiForDocker(endpoint) {
+    return String(endpoint || '').replace(/\/\/(localhost|127\.0\.0\.1)(?=[:\/]|$)/i, '//host.docker.internal');
+}
+
+// The settings as name/value pairs. The endpoint is left out where it is
+// the provider's own default — except in a container, where the default
+// would point at the container itself.
+function bowireAiSettings(state, docker) {
+    var p = BOWIRE_AI_PROVIDERS[state.provider] || BOWIRE_AI_PROVIDERS.ollama;
+    var out = [['ProviderId', state.provider]];
+    var endpoint = (state.endpoint || '').trim();
+    if (docker && endpoint) endpoint = bowireAiForDocker(endpoint);
+    var isDefault = endpoint === p.endpoint && state.provider === 'ollama';
+    if (endpoint && !isDefault) out.push(['Endpoint', endpoint]);
+    var model = (state.model || '').trim();
+    if (model) out.push(['Model', model]);
+    return out;
+}
+
+var BOWIRE_AI_FLAG = { ProviderId: '--ai-provider', Endpoint: '--ai-endpoint', Model: '--ai-model' };
+
+// Flags for `bowire`, appended to a run line.
+function bowireAiCliFlags(state) {
+    return bowireAiSettings(state, false).map(function (kv) {
+        return ' ' + BOWIRE_AI_FLAG[kv[0]] + ' ' + kv[1];
+    }).join('');
+}
+
+// `-e` lines for `docker run`, each ending in a continuation.
+function bowireAiDockerEnv(state) {
+    var p = BOWIRE_AI_PROVIDERS[state.provider] || {};
+    var lines = bowireAiSettings(state, true).map(function (kv) {
+        return '  -e Bowire__Ai__' + kv[0] + '=' + kv[1] + ' \\\n';
+    });
+    if (p.key) lines.push('  -e Bowire__Ai__ApiKey \\\n');
+    if (lines.join('').indexOf('host.docker.internal') >= 0) {
+        lines.push('  --add-host host.docker.internal:host-gateway \\\n');
+    }
+    return lines.join('');
+}
+
+// The key line for a shell, or '' for the providers that take none.
+function bowireAiKeyExport(state) {
+    var p = BOWIRE_AI_PROVIDERS[state.provider] || {};
+    return p.key ? 'export Bowire__Ai__ApiKey=<your key>   # stays on this machine\n' : '';
+}
+
+// NuGet packages an embedded host adds for the provider.
+function bowireAiPackages(state) {
+    var pkgs = ['Kuestenlogik.Bowire.Ai'];
+    if (state.provider === 'openai' || state.provider === 'openrouter') pkgs.push('Kuestenlogik.Bowire.Ai.OpenAi');
+    if (state.provider === 'anthropic') pkgs.push('Kuestenlogik.Bowire.Ai.Anthropic');
+    if (state.provider === 'mcp') pkgs.push('Kuestenlogik.Bowire.Ai.Mcp');
+    return pkgs;
+}
+
+// Program.cs lines for an embedded host, up to MapBowire.
+function bowireAiEmbeddedRun(state) {
+    var extra = { openai: 'AddBowireAiOpenAi', openrouter: 'AddBowireAiOpenAi', anthropic: 'AddBowireAiAnthropic', mcp: 'AddBowireAiMcp' }[state.provider];
+    var json = bowireAiSettings(state, false).map(function (kv) { return '"' + kv[0] + '": "' + kv[1] + '"'; }).join(', ');
+    var p = BOWIRE_AI_PROVIDERS[state.provider] || {};
+    return '// appsettings.json: { "Bowire": { "Ai": { ' + json + ' } } }\n' +
+        (p.key ? '// The key goes in the environment as Bowire__Ai__ApiKey, never in the file.\n' : '') +
+        '\n// Before builder.Build():\n' +
+        'builder.Services.AddBowireAi(builder.Configuration);\n' +
+        (extra ? 'builder.Services.' + extra + '();\n' : '') + '\n';
+}
+
+// The picker's own snippet, for pages that show one (the quickstart).
+function bowireAiSnippet(state, target) {
+    if (target === 'docker') {
+        return 'docker run --rm -p 5080:5080 \\\n' + bowireAiDockerEnv(state) +
+            '  kuestenlogik/bowire:latest \\\n  --url https://api.example.com';
+    }
+    if (target === 'embedded') {
+        return '// dotnet add package ' + bowireAiPackages(state).join('\n// dotnet add package ') + '\n\n' +
+            bowireAiEmbeddedRun(state) + '// After it:\napp.MapBowire();\napp.MapBowireAiEndpoints();';
+    }
+    return bowireAiKeyExport(state) + 'bowire --url https://api.example.com' + bowireAiCliFlags(state);
+}
+
+// Wire one [data-ai-picker]; returns { state(), onChange(cb) }.
+function initAiPicker(host) {
+    var providerSel = host.querySelector('[data-ai-provider]');
+    var endpointIn = host.querySelector('[data-ai-endpoint]');
+    var modelIn = host.querySelector('[data-ai-model]');
+    var privacy = host.querySelector('[data-ai-privacy]');
+    var snippetOut = host.querySelector('[data-ai-snippet]');
+    var snippetCopy = host.querySelector('[data-ai-snippet-copy]');
+    var snippetLang = host.querySelector('[data-ai-snippet-lang]');
+    var target = host.dataset.aiTarget || 'cli';
+    var listeners = [];
+
+    function state() {
+        return { provider: providerSel.value, endpoint: endpointIn.value, model: modelIn.value };
+    }
+    function paint() {
+        var s = state();
+        var p = BOWIRE_AI_PROVIDERS[s.provider] || BOWIRE_AI_PROVIDERS.ollama;
+        if (privacy) {
+            privacy.textContent = p.privacy;
+            privacy.classList.toggle('ai-picker-privacy-local', !!p.local);
+        }
+        if (snippetOut) {
+            var text = bowireAiSnippet(s, target);
+            snippetOut.textContent = text;
+            if (snippetCopy) snippetCopy.dataset.copy = text;
+            if (snippetLang) snippetLang.textContent = target === 'embedded' ? 'csharp' : 'bash';
+        }
+        listeners.forEach(function (cb) { cb(s); });
+    }
+    function resetForProvider() {
+        var p = BOWIRE_AI_PROVIDERS[providerSel.value] || BOWIRE_AI_PROVIDERS.ollama;
+        endpointIn.value = p.endpoint;
+        endpointIn.placeholder = p.endpointHint || p.endpoint;
+        modelIn.value = p.model;
+        modelIn.placeholder = p.modelHint || p.model;
+        paint();
+    }
+    providerSel.addEventListener('change', resetForProvider);
+    endpointIn.addEventListener('input', paint);
+    modelIn.addEventListener('input', paint);
+    resetForProvider();
+    return {
+        state: state,
+        onChange: function (cb) { listeners.push(cb); }
+    };
+}
+
+// Pickers that stand alone (the quickstart) are wired here; the launch
+// wizard wires its own, because its run snippet has to follow it.
+document.querySelectorAll('[data-ai-picker]').forEach(function (host) {
+    if (!host.closest('[data-launch]')) initAiPicker(host);
+});
+
 (function () {
     var root = document.querySelector('[data-launch]');
     if (!root) return;
@@ -1750,9 +1910,15 @@ function createBowireCombobox(hostEl, allItems, defaultSelectedIds, placeholder,
             protocolPicker: 'nuget',
             runLang: 'csharp',
             run:
+                '{AIEMBED}' +
                 '// In your Program.cs, after WebApplication.CreateBuilder(...).Build():\n' +
                 'app.MapBowire(){ADDONS};\n' +
+                '{AIMAP}' +
                 '// app.Run();',
+            // #110 — how the AI step lands: packages + AddBowireAi here,
+            // CLI flags for the tool, -e variables for a container,
+            // Settings → AI where there is no command line of your own.
+            ai: 'embedded',
             // MCP adapter is the embedded equivalent of the standalone
             // `--enable-mcp-adapter` flag — adds an `/bowire/mcp` route
             // alongside the workbench UI in the host's pipeline. No
@@ -1786,7 +1952,8 @@ function createBowireCombobox(hostEl, allItems, defaultSelectedIds, placeholder,
                 'The workbench opens in an editor panel beside your code, and it drives a <code>bowire</code> CLI rather than bundling one &mdash; so the workbench in your editor, your terminal and your CI are the same binary reading the same collections.<br><br>It looks for that CLI in order: the <code>bowire.cliPath</code> setting, then <code>PATH</code>, then a <code>dotnet tool</code> install. Only if none of those find anything does it <em>offer</em> to fetch one into its own storage &mdash; never without being asked.',
             urlInput: false,
             installPrompt: 'One extension. It needs a Bowire CLI to drive &mdash; it finds one, or offers to fetch it.',
-            runPrompt: 'One command from the palette.'
+            runPrompt: 'One command from the palette.',
+            ai: 'settings'
         },
         tester: {
             installLang: 'bash',
@@ -1796,7 +1963,8 @@ function createBowireCombobox(hostEl, allItems, defaultSelectedIds, placeholder,
             protocolPicker: 'cli',
             pluginInstallTemplate: 'bowire plugin install {PACKAGE}',
             runLang: 'bash',
-            run: 'bowire {URLS}{ADDONS}',
+            run: '{AIKEY}bowire {URLS}{ADDONS}{AI}',
+            ai: 'cli',
             // Two MCP angles, orthogonal — tick one, the other, or both:
             //   `mcp-adapter` exposes the *target API's* methods as MCP
             //     tools, so an AI agent can call the API under test.
@@ -1837,7 +2005,10 @@ function createBowireCombobox(hostEl, allItems, defaultSelectedIds, placeholder,
                 'Mock server listens on the chosen port. Point your frontend or CI at <code>http://localhost:5050</code> and the recorded responses replay verbatim.',
             urlInput: false,
             installPrompt: 'Same CLI as the tester path. Add any third-party extras you want to mock against.',
-            runPrompt: 'Two ways: replay a recording, or synthesize from a schema.'
+            runPrompt: 'Two ways: replay a recording, or synthesize from a schema.',
+            // The mock server answers with recorded responses; it has no
+            // workbench, so there is no assistant to turn on.
+            ai: 'none'
         },
         ai: {
             installLang: 'bash',
@@ -1855,10 +2026,12 @@ function createBowireCombobox(hostEl, allItems, defaultSelectedIds, placeholder,
                 '    plugin install {PACKAGE}',
             runLang: 'bash',
             run:
-                'docker run --rm -p 5080:5080 \\\n' +
+                '{AIKEY}docker run --rm -p 5080:5080 \\\n' +
                 '  -v ~/.bowire:/home/app/.bowire \\\n' +
+                '{AIENV}' +
                 '  kuestenlogik/bowire:latest \\\n' +
                 '  {URLS}{ADDONS}',
+            ai: 'docker',
             // Same two MCP angles as the tester boat — see comment
             // there for the adapter-vs-serve split. `mcp-serve`
             // wrapped as a second `docker run` so the demo stays a
@@ -1886,9 +2059,11 @@ function createBowireCombobox(hostEl, allItems, defaultSelectedIds, placeholder,
             installLang: 'bash',
             install:
                 '# Run Bowire as a long-lived multi-user server\n' +
-                'docker run -p 5080:5080 \\\n' +
+                '{AIKEY}docker run -p 5080:5080 \\\n' +
+                '{AIENV}' +
                 '  kuestenlogik/bowire:latest \\\n' +
                 '  --url-file /etc/bowire/targets.txt',
+            ai: 'docker',
             runLang: 'bash',
             run:
                 '# Front the container with your OIDC reverse proxy.\n' +
@@ -1956,6 +2131,12 @@ function createBowireCombobox(hostEl, allItems, defaultSelectedIds, placeholder,
     // addon (e.g. ai/container), the choice carries through. Reset
     // only on full restart from step 1.
     var selectedAddons = new Set();
+    // #110 — the optional AI step. Off until the reader says yes; the
+    // picker's state then flows into the install / run snippets.
+    var aiEnabled = false;
+    var aiPickerHost = root.querySelector('[data-ai-picker]');
+    var aiPicker = aiPickerHost ? initAiPicker(aiPickerHost) : null;
+    if (aiPicker) aiPicker.onChange(function () { if (pickedBoat) renderRecipes(); });
     // Target URL rows. Each entry: { hint: '', url: '' }. Multi-row
     // because `bowire --url X --url Y` polls many targets in parallel,
     // and the marketing stepper should surface that — bonus: each row
@@ -2096,7 +2277,53 @@ function createBowireCombobox(hostEl, allItems, defaultSelectedIds, placeholder,
                 if (proto) lines.push('dotnet add package ' + proto.packageId);
             });
         }
+        if (aiOn()) {
+            lines.push('');
+            lines.push('# Plus the AI assistant');
+            bowireAiPackages(aiPicker.state()).forEach(function (pkg) {
+                lines.push('dotnet add package ' + pkg);
+            });
+        }
         return lines.join('\n');
+    }
+
+    function aiOn() {
+        var recipe = pickedBoat ? RECIPES[pickedBoat] : null;
+        return !!(aiEnabled && aiPicker && recipe && recipe.ai && recipe.ai !== 'none');
+    }
+
+    // Fill the AI placeholders of a recipe snippet — all of them empty
+    // while the AI step is skipped.
+    function fillAi(text, recipe) {
+        var on = aiOn();
+        var st = on ? aiPicker.state() : null;
+        return text
+            .replace(/\{AIKEY\}/g, on && recipe.ai !== 'embedded' ? bowireAiKeyExport(st) : '')
+            .replace(/\{AIENV\}/g, on && recipe.ai === 'docker' ? bowireAiDockerEnv(st) : '')
+            .replace(/\{AI\}/g, on && recipe.ai === 'cli' ? bowireAiCliFlags(st) : '')
+            .replace(/\{AIEMBED\}/g, on && recipe.ai === 'embedded' ? bowireAiEmbeddedRun(st) : '')
+            .replace(/\{AIMAP\}/g, on && recipe.ai === 'embedded' ? 'app.MapBowireAiEndpoints();\n' : '');
+    }
+
+    // The AI step's panel: the choice, or a note for a boat without a
+    // workbench.
+    function renderAiStep() {
+        var recipe = pickedBoat ? RECIPES[pickedBoat] : null;
+        var none = !recipe || recipe.ai === 'none';
+        var choice = root.querySelector('[data-ai-choice]');
+        var noneNote = root.querySelector('[data-ai-none]');
+        var skipNote = root.querySelector('[data-ai-skip-note]');
+        var settingsNote = root.querySelector('[data-ai-settings-note]');
+        if (choice) choice.hidden = none;
+        if (noneNote) noneNote.hidden = !none;
+        if (aiPickerHost) aiPickerHost.hidden = none || !aiEnabled;
+        if (skipNote) skipNote.hidden = none || aiEnabled;
+        if (settingsNote) settingsNote.hidden = none || !aiEnabled || recipe.ai !== 'settings';
+        root.querySelectorAll('[data-ai-toggle]').forEach(function (btn) {
+            var yes = btn.dataset.aiToggle === 'yes';
+            btn.classList.toggle('selected', yes === aiEnabled);
+            btn.setAttribute('aria-pressed', yes === aiEnabled ? 'true' : 'false');
+        });
     }
 
     function buildCliInstall(recipe) {
@@ -2242,6 +2469,7 @@ function createBowireCombobox(hostEl, allItems, defaultSelectedIds, placeholder,
         if (recipe.protocolPicker === 'nuget') installSnippet = buildNugetInstall();
         else if (recipe.protocolPicker === 'cli') installSnippet = buildCliInstall(recipe);
         else installSnippet = recipe.install;
+        installSnippet = fillAi(installSnippet, recipe);
 
         renderSetupNotes(recipe);
         renderAddons(recipe);
@@ -2288,12 +2516,23 @@ function createBowireCombobox(hostEl, allItems, defaultSelectedIds, placeholder,
         }).join('');
         var addonsFlags = buildAddonsFlags(recipe);
         var addonsExtra = buildAddonsExtra(recipe);
-        var filled = recipe.run.replace(/\{URLS\}/g, urlFlags).replace(/\{ADDONS\}/g, addonsFlags) + addonsExtra;
+        var filled = fillAi(recipe.run.replace(/\{URLS\}/g, urlFlags).replace(/\{ADDONS\}/g, addonsFlags), recipe) + addonsExtra;
         runCode.textContent = filled;
         runLang.textContent = recipe.runLang;
         runCopy.dataset.copy = filled;
         if (runPrompt) runPrompt.innerHTML = recipe.runPrompt;
-        if (thenLine) thenLine.innerHTML = recipe.then;
+        if (thenLine) thenLine.innerHTML = recipe.then + aiThen(recipe);
+    }
+
+    // The sentence the run step ends on about the assistant.
+    function aiThen(recipe) {
+        if (!recipe.ai || recipe.ai === 'none') return '';
+        if (aiOn()) {
+            return '<br><br>' + (recipe.ai === 'settings'
+                ? 'Then pick the same provider under <strong>Settings &rarr; AI</strong> in the panel. '
+                : '') + 'Open the assistant with <kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd>A</kbd> and ask it about the API you are looking at.';
+        }
+        return '<br><br>The AI assistant is off for now &mdash; turn it on any time under <strong>Settings &rarr; AI</strong>.';
     }
 
     function setStep(n) {
@@ -2313,6 +2552,7 @@ function createBowireCombobox(hostEl, allItems, defaultSelectedIds, placeholder,
             p.classList.toggle('active', idx === n);
             p.setAttribute('aria-hidden', idx !== n ? 'true' : 'false');
         });
+        renderAiStep();
         if (n >= 2) {
             // Refresh the URL-row hint options + the snippet. Both
             // depend on pickedBoat — switching boats can change the
@@ -2324,12 +2564,14 @@ function createBowireCombobox(hostEl, allItems, defaultSelectedIds, placeholder,
     }
 
     boats.forEach(function (card) {
-        card.addEventListener('click', function () {
+        card.addEventListener('click', function (ev) {
             pickedBoat = card.dataset.boat;
             boats.forEach(function (b) { b.classList.toggle('selected', b === card); });
             // Auto-advance to step 2 — feels more direct than a
-            // separate "Next" click on the boat-picker step.
-            setTimeout(function () { setStep(2); }, 180);
+            // separate "Next" click on the boat-picker step. The
+            // "AI-assisted" badge on a card goes to the AI step instead.
+            var toAi = !!(ev && ev.target && ev.target.closest && ev.target.closest('[data-ai-badge]'));
+            setTimeout(function () { setStep(toAi ? 3 : 2); }, 180);
         });
     });
 
@@ -2339,11 +2581,19 @@ function createBowireCombobox(hostEl, allItems, defaultSelectedIds, placeholder,
             return;
         }
         if (ev.target.closest('[data-step-next]')) {
-            setStep(Math.min(3, currentStep + 1));
+            setStep(Math.min(4, currentStep + 1));
+            return;
+        }
+        var aiToggle = ev.target.closest('[data-ai-toggle]');
+        if (aiToggle) {
+            aiEnabled = aiToggle.dataset.aiToggle === 'yes';
+            renderAiStep();
+            renderRecipes();
             return;
         }
         if (ev.target.closest('[data-step-restart]')) {
             pickedBoat = null;
+            aiEnabled = false;
             urls = [{ hint: '', url: '' }];
             selectedAddons.clear();
             boats.forEach(function (b) { b.classList.remove('selected'); });
