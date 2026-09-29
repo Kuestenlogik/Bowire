@@ -1,10 +1,10 @@
 ---
 # The release's `#` heading. A sentence about this delivery, not the version.
 title: <fill in before the tag>
-version: 2.8.0
+version: 2.9.0
 ---
 
-<One-sentence frame for what 2.8 is about. Replaces this placeholder
+<One-sentence frame for what 2.9 is about. Replaces this placeholder
 before the tag.>
 
 ## Highlights
