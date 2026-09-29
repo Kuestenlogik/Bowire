@@ -41,7 +41,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.8 — Localisation, test pillar, MCP completion and the agent hub *(due 2026-11-24)*
 
-**44/44 done**
+**46/46 done**
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -89,10 +89,12 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [712](https://github.com/Kuestenlogik/Bowire/issues/712) | Bowire | [Stream-Vertrag hat keine Fehlerform — jedes Plugin erfindet seine eigene](#issue-kuestenlogik-bowire-712) | ✅ Done |  |
 | [713](https://github.com/Kuestenlogik/Bowire/issues/713) | Bowire | [GraphQL-Transportoptionen: Multiplexing, GET, APQ, Uploads, Batching](#issue-kuestenlogik-bowire-713) | ✅ Done |  |
 | [714](https://github.com/Kuestenlogik/Bowire/issues/714) | Bowire | [Interceptor-Tests: Assert.Single über den ganzen Flow-Store ist gegen Fremdverkehr ungeschützt](#issue-kuestenlogik-bowire-714) | ✅ Done |  |
+| [751](https://github.com/Kuestenlogik/Bowire/issues/751) | Bowire | [Protocols[0] als stiller Vorgabewert: fuenf Stellen entscheiden per Assembly-Ladereihenfolge](#issue-kuestenlogik-bowire-751) | ✅ Done |  |
+| [752](https://github.com/Kuestenlogik/Bowire/issues/752) | Bowire | [Ein fehlgeschlagenes /api/protocols wird verschluckt: Einstellungen → Protokolle zeigt dann stillschweigend nichts](#issue-kuestenlogik-bowire-752) | ✅ Done |  |
 
 ### v2.9 — Discoverability: the pitch, the directories, the star ask *(due 2026-12-14)*
 
-**0/5 done** · 5 backlog
+**0/6 done** · 6 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -101,6 +103,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [668](https://github.com/Kuestenlogik/Bowire/issues/668) | Bowire | [Sharpen the one-line pitch, and carry the same sentence everywhere](#issue-kuestenlogik-bowire-668) | ⬜ Backlog | `area:site` |
 | [670](https://github.com/Kuestenlogik/Bowire/issues/670) | Bowire | [Get listed where developers and models actually look](#issue-kuestenlogik-bowire-670) | ⬜ Backlog | `area:site` |
 | [671](https://github.com/Kuestenlogik/Bowire/issues/671) | Bowire | [Site: /alternatives/* landing pages, a changelog page, and the trust claim in the hero](#issue-kuestenlogik-bowire-671) | ⬜ Backlog | `area:site` |
+| [755](https://github.com/Kuestenlogik/Bowire/issues/755) | Bowire | [Link-Check der Site prüft seit dem Umzug nach scripts/site nichts mehr](#issue-kuestenlogik-bowire-755) | ⬜ Backlog |  |
 
 ### v2.10 — Corporate networks: outbound proxy, Windows auth, cookies *(due 2027-01-11)*
 
@@ -114,7 +117,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**0/10 done** · 10 backlog
+**0/12 done** · 12 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -128,6 +131,8 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [687](https://github.com/Kuestenlogik/Bowire/issues/687) | Bowire | [Tray icon and no console window: give the running workbench a handle of its own](#issue-kuestenlogik-bowire-687) | ⬜ Backlog | `area:cli` |
 | [688](https://github.com/Kuestenlogik/Bowire/issues/688) | Bowire | [Plurals: the translation layer cannot express a sentence whose shape depends on a number](#issue-kuestenlogik-bowire-688) | ⬜ Backlog | `area:workbench` |
 | [690](https://github.com/Kuestenlogik/Bowire/issues/690) | Bowire | [Translate the CLI help surface, or decide not to](#issue-kuestenlogik-bowire-690) | ⬜ Backlog | `area:cli` |
+| [753](https://github.com/Kuestenlogik/Bowire/issues/753) | Bowire | [Pane in ein eigenes Browserfenster abloesen (Pop-out)](#issue-kuestenlogik-bowire-753) | ⬜ Backlog |  |
+| [754](https://github.com/Kuestenlogik/Bowire/issues/754) | Bowire | [Scaffolding: weitere Stub-Sprachen und Protokolle (Folge von #177)](#issue-kuestenlogik-bowire-754) | ⬜ Backlog |  |
 
 ### v2.12 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
 
@@ -487,6 +492,14 @@ Abgespalten von #710. Dort standen sechs Punkte unter „Lücken". Vier davon **
 
 Ein intermittierender Fehlschlag, der seit dem #314-Kommentar als „unrelated server-side network flake" mitgeschleppt wird. Er ist mir in dieser Sitzung zweimal begegnet, und die Fehlermeldung sagt mehr als „Flake". [[more]](https://github.com/Kuestenlogik/Bowire/issues/714)
 
+#### <a id="issue-kuestenlogik-bowire-751"></a>✅ Done · [#751](https://github.com/Kuestenlogik/Bowire/issues/751) Protocols[0] als stiller Vorgabewert: fuenf Stellen entscheiden per Assembly-Ladereihenfolge
+
+Aufgefallen beim Nachgehen des roten CI auf `main` (Fix in `1e90121d`). [[more]](https://github.com/Kuestenlogik/Bowire/issues/751)
+
+#### <a id="issue-kuestenlogik-bowire-752"></a>✅ Done · [#752](https://github.com/Kuestenlogik/Bowire/issues/752) Ein fehlgeschlagenes /api/protocols wird verschluckt: Einstellungen → Protokolle zeigt dann stillschweigend nichts
+
+Gefunden bei #740. [[more]](https://github.com/Kuestenlogik/Bowire/issues/752)
+
 ### v2.9 — Discoverability: the pitch, the directories, the star ask *(due 2026-12-14)*
 
 #### <a id="issue-kuestenlogik-bowire-639"></a>⬜ Backlog · [#639](https://github.com/Kuestenlogik/Bowire/issues/639) SCIM: live Okta and Entra ID provisioning round-trips
@@ -518,6 +531,10 @@ Six credible competitors turned up during the competitive survey **via openalter
 > `area:site`
 
 Two structural gaps on bowire.io. Both cheap, neither risky. [[more]](https://github.com/Kuestenlogik/Bowire/issues/671)
+
+#### <a id="issue-kuestenlogik-bowire-755"></a>⬜ Backlog · [#755](https://github.com/Kuestenlogik/Bowire/issues/755) Link-Check der Site prüft seit dem Umzug nach scripts/site nichts mehr
+
+`scripts/site/check-internal-links.mjs` löst die Repo-Wurzel mit `resolve(__dirname, '..')` auf. Seit das Skript in `scripts/site/` liegt (02adf0b7), ist das `scripts/`. Die Folge: Es scannt eine einzige Datei und keinen Link, und meldet trotzdem „all internal links resolve“. [[more]](https://github.com/Kuestenlogik/Bowire/issues/755)
 
 ### v2.10 — Corporate networks: outbound proxy, Windows auth, cookies *(due 2027-01-11)*
 
@@ -600,6 +617,14 @@ The translation layer from #117 substitutes `{name}` placeholders and nothing mo
 > `area:cli`
 
 `bowire --help` is still English in every locale. The machinery it needs already exists — `BowireLocale` resolves `BOWIRE_LOCALE` / `LC_ALL` / `LANG` / the OS culture and reads the same catalogues the workbench does — but nothing in the help surface calls it yet. [[more]](https://github.com/Kuestenlogik/Bowire/issues/690)
+
+#### <a id="issue-kuestenlogik-bowire-753"></a>⬜ Backlog · [#753](https://github.com/Kuestenlogik/Bowire/issues/753) Pane in ein eigenes Browserfenster abloesen (Pop-out)
+
+Ausgegliedert aus #250 Phase 2, wo es schon als *„long deferred — needs proper inter-window state sync"* stand. [[more]](https://github.com/Kuestenlogik/Bowire/issues/753)
+
+#### <a id="issue-kuestenlogik-bowire-754"></a>⬜ Backlog · [#754](https://github.com/Kuestenlogik/Bowire/issues/754) Scaffolding: weitere Stub-Sprachen und Protokolle (Folge von #177)
+
+#177 hat den ersten Schnitt geliefert: REST (OpenAPI 3) und gRPC (proto3), Server-Stubs in C#. Die Templates liegen in `src/Kuestenlogik.Bowire.Scaffold/Templates/<protokoll>/`, die Spec ist sprachneutral – eine neue Sprache ist ein Satz Templates plus ein Eintrag im Generator. [[more]](https://github.com/Kuestenlogik/Bowire/issues/754)
 
 ### v2.12 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
 
