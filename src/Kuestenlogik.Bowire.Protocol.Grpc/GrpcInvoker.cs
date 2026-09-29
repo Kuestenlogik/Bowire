@@ -375,7 +375,8 @@ internal sealed class GrpcInvoker : IDisposable
         try
         {
             var allBytes = new List<ByteString>();
-            foreach (var seed in WellKnownDescriptorBytes())
+            var sent = new HashSet<string>(protos.Select(p => p.Name), StringComparer.Ordinal);
+            foreach (var seed in WellKnownDescriptorBytes(sent))
                 allBytes.Add(seed);
             // Topological sort guarantees deps come before dependents in the
             // byte list, which gives BuildFromByteStrings the best chance.
@@ -459,34 +460,35 @@ internal sealed class GrpcInvoker : IDisposable
 
             try
             {
-                // Build this single FileDescriptor with its resolved dependencies
-                var fd = FileDescriptor.BuildFromByteStrings(
-                    [ByteString.CopyFrom(proto.ToByteArray())]);
-
-                // If there are dependencies, we need to rebuild with them
-                if (deps.Count > 0)
+                IReadOnlyList<FileDescriptor> fd;
+                if (deps.Count == 0)
                 {
-                    // Strip the dependencies from the proto, build standalone,
-                    // then look up types. This is a workaround for the API not
-                    // accepting FileDescriptor[] dependencies.
-                    var clone = proto.Clone();
-                    clone.Dependency.Clear();
-
+                    fd = FileDescriptor.BuildFromByteStrings(
+                        [ByteString.CopyFrom(proto.ToByteArray())]);
+                }
+                else
+                {
+                    // BuildFromByteStrings takes no FileDescriptor
+                    // dependencies, only bytes — so hand it the imports'
+                    // bytes (transitively, imports first) with this file
+                    // last. Its descriptor is the last one built.
+                    var withImports = WithDependencies(deps)
+                        .Select(d => d.SerializedData)
+                        .Append(ByteString.CopyFrom(proto.ToByteArray()))
+                        .ToList();
                     try
                     {
-                        fd = FileDescriptor.BuildFromByteStrings(
-                            [ByteString.CopyFrom(clone.ToByteArray())]);
+                        fd = FileDescriptor.BuildFromByteStrings(withImports);
                     }
                     catch
                     {
-                        // If stripping deps fails, try with all deps as byte strings
-                        var allBytes = deps
-                            .Select(d => ByteString.CopyFrom(d.SerializedData.ToByteArray()))
-                            .Append(ByteString.CopyFrom(proto.ToByteArray()))
-                            .ToList();
+                        // Last resort: the shape without the imports.
+                        var clone = proto.Clone();
+                        clone.Dependency.Clear();
                         try
                         {
-                            fd = FileDescriptor.BuildFromByteStrings(allBytes);
+                            fd = FileDescriptor.BuildFromByteStrings(
+                                [ByteString.CopyFrom(clone.ToByteArray())]);
                         }
                         catch
                         {
@@ -519,7 +521,7 @@ internal sealed class GrpcInvoker : IDisposable
     /// Used to prepend these bytes to a single BuildFromByteStrings batch so
     /// the runtime can resolve cross-references.
     /// </summary>
-    private static IEnumerable<ByteString> WellKnownDescriptorBytes()
+    private static IEnumerable<ByteString> WellKnownDescriptorBytes(HashSet<string> sent)
     {
         FileDescriptor[] all =
         [
@@ -533,11 +535,35 @@ internal sealed class GrpcInvoker : IDisposable
             Google.Api.AnnotationsReflection.Descriptor,
             Google.Api.HttpReflection.Descriptor,
         ];
-        foreach (var fd in all)
+        // A file the server sent itself must not be in the batch twice —
+        // reflection ships google/protobuf/empty.proto along with a service
+        // that imports it, and BuildFromByteStrings refuses a duplicate name.
+        // Struct and Value share struct.proto, and annotations.proto imports
+        // descriptor.proto, so the seeds go through the same closure.
+        foreach (var fd in WithDependencies(all))
         {
+            if (sent.Contains(fd.Name)) continue;
             // SerializedData is the proto bytes the descriptor was built from
             yield return fd.SerializedData;
         }
+    }
+
+    /// <summary>
+    /// <paramref name="roots"/> and everything they import, each once,
+    /// imports before importers — the order BuildFromByteStrings needs.
+    /// </summary>
+    internal static List<FileDescriptor> WithDependencies(IEnumerable<FileDescriptor> roots)
+    {
+        var ordered = new List<FileDescriptor>();
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        void Visit(FileDescriptor fd)
+        {
+            if (!seen.Add(fd.Name)) return;
+            foreach (var dep in fd.Dependencies) Visit(dep);
+            ordered.Add(fd);
+        }
+        foreach (var root in roots) Visit(root);
+        return ordered;
     }
 
     private static void SeedWellKnownTypes(Dictionary<string, FileDescriptor> built)
