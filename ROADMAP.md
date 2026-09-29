@@ -41,7 +41,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.8 — Localisation, test pillar, MCP completion and the agent hub *(due 2026-11-24)*
 
-**46/46 done**
+**58/58 done**
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -89,6 +89,18 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [712](https://github.com/Kuestenlogik/Bowire/issues/712) | Bowire | [Stream-Vertrag hat keine Fehlerform — jedes Plugin erfindet seine eigene](#issue-kuestenlogik-bowire-712) | ✅ Done |  |
 | [713](https://github.com/Kuestenlogik/Bowire/issues/713) | Bowire | [GraphQL-Transportoptionen: Multiplexing, GET, APQ, Uploads, Batching](#issue-kuestenlogik-bowire-713) | ✅ Done |  |
 | [714](https://github.com/Kuestenlogik/Bowire/issues/714) | Bowire | [Interceptor-Tests: Assert.Single über den ganzen Flow-Store ist gegen Fremdverkehr ungeschützt](#issue-kuestenlogik-bowire-714) | ✅ Done |  |
+| [715](https://github.com/Kuestenlogik/Bowire/issues/715) | Bowire | [Request-Builder: Datei-Input für GraphQL-Uploads (#713 Nachtrag)](#issue-kuestenlogik-bowire-715) | ✅ Done |  |
+| [730](https://github.com/Kuestenlogik/Bowire/issues/730) | Bowire | [MCP-Weiterleitung über HTTP startet nicht: --bind http zusammen mit --attach stürzt ab](#issue-kuestenlogik-bowire-730) | ✅ Done |  |
+| [731](https://github.com/Kuestenlogik/Bowire/issues/731) | Bowire | [--attach host:port zielt auf /bowire/mcp, der eigenständige Server bedient /mcp](#issue-kuestenlogik-bowire-731) | ✅ Done |  |
+| [732](https://github.com/Kuestenlogik/Bowire/issues/732) | Bowire | [Die Discovery-Abkürzung für hochgeladene Schemas hat keinen automatischen Test](#issue-kuestenlogik-bowire-732) | ✅ Done |  |
+| [733](https://github.com/Kuestenlogik/Bowire/issues/733) | Bowire | [Die Ablegefläche für Schemas hat keinen UI-Test — Klick und Dateiauswahl sind ungeprüft](#issue-kuestenlogik-bowire-733) | ✅ Done |  |
+| [734](https://github.com/Kuestenlogik/Bowire/issues/734) | Bowire | [Testablage-Isolierung scheitert still: der Scope greift nicht und es schreibt ins echte ~/.bowire](#issue-kuestenlogik-bowire-734) | ✅ Done |  |
+| [735](https://github.com/Kuestenlogik/Bowire/issues/735) | Bowire | [?rail= aus der Doku bewirkt nichts — der Parameter wird nirgends gelesen](#issue-kuestenlogik-bowire-735) | ✅ Done |  |
+| [736](https://github.com/Kuestenlogik/Bowire/issues/736) | Bowire | [?topic= aus der Hilfe-Doku bewirkt nichts — nur der ?rail=-Teil des Links wird gelesen](#issue-kuestenlogik-bowire-736) | ✅ Done |  |
+| [737](https://github.com/Kuestenlogik/Bowire/issues/737) | Bowire | [Fremdverkehr auf Loopback-Testports: suchen statt dulden](#issue-kuestenlogik-bowire-737) | ✅ Done |  |
+| [738](https://github.com/Kuestenlogik/Bowire/issues/738) | Bowire | [Quickstart: die Pfade Cruise ship und Tugboat enden ohne Zielflagge](#issue-kuestenlogik-bowire-738) | ✅ Done |  |
+| [739](https://github.com/Kuestenlogik/Bowire/issues/739) | Bowire | [Konsolen-Zeilen tragen die Ausnahme-Begruendung des Aktionsprotokolls, die fuer sie nie galt](#issue-kuestenlogik-bowire-739) | ✅ Done |  |
+| [740](https://github.com/Kuestenlogik/Bowire/issues/740) | Bowire | [plugin-visibility: faellt oder ueberspringt sich je nach Lauf — beides sagt nichts](#issue-kuestenlogik-bowire-740) | ✅ Done |  |
 | [751](https://github.com/Kuestenlogik/Bowire/issues/751) | Bowire | [Protocols[0] als stiller Vorgabewert: fuenf Stellen entscheiden per Assembly-Ladereihenfolge](#issue-kuestenlogik-bowire-751) | ✅ Done |  |
 | [752](https://github.com/Kuestenlogik/Bowire/issues/752) | Bowire | [Ein fehlgeschlagenes /api/protocols wird verschluckt: Einstellungen → Protokolle zeigt dann stillschweigend nichts](#issue-kuestenlogik-bowire-752) | ✅ Done |  |
 
@@ -158,7 +170,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v3.0 — Cleanups + breaking-change cuts *(due 2027-07-27)*
 
-**1/25 done** · 24 backlog
+**1/26 done** · 25 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -186,6 +198,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [529](https://github.com/Kuestenlogik/Bowire/issues/529) | Bowire | [OData plugin: EDM functions and actions are never discovered (class doc claims they are)](#issue-kuestenlogik-bowire-529) | ⬜ Backlog | `area:plugin-sdk` |
 | [584](https://github.com/Kuestenlogik/Bowire/issues/584) | Bowire | [Secrets redaction: extend to HTML report, snapshot files, and recordings](#issue-kuestenlogik-bowire-584) | ⬜ Backlog |  |
 | [611](https://github.com/Kuestenlogik/Bowire/issues/611) | Bowire | [Sidecar: add gRPC as a third transport alongside stdio and HTTP](#issue-kuestenlogik-bowire-611) | ⬜ Backlog |  |
+| [709](https://github.com/Kuestenlogik/Bowire/issues/709) | Bowire | [UnaryReplayer: eight protocol paths, each with its own copy of the shared rules](#issue-kuestenlogik-bowire-709) | ⬜ Backlog |  |
 | [215](https://github.com/Kuestenlogik/Bowire/issues/215) | Bowire | [Test infra: IProcessLauncher seam in PluginManager to cover dotnet-shell-out paths](#issue-kuestenlogik-bowire-215) | ✅ Done | `area:plugin-sdk` |
 
 ### VS Code v1.1 — Marketplace publish via Entra ID *(due 2026-11-30)*
@@ -491,6 +504,54 @@ Abgespalten von #710. Dort standen sechs Punkte unter „Lücken". Vier davon **
 #### <a id="issue-kuestenlogik-bowire-714"></a>✅ Done · [#714](https://github.com/Kuestenlogik/Bowire/issues/714) Interceptor-Tests: Assert.Single über den ganzen Flow-Store ist gegen Fremdverkehr ungeschützt
 
 Ein intermittierender Fehlschlag, der seit dem #314-Kommentar als „unrelated server-side network flake" mitgeschleppt wird. Er ist mir in dieser Sitzung zweimal begegnet, und die Fehlermeldung sagt mehr als „Flake". [[more]](https://github.com/Kuestenlogik/Bowire/issues/714)
+
+#### <a id="issue-kuestenlogik-bowire-715"></a>✅ Done · [#715](https://github.com/Kuestenlogik/Bowire/issues/715) Request-Builder: Datei-Input für GraphQL-Uploads (#713 Nachtrag)
+
+Nachtrag zu #713. Dort ist `graphql-multipart-request-spec` serverseitig fertig: das Plugin liest eine `files`-Liste aus der Invoke-Nachricht und baut daraus den `operations`/`map`/Dateiteile-Körper. **Bedienbar ist es nicht** — der GraphQL-Tab hat keinen Datei-Input, also kann niemand Bytes hineingeben. [[more]](https://github.com/Kuestenlogik/Bowire/issues/715)
+
+#### <a id="issue-kuestenlogik-bowire-730"></a>✅ Done · [#730](https://github.com/Kuestenlogik/Bowire/issues/730) MCP-Weiterleitung über HTTP startet nicht: --bind http zusammen mit --attach stürzt ab
+
+`bowire mcp serve --bind http --attach <parent>` startet nicht. Der Prozess stirbt sofort mit einer unbehandelten Ausnahme: [[more]](https://github.com/Kuestenlogik/Bowire/issues/730)
+
+#### <a id="issue-kuestenlogik-bowire-731"></a>✅ Done · [#731](https://github.com/Kuestenlogik/Bowire/issues/731) --attach host:port zielt auf /bowire/mcp, der eigenständige Server bedient /mcp
+
+Die Kurzform `--attach host:port` expandiert zu `http://host:port/bowire/mcp`. Ein mit `bowire mcp serve --bind http` gestarteter Eltern-Server bedient aber `/mcp`. [[more]](https://github.com/Kuestenlogik/Bowire/issues/731)
+
+#### <a id="issue-kuestenlogik-bowire-732"></a>✅ Done · [#732](https://github.com/Kuestenlogik/Bowire/issues/732) Die Discovery-Abkürzung für hochgeladene Schemas hat keinen automatischen Test
+
+In `714140d9` wurde behoben, dass ein in eine Workbench **ohne Server-URL** gezogenes OpenAPI-Dokument nirgends ankam: die AbkÃ¼rzung in `/api/services` fragte `ProtoUploadStore.HasUploads` und damit nur nach Protos. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/732)
+
+#### <a id="issue-kuestenlogik-bowire-733"></a>✅ Done · [#733](https://github.com/Kuestenlogik/Bowire/issues/733) Die Ablegefläche für Schemas hat keinen UI-Test — Klick und Dateiauswahl sind ungeprüft
+
+Der Schema-Upload hat seit `714140d9` Tests für die Zusammenfassung (`summariseSchemaUpload`, zwölf Stück) und seit `690747b8` vier Browser-Tests für das, was danach in der Liste steht. Was keiner davon bedient: den Klick auf die Ablegefläche selbst und die Dateiauswahl dahinter. [[more]](https://github.com/Kuestenlogik/Bowire/issues/733)
+
+#### <a id="issue-kuestenlogik-bowire-734"></a>✅ Done · [#734](https://github.com/Kuestenlogik/Bowire/issues/734) Testablage-Isolierung scheitert still: der Scope greift nicht und es schreibt ins echte ~/.bowire
+
+Ein Test, der eine Ablage anfasst, muss sich ein eigenes Verzeichnis geben. Tut er es falsch, schreibt er in das echte `~/.bowire` der ausführenden Person — und merkt es nicht. Der Fehlschlag ist still, und das ist das eigentliche Problem. [[more]](https://github.com/Kuestenlogik/Bowire/issues/734)
+
+#### <a id="issue-kuestenlogik-bowire-735"></a>✅ Done · [#735](https://github.com/Kuestenlogik/Bowire/issues/735) ?rail= aus der Doku bewirkt nichts — der Parameter wird nirgends gelesen
+
+`docs/features/rail-strip.md` bewirbt einen Direkteinstieg in eine Leisten-Betriebsart: [[more]](https://github.com/Kuestenlogik/Bowire/issues/735)
+
+#### <a id="issue-kuestenlogik-bowire-736"></a>✅ Done · [#736](https://github.com/Kuestenlogik/Bowire/issues/736) ?topic= aus der Hilfe-Doku bewirkt nichts — nur der ?rail=-Teil des Links wird gelesen
+
+`docs/features/help-rail.md` wirbt an zwei Stellen mit einem Direkteinstieg auf ein einzelnes Hilfe-Thema: [[more]](https://github.com/Kuestenlogik/Bowire/issues/736)
+
+#### <a id="issue-kuestenlogik-bowire-737"></a>✅ Done · [#737](https://github.com/Kuestenlogik/Bowire/issues/737) Fremdverkehr auf Loopback-Testports: suchen statt dulden
+
+Ein Test-Host auf `127.0.0.1:0` nimmt entgegen, was ankommt. Ob je etwas ankommt, das der Test nicht geschickt hat, weiß derzeit niemand — es fällt nur auf, wenn es zufällig eine Zusicherung verletzt. [[more]](https://github.com/Kuestenlogik/Bowire/issues/737)
+
+#### <a id="issue-kuestenlogik-bowire-738"></a>✅ Done · [#738](https://github.com/Kuestenlogik/Bowire/issues/738) Quickstart: die Pfade Cruise ship und Tugboat enden ohne Zielflagge
+
+Der Quickstart führt jede Route mit einer Zielflagge zu Ende — einer letzten Blase mit Flaggen-Symbol statt Nummer („You're afloat"). Bei **Cruise ship** fehlt sie: der Pfad hört nach Schritt 4 einfach auf. [[more]](https://github.com/Kuestenlogik/Bowire/issues/738)
+
+#### <a id="issue-kuestenlogik-bowire-739"></a>✅ Done · [#739](https://github.com/Kuestenlogik/Bowire/issues/739) Konsolen-Zeilen tragen die Ausnahme-Begruendung des Aktionsprotokolls, die fuer sie nie galt
+
+22 Zeilen tragen die Marke [[more]](https://github.com/Kuestenlogik/Bowire/issues/739)
+
+#### <a id="issue-kuestenlogik-bowire-740"></a>✅ Done · [#740](https://github.com/Kuestenlogik/Bowire/issues/740) plugin-visibility: faellt oder ueberspringt sich je nach Lauf — beides sagt nichts
+
+`plugin-visibility.spec.ts` verhält sich in zwei aufeinanderfolgenden Vollläufen derselben Suite unterschiedlich — und beide Male sagt es nichts über #638 aus. [[more]](https://github.com/Kuestenlogik/Bowire/issues/740)
 
 #### <a id="issue-kuestenlogik-bowire-751"></a>✅ Done · [#751](https://github.com/Kuestenlogik/Bowire/issues/751) Protocols[0] als stiller Vorgabewert: fuenf Stellen entscheiden per Assembly-Ladereihenfolge
 
@@ -819,6 +880,10 @@ The `.Scanner` suffix under-describes what the package has become. It started as
 #### <a id="issue-kuestenlogik-bowire-611"></a>⬜ Backlog · [#611](https://github.com/Kuestenlogik/Bowire/issues/611) Sidecar: add gRPC as a third transport alongside stdio and HTTP
 
 Sidecars speak JSON-RPC 2.0 over two transports today: `stdio` (NDJSON) and `http` (POST + SSE). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/611)
+
+#### <a id="issue-kuestenlogik-bowire-709"></a>⬜ Backlog · [#709](https://github.com/Kuestenlogik/Bowire/issues/709) UnaryReplayer: eight protocol paths, each with its own copy of the shared rules
+
+`UnaryReplayer.cs` ist ~2700 Zeilen mit acht Protokollpfaden — REST, gRPC unary/stream/client-stream/bidi, SSE, WebSocket, GraphQL-Subscription, SignalR, Socket.IO. Jeder führt seine eigene Frame-Schleife, und die Regeln, die alle teilen, sind in jede hineinkopiert. [[more]](https://github.com/Kuestenlogik/Bowire/issues/709)
 
 #### <a id="issue-kuestenlogik-bowire-215"></a>✅ Done · [#215](https://github.com/Kuestenlogik/Bowire/issues/215) Test infra: IProcessLauncher seam in PluginManager to cover dotnet-shell-out paths
 
