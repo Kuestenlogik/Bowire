@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### M1 — Localisation, layout and the test pillar *(due 2026-11-03)*
 
-**48/48 done**
+**28/28 done**
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -44,26 +44,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [250](https://github.com/Kuestenlogik/Bowire/issues/250) | Bowire | [Unified Layout — within-tab split (Auto/drag/shortcut/per-tab) + cross-tab pane split with tab drag-and-drop](#issue-kuestenlogik-bowire-250) | ✅ Done | `area:workbench` |
 | [251](https://github.com/Kuestenlogik/Bowire/issues/251) | Bowire | [Visual shelf — drag-and-drop holding area for cross-surface fragments (parallel to OS clipboard)](#issue-kuestenlogik-bowire-251) | ✅ Done | `area:workbench` |
 | [292](https://github.com/Kuestenlogik/Bowire/issues/292) | Bowire | [Request-builder: GraphQL layout (#291 Phase D follow-up)](#issue-kuestenlogik-bowire-292) | ✅ Done | `area:workbench` |
-| [311](https://github.com/Kuestenlogik/Bowire/issues/311) | Bowire | [Pluggable workbench: extract remaining rails (Phase G continuation)](#issue-kuestenlogik-bowire-311) | ✅ Done | `area:workbench` |
-| [365](https://github.com/Kuestenlogik/Bowire/issues/365) | Bowire | [Contract testing + workspace-id: run a workbench-stored workspace's suite by id](#issue-kuestenlogik-bowire-365) | ✅ Done | `area:workbench` |
-| [366](https://github.com/Kuestenlogik/Bowire/issues/366) | Bowire | [Test-pillar UI polish: snapshot diff/approve, data-driven results view, mock frame-drop faults](#issue-kuestenlogik-bowire-366) | ✅ Done | `area:workbench` |
-| [486](https://github.com/Kuestenlogik/Bowire/issues/486) | Bowire | [Security rail: manual OAST/pen-test surface — generate a callback payload + watch interactions live](#issue-kuestenlogik-bowire-486) | ✅ Done | `area:security` |
-| [535](https://github.com/Kuestenlogik/Bowire/issues/535) | Bowire | [Embedded first run should land on Discover, not on a workspace-creation gate](#issue-kuestenlogik-bowire-535) | ✅ Done | `area:workbench` |
-| [583](https://github.com/Kuestenlogik/Bowire/issues/583) | Bowire | [Design-time lint: naming/PII rules, inline workbench hints, test --suite=lint](#issue-kuestenlogik-bowire-583) | ✅ Done | `area:multi` |
-| [654](https://github.com/Kuestenlogik/Bowire/issues/654) | Bowire | [Uploaded schemas live in a process-wide static — lost on restart, shared between identities, invisible to the CLI](#issue-kuestenlogik-bowire-654) | ✅ Done | `area:multi` |
-| [663](https://github.com/Kuestenlogik/Bowire/issues/663) | Bowire | [Lint's response-shape rules cannot fire on REST — discovery populates no output fields](#issue-kuestenlogik-bowire-663) | ✅ Done | `area:cli` |
-| [664](https://github.com/Kuestenlogik/Bowire/issues/664) | Bowire | [Method-name form on /api/invoke is not uniform across plugins](#issue-kuestenlogik-bowire-664) | ✅ Done | `area:workbench` |
-| [665](https://github.com/Kuestenlogik/Bowire/issues/665) | Bowire | [SignalR ad-hoc invoke declares args:string but requires a JSON array](#issue-kuestenlogik-bowire-665) | ✅ Done | `area:workbench` |
-| [666](https://github.com/Kuestenlogik/Bowire/issues/666) | Bowire | [plugin install suggests a re-run its own already-installed guard blocks](#issue-kuestenlogik-bowire-666) | ✅ Done | `area:plugin-sdk` |
-| [684](https://github.com/Kuestenlogik/Bowire/issues/684) | Bowire | [Starting Bowire on an occupied port crashes with an unhandled exception instead of opening the running workbench](#issue-kuestenlogik-bowire-684) | ✅ Done | `area:cli` |
-| [686](https://github.com/Kuestenlogik/Bowire/issues/686) | Bowire | [el() turns a false boolean attribute into a set attribute, so disabled: false disables the control](#issue-kuestenlogik-bowire-686) | ✅ Done | `area:workbench` |
-| [689](https://github.com/Kuestenlogik/Bowire/issues/689) | Bowire | [Action-log entries store rendered English text instead of a key](#issue-kuestenlogik-bowire-689) | ✅ Done | `area:workbench` |
-| [691](https://github.com/Kuestenlogik/Bowire/issues/691) | Bowire | [i18n: plugin settings and protocol descriptions come from the backend, already in English](#issue-kuestenlogik-bowire-691) | ✅ Done | `area:plugin-sdk` |
-| [692](https://github.com/Kuestenlogik/Bowire/issues/692) | Bowire | [A sidecar manifest cannot name an interpreter: the executable never resolves through PATH](#issue-kuestenlogik-bowire-692) | ✅ Done | `area:plugin-sdk` |
-| [693](https://github.com/Kuestenlogik/Bowire/issues/693) | Bowire | [A sidecar's settings() reaches nothing: the host never reads them](#issue-kuestenlogik-bowire-693) | ✅ Done | `area:plugin-sdk` |
-| [694](https://github.com/Kuestenlogik/Bowire/issues/694) | Bowire | [Discovery drops every repeated type reference: the gRPC visited-set is per-tree, not per-path](#issue-kuestenlogik-bowire-694) | ✅ Done | `area:plugin-sdk` |
-| [695](https://github.com/Kuestenlogik/Bowire/issues/695) | Bowire | [Request and response state lives in globals, so only one method can ever be live](#issue-kuestenlogik-bowire-695) | ✅ Done | `area:workbench` |
-| [696](https://github.com/Kuestenlogik/Bowire/issues/696) | Bowire | [Post-mount wiring is scheduled with requestAnimationFrame, so a hidden tab never wires it](#issue-kuestenlogik-bowire-696) | ✅ Done | `area:workbench` |
 
 ### M3 — Discoverability: the pitch, the directories, the star ask *(due 2026-12-14)*
 
@@ -177,7 +157,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.8 — Localisation, test pillar, MCP completion and the agent hub *(due 2026-11-24)*
 
-**12/14 done** · 2 backlog
+**32/34 done** · 2 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -188,7 +168,27 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [110](https://github.com/Kuestenlogik/Bowire/issues/110) | Bowire | [Site: surface the AI assistant in the launch wizard + quickstart](#issue-kuestenlogik-bowire-110) | ✅ Done | `area:site` |
 | [128](https://github.com/Kuestenlogik/Bowire/issues/128) | Bowire | [Bowire Agent — register embedded instances with a central hub](#issue-kuestenlogik-bowire-128) | ✅ Done | `area:multi` |
 | [177](https://github.com/Kuestenlogik/Bowire/issues/177) | Bowire | [AI-assisted service scaffolding — schema + stub + collection + test](#issue-kuestenlogik-bowire-177) | ✅ Done | `area:workbench` |
+| [311](https://github.com/Kuestenlogik/Bowire/issues/311) | Bowire | [Pluggable workbench: extract remaining rails (Phase G continuation)](#issue-kuestenlogik-bowire-311) | ✅ Done | `area:workbench` |
 | [313](https://github.com/Kuestenlogik/Bowire/issues/313) | Bowire | [Parallel sessions Phase 3 — hardening (allowlist + audit log + agent-hub discovery)](#issue-kuestenlogik-bowire-313) | ✅ Done | `area:security` |
+| [365](https://github.com/Kuestenlogik/Bowire/issues/365) | Bowire | [Contract testing + workspace-id: run a workbench-stored workspace's suite by id](#issue-kuestenlogik-bowire-365) | ✅ Done | `area:workbench` |
+| [366](https://github.com/Kuestenlogik/Bowire/issues/366) | Bowire | [Test-pillar UI polish: snapshot diff/approve, data-driven results view, mock frame-drop faults](#issue-kuestenlogik-bowire-366) | ✅ Done | `area:workbench` |
+| [486](https://github.com/Kuestenlogik/Bowire/issues/486) | Bowire | [Security rail: manual OAST/pen-test surface — generate a callback payload + watch interactions live](#issue-kuestenlogik-bowire-486) | ✅ Done | `area:security` |
+| [535](https://github.com/Kuestenlogik/Bowire/issues/535) | Bowire | [Embedded first run should land on Discover, not on a workspace-creation gate](#issue-kuestenlogik-bowire-535) | ✅ Done | `area:workbench` |
+| [583](https://github.com/Kuestenlogik/Bowire/issues/583) | Bowire | [Design-time lint: naming/PII rules, inline workbench hints, test --suite=lint](#issue-kuestenlogik-bowire-583) | ✅ Done | `area:multi` |
+| [654](https://github.com/Kuestenlogik/Bowire/issues/654) | Bowire | [Uploaded schemas live in a process-wide static — lost on restart, shared between identities, invisible to the CLI](#issue-kuestenlogik-bowire-654) | ✅ Done | `area:multi` |
+| [663](https://github.com/Kuestenlogik/Bowire/issues/663) | Bowire | [Lint's response-shape rules cannot fire on REST — discovery populates no output fields](#issue-kuestenlogik-bowire-663) | ✅ Done | `area:cli` |
+| [664](https://github.com/Kuestenlogik/Bowire/issues/664) | Bowire | [Method-name form on /api/invoke is not uniform across plugins](#issue-kuestenlogik-bowire-664) | ✅ Done | `area:workbench` |
+| [665](https://github.com/Kuestenlogik/Bowire/issues/665) | Bowire | [SignalR ad-hoc invoke declares args:string but requires a JSON array](#issue-kuestenlogik-bowire-665) | ✅ Done | `area:workbench` |
+| [666](https://github.com/Kuestenlogik/Bowire/issues/666) | Bowire | [plugin install suggests a re-run its own already-installed guard blocks](#issue-kuestenlogik-bowire-666) | ✅ Done | `area:plugin-sdk` |
+| [684](https://github.com/Kuestenlogik/Bowire/issues/684) | Bowire | [Starting Bowire on an occupied port crashes with an unhandled exception instead of opening the running workbench](#issue-kuestenlogik-bowire-684) | ✅ Done | `area:cli` |
+| [686](https://github.com/Kuestenlogik/Bowire/issues/686) | Bowire | [el() turns a false boolean attribute into a set attribute, so disabled: false disables the control](#issue-kuestenlogik-bowire-686) | ✅ Done | `area:workbench` |
+| [689](https://github.com/Kuestenlogik/Bowire/issues/689) | Bowire | [Action-log entries store rendered English text instead of a key](#issue-kuestenlogik-bowire-689) | ✅ Done | `area:workbench` |
+| [691](https://github.com/Kuestenlogik/Bowire/issues/691) | Bowire | [i18n: plugin settings and protocol descriptions come from the backend, already in English](#issue-kuestenlogik-bowire-691) | ✅ Done | `area:plugin-sdk` |
+| [692](https://github.com/Kuestenlogik/Bowire/issues/692) | Bowire | [A sidecar manifest cannot name an interpreter: the executable never resolves through PATH](#issue-kuestenlogik-bowire-692) | ✅ Done | `area:plugin-sdk` |
+| [693](https://github.com/Kuestenlogik/Bowire/issues/693) | Bowire | [A sidecar's settings() reaches nothing: the host never reads them](#issue-kuestenlogik-bowire-693) | ✅ Done | `area:plugin-sdk` |
+| [694](https://github.com/Kuestenlogik/Bowire/issues/694) | Bowire | [Discovery drops every repeated type reference: the gRPC visited-set is per-tree, not per-path](#issue-kuestenlogik-bowire-694) | ✅ Done | `area:plugin-sdk` |
+| [695](https://github.com/Kuestenlogik/Bowire/issues/695) | Bowire | [Request and response state lives in globals, so only one method can ever be live](#issue-kuestenlogik-bowire-695) | ✅ Done | `area:workbench` |
+| [696](https://github.com/Kuestenlogik/Bowire/issues/696) | Bowire | [Post-mount wiring is scheduled with requestAnimationFrame, so a hidden tab never wires it](#issue-kuestenlogik-bowire-696) | ✅ Done | `area:workbench` |
 | [706](https://github.com/Kuestenlogik/Bowire/issues/706) | Bowire | [The first click into any text field is lost: the chip overlay re-parents the field on focus](#issue-kuestenlogik-bowire-706) | ✅ Done | `area:workbench` |
 | [710](https://github.com/Kuestenlogik/Bowire/issues/710) | Bowire | [GraphQL: Lücken zwischen Discovery und einem vollwertigen GraphQL-Client](#issue-kuestenlogik-bowire-710) | ✅ Done |  |
 | [711](https://github.com/Kuestenlogik/Bowire/issues/711) | Bowire | [Schema-Designer: Eingabefelder und Dropdowns übernehmen die Workbench-Stile nicht](#issue-kuestenlogik-bowire-711) | ✅ Done |  |
@@ -367,126 +367,6 @@ A visible, in-app **shelf** (working name) — a drag-and-drop holding area for 
 > `area:workbench`
 
 Followup to #291. Phases A+B+C+E shipped (REST / gRPC / MCP / MQTT / WebSocket / SSE + streaming response pane). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/292)
-
-#### <a id="issue-kuestenlogik-bowire-311"></a>✅ Done · [#311](https://github.com/Kuestenlogik/Bowire/issues/311) Pluggable workbench: extract remaining rails (Phase G continuation)
-
-> `area:workbench`
-
-Follow-up to #306. Phase G's descriptor-by-package extraction shipped in 0b76086 — every rail descriptor now lives in its own `Kuestenlogik.Bowire.Rail.*` NuGet, `BuiltInRails.cs` is gone from core, and `Bundle.Workbench` is the new meta-package referenced by `Bowire.Tool`. [[more]](https://github.com/Kuestenlogik/Bowire/issues/311)
-
-#### <a id="issue-kuestenlogik-bowire-365"></a>✅ Done · [#365](https://github.com/Kuestenlogik/Bowire/issues/365) Contract testing + workspace-id: run a workbench-stored workspace's suite by id
-
-> `area:workbench`
-
-Follow-up to #181. `bowire test --workspace <dir>` (82825f43) runs every flow in a **git-native workspace directory**. The original #181 sketch also listed `--workspace-id` — running a workspace addressed by its id from the workbench's `~/.bowire/` per-user storage. [[more]](https://github.com/Kuestenlogik/Bowire/issues/365)
-
-#### <a id="issue-kuestenlogik-bowire-366"></a>✅ Done · [#366](https://github.com/Kuestenlogik/Bowire/issues/366) Test-pillar UI polish: snapshot diff/approve, data-driven results view, mock frame-drop faults
-
-> `area:workbench`
-
-Follow-ups collecting the workbench-UI remainders from the shipped test-pillar features (#170/#171/#174). The CLI + engine + authoring editors are done; these are read-side / streaming refinements. [[more]](https://github.com/Kuestenlogik/Bowire/issues/366)
-
-#### <a id="issue-kuestenlogik-bowire-486"></a>✅ Done · [#486](https://github.com/Kuestenlogik/Bowire/issues/486) Security rail: manual OAST/pen-test surface — generate a callback payload + watch interactions live
-
-> `area:security`
-
-The `app.interactsh.com` analog, as a **sub-tab of the Security rail** — the workflow the OAST work so far does not cover. [[more]](https://github.com/Kuestenlogik/Bowire/issues/486)
-
-#### <a id="issue-kuestenlogik-bowire-535"></a>✅ Done · [#535](https://github.com/Kuestenlogik/Bowire/issues/535) Embedded first run should land on Discover, not on a workspace-creation gate
-
-> `area:workbench`
-
-Feasible and small. Everything the proposal assumes already exists: `BowireOptions.AutoCreateInitialWorkspace` (BowireOptions.cs:133) is emitted into `window.__BOWIRE_CONFIG__` by BowireHtmlGenerator.cs:271 and consumed by the boot seed in prologue.js:1999-2017; embedded-vs-standalone is decided onc … [[more]](https://github.com/Kuestenlogik/Bowire/issues/535)
-
-#### <a id="issue-kuestenlogik-bowire-583"></a>✅ Done · [#583](https://github.com/Kuestenlogik/Bowire/issues/583) Design-time lint: naming/PII rules, inline workbench hints, test --suite=lint
-
-> `area:multi`
-
-#189 shipped the design-time lint core across **all three surfaces** — CLI (`bowire lint`), Web-UI (workbench Lint rail + `/api/lint`), and MCP (`bowire.lint`) — with a typed rule engine, 5 built-in rules, `.bowire/rules.json` config (toggles + severity overrides), and a plugin SPI (`IBowireLintRule … [[more]](https://github.com/Kuestenlogik/Bowire/issues/583)
-
-#### <a id="issue-kuestenlogik-bowire-654"></a>✅ Done · [#654](https://github.com/Kuestenlogik/Bowire/issues/654) Uploaded schemas live in a process-wide static — lost on restart, shared between identities, invisible to the CLI
-
-> `area:multi`
-
-A schema uploaded through the workbench — a `.proto`, an OpenAPI document — lives in a static list for the lifetime of the process and nowhere else: [[more]](https://github.com/Kuestenlogik/Bowire/issues/654)
-
-#### <a id="issue-kuestenlogik-bowire-663"></a>✅ Done · [#663](https://github.com/Kuestenlogik/Bowire/issues/663) Lint's response-shape rules cannot fire on REST — discovery populates no output fields
-
-> `area:cli`
-
-`bowire lint` against a REST target reports "no findings" and exits 0. Against a gRPC target the same rules produce findings. The difference is not the APIs — it is that REST discovery populates request parameters but no response schemas, so the four response-shaped rules have nothing to inspect. [[more]](https://github.com/Kuestenlogik/Bowire/issues/663)
-
-#### <a id="issue-kuestenlogik-bowire-664"></a>✅ Done · [#664](https://github.com/Kuestenlogik/Bowire/issues/664) Method-name form on /api/invoke is not uniform across plugins
-
-> `area:workbench`
-
-`/api/invoke` takes a `method` field, and which form it accepts differs by plugin. A caller that reads a discovery response and uses the obvious field hits one or the other. [[more]](https://github.com/Kuestenlogik/Bowire/issues/664)
-
-#### <a id="issue-kuestenlogik-bowire-665"></a>✅ Done · [#665](https://github.com/Kuestenlogik/Bowire/issues/665) SignalR ad-hoc invoke declares args:string but requires a JSON array
-
-> `area:workbench`
-
-Discovery declares the SignalR ad-hoc `invoke` method's input as: [[more]](https://github.com/Kuestenlogik/Bowire/issues/665)
-
-#### <a id="issue-kuestenlogik-bowire-666"></a>✅ Done · [#666](https://github.com/Kuestenlogik/Bowire/issues/666) plugin install suggests a re-run its own already-installed guard blocks
-
-> `area:plugin-sdk`
-
-`bowire plugin install --file <pkg>.nupkg` installs a package whose runtime dependencies could not be resolved, reports the unmet ones as a warning, and tells the operator what to do: [[more]](https://github.com/Kuestenlogik/Bowire/issues/666)
-
-#### <a id="issue-kuestenlogik-bowire-684"></a>✅ Done · [#684](https://github.com/Kuestenlogik/Bowire/issues/684) Starting Bowire on an occupied port crashes with an unhandled exception instead of opening the running workbench
-
-> `area:cli`
-
-Starting Bowire while an instance is already listening does not fail gracefully — it throws an **unhandled** `IOException` / `AddressInUseException` and exits with code 1, after printing roughly forty lines of .NET stack trace. [[more]](https://github.com/Kuestenlogik/Bowire/issues/684)
-
-#### <a id="issue-kuestenlogik-bowire-686"></a>✅ Done · [#686](https://github.com/Kuestenlogik/Bowire/issues/686) el() turns a false boolean attribute into a set attribute, so disabled: false disables the control
-
-> `area:workbench`
-
-`el()` in `helpers.js` skips `undefined` and `null` and routes everything else through `setAttribute`: [[more]](https://github.com/Kuestenlogik/Bowire/issues/686)
-
-#### <a id="issue-kuestenlogik-bowire-689"></a>✅ Done · [#689](https://github.com/Kuestenlogik/Bowire/issues/689) Action-log entries store rendered English text instead of a key
-
-> `area:workbench`
-
-The Activity drawer renders text that was translated once, when the action happened, and then stored. Switching the interface language afterwards leaves every existing entry in the old language, and an entry made before a translation existed stays English for ever. [[more]](https://github.com/Kuestenlogik/Bowire/issues/689)
-
-#### <a id="issue-kuestenlogik-bowire-691"></a>✅ Done · [#691](https://github.com/Kuestenlogik/Bowire/issues/691) i18n: plugin settings and protocol descriptions come from the backend, already in English
-
-> `area:plugin-sdk`
-
-#117 put every string the workbench JS renders onto the catalogue, and `npm run i18n:report` reads zero. But the Settings dialog still shows English in a German session, because some of the text on that screen never passes through JavaScript at all — the backend sends it, already rendered, over the API. [[more]](https://github.com/Kuestenlogik/Bowire/issues/691)
-
-#### <a id="issue-kuestenlogik-bowire-692"></a>✅ Done · [#692](https://github.com/Kuestenlogik/Bowire/issues/692) A sidecar manifest cannot name an interpreter: the executable never resolves through PATH
-
-> `area:plugin-sdk`
-
-A sidecar manifest cannot name an interpreter. `SidecarJsonRpcTransport.Start` resolves the executable as [[more]](https://github.com/Kuestenlogik/Bowire/issues/692)
-
-#### <a id="issue-kuestenlogik-bowire-693"></a>✅ Done · [#693](https://github.com/Kuestenlogik/Bowire/issues/693) A sidecar's settings() reaches nothing: the host never reads them
-
-> `area:plugin-sdk`
-
-A sidecar plugin can describe its settings, and nothing receives them. [[more]](https://github.com/Kuestenlogik/Bowire/issues/693)
-
-#### <a id="issue-kuestenlogik-bowire-694"></a>✅ Done · [#694](https://github.com/Kuestenlogik/Bowire/issues/694) Discovery drops every repeated type reference: the gRPC visited-set is per-tree, not per-path
-
-> `area:plugin-sdk`
-
-`GrpcReflectionClient.ResolveMessageType` builds each method's request and response shape by walking the descriptors recursively, carrying a `visited` set to stop it looping. The set is added to but **never unwound**: [[more]](https://github.com/Kuestenlogik/Bowire/issues/694)
-
-#### <a id="issue-kuestenlogik-bowire-695"></a>✅ Done · [#695](https://github.com/Kuestenlogik/Bowire/issues/695) Request and response state lives in globals, so only one method can ever be live
-
-> `area:workbench`
-
-The workbench holds **one method's request and response at a time**. Tab switching does not make a second set live — it swaps the one set out and back in: [[more]](https://github.com/Kuestenlogik/Bowire/issues/695)
-
-#### <a id="issue-kuestenlogik-bowire-696"></a>✅ Done · [#696](https://github.com/Kuestenlogik/Bowire/issues/696) Post-mount wiring is scheduled with requestAnimationFrame, so a hidden tab never wires it
-
-> `area:workbench`
-
-Post-mount wiring across the workbench is scheduled with `requestAnimationFrame` — the pattern is "render the tree, then on the next frame re-resolve the nodes by id and attach behaviour to them": [[more]](https://github.com/Kuestenlogik/Bowire/issues/696)
 
 ### M3 — Discoverability: the pitch, the directories, the star ask *(due 2026-12-14)*
 
@@ -892,11 +772,131 @@ v1.9 ships the AI workbench in a real way — chat grounded in workbench state (
 
 The AI assistant today is reactive: it answers questions, surfaces hints, helps explain. The natural next step for a "build APIs faster" tool is generative — "scaffold a CRUD service for this Entity" → out drops a `.proto` + handler stubs + an example collection + a smoke-test. [[more]](https://github.com/Kuestenlogik/Bowire/issues/177)
 
+#### <a id="issue-kuestenlogik-bowire-311"></a>✅ Done · [#311](https://github.com/Kuestenlogik/Bowire/issues/311) Pluggable workbench: extract remaining rails (Phase G continuation)
+
+> `area:workbench`
+
+Follow-up to #306. Phase G's descriptor-by-package extraction shipped in 0b76086 — every rail descriptor now lives in its own `Kuestenlogik.Bowire.Rail.*` NuGet, `BuiltInRails.cs` is gone from core, and `Bundle.Workbench` is the new meta-package referenced by `Bowire.Tool`. [[more]](https://github.com/Kuestenlogik/Bowire/issues/311)
+
 #### <a id="issue-kuestenlogik-bowire-313"></a>✅ Done · [#313](https://github.com/Kuestenlogik/Bowire/issues/313) Parallel sessions Phase 3 — hardening (allowlist + audit log + agent-hub discovery)
 
 > `area:security`
 
 Follow-up from #132 Phase 2 (shipped in `ecbfa9e`). Phase 2 wired the wire shape — coordinator + per-host worker, ramp-up, env pool, failure policy, bearer auth — but deferred the hardening pieces called out on #132's security note. [[more]](https://github.com/Kuestenlogik/Bowire/issues/313)
+
+#### <a id="issue-kuestenlogik-bowire-365"></a>✅ Done · [#365](https://github.com/Kuestenlogik/Bowire/issues/365) Contract testing + workspace-id: run a workbench-stored workspace's suite by id
+
+> `area:workbench`
+
+Follow-up to #181. `bowire test --workspace <dir>` (82825f43) runs every flow in a **git-native workspace directory**. The original #181 sketch also listed `--workspace-id` — running a workspace addressed by its id from the workbench's `~/.bowire/` per-user storage. [[more]](https://github.com/Kuestenlogik/Bowire/issues/365)
+
+#### <a id="issue-kuestenlogik-bowire-366"></a>✅ Done · [#366](https://github.com/Kuestenlogik/Bowire/issues/366) Test-pillar UI polish: snapshot diff/approve, data-driven results view, mock frame-drop faults
+
+> `area:workbench`
+
+Follow-ups collecting the workbench-UI remainders from the shipped test-pillar features (#170/#171/#174). The CLI + engine + authoring editors are done; these are read-side / streaming refinements. [[more]](https://github.com/Kuestenlogik/Bowire/issues/366)
+
+#### <a id="issue-kuestenlogik-bowire-486"></a>✅ Done · [#486](https://github.com/Kuestenlogik/Bowire/issues/486) Security rail: manual OAST/pen-test surface — generate a callback payload + watch interactions live
+
+> `area:security`
+
+The `app.interactsh.com` analog, as a **sub-tab of the Security rail** — the workflow the OAST work so far does not cover. [[more]](https://github.com/Kuestenlogik/Bowire/issues/486)
+
+#### <a id="issue-kuestenlogik-bowire-535"></a>✅ Done · [#535](https://github.com/Kuestenlogik/Bowire/issues/535) Embedded first run should land on Discover, not on a workspace-creation gate
+
+> `area:workbench`
+
+Feasible and small. Everything the proposal assumes already exists: `BowireOptions.AutoCreateInitialWorkspace` (BowireOptions.cs:133) is emitted into `window.__BOWIRE_CONFIG__` by BowireHtmlGenerator.cs:271 and consumed by the boot seed in prologue.js:1999-2017; embedded-vs-standalone is decided onc … [[more]](https://github.com/Kuestenlogik/Bowire/issues/535)
+
+#### <a id="issue-kuestenlogik-bowire-583"></a>✅ Done · [#583](https://github.com/Kuestenlogik/Bowire/issues/583) Design-time lint: naming/PII rules, inline workbench hints, test --suite=lint
+
+> `area:multi`
+
+#189 shipped the design-time lint core across **all three surfaces** — CLI (`bowire lint`), Web-UI (workbench Lint rail + `/api/lint`), and MCP (`bowire.lint`) — with a typed rule engine, 5 built-in rules, `.bowire/rules.json` config (toggles + severity overrides), and a plugin SPI (`IBowireLintRule … [[more]](https://github.com/Kuestenlogik/Bowire/issues/583)
+
+#### <a id="issue-kuestenlogik-bowire-654"></a>✅ Done · [#654](https://github.com/Kuestenlogik/Bowire/issues/654) Uploaded schemas live in a process-wide static — lost on restart, shared between identities, invisible to the CLI
+
+> `area:multi`
+
+A schema uploaded through the workbench — a `.proto`, an OpenAPI document — lives in a static list for the lifetime of the process and nowhere else: [[more]](https://github.com/Kuestenlogik/Bowire/issues/654)
+
+#### <a id="issue-kuestenlogik-bowire-663"></a>✅ Done · [#663](https://github.com/Kuestenlogik/Bowire/issues/663) Lint's response-shape rules cannot fire on REST — discovery populates no output fields
+
+> `area:cli`
+
+`bowire lint` against a REST target reports "no findings" and exits 0. Against a gRPC target the same rules produce findings. The difference is not the APIs — it is that REST discovery populates request parameters but no response schemas, so the four response-shaped rules have nothing to inspect. [[more]](https://github.com/Kuestenlogik/Bowire/issues/663)
+
+#### <a id="issue-kuestenlogik-bowire-664"></a>✅ Done · [#664](https://github.com/Kuestenlogik/Bowire/issues/664) Method-name form on /api/invoke is not uniform across plugins
+
+> `area:workbench`
+
+`/api/invoke` takes a `method` field, and which form it accepts differs by plugin. A caller that reads a discovery response and uses the obvious field hits one or the other. [[more]](https://github.com/Kuestenlogik/Bowire/issues/664)
+
+#### <a id="issue-kuestenlogik-bowire-665"></a>✅ Done · [#665](https://github.com/Kuestenlogik/Bowire/issues/665) SignalR ad-hoc invoke declares args:string but requires a JSON array
+
+> `area:workbench`
+
+Discovery declares the SignalR ad-hoc `invoke` method's input as: [[more]](https://github.com/Kuestenlogik/Bowire/issues/665)
+
+#### <a id="issue-kuestenlogik-bowire-666"></a>✅ Done · [#666](https://github.com/Kuestenlogik/Bowire/issues/666) plugin install suggests a re-run its own already-installed guard blocks
+
+> `area:plugin-sdk`
+
+`bowire plugin install --file <pkg>.nupkg` installs a package whose runtime dependencies could not be resolved, reports the unmet ones as a warning, and tells the operator what to do: [[more]](https://github.com/Kuestenlogik/Bowire/issues/666)
+
+#### <a id="issue-kuestenlogik-bowire-684"></a>✅ Done · [#684](https://github.com/Kuestenlogik/Bowire/issues/684) Starting Bowire on an occupied port crashes with an unhandled exception instead of opening the running workbench
+
+> `area:cli`
+
+Starting Bowire while an instance is already listening does not fail gracefully — it throws an **unhandled** `IOException` / `AddressInUseException` and exits with code 1, after printing roughly forty lines of .NET stack trace. [[more]](https://github.com/Kuestenlogik/Bowire/issues/684)
+
+#### <a id="issue-kuestenlogik-bowire-686"></a>✅ Done · [#686](https://github.com/Kuestenlogik/Bowire/issues/686) el() turns a false boolean attribute into a set attribute, so disabled: false disables the control
+
+> `area:workbench`
+
+`el()` in `helpers.js` skips `undefined` and `null` and routes everything else through `setAttribute`: [[more]](https://github.com/Kuestenlogik/Bowire/issues/686)
+
+#### <a id="issue-kuestenlogik-bowire-689"></a>✅ Done · [#689](https://github.com/Kuestenlogik/Bowire/issues/689) Action-log entries store rendered English text instead of a key
+
+> `area:workbench`
+
+The Activity drawer renders text that was translated once, when the action happened, and then stored. Switching the interface language afterwards leaves every existing entry in the old language, and an entry made before a translation existed stays English for ever. [[more]](https://github.com/Kuestenlogik/Bowire/issues/689)
+
+#### <a id="issue-kuestenlogik-bowire-691"></a>✅ Done · [#691](https://github.com/Kuestenlogik/Bowire/issues/691) i18n: plugin settings and protocol descriptions come from the backend, already in English
+
+> `area:plugin-sdk`
+
+#117 put every string the workbench JS renders onto the catalogue, and `npm run i18n:report` reads zero. But the Settings dialog still shows English in a German session, because some of the text on that screen never passes through JavaScript at all — the backend sends it, already rendered, over the API. [[more]](https://github.com/Kuestenlogik/Bowire/issues/691)
+
+#### <a id="issue-kuestenlogik-bowire-692"></a>✅ Done · [#692](https://github.com/Kuestenlogik/Bowire/issues/692) A sidecar manifest cannot name an interpreter: the executable never resolves through PATH
+
+> `area:plugin-sdk`
+
+A sidecar manifest cannot name an interpreter. `SidecarJsonRpcTransport.Start` resolves the executable as [[more]](https://github.com/Kuestenlogik/Bowire/issues/692)
+
+#### <a id="issue-kuestenlogik-bowire-693"></a>✅ Done · [#693](https://github.com/Kuestenlogik/Bowire/issues/693) A sidecar's settings() reaches nothing: the host never reads them
+
+> `area:plugin-sdk`
+
+A sidecar plugin can describe its settings, and nothing receives them. [[more]](https://github.com/Kuestenlogik/Bowire/issues/693)
+
+#### <a id="issue-kuestenlogik-bowire-694"></a>✅ Done · [#694](https://github.com/Kuestenlogik/Bowire/issues/694) Discovery drops every repeated type reference: the gRPC visited-set is per-tree, not per-path
+
+> `area:plugin-sdk`
+
+`GrpcReflectionClient.ResolveMessageType` builds each method's request and response shape by walking the descriptors recursively, carrying a `visited` set to stop it looping. The set is added to but **never unwound**: [[more]](https://github.com/Kuestenlogik/Bowire/issues/694)
+
+#### <a id="issue-kuestenlogik-bowire-695"></a>✅ Done · [#695](https://github.com/Kuestenlogik/Bowire/issues/695) Request and response state lives in globals, so only one method can ever be live
+
+> `area:workbench`
+
+The workbench holds **one method's request and response at a time**. Tab switching does not make a second set live — it swaps the one set out and back in: [[more]](https://github.com/Kuestenlogik/Bowire/issues/695)
+
+#### <a id="issue-kuestenlogik-bowire-696"></a>✅ Done · [#696](https://github.com/Kuestenlogik/Bowire/issues/696) Post-mount wiring is scheduled with requestAnimationFrame, so a hidden tab never wires it
+
+> `area:workbench`
+
+Post-mount wiring across the workbench is scheduled with `requestAnimationFrame` — the pattern is "render the tree, then on the next frame re-resolve the nodes by id and attach behaviour to them": [[more]](https://github.com/Kuestenlogik/Bowire/issues/696)
 
 #### <a id="issue-kuestenlogik-bowire-706"></a>✅ Done · [#706](https://github.com/Kuestenlogik/Bowire/issues/706) The first click into any text field is lost: the chip overlay re-parents the field on focus
 
