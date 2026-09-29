@@ -34,7 +34,7 @@ for (let i = 0; i < rest.length; i++) {
   else if (rest[i].startsWith('--')) flags.add(rest[i]);
   else args.push(rest[i]);
 }
-const gh = (...a) => execFileSync('gh', a, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'inherit'] });
+const gh = (...a) => execFileSync('gh', a, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'inherit'], maxBuffer: 64 * 1024 * 1024 });
 const ghJson = (...a) => JSON.parse(gh(...a));
 const graphql = (query, vars = {}) => {
   const a = ['api', 'graphql', '-f', `query=${query}`];
