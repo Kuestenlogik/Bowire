@@ -91,5 +91,6 @@ The extension drives a `bowire` CLI. Pick the provider under **Settings → AI**
 
 ## More
 
+- The assistant also writes the spec for [service scaffolding](scaffolding.md), local model first.
 - The [AI integration design](../architecture/ai-integration.md) covers the three model-access modes, which features work on a small local model, and the privacy stance.
 - The security drawer uses the same model for AI-assisted findings — see [security testing](../architecture/security-testing.md).

@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>{{Namespace}}</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Served at /openapi.yaml so Bowire can discover the stub. -->
+    <None Include="openapi.yaml" CopyToOutputDirectory="PreserveNewest" />
+    <None Remove="bowire\**" />
+  </ItemGroup>
+</Project>

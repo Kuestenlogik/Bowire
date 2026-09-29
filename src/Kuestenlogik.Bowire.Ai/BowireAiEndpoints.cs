@@ -1034,6 +1034,9 @@ public static class BowireAiEndpoints
             }
         }).ExcludeFromDescription();
 
+        // #177 - a scaffold spec from a sentence, local model first.
+        endpoints.MapBowireAiScaffoldEndpoints(basePath);
+
         return endpoints;
     }
 

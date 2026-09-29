@@ -3301,6 +3301,18 @@
             }));
         }
 
+        // #177 - scaffold a new service into this workspace. Only when the
+        // Kuestenlogik.Bowire.Scaffold fragment is part of the bundle.
+        if (typeof openScaffoldDialog === 'function') {
+            section.appendChild(el('button', {
+                className: 'bowire-ws-detail-action',
+                style: 'margin-top:8px',
+                textContent: t('scaffold.sourcesButton'),
+                title: t('scaffold.paletteSublabel'),
+                onClick: function () { openScaffoldDialog(); }
+            }));
+        }
+
         // #128 - on a hub, the agents that registered with it. After the
         // address block, not inside it: agents are other workbenches to
         // open, not addresses this one discovers against.

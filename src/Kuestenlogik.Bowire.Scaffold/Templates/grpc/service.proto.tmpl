@@ -1,0 +1,48 @@
+// {{Service}} — scaffolded by Bowire from the spec in bowire-scaffold.json.
+// Edit freely; the C# stub follows the messages below.
+syntax = "proto3";
+
+package {{package}};
+
+option csharp_namespace = "{{Namespace}}";
+
+import "google/protobuf/empty.proto";
+
+// CRUD for {{plural}}.
+service {{Service}} {
+  rpc List{{Plural}} (List{{Plural}}Request) returns (List{{Plural}}Response);
+  rpc Get{{Entity}} (Get{{Entity}}Request) returns ({{Entity}});
+  rpc Create{{Entity}} ({{Entity}}Input) returns ({{Entity}});
+  rpc Update{{Entity}} (Update{{Entity}}Request) returns ({{Entity}});
+  rpc Delete{{Entity}} (Delete{{Entity}}Request) returns (google.protobuf.Empty);
+}
+
+// A stored {{entityWords}}.
+message {{Entity}} {
+  string id = 1;
+{{#fields}}  {{#ProtoOptional}}optional {{/ProtoOptional}}{{protoType}} {{snake}} = {{Number}};{{#protoNote}} // {{protoNote}}{{/protoNote}}
+{{/fields}}}
+
+// What a client sends to create or replace {{aEntity}}.
+message {{Entity}}Input {
+{{#fields}}  {{#ProtoOptional}}optional {{/ProtoOptional}}{{protoType}} {{snake}} = {{InputNumber}};{{#Required}} // required{{/Required}}
+{{/fields}}}
+
+message List{{Plural}}Request {}
+
+message List{{Plural}}Response {
+  repeated {{Entity}} {{pluralSnake}} = 1;
+}
+
+message Get{{Entity}}Request {
+  string id = 1;
+}
+
+message Update{{Entity}}Request {
+  string id = 1;
+  {{Entity}}Input {{entitySnake}} = 2;
+}
+
+message Delete{{Entity}}Request {
+  string id = 1;
+}

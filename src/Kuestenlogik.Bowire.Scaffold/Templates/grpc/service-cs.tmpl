@@ -1,0 +1,72 @@
+// {{Service}} — scaffolded by Bowire from the spec in bowire-scaffold.json.
+// The service keeps {{plural}} in memory, so every restart starts empty:
+// replace the store with your own persistence and keep the RPCs.
+using System.Collections.Concurrent;
+using Google.Protobuf.WellKnownTypes;
+using Grpc.Core;
+
+namespace {{Namespace}};
+
+public sealed class {{Service}}Service : {{Service}}.{{Service}}Base
+{
+    private static readonly ConcurrentDictionary<string, {{Entity}}> Store = new();
+
+    public override Task<List{{Plural}}Response> List{{Plural}}(List{{Plural}}Request request, ServerCallContext context)
+    {
+        var response = new List{{Plural}}Response();
+        response.{{PluralPascalField}}.AddRange(Store.Values.OrderBy(x => x.Id, StringComparer.Ordinal));
+        return Task.FromResult(response);
+    }
+
+    public override Task<{{Entity}}> Get{{Entity}}(Get{{Entity}}Request request, ServerCallContext context) =>
+        Task.FromResult(Find(request.Id));
+
+    public override Task<{{Entity}}> Create{{Entity}}({{Entity}}Input request, ServerCallContext context)
+    {
+        Validate(request);
+        var item = From(Guid.NewGuid().ToString("n"), request);
+        Store[item.Id] = item;
+        return Task.FromResult(item);
+    }
+
+    public override Task<{{Entity}}> Update{{Entity}}(Update{{Entity}}Request request, ServerCallContext context)
+    {
+        Find(request.Id);
+        var input = request.{{EntityPascalField}} ?? new {{Entity}}Input();
+        Validate(input);
+        var item = From(request.Id, input);
+        Store[item.Id] = item;
+        return Task.FromResult(item);
+    }
+
+    public override Task<Empty> Delete{{Entity}}(Delete{{Entity}}Request request, ServerCallContext context)
+    {
+        if (!Store.TryRemove(request.Id, out _)) throw NotFound(request.Id);
+        return Task.FromResult(new Empty());
+    }
+
+    private static {{Entity}} Find(string id) =>
+        Store.TryGetValue(id, out var item) ? item : throw NotFound(id);
+
+    private static RpcException NotFound(string id) =>
+        new(new Status(StatusCode.NotFound, $"no {{entityWords}} with id '{id}'"));
+
+    private static {{Entity}} From(string id, {{Entity}}Input input)
+    {
+        var item = new {{Entity}} { Id = id };
+{{#fields}}{{#ProtoOptional}}        if (input.Has{{Pascal}}) item.{{Pascal}} = input.{{Pascal}};
+{{/ProtoOptional}}{{^ProtoOptional}}        item.{{Pascal}} = input.{{Pascal}};
+{{/ProtoOptional}}{{/fields}}        return item;
+    }
+
+    private static void Validate({{Entity}}Input input)
+    {
+        var missing = new List<string>();
+{{#fields}}{{#Required}}{{#ProtoOptional}}        if (!input.Has{{Pascal}}) missing.Add("{{name}}");
+{{/ProtoOptional}}{{^ProtoOptional}}        if (string.IsNullOrEmpty(input.{{Pascal}})) missing.Add("{{name}}");
+{{/ProtoOptional}}{{/Required}}{{/fields}}        if (missing.Count > 0)
+        {
+            throw new RpcException(new Status(StatusCode.InvalidArgument, "required: " + string.Join(", ", missing)));
+        }
+    }
+}

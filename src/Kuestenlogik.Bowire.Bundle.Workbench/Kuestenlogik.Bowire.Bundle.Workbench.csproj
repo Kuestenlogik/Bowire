@@ -55,6 +55,8 @@
          DefaultEnabled => false (#249), so it arrives unticked under
          Settings -> Rail modes rather than as a new icon on the strip. -->
     <ProjectReference Include="..\Kuestenlogik.Bowire.SchemaDesigner\Kuestenlogik.Bowire.SchemaDesigner.csproj" />
+    <!-- #177 - service scaffolding: endpoints, dialog, templates. -->
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Scaffold\Kuestenlogik.Bowire.Scaffold.csproj" />
     <!-- v2.1 (#325): the Proxy + Intercepted + Traffic rails AND the
          interceptor middleware + reverse-proxy host + /api/intercepted
          endpoints were lifted into a single Kuestenlogik.Bowire.Interceptor

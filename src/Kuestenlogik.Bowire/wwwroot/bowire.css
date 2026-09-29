@@ -27734,3 +27734,152 @@ not as the
 .bowire-hub-agent-open:hover {
     border-color: var(--bowire-accent);
 }
+
+/* #177 - the scaffold dialog. Its own overlay (see scaffold.js for why),
+   same geometry as the confirm overlay. */
+.bowire-scaffold-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 10002; /* under a bowireConfirm (10003) it raises */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.45);
+}
+.bowire-scaffold-overlay .bowire-scaffold-dialog {
+    max-width: none;
+    width: min(920px, calc(100vw - 32px));
+    max-height: calc(100vh - 48px);
+    display: flex;
+    flex-direction: column;
+}
+.bowire-scaffold-body {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.bowire-scaffold-steps {
+    display: flex;
+    gap: 14px;
+    font-size: 12px;
+    color: var(--bowire-text-tertiary);
+    margin-bottom: 4px;
+}
+.bowire-scaffold-step.active {
+    color: var(--bowire-text);
+    font-weight: 600;
+}
+.bowire-scaffold-step.done {
+    color: var(--bowire-success, #34d399);
+}
+.bowire-scaffold-label {
+    font-size: 12px;
+    color: var(--bowire-text-secondary);
+}
+.bowire-scaffold-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.bowire-scaffold-intent,
+.bowire-scaffold-editor,
+.bowire-scaffold-protocol {
+    font: inherit;
+    font-size: 13px;
+    color: var(--bowire-text);
+    background: var(--bowire-bg);
+    border: 1px solid var(--bowire-border-subtle);
+    border-radius: var(--bowire-radius-sm);
+    padding: 6px 8px;
+    box-sizing: border-box;
+}
+.bowire-scaffold-intent {
+    width: 100%;
+    resize: vertical;
+}
+.bowire-scaffold-editor {
+    width: 100%;
+    flex: 1;
+    min-height: 260px;
+    font-family: var(--bowire-font-mono, monospace);
+    font-size: 12px;
+    line-height: 1.45;
+    white-space: pre;
+    resize: vertical;
+}
+.bowire-scaffold-hint,
+.bowire-scaffold-source {
+    margin: 0;
+    font-size: 12px;
+    color: var(--bowire-text-tertiary);
+}
+.bowire-scaffold-source {
+    color: var(--bowire-text-secondary);
+}
+.bowire-scaffold-notes {
+    margin: 0;
+    padding-left: 18px;
+    font-size: 12px;
+    color: var(--bowire-warning, #fbbf24);
+}
+.bowire-scaffold-split {
+    display: flex;
+    gap: 10px;
+    min-height: 320px;
+}
+.bowire-scaffold-files {
+    flex: 0 0 220px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    overflow: auto;
+}
+.bowire-scaffold-file {
+    text-align: left;
+    font: inherit;
+    font-size: 12px;
+    font-family: var(--bowire-font-mono, monospace);
+    padding: 5px 8px;
+    color: var(--bowire-text-secondary);
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--bowire-radius-sm);
+    cursor: pointer;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.bowire-scaffold-file.active {
+    color: var(--bowire-text);
+    border-color: var(--bowire-accent);
+    background: var(--bowire-bg-elevated);
+}
+.bowire-scaffold-busy {
+    margin: 0;
+    font-size: 12px;
+    color: var(--bowire-text-secondary);
+}
+.bowire-scaffold-error {
+    margin: 0;
+    font-size: 12px;
+    color: var(--bowire-error, #f87171);
+}
+.bowire-scaffold-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 12px;
+}
+@media (max-width: 640px) {
+    .bowire-scaffold-split {
+        flex-direction: column;
+    }
+    .bowire-scaffold-files {
+        flex: 0 0 auto;
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
+}

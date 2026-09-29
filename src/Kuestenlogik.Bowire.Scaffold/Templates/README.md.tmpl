@@ -1,0 +1,27 @@
+# {{Service}}
+
+Scaffolded by Bowire: CRUD for {{plural}} over {{protocolName}}. The spec it came from is `bowire-scaffold.json`; `bowire scaffold --spec bowire-scaffold.json` generates the same files again.
+
+| File | What it is |
+|---|---|
+| `{{schemaFile}}` | The contract |
+{{#stubFiles}}| `{{path}}` | {{what}} |
+{{/stubFiles}}| `bowire/{{collectionFile}}` | A workbench collection: every operation, plus the error cases |
+| `bowire/{{testFile}}` | A smoke test for `bowire test` |
+
+## Run it
+
+```bash
+dotnet run
+```
+
+The stub listens on {{BaseUrl}} and keeps {{plural}} in memory — replace the store with your own persistence.
+
+## Try it
+
+```bash
+bowire --url {{discoveryUrl}}
+bowire test bowire/{{testFile}}
+```
+
+In the collection, the requests that need an id read it from the environment variable `{{idVariable}}`: create {{aEntity}}, copy its id into that variable, and the get, update and delete requests follow it.

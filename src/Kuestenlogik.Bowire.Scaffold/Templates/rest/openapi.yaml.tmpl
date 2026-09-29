@@ -1,0 +1,120 @@
+openapi: 3.0.3
+info:
+  title: {{Service}} API
+  version: 0.1.0
+  description: CRUD for {{plural}}. Scaffolded by Bowire; edit freely.
+servers:
+  - url: {{BaseUrl}}
+paths:
+  /{{route}}:
+    get:
+      tags: [{{route}}]
+      operationId: list{{Plural}}
+      summary: List every {{entityWords}}
+      responses:
+        '200':
+          description: All {{plural}}
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/{{Entity}}'
+    post:
+      tags: [{{route}}]
+      operationId: create{{Entity}}
+      summary: Create {{aEntity}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/{{Entity}}Input'
+      responses:
+        '201':
+          description: The new {{entityWords}}
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/{{Entity}}'
+        '400':
+          description: A required field is missing
+  /{{route}}/{id}:
+    get:
+      tags: [{{route}}]
+      operationId: get{{Entity}}
+      summary: Read one {{entityWords}}
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: The {{entityWords}}
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/{{Entity}}'
+        '404':
+          description: No {{entityWords}} with that id
+    put:
+      tags: [{{route}}]
+      operationId: update{{Entity}}
+      summary: Replace {{aEntity}}
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/{{Entity}}Input'
+      responses:
+        '200':
+          description: The updated {{entityWords}}
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/{{Entity}}'
+        '400':
+          description: A required field is missing
+        '404':
+          description: No {{entityWords}} with that id
+    delete:
+      tags: [{{route}}]
+      operationId: delete{{Entity}}
+      summary: Delete {{aEntity}}
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '204':
+          description: Deleted
+        '404':
+          description: No {{entityWords}} with that id
+components:
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+  schemas:
+    {{Entity}}Input:
+      type: object
+{{#HasRequired}}      required:
+{{#fields}}{{#Required}}        - {{name}}
+{{/Required}}{{/fields}}{{/HasRequired}}      properties:
+{{#fields}}        {{name}}:
+          type: {{oasType}}
+{{#oasFormat}}          format: {{oasFormat}}
+{{/oasFormat}}{{/fields}}    {{Entity}}:
+      type: object
+      required:
+        - id
+{{#fields}}{{#Required}}        - {{name}}
+{{/Required}}{{/fields}}      properties:
+        id:
+          type: string
+{{#fields}}        {{name}}:
+          type: {{oasType}}
+{{#oasFormat}}          format: {{oasFormat}}
+{{/oasFormat}}{{/fields}}

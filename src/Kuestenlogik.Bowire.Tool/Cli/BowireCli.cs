@@ -209,6 +209,8 @@ internal static class BowireCli
         root.Add(ExportCommand.Build());
         root.Add(DiffCommand.Build());
         root.Add(LintCommand.Build());
+        // #177 - a CRUD service from a sentence or a spec.
+        root.Add(ScaffoldCommand.Build());
         root.Add(WorkspaceCommand.Build());
         // #97 — the operator's side of per-identity storage: what is on disk,
         // and moving a single-user install's data into a named subject's slot.

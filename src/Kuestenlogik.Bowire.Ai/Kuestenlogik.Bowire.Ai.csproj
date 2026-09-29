@@ -26,6 +26,8 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+    <!-- #177 - the assistant writes scaffold specs; the templates live there. -->
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Scaffold\Kuestenlogik.Bowire.Scaffold.csproj" />
     <PackageReference Include="Microsoft.Extensions.AI" />
     <PackageReference Include="OllamaSharp" />
   </ItemGroup>

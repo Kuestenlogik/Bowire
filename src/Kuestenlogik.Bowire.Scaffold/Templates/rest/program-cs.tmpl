@@ -1,0 +1,60 @@
+// {{Service}} — scaffolded by Bowire from the spec in bowire-scaffold.json.
+// The handlers keep {{plural}} in memory, so every restart starts empty:
+// replace the store with your own persistence and keep the routes.
+using System.Collections.Concurrent;
+
+var builder = WebApplication.CreateBuilder(args);
+builder.WebHost.UseUrls("{{BaseUrl}}");
+var app = builder.Build();
+
+var store = new ConcurrentDictionary<string, {{Entity}}>();
+var {{routeVar}} = app.MapGroup("/{{route}}").WithTags("{{route}}");
+
+{{routeVar}}.MapGet("/", () => store.Values.OrderBy(x => x.Id, StringComparer.Ordinal))
+    .WithName("list{{Plural}}");
+
+{{routeVar}}.MapPost("/", ({{Entity}}Input input) =>
+{
+    var missing = Missing(input);
+    if (missing.Count > 0) return Results.ValidationProblem(missing);
+    var item = new {{Entity}}(Guid.NewGuid().ToString("n"){{#fields}}, input.{{Pascal}}{{/fields}});
+    store[item.Id] = item;
+    return Results.Created($"/{{route}}/{item.Id}", item);
+}).WithName("create{{Entity}}");
+
+{{routeVar}}.MapGet("/{id}", (string id) =>
+    store.TryGetValue(id, out var item) ? Results.Ok(item) : Results.NotFound())
+    .WithName("get{{Entity}}");
+
+{{routeVar}}.MapPut("/{id}", (string id, {{Entity}}Input input) =>
+{
+    if (!store.ContainsKey(id)) return Results.NotFound();
+    var missing = Missing(input);
+    if (missing.Count > 0) return Results.ValidationProblem(missing);
+    var item = new {{Entity}}(id{{#fields}}, input.{{Pascal}}{{/fields}});
+    store[id] = item;
+    return Results.Ok(item);
+}).WithName("update{{Entity}}");
+
+{{routeVar}}.MapDelete("/{id}", (string id) =>
+    store.TryRemove(id, out _) ? Results.NoContent() : Results.NotFound())
+    .WithName("delete{{Entity}}");
+
+// The contract this stub implements, for Bowire to discover it from.
+app.MapGet("/openapi.yaml", () =>
+    Results.File(Path.Combine(AppContext.BaseDirectory, "openapi.yaml"), "application/yaml"));
+
+app.Run();
+
+static Dictionary<string, string[]> Missing({{Entity}}Input input)
+{
+    var missing = new Dictionary<string, string[]>();
+{{#fields}}{{#Required}}    if (input.{{Pascal}} is null) missing["{{name}}"] = ["{{name}} is required"];
+{{/Required}}{{/fields}}    return missing;
+}
+
+/// <summary>What a client sends to create or replace {{aEntity}}.</summary>
+public sealed record {{Entity}}Input({{#fields}}{{csNullable}} {{Pascal}}{{^Last}}, {{/Last}}{{/fields}});
+
+/// <summary>A stored {{entityWords}}.</summary>
+public sealed record {{Entity}}(string Id{{#fields}}, {{csNullable}} {{Pascal}}{{/fields}});

@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- #177 — service scaffolding. An entity spec goes in; a schema
+         (OpenAPI or .proto), a runnable C# server stub, a workbench
+         collection and a `bowire test` smoke test come out. The output is
+         a pure function of the spec and the checked-in templates below, so
+         it is the same whichever model — or no model — wrote the spec. -->
+    <Description>Bowire service scaffolding — turns an entity spec into a schema (OpenAPI 3 or proto3), a runnable C# server stub, a workbench collection and a smoke test, from checked-in templates. The AI assistant can write the spec from a sentence; without a model a deterministic parser does.</Description>
+    <PackageId>Kuestenlogik.Bowire.Scaffold</PackageId>
+    <PackageTags>bowire;scaffold;openapi;grpc;codegen;workbench;plugin</PackageTags>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.Scaffold.Tests" />
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.Ai" />
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.Tool" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- The templates are the reproducibility promise: generation reads
+         nothing else. -->
+    <EmbeddedResource Include="Templates\**\*.tmpl" />
+    <EmbeddedResource Include="wwwroot\js\scaffold.js"
+                      LogicalName="Kuestenlogik.Bowire.Scaffold.wwwroot.js.scaffold.js" />
+  </ItemGroup>
+</Project>
