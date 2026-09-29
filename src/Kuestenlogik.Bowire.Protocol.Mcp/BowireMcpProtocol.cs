@@ -50,6 +50,7 @@ namespace Kuestenlogik.Bowire.Protocol.Mcp;
 public sealed class BowireMcpProtocol : IBowireProtocol, IBowireDiscoveryDiagnostics
 {
     private static readonly JsonSerializerOptions s_indented = new() { WriteIndented = true };
+    private static readonly JsonSerializerOptions s_web = new(JsonSerializerDefaults.Web);
 
     // Tool definitions captured by the last successful DiscoverAsync, keyed
     // by normalised server URL. InvokeAsync builds a *fresh* McpClient per
@@ -278,16 +279,132 @@ public sealed class BowireMcpProtocol : IBowireProtocol, IBowireDiscoveryDiagnos
         }
     }
 
-    public IAsyncEnumerable<string> InvokeStreamAsync(
+    /// <summary>
+    /// A tool call with what the server says while it runs (#46): every
+    /// <c>notifications/progress</c> and <c>notifications/message</c> the
+    /// server sends during the call is a frame, and the tool's result is the
+    /// last one. A server that sends nothing yields the result alone.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Each frame is <c>{ "event": …, "data": … }</c> — <c>progress</c>,
+    /// <c>log</c>, <c>result</c>, or <c>error</c> when the call failed.
+    /// Resources and prompts have no progress; they yield their result as
+    /// the one frame.
+    /// </para>
+    /// <para>
+    /// The notifications come through the SDK's handlers, which own the
+    /// transport — not through a raw SSE parser. Logging is only asked for
+    /// when the server declares the capability, since <c>logging/setLevel</c>
+    /// against one that doesn't is an error, not a no-op.
+    /// </para>
+    /// </remarks>
+    public async IAsyncEnumerable<string> InvokeStreamAsync(
         string serverUrl, string service, string method,
         List<string> jsonMessages, bool showInternalServices,
-        Dictionary<string, string>? metadata = null, CancellationToken ct = default)
+        Dictionary<string, string>? metadata = null,
+        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct = default)
     {
-        // MCP tool calls are unary in the request/response sense. Server
-        // notifications (progress, log entries) are a separate seam the
-        // SDK exposes via handlers — when we wire them through Bowire's
-        // streaming surface this method will fan them out.
-        return AsyncEnumerable.Empty<string>();
+        if (service != "Tools")
+        {
+            var unary = await InvokeAsync(serverUrl, service, method, jsonMessages, showInternalServices, metadata, ct).ConfigureAwait(false);
+            yield return unary.Status == "OK"
+                ? Frame("result", JsonDocument.Parse(unary.Response!).RootElement)
+                : Frame("error", JsonSerializer.SerializeToElement(new { message = unary.Status }));
+            yield break;
+        }
+
+        var frames = System.Threading.Channels.Channel.CreateUnbounded<string>(
+            new System.Threading.Channels.UnboundedChannelOptions { SingleReader = true });
+
+        McpClient client;
+        string? connectFailure = null;
+        try
+        {
+            client = await CreateClientAsync(serverUrl, metadata, ct).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            client = null!;
+            connectFailure = ex.Message;
+        }
+        if (connectFailure is not null)
+        {
+            yield return Frame("error", JsonSerializer.SerializeToElement(new { message = connectFailure }));
+            yield break;
+        }
+
+        await using (client)
+        {
+            if (_knownTools.TryGetValue(NormalizeUrl(serverUrl), out var known) && known.Count > 0)
+                PrimeToolCache(client, known);
+
+            // MCP's logging is deprecated as of spec 2026-07-28 (SEP-2577), but
+            // servers built on earlier revisions still send it, and a workbench
+            // that inspects them should show what they say. So Bowire listens,
+            // and asks for it only where a server declares the capability.
+#pragma warning disable MCP9005
+            await using var logs = client.RegisterNotificationHandler(
+                NotificationMethods.LoggingMessageNotification,
+                (notification, _) =>
+                {
+                    frames.Writer.TryWrite(Frame("log", notification.Params is null ? null : JsonSerializer.SerializeToElement(notification.Params)));
+                    return ValueTask.CompletedTask;
+                });
+
+            if (client.ServerCapabilities?.Logging is not null)
+            {
+                try
+                {
+                    await client.SetLoggingLevelAsync(LoggingLevel.Debug, cancellationToken: ct).ConfigureAwait(false);
+                }
+                catch (Exception ex) when (ex is McpException or HttpRequestException)
+                {
+                    // The call still runs; it just says less while it does.
+                }
+            }
+#pragma warning restore MCP9005
+
+            var call = Task.Run(async () =>
+            {
+                try
+                {
+                    var result = await client.CallToolAsync(
+                        method, ParseArguments(jsonMessages),
+                        new FrameProgress(frames.Writer), cancellationToken: ct).ConfigureAwait(false);
+                    frames.Writer.TryWrite(Frame("result", JsonSerializer.SerializeToElement(result)));
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    frames.Writer.TryWrite(Frame("error", JsonSerializer.SerializeToElement(new { message = ex.Message })));
+                }
+                finally
+                {
+                    frames.Writer.TryComplete();
+                }
+            }, ct);
+
+            await foreach (var frame in frames.Reader.ReadAllAsync(ct).ConfigureAwait(false))
+                yield return frame;
+            await call.ConfigureAwait(false);
+        }
+    }
+
+    private static string Frame(string kind, JsonElement? data) =>
+        JsonSerializer.Serialize(new { @event = kind, data });
+
+    /// <summary>
+    /// Writes each progress report straight to the frame channel, on the
+    /// thread that reports it. <see cref="Progress{T}"/> would post it to the
+    /// thread pool instead, and a progress frame could then arrive after the
+    /// result it belongs before.
+    /// </summary>
+    private sealed class FrameProgress(System.Threading.Channels.ChannelWriter<string> writer) : IProgress<ProgressNotificationValue>
+    {
+        public void Report(ProgressNotificationValue value) =>
+            // camelCase like the protocol types around it; this one carries no
+            // JSON names of its own.
+            writer.TryWrite(Frame("progress", JsonSerializer.SerializeToElement(value, s_web)));
     }
 
     public Task<IBowireChannel?> OpenChannelAsync(

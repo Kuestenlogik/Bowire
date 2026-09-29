@@ -92,19 +92,22 @@ public sealed class BowireMcpProtocolTests
     }
 
     [Fact]
-    public async Task InvokeStreamAsync_Yields_Nothing_Because_Mcp_Is_Unary()
+    public async Task InvokeStreamAsync_Against_An_Unreachable_Server_Is_One_Error_Frame()
     {
+        // #46 — the stream used to be empty by design. Now it carries the
+        // call; a call that cannot be made says why, once.
         var protocol = new BowireMcpProtocol();
 
         var collected = new List<string>();
         await foreach (var item in protocol.InvokeStreamAsync(
-            "http://localhost:5000", "Tools", "x", ["{}"], false, null,
+            "http://127.0.0.1:1", "Tools", "x", ["{}"], false, null,
             TestContext.Current.CancellationToken))
         {
             collected.Add(item);
         }
 
-        Assert.Empty(collected);
+        using var frame = System.Text.Json.JsonDocument.Parse(Assert.Single(collected));
+        Assert.Equal("error", frame.RootElement.GetProperty("event").GetString());
     }
 
     [Fact]
