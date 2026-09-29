@@ -4295,6 +4295,27 @@ var railName = opts.railLabel || t('prereq.thisRail');
         });
     }
 
+    // #669 — the ask for a star and a watch, where someone is using
+    // Bowire. A plain link and nothing else: no count fetched from GitHub,
+    // no request until the reader clicks — outbound calls stay opt-in.
+    // Watching is asked for in the same breath as starring: a watcher hears
+    // about every release.
+    var BOWIRE_REPO_URL = 'https://github.com/Kuestenlogik/Bowire';
+
+    function renderStarAsk(variant) {
+        var link = el('a', {
+            className: 'bowire-star-ask-link',
+            href: BOWIRE_REPO_URL,
+            target: '_blank',
+            rel: 'noopener noreferrer'
+        });
+        link.appendChild(el('span', { className: 'bowire-star-ask-icon', innerHTML: svgIcon('star'), 'aria-hidden': 'true' }));
+        link.appendChild(document.createTextNode(t('starAsk.link')));
+        return el('div', { className: 'bowire-star-ask bowire-star-ask-' + (variant || 'inline') },
+            el('span', { className: 'bowire-star-ask-text', textContent: t('starAsk.text') }),
+            link);
+    }
+
     function svgIcon(name) {
         const icons = {
             search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>',

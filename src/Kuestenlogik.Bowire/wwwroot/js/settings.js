@@ -4116,6 +4116,9 @@ textContent: t(discoveryState.entryCount === 1
             )
         ));
 
+        // #669 — the one place everybody who opens it is a current user.
+        section.appendChild(renderStarAsk('about'));
+
         // ---- Runtime stats ----
         section.appendChild(el('h4', { className: 'bowire-settings-about-subhead', textContent: t('settings.about.runtime') }));
 

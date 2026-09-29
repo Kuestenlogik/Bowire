@@ -4,6 +4,7 @@
 [![codecov](https://codecov.io/gh/Kuestenlogik/Bowire/branch/main/graph/badge.svg)](https://codecov.io/gh/Kuestenlogik/Bowire)
 [![NuGet](https://img.shields.io/nuget/v/Kuestenlogik.Bowire)](https://www.nuget.org/packages/Kuestenlogik.Bowire)
 [![License](https://img.shields.io/github/license/Kuestenlogik/Bowire)](https://github.com/Kuestenlogik/Bowire/blob/main/LICENSE)
+[![GitHub stars](https://img.shields.io/github/stars/Kuestenlogik/Bowire?style=flat&label=stars)](https://github.com/Kuestenlogik/Bowire/stargazers)
 
 **The multi-protocol API workbench.** gRPC, REST, GraphQL, JSON-RPC, SignalR, WebSocket, SSE, MQTT, Socket.IO, MCP, OData, AsyncAPI, AMQP, Kafka, Akka.NET, NATS, SOAP, Pulsar — run against any service URL with zero code changes.
 

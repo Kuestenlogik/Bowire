@@ -34,8 +34,23 @@
             <svg class="cta-snippet-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
             Stay in the loop
           </div>
+          <!-- #669 — the ask gets its own affordance rather than one link
+               among several. The counts are baked in at build time
+               (scripts/site/build-activity-snapshot.mjs); without a
+               snapshot the buttons stand without numbers. -->
+          {%- assign act = site.data.activity -%}
+          <div class="cta-star-ask">
+            <a class="cta-star-btn" href="https://github.com/Kuestenlogik/Bowire/stargazers" target="_blank" rel="noopener">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              Star{% if act.stars and act.stars > 0 %} <span class="cta-star-count">{{ act.stars }}</span>{% endif %}
+            </a>
+            <a class="cta-star-btn" href="https://github.com/Kuestenlogik/Bowire/subscription" target="_blank" rel="noopener">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+              Watch{% if act.watchers and act.watchers > 0 %} <span class="cta-star-count">{{ act.watchers }}</span>{% endif %}
+            </a>
+          </div>
+          <p class="cta-star-note">A star helps others find Bowire. Watching brings you every release.</p>
           <ul class="cta-link-list">
-            <li><a href="https://github.com/Kuestenlogik/Bowire" target="_blank" rel="noopener">Star &amp; watch on GitHub &rarr;</a></li>
             <li><a href="https://github.com/Kuestenlogik/Bowire/blob/main/ROADMAP.md" target="_blank" rel="noopener">Read the roadmap &rarr;</a></li>
             <li><a href="https://github.com/Kuestenlogik/Bowire/releases" target="_blank" rel="noopener">Latest releases &rarr;</a></li>
           </ul>

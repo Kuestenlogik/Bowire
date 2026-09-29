@@ -27883,3 +27883,57 @@ not as the
         flex-wrap: wrap;
     }
 }
+
+/* #669 - the star and watch ask. */
+.bowire-star-ask {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 10px;
+    font-size: 12px;
+    color: var(--bowire-text-secondary);
+}
+.bowire-star-ask-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border: 1px solid var(--bowire-border-subtle);
+    border-radius: var(--bowire-radius-sm);
+    color: var(--bowire-text);
+    text-decoration: none;
+    white-space: nowrap;
+}
+.bowire-star-ask-link:hover {
+    border-color: var(--bowire-accent);
+}
+.bowire-star-ask-icon {
+    display: inline-flex;
+    width: 14px;
+    height: 14px;
+    color: var(--bowire-warning, #fbbf24);
+}
+.bowire-star-ask-icon svg {
+    width: 14px;
+    height: 14px;
+}
+.bowire-star-ask-about {
+    margin: 12px 0 4px;
+    padding: 10px 12px;
+    background: var(--bowire-bg);
+    border: 1px solid var(--bowire-border-subtle);
+    border-radius: var(--bowire-radius-md);
+}
+.bowire-star-ask-home {
+    justify-content: center;
+    margin-top: 24px;
+}
+.bowire-star-ask-help .bowire-star-ask-link {
+    white-space: normal;
+}
+.bowire-star-ask-help {
+    margin: 16px 8px 8px;
+    padding-top: 12px;
+    border-top: 1px solid var(--bowire-border-subtle);
+    font-size: 11px;
+}

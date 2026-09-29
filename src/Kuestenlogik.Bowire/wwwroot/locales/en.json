@@ -3800,5 +3800,7 @@
   "scaffold.overwriteTitle": "Replace the scaffold?",
   "scaffold.overwriteBody": "{folder} already has files. Replace the ones with the same names?",
   "scaffold.overwrite": "Replace",
-  "scaffold.done": "Scaffolded: {count} files in {folder} — the schema is uploaded and the collection added."
+  "scaffold.done": "Scaffolded: {count} files in {folder} — the schema is uploaded and the collection added.",
+  "starAsk.text": "Bowire useful? Star it on GitHub — and watch it to hear about each release.",
+  "starAsk.link": "Star and watch on GitHub"
 }

@@ -814,8 +814,10 @@ internal static class BowireCli
             {
                 var cli = BuildCliOptions(pr, url, plaintext, verbose, new Option<bool>("--compact"), null, null, null);
                 ApplyDescriptorSet(pr, descriptorSet, cli);
-                return await CliHandler.DiscoverAsync(cli,
+                var discovered = await CliHandler.DiscoverAsync(cli,
                     pr.InvocationConfiguration.Output, pr.InvocationConfiguration.Error).ConfigureAwait(false);
+                StarHint.MaybeShow(discovered, cli.Compact, pr.InvocationConfiguration.Error);
+                return discovered;
             }
         });
         return cmd;
@@ -964,8 +966,11 @@ internal static class BowireCli
                 ApplyDescriptorSet(pr, grpcDescriptorSet, cli);
                 cli.Vars.AddRange(pr.GetValue(vars) ?? []);
                 cli.VarFiles.AddRange(pr.GetValue(varFiles) ?? []);
-                return await CliHandler.CallAsync(cli,
+                var called = await CliHandler.CallAsync(cli,
                     pr.InvocationConfiguration.Output, pr.InvocationConfiguration.Error, ct).ConfigureAwait(false);
+                // #669 - once per machine, after a call that worked.
+                StarHint.MaybeShow(called, cli.Compact, pr.InvocationConfiguration.Error);
+                return called;
             }
         });
         return cmd;

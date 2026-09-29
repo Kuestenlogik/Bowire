@@ -3799,5 +3799,7 @@
   "scaffold.overwriteTitle": "Scaffold ersetzen?",
   "scaffold.overwriteBody": "In {folder} liegen schon Dateien. Die gleichnamigen ersetzen?",
   "scaffold.overwrite": "Ersetzen",
-  "scaffold.done": "Erzeugt: {count} Dateien in {folder} — das Schema ist hochgeladen, die Sammlung angelegt."
+  "scaffold.done": "Erzeugt: {count} Dateien in {folder} — das Schema ist hochgeladen, die Sammlung angelegt.",
+  "starAsk.text": "Bowire nützlich? Ein Stern auf GitHub hilft — und wer beobachtet („Watch“), erfährt von jedem Release.",
+  "starAsk.link": "Auf GitHub Stern geben und beobachten"
 }

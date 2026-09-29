@@ -154,6 +154,12 @@ async function main() {
       last_release_at: lastRelease ? (lastRelease.published_at || lastRelease.created_at) : null,
       last_push_relative: relativeTime(repo.pushed_at, generatedAt.getTime()),
       last_push_at: repo.pushed_at || null,
+      // #669 — shown next to the star-and-watch ask on the site. Read at
+      // build time like everything else here: no visitor's browser calls
+      // api.github.com. subscribers_count is the watcher count;
+      // watchers_count is, confusingly, the star count again.
+      stars: Number.isInteger(repo.stargazers_count) ? repo.stargazers_count : null,
+      watchers: Number.isInteger(repo.subscribers_count) ? repo.subscribers_count : null,
       releases: items,
     };
   } catch (err) {
@@ -167,6 +173,8 @@ async function main() {
       last_release_at: null,
       last_push_relative: null,
       last_push_at: null,
+      stars: null,
+      watchers: null,
       releases: [],
     };
   }

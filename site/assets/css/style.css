@@ -9446,3 +9446,43 @@ select.ai-picker-input {
         gap: 4px;
     }
 }
+
+/* #669 - the star-and-watch ask in "Stay in the loop". */
+.cta-star-ask {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 4px 0 6px;
+}
+.cta-star-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    text-decoration: none;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+}
+.cta-star-btn:hover {
+    border-color: var(--accent);
+}
+.cta-star-btn svg {
+    color: var(--warning);
+}
+.cta-star-count {
+    padding: 0 7px;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--text-secondary);
+}
+.cta-star-note {
+    margin: 0 0 12px;
+    font-size: 13px;
+    color: var(--text-secondary);
+}

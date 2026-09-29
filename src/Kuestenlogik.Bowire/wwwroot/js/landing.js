@@ -829,6 +829,8 @@
             }));
         }
         parent.appendChild(footer);
+        // #669 — under tour and docs on Home, quiet: the ask, not a gate.
+        parent.appendChild(renderStarAsk('home'));
     }
     if (typeof window !== 'undefined') {
         window.bowireRenderLandingHelpFooter = renderLandingHelpFooter;
