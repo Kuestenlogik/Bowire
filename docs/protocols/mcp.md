@@ -30,11 +30,27 @@ After the handshake (`initialize` + `notifications/initialized`), Bowire calls `
 
 | Service | Methods | Invocation |
 |---------|---------|------------|
-| **Tools** | one per discovered tool | `tools/call` with the tool arguments |
+| **Tools** | one per discovered tool | `tools/call` with the tool arguments — server-streaming: what the server reports while the tool runs, then the result |
 | **Resources** | one per resource (method name = URI) | `resources/read` |
 | **Prompts** | one per prompt | `prompts/get` with the prompt arguments |
 
 Tool input schemas (`inputSchema`, JSON Schema with `type: "object"`) are mapped to the standard form-based UI: strings become text inputs, numbers become number fields, booleans become checkboxes, arrays become repeated fields, and nested objects become message fields. Required fields are marked with an asterisk.
+
+### Progress and log messages during a tool call
+
+A tool call is one request, but the server can say things while it runs. Bowire shows them live: each tool is a server-streaming method, and the stream carries one frame per message, in the order the server sends them, with the tool's result as the last frame:
+
+```json
+{ "event": "progress", "data": { "progress": 2, "total": 3 } }
+{ "event": "log",      "data": { "level": "info", "data": "step 2" } }
+{ "event": "result",   "data": { "content": [ { "type": "text", "text": "counted 3" } ] } }
+```
+
+- **`progress`** — `notifications/progress` for this call; Bowire sends a progress token with every `tools/call`, so a server that reports progress can.
+- **`log`** — `notifications/message`. MCP deprecated logging in spec 2026-07-28 (SEP-2577), but servers built on earlier revisions still send it, so Bowire listens — and asks for it (`logging/setLevel`) only when the server declares the `logging` capability.
+- **`result`** — the `tools/call` result exactly as the server returned it; a tool's own failure is a result with `isError: true`. **`error`** means the call itself could not be made.
+
+A tool that says nothing is a stream of one frame, its result. Resources and prompts have no progress and answer with a single frame too.
 
 ### Sample target
 

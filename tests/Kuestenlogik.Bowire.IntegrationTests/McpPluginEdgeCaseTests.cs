@@ -135,13 +135,14 @@ public sealed class McpPluginEdgeCaseTests
     }
 
     [Fact]
-    public async Task InvokeStreamAsync_Yields_Empty_Sequence()
+    public async Task InvokeStreamAsync_Against_No_Server_Is_One_Error_Frame()
     {
-        // Streaming surface is an empty IAsyncEnumerable until the SDK
-        // exposes the notification seam.
+        // #46 — the stream used to be empty until the SDK's notification
+        // seam was wired. It carries the call now, so a call that cannot be
+        // made says so, once, instead of ending silently.
         var protocol = new BowireMcpProtocol();
-        var emitted = 0;
-        await foreach (var _ in protocol.InvokeStreamAsync(
+        var frames = new List<string>();
+        await foreach (var frame in protocol.InvokeStreamAsync(
             "http://localhost:1",
             service: "Tools",
             method: "x",
@@ -150,9 +151,10 @@ public sealed class McpPluginEdgeCaseTests
             metadata: null,
             ct: TestContext.Current.CancellationToken))
         {
-            emitted++;
+            frames.Add(frame);
         }
-        Assert.Equal(0, emitted);
+        using var doc = System.Text.Json.JsonDocument.Parse(Assert.Single(frames));
+        Assert.Equal("error", doc.RootElement.GetProperty("event").GetString());
     }
 
     [Fact]

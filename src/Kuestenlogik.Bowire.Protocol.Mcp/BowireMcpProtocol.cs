@@ -503,14 +503,18 @@ public sealed class BowireMcpProtocol : IBowireProtocol, IBowireDiscoveryDiagnos
 
         if (tools.Count == 0) return;
 
+        // Server-streaming (#46): a tool call is one request, but the server
+        // can report progress and log while it runs. The stream carries those
+        // as they come and the tool's result as the last frame; a tool that
+        // says nothing is a stream of one.
         var methods = tools.Select(tool => new BowireMethodInfo(
             Name: tool.Name,
             FullName: "Tools/" + tool.Name,
             ClientStreaming: false,
-            ServerStreaming: false,
+            ServerStreaming: true,
             InputType: MapToolInputSchema(tool),
             OutputType: new BowireMessageInfo("ToolResult", "mcp.ToolResult", []),
-            MethodType: "Unary")
+            MethodType: "ServerStreaming")
         {
             Summary = tool.Description,
             Description = tool.Description,
@@ -520,7 +524,7 @@ public sealed class BowireMcpProtocol : IBowireProtocol, IBowireDiscoveryDiagnos
         {
             Source = "mcp",
             OriginUrl = serverUrl,
-            Description = "MCP tools — invoke with the same form-based UI as gRPC unary methods.",
+            Description = "MCP tools — invoke with the form-based UI; progress and log messages the server sends during a call stream in live, the result last.",
         });
     }
 
