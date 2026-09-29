@@ -401,10 +401,24 @@ public sealed class BowireMcpProtocol : IBowireProtocol, IBowireDiscoveryDiagnos
     /// </summary>
     private sealed class FrameProgress(System.Threading.Channels.ChannelWriter<string> writer) : IProgress<ProgressNotificationValue>
     {
-        public void Report(ProgressNotificationValue value) =>
-            // camelCase like the protocol types around it; this one carries no
-            // JSON names of its own.
-            writer.TryWrite(Frame("progress", JsonSerializer.SerializeToElement(value, s_web)));
+        private readonly Lock _gate = new();
+        private float? _last;
+
+        public void Report(ProgressNotificationValue value)
+        {
+            // The SDK hands notifications to handlers concurrently, so a
+            // progress value can arrive after a later one. MCP progress only
+            // ever increases; one that does not is stale, and passing it on
+            // would make a progress bar step backwards.
+            lock (_gate)
+            {
+                if (_last is { } last && value.Progress <= last) return;
+                _last = value.Progress;
+                // camelCase like the protocol types around it; this one
+                // carries no JSON names of its own.
+                writer.TryWrite(Frame("progress", JsonSerializer.SerializeToElement(value, s_web)));
+            }
+        }
     }
 
     public Task<IBowireChannel?> OpenChannelAsync(

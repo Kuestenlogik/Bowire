@@ -41,13 +41,20 @@ public sealed class McpNotificationStreamTests
     private static string Kind(JsonElement frame) => frame.GetProperty("event").GetString()!;
 
     [Fact]
-    public async Task Progress_Arrives_In_Order_And_The_Result_Is_The_Last_Frame()
+    public async Task Progress_Only_Rises_And_The_Result_Is_The_Last_Frame()
     {
         await using var server = await McpTestServer.StartAsync(Ct);
         var frames = await Stream(server.Url, "Tools", "count", """{ "steps": 3 }""");
 
-        Assert.Equal(["progress", "progress", "progress", "result"], frames.Where(f => Kind(f) != "log").Select(Kind));
-        Assert.Equal([1d, 2d, 3d], frames.Where(f => Kind(f) == "progress").Select(f => f.GetProperty("data").GetProperty("progress").GetDouble()));
+        // The SDK dispatches notifications concurrently: a stale value can
+        // arrive after a newer one and is dropped, so what comes through only
+        // ever rises and ends at the last step.
+        var progress = frames.Where(f => Kind(f) == "progress").Select(f => f.GetProperty("data").GetProperty("progress").GetDouble()).ToList();
+        Assert.NotEmpty(progress);
+        Assert.Equal(progress.Order(), progress);
+        Assert.Equal(progress.Distinct().Count(), progress.Count);
+        Assert.Equal(3d, progress[^1]);
+        Assert.Equal("result", Kind(frames.Last(f => Kind(f) != "log")));
         Assert.Contains("counted 3", frames[^1].GetProperty("data").GetRawText(), StringComparison.Ordinal);
     }
 
