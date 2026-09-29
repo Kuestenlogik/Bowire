@@ -54,16 +54,16 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### M2 — MCP completion + agent hub *(due 2026-11-24)*
 
-**4/7 done** · 3 backlog
+**5/7 done** · 2 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
-| [177](https://github.com/Kuestenlogik/Bowire/issues/177) | Bowire | [AI-assisted service scaffolding — schema + stub + collection + test](#issue-kuestenlogik-bowire-177) | ⬜ Backlog | `area:workbench` |
 | [613](https://github.com/Kuestenlogik/Bowire/issues/613) | Bowire | [Move the VS Code Marketplace publish off PATs to Entra ID before 2026-12-01](#issue-kuestenlogik-bowire-613) | ⬜ Backlog | `area:cli` |
 | [639](https://github.com/Kuestenlogik/Bowire/issues/639) | Bowire | [SCIM: live Okta and Entra ID provisioning round-trips](#issue-kuestenlogik-bowire-639) | ⬜ Backlog | `area:workbench` |
 | [46](https://github.com/Kuestenlogik/Bowire/issues/46) | Bowire | [MCP server-side notifications via SDK notification handlers](#issue-kuestenlogik-bowire-46) | ✅ Done | `area:mcp` |
 | [110](https://github.com/Kuestenlogik/Bowire/issues/110) | Bowire | [Site: surface the AI assistant in the launch wizard + quickstart](#issue-kuestenlogik-bowire-110) | ✅ Done | `area:site` |
 | [128](https://github.com/Kuestenlogik/Bowire/issues/128) | Bowire | [Bowire Agent — register embedded instances with a central hub](#issue-kuestenlogik-bowire-128) | ✅ Done | `area:multi` |
+| [177](https://github.com/Kuestenlogik/Bowire/issues/177) | Bowire | [AI-assisted service scaffolding — schema + stub + collection + test](#issue-kuestenlogik-bowire-177) | ✅ Done | `area:workbench` |
 | [313](https://github.com/Kuestenlogik/Bowire/issues/313) | Bowire | [Parallel sessions Phase 3 — hardening (allowlist + audit log + agent-hub discovery)](#issue-kuestenlogik-bowire-313) | ✅ Done | `area:security` |
 
 ### M3 — Discoverability: the pitch, the directories, the star ask *(due 2026-12-14)*
@@ -381,12 +381,6 @@ Ein intermittierender Fehlschlag, der seit dem #314-Kommentar als „unrelated s
 
 ### M2 — MCP completion + agent hub *(due 2026-11-24)*
 
-#### <a id="issue-kuestenlogik-bowire-177"></a>⬜ Backlog · [#177](https://github.com/Kuestenlogik/Bowire/issues/177) AI-assisted service scaffolding — schema + stub + collection + test
-
-> `area:workbench`
-
-The AI assistant today is reactive: it answers questions, surfaces hints, helps explain. The natural next step for a "build APIs faster" tool is generative — "scaffold a CRUD service for this Entity" → out drops a `.proto` + handler stubs + an example collection + a smoke-test. [[more]](https://github.com/Kuestenlogik/Bowire/issues/177)
-
 #### <a id="issue-kuestenlogik-bowire-613"></a>⬜ Backlog · [#613](https://github.com/Kuestenlogik/Bowire/issues/613) Move the VS Code Marketplace publish off PATs to Entra ID before 2026-12-01
 
 > `area:cli`
@@ -416,6 +410,12 @@ v1.9 ships the AI workbench in a real way — chat grounded in workbench state (
 > `area:multi`
 
 **One-liner.** Bowire instances embedded in apps (e.g. a Surgewave broker) register themselves with a central Bowire **hub** so an operator sees every discovery / call / mock across the fleet in one UI, instead of poking around N per-app endpoints. [[more]](https://github.com/Kuestenlogik/Bowire/issues/128)
+
+#### <a id="issue-kuestenlogik-bowire-177"></a>✅ Done · [#177](https://github.com/Kuestenlogik/Bowire/issues/177) AI-assisted service scaffolding — schema + stub + collection + test
+
+> `area:workbench`
+
+The AI assistant today is reactive: it answers questions, surfaces hints, helps explain. The natural next step for a "build APIs faster" tool is generative — "scaffold a CRUD service for this Entity" → out drops a `.proto` + handler stubs + an example collection + a smoke-test. [[more]](https://github.com/Kuestenlogik/Bowire/issues/177)
 
 #### <a id="issue-kuestenlogik-bowire-313"></a>✅ Done · [#313](https://github.com/Kuestenlogik/Bowire/issues/313) Parallel sessions Phase 3 — hardening (allowlist + audit log + agent-hub discovery)
 
