@@ -251,6 +251,16 @@ public sealed class BowireHubTests
         Assert.Equal(expected, BowireAgentPublisher.DeriveCallbackUrl([address], basePath));
     }
 
+    [Theory]
+    [InlineData("https://hub.internal", "https://hub.internal/hub")]
+    [InlineData("https://hub.internal/", "https://hub.internal/hub")]
+    [InlineData("https://hub.internal/hub", "https://hub.internal/hub")]
+    [InlineData("https://hub.internal/hub/", "https://hub.internal/hub")]
+    public void The_hub_url_may_or_may_not_end_in_hub(string hubUrl, string expected)
+    {
+        Assert.Equal(expected, BowireAgentPublisher.HubBaseFor(hubUrl));
+    }
+
     [Fact]
     public void A_wildcard_address_becomes_the_machine_name_and_https_wins()
     {

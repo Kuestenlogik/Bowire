@@ -72,7 +72,7 @@ app.MapBowire(options =>
 
 | `Bowire:Agent:*` | Default | |
 |---|---|---|
-| `HubUrl` | — | The hub's base URL. Without it the Bowire is no agent. |
+| `HubUrl` | — | The hub's base URL, with or without the trailing `/hub`. Without it the Bowire is no agent. |
 | `Token` | — | The hub's token. |
 | `ServiceName` | the application name | The name the hub lists. |
 | `InstanceId` | the machine name | Tells instances of one service apart. |

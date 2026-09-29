@@ -41,7 +41,17 @@ internal sealed partial class BowireAgentPublisher : IAsyncDisposable
     /// <summary>The id the hub gave this agent, once a registration went through.</summary>
     public string? AgentId => _agentId;
 
-    private string HubBase => _options.HubUrl!.TrimEnd('/') + "/hub";
+    private string HubBase => HubBaseFor(_options.HubUrl!);
+
+    /// <summary>
+    /// The hub's <c>/hub</c> root. Takes the hub's base URL, and also one
+    /// that already ends in <c>/hub</c> — both get written.
+    /// </summary>
+    internal static string HubBaseFor(string hubUrl)
+    {
+        var trimmed = hubUrl.TrimEnd('/');
+        return trimmed.EndsWith("/hub", StringComparison.OrdinalIgnoreCase) ? trimmed : trimmed + "/hub";
+    }
 
     /// <summary>Register now, then keep heartbeating until <see cref="StopAsync"/>.</summary>
     public void Start()
