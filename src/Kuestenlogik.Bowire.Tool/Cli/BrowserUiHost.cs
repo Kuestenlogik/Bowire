@@ -279,7 +279,7 @@ internal static class BrowserUiHost
     /// otherwise only meets as a 403 on the first OAuth token call. Empty when
     /// nothing is restricted.
     /// </summary>
-    internal static IReadOnlyList<string> TargetLockNotice(BrowserUiOptions ui)
+    internal static List<string> TargetLockNotice(BrowserUiOptions ui)
     {
         if (!ui.LockServerUrl && ui.AllowedServerUrls.Count == 0 && ui.AllowedAuthUrls.Count == 0)
             return [];
