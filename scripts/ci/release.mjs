@@ -110,10 +110,6 @@ if (command === 'notes' || command === 'cut') {
   if (unplanned.length) console.error(`closed since ${since} without a release (this cut claims them):\n${unplanned.map(it => `  ${ref(it)} ${it.title}`).join('\n')}`);
 
   if (command === 'notes') {
-    if (existsSync(notesPath) && !flags.has('--force')) {
-      console.log(`${notesPath} exists — edit it, or pass --force to draft it again.`);
-      process.exit(0);
-    }
     // Grouped by area: the notes are read by feature, not by ticket type.
     const groups = new Map();
     for (const it of [...shipped, ...unplanned]) {
@@ -128,7 +124,15 @@ if (command === 'notes' || command === 'cut') {
       md += `## ${area}\n\n### <headline>\n\n${list.sort((a, b) => a.number - b.number).map(it => `- ${it.title} ([${ref(it)}](${it.url}))`).join('\n')}\n\n`;
     }
     mkdirSync(dirname(notesPath), { recursive: true });
-    writeFileSync(notesPath, md);
+    // Create exclusively rather than check-then-write: a draft someone is
+    // editing is never overwritten by a race, only by an explicit --force.
+    try {
+      writeFileSync(notesPath, md, { flag: flags.has('--force') ? 'w' : 'wx' });
+    } catch (e) {
+      if (e.code !== 'EEXIST') throw e;
+      console.log(`${notesPath} exists — edit it, or pass --force to draft it again.`);
+      process.exit(0);
+    }
     console.log(`→ ${notesPath}: ${shipped.length + unplanned.length} ticket(s) in ${groups.size} group(s). Write it, then: node scripts/ci/release.mjs cut ${version}`);
     process.exit(0);
   }
