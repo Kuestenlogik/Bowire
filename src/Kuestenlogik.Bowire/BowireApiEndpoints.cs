@@ -166,7 +166,7 @@ internal static class BowireApiEndpoints
             // /api/recording/session/* (Recordings). Their stores stay in
             // core, where the CLI and the replay pipeline reach them.
             .MapBowireCollectionEndpoints(options, basePath)
-            .MapBowireParallelEndpoints(basePath)
+            .MapBowireParallelEndpoints(basePath, options)
             .MapBowirePresetEndpoints(basePath)
             .MapBowireMockConfigEndpoints(basePath)
             .MapBowireProjectEndpoints(basePath)
@@ -180,7 +180,7 @@ internal static class BowireApiEndpoints
             .MapBowireIdentityEndpoints(basePath)
             .MapBowireImpersonationEndpoints(basePath)
             .MapBowireSemanticsEndpoints(basePath)
-            .MapBowireSecurityEndpoints(basePath)
+            .MapBowireSecurityEndpoints(basePath, options)
             // #311 - /api/help/* and /help/topic/{id} moved to
             // Kuestenlogik.Bowire.Help; they arrive through the seam below.
             .MapBowireCatalogueEndpoints(basePath);

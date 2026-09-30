@@ -232,7 +232,7 @@ public static class FuzzExecutor
         };
     }
 
-    private static string CombineUrl(string baseUrl, string path)
+    internal static string CombineUrl(string baseUrl, string path)
     {
         var b = baseUrl.TrimEnd('/');
         var p = string.IsNullOrEmpty(path) ? "/" : (path.StartsWith('/') ? path : "/" + path);

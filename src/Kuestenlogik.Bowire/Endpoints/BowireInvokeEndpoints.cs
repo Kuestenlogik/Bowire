@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Text.Json;
 using Kuestenlogik.Bowire.Mocking;
 using Kuestenlogik.Bowire.Models;
+using Kuestenlogik.Bowire.Net;
 using Kuestenlogik.Bowire.Semantics;
 using Kuestenlogik.Bowire.Semantics.Detectors;
 using Kuestenlogik.Bowire.Telemetry;
@@ -57,6 +58,8 @@ internal static class BowireInvokeEndpoints
 
             var rawServerUrl = ctx.Request.Query["serverUrl"].FirstOrDefault()
                 ?? BowireEndpointHelpers.ResolveServerUrl(options, ctx.Request);
+            if (BowireTargetPolicy.For(options, ctx.Request).Refuse(ctx, rawServerUrl) is { } refused)
+                return refused;
 
             // Strip an optional 'hint@url' basePath before any URL
             // manipulation runs — query-auth append, plugin selection,
@@ -352,12 +355,20 @@ internal static class BowireInvokeEndpoints
                 }
             }
 
+            var rawServerUrl = ctx.Request.Query["serverUrl"].FirstOrDefault()
+                ?? BowireEndpointHelpers.ResolveServerUrl(options, ctx.Request);
+            // Before the SSE headers go out, so the refusal is a plain
+            // problem+json 403 rather than an event stream.
+            if (BowireTargetPolicy.For(options, ctx.Request).Refuse(ctx, rawServerUrl) is { } refused)
+            {
+                await refused.ExecuteAsync(ctx);
+                return;
+            }
+
             ctx.Response.Headers.ContentType = "text/event-stream";
             ctx.Response.Headers.CacheControl = "no-cache";
             ctx.Response.Headers.Connection = "keep-alive";
 
-            var rawServerUrl = ctx.Request.Query["serverUrl"].FirstOrDefault()
-                ?? BowireEndpointHelpers.ResolveServerUrl(options, ctx.Request);
             // Strip 'hint@url' basePath; hint overrides protocolId.
             var (urlHint, urlAfterHint) = BowireServerUrl.Parse(rawServerUrl);
             var serverUrl = urlAfterHint;

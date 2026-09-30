@@ -54,7 +54,8 @@ app.MapBowire(options =>
 | `Theme` | `Dark` | `BowireTheme.Dark` or `BowireTheme.Light` |
 | `RoutePrefix` | `"bowire"` | URL path prefix for all endpoints |
 | `ServerUrl` | `null` | Override server URL (for reverse proxies) |
-| `LockServerUrl` | `false` | Prevents the server URL from being changed in the UI |
+| `LockServerUrl` | `false` | Locks the workbench to its configured server URLs — read-only in the UI and enforced server-side (other targets get `403`) |
+| `AllowedServerUrls` | empty | Extra targets the server may dial; non-empty enforces the allowlist without locking the UI |
 | `ShowInternalServices` | `false` | Show internal services like `grpc.reflection` |
 
 See also: [Keyboard Shortcuts](../features/keyboard-shortcuts.md), [Responsive & Mobile](../features/responsive-mobile.md)

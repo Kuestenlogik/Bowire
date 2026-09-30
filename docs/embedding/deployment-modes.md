@@ -109,7 +109,9 @@ When this doesn't fit:
   for that.
 - **You want a hardened production host with no extra surface.**
   Either gate aggressively (`.RequireAuthorization` + the
-  `LockServerUrl` / `DisabledPlugins` knobs in `BowireOptions`), or
+  `LockServerUrl` / `AllowedServerUrls` / `DisabledPlugins` knobs in
+  `BowireOptions` — the first two are enforced server-side, so the
+  workbench cannot be used to dial hosts you did not configure), or
   switch to interceptor-only (Mode 3 below) and drop the workbench
   surface entirely.
 

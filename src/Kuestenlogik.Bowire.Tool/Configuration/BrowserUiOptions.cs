@@ -99,6 +99,16 @@ internal sealed class BrowserUiOptions
     public List<string> ServerUrls { get; set; } = [];
 
     /// <summary>
+    /// Extra server URLs the workbench may dial besides <see cref="ServerUrls"/>.
+    /// Bound from <c>Bowire:AllowedServerUrls</c> and merged with any
+    /// <c>--allowed-server-url</c> flags by
+    /// <see cref="BowireConfiguration.BuildBrowserUiOptions"/>, then forwarded
+    /// into <see cref="BowireOptions.AllowedServerUrls"/>. Non-empty switches
+    /// server-side target enforcement on.
+    /// </summary>
+    public List<string> AllowedServerUrls { get; set; } = [];
+
+    /// <summary>
     /// Plugin ids to skip when scanning for protocol implementations.
     /// Bound from <c>Bowire:DisabledPlugins</c> in appsettings.json
     /// and merged with any <c>--disable-plugin</c> CLI flags by
@@ -154,7 +164,9 @@ internal sealed class BrowserUiOptions
 
     /// <summary>
     /// True when the user (or config) locked discovery to a fixed URL
-    /// list — the UI disables the URL input in that case.
+    /// list — the UI disables the URL input in that case, and the
+    /// server-side endpoints refuse every target outside
+    /// <see cref="ServerUrls"/> + <see cref="AllowedServerUrls"/>.
     /// </summary>
     public bool LockServerUrl => ServerUrls.Count > 0;
 

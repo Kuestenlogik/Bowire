@@ -39,6 +39,8 @@ app.Run();
 
 Discovery picks services off the host's `IServiceProvider` — REST routes, gRPC reflection, SignalR hubs, custom protocols. See [Setup → Embedded](https://bowire.io/docs/setup/embedded.html).
 
+On a shared or production host, set `options.LockServerUrl = true` (standalone: `--url`) and, if needed, `options.AllowedServerUrls` (`--allowed-server-url`). Both are enforced server-side: the workbench then refuses to dial any target outside the configured set with `403`, so it can't be used as a relay into your network. See [Options → LockServerUrl](https://bowire.io/docs/embedding/options.html).
+
 ## Documentation
 
 Everything user-facing lives at **[bowire.io](https://bowire.io)**. The most-asked entries:
