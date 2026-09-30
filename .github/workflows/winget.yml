@@ -17,8 +17,11 @@
 #
 # One-time setup before the first release:
 #   - Fork microsoft/winget-pkgs into the maintainer's GitHub account.
-#   - Create a **classic** PAT (not fine-grained) with the
-#     `public_repo` scope. Save it as repo secret WINGET_TOKEN.
+#   - Create a **classic** PAT (not fine-grained) with the scopes
+#     `public_repo` and `workflow`. Save it as repo secret WINGET_TOKEN.
+#     `workflow` is for the fork sync below: when upstream commits touch
+#     .github/workflows, GitHub refuses to sync the fork without it (that
+#     broke the v2.8.0 submission, #757).
 #
 # Classic, not fine-grained, on purpose. `wingetcreate submit` opens a
 # cross-org PR (from <maintainer>/winget-pkgs → microsoft/winget-pkgs),
@@ -273,6 +276,13 @@ jobs:
             Write-Host "::warning::Could not resolve the token owner — skipping the fork sync."
             exit 0
           }
+          # Syncing commits that change .github/workflows needs the `workflow`
+          # scope. Said up front, so the log names the fix instead of the
+          # generic "sync your fork manually" (#757).
+          $scopes = (gh api -i user 2>$null | Select-String -Pattern '^X-Oauth-Scopes:' | ForEach-Object { $_.Line })
+          if ($scopes -and $scopes -notmatch '\bworkflow\b') {
+            Write-Host "::warning::WINGET_TOKEN lacks the 'workflow' scope ($scopes). The fork sync fails whenever upstream commits touch .github/workflows. Add the scope to the classic PAT: github.com/settings/tokens → the token → tick 'workflow' → Update token (the secret stays the same)."
+          }
           Write-Host "Syncing $owner/winget-pkgs with microsoft/winget-pkgs…"
           gh repo sync "$owner/winget-pkgs" --source microsoft/winget-pkgs
           if ($LASTEXITCODE -ne 0) {
@@ -297,4 +307,4 @@ jobs:
           channel: winget
           version: ${{ steps.meta.outputs.version }}
           hint: >-
-            the `WINGET_TOKEN` secret (classic PAT, `public_repo`, not expired) and whether the winget-pkgs fork synced — see #237 for both failure modes.
+            the `WINGET_TOKEN` secret (classic PAT, scopes `public_repo` + `workflow`, not expired) and whether the winget-pkgs fork synced — see #237 and #757.
