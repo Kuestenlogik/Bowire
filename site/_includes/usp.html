@@ -232,8 +232,9 @@
               <h3>100% Local &mdash; no cloud</h3>
               <p class="features-block-lead">No accounts. No telemetry. No data leaves your machine. Bowire persists every credential, recording, and environment to your disk.</p>
               <p>Workspace state lives in browser <code>localStorage</code> (per-origin, dev/staging/prod each get their own). Recordings, plugins, and shared environments persist under <code>~/.bowire/</code> as a plain JSON tree &mdash; greppable, diffable, check it into a private repo if you want shared envs without a sync service.</p>
-              <p>Outbound connections happen only when you click <em>Execute</em>. No background pings, no telemetry, no remote feature flags. Enterprise security teams sign off in minutes &mdash; no third party in the chain, nothing to put in a DPA.</p>
+              <p>Outbound calls are opt-in: Bowire contacts the services you point it at and nothing else &mdash; no telemetry, no update check, no remote feature flags until you switch them on. Enterprise security teams sign off in minutes &mdash; no third party in the chain, nothing to put in a DPA.</p>
               <div class="features-block-docs-links">
+                <a class="features-block-docs-link" href="{{ '/docs/setup/outbound-connections.html' | relative_url }}">Every connection it can make, and its switch &rarr;</a>
                 <a class="features-block-docs-link" href="{{ '/why-bowire.html#local' | relative_url }}">See the full tour &rarr;</a>
                 <a class="features-block-docs-link" href="{{ '/docs/setup/standalone.html' | relative_url }}">Straight to the docs &rarr;</a>
               </div>

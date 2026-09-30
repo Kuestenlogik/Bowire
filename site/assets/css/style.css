@@ -9488,30 +9488,6 @@ select.ai-picker-input {
 }
 
 /* #671 - the trust claim under the hero slogan, with its proof one click away. */
-.hero-trust {
-    display: inline-flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: center;
-    gap: 4px 8px;
-    max-width: 760px;
-    margin: 4px auto 28px;
-    padding: 8px 14px;
-    font-size: 14px;
-    color: var(--text-secondary);
-    background: color-mix(in srgb, var(--success) 7%, transparent);
-    border: 1px solid color-mix(in srgb, var(--success) 30%, transparent);
-    border-radius: var(--radius);
-}
-.hero-trust svg {
-    color: var(--success);
-    flex: none;
-}
-.hero-trust a {
-    color: var(--accent-light);
-    white-space: nowrap;
-}
-
 /* #671 - the changelog page, generated from the release notes. */
 .changelog-hero {
     max-width: 860px;

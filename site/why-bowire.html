@@ -38,6 +38,7 @@ description: A closer look at what makes Bowire different from Postman, Insomnia
       <p class="features-block-lead">No accounts. No telemetry. No data leaves your machine. Bowire persists every credential, recording, and environment to your disk.</p>
       <p>Workspace state lives in browser <code>localStorage</code> (per-origin, so dev/staging/prod each have their own). Recordings, plugins, and shared environments persist under <code>~/.bowire/</code> &mdash; a plain JSON tree on the file system that you can grep, diff, and check into a private repository if your team wants shared environments without paying for a sync service.</p>
       <p>Outbound connections only happen when you tell Bowire to make one: clicking <em>Execute</em> hits the target API, that's it. No background pings, no opt-out telemetry, no remote feature flags. Enterprise security teams sign off on this in minutes &mdash; there's nothing to put in a Data Processing Agreement because there's no third party in the chain.</p>
+      <a class="features-block-docs-link" href="{{ '/docs/setup/outbound-connections.html' | relative_url }}">Every connection it can make, and its switch &rarr;</a>
       <a class="features-block-docs-link" href="{{ '/docs/setup/standalone.html' | relative_url }}">Read the technical docs &rarr;</a>
     </div>
   </div>
