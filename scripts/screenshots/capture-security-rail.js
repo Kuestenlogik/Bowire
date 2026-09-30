@@ -1,8 +1,8 @@
 /**
  * Captures the Security rail's main pane (OWASP API Top 10 suite #173 +
  * endpoint spider #176) with Playwright — a quick way to eyeball the
- * design-system styling of those sections without the Claude-for-Chrome
- * extension.
+ * design-system styling of those sections without driving a browser by
+ * hand.
  *
  * Drives a running standalone Tool (no in-process services needed — the
  * OWASP catalog + spider are served by the Security.Scanner package). Start
