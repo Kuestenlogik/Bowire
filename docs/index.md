@@ -37,7 +37,7 @@ summary: 'The reference manual for the multi-protocol API workbench: how to inst
 
 ## Where to start
 
-> **New to Bowire?** Take the [**Bowire Bootcamp**](/bootcamp/) &mdash; a hands-on walkthrough from your first call through recording, mocks, AI integration, and authoring your own protocol plugin. Picks up where the [Quickstart](/quickstart) leaves off and lands in a capstone project. The pages below are the *reference* you reach for after the Bootcamp.
+> **New to Bowire?** Take the [**Bowire Bootcamp**](/bootcamp/) &mdash; a hands-on walkthrough from your first call through recording, mocks, AI integration, and authoring your own protocol plugin. Picks up where the [Quickstart](/quickstart.html) leaves off and lands in a capstone project. The pages below are the *reference* you reach for after the Bootcamp.
 
 Three entry points depending on what you need:
 

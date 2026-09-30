@@ -58,7 +58,7 @@ Since 2026-09-29 a release is **planned**, not reconstructed after the fact.
 
 The daily [field guard](../../.github/workflows/roadmap-field-guard.yml) runs [`check-board.mjs`](../../scripts/ci/check-board.mjs): every open issue of every product repository has to be on the board, with the three fields filled in and in agreement. It fails, and files a tracking issue, for any that is not.
 
-> **Why this changed back.** From 2026-09-19 milestones were ordered work sections (`M1 — …`) and `Release` was stamped at the cut, empty until then. Nothing then said when the next release was due: 2.8 waited three weeks behind 43 finished tickets, and the tickets of one release were only found after it. The sections were renamed into the releases they became (M1 and M2 → v2.8, M3 → v2.9, M4 → v2.10, M6 → v2.11, M7 → v2.12, M8 → v2.13, M5 → v3.0 — the breaking cut) and every ticket got its planned release; the old values survive in the `Release (alt)` field.
+> **Why this changed back.** From 2026-09-19 milestones were ordered work sections (`M1 — …`) and `Release` was stamped at the cut, empty until then. Nothing then said when the next release was due: 2.8 waited three weeks behind 43 finished tickets, and the tickets of one release were only found after it. The sections were renamed into the releases they became (M1 and M2 → v2.8, M3 → v2.9, M4 → v2.10, M6 → v2.11, M7 → v2.12, M8 → v2.13, M5 → v3.0 — the breaking cut) and every ticket got its planned release; the old values were kept in a `Release (alt)` field until 2026-09-30, and the release notes of each version remain their record.
 
 ### Releasing
 

@@ -41,7 +41,7 @@ description: A closer look at the workflows Bowire is built for — visual flow 
       <p class="features-block-lead">One <code>asyncapi.yaml</code>, five wire plugins. Each <code>bindings:</code> key the doc declares has a resolver that hands the call to the matching shipped plugin.</p>
       <p>The AsyncAPI plugin doesn&rsquo;t talk to brokers itself &mdash; it&rsquo;s a discovery source that reads the contract and dispatches. Today every active binding maps to a real, shipped plugin: <code>bindings.mqtt</code> / <code>mqtt5</code> to <code>Kuestenlogik.Bowire.Protocol.Mqtt</code>, <code>bindings.kafka</code> to <code>Kuestenlogik.Bowire.Protocol.Kafka</code>, <code>bindings.amqp</code> / <code>amqp1</code> to <code>Kuestenlogik.Bowire.Protocol.Amqp</code>, <code>bindings.ws</code> to <code>Kuestenlogik.Bowire.Protocol.WebSocket</code>, and <code>bindings.http</code> through Bowire&rsquo;s built-in HTTP client.</p>
       <p>The benefit: an AsyncAPI doc travels as the contract surface (review it in PRs, version it in Git), but the runtime is whatever wire the broker speaks. Switch from Kafka to MQTT by editing the <code>bindings:</code> block; no Bowire side changes needed.</p>
-      <a class="features-block-docs-link" href="{{ '/docs/protocols/asyncapi.html' | relative_url }}">Read the AsyncAPI docs &rarr;</a>
+      <a class="features-block-docs-link" href="{{ '/docs/features/asyncapi.html' | relative_url }}">Read the AsyncAPI docs &rarr;</a>
     </div>
     <div class="features-block-screenshot">
       <figure class="features-diagram">
@@ -638,7 +638,7 @@ EventsHub        SignalR
       <p class="features-block-lead"><code>bowire proxy</code> is a CA-trusted forward proxy that decrypts TLS on the fly, streams captured flows into the workbench, and converts any flow into a Bowire recording with one click.</p>
       <p>Auto-generated CA on first run, leaf-cert minting per hostname, cache that survives restarts. Point your client (browser, mobile app under test, scripted runner) at <code>localhost:8888</code>, install the printed CA, every request flows through the proxy &mdash; HTTPS included, fully decrypted. The workbench Proxy view subscribes to the flow stream over SSE and renders each captured request/response live.</p>
       <p>One-click "send to recording" converts a captured flow into a template that <code>bowire scan</code>, <code>fuzz</code>, or <code>mock</code> can replay. The CA lives at <code>~/.bowire/proxy-ca.{pfx,crt}</code> &mdash; same place across restarts, importable into the trust store of any client you're driving.</p>
-      <a class="features-block-docs-link" href="{{ '/docs/features/proxy.html' | relative_url }}">Read the technical docs &rarr;</a>
+      <a class="features-block-docs-link" href="{{ '/docs/features/interceptor.html' | relative_url }}">Read the technical docs &rarr;</a>
     </div>
     <div class="features-block-screenshot">
       <div class="code-block">

@@ -164,7 +164,7 @@ $ bowire jwt tamper &lt;token&gt; \
       <h3><code>bowire proxy</code> &mdash; intercepting forward proxy, HTTPS MITM</h3>
       <p class="features-block-lead">CA-trusted forward proxy with HTTPS MITM (CONNECT hijack, raw <code>TcpListener</code> + <code>SslStream</code>, leaf-cert minting per host, cache that survives restarts). Captured flows stream live into the workbench Proxy view via SSE.</p>
       <p>One-click <em>send to recording</em> converts a captured flow into a template that <code>bowire scan</code>, <code>fuzz</code>, or <code>mock</code> can then replay. The auto-generated CA lives at <code>~/.bowire/proxy-ca.{pfx,crt}</code>; install it once into the trust store of the client you're driving (browser, mobile app under test, scripted runner) and every subsequent run reuses it.</p>
-      <a class="features-block-docs-link" href="{{ '/docs/features/proxy.html' | relative_url }}">Read the technical docs &rarr;</a>
+      <a class="features-block-docs-link" href="{{ '/docs/features/interceptor.html' | relative_url }}">Read the technical docs &rarr;</a>
     </div>
     <div class="features-block-screenshot">
       <div class="code-block">

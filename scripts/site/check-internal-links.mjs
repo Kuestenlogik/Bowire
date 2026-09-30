@@ -9,7 +9,16 @@
 // that resolves to a relative or root-anchored path is checked against
 // the on-disk file set.
 //
-// Run: `node scripts/check-internal-links.mjs`
+// Some targets are not in this repository and arrive with the site build
+// (.github/workflows/docs.yml); they count as present:
+//   * docs/protocols/<slug>.md of a protocol plugin — fetched from the plugin's
+//     own repository (scripts/docs/fetch-plugin-docs.mjs). The plugins are the
+//     `Bowire.Protocol.*` products of scripts/ci/release-plan.mjs.
+//   * /bootcamp/ — the Bowire.Bootcamp site, mounted into the combined build.
+//   * docs/api/Kuestenlogik.*.html — the API reference DocFX generates.
+// Links inside code (fenced blocks, inline code) are examples, not links.
+//
+// Run: `node scripts/site/check-internal-links.mjs` (CI: ci.yml, "Site link check")
 // Exit 0 if everything resolves, exit 1 if there are dead links.
 
 import { readFile, readdir, stat } from 'node:fs/promises';
@@ -17,7 +26,20 @@ import { dirname, join, resolve, relative, posix } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const ROOT = resolve(__dirname, '..');
+import { PRODUCT_OF_REPO } from '../ci/release-plan.mjs';
+import { slugFor } from '../docs/plugin-docs.mjs';
+
+// Pages the site build brings in from elsewhere (see the header).
+const FETCHED_PLUGIN_PAGES = new Set(Object.keys(PRODUCT_OF_REPO).map(slugFor).filter(Boolean).map(s => `docs/protocols/${s}.md`));
+const MOUNTED_SITE_PATHS = ['/bootcamp/'];
+function arrivesWithBuild(target, resolvedRel) {
+  if (MOUNTED_SITE_PATHS.some(m => target === m || target.startsWith(m))) return true;
+  const md = resolvedRel.replace(/\.html$/, '.md');
+  if (FETCHED_PLUGIN_PAGES.has(md)) return true;
+  if (/^docs\/api\/Kuestenlogik\.[\w.]+\.html$/.test(resolvedRel)) return true;
+  return false;
+}
+const ROOT = resolve(__dirname, '..', '..');
 const SITE_DIR = join(ROOT, 'site');
 const DOCS_DIR = join(ROOT, 'docs');
 
@@ -187,6 +209,7 @@ async function checkOne(file, hrefs, issues) {
       if (await exists(join(resolved.path, 'index.md'))) ok = true;
       else if (await exists(join(resolved.path, 'index.html'))) ok = true;
     }
+    if (!ok && arrivesWithBuild(c.target, toPosix(relative(ROOT, resolved.path)))) ok = true;
     if (!ok) {
       issues.push({
         file: toPosix(relative(ROOT, file)),
@@ -222,7 +245,8 @@ async function main() {
     let content;
     try { content = await readFile(file, 'utf8'); }
     catch { continue; }
-    const hrefs = [...extractHrefs(content), ...extractMarkdownLinks(content)];
+    const prose = content.replace(/```[\s\S]*?```/g, '').replace(/`[^`\n]*`/g, '');
+    const hrefs = [...extractHrefs(prose), ...extractMarkdownLinks(content)];
     totalChecked += await checkOne(file, hrefs, issues);
   }
 
