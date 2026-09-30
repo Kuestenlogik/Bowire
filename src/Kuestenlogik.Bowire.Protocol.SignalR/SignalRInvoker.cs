@@ -42,7 +42,7 @@ internal sealed class SignalRInvoker : IAsyncDisposable
             {
                 if (headers is not null)
                 {
-                    foreach (var (key, value) in headers)
+                    foreach (var (key, value) in BowireMetadataKeys.WireHeaders(headers))
                         options.Headers[key] = value;
                 }
                 if (_mtlsOwner is not null)

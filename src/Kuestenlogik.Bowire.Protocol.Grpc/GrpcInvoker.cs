@@ -885,7 +885,7 @@ internal sealed class GrpcInvoker : IDisposable
         var headers = new Metadata();
         if (metadata is not null)
         {
-            foreach (var (key, value) in metadata)
+            foreach (var (key, value) in BowireMetadataKeys.WireHeaders(metadata))
                 headers.Add(key, value);
         }
         return new CallOptions(headers: headers, cancellationToken: ct);

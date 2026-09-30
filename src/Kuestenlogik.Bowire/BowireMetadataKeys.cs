@@ -77,4 +77,37 @@ public static class BowireMetadataKeys
     /// </para>
     /// </remarks>
     public const string PluginHint = "__bowirePluginHint";
+
+    /// <summary>
+    /// The prefix every Bowire-internal metadata key starts with.
+    /// </summary>
+    public const string InternalPrefix = "__bowire";
+
+    /// <summary>
+    /// Whether <paramref name="key"/> is a Bowire-internal marker rather than
+    /// a header meant for the server.
+    /// </summary>
+    /// <remarks>
+    /// Markers carry plugin configuration, and some of it is secret: the mTLS
+    /// marker holds a private key, the SigV4 marker an AWS secret. Every path
+    /// that turns metadata into wire headers skips these, including markers a
+    /// given plugin does not itself understand; a plugin that only stripped its
+    /// own sent the rest to the target as literal headers.
+    /// </remarks>
+    public static bool IsInternal(string key) =>
+        key.StartsWith(InternalPrefix, StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// <paramref name="metadata"/> without the Bowire-internal markers: what
+    /// may go on the wire as headers. Empty for <c>null</c>.
+    /// </summary>
+    public static IEnumerable<KeyValuePair<string, string>> WireHeaders(
+        IEnumerable<KeyValuePair<string, string>>? metadata)
+    {
+        if (metadata is null) yield break;
+        foreach (var kv in metadata)
+        {
+            if (!IsInternal(kv.Key)) yield return kv;
+        }
+    }
 }

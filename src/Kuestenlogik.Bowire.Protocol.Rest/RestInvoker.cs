@@ -400,6 +400,7 @@ internal static class RestInvoker
                     if (!string.IsNullOrEmpty(v)) cookieEnvId = v;
                     continue;
                 }
+                if (BowireMetadataKeys.IsInternal(k)) continue;
                 request.Headers.TryAddWithoutValidation(k, v);
             }
         }

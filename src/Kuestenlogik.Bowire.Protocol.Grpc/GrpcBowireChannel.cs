@@ -122,7 +122,7 @@ internal sealed class GrpcBowireChannel : IBowireChannel
         var headers = new Metadata();
         if (_metadata is not null)
         {
-            foreach (var (key, value) in _metadata)
+            foreach (var (key, value) in BowireMetadataKeys.WireHeaders(_metadata))
                 headers.Add(key, value);
         }
         return new CallOptions(headers: headers, cancellationToken: ct);

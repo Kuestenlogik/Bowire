@@ -130,7 +130,7 @@ internal sealed class ConnectInvoker : IDisposable
         // header pass-through.
         if (metadata is not null)
         {
-            foreach (var (k, v) in metadata)
+            foreach (var (k, v) in BowireMetadataKeys.WireHeaders(metadata))
             {
                 req.Headers.TryAddWithoutValidation(k, v);
             }
@@ -275,7 +275,7 @@ internal sealed class ConnectInvoker : IDisposable
         req.Headers.TryAddWithoutValidation(ProtocolVersionHeader, ProtocolVersionValue);
         if (metadata is not null)
         {
-            foreach (var (k, v) in metadata)
+            foreach (var (k, v) in BowireMetadataKeys.WireHeaders(metadata))
                 req.Headers.TryAddWithoutValidation(k, v);
         }
 
@@ -368,7 +368,7 @@ internal sealed class ConnectInvoker : IDisposable
         req.Headers.TryAddWithoutValidation(ProtocolVersionHeader, ProtocolVersionValue);
         if (metadata is not null)
         {
-            foreach (var (k, v) in metadata)
+            foreach (var (k, v) in BowireMetadataKeys.WireHeaders(metadata))
                 req.Headers.TryAddWithoutValidation(k, v);
         }
 
@@ -469,7 +469,7 @@ internal sealed class ConnectInvoker : IDisposable
         req.Headers.TryAddWithoutValidation(ProtocolVersionHeader, ProtocolVersionValue);
         if (metadata is not null)
         {
-            foreach (var (k, v) in metadata)
+            foreach (var (k, v) in BowireMetadataKeys.WireHeaders(metadata))
                 req.Headers.TryAddWithoutValidation(k, v);
         }
 

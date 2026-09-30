@@ -120,7 +120,7 @@ internal sealed class SignalRBowireChannel : IBowireChannel
             {
                 if (headers is not null)
                 {
-                    foreach (var (key, value) in headers)
+                    foreach (var (key, value) in BowireMetadataKeys.WireHeaders(headers))
                         options.Headers[key] = value;
                 }
                 if (mtlsOwner is not null)

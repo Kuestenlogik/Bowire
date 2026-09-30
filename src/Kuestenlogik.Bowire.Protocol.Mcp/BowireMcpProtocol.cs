@@ -473,7 +473,7 @@ public sealed class BowireMcpProtocol : IBowireProtocol, IBowireDiscoveryDiagnos
             TransportMode = HttpTransportMode.AutoDetect,
             AdditionalHeaders = metadata is null
                 ? null
-                : new Dictionary<string, string>(metadata, StringComparer.OrdinalIgnoreCase),
+                : new Dictionary<string, string>(BowireMetadataKeys.WireHeaders(metadata), StringComparer.OrdinalIgnoreCase),
         };
 
         // McpClient.CreateAsync takes ownership of the transport on
