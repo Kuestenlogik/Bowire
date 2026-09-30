@@ -40,6 +40,9 @@ public sealed class BowirePulsarProtocol : IBowireProtocol, Kuestenlogik.Bowire.
     /// <inheritdoc />
     public string? ProxyNote => "The admin REST API goes through the proxy; the broker connection uses Pulsar's binary protocol over TCP and connects directly.";
 
+    /// <inheritdoc />
+    public string? ProxyNoteKey => "plugin.pulsar.proxyNote";
+
     private HttpClient _http = new() { Timeout = TimeSpan.FromSeconds(15) };
 
     public string Name => "Pulsar";

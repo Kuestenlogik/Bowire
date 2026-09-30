@@ -42,6 +42,9 @@ public sealed class BowireOtlpProtocol : IBowireProtocol, Kuestenlogik.Bowire.Ne
     /// <inheritdoc />
     public string? ProxyNote => "OTLP listens for telemetry sent to Bowire; it makes no outbound connections.";
 
+    /// <inheritdoc />
+    public string? ProxyNoteKey => "plugin.otlp.proxyNote";
+
     private static readonly JsonSerializerOptions s_indentedJson = new() { WriteIndented = true };
 
     private OtlpEnvelopeStore? _store;

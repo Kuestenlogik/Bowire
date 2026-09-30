@@ -4502,10 +4502,8 @@ textContent: t(discoveryState.entryCount === 1
         protos.appendChild(el('h3', { className: 'bowire-settings-section-title', textContent: t('settings.network.protocols') }));
         protos.appendChild(el('p', { className: 'bowire-settings-section-hint', textContent: t('settings.network.protocolsDesc') }));
         (data.protocols || []).forEach(function (p) {
-            // #691 pattern: a catalogue key beside the plugin's own English note.
-            var noteKey = 'plugin.' + p.id + '.proxyNote';
-            var note = t(noteKey);
-            if (note === noteKey) note = p.note || '';
+            // #691: the plugin names the catalogue key beside its English note.
+            var note = backendText(p.note, p.noteKey);
             protos.appendChild(el('div', { className: 'bowire-settings-about-row', title: note },
                 el('span', { className: 'bowire-settings-about-label', textContent: p.name }),
                 el('span', { textContent: t('settings.network.support.' + p.support) + (note ? ' — ' + note : '') })));

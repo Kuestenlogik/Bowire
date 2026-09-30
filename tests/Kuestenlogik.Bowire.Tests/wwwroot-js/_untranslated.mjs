@@ -650,8 +650,9 @@ export function frozenTranslations({ file, text, outsideIife }) {
 // initialiser (how a plugin setting carries one — see the binary-compatibility
 // note on BowirePluginSetting), `DescriptionKey => "…"` as an interface
 // property, and `LabelKey: "…"` as a named argument, which nothing uses today
-// but is what a reader would try first.
-const BACKEND_KEY = /(?:LabelKey|DescriptionKey)\s*(?:=>|=|:)\s*"([^"]+)"/g;
+// but is what a reader would try first. `ProxyNoteKey => "…"` names a
+// plugin's proxy note (#680) the same way.
+const BACKEND_KEY = /(?:LabelKey|DescriptionKey|ProxyNoteKey)\s*(?:=>|=|:)\s*"([^"]+)"/g;
 
 /** Every catalogue key declared by a C# source under src/. */
 export function backendDeclaredKeys() {
