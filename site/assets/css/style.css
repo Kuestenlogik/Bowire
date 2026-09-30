@@ -9488,6 +9488,13 @@ select.ai-picker-input {
 }
 
 /* #671 - the trust claim under the hero slogan, with its proof one click away. */
+/* #671 - the downloads page points at the changelog instead of the top nav. */
+.downloads-hero-latest {
+    margin: 8px 0 0;
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
 /* #671 - the changelog page, generated from the release notes. */
 .changelog-hero {
     max-width: 860px;
