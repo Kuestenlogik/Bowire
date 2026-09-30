@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Text.Json;
+using Kuestenlogik.Bowire.Net;
 using Kuestenlogik.Bowire.Security;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -34,7 +35,8 @@ internal static class BowireSecurityEndpoints
 
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA5400:HttpClient may be created without enabling CheckCertificateRevocationList",
         Justification = "CRL toggle is set explicitly inside the conditional below based on the operator's --allow-self-signed-certs choice.")]
-    public static IEndpointRouteBuilder MapBowireSecurityEndpoints(this IEndpointRouteBuilder endpoints, string basePath)
+    public static IEndpointRouteBuilder MapBowireSecurityEndpoints(
+        this IEndpointRouteBuilder endpoints, string basePath, BowireOptions? options = null)
     {
         endpoints.MapPost($"{basePath}/api/security/fuzz", async (HttpContext ctx) =>
         {
@@ -72,6 +74,11 @@ internal static class BowireSecurityEndpoints
                     title: "'field' is required",
                     status: 400,
                     instance: ctx.Request.Path);
+            // Both the base and the URL the executor will actually send to:
+            // the path is appended verbatim, so it gets checked as well.
+            if (BowireTargetPolicy.For(options, ctx.Request)
+                    .Refuse(ctx, req.Target, FuzzExecutor.CombineUrl(req.Target, req.HttpPath ?? "/")) is { } refused)
+                return refused;
             var hasCustomPayloads = req.CustomPayloads is { Count: > 0 };
             if (!hasCustomPayloads && string.IsNullOrWhiteSpace(req.Category))
                 return BowireEndpointHelpers.Problem(

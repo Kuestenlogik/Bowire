@@ -27,7 +27,7 @@ flowchart TB
 
 - Small logo (matches the favicon) plus the **Bowire** wordmark.
 - In embedded mode, the wordmark is replaced by `options.Title` from the host configuration.
-- In locked mode (`--lock-server-url`), a subtitle line shows which URL the workbench is pinned to.
+- In locked mode (started with `--url`), a subtitle line shows which URL the workbench is pinned to. The lock is enforced server-side too — requests for any other URL are refused with `403`.
 
 ### Center — command palette
 

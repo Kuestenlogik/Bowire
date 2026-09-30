@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using Kuestenlogik.Bowire.Models;
+using Kuestenlogik.Bowire.Net;
 using Kuestenlogik.Bowire.Plugins;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -123,6 +124,8 @@ internal static class BowireDiscoveryEndpoints
                 ?? (options.Mode == BowireMode.Standalone
                     ? string.Empty
                     : BowireEndpointHelpers.ResolveServerUrl(options, ctx.Request));
+            if (BowireTargetPolicy.For(options, ctx.Request).Refuse(ctx, rawServerUrl) is { } refused)
+                return refused;
 
             // Optional 'hint@url' form: when present, narrow the
             // plugin loop below to the named plugin only. Saves the

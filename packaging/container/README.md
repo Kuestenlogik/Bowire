@@ -90,6 +90,26 @@ docker run --rm -p 5080:5080 \
 
 Then point your AI tool at `http://localhost:5080/mcp`.
 
+### Locking the targets
+
+A container is often reachable by more people than a laptop install, and
+every call the workbench makes goes out **from the container's network**.
+Passing `--url` locks Bowire to that URL server-side: any request for
+another target (`?serverUrl=http://169.254.169.254/…`, an internal host, …)
+is refused with `403 Forbidden` before anything is dialed. Add further
+permitted targets with `--allowed-server-url` (repeatable, comma-separable)
+or the `BOWIRE_Bowire__AllowedServerUrls__0` environment variable:
+
+```bash
+docker run --rm -p 5080:5080 \
+    ghcr.io/kuestenlogik/bowire:latest \
+    --url https://api.example.com \
+    --allowed-server-url https://auth.example.com
+```
+
+Without `--url` or `--allowed-server-url` the workbench can dial anything
+the container can reach — fine on a laptop, not on a shared network.
+
 ## docker-compose
 
 For a stable local setup with persistent plugins, environments, and

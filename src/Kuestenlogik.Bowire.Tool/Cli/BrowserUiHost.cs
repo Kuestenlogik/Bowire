@@ -412,6 +412,7 @@ internal static class BrowserUiHost
         if (ui.EnableMcpAdapter) ignored.Add("--enable-mcp-adapter");
         if (!string.Equals(ui.Title, "Bowire", StringComparison.Ordinal)) ignored.Add("--title");
         if (ui.DisabledPlugins.Count > 0) ignored.Add("--disable-plugin");
+        if (ui.AllowedServerUrls.Count > 0) ignored.Add("--allowed-server-url");
         if (!string.IsNullOrEmpty(ui.PluginDir)) ignored.Add("--plugin-dir");
         if (!string.IsNullOrEmpty(ui.MapBasemap)) ignored.Add("--map-basemap");
         if (ui.AutoCreateInitialWorkspace is not null) ignored.Add("--auto-create-initial-workspace");
@@ -786,6 +787,10 @@ internal static class BrowserUiHost
             options.ServerUrl = ui.PrimaryUrl;
             foreach (var u in ui.ServerUrls) options.ServerUrls.Add(u);
             options.LockServerUrl = ui.LockServerUrl;
+            // Extra targets the server-side endpoints may dial (and, when
+            // non-empty, the switch that turns target enforcement on even
+            // without a lock).
+            foreach (var u in ui.AllowedServerUrls) options.AllowedServerUrls.Add(u);
             // Forward --disable-plugin / Bowire:DisabledPlugins through
             // so the protocol-registry assembly scan honours it.
             foreach (var p in ui.DisabledPlugins) options.DisabledPlugins.Add(p);
