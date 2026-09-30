@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.9 — Discoverability: the pitch, the directories, the star ask *(due 2026-12-14)*
 
-**1/6 done** · 5 backlog
+**2/6 done** · 4 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -20,7 +20,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [647](https://github.com/Kuestenlogik/Bowire/issues/647) | Bowire | [Lizenz entscheiden und je Projekt führen](#issue-kuestenlogik-bowire-647) | ⬜ Backlog | `area:multi` |
 | [668](https://github.com/Kuestenlogik/Bowire/issues/668) | Bowire | [Sharpen the one-line pitch, and carry the same sentence everywhere](#issue-kuestenlogik-bowire-668) | ⬜ Backlog | `area:site` |
 | [670](https://github.com/Kuestenlogik/Bowire/issues/670) | Bowire | [Get listed where developers and models actually look](#issue-kuestenlogik-bowire-670) | ⬜ Backlog | `area:site` |
-| [671](https://github.com/Kuestenlogik/Bowire/issues/671) | Bowire | [Site: /alternatives/* landing pages, a changelog page, and the trust claim in the hero](#issue-kuestenlogik-bowire-671) | ⬜ Backlog | `area:site` |
+| [671](https://github.com/Kuestenlogik/Bowire/issues/671) | Bowire | [Site: /alternatives/* landing pages, a changelog page, and the trust claim in the hero](#issue-kuestenlogik-bowire-671) | ✅ Done | `area:site` |
 | [755](https://github.com/Kuestenlogik/Bowire/issues/755) | Bowire | [Link-Check der Site prüft seit dem Umzug nach scripts/site nichts mehr](#issue-kuestenlogik-bowire-755) | ✅ Done |  |
 
 ### v2.10 — Corporate networks: outbound proxy, Windows auth, cookies *(due 2027-01-11)*
@@ -179,7 +179,7 @@ In every directory, every search result and every model-generated answer, Bowire
 
 Six credible competitors turned up during the competitive survey **via openalternative.co**. Bowire was not there. That is the whole diagnosis: when a developer — or a language model — asks for "open source Postman alternative", the answer is assembled from these directories, not from bowire.io. [[more]](https://github.com/Kuestenlogik/Bowire/issues/670)
 
-#### <a id="issue-kuestenlogik-bowire-671"></a>⬜ Backlog · [#671](https://github.com/Kuestenlogik/Bowire/issues/671) Site: /alternatives/* landing pages, a changelog page, and the trust claim in the hero
+#### <a id="issue-kuestenlogik-bowire-671"></a>✅ Done · [#671](https://github.com/Kuestenlogik/Bowire/issues/671) Site: /alternatives/* landing pages, a changelog page, and the trust claim in the hero
 
 > `area:site`
 
