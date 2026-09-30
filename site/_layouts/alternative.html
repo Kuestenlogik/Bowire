@@ -1,0 +1,81 @@
+---
+layout: page
+---
+{%- comment -%}
+#671 — one /alternatives/<tool> page. Everything factual comes from site/_data/comparison.yml,
+the same data the home page's matrix renders, so a correction lands on both. The page's own
+body (page content) is the "Moving over from X" section: what works today, nothing promised.
+{%- endcomment -%}
+{%- assign t = site.data.comparison.tools | where: "id", page.tool | first -%}
+{%- assign none = '' | split: '' -%}
+
+<section class="features-page-hero alt-hero">
+  <p class="alt-eyebrow"><a href="{{ '/alternatives/' | relative_url }}">Alternatives</a></p>
+  <h1>Bowire vs. {{ t.name }}</h1>
+  <p class="features-page-tagline">{{ page.lede }}</p>
+</section>
+
+<section class="alt-pick">
+  <div class="alt-pick-card">
+    <h2>When {{ t.name }} is the better fit</h2>
+    <p>{{ t.pick_them }}</p>
+  </div>
+  <div class="alt-pick-card alt-pick-bowire">
+    <h2>When Bowire is the better fit</h2>
+    <p>{{ t.pick_bowire }}</p>
+  </div>
+</section>
+
+<section class="alt-diff">
+  <h2>Where they differ</h2>
+  <p class="alt-diff-lede">Only the rows where {{ t.name }} and Bowire differ, from the <a href="{{ '/#comparison' | relative_url }}">full comparison</a>. Rows we could not verify for {{ t.name }} are left out rather than guessed. Facts as of {{ site.data.comparison.as_of }}; <a href="https://github.com/Kuestenlogik/Bowire/edit/main/site/_data/comparison.yml">correct one</a>.</p>
+  <div class="comparison-table-wrap alt-table-wrap">
+    <table class="comparison-table alt-table">
+      <thead>
+        <tr>
+          <th class="comparison-feature-col">Feature</th>
+          <th>{{ t.name }}</th>
+          <th class="comparison-bowire"><span class="comparison-brand">Bowire</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        {%- for row in site.data.comparison.rows %}
+        {%- assign list = none | push: row -%}
+        {%- if row.rows %}{% assign list = list | concat: row.rows %}{% endif -%}
+        {%- for r in list %}
+        {%- assign tc = r.cells[page.tool] -%}
+        {%- assign bc = r.cells.bowire -%}
+        {%- unless tc -%}{%- continue -%}{%- endunless -%}
+        {%- if tc.c == bc.c and tc.v == bc.v -%}{%- continue -%}{%- endif %}
+        <tr>
+          <td class="comparison-feature{% if forloop.first == false %} comparison-feature-sub{% endif %}">
+            {{ r.label }}
+            {%- if tc.d %}<span class="alt-detail">{{ t.name }}: {{ tc.d }}</span>{% endif -%}
+            {%- if bc.d and bc.d.size < 160 %}<span class="alt-detail">Bowire: {{ bc.d }}</span>{% endif -%}
+          </td>
+          {% include comparison-cell.html cell=tc bowire=page.tool %}
+          {% include comparison-cell.html cell=bc bowire='bowire' %}
+        </tr>
+        {%- endfor %}
+        {%- endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="alt-legend">&#9679; supported &middot; &#9680; partial or paid tier &middot; &#9675; not supported</p>
+</section>
+
+<section class="alt-migrate">
+  <h2>Moving over from {{ t.name }}</h2>
+  {{ content }}
+</section>
+
+<section class="alt-others">
+  <h2>Other comparisons</h2>
+  <ul>
+    {%- assign alts = site.pages | where: "layout", "alternative" | sort: "tool" -%}
+    {%- for p in alts %}{% if p.tool != page.tool %}
+    {%- assign o = site.data.comparison.tools | where: "id", p.tool | first %}
+    <li><a href="{{ p.url | relative_url }}">Bowire vs. {{ o.name }}</a></li>
+    {%- endif %}{% endfor %}
+  </ul>
+</section>

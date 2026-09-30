@@ -1,0 +1,9 @@
+{%- comment -%}One matrix cell (site/_data/comparison.yml): v shows, c = yes|no|partial|yes-text, d = hover detail. include.bowire is the column's tool id.{%- endcomment -%}
+{%- assign c = include.cell -%}
+{%- assign cls = '' -%}
+{%- if include.bowire == 'bowire' -%}{%- assign cls = 'comparison-bowire' -%}{%- endif -%}
+{%- if c.c -%}
+  {%- assign cc = 'c-' | append: c.c -%}
+  {%- if cls == '' -%}{%- assign cls = cc -%}{%- else -%}{%- assign cls = cls | append: ' ' | append: cc -%}{%- endif -%}
+{%- endif %}
+            <td{% if cls != '' %} class="{{ cls }}"{% endif %}{% if c.d %} data-detail="{{ c.d }}"{% endif %}>{{ c.v }}</td>

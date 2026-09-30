@@ -1,0 +1,13 @@
+---
+layout: alternative
+tool: insomnia
+title: An Insomnia alternative for multi-protocol services — Bowire
+description: Bowire vs. Insomnia — when each fits, where they differ feature by feature, and how to move your requests over today via OpenAPI, HAR or discovery. Local-first, Apache 2.0.
+lede: Insomnia is a polished desktop client from Kong. Bowire discovers your services instead of keeping a hand-maintained collection, speaks more protocols, and needs no account.
+---
+<p>Bowire has no Insomnia importer yet &mdash; that is <a href="https://github.com/Kuestenlogik/Bowire/issues/674">#674</a>. What works today:</p>
+<ul>
+  <li><strong>Point Bowire at the service.</strong> For OpenAPI, gRPC (reflection) and GraphQL services, <a href="{{ '/docs/features/auto-discovery.html' | relative_url }}">discovery</a> lists every method without any import.</li>
+  <li><strong>OpenAPI.</strong> Export the spec with Insomnia's Inso CLI and drop the file on Bowire's <a href="{{ '/docs/protocols/rest.html#local-schema-upload' | relative_url }}">Schema Files</a> tab.</li>
+  <li><strong>HAR.</strong> Insomnia exports HAR; <code>bowire import har export.har</code> turns it into a <code>.bwr</code> recording you can replay, mock or turn into tests (<code>--redact-secrets</code> strips credential headers). See <a href="{{ '/docs/architecture/file-formats.html' | relative_url }}">file formats</a>.</li>
+</ul>

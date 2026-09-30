@@ -1,0 +1,14 @@
+---
+layout: alternative
+tool: postman
+title: A Postman alternative for gRPC, SignalR and MQTT — Bowire
+description: Bowire vs. Postman — when each fits, where they differ feature by feature, and how to bring a Postman Collection v2.1 over. Local-first, no account, Apache 2.0.
+lede: Postman is the default API client for cloud teams. Bowire covers the protocols Postman doesn't, runs locally without an account, and can live inside your ASP.NET service.
+---
+<p>Bowire imports <strong>Postman Collection v2.1</strong> JSON directly. In Postman, export the collection (Collection v2.1), then open the Compose rail in Bowire and click <strong>Import Postman</strong>.</p>
+<ul>
+  <li>Method, URL, headers and raw body carry over; nested folders are flattened into one list.</li>
+  <li><code>{% raw %}{{variable}}{% endraw %}</code> placeholders become Bowire's <code>${variable}</code>. Define the same names in a Bowire <a href="{{ '/docs/features/environments.html' | relative_url }}">environment</a> and the collection runs as is.</li>
+  <li>Pre-request scripts and Postman tests are <em>not</em> converted. Re-create checks as Bowire <a href="{{ '/docs/features/test-assertions.html' | relative_url }}">assertions</a>.</li>
+</ul>
+<p>For gRPC, GraphQL and OpenAPI services you often don't need the collection at all: point Bowire at the running service and it <a href="{{ '/docs/features/auto-discovery.html' | relative_url }}">discovers</a> every method. Details: <a href="{{ '/docs/features/collections.html' | relative_url }}">Postman Collection import</a>.</p>

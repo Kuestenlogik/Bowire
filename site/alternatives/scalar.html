@@ -1,0 +1,14 @@
+---
+layout: alternative
+tool: scalar
+title: Scalar or Bowire? API docs vs. a multi-protocol workbench — Bowire
+description: Bowire vs. Scalar — spec-first API docs or a runtime-discovered workbench? When each fits, where they differ, and how both read the same OpenAPI document.
+lede: Scalar renders an OpenAPI document into beautiful docs. Bowire discovers the contract from the running service, across every protocol it speaks. Many teams use both.
+---
+<p>There is nothing to migrate: Bowire reads the same OpenAPI document Scalar renders.</p>
+<ul>
+  <li><strong>Standalone:</strong> <code>bowire --url=https://api.example.com/openapi.json</code> &mdash; the exact document URL, JSON or YAML, OpenAPI 3 or Swagger 2.0. See <a href="{{ '/docs/protocols/rest.html' | relative_url }}">REST / OpenAPI</a>.</li>
+  <li><strong>Embedded:</strong> <code>app.MapBowire()</code> in the ASP.NET app reads the same metadata <code>Microsoft.AspNetCore.OpenApi</code> uses, so the workbench never runs on a stale spec.</li>
+  <li><strong>A file on disk:</strong> drop it on the <a href="{{ '/docs/protocols/rest.html#local-schema-upload' | relative_url }}">Schema Files</a> tab.</li>
+</ul>
+<p>Keep Scalar for the public docs site and use Bowire for development, testing and the protocols beyond REST.</p>

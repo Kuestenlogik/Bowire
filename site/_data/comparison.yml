@@ -1,0 +1,2244 @@
+# The comparison — one source for the home page's matrix and the /alternatives/* pages (#671).
+#
+#   tools    every tool compared: its positioning (the "Pick X when…" / "Pick Bowire when…"
+#            panel on the home page), whether it is a column of the home page's matrix
+#            (in_matrix), and whether the home page lists it at all (on_home: false = only
+#            its /alternatives/ page).
+#   columns  the home page matrix's columns, in order.
+#   rows     the matrix. A row with `rows:` is an expandable group; `cells` are keyed by tool
+#            id. A cell: v = what shows, c = yes | no | partial | yes-text, d = the hover detail.
+#            A tool without a cell in a row is not claimed either way — the alternatives page
+#            leaves that row out rather than guessing.
+#
+# Facts about other tools date from `as_of`. Wrong or outdated? Correct it here; both pages follow.
+as_of: 2026-08
+columns:
+- bowire
+- postman
+- scalar
+- swashbuckle
+- insomnia
+- bruno
+tools:
+- id: bowire
+  name: Bowire
+  tag: .NET + multi-protocol deployment
+  in_matrix: true
+- id: postman
+  name: Postman
+  tag: Cloud teams
+  panel_title: Bowire vs. Postman
+  pick_them: <strong>Pick Postman</strong> when a distributed team collaborates on curated API collections in the cloud, your stack is primarily REST / GraphQL / WebSocket, and features like Agent Mode, Public Workspaces, and seat-based sync are worth the account + subscription.
+  pick_bowire: <strong>Pick Bowire</strong> when you need more protocols (gRPC streaming, SignalR, MCP, MQTT, Socket.IO, OData, &hellip;) in one workbench, want local-first (no Kong/Postman account, no cloud), or need the UI embedded in your ASP.NET service for ops teams.
+  in_matrix: true
+- id: scalar
+  name: Scalar
+  tag: API docs
+  panel_title: Bowire vs. Scalar
+  pick_them: '<strong>Pick Scalar</strong> when your workflow is <em>spec-first</em>: an <code>openapi.yaml</code> / <code>swagger.json</code> is the source of truth, server + clients are generated from it, and you want a polished public docs site with a built-in Try-it console. Scalar reads the spec and renders it beautifully &mdash; great fit for contract-first REST APIs where the contract is designed before implementation.'
+  pick_bowire: '<strong>Pick Bowire</strong> when the direction is reversed: a running server is the source of truth and Bowire <em>discovers</em> the contract at runtime (gRPC reflection, the OpenAPI document the server emits, SignalR hub enumeration, GraphQL introspection, &hellip;). Bowire lands one workbench across every protocol your service actually speaks &mdash; not only REST &mdash; and embeds directly inside the ASP.NET app instead of being a separate hosted site.'
+  in_matrix: true
+- id: swashbuckle
+  name: Swashbuckle
+  tag: Legacy .NET OpenAPI
+  panel_title: Bowire vs. Swashbuckle / <code>Microsoft.AspNetCore.OpenApi</code>
+  pick_them: <strong>Pick Swashbuckle</strong> (or Microsoft&rsquo;s new built-in OpenAPI in .NET 9+) when pre-built / offline generation and distribution of OpenAPI specs is enough for your workflow. Note that Swagger UI itself is legacy &mdash; Scalar or Bowire make a simple migration path, both consume the same OpenAPI document you already emit.
+  pick_bowire: <strong>Pick Bowire</strong> when the same service exposes gRPC, SignalR, WebSocket, MCP, or other protocols alongside REST. Bowire reads the OpenAPI document you already generate and layers every other protocol on top &mdash; one workbench instead of five different tools.
+  in_matrix: true
+- id: insomnia
+  name: Insomnia
+  tag: REST + GraphQL desktop
+  panel_title: Bowire vs. Insomnia
+  pick_them: <strong>Pick Insomnia</strong> when you want a solid local-first desktop client for REST / GraphQL / gRPC / WebSocket, and you&rsquo;re fine with Kong&rsquo;s account layer for Sync, Teams, and the Dev Portal.
+  pick_bowire: <strong>Pick Bowire</strong> when you also need SignalR, MCP, MQTT, Socket.IO, OData, or custom protocols, or when you want the workbench embedded in your ASP.NET service instead of running a separate desktop app. No Kong account required for anything.
+  in_matrix: true
+- id: bruno
+  name: Bruno
+  tag: Git-native REST client
+  panel_title: Bowire vs. Bruno
+  pick_them: <strong>Pick Bruno</strong> when Git-native collections are your priority &mdash; REST / GraphQL / basic gRPC with <code>.bru</code> files committed to your repo. No cloud, no account, just text files reviewed like code.
+  pick_bowire: <strong>Pick Bowire</strong> when you need gRPC streaming, GraphQL subscriptions, SignalR hubs, MQTT topics, Socket.IO, or the workbench embedded in your ASP.NET service.
+  in_matrix: true
+- id: grpcui
+  name: gRPC UI / grpcurl
+  tag: Single-protocol gRPC
+  panel_title: Bowire vs. gRPC UI / grpcurl
+  pick_them: <strong>Pick gRPC UI or grpcurl</strong> when you only care about gRPC and want a lightweight, single-purpose tool with minimal setup.
+  pick_bowire: <strong>Pick Bowire</strong> when the same service exposes REST or SignalR alongside gRPC and you don&rsquo;t want to switch tools mid-session. Bowire also has a Wireshark-style append-only streaming view that beats the chat-style drawer for long duplex sessions.
+  in_matrix: false
+- id: mockoon
+  name: Mockoon
+  tag: Offline HTTP mocks
+  panel_title: Bowire vs. Mockoon
+  pick_them: '<strong>Pick Mockoon</strong> when you need a quick, free, fully offline mock of an HTTP/REST or WebSocket API, built in a GUI with no account: templating, rules, CRUD data buckets and simulated latency. Its JSON environment files live in git and the same file runs headless in CI through the CLI, the Docker image or the GitHub Action.'
+  pick_bowire: '<strong>Pick Bowire</strong> when the mock has to speak more than HTTP and WebSocket &mdash; gRPC (including streaming), SSE, SignalR, MQTT, GraphQL subscriptions &mdash; or when you want the mock to come out of real traffic: record a session against the running service, replay it as a mock with chaos and stateful modes, and use the same workbench to call, test and scan the real thing.'
+  in_matrix: false
+  on_home: false
+- id: hoppscotch
+  name: Hoppscotch
+  tag: Browser-first client
+  panel_title: Bowire vs. Hoppscotch
+  pick_them: <strong>Pick Hoppscotch</strong> when you want a fast, lightweight, MIT-licensed API client that runs in the browser with no install, covers REST, GraphQL and the realtime protocols (WebSocket, SSE, Socket.IO, MQTT) in one UI, and a free self-hosted Community Edition via Docker or Helm &mdash; with a cheap upgrade path to SSO / SCIM, published docs and mocks.
+  pick_bowire: <strong>Pick Bowire</strong> when the service speaks gRPC, SignalR, MCP, AMQP, NATS, Kafka or OData as well, when the contract should be discovered from the running server instead of maintained in a collection, or when you need record &amp; replay, mocks from real traffic, security scanning and contract tests in the same workbench &mdash; locally, without an account.
+  in_matrix: false
+  on_home: false
+rows:
+- group: protocols
+  label: Multi-protocol support
+  cells:
+    bowire:
+      v: 20+
+      d: gRPC (native HTTP/2 + gRPC-Web), REST, SOAP, GraphQL, SignalR, MCP, JSON-RPC, SSE, WebSocket, MQTT, AMQP (0.9.1 + 1.0), NATS (core + JetStream + Services API), Socket.IO, OData, AsyncAPI (discovery source), OTLP (OpenTelemetry passive listener), Kafka, Apache Pulsar, Surgewave, DIS, UDP, Akka.NET, TacticalAPI — plus any custom protocol via plugin
+    postman:
+      v: '7'
+      d: REST, GraphQL, gRPC, WebSocket, MQTT, Socket.IO, MCP
+    scalar:
+      v: '1'
+      d: REST via OpenAPI / Swagger import
+    swashbuckle:
+      v: '1'
+      d: REST via ASP.NET OpenAPI document
+    insomnia:
+      v: '5'
+      d: REST, GraphQL, gRPC, WebSocket, SSE
+    bruno:
+      v: '4'
+      d: REST, GraphQL, gRPC, WebSocket
+    mockoon:
+      v: '2'
+      d: REST / HTTP and WebSocket mocks (HTTP routes, CRUD routes, WebSockets)
+    hoppscotch:
+      v: '6'
+      d: REST, GraphQL, WebSocket, SSE, Socket.IO, MQTT
+  rows:
+  - label: gRPC
+    cells:
+      bowire:
+        v: ✓
+        c: 'yes'
+      postman:
+        v: ✓
+        c: 'yes'
+      scalar:
+        v: ✗
+        c: 'no'
+      swashbuckle:
+        v: ✗
+        c: 'no'
+      insomnia:
+        v: ✓
+        c: 'yes'
+      bruno:
+        v: ✗
+        c: 'no'
+      hoppscotch:
+        v: ✗
+        c: 'no'
+        d: Not among the documented protocols
+  - label: REST / HTTP
+    cells:
+      bowire:
+        v: ✓
+        c: 'yes'
+      postman:
+        v: ✓
+        c: 'yes'
+      scalar:
+        v: ✓
+        c: 'yes'
+      swashbuckle:
+        v: ✓
+        c: 'yes'
+      insomnia:
+        v: ✓
+        c: 'yes'
+      bruno:
+        v: ✓
+        c: 'yes'
+      mockoon:
+        v: ✓
+        c: 'yes'
+        d: HTTP routes with regex paths, HTTPS and CORS
+      hoppscotch:
+        v: ✓
+        c: 'yes'
+  - label: SOAP
+    cells:
+      bowire:
+        v: ✓
+        c: 'yes'
+        d: WSDL 1.1 discovery, 1.1 + 1.2 envelopes
+      postman:
+        v: ✗
+        c: 'no'
+      scalar:
+        v: ✗
+        c: 'no'
+      swashbuckle:
+        v: ✗
+        c: 'no'
+      insomnia:
+        v: ✗
+        c: 'no'
+      bruno:
+        v: ✗
+        c: 'no'
+  - label: GraphQL
+    cells:
+      bowire:
+        v: ✓
+        c: 'yes'
+      postman:
+        v: ✓
+        c: 'yes'
+      scalar:
+        v: ✗
+        c: 'no'
+      swashbuckle:
+        v: ✗
+        c: 'no'
+      insomnia:
+        v: ✓
+        c: 'yes'
+      bruno:
+        v: partial
+        c: partial
+        d: Queries + mutations; no subscriptions
+      hoppscotch:
+        v: ✓
+        c: 'yes'
+  - label: SignalR
+    cells:
+      bowire:
+        v: ✓
+        c: 'yes'
+      postman:
+        v: ✗
+        c: 'no'
+      scalar:
+        v: ✗
+        c: 'no'
+      swashbuckle:
+        v: ✗
+        c: 'no'
+      insomnia:
+        v: ✗
+        c: 'no'
+      bruno:
+        v: ✗
+        c: 'no'
+  - label: MCP
+    cells:
+      bowire:
+        v: ✓
+        c: 'yes'
+        d: 'Four roles on the official MCP C# SDK 2.0 (revision 2026-07-28): first-class client (tools / resources / prompts discovery + invoke over streamable HTTP), Bowire itself as MCP server (stdio + HTTP — 15 tools, 8 resources, 4 prompts), adapter exposing any discovered API as MCP tools, and MCP security probes in bowire scan'
+      postman:
+        v: ✓
+        c: 'yes'
+      scalar:
+        v: ✗
+        c: 'no'
+      swashbuckle:
+        v: ✗
+        c: 'no'
+      insomnia:
+        v: client only
+        c: partial
+        d: MCP client only — Insomnia can call other people's MCP servers, but doesn't expose its own collections as MCP tools
+      bruno:
+        v: ✗
+        c: 'no'
+  - label: JSON-RPC
+    cells:
+      bowire:
+        v: ✓
+        c: 'yes'
+        d: OpenRPC rpc.discover
+      postman:
+        v: ✗
+        c: 'no'
+      scalar:
+        v: ✗
+        c: 'no'
+      swashbuckle:
+        v: ✗
+        c: 'no'
+      insomnia:
+        v: ✗
+        c: 'no'
+      bruno:
+        v: ✗
+        c: 'no'
+  - label: SSE
+    cells:
+      bowire:
+        v: ✓
+        c: 'yes'
+      postman:
+        v: ✗
+        c: 'no'
+      scalar:
+        v: ✗
+        c: 'no'
+      swashbuckle:
+        v: ✗
+        c: 'no'
+      insomnia:
+        v: ✓
+        c: 'yes'
+      bruno:
+        v: ✗
+        c: 'no'
+      hoppscotch:
+        v: ✓
+        c: 'yes'
+  - label: WebSocket
+    cells:
+      bowire:
+        v: ✓
+        c: 'yes'
+      postman:
+        v: ✓
+        c: 'yes'
+      scalar:
+        v: ✗
+        c: 'no'
+      swashbuckle:
+        v: ✗
+        c: 'no'
+      insomnia:
+        v: ✓
+        c: 'yes'
+      bruno:
+        v: ✓
+        c: 'yes'
+      mockoon:
+        v: ✓
+        c: 'yes'
+        d: 'Since v9.0: conversational, one-to-one and broadcast modes'
+      hoppscotch:
+        v: ✓
+        c: 'yes'
+  - label: MQTT
+    cells:
+      bowire:
+        v: ✓
+        c: 'yes'
+      postman:
+        v: ✓
+        c: 'yes'
+      scalar:
+        v: ✗
+        c: 'no'
+      swashbuckle:
+        v: ✗
+        c: 'no'
+      insomnia:
+        v: ✗
+        c: 'no'
+      bruno:
+        v: ✗
+        c: 'no'
+      hoppscotch:
+        v: ✓
+        c: 'yes'
+  - label: AMQP
+    cells:
+      bowire:
+        v: ✓
+        c: 'yes'
+        d: 0.9.1 RabbitMQ + 1.0
+      postman:
+        v: ✗
+        c: 'no'
+      scalar:
+        v: ✗
+        c: 'no'
+      swashbuckle:
+        v: ✗
+        c: 'no'
+      insomnia:
+        v: ✗
+        c: 'no'
+      bruno:
+        v: ✗
+        c: 'no'
+  - label: NATS
+    cells:
+      bowire:
+        v: ✓
+        c: 'yes'
+        d: core + JetStream + Services API
+      postman:
+        v: ✗
+        c: 'no'
+      scalar:
+        v: ✗
+        c: 'no'
+      swashbuckle:
+        v: ✗
+        c: 'no'
+      insomnia:
+        v: ✗
+        c: 'no'
+      bruno:
+        v: ✗
+        c: 'no'
+  - label: Socket.IO
+    cells:
+      bowire:
+        v: ✓
+        c: 'yes'
+      postman:
+        v: ✓
+        c: 'yes'
+      scalar:
+        v: ✗
+        c: 'no'
+      swashbuckle:
+        v: ✗
+        c: 'no'
+      insomnia:
+        v: ✗
+        c: 'no'
+      bruno:
+        v: ✗
+        c: 'no'
+      mockoon:
+        v: ✗
+        c: 'no'
+        d: Documented as not implementing the Socket.IO protocol
+      hoppscotch:
+        v: ✓
+        c: 'yes'
+  - label: OData
+    cells:
+      bowire:
+        v: ✓
+        c: 'yes'
+      postman:
+        v: ✗
+        c: 'no'
+      scalar:
+        v: ✗
+        c: 'no'
+      swashbuckle:
+        v: ✗
+        c: 'no'
+      insomnia:
+        v: ✗
+        c: 'no'
+      bruno:
+        v: ✗
+        c: 'no'
+  - label: AsyncAPI
+    cells:
+      bowire:
+        v: ✓
+        c: 'yes'
+        d: discovery source — routes to MQTT / Kafka / WS wires
+      postman:
+        v: partial
+        c: partial
+        d: Spec import + validation only via the AsyncAPI workspace; no channel invocation
+      scalar:
+        v: ✗
+        c: 'no'
+      swashbuckle:
+        v: ✗
+        c: 'no'
+      insomnia:
+        v: ✗
+        c: 'no'
+      bruno:
+        v: ✗
+        c: 'no'
+  - label: Surgewave
+    cells:
+      bowire:
+        v: ✓
+        c: 'yes'
+      postman:
+        v: ✗
+        c: 'no'
+      scalar:
+        v: ✗
+        c: 'no'
+      swashbuckle:
+        v: ✗
+        c: 'no'
+      insomnia:
+        v: ✗
+        c: 'no'
+      bruno:
+        v: ✗
+        c: 'no'
+  - label: Kafka
+    cells:
+      bowire:
+        v: ✓
+        c: 'yes'
+      postman:
+        v: ✗
+        c: 'no'
+      scalar:
+        v: ✗
+        c: 'no'
+      swashbuckle:
+        v: ✗
+        c: 'no'
+      insomnia:
+        v: ✗
+        c: 'no'
+      bruno:
+        v: ✗
+        c: 'no'
+  - label: Apache Pulsar
+    cells:
+      bowire:
+        v: ✓
+        c: 'yes'
+      postman:
+        v: ✗
+        c: 'no'
+      scalar:
+        v: ✗
+        c: 'no'
+      swashbuckle:
+        v: ✗
+        c: 'no'
+      insomnia:
+        v: ✗
+        c: 'no'
+      bruno:
+        v: ✗
+        c: 'no'
+  - label: DIS (IEEE 1278)
+    cells:
+      bowire:
+        v: ✓
+        c: 'yes'
+      postman:
+        v: ✗
+        c: 'no'
+      scalar:
+        v: ✗
+        c: 'no'
+      swashbuckle:
+        v: ✗
+        c: 'no'
+      insomnia:
+        v: ✗
+        c: 'no'
+      bruno:
+        v: ✗
+        c: 'no'
+  - label: UDP (raw datagrams)
+    cells:
+      bowire:
+        v: ✓
+        c: 'yes'
+      postman:
+        v: ✗
+        c: 'no'
+      scalar:
+        v: ✗
+        c: 'no'
+      swashbuckle:
+        v: ✗
+        c: 'no'
+      insomnia:
+        v: ✗
+        c: 'no'
+      bruno:
+        v: ✗
+        c: 'no'
+  - label: Akka.NET (mailbox tap)
+    cells:
+      bowire:
+        v: ✓
+        c: 'yes'
+      postman:
+        v: ✗
+        c: 'no'
+      scalar:
+        v: ✗
+        c: 'no'
+      swashbuckle:
+        v: ✗
+        c: 'no'
+      insomnia:
+        v: ✗
+        c: 'no'
+      bruno:
+        v: ✗
+        c: 'no'
+  - label: TacticalAPI (situational awareness)
+    cells:
+      bowire:
+        v: ✓
+        c: 'yes'
+        d: v1.0.0 stable — descriptor discovery, typed CRUD, server-streaming track pump, the lot
+      postman:
+        v: ✗
+        c: 'no'
+      scalar:
+        v: ✗
+        c: 'no'
+      swashbuckle:
+        v: ✗
+        c: 'no'
+      insomnia:
+        v: ✗
+        c: 'no'
+      bruno:
+        v: ✗
+        c: 'no'
+  - label: OTLP (OpenTelemetry listener)
+    cells:
+      bowire:
+        v: ✓
+        c: 'yes'
+        d: Passive listener — receive traces / metrics / logs from the services under test; first-party opt-in package
+      postman:
+        v: ✗
+        c: 'no'
+      scalar:
+        v: ✗
+        c: 'no'
+      swashbuckle:
+        v: ✗
+        c: 'no'
+      insomnia:
+        v: ✗
+        c: 'no'
+      bruno:
+        v: ✗
+        c: 'no'
+- label: Custom protocol plugins
+  cells:
+    bowire:
+      v: ✓
+      c: 'yes'
+      d: .NET plugin SDK ([BowirePlugin] protocols plus UI rails / modules as packages) and language-agnostic sidecar plugins — Go / Node / Python / Rust zip via bowire plugin install
+    postman:
+      v: ✗
+      c: 'no'
+    scalar:
+      v: ✗
+      c: 'no'
+    swashbuckle:
+      v: ✗
+      c: 'no'
+    insomnia:
+      v: ✗
+      c: 'no'
+    bruno:
+      v: ✗
+      c: 'no'
+- group: discovery
+  label: Auto-discovery
+  cells:
+    bowire:
+      v: ✓
+      c: 'yes'
+    postman:
+      v: manual
+      c: partial
+      d: Manual endpoint configuration required
+    scalar:
+      v: OpenAPI
+      c: partial
+      d: Only via OpenAPI / Swagger import
+    swashbuckle:
+      v: OpenAPI
+      c: partial
+      d: Only via ASP.NET OpenAPI document
+    insomnia:
+      v: manual
+      c: partial
+      d: Manual endpoint configuration required
+    bruno:
+      v: manual
+      c: partial
+      d: Manual endpoint configuration required
+    mockoon:
+      v: OpenAPI
+      c: partial
+      d: Mocks are built by hand or imported from an OpenAPI document
+    hoppscotch:
+      v: partial
+      c: partial
+      d: OpenAPI import and GraphQL schema only
+  rows:
+  - label: gRPC Reflection
+    cells:
+      bowire:
+        v: ✓
+        c: 'yes'
+      postman:
+        v: ✓
+        c: 'yes'
+      scalar:
+        v: ✗
+        c: 'no'
+      swashbuckle:
+        v: ✗
+        c: 'no'
+      insomnia:
+        v: ✓
+        c: 'yes'
+      bruno:
+        v: ✗
+        c: 'no'
+  - label: OpenAPI / Swagger import
+    cells:
+      bowire:
+        v: ✓
+        c: 'yes'
+      postman:
+        v: ✓
+        c: 'yes'
+      scalar:
+        v: ✓
+        c: 'yes'
+      swashbuckle:
+        v: ✓
+        c: 'yes'
+      insomnia:
+        v: ✓
+        c: 'yes'
+      bruno:
+        v: ✓
+        c: 'yes'
+      mockoon:
+        v: ✓
+        c: 'yes'
+        d: OpenAPI v2 and v3 (JSON / YAML), with re-import
+      hoppscotch:
+        v: ✓
+        c: 'yes'
+        d: From a JSON file or URL
+  - label: GraphQL introspection
+    cells:
+      bowire:
+        v: ✓
+        c: 'yes'
+      postman:
+        v: ✓
+        c: 'yes'
+      scalar:
+        v: ✗
+        c: 'no'
+      swashbuckle:
+        v: ✗
+        c: 'no'
+      insomnia:
+        v: ✓
+        c: 'yes'
+      bruno:
+        v: ✓
+        c: 'yes'
+      hoppscotch:
+        v: ✓
+        c: 'yes'
+  - label: Proto file loading
+    cells:
+      bowire:
+        v: ✓
+        c: 'yes'
+      postman:
+        v: ✓
+        c: 'yes'
+      scalar:
+        v: ✗
+        c: 'no'
+      swashbuckle:
+        v: ✗
+        c: 'no'
+      insomnia:
+        v: ✓
+        c: 'yes'
+      bruno:
+        v: ✗
+        c: 'no'
+  - label: Service catalogue (Consul / Kubernetes)
+    cells:
+      bowire:
+        v: ✓
+        c: 'yes'
+        d: Built-in catalogue with local file / HTTP / Consul / Kubernetes API-server / Agent providers — browsable in the workbench, scriptable via bowire catalogue list|providers|use|clear
+      postman:
+        v: paid cloud
+        c: partial
+        d: Private API Network — paid cloud tiers
+      scalar:
+        v: ✗
+        c: 'no'
+      swashbuckle:
+        v: ✗
+        c: 'no'
+      insomnia:
+        v: ✗
+        c: 'no'
+      bruno:
+        v: ✗
+        c: 'no'
+  - label: Schema drift watch
+    cells:
+      bowire:
+        v: ✓
+        c: 'yes'
+        d: Watch mode re-polls schemas on an interval and diffs at the AST level — added / removed / signature change / deprecation, a 7-day per-workspace change log, statusbar pill + rail badge, click-through to the changed method
+      postman:
+        v: paid cloud
+        c: partial
+        d: Spec-version diffing in API Builder — paid cloud tiers
+      scalar:
+        v: ✗
+        c: 'no'
+      swashbuckle:
+        v: ✗
+        c: 'no'
+      insomnia:
+        v: ✗
+        c: 'no'
+      bruno:
+        v: ✗
+        c: 'no'
+- label: Embedded in ASP.NET app
+  cells:
+    bowire:
+      v: ✓
+      c: 'yes'
+    postman:
+      v: ✗
+      c: 'no'
+    scalar:
+      v: ✓
+      c: 'yes'
+    swashbuckle:
+      v: ✓
+      c: 'yes'
+    insomnia:
+      v: ✗
+      c: 'no'
+    bruno:
+      v: ✗
+      c: 'no'
+    mockoon:
+      v: ✗
+      c: 'no'
+      d: Node / TypeScript tool
+    hoppscotch:
+      v: ✗
+      c: 'no'
+      d: Vue / TypeScript app, not a .NET library
+- label: Standalone tool
+  cells:
+    bowire:
+      v: ✓
+      c: 'yes'
+    postman:
+      v: ✓
+      c: 'yes'
+    scalar:
+      v: ✗
+      c: 'no'
+    swashbuckle:
+      v: ✗
+      c: 'no'
+    insomnia:
+      v: ✓
+      c: 'yes'
+    bruno:
+      v: ✓
+      c: 'yes'
+    mockoon:
+      v: ✓
+      c: 'yes'
+      d: Electron desktop app for Windows, macOS and Linux
+    hoppscotch:
+      v: ✓
+      c: 'yes'
+      d: Web app, PWA and a Tauri desktop app for Windows, macOS and Linux
+- label: CLI mode
+  cells:
+    bowire:
+      v: ✓
+      c: 'yes'
+    postman:
+      v: ✓
+      c: 'yes'
+    scalar:
+      v: ✗
+      c: 'no'
+    swashbuckle:
+      v: ✗
+      c: 'no'
+    insomnia:
+      v: ✓
+      c: 'yes'
+    bruno:
+      v: ✓
+      c: 'yes'
+    mockoon:
+      v: ✓
+      c: 'yes'
+      d: '@mockoon/cli, headless, plus a GitHub Action'
+    hoppscotch:
+      v: ✓
+      c: 'yes'
+      d: hopp test (@hoppscotch/cli), still alpha
+- group: onprem
+  label: On-premise deployment
+  cells:
+    bowire:
+      v: ✓
+      c: 'yes'
+    postman:
+      v: Enterprise (paid)
+      c: partial
+      d: Enterprise plan (paid)
+    scalar:
+      v: ✓
+      c: 'yes'
+    swashbuckle:
+      v: ✓
+      c: 'yes'
+    insomnia:
+      v: Enterprise (paid)
+      c: partial
+      d: Enterprise plan (paid)
+    bruno:
+      v: ✓
+      c: 'yes'
+    hoppscotch:
+      v: Community Edition
+      d: Self-hosted Community Edition (MIT); Enterprise Edition paid
+  rows:
+  - label: Docker image
+    cells:
+      bowire:
+        v: ✓
+        c: 'yes'
+      postman:
+        v: ✓
+        c: 'yes'
+      scalar:
+        v: ✓
+        c: 'yes'
+      swashbuckle:
+        v: ✓
+        c: 'yes'
+      insomnia:
+        v: ✓
+        c: 'yes'
+      bruno:
+        v: ✓
+        c: 'yes'
+      mockoon:
+        v: ✓
+        c: 'yes'
+        d: mockoon/cli
+      hoppscotch:
+        v: ✓
+        c: 'yes'
+        d: Frontend, backend and admin images plus an all-in-one container
+  - label: Compose manifest
+    cells:
+      bowire:
+        v: ✓
+        c: 'yes'
+      postman:
+        v: ✓
+        c: 'yes'
+      scalar:
+        v: ✓
+        c: 'yes'
+      swashbuckle:
+        v: ✓
+        c: 'yes'
+      insomnia:
+        v: ✓
+        c: 'yes'
+      bruno:
+        v: ✓
+        c: 'yes'
+      hoppscotch:
+        v: ✓
+        c: 'yes'
+  - label: Kubernetes / Helm
+    cells:
+      bowire:
+        v: planned
+      postman:
+        v: ✓
+        c: 'yes'
+      scalar:
+        v: ✓
+        c: 'yes'
+      swashbuckle:
+        v: ✓
+        c: 'yes'
+      insomnia:
+        v: ✓
+        c: 'yes'
+      bruno:
+        v: manual
+        c: partial
+        d: Manual K8s manifest required
+      hoppscotch:
+        v: ✓
+        c: 'yes'
+        d: Official Helm chart
+  - label: Air-gapped install
+    cells:
+      bowire:
+        v: ✓
+        c: 'yes'
+      postman:
+        v: Enterprise (paid)
+        c: partial
+        d: Enterprise plan (paid)
+      scalar:
+        v: ✓
+        c: 'yes'
+      swashbuckle:
+        v: ✓
+        c: 'yes'
+      insomnia:
+        v: Enterprise (paid)
+        c: partial
+        d: Enterprise plan (paid)
+      bruno:
+        v: ✓
+        c: 'yes'
+      mockoon:
+        v: ✓
+        c: 'yes'
+        d: Offline-first, no account needed
+  - label: SSO / SCIM
+    cells:
+      bowire:
+        v: ✓
+        c: 'yes'
+        d: 'Standalone: --auth-provider oidc against any OIDC authority (Entra ID, Okta, Keycloak), every identity getting its own slot under &lt;storage root&gt;/users/ — workspaces, recordings, collections, plugin settings — with SCIM 2.0 provisioning (opt-in via MapBowireScim) keeping the roster in step. Embedded: still inherits the host ASP.NET Core auth pipeline (OIDC / SAML / anything).'
+      postman:
+        v: Enterprise (paid)
+        c: partial
+        d: Enterprise plan (paid)
+      scalar:
+        v: Enterprise (paid)
+        c: partial
+        d: Enterprise plan (paid)
+      swashbuckle:
+        v: ✗
+        c: 'no'
+      insomnia:
+        v: Enterprise (paid)
+        c: partial
+        d: Enterprise plan (paid)
+      bruno:
+        v: ✗
+        c: 'no'
+      hoppscotch:
+        v: Enterprise (paid)
+        c: partial
+        d: SAML / OIDC SSO and SCIM on the Enterprise plan
+- label: Native .NET
+  cells:
+    bowire:
+      v: ✓
+      c: 'yes'
+    postman:
+      v: ✗
+      c: 'no'
+    scalar:
+      v: via Scalar.AspNetCore
+      c: partial
+      d: Requires Scalar.AspNetCore NuGet package
+    swashbuckle:
+      v: ✓
+      c: 'yes'
+    insomnia:
+      v: ✗
+      c: 'no'
+    bruno:
+      v: ✗
+      c: 'no'
+    mockoon:
+      v: ✗
+      c: 'no'
+    hoppscotch:
+      v: ✗
+      c: 'no'
+      d: TypeScript / Vue, desktop on Tauri
+- group: recorder
+  label: Record + replay
+  cells:
+    bowire:
+      v: ✓
+      c: 'yes'
+    postman:
+      v: Collections
+      c: partial
+      d: Via Postman Collections
+    scalar:
+      v: ✗
+      c: 'no'
+    swashbuckle:
+      v: ✗
+      c: 'no'
+    insomnia:
+      v: partial
+      c: partial
+      d: Partial recording support
+    bruno:
+      v: ✗
+      c: 'no'
+  rows:
+  - label: Record session
+    cells:
+      bowire:
+        v: ✓
+        c: 'yes'
+      postman:
+        v: ✓
+        c: 'yes'
+      scalar:
+        v: ✗
+        c: 'no'
+      swashbuckle:
+        v: ✗
+        c: 'no'
+      insomnia:
+        v: ✓
+        c: 'yes'
+      bruno:
+        v: ✗
+        c: 'no'
+      mockoon:
+        v: ✓
+        c: 'yes'
+        d: Proxy-mode recording creates one route per path and method
+  - label: Replay against env
+    cells:
+      bowire:
+        v: ✓
+        c: 'yes'
+      postman:
+        v: ✓
+        c: 'yes'
+      scalar:
+        v: ✗
+        c: 'no'
+      swashbuckle:
+        v: ✗
+        c: 'no'
+      insomnia:
+        v: ✓
+        c: 'yes'
+      bruno:
+        v: ✗
+        c: 'no'
+  - label: HAR export
+    cells:
+      bowire:
+        v: ✓
+        c: 'yes'
+      postman:
+        v: ✓
+        c: 'yes'
+      scalar:
+        v: ✗
+        c: 'no'
+      swashbuckle:
+        v: ✗
+        c: 'no'
+      insomnia:
+        v: ✓
+        c: 'yes'
+      bruno:
+        v: ✗
+        c: 'no'
+      mockoon:
+        v: ✗
+        c: 'no'
+        d: Log export as HAR is on the public roadmap (in progress)
+  - label: Convert to test assertions
+    cells:
+      bowire:
+        v: ✓
+        c: 'yes'
+      postman:
+        v: ✓
+        c: 'yes'
+      scalar:
+        v: ✗
+        c: 'no'
+      swashbuckle:
+        v: ✗
+        c: 'no'
+      insomnia:
+        v: via Inso CLI
+        c: partial
+        d: Only via the Inso CLI, not in the GUI
+      bruno:
+        v: ✗
+        c: 'no'
+  - label: Correlated multi-protocol timeline
+    cells:
+      bowire:
+        v: ✓
+        c: 'yes'
+        d: One lane per protocol on a shared time axis with per-step verdicts; correlation via header → shared id → derived second-edge bridges; same analysis as bowire recording correlate
+      postman:
+        v: ✗
+        c: 'no'
+      scalar:
+        v: ✗
+        c: 'no'
+      swashbuckle:
+        v: ✗
+        c: 'no'
+      insomnia:
+        v: ✗
+        c: 'no'
+      bruno:
+        v: ✗
+        c: 'no'
+  - label: Native export format
+    cells:
+      bowire:
+        v: .bwr
+      postman:
+        v: Collection JSON
+      scalar:
+        v: ✗
+        c: 'no'
+      swashbuckle:
+        v: ✗
+        c: 'no'
+      insomnia:
+        v: Insomnia JSON
+      bruno:
+        v: .bru
+      mockoon:
+        v: Environment JSON
+      hoppscotch:
+        v: Collection JSON
+- label: Replay as mock server
+  cells:
+    bowire:
+      v: ✓
+      c: 'yes'
+    postman:
+      v: Free tier
+      c: partial
+      d: Mock servers available in the Free tier; capacity scales with the paid plans
+    scalar:
+      v: ✗
+      c: 'no'
+    swashbuckle:
+      v: ✗
+      c: 'no'
+    insomnia:
+      v: Free tier (1k req/mo)
+      c: partial
+      d: 1,000 mock requests/month in the Essentials (free) tier; 10,000 in Pro; unlimited in Enterprise
+    bruno:
+      v: ✗
+      c: 'no'
+    mockoon:
+      v: ✓
+      c: 'yes'
+      d: Recorded proxy traffic becomes mock routes
+    hoppscotch:
+      v: partial
+      c: partial
+      d: A collection's saved examples become mock routes; no traffic recording
+- label: Mock from schema (no recording)
+  cells:
+    bowire:
+      v: ✓
+      c: 'yes'
+      d: bowire mock --schema (OpenAPI 3 doc), --grpc-schema (FileDescriptorSet), or --graphql-schema (SDL) → running mock, no traffic capture needed
+    postman:
+      v: examples
+      c: partial
+      d: Example-based mock servers; schema-derived examples
+    scalar:
+      v: REST only
+      c: partial
+      d: '@scalar/mock-server generates REST mocks from OpenAPI'
+    swashbuckle:
+      v: ✗
+      c: 'no'
+    insomnia:
+      v: ✗
+      c: 'no'
+    bruno:
+      v: ✗
+      c: 'no'
+    mockoon:
+      v: ✓
+      c: 'yes'
+      d: Bodies generated from OpenAPI schemas and examples; the CLI can run a spec directly
+- label: Mock engine depth
+  cells:
+    bowire:
+      v: ✓
+      c: 'yes'
+      d: 'WireMock feature parity: request matchers incl. JSONPath / XPath / JSON-schema / regex + stub priority, response templating with helpers + faker, named scenario state machine, selective upstream proxy (forward-on-miss), fault injection, verification API, HTTPS, admin CRUD'
+    postman:
+      v: basic
+      c: partial
+      d: Example matching + basic templating; no scenarios / faults / verification API
+    scalar:
+      v: ✗
+      c: 'no'
+    swashbuckle:
+      v: ✗
+      c: 'no'
+    insomnia:
+      v: basic
+      c: partial
+      d: Static example responses
+    bruno:
+      v: ✗
+      c: 'no'
+    mockoon:
+      v: partial
+      c: partial
+      d: Handlebars / Faker templating, rules, CRUD data buckets, latency, callbacks; no request-verification API
+    hoppscotch:
+      v: partial
+      c: partial
+      d: Static routes by method and path, variables, delays, status and headers; no logic
+- label: Multiple duplex channels
+  cells:
+    bowire:
+      v: ✓
+      c: 'yes'
+    postman:
+      v: one at a time
+      c: partial
+      d: One channel at a time (serial, not parallel)
+    scalar:
+      v: ✗
+      c: 'no'
+    swashbuckle:
+      v: ✗
+      c: 'no'
+    insomnia:
+      v: one at a time
+      c: partial
+      d: One channel at a time (serial, not parallel)
+    bruno:
+      v: one at a time
+      c: partial
+      d: One channel at a time (serial, not parallel)
+    mockoon:
+      v: partial
+      c: partial
+      d: Several WebSocket endpoints, including broadcast; WebSocket only
+- group: flows
+  label: Visual flow editor
+  cells:
+    bowire:
+      v: ✓
+      c: 'yes'
+    postman:
+      v: paid cloud
+      c: partial
+      d: Paid cloud tier only
+    scalar:
+      v: ✗
+      c: 'no'
+    swashbuckle:
+      v: ✗
+      c: 'no'
+    insomnia:
+      v: ✗
+      c: 'no'
+    bruno:
+      v: ✗
+      c: 'no'
+  rows:
+  - label: Branching (if / else)
+    cells:
+      bowire:
+        v: ✓
+        c: 'yes'
+      postman:
+        v: paid cloud
+        c: partial
+        d: Paid cloud tier only
+      scalar:
+        v: ✗
+        c: 'no'
+      swashbuckle:
+        v: ✗
+        c: 'no'
+      insomnia:
+        v: ✗
+        c: 'no'
+      bruno:
+        v: ✗
+        c: 'no'
+  - label: Loops
+    cells:
+      bowire:
+        v: ✓
+        c: 'yes'
+      postman:
+        v: paid cloud
+        c: partial
+        d: Paid cloud tier only
+      scalar:
+        v: ✗
+        c: 'no'
+      swashbuckle:
+        v: ✗
+        c: 'no'
+      insomnia:
+        v: ✗
+        c: 'no'
+      bruno:
+        v: ✗
+        c: 'no'
+  - label: Delays / wait steps
+    cells:
+      bowire:
+        v: ✓
+        c: 'yes'
+      postman:
+        v: paid cloud
+        c: partial
+        d: Paid cloud tier only
+      scalar:
+        v: ✗
+        c: 'no'
+      swashbuckle:
+        v: ✗
+        c: 'no'
+      insomnia:
+        v: ✗
+        c: 'no'
+      bruno:
+        v: ✗
+        c: 'no'
+  - label: Variable forwarding
+    cells:
+      bowire:
+        v: ✓
+        c: 'yes'
+      postman:
+        v: paid cloud
+        c: partial
+        d: Paid cloud tier only
+      scalar:
+        v: ✗
+        c: 'no'
+      swashbuckle:
+        v: ✗
+        c: 'no'
+      insomnia:
+        v: ✗
+        c: 'no'
+      bruno:
+        v: ✗
+        c: 'no'
+  - label: Per-step assertions
+    cells:
+      bowire:
+        v: ✓
+        c: 'yes'
+      postman:
+        v: paid cloud
+        c: partial
+        d: Paid cloud tier only
+      scalar:
+        v: ✗
+        c: 'no'
+      swashbuckle:
+        v: ✗
+        c: 'no'
+      insomnia:
+        v: ✗
+        c: 'no'
+      bruno:
+        v: ✗
+        c: 'no'
+- label: Performance / load testing
+  cells:
+    bowire:
+      v: ✓
+      c: 'yes'
+    postman:
+      v: ✓
+      c: 'yes'
+      d: Collection Runner with unlimited performance testing runs in the Free tier; k6 also available as a separate integration
+    scalar:
+      v: ✗
+      c: 'no'
+    swashbuckle:
+      v: ✗
+      c: 'no'
+    insomnia:
+      v: ✗
+      c: 'no'
+    bruno:
+      v: ✗
+      c: 'no'
+- label: CI test runner (JUnit / SARIF / HTML)
+  cells:
+    bowire:
+      v: ✓
+      c: 'yes'
+      d: bowire test — runs recordings or flows headless with JUnit, SARIF and HTML reports, GitHub annotations, --fail-on gates
+    postman:
+      v: ✓
+      c: 'yes'
+      d: Postman CLI / Newman with JUnit reporters
+    scalar:
+      v: ✗
+      c: 'no'
+    swashbuckle:
+      v: ✗
+      c: 'no'
+    insomnia:
+      v: Inso CLI
+      c: partial
+      d: Inso CLI
+    bruno:
+      v: ✓
+      c: 'yes'
+      d: Bruno CLI with reporter output
+    hoppscotch:
+      v: partial
+      c: partial
+      d: hopp test with JUnit XML only
+- label: Contract testing (consumer / provider)
+  cells:
+    bowire:
+      v: ✓
+      c: 'yes'
+      d: bowire contract publish|verify — a recording becomes a Pact-style consumer contract, provider verification with structural matching; broker opt-in via --broker-url, nothing egresses by default
+    postman:
+      v: schema checks
+      c: partial
+      d: Schema validation inside collections; no Pact-style consumer/provider flow
+    scalar:
+      v: ✗
+      c: 'no'
+    swashbuckle:
+      v: ✗
+      c: 'no'
+    insomnia:
+      v: ✗
+      c: 'no'
+    bruno:
+      v: ✗
+      c: 'no'
+- label: Snapshot testing
+  cells:
+    bowire:
+      v: ✓
+      c: 'yes'
+      d: exact | structural modes, __snapshots__ baselines committed to git, --update-snapshots re-baselining
+    postman:
+      v: ✗
+      c: 'no'
+    scalar:
+      v: ✗
+      c: 'no'
+    swashbuckle:
+      v: ✗
+      c: 'no'
+    insomnia:
+      v: ✗
+      c: 'no'
+    bruno:
+      v: ✗
+      c: 'no'
+- label: Data-driven test runs
+  cells:
+    bowire:
+      v: ✓
+      c: 'yes'
+      d: Per-step datasets — inline rows, CSV, or generator
+    postman:
+      v: ✓
+      c: 'yes'
+      d: Collection Runner data files (CSV/JSON)
+    scalar:
+      v: ✗
+      c: 'no'
+    swashbuckle:
+      v: ✗
+      c: 'no'
+    insomnia:
+      v: Inso CLI
+      c: partial
+      d: Via the Inso CLI
+    bruno:
+      v: CLI
+      c: partial
+      d: CLI datasets
+    hoppscotch:
+      v: ✓
+      c: 'yes'
+      d: CSV via --iteration-data
+- label: Endpoint test coverage
+  cells:
+    bowire:
+      v: ✓
+      c: 'yes'
+      d: Per-method run history + coverage chips in the Discover sidebar — see which endpoints regression runs actually touch
+    postman:
+      v: ✗
+      c: 'no'
+    scalar:
+      v: ✗
+      c: 'no'
+    swashbuckle:
+      v: ✗
+      c: 'no'
+    insomnia:
+      v: ✗
+      c: 'no'
+    bruno:
+      v: ✗
+      c: 'no'
+- label: Security scanning
+  cells:
+    bowire:
+      v: ✓ OWASP API Top 10
+      c: 'yes'
+      d: bowire scan — full OWASP API Top 10 (2023) suite covering 10/10 incl. business-flow abuse, protocol probes for GraphQL / gRPC / WebSocket / SSE / MQTT / MCP, an opt-in --active attack tier (budgeted), Nuclei templates via --nuclei + the curated Bowire.VulnDb cache (bowire vulndb update). Emits SARIF 2.1.0 with an OWASP / CWE / CVSS compliance overview.
+    postman:
+      v: secrets + governance
+      c: partial
+      d: Secret Scanner + governance rules + automated compliance scanning. No vulnerability templates or SARIF output.
+    scalar:
+      v: ✗
+      c: 'no'
+    swashbuckle:
+      v: ✗
+      c: 'no'
+    insomnia:
+      v: ✗
+      c: 'no'
+    bruno:
+      v: ✗
+      c: 'no'
+- label: Out-of-band (OAST) detection
+  cells:
+    bowire:
+      v: ✓
+      c: 'yes'
+      d: interactsh-wire-compatible client + self-hosted bowire oast serve DNS+HTTP catcher; strictly opt-in, fails closed — blind findings are skipped, never reported clean
+    postman:
+      v: ✗
+      c: 'no'
+    scalar:
+      v: ✗
+      c: 'no'
+    swashbuckle:
+      v: ✗
+      c: 'no'
+    insomnia:
+      v: ✗
+      c: 'no'
+    bruno:
+      v: ✗
+      c: 'no'
+- label: API monitoring / scheduled probes
+  cells:
+    bowire:
+      v: ✓ local
+      c: 'yes'
+      d: Saved recordings run as scheduled health probes — Monitoring rail + bowire monitor run, append-only outcome ledger, pass↔fail transition signals to Slack / PagerDuty / OTLP (opt-in packages), all local — no cloud
+    postman:
+      v: cloud
+      c: partial
+      d: Monitors — cloud-run, seat/usage limited
+    scalar:
+      v: ✗
+      c: 'no'
+    swashbuckle:
+      v: ✗
+      c: 'no'
+    insomnia:
+      v: ✗
+      c: 'no'
+    bruno:
+      v: ✗
+      c: 'no'
+- label: Traffic interception / reverse proxy
+  cells:
+    bowire:
+      v: ✓
+      c: 'yes'
+      d: In-process app.UseBowireInterceptor() middleware plus a YARP-based standalone reverse proxy; Intercept rail with Captured | Live overrides | Mock servers
+    postman:
+      v: capture only
+      c: partial
+      d: Proxy capture + Interceptor browser extension — capture only
+    scalar:
+      v: ✗
+      c: 'no'
+    swashbuckle:
+      v: ✗
+      c: 'no'
+    insomnia:
+      v: ✗
+      c: 'no'
+    bruno:
+      v: ✗
+      c: 'no'
+    mockoon:
+      v: partial
+      c: partial
+      d: Proxy mode forwards undefined routes and logs traffic
+    hoppscotch:
+      v: ✗
+      c: 'no'
+      d: The Interceptor routes requests around CORS; it does not capture traffic
+- label: AI assistant (local-first, BYOK)
+  cells:
+    bowire:
+      v: ✓
+      c: 'yes'
+      d: Side-panel chat with Ollama / LM Studio auto-detect plus optional OpenAI / Anthropic / OpenRouter / MCP providers; read-only tools by default, invoke gated behind a session-only toggle with an audit log; AI security layer (threat model, JWT analyzer, one-button OWASP scan)
+    postman:
+      v: cloud
+      c: partial
+      d: Postbot / Agent Mode — cloud, account-gated
+    scalar:
+      v: ✗
+      c: 'no'
+    swashbuckle:
+      v: ✗
+      c: 'no'
+    insomnia:
+      v: ✗
+      c: 'no'
+    bruno:
+      v: ✗
+      c: 'no'
+    mockoon:
+      v: partial
+      c: partial
+      d: Generates endpoints and templates; paid Cloud plans, credit-based
+    hoppscotch:
+      v: partial
+      c: partial
+      d: Alpha AI features in Cloud / Desktop; BYOK and local models not documented
+- label: Local-first, no account
+  cells:
+    bowire:
+      v: ✓
+      c: 'yes'
+    postman:
+      v: account required
+      c: partial
+      d: Postman account required for free tier
+    scalar:
+      v: cloud-hosted
+      c: partial
+      d: OSS client is local; hosted platform is cloud
+    swashbuckle:
+      v: ✓
+      c: 'yes'
+    insomnia:
+      v: ✓
+      c: 'yes'
+      d: No account required for local testing; cloud sync is optional and requires a Kong account
+    bruno:
+      v: ✓
+      c: 'yes'
+    mockoon:
+      v: ✓
+      c: 'yes'
+      d: Desktop app and CLI work without an account
+    hoppscotch:
+      v: partial
+      c: partial
+      d: Usable signed out with local storage; sync and teams need sign-in
+- label: Git-native workspace
+  cells:
+    bowire:
+      v: ✓
+      c: 'yes'
+      d: A workspace is a committable project folder — bowire workspace init, one JSON per entity, secrets in a gitignored sibling tree, FileSystemWatcher live-reload, a stale-pid-aware .bowire.lock writer guard; .bww remains as the portable single-file export
+    postman:
+      v: ✓
+      c: 'yes'
+      d: Native Git access advertised on the Free tier (2026)
+    scalar:
+      v: ✗
+      c: 'no'
+    swashbuckle:
+      v: ✗
+      c: 'no'
+    insomnia:
+      v: Git Sync (cloud)
+      c: partial
+      d: Git Sync available, but requires Kong cloud
+    bruno:
+      v: ✓
+      c: 'yes'
+    mockoon:
+      v: ✓
+      c: 'yes'
+      d: Environment JSON files meant to live in a git repository
+- group: catalog
+  label: Public API catalog
+  cells:
+    bowire:
+      v: internal ✓ / public via Registry
+      c: partial
+      d: Internal catalogue built in (browsable in the workbench + bowire catalogue list|providers|use|clear); public hosted docs via the Surgewave Registry
+    postman:
+      v: Public Workspaces
+      c: yes-text
+    scalar:
+      v: ✓
+      c: 'yes'
+    swashbuckle:
+      v: Swagger UI
+      c: partial
+      d: Hosted Swagger UI at /swagger
+    insomnia:
+      v: partial
+      c: partial
+      d: Kong Dev Portal (Enterprise)
+    bruno:
+      v: ✗
+      c: 'no'
+    hoppscotch:
+      v: Business plan
+      c: partial
+      d: Published docs from collections
+  rows:
+  - label: Hosted docs page
+    cells:
+      bowire:
+        v: ✗
+        c: 'no'
+      postman:
+        v: ✓
+        c: 'yes'
+      scalar:
+        v: ✓
+        c: 'yes'
+      swashbuckle:
+        v: ✓
+        c: 'yes'
+      insomnia:
+        v: Kong portal
+        c: partial
+        d: Via Kong Developer Portal
+      bruno:
+        v: ✗
+        c: 'no'
+      hoppscotch:
+        v: ✓
+        c: 'yes'
+        d: Public URL, synced with the collection
+  - label: Custom domain
+    cells:
+      bowire:
+        v: ✗
+        c: 'no'
+      postman:
+        v: Enterprise (paid)
+        c: partial
+        d: Enterprise plan (paid)
+      scalar:
+        v: Pro (paid)
+        c: partial
+        d: Scalar Pro tier (paid)
+      swashbuckle:
+        v: ✓
+        c: 'yes'
+      insomnia:
+        v: ✗
+        c: 'no'
+      bruno:
+        v: ✗
+        c: 'no'
+  - label: Try-It-Out widget
+    cells:
+      bowire:
+        v: via client
+      postman:
+        v: ✓
+        c: 'yes'
+      scalar:
+        v: ✓
+        c: 'yes'
+      swashbuckle:
+        v: ✓
+        c: 'yes'
+      insomnia:
+        v: ✗
+        c: 'no'
+      bruno:
+        v: ✗
+        c: 'no'
+  - label: API versioning
+    cells:
+      bowire:
+        v: via Surgewave Registry
+      postman:
+        v: ✓
+        c: 'yes'
+      scalar:
+        v: Pro (paid)
+        c: partial
+        d: Scalar Pro tier (paid)
+      swashbuckle:
+        v: manual
+        c: partial
+        d: Manual via OpenAPI document
+      insomnia:
+        v: ✗
+        c: 'no'
+      bruno:
+        v: ✗
+        c: 'no'
+      hoppscotch:
+        v: ✓
+        c: 'yes'
+  - label: Catalog / search
+    cells:
+      bowire:
+        v: ✓ built-in
+        c: 'yes'
+        d: Built-in catalogue — local file / HTTP / Consul / Kubernetes / Agent providers (bowire catalogue); public sharing via the Surgewave Registry
+      postman:
+        v: Public API Network
+        c: partial
+        d: Postman Public API Network
+      scalar:
+        v: ✓
+        c: 'yes'
+      swashbuckle:
+        v: ✗
+        c: 'no'
+      insomnia:
+        v: ✗
+        c: 'no'
+      bruno:
+        v: ✗
+        c: 'no'
+- group: mcp
+  label: MCP adapter
+  cells:
+    bowire:
+      v: ✓ every protocol
+      c: 'yes'
+      d: Tools + Resources + Prompts across every protocol Bowire discovers — gRPC, MQTT, NATS, AsyncAPI, REST, the whole set. Streamable-HTTP + stdio both shipped (official MCP C# SDK 2.0, revision 2026-07-28); mutating tools behind a two-step confirmation gate; URL allowlist on by default.
+    postman:
+      v: REST only
+      c: partial
+      d: Tools + Resources + Prompts, REST collections only
+    scalar:
+      v: REST docs only
+      c: partial
+      d: REST docs only, via OpenAPI
+    swashbuckle:
+      v: ✗
+      c: 'no'
+    insomnia:
+      v: client only
+      c: partial
+      d: MCP client only, not server
+    bruno:
+      v: ✗
+      c: 'no'
+  rows:
+  - label: Tools capability
+    cells:
+      bowire:
+        v: ✓
+        c: 'yes'
+      postman:
+        v: ✓
+        c: 'yes'
+      scalar:
+        v: ✗
+        c: 'no'
+      swashbuckle:
+        v: ✗
+        c: 'no'
+      insomnia:
+        v: ✗
+        c: 'no'
+      bruno:
+        v: ✗
+        c: 'no'
+  - label: Resources capability
+    cells:
+      bowire:
+        v: ✓
+        c: 'yes'
+        d: '8 resources: bowire://environments, bowire://recordings (+/{id}), bowire://collections (+/{id}), bowire://flows (+/{id}), bowire://plugins'
+      postman:
+        v: ✓
+        c: 'yes'
+      scalar:
+        v: docs-as-resources
+        c: partial
+        d: Docs content exposed as MCP resources
+      swashbuckle:
+        v: ✗
+        c: 'no'
+      insomnia:
+        v: ✗
+        c: 'no'
+      bruno:
+        v: ✗
+        c: 'no'
+  - label: Prompts capability
+    cells:
+      bowire:
+        v: ✓
+        c: 'yes'
+        d: '4 prompts: replay-recording, compare-responses, fuzz-method, scan-service'
+      postman:
+        v: ✓
+        c: 'yes'
+      scalar:
+        v: ✗
+        c: 'no'
+      swashbuckle:
+        v: ✗
+        c: 'no'
+      insomnia:
+        v: ✗
+        c: 'no'
+      bruno:
+        v: ✗
+        c: 'no'
+  - label: stdio transport
+    cells:
+      bowire:
+        v: ✓
+        c: 'yes'
+      postman:
+        v: ✓
+        c: 'yes'
+      scalar:
+        v: ✗
+        c: 'no'
+      swashbuckle:
+        v: ✗
+        c: 'no'
+      insomnia:
+        v: client only
+        c: partial
+        d: MCP client only, not server
+      bruno:
+        v: ✗
+        c: 'no'
+  - label: Streamable HTTP transport
+    cells:
+      bowire:
+        v: ✓
+        c: 'yes'
+        d: The current MCP spec transport. Embedded MapBowireMcp() mounts streamable-HTTP (default /bowire/mcp); standalone bowire mcp serve --bind http serves /mcp with optional --token bearer auth. The legacy SSE+POST split is deliberately unsupported.
+      postman:
+        v: ✓
+        c: 'yes'
+      scalar:
+        v: ✗
+        c: 'no'
+      swashbuckle:
+        v: ✗
+        c: 'no'
+      insomnia:
+        v: ✗
+        c: 'no'
+      bruno:
+        v: ✗
+        c: 'no'
+- group: platformops
+  label: Platform ops as MCP tools
+  cells:
+    bowire:
+      v: ✓ 15 tools
+      c: 'yes'
+      d: '15 tools: bowire.discover, bowire.invoke, bowire.subscribe, bowire.assert, bowire.har.import, bowire.env.list, bowire.record.{list,start,stop,replay}, bowire.mock.{start,stop,list}, bowire.allowlist.{show,permit}'
+    postman:
+      v: ✓
+      c: 'yes'
+    scalar:
+      v: ✗
+      c: 'no'
+    swashbuckle:
+      v: ✗
+      c: 'no'
+    insomnia:
+      v: ✗
+      c: 'no'
+    bruno:
+      v: ✗
+      c: 'no'
+    mockoon:
+      v: partial
+      c: partial
+      d: 'Since v9.8: mockoon-cli mcp with four tools (list, start, stop, list running)'
+    hoppscotch:
+      v: ✓
+      c: 'yes'
+      d: 'Official MCP server: 53 tools over stdio for collections, environments, requests and teams'
+  rows:
+  - label: Recording start / stop
+    cells:
+      bowire:
+        v: ✓
+        c: 'yes'
+        d: bowire.record.start / .stop / .list
+      postman:
+        v: ✓
+        c: 'yes'
+      scalar:
+        v: ✗
+        c: 'no'
+      swashbuckle:
+        v: ✗
+        c: 'no'
+      insomnia:
+        v: ✗
+        c: 'no'
+      bruno:
+        v: ✗
+        c: 'no'
+  - label: Environment list
+    cells:
+      bowire:
+        v: ✓
+        c: 'yes'
+        d: bowire.env.list — read-only enumeration; an environment-switch tool is tracked in the v2.9 MCP-completion milestone
+      postman:
+        v: ✓
+        c: 'yes'
+      scalar:
+        v: ✗
+        c: 'no'
+      swashbuckle:
+        v: ✗
+        c: 'no'
+      insomnia:
+        v: ✗
+        c: 'no'
+      bruno:
+        v: ✗
+        c: 'no'
+  - label: Replay execute
+    cells:
+      bowire:
+        v: ✓
+        c: 'yes'
+        d: bowire.record.replay
+      postman:
+        v: ✓
+        c: 'yes'
+      scalar:
+        v: ✗
+        c: 'no'
+      swashbuckle:
+        v: ✗
+        c: 'no'
+      insomnia:
+        v: ✗
+        c: 'no'
+      bruno:
+        v: ✗
+        c: 'no'
+  - label: Mock spin-up
+    cells:
+      bowire:
+        v: ✓
+        c: 'yes'
+        d: bowire.mock.start / .stop / .list
+      postman:
+        v: ✓
+        c: 'yes'
+      scalar:
+        v: ✗
+        c: 'no'
+      swashbuckle:
+        v: ✗
+        c: 'no'
+      insomnia:
+        v: ✗
+        c: 'no'
+      bruno:
+        v: ✗
+        c: 'no'
+  - label: Collection / workspace mgmt
+    cells:
+      bowire:
+        v: ✗
+        c: 'no'
+      postman:
+        v: ✓
+        c: 'yes'
+      scalar:
+        v: ✗
+        c: 'no'
+      swashbuckle:
+        v: ✗
+        c: 'no'
+      insomnia:
+        v: ✗
+        c: 'no'
+      bruno:
+        v: ✗
+        c: 'no'
+- label: License
+  cells:
+    bowire:
+      v: Apache 2.0
+    postman:
+      v: Proprietary
+    scalar:
+      v: MIT
+    swashbuckle:
+      v: MIT
+    insomnia:
+      v: Apache 2.0 (core only!)
+    bruno:
+      v: MIT
+    mockoon:
+      v: MIT
+    hoppscotch:
+      v: MIT
+      d: Community Edition; the Enterprise Edition is open-core
+- label: Price
+  cells:
+    bowire:
+      v: Free
+    postman:
+      v: Freemium
+    scalar:
+      v: Freemium
+    swashbuckle:
+      v: Free
+    insomnia:
+      v: Freemium
+    bruno:
+      v: Free
+    mockoon:
+      v: Free
+      d: Desktop app and CLI free; Cloud Team and Enterprise plans are paid
+    hoppscotch:
+      v: Freemium
+      d: Free; paid Business and Enterprise plans per user

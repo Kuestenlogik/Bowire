@@ -1,0 +1,13 @@
+---
+layout: alternative
+tool: bruno
+title: A Bruno alternative for gRPC, SignalR and MQTT — Bowire
+description: Bowire vs. Bruno — when each fits, where they differ feature by feature, and how to bring a Bruno collection over via Postman or OpenAPI export. Local-first, Apache 2.0.
+lede: Bruno keeps collections as plain files in git. Bowire shares the local-first stance and adds discovery, record &amp; replay, mocks and many more protocols.
+---
+<p>Bowire has no <code>.bru</code> importer yet &mdash; that is <a href="https://github.com/Kuestenlogik/Bowire/issues/674">#674</a>. Bruno exports a collection in other formats, and Bowire reads two of them today:</p>
+<ul>
+  <li><strong>Postman Collection.</strong> Export the collection as a Postman Collection in Bruno, then click <strong>Import Postman</strong> in Bowire's Compose rail. Method, URL, headers and body carry over; scripts and tests don't. See <a href="{{ '/docs/features/collections.html' | relative_url }}">Postman Collection import</a>.</li>
+  <li><strong>OpenAPI.</strong> Export as an OpenAPI specification and drop the file on Bowire's <a href="{{ '/docs/protocols/rest.html#local-schema-upload' | relative_url }}">Schema Files</a> tab.</li>
+  <li><strong>Or skip the export</strong> and point Bowire at the running service &mdash; <a href="{{ '/docs/features/auto-discovery.html' | relative_url }}">discovery</a> covers OpenAPI, gRPC and GraphQL.</li>
+</ul>

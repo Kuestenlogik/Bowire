@@ -1,0 +1,11 @@
+---
+layout: alternative
+tool: mockoon
+title: A Mockoon alternative for gRPC, SSE and MQTT mocks — Bowire
+description: Bowire vs. Mockoon — when each fits, where they differ feature by feature, and how to run a Mockoon API as a Bowire mock through its OpenAPI export. Apache 2.0.
+lede: Mockoon builds HTTP and WebSocket mocks by hand in a GUI. Bowire records real traffic and replays it as a mock over gRPC, SSE, WebSocket, MQTT and more — or synthesises one from a schema.
+---
+<p>Mockoon exports an environment as <strong>OpenAPI v3 JSON</strong>, and Bowire's mock server serves an OpenAPI document directly:</p>
+<pre><code>bowire mock --schema mockoon-export.json --port 7070</code></pre>
+<p>Every operation becomes a mock step whose body is generated from the declared response schema. Mockoon's templating, rules and data buckets don't carry over; add <code>--chaos</code> for latency and failures, or <code>--stateful</code> to walk a scenario. See <a href="{{ '/docs/features/mock-server.html#schema-only-mock' | relative_url }}">schema-only mock</a>.</p>
+<p>The other way in is a recording: capture a session against the real service in Bowire, and <code>bowire mock --recording session.bwr</code> replays it, streaming protocols included. See <a href="{{ '/docs/features/mock-server.html' | relative_url }}">mock server</a>.</p>

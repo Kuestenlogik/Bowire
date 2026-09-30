@@ -1,0 +1,18 @@
+---
+layout: page
+title: Alternatives — Bowire compared with Postman, Insomnia, Bruno and more
+description: How Bowire compares with Postman, Insomnia, Bruno, Hoppscotch, Scalar and Mockoon — when each tool fits, where they differ, and how to move over.
+---
+{%- comment -%}#671 — the index of the /alternatives/* pages (site/_layouts/alternative.html).{%- endcomment -%}
+<section class="features-page-hero alt-hero">
+  <h1>Bowire and the alternatives</h1>
+  <p class="features-page-tagline">Every tool here is good at something. Each page says plainly when to pick the other tool, where the two differ, and how to move over today.</p>
+</section>
+
+<ul class="alt-index">
+  {%- assign alts = site.pages | where: "layout", "alternative" | sort: "tool" -%}
+  {%- for p in alts %}
+  {%- assign o = site.data.comparison.tools | where: "id", p.tool | first %}
+  <li><a href="{{ p.url | relative_url }}"><strong>Bowire vs. {{ o.name }}</strong><span>{{ o.tag }}</span></a></li>
+  {%- endfor %}
+</ul>

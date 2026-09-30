@@ -9573,3 +9573,120 @@ select.ai-picker-input {
 .changelog-body h4 {
     margin-top: 16px;
 }
+
+/* #671 - the /alternatives/* pages (site/_layouts/alternative.html). */
+.alt-eyebrow {
+    margin: 0 0 8px;
+    font-size: 0.8125rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+.alt-hero .features-page-tagline {
+    max-width: 720px;
+    margin-left: auto;
+    margin-right: auto;
+}
+.alt-pick {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    max-width: 1000px;
+    margin: 0 auto 56px;
+}
+.alt-pick-card {
+    padding: 24px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--bg-elevated);
+}
+.alt-pick-card h2 {
+    margin: 0 0 10px;
+    font-size: 1.125rem;
+}
+.alt-pick-card p {
+    margin: 0;
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+.alt-pick-bowire {
+    border-color: var(--accent);
+}
+.alt-diff,
+.alt-migrate,
+.alt-others {
+    max-width: 1000px;
+    margin: 0 auto 56px;
+}
+.alt-diff-lede,
+.alt-legend {
+    color: var(--text-secondary);
+}
+.alt-legend {
+    font-size: 0.8125rem;
+    text-align: center;
+    margin-top: 12px;
+}
+.alt-table .comparison-feature-col {
+    width: 50%;
+}
+.alt-detail {
+    display: block;
+    margin-top: 4px;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+.alt-migrate li,
+.alt-migrate p {
+    line-height: 1.7;
+}
+.alt-migrate p {
+    margin: 0 0 14px;
+}
+.alt-migrate pre {
+    margin: 0 0 14px;
+    padding: 12px 16px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--bg-elevated);
+    overflow-x: auto;
+}
+.alt-others ul,
+.alt-index {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+.alt-index {
+    max-width: 1000px;
+    margin: 0 auto 64px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 16px;
+}
+.alt-index a {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 20px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    text-decoration: none;
+}
+.alt-index a span {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+}
+.alt-others a {
+    display: inline-block;
+    padding: 6px 14px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    text-decoration: none;
+}
+@media (max-width: 640px) {
+    .alt-table .comparison-feature-col {
+        width: 44%;
+    }
+}
