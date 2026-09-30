@@ -48,7 +48,20 @@ public sealed class BowireKeyringEndpointContribution : IBowireEndpointContribut
 {
     /// <inheritdoc />
     public void MapEndpoints(IEndpointRouteBuilder endpoints, string basePath)
-        => endpoints.MapBowireKeyringEndpoints(basePath);
+    {
+        ArgumentNullException.ThrowIfNull(endpoints);
+        endpoints.MapBowireKeyringEndpoints(basePath);
+
+        // #680 — a proxy password named keyring:service/account resolves here.
+        if (endpoints.ServiceProvider.GetService<KeyringResolver>() is { } resolver)
+        {
+            Kuestenlogik.Bowire.Net.BowireNetworkPolicy.UseKeyring(reference =>
+            {
+                var result = resolver.Resolve(reference);
+                return result.Status == KeyringReadStatus.Found ? result.Value : null;
+            });
+        }
+    }
 }
 
 /// <summary>

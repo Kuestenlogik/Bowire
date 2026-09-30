@@ -490,6 +490,12 @@ internal static class BrowserUiHost
             ["--catalogue-path"] = "Bowire:Discovery:Catalogue:Local:Path",
             ["--catalogue-url"] = "Bowire:Discovery:Catalogue:Http:Url",
             ["--catalogue-consul"] = "Bowire:Discovery:Catalogue:Consul:Address",
+            // #680 — MapBowire hands this configuration to BowireNetworkPolicy,
+            // replacing the bootstrap one; without these the workbench would
+            // drop --proxy-url the moment it started.
+            ["--proxy-url"] = "Bowire:Network:ProxyUrl",
+            ["--no-proxy"] = "Bowire:Network:NoProxy",
+            ["--ca-bundle"] = "Bowire:Network:CaBundle",
         });
         InferCatalogueProvider(builder.Configuration);
 

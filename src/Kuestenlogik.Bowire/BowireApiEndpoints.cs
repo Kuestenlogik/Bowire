@@ -83,6 +83,11 @@ internal static class BowireApiEndpoints
         }
         BowireEndpointHelpers.SetRegistry(registry);
 
+        // #680 — the host configuration's Bowire:Network:* layer (appsettings,
+        // BOWIRE_Bowire__Network__*, the CLI flags) for every outbound connection.
+        Net.BowireNetworkPolicy.UseConfiguration(
+            endpoints.ServiceProvider.GetService<Microsoft.Extensions.Configuration.IConfiguration>());
+
         // #294 — Discover the rail + module contributions and merge in
         // any descriptors that the host registered explicitly via
         // services.AddBowireRail<T>() / AddBowireModule<T>(). Built once
@@ -171,6 +176,7 @@ internal static class BowireApiEndpoints
             .MapBowireMockConfigEndpoints(basePath)
             .MapBowireProjectEndpoints(basePath)
             .MapBowireLintEndpoints(basePath)
+            .MapBowireNetworkEndpoints(basePath)
             .MapBowireReportEndpoints(basePath)
             .MapBowireSchemaChangeEndpoints(basePath)
             .MapBowireAuthEndpoints(options, basePath)

@@ -254,6 +254,7 @@ Both transports expose the same toolset. Top-level tools include:
 | `bowire.invoke` | Call a unary method with a JSON payload. |
 | `bowire.subscribe` | Sample a streaming method for a bounded window and return collected frames. |
 | `bowire.env.list` / `bowire.env.get` | Read environments stored under `~/.bowire/environments.json`. |
+| `bowire.network.get` | The network settings in force — proxy mode and URL, bypass list, CA bundle, which layer set each value, problems, and which protocols follow the proxy. Passwords appear only as their reference. See [Proxy and certificates](../setup/proxy-and-certificates.md). |
 | `bowire.recordings.list` / `bowire.recording.get` | Browse captured recordings. |
 | `bowire.mock.start` / `bowire.mock.stop` / `bowire.mock.list` | Spin up an in-process mock server from a recording, stop it, list active handles. Mutators run behind a two-step confirmation gate (`--no-confirm` to disable). |
 | `bowire.har.import` | Convert a HAR 1.2 trace into a Bowire recording — optionally writes it to disk for use with `bowire.mock.start`. |

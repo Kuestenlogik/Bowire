@@ -25,3 +25,5 @@ Bowire talks to the services you point it at. Everything else it could reach is 
 Nothing on this list is on in a fresh install except the first row. If you find Bowire contacting something that is not here, that is a bug — please [report it](https://github.com/Kuestenlogik/Bowire/issues/new).
 
 The source is Apache 2.0, so each row can be checked against the code that makes the connection.
+
+Behind a corporate proxy, every row on this list goes through the proxy you configure, with the same bypass list and trusted CAs — see [Proxy and certificates](proxy-and-certificates.md).

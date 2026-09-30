@@ -36,8 +36,11 @@ namespace Kuestenlogik.Bowire.Protocol.JsonRpc;
 ///   freeform request form.</item>
 /// </list>
 /// </remarks>
-public sealed class BowireJsonRpcProtocol : IBowireProtocol, IDisposable
+public sealed class BowireJsonRpcProtocol : IBowireProtocol, Kuestenlogik.Bowire.Net.IBowireProxySupport, IDisposable
 {
+    /// <inheritdoc />
+    public Kuestenlogik.Bowire.Net.BowireProxySupport ProxySupport => Kuestenlogik.Bowire.Net.BowireProxySupport.Full;
+
     private static readonly JsonSerializerOptions s_indented = new() { WriteIndented = true };
 
     // Lazily created in Initialize so the localhost-cert opt-in flows

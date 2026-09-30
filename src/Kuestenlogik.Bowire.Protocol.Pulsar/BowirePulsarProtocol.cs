@@ -32,8 +32,14 @@ namespace Kuestenlogik.Bowire.Protocol.Pulsar;
 /// state would leak across browser sessions).
 /// </para>
 /// </remarks>
-public sealed class BowirePulsarProtocol : IBowireProtocol, IDisposable
+public sealed class BowirePulsarProtocol : IBowireProtocol, Kuestenlogik.Bowire.Net.IBowireProxySupport, IDisposable
 {
+    /// <inheritdoc />
+    public Kuestenlogik.Bowire.Net.BowireProxySupport ProxySupport => Kuestenlogik.Bowire.Net.BowireProxySupport.Partial;
+
+    /// <inheritdoc />
+    public string? ProxyNote => "The admin REST API goes through the proxy; the broker connection uses Pulsar's binary protocol over TCP and connects directly.";
+
     private HttpClient _http = new() { Timeout = TimeSpan.FromSeconds(15) };
 
     public string Name => "Pulsar";

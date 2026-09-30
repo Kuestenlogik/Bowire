@@ -16,8 +16,11 @@ namespace Kuestenlogik.Bowire.Protocol.Rest;
 /// <see cref="BowireProtocolRegistry"/>.
 /// </summary>
 public sealed class BowireRestProtocol
-    : IBowireProtocol, IInlineHttpInvoker, IBowireDiscoveryDiagnostics, IDisposable
+    : IBowireProtocol, Kuestenlogik.Bowire.Net.IBowireProxySupport, IInlineHttpInvoker, IBowireDiscoveryDiagnostics, IDisposable
 {
+    /// <inheritdoc />
+    public Kuestenlogik.Bowire.Net.BowireProxySupport ProxySupport => Kuestenlogik.Bowire.Net.BowireProxySupport.Full;
+
     // One HttpClient for the lifetime of the plugin — fine for a dev tool.
     // 30s timeout matches the OAuth proxy timeout used elsewhere in Bowire.
     // Built lazily from BowireHttpClientFactory in Initialize() so the

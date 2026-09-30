@@ -77,6 +77,10 @@ internal static class BowireConfiguration
         ["--oast-server"] = "Bowire:Oast:Server",
         ["--oast-token"] = "Bowire:Oast:Token",
         ["--map-basemap"] = "Bowire:MapBasemap",
+        // #680 — outbound network: proxy, bypass list, CA bundle.
+        ["--proxy-url"] = "Bowire:Network:ProxyUrl",
+        ["--no-proxy"] = "Bowire:Network:NoProxy",
+        ["--ca-bundle"] = "Bowire:Network:CaBundle",
         // Subcommand-specific flags that also appear in the top-level
         // pass (because Program.cs builds the bootstrap config from the
         // whole arg list to resolve --plugin-dir). Bind them to

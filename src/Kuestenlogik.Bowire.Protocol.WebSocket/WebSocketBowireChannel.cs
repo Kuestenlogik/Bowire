@@ -103,6 +103,9 @@ internal sealed class WebSocketBowireChannel : IBowireChannel
 #pragma warning restore CA5359
             }
 
+            // #680 — the proxy and the CA bundle, after the trust callbacks above.
+            Kuestenlogik.Bowire.Net.BowireNetworkPolicy.Apply(socket.Options);
+
             if (headers is not null)
             {
                 foreach (var (key, value) in BowireMetadataKeys.WireHeaders(headers))

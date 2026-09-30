@@ -20,3 +20,5 @@
   href: updating.md
 - name: Outbound connections
   href: outbound-connections.md
+- name: Proxy and certificates
+  href: proxy-and-certificates.md

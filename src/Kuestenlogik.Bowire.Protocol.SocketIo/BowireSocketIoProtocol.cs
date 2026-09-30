@@ -11,8 +11,14 @@ namespace Kuestenlogik.Bowire.Protocol.SocketIo;
 /// <summary>
 /// Bowire protocol plugin for Socket.IO 4.x servers via SocketIOClient.
 /// </summary>
-public sealed class BowireSocketIoProtocol : IBowireProtocol
+public sealed class BowireSocketIoProtocol : IBowireProtocol, Kuestenlogik.Bowire.Net.IBowireProxySupport
 {
+    /// <inheritdoc />
+    public Kuestenlogik.Bowire.Net.BowireProxySupport ProxySupport => Kuestenlogik.Bowire.Net.BowireProxySupport.Partial;
+
+    /// <inheritdoc />
+    public string? ProxyNote => "Follows the proxy in the standalone tool through the process default; embedded in another app, the Socket.IO client connects directly, and the CA bundle does not apply.";
+
     public string Name => "Socket.IO";
     public string Description => "Engine.IO-based bidirectional event emitter — Node.js ecosystem.";
 

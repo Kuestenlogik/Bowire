@@ -609,6 +609,8 @@ internal static class RestInvoker
             CookieContainer = CookieJar.GetOrCreate(cookieEnvId)
         };
 #pragma warning restore CA2000
+        // #680 — a per-call handler follows the proxy like the shared one.
+        Kuestenlogik.Bowire.Net.BowireNetworkPolicy.Apply(cookieHandler);
         try
         {
 #pragma warning disable CA5399, CA5400

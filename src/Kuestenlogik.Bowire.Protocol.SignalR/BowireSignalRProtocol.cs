@@ -16,8 +16,11 @@ namespace Kuestenlogik.Bowire.Protocol.SignalR;
 /// Discovers hubs via <see cref="Microsoft.AspNetCore.SignalR.HubMetadata"/> in embedded mode.
 /// Auto-discovered by <see cref="BowireProtocolRegistry"/>.
 /// </summary>
-public sealed class BowireSignalRProtocol : IBowireProtocol
+public sealed class BowireSignalRProtocol : IBowireProtocol, Kuestenlogik.Bowire.Net.IBowireProxySupport
 {
+    /// <inheritdoc />
+    public Kuestenlogik.Bowire.Net.BowireProxySupport ProxySupport => Kuestenlogik.Bowire.Net.BowireProxySupport.Full;
+
     private IServiceProvider? _serviceProvider;
     /// <summary>
     /// Application config picked up at <see cref="Initialize"/>. The plugin

@@ -81,7 +81,8 @@ public static class BowireHttpClientFactory
         };
 #pragma warning restore CA5359
 
-        return handler;
+        // #680 — the proxy, the bypass list and the CA bundle.
+        return BowireNetworkPolicy.Apply(handler);
     }
 
     /// <summary>
@@ -124,6 +125,7 @@ public static class BowireHttpClientFactory
 #pragma warning restore CA5359
         };
 
-        return handler;
+        // #680 — the proxy, the bypass list and the CA bundle.
+        return BowireNetworkPolicy.Apply(handler);
     }
 }

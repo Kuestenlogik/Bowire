@@ -24,9 +24,12 @@ namespace Kuestenlogik.Bowire.Protocol.Sse;
 // just to dispose a singleton at shutdown would ripple through every plugin
 // without payoff.
 #pragma warning disable CA1001
-public sealed class BowireSseProtocol : IBowireProtocol, IInlineSseSubscriber
+public sealed class BowireSseProtocol : IBowireProtocol, Kuestenlogik.Bowire.Net.IBowireProxySupport, IInlineSseSubscriber
 #pragma warning restore CA1001
 {
+    /// <inheritdoc />
+    public Kuestenlogik.Bowire.Net.BowireProxySupport ProxySupport => Kuestenlogik.Bowire.Net.BowireProxySupport.Full;
+
     private static readonly List<SseEndpointInfo> s_registeredEndpoints = [];
     private IServiceProvider? _serviceProvider;
 

@@ -34,8 +34,14 @@ namespace Kuestenlogik.Bowire.Protocol.Otlp;
 /// it arrives.
 /// </para>
 /// </remarks>
-public sealed class BowireOtlpProtocol : IBowireProtocol
+public sealed class BowireOtlpProtocol : IBowireProtocol, Kuestenlogik.Bowire.Net.IBowireProxySupport
 {
+    /// <inheritdoc />
+    public Kuestenlogik.Bowire.Net.BowireProxySupport ProxySupport => Kuestenlogik.Bowire.Net.BowireProxySupport.NotApplicable;
+
+    /// <inheritdoc />
+    public string? ProxyNote => "OTLP listens for telemetry sent to Bowire; it makes no outbound connections.";
+
     private static readonly JsonSerializerOptions s_indentedJson = new() { WriteIndented = true };
 
     private OtlpEnvelopeStore? _store;

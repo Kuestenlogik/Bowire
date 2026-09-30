@@ -29,8 +29,14 @@ namespace Kuestenlogik.Bowire.Protocol.Mqtt;
 ///
 /// Auto-discovered by <see cref="BowireProtocolRegistry"/>.
 /// </summary>
-public sealed class BowireMqttProtocol : IBowireProtocol
+public sealed class BowireMqttProtocol : IBowireProtocol, Kuestenlogik.Bowire.Net.IBowireProxySupport
 {
+    /// <inheritdoc />
+    public Kuestenlogik.Bowire.Net.BowireProxySupport ProxySupport => Kuestenlogik.Bowire.Net.BowireProxySupport.None;
+
+    /// <inheritdoc />
+    public string? ProxyNote => "MQTT connects to the broker over plain TCP; there is no HTTP proxy in that path.";
+
     public string Name => "MQTT";
     public string Description => "Publish / subscribe over MQTT 3.1.1 + 5 brokers.";
 

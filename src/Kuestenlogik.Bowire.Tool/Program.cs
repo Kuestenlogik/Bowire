@@ -47,6 +47,15 @@ BowireStorageRoot.Apply();
 // from this same instance.
 var bootstrapConfig = BowireConfiguration.Build(args);
 
+// #680 — every outbound connection follows the network settings: the files
+// the workbench writes, overlaid by Bowire:Network:* from this configuration
+// (--proxy-url / --no-proxy / --ca-bundle). As the process default too, so
+// connections Bowire does not build itself — plugin downloads, the update
+// check, third-party client libraries — go the same way. Only the tool does
+// this; embedded in someone else's app, Bowire leaves the host's default alone.
+Kuestenlogik.Bowire.Net.BowireNetworkPolicy.UseConfiguration(bootstrapConfig);
+Kuestenlogik.Bowire.Net.BowireNetworkPolicy.InstallAsProcessDefault();
+
 // The composition root for plugin management. Everything downstream —
 // the browser UI, `bowire mock`, the plugin verbs — receives this one
 // loader rather than reaching for process-global state, so "which
