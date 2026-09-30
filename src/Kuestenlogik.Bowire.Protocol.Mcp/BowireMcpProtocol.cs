@@ -485,9 +485,12 @@ public sealed class BowireMcpProtocol : IBowireProtocol, Kuestenlogik.Bowire.Net
         // #680 — Bowire's own HttpClient, so the proxy and the CA bundle apply.
         // No client timeout: the SDK times its own requests, and an SSE stream
         // stays open far longer than HttpClient's 100 s default.
+        // #679 — the SDK builds its own requests, so the credentials go on the
+        // client itself rather than on each request.
         var transport = new HttpClientTransport(
             options,
-            Kuestenlogik.Bowire.Net.BowireHttpClientFactory.Create(null, "mcp", Timeout.InfiniteTimeSpan),
+            Kuestenlogik.Bowire.Net.BowireHttpClientFactory.CreateAuthenticated(
+                null, "mcp", Timeout.InfiniteTimeSpan, Kuestenlogik.Bowire.Auth.BowireHttpAuth.TryParse(metadata)),
             loggerFactory: null,
             ownsHttpClient: true);
 #pragma warning restore CA2000

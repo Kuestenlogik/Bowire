@@ -87,6 +87,22 @@
             if (user && !metadataHasKey(out, 'Authorization')) {
                 out['Authorization'] = 'Basic ' + utf8ToBase64(user + ':' + pass);
             }
+        } else if (auth.type === 'negotiate') {
+            // #679 - Windows-integrated: the server answers the challenge with
+            // the signed-in account's ticket; nothing to send from here.
+            out['__bowireHttpAuth__'] = JSON.stringify({ scheme: 'negotiate' });
+        } else if (auth.type === 'ntlm' || auth.type === 'digest') {
+            // #679 - challenge-response: the credentials go to the server as a
+            // marker (never a header) and answer the 401 there.
+            var httpUser = substituteVars(auth.username || '');
+            if (httpUser) {
+                out['__bowireHttpAuth__'] = JSON.stringify({
+                    scheme: auth.type,
+                    user: httpUser,
+                    password: substituteVars(auth.password || ''),
+                    domain: auth.domain ? substituteVars(auth.domain) : undefined
+                });
+            }
         } else if (auth.type === 'apikey') {
             var keyName = substituteVars(auth.key || '').trim();
             var keyValue = substituteVars(auth.value || '');

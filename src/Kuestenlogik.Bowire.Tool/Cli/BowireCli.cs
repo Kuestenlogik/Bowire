@@ -757,6 +757,49 @@ internal static class BowireCli
         cli.Headers.Add($"{BowireMetadataKeys.GrpcDescriptorSet}: {path}");
     }
 
+    // #679 - challenge-response authentication for `call`, curl's spelling.
+    private static (Option<bool> Negotiate, Option<string?> Ntlm, Option<string?> Digest) HttpAuthOptions() => (
+        new Option<bool>("--negotiate")
+        {
+            Description = "Windows-integrated authentication (Kerberos, falling back to NTLM) as the signed-in "
+                + "account. No password. Windows only.",
+        },
+        new Option<string?>("--ntlm")
+        {
+            Description = "NTLM with explicit credentials: [DOMAIN\\]user:password. Pass the password from a "
+                + "variable (\"$NTLM_PASSWORD\") rather than typing it.",
+        },
+        new Option<string?>("--digest")
+        {
+            Description = "HTTP Digest (RFC 7616, MD5 / SHA-256, qop auth / auth-int): user:password.",
+        });
+
+    /// <summary>
+    /// Fold <c>--negotiate</c> / <c>--ntlm</c> / <c>--digest</c> into the
+    /// metadata marker every HTTP-based plugin reads. An explicit <c>-H</c>
+    /// of the marker wins, as with <see cref="ApplyDescriptorSet"/>.
+    /// </summary>
+    internal static void ApplyHttpAuth(bool negotiate, string? ntlm, string? digest, CliCommandOptions cli)
+    {
+        if (cli.Headers.Exists(h => h.StartsWith(Kuestenlogik.Bowire.Auth.BowireHttpAuth.MarkerKey, StringComparison.Ordinal))) return;
+        object? marker = null;
+        if (negotiate)
+        {
+            marker = new { scheme = "negotiate" };
+        }
+        else if (!string.IsNullOrEmpty(ntlm) || !string.IsNullOrEmpty(digest))
+        {
+            var credentials = ntlm ?? digest!;
+            var colon = credentials.IndexOf(':', StringComparison.Ordinal);
+            var user = colon < 0 ? credentials : credentials[..colon];
+            var password = colon < 0 ? string.Empty : credentials[(colon + 1)..];
+            marker = new { scheme = ntlm is not null ? "ntlm" : "digest", user, password };
+        }
+        if (marker is null) return;
+        cli.Headers.Add(Kuestenlogik.Bowire.Auth.BowireHttpAuth.MarkerKey + ": "
+            + System.Text.Json.JsonSerializer.Serialize(marker));
+    }
+
     private static CliCommandOptions BuildCliOptions(
         ParseResult pr,
         Option<string> url, Option<bool> plaintext, Option<bool> verbose, Option<bool> compact,
@@ -956,6 +999,7 @@ internal static class BowireCli
         };
 
         var grpcDescriptorSet = GrpcDescriptorSetOption();
+        var (negotiate, ntlm, digest) = HttpAuthOptions();
         var cmd = new Command("call",
             "Invoke a method on any loaded protocol plugin (grpcurl-style). "
             + "Pin the plugin with `--protocol` or the `protocol@url` form; add `--stream` to follow "
@@ -964,6 +1008,7 @@ internal static class BowireCli
         cmd.Add(compact); cmd.Add(data); cmd.Add(headers);
         cmd.Add(protocol); cmd.Add(stream); cmd.Add(vars); cmd.Add(varFiles);
         cmd.Add(grpcDescriptorSet);
+        cmd.Add(negotiate); cmd.Add(ntlm); cmd.Add(digest);
         // `call` resolves the method by discovering first, so a schema named
         // here is what lets it invoke against a service the server does not
         // describe (#654).
@@ -989,6 +1034,7 @@ internal static class BowireCli
                 if (!string.IsNullOrEmpty(explicitProtocol)) cli.Protocol = explicitProtocol;
                 cli.Stream = pr.GetValue(stream);
                 ApplyDescriptorSet(pr, grpcDescriptorSet, cli);
+                ApplyHttpAuth(pr.GetValue(negotiate), pr.GetValue(ntlm), pr.GetValue(digest), cli);
                 cli.Vars.AddRange(pr.GetValue(vars) ?? []);
                 cli.VarFiles.AddRange(pr.GetValue(varFiles) ?? []);
                 var called = await CliHandler.CallAsync(cli,

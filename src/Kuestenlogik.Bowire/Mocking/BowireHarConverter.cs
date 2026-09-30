@@ -200,10 +200,13 @@ public static class BowireHarConverter
         };
     }
 
+    // Bowire's internal markers (mTLS keys, #679 credentials) are never headers;
+    // a recording made before the workbench stopped storing them must not
+    // carry them into a HAR either.
     private static object[] ToHeaderArray(IDictionary<string, string>? headers)
         => headers is null
             ? []
-            : headers.OrderBy(kv => kv.Key, StringComparer.OrdinalIgnoreCase)
+            : BowireMetadataKeys.WireHeaders(headers).OrderBy(kv => kv.Key, StringComparer.OrdinalIgnoreCase)
                 .Select(kv => (object)new { name = kv.Key, value = kv.Value }).ToArray();
 
     // Inverse of MapStatus: the recorder stores "OK" for 2xx and the numeric

@@ -51,6 +51,8 @@
         const history = getHistory();
         history.unshift({
             ...entry,
+            // #679 - never the internal markers (passwords, keys) in stored history.
+            metadata: entry && entry.metadata ? withoutBowireMarkers(entry.metadata) : entry && entry.metadata,
             timestamp: Date.now()
         });
         if (history.length > MAX_HISTORY) history.length = MAX_HISTORY;

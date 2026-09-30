@@ -405,6 +405,11 @@ internal static class RestInvoker
             }
         }
 
+        // #679 - Negotiate / NTLM / Digest. On the request for the shared,
+        // routed client; handed to the per-call builder for mTLS / cookie clients.
+        var httpAuth = BowireHttpAuth.TryParse(requestMetadata);
+        if (httpAuth is not null) request.Options.Set(BowireHttpAuth.OptionKey, httpAuth);
+
         // Body — only attach if the verb supports it AND there's something to send.
         // multipart/form-data wins when the discovery flagged the operation as
         // form-encoded; the same fields can't be both because Source bucketed
@@ -455,7 +460,7 @@ internal static class RestInvoker
         // itself, and a dev tool isn't on the hot path of a production
         // server anyway.
         var sw = Stopwatch.StartNew();
-        using var perCall = BuildPerCallHttpClient(mtlsConfig, cookieEnvId, http, out var perCallError);
+        using var perCall = BuildPerCallHttpClient(mtlsConfig, cookieEnvId, http, httpAuth, out var perCallError);
         if (perCallError is not null)
         {
             return new InvokeResult(
@@ -533,6 +538,7 @@ internal static class RestInvoker
         MtlsConfig? mtlsConfig,
         string? cookieEnvId,
         HttpClient sharedHttp,
+        BowireHttpAuthConfig? httpAuth,
         out string? error)
     {
         error = null;
@@ -543,16 +549,17 @@ internal static class RestInvoker
 
         if (mtlsConfig is not null)
         {
-            return BuildMtlsBundle(mtlsConfig, cookieEnvId, sharedHttp, out error);
+            return BuildMtlsBundle(mtlsConfig, cookieEnvId, sharedHttp, httpAuth, out error);
         }
 
-        return BuildCookieJarBundle(cookieEnvId!, sharedHttp);
+        return BuildCookieJarBundle(cookieEnvId!, sharedHttp, httpAuth);
     }
 
     private static PerCallHttpClient BuildMtlsBundle(
         MtlsConfig mtlsConfig,
         string? cookieEnvId,
         HttpClient sharedHttp,
+        BowireHttpAuthConfig? httpAuth,
         out string? error)
     {
 #pragma warning disable CA2000
@@ -575,6 +582,8 @@ internal static class RestInvoker
             mtlsHandler.UseCookies = true;
             mtlsHandler.CookieContainer = CookieJar.GetOrCreate(cookieEnvId);
         }
+        if (httpAuth is not null && mtlsOwner.Handler is HttpClientHandler authHandler)
+            BowireHttpAuth.ApplyTo(authHandler, httpAuth);
 
         try
         {
@@ -583,7 +592,9 @@ internal static class RestInvoker
             // them in the right order. CA5400 suppressed: CRL checks
             // default off (see MtlsHandlerOwner for the rationale).
 #pragma warning disable CA5400
-            var client = new HttpClient(mtlsOwner.Handler, disposeHandler: false) { Timeout = sharedHttp.Timeout };
+            var client = new HttpClient(
+                httpAuth is null ? mtlsOwner.Handler : BowireHttpAuth.Wrap(mtlsOwner.Handler, httpAuth),
+                disposeHandler: false) { Timeout = sharedHttp.Timeout };
 #pragma warning restore CA5400
             error = null;
             return new PerCallHttpClient(client, mtlsOwner, cookieHandler: null);
@@ -597,7 +608,7 @@ internal static class RestInvoker
         }
     }
 
-    private static PerCallHttpClient BuildCookieJarBundle(string cookieEnvId, HttpClient sharedHttp)
+    private static PerCallHttpClient BuildCookieJarBundle(string cookieEnvId, HttpClient sharedHttp, BowireHttpAuthConfig? httpAuth)
     {
 #pragma warning disable CA2000
         // cookieHandler ownership moves into the PerCallHttpClient
@@ -611,12 +622,15 @@ internal static class RestInvoker
 #pragma warning restore CA2000
         // #680 — a per-call handler follows the proxy like the shared one.
         Kuestenlogik.Bowire.Net.BowireNetworkPolicy.Apply(cookieHandler);
+        if (httpAuth is not null) BowireHttpAuth.ApplyTo(cookieHandler, httpAuth);
         try
         {
 #pragma warning disable CA5399, CA5400
             // CRL checks intentionally off — same rationale as the
             // mTLS path. Cookie-jar mode is a dev-tool convenience.
-            var client = new HttpClient(cookieHandler, disposeHandler: false) { Timeout = sharedHttp.Timeout };
+            var client = new HttpClient(
+                httpAuth is null ? cookieHandler : BowireHttpAuth.Wrap(cookieHandler, httpAuth),
+                disposeHandler: false) { Timeout = sharedHttp.Timeout };
 #pragma warning restore CA5399, CA5400
             return new PerCallHttpClient(client, mtlsOwner: null, cookieHandler);
         }

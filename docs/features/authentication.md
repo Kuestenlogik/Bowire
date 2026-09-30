@@ -22,6 +22,9 @@ Bowire ships with built-in auth helpers so you don't have to hand-craft `Authori
 | **AWS Signature v4** | Signs the entire HTTP request (headers + body hash) with the AWS Sig v4 algorithm. **REST-only.** | `Authorization: AWS4-HMAC-SHA256 Credential=…, SignedHeaders=…, Signature=…` plus `X-Amz-Date`, `X-Amz-Content-Sha256`, optional `X-Amz-Security-Token` |
 | **mTLS** | Client certificate + private key (PEM), optional CA bundle, optional passphrase. Wire-level TLS auth shared by REST, gRPC, WebSocket, SignalR, and the Kafka plugin. | TLS handshake — no `Authorization` header needed |
 | **Cookie jar (REST)** | Per-environment in-memory `CookieContainer`. Replays cookies a previous response set on the same origin. **REST-only.** | `Cookie: …` set automatically on follow-up calls |
+| **Windows (Negotiate / Kerberos)** | The signed-in Windows account answers the server's challenge — Kerberos, falling back to NTLM. No password typed or stored. **Windows hosts only.** | `Authorization: Negotiate …` (challenge-response) |
+| **NTLM** | Explicit domain, user and password, for where Kerberos is not available | `Authorization: NTLM …` (challenge-response) |
+| **Digest** | RFC 7616: MD5 / SHA-256 and their `-sess` variants, `qop=auth` and `auth-int`, `userhash` | `Authorization: Digest …` (challenge-response) |
 
 ## Configuration
 
@@ -260,6 +263,32 @@ Signs the entire HTTP request with the AWS Sig v4 algorithm. **REST-only** — g
 The signing happens in the REST plugin's `RestInvoker` right before the wire write — the signature includes a SHA-256 hash of the request body, so it has to happen after the body is built. The JS auth helper marks the credentials with a magic `__bowireAwsSigV4__` metadata key; `RestInvoker` strips it before forwarding the rest as HTTP headers and calls `AwsSigV4Signer.SignAsync` to add the `Authorization`, `X-Amz-Date`, `X-Amz-Content-Sha256`, and optional `X-Amz-Security-Token` headers in place.
 
 The signer is hand-rolled (no AWSSDK dependency) and uses `System.Security.Cryptography.SHA256` + `HMACSHA256`. It honours the canonical-request → string-to-sign → derived-signing-key → HMAC chain from the AWS spec, with the empty-body fast path using the well-known SHA-256 of the empty string.
+
+## Windows-integrated, NTLM and Digest
+
+Three schemes where the server answers the first request with a `401` challenge and the client proves who it is in a second round-trip. They apply to every protocol that goes over HTTP: REST, SOAP, OData, GraphQL (queries and the SSE transport), JSON-RPC, SSE, MCP, and the SignalR and WebSocket handshakes.
+
+| Scheme | Credentials | Notes |
+|--------|-------------|-------|
+| **Windows (Negotiate / Kerberos)** | none — the Windows account Bowire runs as | Offered only when Bowire runs on Windows; elsewhere the auth panel leaves it out and says why. The intranet IIS / Kestrel API case: a domain-joined machine calls it without typing a password. |
+| **NTLM** | domain, user, password | `DOMAIN\user` in the user field works too. Offered only to NTLM / Negotiate challenges — a server that answers with `Basic` never receives the password. |
+| **Digest** | user, password | Bowire implements RFC 7616 itself, because the platform's Digest supports `qop=auth` only. SHA-256 is preferred when a server offers several algorithms; `auth` over `auth-int` unless `auth-int` is all there is. A `stale` nonce is retried once. |
+
+Keep passwords in a secret (`{{secret.name}}`) or the OS keyring (`{{keyring.service/account}}`), not in the environment itself.
+
+**How it travels.** The auth panel resolves the credentials for the call and sends them to Bowire's server as an internal metadata marker (`__bowireHttpAuth__`), the same way mTLS travels. The marker never becomes a header, and it is stripped from history entries, recordings and HAR exports. On the server, each credential set gets a connection pool of its own, because NTLM and Negotiate authenticate the connection rather than the request.
+
+**From the command line:**
+
+```bash
+bowire call --negotiate https://intranet.corp/api Orders/List
+bowire call --ntlm 'CORP\alice:'"$NTLM_PASSWORD" https://intranet.corp/api Orders/List
+bowire call --digest "alice:$DIGEST_PASSWORD" https://device.local/cgi Status/Get
+```
+
+From MCP, pass the marker in `bowire.invoke`'s metadata: `{"__bowireHttpAuth__": "{\"scheme\":\"ntlm\",\"domain\":\"CORP\",\"user\":\"alice\",\"password\":\"…\"}"}`.
+
+**Behind a proxy.** Challenge-response schemes authenticate against the *target*. Credentials for the proxy itself are set under [Proxy and certificates](../setup/proxy-and-certificates.md).
 
 ## Where it's applied
 

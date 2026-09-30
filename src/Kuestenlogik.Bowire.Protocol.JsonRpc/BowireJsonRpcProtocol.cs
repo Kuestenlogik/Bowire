@@ -46,7 +46,7 @@ public sealed class BowireJsonRpcProtocol : IBowireProtocol, Kuestenlogik.Bowire
     // Lazily created in Initialize so the localhost-cert opt-in flows
     // through BowireHttpClientFactory. Falls back to a default
     // HttpClient when Initialize is skipped (test paths).
-    private HttpClient _http = new() { Timeout = TimeSpan.FromSeconds(30) };
+    private HttpClient _http = Kuestenlogik.Bowire.Net.BowireHttpClientFactory.Create(null, "jsonrpc", TimeSpan.FromSeconds(30));
 
     public string Name => "JSON-RPC";
     public string Description => "JSON-RPC 2.0 over HTTP or WebSocket — named methods with positional or keyword arguments.";
