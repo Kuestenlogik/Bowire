@@ -474,6 +474,10 @@ internal static class RestInvoker
         {
             using var resp = await effectiveClient.SendAsync(request, ct).ConfigureAwait(false);
             sw.Stop();
+            // #681 — the per-call handler stored the cookies in the jar's
+            // container; record their SameSite and persist the jar.
+            if (cookieEnvId is not null && request.RequestUri is { } cookieOrigin)
+                CookieJar.For(cookieEnvId).Observe(cookieOrigin, resp);
 
             var bodyText = resp.Content is null
                 ? string.Empty

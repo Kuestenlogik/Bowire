@@ -83,7 +83,11 @@ public static class BowireHttpClientFactory
     /// </summary>
     public static HttpClientHandler CreateHandler(IConfiguration? config, string pluginId)
     {
-        var handler = new HttpClientHandler();
+        // #681 — no cookies of its own: a shared plugin client used to keep
+        // whatever any server set and send it to that server on every later
+        // call, whichever environment it came from. Cookies now come only
+        // from the environment's jar (BowireHttpAuthRoutingHandler).
+        var handler = new HttpClientHandler { UseCookies = false };
 
 #pragma warning disable CA5359 // The relaxed path is double-guarded inside the callback.
         handler.ServerCertificateCustomValidationCallback = (request, cert, chain, errors) =>

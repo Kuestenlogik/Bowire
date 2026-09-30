@@ -21,7 +21,7 @@ Bowire ships with built-in auth helpers so you don't have to hand-craft `Authori
 | **Custom Token Endpoint** | POST credentials to an arbitrary `/login` endpoint, pluck the token from a JSON path, auto-refresh | `Authorization: Bearer <token>` (configurable prefix) |
 | **AWS Signature v4** | Signs the entire HTTP request (headers + body hash) with the AWS Sig v4 algorithm. **REST-only.** | `Authorization: AWS4-HMAC-SHA256 Credential=…, SignedHeaders=…, Signature=…` plus `X-Amz-Date`, `X-Amz-Content-Sha256`, optional `X-Amz-Security-Token` |
 | **mTLS** | Client certificate + private key (PEM), optional CA bundle, optional passphrase. Wire-level TLS auth shared by REST, gRPC, WebSocket, SignalR, and the Kafka plugin. | TLS handshake — no `Authorization` header needed |
-| **Cookie jar (REST)** | Per-environment in-memory `CookieContainer`. Replays cookies a previous response set on the same origin. **REST-only.** | `Cookie: …` set automatically on follow-up calls |
+| **Cookie jar** | Per workspace and environment; persistent cookies survive a restart. Replays what a response set on the same origin — for REST, SOAP, OData, GraphQL, JSON-RPC, SSE, MCP and the SignalR / WebSocket handshakes. A manager shows, edits and clears them. | `Cookie: …` set automatically on follow-up calls |
 | **Windows (Negotiate / Kerberos)** | The signed-in Windows account answers the server's challenge — Kerberos, falling back to NTLM. No password typed or stored. **Windows hosts only.** | `Authorization: Negotiate …` (challenge-response) |
 | **NTLM** | Explicit domain, user and password, for where Kerberos is not available | `Authorization: NTLM …` (challenge-response) |
 | **Digest** | RFC 7616: MD5 / SHA-256 and their `-sess` variants, `qop=auth` and `auth-int`, `userhash` | `Authorization: Digest …` (challenge-response) |
@@ -366,16 +366,35 @@ The JS layer ships PEM material to the plugin invokers via a magic metadata mark
 
 Plugins call `MtlsConfig.TryParseFromMetadata(...)`, then `MtlsConfig.StripMarker(...)` on the metadata before forwarding it as protocol-level headers (gRPC `Metadata`, HTTP request headers, …) so the secret payload never reaches the wire as a regular header.
 
-### Cookie jar (REST)
+## Cookie jar
 
-When the Cookie-jar helper is on, the REST plugin attaches a per-environment `CookieContainer` to the request handler. Cookies the server sets via `Set-Cookie` are stored, then replayed on the next call against the same origin. Use it to model real session flows:
+Switch on **Keep cookies** in an environment's auth section and every call from that environment keeps what a server sets with `Set-Cookie` and sends it back on the next call to the same origin — the way a browser does. Use it for session-based APIs:
 
-1. `POST /login` with credentials in the body → server returns `Set-Cookie: session=abc`
-2. `GET /me` against the same env → Bowire automatically attaches `Cookie: session=abc`
+1. `POST /login` with credentials in the body → the server answers `Set-Cookie: session=abc`
+2. `GET /me` in the same environment → Bowire sends `Cookie: session=abc`
 
-Memory only by design (process restart wipes the jar), so a stale token can't haunt the next workbench session. The "Clear cookies" button on the env-auth page wipes the container ahead of the next call.
+**Which protocols.** Every call that goes over HTTP: REST, SOAP, OData, GraphQL (queries and the SSE transport), JSON-RPC, SSE, MCP, and the SignalR and WebSocket handshakes — the upgrade is where a socket API usually decides who you are.
 
-mTLS and cookie-jar mode compose: when both are active, the same `HttpClientHandler` carries the client cert and the per-env `CookieContainer`.
+**Matching** follows RFC 6265: a cookie goes back only to its domain (and its subdomains when it names one), under its path, over HTTPS only when it is `Secure`, and not after it expires. A `Set-Cookie` for a domain the response did not come from is dropped.
+
+**Persistence.** Each workspace keeps its jars in `cookies.json`, one jar per environment. Persistent cookies survive a restart; session cookies (no expiry) end with the Bowire process, as they do in a browser. A git-native workspace's `.gitignore` excludes `cookies.json`. The jars ride along in the workspace export (`.bww`) and come back on import.
+
+**The manager.** Under the switch, the jar is listed by domain — name, value (masked until you click *Show*), path, expiry, `Secure` / `HttpOnly` / `SameSite`. Edit a cookie, add one, delete one, clear a domain, or clear the jar.
+
+**From the command line and MCP:**
+
+```bash
+bowire cookies list --workspace-id ws_orders --env staging     # values masked; --show-values to print them
+bowire cookies clear --workspace-id ws_orders --env staging --domain api.example.com
+```
+
+The MCP tools `bowire.cookies.list` (values masked) and `bowire.cookies.clear` (two-step) do the same.
+
+**Cookie values are credentials.** A recorded step keeps a `Cookie` header's name and replaces its value; HAR exports replace `Cookie` and `Set-Cookie` values the same way. Switch **Keep cookie values in recordings** on in the cookie section when a recording has to replay a session as it was. Test reports carry no request headers, so no cookie reaches them.
+
+**Without the switch**, no cookies are kept at all — Bowire's HTTP clients hold none of their own, so one environment's session never leaks into another's calls.
+
+mTLS and the cookie jar compose: when both are active, the handler that carries the client certificate also carries the jar.
 
 ## Tips
 

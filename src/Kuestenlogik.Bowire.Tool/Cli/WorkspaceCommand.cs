@@ -57,6 +57,9 @@ internal static class WorkspaceCommand
         "# stays committed so the team sees what was captured.",
         "recordings/bodies/",
         "",
+        "# Cookie jars (#681) - session credentials, never committed.",
+        "cookies.json",
+        "",
         "# Workbench cache (bundle-format conversions, watcher state).",
         ".bowire-cache/",
         "",
@@ -450,6 +453,21 @@ internal static class WorkspaceCommand
             catch (JsonException) { /* skip on malformed */ }
         }
 
+        // #681 - the cookie jars ride along, keyed by environment id.
+        var cookiesPath = Path.Combine(fullSource, Kuestenlogik.Bowire.Auth.CookieJar.FileName);
+        if (File.Exists(cookiesPath))
+        {
+            try
+            {
+                var cookiesRaw = await File.ReadAllTextAsync(cookiesPath, ct).ConfigureAwait(false);
+                if (System.Text.Json.Nodes.JsonNode.Parse(cookiesRaw)?["environments"] is System.Text.Json.Nodes.JsonObject jars)
+                {
+                    data["cookies"] = jars.DeepClone();
+                }
+            }
+            catch (JsonException) { /* skip on malformed */ }
+        }
+
         var perKindCount = new Dictionary<string, int>(StringComparer.Ordinal);
         try
         {
@@ -617,6 +635,15 @@ internal static class WorkspaceCommand
         {
             await stderr.WriteLineAsync($"workspace import: write failed: {ex.Message}").ConfigureAwait(false);
             return 70;
+        }
+
+        // #681 - the cookie jars, when the export carried them.
+        if (v2Data["cookies"] is System.Text.Json.Nodes.JsonObject cookieJars && cookieJars.Count > 0)
+        {
+            var file = new System.Text.Json.Nodes.JsonObject { ["version"] = 1, ["environments"] = cookieJars.DeepClone() };
+            await File.WriteAllTextAsync(
+                Path.Combine(fullTarget, Kuestenlogik.Bowire.Auth.CookieJar.FileName),
+                file.ToJsonString(IndentedJsonOpts), ct).ConfigureAwait(false);
         }
 
         await stdout.WriteLineAsync($"Imported workspace from {fullInput} into {fullTarget}").ConfigureAwait(false);

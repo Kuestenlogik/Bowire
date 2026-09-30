@@ -16993,6 +16993,115 @@ subtler
     background: var(--bowire-accent-hover);
 }
 
+.bowire-auth-preview-btn.danger {
+    background: var(--bowire-danger, #dc2626);
+}
+.bowire-auth-preview-btn[disabled] {
+    opacity: 0.5;
+    cursor: default;
+}
+
+/* #681 - cookie manager in the environment's auth section. */
+.bowire-cookie-manager {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 8px;
+}
+.bowire-cookie-manager-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+}
+.bowire-cookie-manager-title {
+    flex: 1;
+    font-size: 12px;
+    color: var(--bowire-text-secondary);
+}
+.bowire-cookie-manager-error {
+    font-size: 12px;
+    color: var(--bowire-danger, #dc2626);
+}
+.bowire-cookie-manager-empty {
+    font-size: 12px;
+    color: var(--bowire-text-tertiary);
+}
+.bowire-cookie-domain {
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius-sm);
+    overflow: hidden;
+}
+.bowire-cookie-domain-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 4px 8px;
+    background: var(--bowire-surface);
+    font-size: 12px;
+    font-weight: 600;
+}
+.bowire-cookie-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 2px 8px;
+    padding: 6px 8px;
+    border-top: 1px solid var(--bowire-border);
+    font-size: 12px;
+}
+.bowire-cookie-main {
+    display: flex;
+    gap: 8px;
+    min-width: 0;
+}
+.bowire-cookie-name {
+    font-weight: 600;
+}
+.bowire-cookie-value {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--bowire-text-secondary);
+}
+.bowire-cookie-meta {
+    grid-column: 1;
+    color: var(--bowire-text-tertiary);
+    font-size: 11px;
+}
+.bowire-cookie-actions {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+.bowire-cookie-editor {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px;
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius-sm);
+}
+.bowire-cookie-editor-row {
+    display: grid;
+    grid-template-columns: 140px minmax(0, 1fr);
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+}
+.bowire-cookie-editor-check {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+}
+.bowire-cookie-editor-actions {
+    display: flex;
+    gap: 6px;
+}
+
 .bowire-auth-preview-token {
     padding: 8px 10px;
     background: var(--bowire-bg-elevated);

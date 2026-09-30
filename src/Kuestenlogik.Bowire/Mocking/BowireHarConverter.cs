@@ -142,10 +142,16 @@ public static class BowireHarConverter
     /// import already drops (cache / timings detail / page IDs) are emitted as
     /// their conventional empty shapes.
     /// </summary>
-    public static string ToHar(BowireRecording recording, string? creatorName = null)
+    /// <param name="recording">The recording to export.</param>
+    /// <param name="creatorName">The HAR creator name; Bowire when omitted.</param>
+    /// <param name="redactCookies">
+    /// #681 — cookie values are credentials: <c>Cookie</c> and <c>Set-Cookie</c>
+    /// values are replaced unless the caller explicitly keeps them.
+    /// </param>
+    public static string ToHar(BowireRecording recording, string? creatorName = null, bool redactCookies = true)
     {
         ArgumentNullException.ThrowIfNull(recording);
-        var entries = recording.Steps.Select(ToEntry).ToArray();
+        var entries = recording.Steps.Select(step => ToEntry(step, redactCookies)).ToArray();
         var doc = new
         {
             log = new
@@ -158,7 +164,7 @@ public static class BowireHarConverter
         return JsonSerializer.Serialize(doc, s_exportJson);
     }
 
-    private static object ToEntry(BowireRecordingStep step)
+    private static object ToEntry(BowireRecordingStep step, bool redactCookies)
     {
         var url = (step.ServerUrl ?? "") + (step.HttpPath ?? "/");
         return new
@@ -172,7 +178,7 @@ public static class BowireHarConverter
                 url,
                 httpVersion = "HTTP/1.1",
                 cookies = Array.Empty<object>(),
-                headers = ToHeaderArray(step.Metadata),
+                headers = ToHeaderArray(step.Metadata, redactCookies),
                 queryString = Array.Empty<object>(),
                 postData = step.Body is null ? null : new { mimeType = "application/json", text = step.Body },
                 headersSize = -1,
@@ -184,7 +190,7 @@ public static class BowireHarConverter
                 statusText = step.Status,
                 httpVersion = "HTTP/1.1",
                 cookies = Array.Empty<object>(),
-                headers = ToHeaderArray(step.ResponseHeaders),
+                headers = ToHeaderArray(step.ResponseHeaders, redactCookies),
                 content = new
                 {
                     size = step.Response is null ? 0 : Encoding.UTF8.GetByteCount(step.Response),
@@ -203,11 +209,19 @@ public static class BowireHarConverter
     // Bowire's internal markers (mTLS keys, #679 credentials) are never headers;
     // a recording made before the workbench stopped storing them must not
     // carry them into a HAR either.
-    private static object[] ToHeaderArray(IDictionary<string, string>? headers)
+    private static object[] ToHeaderArray(IDictionary<string, string>? headers, bool redactCookies)
         => headers is null
             ? []
             : BowireMetadataKeys.WireHeaders(headers).OrderBy(kv => kv.Key, StringComparer.OrdinalIgnoreCase)
-                .Select(kv => (object)new { name = kv.Key, value = kv.Value }).ToArray();
+                .Select(kv => (object)new
+                {
+                    name = kv.Key,
+                    value = redactCookies && IsCookieHeader(kv.Key) ? RedactedPlaceholder : kv.Value,
+                }).ToArray();
+
+    private static bool IsCookieHeader(string name) =>
+        name.Equals("Cookie", StringComparison.OrdinalIgnoreCase)
+        || name.Equals("Set-Cookie", StringComparison.OrdinalIgnoreCase);
 
     // Inverse of MapStatus: the recorder stores "OK" for 2xx and the numeric
     // code otherwise, so map back to a concrete response status.

@@ -451,14 +451,9 @@
                 onClick: function () {
                     closeDrawer();
                     try {
+                        // One export path, so the cookie jars (#681) ride along here too.
                         var ws = activeWorkspace();
-                        var payload = exportWorkspaceJson(ws.id);
-                        var blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-                        var a = document.createElement('a');
-                        a.href = URL.createObjectURL(blob);
-                        a.download = (ws.name || 'workspace') + '.bww';
-                        a.click();
-                        setTimeout(function () { URL.revokeObjectURL(a.href); }, 0);
+                        if (!downloadWorkspaceExport(ws.id)) throw new Error('');
                     } catch (e) {
                         if (typeof toast === 'function') toast(t('drawer.exportFailed') + e.message, 'error');
                     }
@@ -6204,29 +6199,215 @@
         cookieRow.appendChild(cookieWrap);
         section.appendChild(cookieRow);
 
-        // Clear-cookies button — only meaningful when the toggle is on.
+        // #681 - the cookie manager: what the jar holds, by domain, with edit,
+        // add, delete and clear. The jar lives on the server (per workspace
+        // and environment, persisted), so every change goes through the API.
         if (auth.persistCookies) {
-            var clearRow = el('div', { className: 'bowire-auth-row' });
-            clearRow.appendChild(el('label', { className: 'bowire-auth-label', textContent: '' }));
-            var clearBtn = el('button', {
-                className: 'bowire-auth-preview-btn',
-                textContent: t('auth.clearCookies'),
-                onClick: async function () {
-                    var envId = getActiveEnvId();
-                    if (!envId) return;
-                    try {
-                        await fetch(config.prefix + '/api/auth/cookie-jar?env=' + encodeURIComponent(envId), { method: 'DELETE' });
-                        toast(t('auth.cookiesCleared'));
-                    } catch (e) {
-                        toast(t('auth.clearCookiesFailed', { reason: e.message }), 'error');
-                    }
-                }
-            });
-            clearRow.appendChild(clearBtn);
-            section.appendChild(clearRow);
+            section.appendChild(renderCookieManager());
         }
 
+        // Recordings mask Cookie header values by default; this is the switch.
+        var keepRow = el('div', { className: 'bowire-auth-row' });
+        keepRow.appendChild(el('label', { className: 'bowire-auth-label', textContent: t('auth.cookies.recordValues') }));
+        var keepWrap = el('div', { className: 'bowire-auth-checkbox-wrap' });
+        var keepCheck = el('input', {
+            type: 'checkbox',
+            className: 'bowire-auth-checkbox',
+            onChange: function (e) {
+                try { localStorage.setItem('bowire_record_cookie_values', e.target.checked ? 'true' : 'false'); } catch (err) { /* private mode */ }
+            }
+        });
+        try { if (localStorage.getItem('bowire_record_cookie_values') === 'true') keepCheck.setAttribute('checked', 'checked'); } catch (err) { /* private mode */ }
+        keepWrap.appendChild(keepCheck);
+        keepWrap.appendChild(el('span', { className: 'bowire-auth-checkbox-hint', textContent: t('auth.cookies.recordValuesHint') }));
+        keepRow.appendChild(keepWrap);
+        section.appendChild(keepRow);
+
         return section;
+    }
+
+    var cookieManager = { envId: null, loading: false, cookies: null, editing: null, reveal: {}, error: null };
+
+    function _cookieJarUrl(envId, extra) {
+        var ws = (typeof workspaceParam === 'function') ? workspaceParam(true) : '';
+        return config.prefix + '/api/auth/cookie-jar?env=' + encodeURIComponent(envId) + ws + (extra || '');
+    }
+
+    function loadCookieJar(envId, force) {
+        if (!envId) return;
+        if (cookieManager.loading) return;
+        if (!force && cookieManager.envId === envId && cookieManager.cookies) return;
+        cookieManager.loading = true;
+        cookieManager.envId = envId;
+        fetch(_cookieJarUrl(envId))
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .catch(function () { return null; })
+            .then(function (data) {
+                cookieManager.loading = false;
+                cookieManager.cookies = (data && data.cookies) || [];
+                if (typeof renderEnvManager === 'function') renderEnvManager();
+            });
+    }
+
+    function _cookieJarSend(method, extra, body) {
+        var envId = cookieManager.envId;
+        if (!envId) return;
+        var init = { method: method, headers: { 'Content-Type': 'application/json' } };
+        if (body) init.body = JSON.stringify(body);
+        fetch(_cookieJarUrl(envId, extra), init)
+            .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, json: j }; }); })
+            .then(function (res) {
+                if (!res.ok) {
+                    cookieManager.error = (res.json && res.json.error) || t('auth.cookies.saveFailed');
+                } else {
+                    cookieManager.error = null;
+                    cookieManager.cookies = res.json.cookies || [];
+                    cookieManager.editing = null;
+                    if (method === 'DELETE' && !extra) toast(t('auth.cookiesCleared'));
+                }
+                if (typeof renderEnvManager === 'function') renderEnvManager();
+            })
+            .catch(function (e) {
+                cookieManager.error = method === 'DELETE'
+                    ? t('auth.clearCookiesFailed', { reason: (e && e.message) || e })
+                    : t('auth.cookies.saveFailed');
+                if (typeof renderEnvManager === 'function') renderEnvManager();
+            });
+    }
+
+    function _cookieKey(c) { return (c.domain || '') + '|' + (c.path || '/') + '|' + c.name; }
+
+    function _cookieQuery(c) {
+        return '&domain=' + encodeURIComponent(c.domain) + '&path=' + encodeURIComponent(c.path || '/') + '&name=' + encodeURIComponent(c.name);
+    }
+
+    function renderCookieManager() {
+        var box = el('div', { className: 'bowire-cookie-manager' });
+        var envId = getActiveEnvId();
+        if (!envId) return box;
+        loadCookieJar(envId, false);
+
+        var cookies = cookieManager.envId === envId ? cookieManager.cookies : null;
+        var head = el('div', { className: 'bowire-cookie-manager-head' },
+            el('span', { className: 'bowire-cookie-manager-title', textContent: cookies
+                ? t('auth.cookies.count', { count: cookies.length })
+                : t('auth.cookies.loading') }),
+            el('button', { className: 'bowire-auth-preview-btn', textContent: t('auth.cookies.add'),
+                onClick: function () {
+                    cookieManager.editing = { original: null, cookie: { name: '', value: '', domain: '', path: '/', secure: false, httpOnly: false, sameSite: '', session: true, expires: '' } };
+                    renderEnvManager();
+                } }),
+            el('button', { className: 'bowire-auth-preview-btn', textContent: t('auth.cookies.refresh'),
+                onClick: function () { loadCookieJar(envId, true); } }),
+            el('button', { className: 'bowire-auth-preview-btn danger', textContent: t('auth.clearCookies'),
+                disabled: !cookies || cookies.length === 0,
+                onClick: function () { _cookieJarSend('DELETE'); } })
+        );
+        box.appendChild(head);
+        if (cookieManager.error) {
+            box.appendChild(el('div', { className: 'bowire-cookie-manager-error', textContent: cookieManager.error }));
+        }
+        if (cookieManager.editing) box.appendChild(renderCookieEditor(cookieManager.editing));
+        if (!cookies) return box;
+        if (cookies.length === 0) {
+            box.appendChild(el('div', { className: 'bowire-cookie-manager-empty', textContent: t('auth.cookies.empty') }));
+            return box;
+        }
+
+        var byDomain = {};
+        cookies.forEach(function (c) {
+            var d = (c.domain || '').replace(/^\./, '');
+            (byDomain[d] = byDomain[d] || []).push(c);
+        });
+        Object.keys(byDomain).sort().forEach(function (domain) {
+            var group = el('div', { className: 'bowire-cookie-domain' });
+            group.appendChild(el('div', { className: 'bowire-cookie-domain-head' },
+                el('span', { className: 'bowire-cookie-domain-name', textContent: domain }),
+                el('button', { className: 'bowire-auth-preview-btn', textContent: t('auth.cookies.clearDomain'),
+                    onClick: function () { _cookieJarSend('DELETE', '&domain=' + encodeURIComponent(domain)); } })));
+            byDomain[domain].forEach(function (c) {
+                var key = _cookieKey(c);
+                var shown = !!cookieManager.reveal[key];
+                var flags = [];
+                if (c.secure) flags.push('Secure');  // i18n-exempt: the cookie attribute's name
+                if (c.httpOnly) flags.push('HttpOnly');  // i18n-exempt: the cookie attribute's name
+                if (c.sameSite) flags.push('SameSite=' + c.sameSite);  // i18n-exempt: the cookie attribute's name
+                var expiry = c.session ? t('auth.cookies.session') : new Date(c.expires).toLocaleString();
+                group.appendChild(el('div', { className: 'bowire-cookie-row' },
+                    el('div', { className: 'bowire-cookie-main' },
+                        el('code', { className: 'bowire-cookie-name', textContent: c.name }),
+                        el('code', { className: 'bowire-cookie-value', textContent: shown ? c.value : '••••••' })),
+                    el('div', { className: 'bowire-cookie-meta', textContent: (c.path || '/') + ' · ' + expiry + (flags.length ? ' · ' + flags.join(' ') : '') }),
+                    el('div', { className: 'bowire-cookie-actions' },
+                        el('button', { className: 'bowire-auth-preview-btn', textContent: shown ? t('auth.cookies.hide') : t('auth.cookies.show'),
+                            onClick: function () { cookieManager.reveal[key] = !shown; renderEnvManager(); } }),
+                        el('button', { className: 'bowire-auth-preview-btn', textContent: t('auth.cookies.edit'),
+                            onClick: function () {
+                                var copy = Object.assign({}, c);
+                                copy.expires = c.session ? '' : _toLocalInput(c.expires);
+                                cookieManager.editing = { original: c, cookie: copy };
+                                renderEnvManager();
+                            } }),
+                        el('button', { className: 'bowire-auth-preview-btn danger', textContent: t('auth.cookies.delete'),
+                            onClick: function () { _cookieJarSend('DELETE', _cookieQuery(c)); } }))));
+            });
+            box.appendChild(group);
+        });
+        return box;
+    }
+
+    function _toLocalInput(iso) {
+        var d = new Date(iso);
+        if (isNaN(d.getTime())) return '';
+        var pad = function (n) { return (n < 10 ? '0' : '') + n; };
+        return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+    }
+
+    function renderCookieEditor(editing) {
+        var c = editing.cookie;
+        var form = el('div', { className: 'bowire-cookie-editor' });
+        function field(label, prop, type, placeholder) {
+            var input = el('input', {
+                className: 'bowire-auth-input', type: type || 'text', placeholder: placeholder || '',
+                onInput: function (e) { c[prop] = e.target.value; }
+            });
+            input.value = c[prop] || '';
+            form.appendChild(el('label', { className: 'bowire-cookie-editor-row' },
+                el('span', { textContent: label }), input));
+        }
+        field(t('auth.cookies.name'), 'name');
+        field(t('auth.cookies.value'), 'value');
+        field(t('auth.cookies.domain'), 'domain', 'text', 'api.example.com');
+        field(t('auth.cookies.path'), 'path', 'text', '/');
+        field(t('auth.cookies.expires'), 'expires', 'datetime-local');
+        function check(label, prop) {
+            var box = el('input', { type: 'checkbox', onChange: function (e) { c[prop] = !!e.target.checked; } });
+            box.checked = !!c[prop];
+            form.appendChild(el('label', { className: 'bowire-cookie-editor-check' }, box, el('span', { textContent: label })));
+        }
+        check('Secure', 'secure');  // i18n-exempt: the cookie attribute's name
+        check('HttpOnly', 'httpOnly');  // i18n-exempt: the cookie attribute's name
+        var sameSite = el('select', { className: 'bowire-auth-select', onChange: function (e) { c.sameSite = e.target.value; } },
+            el('option', { value: '', textContent: t('auth.cookies.sameSiteUnset') }),
+            el('option', { value: 'Strict', textContent: 'Strict' }),  // i18n-exempt: a SameSite value
+            el('option', { value: 'Lax', textContent: 'Lax' }),  // i18n-exempt: a SameSite value
+            el('option', { value: 'None', textContent: 'None' }));  // i18n-exempt: a SameSite value
+        sameSite.value = c.sameSite || '';
+        form.appendChild(el('label', { className: 'bowire-cookie-editor-row' }, el('span', { textContent: 'SameSite' }), sameSite));  // i18n-exempt: the cookie attribute's name
+        form.appendChild(el('div', { className: 'bowire-cookie-editor-actions' },
+            el('button', { className: 'bowire-auth-preview-btn', textContent: t('auth.cookies.save'),
+                onClick: function () {
+                    var body = {
+                        name: c.name, value: c.value, domain: c.domain, path: c.path || '/',
+                        secure: !!c.secure, httpOnly: !!c.httpOnly, sameSite: c.sameSite || null,
+                        session: !c.expires,
+                        expires: c.expires ? new Date(c.expires).toISOString() : '0001-01-01T00:00:00'
+                    };
+                    _cookieJarSend('PUT', editing.original ? _cookieQuery(editing.original) : '', body);
+                } }),
+            el('button', { className: 'bowire-auth-preview-btn', textContent: t('auth.cookies.cancel'),
+                onClick: function () { cookieManager.editing = null; renderEnvManager(); } })));
+        return form;
     }
 
     /**

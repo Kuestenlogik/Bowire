@@ -396,6 +396,48 @@ public sealed class BowireMcpTools
             JsonOpts);
     }
 
+    [McpServerTool(Name = "bowire.cookies.list")]
+    [Description("List the cookie jars (#681): per environment, the cookies Bowire's calls send and keep — domain, path, name, expiry, Secure / HttpOnly / SameSite. Values are credentials and are masked.")]
+    public static string CookiesList(
+        [Description("Workspace id whose jars to read; omit for the jars kept outside any workspace.")] string? workspaceId = null,
+        [Description("Only this environment's jar.")] string? env = null)
+    {
+        using var scope = string.IsNullOrWhiteSpace(workspaceId) ? null : Kuestenlogik.Bowire.Plugins.BowirePluginSettingsScope.Enter(workspaceId.Trim());
+        var envs = string.IsNullOrWhiteSpace(env) ? Kuestenlogik.Bowire.Auth.CookieJar.StoredEnvironments() : [env.Trim()];
+        return JsonSerializer.Serialize(envs.Select(e => new
+        {
+            env = e,
+            cookies = Kuestenlogik.Bowire.Auth.CookieJar.Snapshot(e).Select(c => new
+            {
+                domain = c.Domain, path = c.Path, name = c.Name, value = "***",
+                expires = c.Session ? (DateTime?)null : c.Expires.ToUniversalTime(),
+                secure = c.Secure, httpOnly = c.HttpOnly, sameSite = c.SameSite, session = c.Session,
+            }),
+        }), JsonOpts);
+    }
+
+    [McpServerTool(Name = "bowire.cookies.clear")]
+    [Description("Clear a cookie jar (#681): an environment's whole jar, or one domain in it. Two-step by default: the first call returns { pending, confirmationToken, plan }; re-invoke with confirm=true or pass the token back.")]
+    public string CookiesClear(
+        [Description("The environment whose jar to clear.")] string env,
+        [Description("Only this domain's cookies.")] string? domain = null,
+        [Description("Workspace id the jar belongs to; omit for the jars kept outside any workspace.")] string? workspaceId = null,
+        [Description("Skip the pending-confirmation step.")] bool confirm = false,
+        [Description("Confirmation token returned by a prior pending call.")] string? confirmationToken = null)
+    {
+        if (string.IsNullOrWhiteSpace(env))
+            return JsonSerializer.Serialize(new { cleared = false, error = "env is required." }, JsonOpts);
+        var plan = $"Clear {(string.IsNullOrWhiteSpace(domain) ? "every cookie" : $"the cookies of {domain}")} in environment \"{env}\"'s jar"
+            + (string.IsNullOrWhiteSpace(workspaceId) ? "." : $" in workspace \"{workspaceId}\".");
+        if (TryConfirmOrPark("bowire.cookies.clear", plan, confirm, confirmationToken, out var pendingResponse))
+            return pendingResponse!;
+
+        using var scope = string.IsNullOrWhiteSpace(workspaceId) ? null : Kuestenlogik.Bowire.Plugins.BowirePluginSettingsScope.Enter(workspaceId.Trim());
+        var jar = Kuestenlogik.Bowire.Auth.CookieJar.For(env.Trim());
+        var removed = string.IsNullOrWhiteSpace(domain) ? jar.Clear() : jar.ClearDomain(domain.Trim());
+        return JsonSerializer.Serialize(new { cleared = true, removed }, JsonOpts);
+    }
+
     [McpServerTool(Name = "bowire.record.list")]
     [Description("List Bowire recordings stored under ~/.bowire/recordings.json — id, name, step count, captured at. Step bodies omitted; ask for details via the (planned) record.replay tool.")]
     public static string RecordList()

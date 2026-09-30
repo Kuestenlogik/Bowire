@@ -172,11 +172,16 @@ public static class BowireHttpAuth
         Attach(request, metadata);
     }
 
-    /// <summary>Carry the credentials in <paramref name="metadata"/>, if any, on <paramref name="request"/>.</summary>
+    /// <summary>
+    /// Carry what <paramref name="metadata"/> asks of the HTTP layer on
+    /// <paramref name="request"/>: the challenge-response credentials, and the
+    /// environment's cookie jar (#681). The factory's client acts on both.
+    /// </summary>
     public static void Attach(HttpRequestMessage request, IEnumerable<KeyValuePair<string, string>>? metadata)
     {
         ArgumentNullException.ThrowIfNull(request);
         if (TryParse(metadata) is { } config) request.Options.Set(OptionKey, config);
+        CookieJar.Attach(request, metadata);
     }
 
     /// <summary>Set up <paramref name="handler"/> to answer the challenge of <paramref name="config"/>.</summary>
