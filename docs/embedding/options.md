@@ -221,6 +221,13 @@ allowlist is non-empty. They may then call the server URLs (`ServerUrl`,
 `AllowedAuthUrls`; anything else gets the same `403`. A non-empty
 `AllowedAuthUrls` on its own restricts only the auth helpers.
 
+The `403` body says how to allow the target: `allowWith` names the option
+(`AllowedServerUrls` or `AllowedAuthUrls`) and `remedy` the matching CLI flag
+with the target's origin filled in, e.g. *"If this is your identity
+provider, allow it with --allowed-auth-url https://login.example.com"*. The
+standalone tool also prints the hint in its startup banner while targets are
+locked and no auth URL is listed.
+
 ```csharp
 app.MapBowire(options =>
 {

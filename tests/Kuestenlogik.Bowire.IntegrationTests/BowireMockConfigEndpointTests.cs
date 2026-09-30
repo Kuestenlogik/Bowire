@@ -385,6 +385,8 @@ public sealed class BowireMockConfigEndpointTests : IDisposable
         Assert.Equal(HttpStatusCode.Forbidden, resp.StatusCode);
         var body = await resp.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
         Assert.Contains(Kuestenlogik.Bowire.Net.BowireTargetPolicy.RefusedProblemType, body, StringComparison.Ordinal);
+        // The refusal names the fix for a legitimate identity provider.
+        Assert.Contains("--allowed-auth-url http://169.254.169.254", body, StringComparison.Ordinal);
         Assert.True(capturer.RanRestricted);
         Assert.Null(AuthRecordingStore.LoadRecording("ws-1", storageRoot: null, "meta"));
     }

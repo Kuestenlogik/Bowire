@@ -149,7 +149,9 @@ bowire --allowed-server-url https://staging-a.example.com,https://staging-b.exam
 The OAuth / custom-token helpers and auth-flow capture call identity
 providers, which are usually not the API host. List those with
 `--allowed-auth-url` (or `Bowire:AllowedAuthUrls`) — they are then allowed
-for the auth helpers only, not for invoke or discovery:
+for the auth helpers only, not for invoke or discovery. A locked Bowire
+reminds you of the flag in its startup banner, and a refused token call's
+`403` names the exact `--allowed-auth-url <origin>` to add:
 
 ```bash
 bowire --url https://api.example.com \
