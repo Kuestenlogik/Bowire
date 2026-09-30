@@ -7,6 +7,10 @@ description: All the ways to install and run Bowire — NuGet packages, global .
 <section class="downloads-hero">
   <h1>Downloads</h1>
   <p class="downloads-hero-tagline">Every way to get Bowire. Pick what fits your workflow.</p>
+  {%- assign latest = site.data.changelog | first %}
+  {%- if latest %}
+  <p class="downloads-hero-latest">Latest release: <strong>{{ latest.version }}</strong>{% if latest.date %} ({{ latest.date }}){% endif %} &middot; <a href="{{ '/changelog.html' | relative_url }}#{{ latest.anchor }}">What's new in every release &rarr;</a></p>
+  {%- endif %}
 
   <!-- Quick-picker: OS auto-detected from the browser, click goes straight
        to the matching release asset. All URLs resolve via GitHub's
