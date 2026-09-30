@@ -52,6 +52,7 @@ public sealed class SseSubscriberLiveServerTests : IAsyncDisposable
         // A 2xx response that is NOT text/event-stream — the content-type guard
         // must surface this as an error envelope instead of parsing the body.
         _app.MapGet("/notstream", WriteHtml);
+        _app.MapGet("/events/headers", WriteHeaderNames);
 
         _app.Start();
 
@@ -95,6 +96,14 @@ public sealed class SseSubscriberLiveServerTests : IAsyncDisposable
         await ctx.Response.WriteAsync(
             ": heartbeat\nretry: notanumber\ndata: payload\n\n",
             ctx.RequestAborted);
+        await ctx.Response.Body.FlushAsync(ctx.RequestAborted);
+    }
+
+    private static async Task WriteHeaderNames(HttpContext ctx)
+    {
+        ctx.Response.ContentType = "text/event-stream";
+        var names = string.Join(",", ctx.Request.Headers.Keys);
+        await ctx.Response.WriteAsync("data: " + names + "\n\n", ctx.RequestAborted);
         await ctx.Response.Body.FlushAsync(ctx.RequestAborted);
     }
 
@@ -220,6 +229,36 @@ public sealed class SseSubscriberLiveServerTests : IAsyncDisposable
         }
 
         Assert.Single(events);
+    }
+
+    [Fact]
+    public async Task SubscribeAsync_Never_Sends_Bowire_Markers_As_Headers()
+    {
+        // The workbench puts plugin configuration into the same metadata bag
+        // as headers — the mTLS marker carries a private key. SSE copied the
+        // whole bag onto the request, so the target received it as a header.
+        var protocol = new BowireSseProtocol();
+        var headers = new Dictionary<string, string>
+        {
+            ["X-Trace-Id"] = "test-123",
+            ["__bowireMtls__"] = "{\"privateKey\":\"secret\"}",
+            ["__bowireCookieEnv__"] = "env-1",
+            ["__bowireAwsSigV4__"] = "{}",
+        };
+
+        string? received = null;
+        await foreach (var evt in protocol.SubscribeAsync(
+            _baseUrl + "/events/headers",
+            headers: headers,
+            TestContext.Current.CancellationToken))
+        {
+            received = JsonDocument.Parse(evt).RootElement.GetProperty("Data").GetString();
+            break;
+        }
+
+        Assert.NotNull(received);
+        Assert.Contains("X-Trace-Id", received, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("__bowire", received, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

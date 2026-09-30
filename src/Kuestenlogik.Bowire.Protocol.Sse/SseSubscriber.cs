@@ -59,7 +59,7 @@ internal sealed class SseSubscriber : IAsyncDisposable
 
         if (headers is not null)
         {
-            foreach (var (key, value) in headers)
+            foreach (var (key, value) in BowireMetadataKeys.WireHeaders(headers))
                 request.Headers.TryAddWithoutValidation(key, value);
         }
 

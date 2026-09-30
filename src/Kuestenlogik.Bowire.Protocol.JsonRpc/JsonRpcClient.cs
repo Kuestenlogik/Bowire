@@ -72,7 +72,7 @@ internal sealed class JsonRpcClient
         req.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         if (_headers is not null)
         {
-            foreach (var (k, v) in _headers)
+            foreach (var (k, v) in BowireMetadataKeys.WireHeaders(_headers))
             {
                 req.Headers.TryAddWithoutValidation(k, v);
             }

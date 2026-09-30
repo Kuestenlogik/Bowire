@@ -105,7 +105,7 @@ internal sealed class WebSocketBowireChannel : IBowireChannel
 
             if (headers is not null)
             {
-                foreach (var (key, value) in headers)
+                foreach (var (key, value) in BowireMetadataKeys.WireHeaders(headers))
                     socket.Options.SetRequestHeader(key, value);
             }
             if (subProtocols is not null)

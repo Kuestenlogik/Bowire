@@ -559,7 +559,7 @@ public sealed class BowireGraphQLProtocol : IBowireProtocol, IDisposable
         request.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("text/event-stream"));
         if (headers is not null)
         {
-            foreach (var (k, v) in headers) request.Headers.TryAddWithoutValidation(k, v);
+            foreach (var (k, v) in BowireMetadataKeys.WireHeaders(headers)) request.Headers.TryAddWithoutValidation(k, v);
         }
 
         HttpResponseMessage? response = null;
@@ -1049,7 +1049,7 @@ public sealed class BowireGraphQLProtocol : IBowireProtocol, IDisposable
 
         if (headers is not null)
         {
-            foreach (var (key, value) in headers)
+            foreach (var (key, value) in BowireMetadataKeys.WireHeaders(headers))
                 request.Headers.TryAddWithoutValidation(key, value);
         }
 
@@ -1159,7 +1159,7 @@ public sealed class BowireGraphQLProtocol : IBowireProtocol, IDisposable
 
         if (headers is not null)
         {
-            foreach (var (key, value) in headers)
+            foreach (var (key, value) in BowireMetadataKeys.WireHeaders(headers))
                 request.Headers.TryAddWithoutValidation(key, value);
         }
 
@@ -1199,7 +1199,7 @@ public sealed class BowireGraphQLProtocol : IBowireProtocol, IDisposable
 
         if (headers is not null)
         {
-            foreach (var (key, value) in headers)
+            foreach (var (key, value) in BowireMetadataKeys.WireHeaders(headers))
                 request.Headers.TryAddWithoutValidation(key, value);
         }
 
