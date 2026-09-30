@@ -118,6 +118,26 @@ internal static class BowireCli
         // the typed parser. The default action delegates to
         // BrowserUiHost which still binds via BowireConfiguration to
         // pick up multi-URL and url-file support natively.
+        // #680 — how every outbound connection leaves the machine. Recursive,
+        // so `bowire call`, `bowire test`, `bowire mock --proxy` upstreams and
+        // the workbench all read them. The values reach BowireNetworkPolicy
+        // through BowireConfiguration's switch mappings (Bowire:Network:*).
+        root.Add(new Option<string>("--proxy-url")
+        {
+            Description = "Proxy for outbound connections (http://host:port), or 'system' / 'none'. "
+                        + "Credentials go in Bowire:Network:ProxyUser / ProxyPasswordRef, never in the URL.",
+            Recursive = true,
+        });
+        root.Add(new Option<string>("--no-proxy")
+        {
+            Description = "Hosts that bypass the proxy, comma-separated: example.com, .corp.local, 10.0.0.0/8, <local>.",
+            Recursive = true,
+        });
+        root.Add(new Option<string>("--ca-bundle")
+        {
+            Description = "PEM file with extra trusted CA certificates, e.g. a TLS-inspecting proxy's root.",
+            Recursive = true,
+        });
         root.Add(new Option<string[]>("--url")
         {
             Description = "Server URL(s) to connect to. Repeat for multi-URL mode.",

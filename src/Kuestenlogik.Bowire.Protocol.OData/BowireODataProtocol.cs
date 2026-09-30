@@ -24,8 +24,11 @@ namespace Kuestenlogik.Bowire.Protocol.OData;
 ///
 /// Auto-discovered by <see cref="BowireProtocolRegistry"/>.
 /// </summary>
-public sealed class BowireODataProtocol : IBowireProtocol, IDisposable
+public sealed class BowireODataProtocol : IBowireProtocol, Kuestenlogik.Bowire.Net.IBowireProxySupport, IDisposable
 {
+    /// <inheritdoc />
+    public Kuestenlogik.Bowire.Net.BowireProxySupport ProxySupport => Kuestenlogik.Bowire.Net.BowireProxySupport.Full;
+
     // Built lazily from BowireHttpClientFactory in Initialize() so the
     // localhost-cert opt-in (Bowire:TrustLocalhostCert) reaches the
     // certificate validation callback. Discovery uses a 10 s timeout, but

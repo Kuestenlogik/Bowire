@@ -61,6 +61,17 @@ public sealed class BowireConfigurationTests : IDisposable
     }
 
     [Fact]
+    public void Network_Flags_Bind_To_The_Network_Section()
+    {
+        // #680 - BowireNetworkPolicy reads Bowire:Network:*; the flags have to land there.
+        var config = BowireConfiguration.Build(
+            ["--proxy-url", "http://proxy.corp:3128", "--no-proxy", ".corp.local", "--ca-bundle", "/etc/ssl/corp.pem"]);
+        Assert.Equal("http://proxy.corp:3128", config["Bowire:Network:ProxyUrl"]);
+        Assert.Equal(".corp.local", config["Bowire:Network:NoProxy"]);
+        Assert.Equal("/etc/ssl/corp.pem", config["Bowire:Network:CaBundle"]);
+    }
+
+    [Fact]
     public void CliFlag_EqualsForm_Works()
     {
         var config = BowireConfiguration.Build(["--plugin-dir=/tmp/plugins-eq"]);

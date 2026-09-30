@@ -124,6 +124,8 @@ public sealed class MtlsHandlerOwner : IDisposable
                 validator(req, cert, chain, errs);
         }
 
+        // #680 — the proxy and the CA bundle apply to mTLS connections too.
+        Net.BowireNetworkPolicy.Apply(handler);
         var owner = new MtlsHandlerOwner(handler, pair.ClientCert, pair.CaCert);
         // Ownership of both certs has moved into `owner`; the pair's
         // implicit Dispose at end-of-method becomes a no-op so we don't
@@ -165,6 +167,8 @@ public sealed class MtlsHandlerOwner : IDisposable
             ConnectTimeout = TimeSpan.FromSeconds(5)
         };
 
+        // #680 — the proxy and the CA bundle apply to mTLS connections too.
+        Net.BowireNetworkPolicy.Apply(handler);
         var owner = new MtlsHandlerOwner(handler, pair.ClientCert, pair.CaCert);
         // Ownership of both certs has moved into `owner`; the pair's
         // implicit Dispose at end-of-method becomes a no-op so we don't

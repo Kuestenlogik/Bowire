@@ -385,6 +385,17 @@ public sealed class BowireMcpTools
         }
     }
 
+    [McpServerTool(Name = "bowire.network.get")]
+    [Description("Show how Bowire's outbound connections leave the machine (#680): proxy mode and URL, bypass list, CA bundle, which layer set each value, what is misconfigured, and which protocol plugins can use the proxy. Passwords are shown only as their reference, never the value.")]
+    public static string NetworkGet(
+        [Description("Workspace id whose override to include; omit for the global settings.")] string? workspaceId = null)
+    {
+        return JsonSerializer.Serialize(
+            Kuestenlogik.Bowire.Endpoints.BowireNetworkEndpoints.Describe(
+                string.IsNullOrWhiteSpace(workspaceId) ? null : workspaceId.Trim()),
+            JsonOpts);
+    }
+
     [McpServerTool(Name = "bowire.record.list")]
     [Description("List Bowire recordings stored under ~/.bowire/recordings.json — id, name, step count, captured at. Step bodies omitted; ask for details via the (planned) record.replay tool.")]
     public static string RecordList()

@@ -35,8 +35,14 @@ namespace Kuestenlogik.Bowire.Protocol.Nats;
 /// the pub/sub surface is settled.
 /// </para>
 /// </remarks>
-public sealed class BowireNatsProtocol : IBowireProtocol
+public sealed class BowireNatsProtocol : IBowireProtocol, Kuestenlogik.Bowire.Net.IBowireProxySupport
 {
+    /// <inheritdoc />
+    public Kuestenlogik.Bowire.Net.BowireProxySupport ProxySupport => Kuestenlogik.Bowire.Net.BowireProxySupport.None;
+
+    /// <inheritdoc />
+    public string? ProxyNote => "NATS connects to the server over plain TCP; there is no HTTP proxy in that path.";
+
     public string Name => "NATS";
     public string Description => "NATS Core publish/subscribe + request/reply over the NATS protocol.";
 

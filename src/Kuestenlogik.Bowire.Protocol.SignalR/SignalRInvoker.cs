@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using Kuestenlogik.Bowire.Auth;
+using Kuestenlogik.Bowire.Net;
 using Microsoft.AspNetCore.SignalR.Client;
 
 namespace Kuestenlogik.Bowire;
@@ -110,6 +111,23 @@ internal sealed class SignalRInvoker : IAsyncDisposable
 #pragma warning restore CA5359
                     };
                 }
+
+                // #680 — the proxy and the CA bundle on every transport,
+                // on top of whichever handler the branch above chose.
+                options.Proxy = BowireNetworkPolicy.Proxy;
+                var configuredHandler = options.HttpMessageHandlerFactory;
+                options.HttpMessageHandlerFactory = inner =>
+                {
+                    var handler = configuredHandler is null ? inner : configuredHandler(inner);
+                    if (handler is HttpClientHandler httpHandler) BowireNetworkPolicy.Apply(httpHandler);
+                    return handler;
+                };
+                var configuredWs = options.WebSocketConfiguration;
+                options.WebSocketConfiguration = ws =>
+                {
+                    configuredWs?.Invoke(ws);
+                    BowireNetworkPolicy.Apply(ws);
+                };
             })
             .WithAutomaticReconnect();
 

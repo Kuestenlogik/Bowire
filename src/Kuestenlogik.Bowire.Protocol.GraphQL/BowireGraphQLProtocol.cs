@@ -19,8 +19,11 @@ namespace Kuestenlogik.Bowire.Protocol.GraphQL;
 /// invokes them by building a parameterised operation string with
 /// <see cref="GraphQLQueryBuilder"/>.
 /// </summary>
-public sealed class BowireGraphQLProtocol : IBowireProtocol, IDisposable
+public sealed class BowireGraphQLProtocol : IBowireProtocol, Kuestenlogik.Bowire.Net.IBowireProxySupport, IDisposable
 {
+    /// <inheritdoc />
+    public Kuestenlogik.Bowire.Net.BowireProxySupport ProxySupport => Kuestenlogik.Bowire.Net.BowireProxySupport.Full;
+
     // Built lazily from BowireHttpClientFactory in Initialize() so the
     // localhost-cert opt-in (Bowire:TrustLocalhostCert) reaches the
     // certificate validation callback. Falls back to a vanilla HttpClient

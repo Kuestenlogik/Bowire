@@ -81,6 +81,9 @@
             // links + saved settings keep working.
             leaf('rails', t('settings.nav.rails'), 'layers'),
             leaf('shortcuts', t('settings.nav.shortcuts'), 'list'),
+            // #680 - proxy, bypass list, trusted CAs. Global with an optional
+            // per-workspace override; the page picks the layer it edits.
+            leaf('network', t('settings.nav.network'), 'globe'),
             // Data is app-wide, NOT workspace-scoped: theme, rail
             // preferences, the workspace LIST itself, action log,
             // last-active workspace all live in localStorage. Stays
@@ -201,6 +204,7 @@
             case 'general':
             case 'rails':
             case 'shortcuts':
+            case 'network':
             case 'data':
             case 'workspace-sources':
             case 'workspace-environments':
@@ -345,6 +349,8 @@
             rightPanel.appendChild(renderSettingsRails());
         } else if (settingsTab === 'shortcuts') {
             rightPanel.appendChild(renderSettingsShortcuts());
+        } else if (settingsTab === 'network') {
+            rightPanel.appendChild(renderSettingsNetwork());
         } else if (settingsTab === 'data') {
             rightPanel.appendChild(renderSettingsData());
         } else if (settingsTab === 'workspace-sources') {
@@ -4222,6 +4228,292 @@ textContent: t(discoveryState.entryCount === 1
     }
 
     // ---- Settings UI helpers ----
+    // ---- #680 Network: proxy, bypass list, trusted CAs ----------------
+    //
+    // The settings live server-side (network-config.json, and
+    // network-config.<workspaceId>.json for a workspace's override) because
+    // the server makes the connections. The page edits one layer at a time;
+    // the "in force" block shows the merged result and which layer set what,
+    // including the host configuration (--proxy-url, BOWIRE_Bowire__Network__*),
+    // which wins over both files.
+    var networkState = {
+        loading: false,
+        loaded: false,
+        data: null,
+        scope: 'global',
+        draft: null,
+        result: null,
+        testUrl: '',
+        testResult: null,
+        testing: false
+    };
+
+    function _networkWorkspaceId() {
+        try { return (typeof activeWorkspaceId === 'string' && activeWorkspaceId) ? activeWorkspaceId : ''; }
+        catch { return ''; }
+    }
+
+    function _networkQuery(forScope) {
+        var ws = _networkWorkspaceId();
+        var scoped = forScope === undefined ? networkState.scope === 'workspace' : forScope;
+        return (scoped && ws) ? '?workspaceId=' + encodeURIComponent(ws) : '';
+    }
+
+    function _networkDraftFrom(data) {
+        var layers = (data && data.layers) || {};
+        var layer = (networkState.scope === 'workspace' ? layers.workspace : layers.global) || {};
+        return {
+            mode: layer.mode || '',
+            proxyUrl: layer.proxyUrl || '',
+            noProxy: layer.noProxy || '',
+            proxyUser: layer.proxyUser || '',
+            proxyPasswordRef: layer.proxyPasswordRef || '',
+            caBundle: layer.caBundle || ''
+        };
+    }
+
+    function _networkRerender() {
+        if (settingsOpen && settingsTab === 'network') renderSettingsDialog();
+    }
+
+    function loadNetworkSettings(force) {
+        if (networkState.loading) return;
+        if (networkState.loaded && !force) return;
+        networkState.loading = true;
+        // Always ask with the workspace, so "in force" reflects this workspace.
+        fetch(config.prefix + '/api/network' + _networkQuery(true))
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .catch(function () { return null; })
+            .then(function (data) {
+                networkState.data = data;
+                networkState.draft = _networkDraftFrom(data);
+                networkState.loaded = true;
+                networkState.loading = false;
+                _networkRerender();
+            });
+    }
+
+    function _networkSend(method, body) {
+        networkState.result = null;
+        var init = { method: method, headers: { 'Content-Type': 'application/json' } };
+        if (body) init.body = JSON.stringify(body);
+        fetch(config.prefix + '/api/network' + _networkQuery(), init)
+            .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, json: j }; }); })
+            .then(function (res) {
+                if (!res.ok) {
+                    networkState.result = { kind: 'err', text: (res.json && res.json.error) || t('settings.network.saveFailed') };
+                    _networkRerender();
+                    return;
+                }
+                networkState.result = { kind: 'ok', text: method === 'DELETE' ? t('settings.network.resetDone') : t('settings.network.saved') };
+                // The answer describes the edited layer's scope; reload for this
+                // workspace so "in force" stays accurate.
+                networkState.loaded = false;
+                loadNetworkSettings(true);
+            })
+            .catch(function () {
+                networkState.result = { kind: 'err', text: t('settings.network.saveFailed') };
+                _networkRerender();
+            });
+    }
+
+    function _networkTest() {
+        var url = (networkState.testUrl || '').trim();
+        if (!url) return;
+        networkState.testing = true;
+        networkState.testResult = null;
+        _networkRerender();
+        fetch(config.prefix + '/api/network/test' + _networkQuery(true), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url: url })
+        })
+            .then(function (r) { return r.json(); })
+            .catch(function () { return { ok: false, error: t('settings.network.saveFailed') }; })
+            .then(function (res) {
+                networkState.testing = false;
+                networkState.testResult = res;
+                _networkRerender();
+            });
+    }
+
+    function renderSettingsNetwork() {
+        var section = el('div', { className: 'bowire-settings-section' });
+        section.appendChild(el('h3', { className: 'bowire-settings-section-title', textContent: t('settings.nav.network') }));
+        section.appendChild(el('p', { className: 'bowire-settings-section-hint', textContent: t('settings.network.hint') }));
+
+        loadNetworkSettings(false);
+        var data = networkState.data;
+        if (!networkState.loaded) {
+            section.appendChild(el('div', { className: 'bowire-settings-section-empty', textContent: t('settings.network.loading') }));
+            return section;
+        }
+        if (!data) {
+            section.appendChild(el('div', { className: 'bowire-settings-section-empty', textContent: t('settings.network.loadFailed') }));
+            return section;
+        }
+        var draft = networkState.draft;
+        var wsId = _networkWorkspaceId();
+
+        // Which layer this form edits.
+        section.appendChild(renderSettingsRow(t('settings.network.scope'), t('settings.network.scopeDesc'), function () {
+            var select = el('select', {
+                id: 'bowire-settings-network-scope',
+                className: 'bowire-settings-select',
+                onChange: function (e) {
+                    networkState.scope = e.target.value;
+                    networkState.draft = _networkDraftFrom(networkState.data);
+                    networkState.result = null;
+                    renderSettingsDialog();
+                }
+            },
+                el('option', { value: 'global', textContent: t('settings.network.scopeGlobal') }),
+                wsId ? el('option', { value: 'workspace', textContent: t('settings.network.scopeWorkspace') }) : null
+            );
+            select.value = networkState.scope;
+            return select;
+        }));
+
+        section.appendChild(renderSettingsRow(t('settings.network.mode'), t('settings.network.modeDesc'), function () {
+            var select = el('select', {
+                id: 'bowire-settings-network-mode',
+                className: 'bowire-settings-select',
+                onChange: function (e) { draft.mode = e.target.value; }
+            },
+                el('option', { value: '', textContent: t('settings.network.modeInherit') }),
+                el('option', { value: 'system', textContent: t('settings.network.modeSystem') }),
+                el('option', { value: 'manual', textContent: t('settings.network.modeManual') }),
+                el('option', { value: 'none', textContent: t('settings.network.modeNone') })
+            );
+            select.value = draft.mode;
+            return select;
+        }));
+
+        function textRow(field, labelKey, descKey, placeholder, multiline) {
+            section.appendChild(renderSettingsRow(t(labelKey), t(descKey), function () {
+                var attrs = {
+                    id: 'bowire-settings-network-' + field,
+                    className: 'bowire-settings-input',
+                    spellcheck: 'false',
+                    placeholder: placeholder,
+                    value: draft[field],
+                    style: 'width:280px',
+                    onInput: function (e) { draft[field] = e.target.value; }
+                };
+                if (multiline) attrs.rows = '3'; else attrs.type = 'text';
+                var node = el(multiline ? 'textarea' : 'input', attrs);
+                // A textarea takes its text from the property, not a value attribute.
+                node.value = draft[field] || '';
+                return node;
+            }));
+        }
+        textRow('proxyUrl', 'settings.network.proxyUrl', 'settings.network.proxyUrlDesc', 'http://proxy.corp:3128');
+        textRow('noProxy', 'settings.network.noProxy', 'settings.network.noProxyDesc', '.corp.local, 10.0.0.0/8, <local>', true);
+        textRow('proxyUser', 'settings.network.proxyUser', 'settings.network.proxyUserDesc', 'CORP\\alice');
+        textRow('proxyPasswordRef', 'settings.network.passwordRef', 'settings.network.passwordRefDesc', 'keyring:corp-proxy/alice');
+        textRow('caBundle', 'settings.network.caBundle', 'settings.network.caBundleDesc', '/etc/ssl/corp-root.pem', true);
+
+        section.appendChild(el('div', { style: 'display:flex;gap:8px;margin:12px 0' },
+            el('button', {
+                id: 'bowire-settings-network-save',
+                className: 'bowire-settings-action-btn',
+                textContent: t('settings.network.save'),
+                onClick: function () { _networkSend('PUT', draft); }
+            }),
+            el('button', {
+                id: 'bowire-settings-network-reset',
+                className: 'bowire-settings-action-btn danger',
+                textContent: t('settings.network.reset'),
+                onClick: function () { _networkSend('DELETE'); }
+            })
+        ));
+        if (networkState.result) {
+            section.appendChild(el('div', {
+                className: 'bowire-settings-help',
+                style: 'color:' + (networkState.result.kind === 'ok' ? 'var(--bowire-success)' : 'var(--bowire-error)'),
+                textContent: networkState.result.text
+            }));
+        }
+
+        // What is in force for this workspace, merged.
+        var effective = el('div', { className: 'bowire-settings-section' });
+        effective.appendChild(el('h3', { className: 'bowire-settings-section-title', textContent: t('settings.network.effective') }));
+        var sources = data.sources || {};
+        function fact(label, value, field) {
+            var src = field && sources[field] ? ' (' + t('settings.network.source.' + sources[field]) + ')' : '';
+            effective.appendChild(el('div', { className: 'bowire-settings-about-row' },
+                el('span', { className: 'bowire-settings-about-label', textContent: label }),
+                el('span', { textContent: (value || '—') + src })));
+        }
+        var modeKey = data.mode === 'none' ? 'modeNone' : data.mode === 'manual' ? 'modeManual' : 'modeSystem';
+        fact(t('settings.network.mode'), t('settings.network.' + modeKey), 'mode');
+        fact(t('settings.network.proxyUrl'), data.proxyUrl, 'proxyUrl');
+        fact(t('settings.network.noProxy'), (data.noProxy || []).join(', '), 'noProxy');
+        fact(t('settings.network.proxyUser'), data.proxyUser, 'proxyUser');
+        fact(t('settings.network.caBundle'), data.caBundle
+            ? data.caBundle + ' — ' + t('settings.network.caCount', { count: (data.caCertificates || []).length })
+            : '', 'caBundle');
+        if (data.layers && data.layers.host) {
+            effective.appendChild(el('p', { className: 'bowire-settings-section-hint', textContent: t('settings.network.pinned') }));
+        }
+        (data.problems || []).forEach(function (p) {
+            effective.appendChild(el('div', { className: 'bowire-settings-help', style: 'color:var(--bowire-warning)', textContent: '⚠ ' + p }));
+        });
+        section.appendChild(effective);
+
+        // Does a URL get out, and how?
+        var test = el('div', { className: 'bowire-settings-section' });
+        test.appendChild(el('h3', { className: 'bowire-settings-section-title', textContent: t('settings.network.test') }));
+        test.appendChild(el('p', { className: 'bowire-settings-section-hint', textContent: t('settings.network.testDesc') }));
+        test.appendChild(el('div', { style: 'display:flex;gap:8px;align-items:center' },
+            el('input', {
+                id: 'bowire-settings-network-test-url',
+                className: 'bowire-settings-input',
+                type: 'url',
+                placeholder: 'https://api.example.com/health',
+                value: networkState.testUrl,
+                style: 'flex:1',
+                onInput: function (e) { networkState.testUrl = e.target.value; },
+                onKeydown: function (e) { if (e.key === 'Enter') _networkTest(); }
+            }),
+            el('button', {
+                id: 'bowire-settings-network-test-btn',
+                className: 'bowire-settings-action-btn',
+                textContent: networkState.testing ? t('settings.network.testing') : t('settings.network.testButton'),
+                disabled: networkState.testing,
+                onClick: _networkTest
+            })
+        ));
+        var tr = networkState.testResult;
+        if (tr) {
+            var via = tr.via === 'direct' ? t('settings.network.direct') : tr.via;
+            test.appendChild(el('div', {
+                className: 'bowire-settings-help',
+                style: 'color:' + (tr.ok ? 'var(--bowire-success)' : 'var(--bowire-error)'),
+                textContent: tr.ok
+                    ? t('settings.network.testOk', { status: tr.status, via: via })
+                    : t('settings.network.testFail', { via: via || '—', error: tr.error || '' })
+            }));
+        }
+        section.appendChild(test);
+
+        // Which protocols follow the proxy, and which cannot.
+        var protos = el('div', { className: 'bowire-settings-section' });
+        protos.appendChild(el('h3', { className: 'bowire-settings-section-title', textContent: t('settings.network.protocols') }));
+        protos.appendChild(el('p', { className: 'bowire-settings-section-hint', textContent: t('settings.network.protocolsDesc') }));
+        (data.protocols || []).forEach(function (p) {
+            // #691 pattern: a catalogue key beside the plugin's own English note.
+            var noteKey = 'plugin.' + p.id + '.proxyNote';
+            var note = t(noteKey);
+            if (note === noteKey) note = p.note || '';
+            protos.appendChild(el('div', { className: 'bowire-settings-about-row', title: note },
+                el('span', { className: 'bowire-settings-about-label', textContent: p.name }),
+                el('span', { textContent: t('settings.network.support.' + p.support) + (note ? ' — ' + note : '') })));
+        });
+        section.appendChild(protos);
+        return section;
+    }
+
     function renderSettingsRow(label, description, controlFn) {
         var row = el('div', { className: 'bowire-settings-row' });
         row.appendChild(el('div', { className: 'bowire-settings-row-info' },

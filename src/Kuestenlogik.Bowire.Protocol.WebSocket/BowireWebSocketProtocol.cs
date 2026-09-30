@@ -24,8 +24,11 @@ namespace Kuestenlogik.Bowire.Protocol.WebSocket;
 /// open WebSocket channels — with sub-protocols + auth headers — without
 /// taking a compile-time dependency on this assembly.
 /// </summary>
-public sealed class BowireWebSocketProtocol : IBowireProtocol, IInlineWebSocketChannel
+public sealed class BowireWebSocketProtocol : IBowireProtocol, Kuestenlogik.Bowire.Net.IBowireProxySupport, IInlineWebSocketChannel
 {
+    /// <inheritdoc />
+    public Kuestenlogik.Bowire.Net.BowireProxySupport ProxySupport => Kuestenlogik.Bowire.Net.BowireProxySupport.Full;
+
     /// <summary>
     /// Optional metadata key the user can set in the request headers to ask
     /// for one or more WebSocket sub-protocols on the upgrade handshake.

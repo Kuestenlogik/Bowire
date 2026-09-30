@@ -83,6 +83,7 @@ internal static class BowireChannelEndpoints
             {
                 // #664 — the name, or a fullName reduced to what this plugin reads.
                 var channelMethod = protocol.ResolveMethodName(body.Service, body.Method);
+                Net.BowireProxyNotice.Report(protocol, serverUrl, ctx);
                 var channel = await protocol.OpenChannelAsync(
                     serverUrl, body.Service, channelMethod,
                     options.ShowInternalServices, body.Metadata, ctx.RequestAborted);

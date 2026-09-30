@@ -31,8 +31,14 @@ namespace Kuestenlogik.Bowire.AsyncApi;
 /// subscribe shape for the binding — comes back as an error result or an
 /// error frame that names it.
 /// </summary>
-public sealed class BowireAsyncApiProtocol : IBowireProtocol
+public sealed class BowireAsyncApiProtocol : IBowireProtocol, Kuestenlogik.Bowire.Net.IBowireProxySupport
 {
+    /// <inheritdoc />
+    public Kuestenlogik.Bowire.Net.BowireProxySupport ProxySupport => Kuestenlogik.Bowire.Net.BowireProxySupport.Partial;
+
+    /// <inheritdoc />
+    public string? ProxyNote => "Fetching the AsyncAPI document and HTTP bindings follows the proxy in the standalone tool; channels connect through their wire protocol - see that protocol's entry.";
+
     // Static loader — Neuroglia's reader is stateless and the DI graph
     // boilerplate is cheap to amortise across discovery calls.
     private static readonly AsyncApiDocumentLoader Loader = new();

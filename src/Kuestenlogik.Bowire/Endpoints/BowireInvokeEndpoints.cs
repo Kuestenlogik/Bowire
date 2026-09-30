@@ -225,6 +225,7 @@ internal static class BowireInvokeEndpoints
             activity?.SetTag("method", body.Method);
             var invokeStart = Stopwatch.GetTimestamp();
             string outcome = "ok";
+            Net.BowireProxyNotice.Report(protocol, serverUrl, ctx);
             try
             {
                 var result = await protocol.InvokeAsync(
@@ -475,6 +476,7 @@ internal static class BowireInvokeEndpoints
                 }
                 else
                 {
+                    Net.BowireProxyNotice.Report(protocol, serverUrl, ctx);
                     await foreach (var response in protocol.InvokeStreamAsync(
                         serverUrl, service, method, messages, options.ShowInternalServices, metadata, ctx.RequestAborted))
                     {

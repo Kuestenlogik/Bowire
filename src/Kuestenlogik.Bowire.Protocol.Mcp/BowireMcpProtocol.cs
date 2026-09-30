@@ -47,8 +47,11 @@ namespace Kuestenlogik.Bowire.Protocol.Mcp;
 /// are synthesised from Bowire's <c>BowireProtocolRegistry</c>.
 /// </para>
 /// </remarks>
-public sealed class BowireMcpProtocol : IBowireProtocol, IBowireDiscoveryDiagnostics
+public sealed class BowireMcpProtocol : IBowireProtocol, Kuestenlogik.Bowire.Net.IBowireProxySupport, IBowireDiscoveryDiagnostics
 {
+    /// <inheritdoc />
+    public Kuestenlogik.Bowire.Net.BowireProxySupport ProxySupport => Kuestenlogik.Bowire.Net.BowireProxySupport.Full;
+
     private static readonly JsonSerializerOptions s_indented = new() { WriteIndented = true };
     private static readonly JsonSerializerOptions s_web = new(JsonSerializerDefaults.Web);
 
@@ -74,11 +77,8 @@ public sealed class BowireMcpProtocol : IBowireProtocol, IBowireDiscoveryDiagnos
     public string DescriptionKey => "plugin.mcp.description";
     public string Id => "mcp";
 
-    // Initialize stays a no-op: the SDK owns its own HttpClient through
-    // HttpClientTransportOptions, and the localhost-cert opt-in we used
-    // to thread through BowireHttpClientFactory isn't reachable from
-    // the SDK transport. Embedded hosts that need a custom HttpClient
-    // can subclass the plugin or wait for the SDK to expose the seam.
+    // Initialize stays a no-op: each client gets a fresh HttpClient from
+    // BowireHttpClientFactory (proxy + CA bundle, #680) in CreateClientAsync.
     public void Initialize(IServiceProvider? serviceProvider) { }
 
     // Model Context Protocol — official three-stroke mark (modelcontextprotocol.io).
@@ -482,7 +482,14 @@ public sealed class BowireMcpProtocol : IBowireProtocol, IBowireDiscoveryDiagnos
         // async path; CA2000 sees IAsyncDisposable but doesn't track
         // it across awaits, so silence it here.
 #pragma warning disable CA2000
-        var transport = new HttpClientTransport(options);
+        // #680 — Bowire's own HttpClient, so the proxy and the CA bundle apply.
+        // No client timeout: the SDK times its own requests, and an SSE stream
+        // stays open far longer than HttpClient's 100 s default.
+        var transport = new HttpClientTransport(
+            options,
+            Kuestenlogik.Bowire.Net.BowireHttpClientFactory.Create(null, "mcp", Timeout.InfiniteTimeSpan),
+            loggerFactory: null,
+            ownsHttpClient: true);
 #pragma warning restore CA2000
         try
         {

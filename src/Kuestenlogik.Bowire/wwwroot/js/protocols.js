@@ -413,7 +413,10 @@
             : (selectedService && selectedService.originUrl)) || (serverUrls[0] || null);
 
         try {
-            var resp = await fetch(config.prefix + '/api/channel/open' + serverUrlParamForService(selectedService, false, selectedMethod), {
+            // The workspace rides along like on invoke: its network settings
+            // (proxy, CA bundle - #680) apply to the connection being opened.
+            var _chUrl = serverUrlParamForService(selectedService, false, selectedMethod);
+            var resp = await fetch(config.prefix + '/api/channel/open' + _chUrl + workspaceParam(_chUrl.length > 0), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
