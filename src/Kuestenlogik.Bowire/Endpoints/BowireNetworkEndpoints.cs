@@ -126,6 +126,7 @@ internal static class BowireNetworkEndpoints
             name = p.Name,
             support = (p is IBowireProxySupport s ? s.ProxySupport : BowireProxySupport.Unknown).ToString(),
             note = p is IBowireProxySupport n ? n.ProxyNote : null,
+            noteKey = p is IBowireProxySupport k ? k.ProxyNoteKey : null,
         }).ToArray();
     }
 

@@ -43,6 +43,9 @@ public sealed class BowireNatsProtocol : IBowireProtocol, Kuestenlogik.Bowire.Ne
     /// <inheritdoc />
     public string? ProxyNote => "NATS connects to the server over plain TCP; there is no HTTP proxy in that path.";
 
+    /// <inheritdoc />
+    public string? ProxyNoteKey => "plugin.nats.proxyNote";
+
     public string Name => "NATS";
     public string Description => "NATS Core publish/subscribe + request/reply over the NATS protocol.";
 

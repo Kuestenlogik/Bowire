@@ -37,6 +37,9 @@ public sealed class BowireMqttProtocol : IBowireProtocol, Kuestenlogik.Bowire.Ne
     /// <inheritdoc />
     public string? ProxyNote => "MQTT connects to the broker over plain TCP; there is no HTTP proxy in that path.";
 
+    /// <inheritdoc />
+    public string? ProxyNoteKey => "plugin.mqtt.proxyNote";
+
     public string Name => "MQTT";
     public string Description => "Publish / subscribe over MQTT 3.1.1 + 5 brokers.";
 

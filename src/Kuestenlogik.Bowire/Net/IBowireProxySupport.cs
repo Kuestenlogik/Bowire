@@ -39,4 +39,10 @@ public interface IBowireProxySupport
 
     /// <summary>One sentence on what goes direct and why, for Partial and None.</summary>
     string? ProxyNote => null;
+
+    /// <summary>
+    /// The catalogue key for <see cref="ProxyNote"/> (#691): the workbench shows
+    /// the translation and falls back to the English note.
+    /// </summary>
+    string? ProxyNoteKey => null;
 }

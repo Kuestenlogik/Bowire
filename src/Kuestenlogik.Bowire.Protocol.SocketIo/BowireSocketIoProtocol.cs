@@ -19,6 +19,9 @@ public sealed class BowireSocketIoProtocol : IBowireProtocol, Kuestenlogik.Bowir
     /// <inheritdoc />
     public string? ProxyNote => "Follows the proxy in the standalone tool through the process default; embedded in another app, the Socket.IO client connects directly, and the CA bundle does not apply.";
 
+    /// <inheritdoc />
+    public string? ProxyNoteKey => "plugin.socketio.proxyNote";
+
     public string Name => "Socket.IO";
     public string Description => "Engine.IO-based bidirectional event emitter — Node.js ecosystem.";
 

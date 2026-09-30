@@ -39,6 +39,9 @@ public sealed class BowireAsyncApiProtocol : IBowireProtocol, Kuestenlogik.Bowir
     /// <inheritdoc />
     public string? ProxyNote => "Fetching the AsyncAPI document and HTTP bindings follows the proxy in the standalone tool; channels connect through their wire protocol - see that protocol's entry.";
 
+    /// <inheritdoc />
+    public string? ProxyNoteKey => "plugin.asyncapi.proxyNote";
+
     // Static loader — Neuroglia's reader is stateless and the DI graph
     // boilerplate is cheap to amortise across discovery calls.
     private static readonly AsyncApiDocumentLoader Loader = new();

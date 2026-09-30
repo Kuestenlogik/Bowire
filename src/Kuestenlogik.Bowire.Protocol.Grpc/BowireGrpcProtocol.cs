@@ -29,6 +29,9 @@ public sealed class BowireGrpcProtocol : IBowireProtocol, Kuestenlogik.Bowire.Ne
     /// <inheritdoc />
     public string? ProxyNote => "https:// channels tunnel through the proxy; a plaintext http:// (h2c) channel cannot go through an HTTP proxy - add the host to the bypass list.";
 
+    /// <inheritdoc />
+    public string? ProxyNoteKey => "plugin.grpc.proxyNote";
+
     // Captured during Initialize() so the gRPC channel constructions below
     // can pull the localhost-cert opt-in (Bowire:TrustLocalhostCert) into
     // the SocketsHttpHandler's SslOptions callback. mTLS-protected gRPC
