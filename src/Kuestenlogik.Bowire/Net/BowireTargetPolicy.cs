@@ -104,7 +104,7 @@ public sealed class BowireTargetPolicy
         return Build(options, request, [.. options.AllowedServerUrls, .. options.AllowedAuthUrls], forAuth: true);
     }
 
-    private static BowireTargetPolicy Build(BowireOptions options, HttpRequest? request, IReadOnlyCollection<string> extra, bool forAuth)
+    private static BowireTargetPolicy Build(BowireOptions options, HttpRequest? request, List<string> extra, bool forAuth)
     {
         var entries = new List<string?>(options.ServerUrls.Count + extra.Count + 2)
         {

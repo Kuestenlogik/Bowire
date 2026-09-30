@@ -35,7 +35,7 @@ public sealed record AuthFlowCaptureResult(string Credential, string? Scheme, st
 /// don't offer flow-capture (the store's static-credential capture still works).
 /// </summary>
 /// <remarks>
-/// <see cref="CaptureAsync"/> makes OUTBOUND HTTP calls (it executes the login
+/// <see cref="CaptureAsync(string, CancellationToken)"/> makes OUTBOUND HTTP calls (it executes the login
 /// chain), so it only ever runs as a direct, explicit result of an operator
 /// action — a CLI invocation, a workbench click, or a confirmed MCP tool call.
 /// </remarks>
