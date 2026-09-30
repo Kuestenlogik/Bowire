@@ -51,6 +51,10 @@ jobs:
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
+          # The site is always main. A release event carries the tag's
+          # commit, and a patch tagged on a release branch (v2.8.1 on
+          # release/2.8) would otherwise publish that branch's older site.
+          ref: ${{ github.event_name == 'release' && 'main' || '' }}
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v6
