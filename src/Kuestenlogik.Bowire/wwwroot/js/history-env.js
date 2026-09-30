@@ -47,12 +47,49 @@
         return false;
     }
 
+    // History lives in localStorage, in clear text. A credential header is
+    // stored as this marker, never its value; a replay applies the
+    // environment's auth again, so the credential is resolved fresh.
+    var HISTORY_MASKED = '<masked>';  // i18n-exempt: a stored placeholder value, not UI text
+    var HISTORY_SENSITIVE_HEADERS = ['authorization', 'proxy-authorization', 'cookie', 'set-cookie',
+        'x-api-key', 'api-key', 'x-auth-token', 'x-access-token', 'x-csrf-token', 'x-xsrf-token'];
+
+    /**
+     * The metadata as history may keep it: no internal markers (#679), no
+     * credential header values, and no resolved secret or keyring value
+     * anywhere else (sanitiseForExport).
+     */
+    function historySafeMetadata(metadata) {
+        if (!metadata || typeof metadata !== 'object') return metadata;
+        var clean = withoutBowireMarkers(metadata);
+        var out = {};
+        Object.keys(clean).forEach(function (k) {
+            out[k] = HISTORY_SENSITIVE_HEADERS.indexOf(k.toLowerCase()) !== -1 ? HISTORY_MASKED : clean[k];
+        });
+        return (typeof sanitiseForExport === 'function') ? sanitiseForExport(out) : out;
+    }
+
+    /** A history entry's metadata ready to send again: masked headers out, auth applied anew. */
+    async function historyReplayMetadata(metadata) {
+        var out = {};
+        if (metadata && typeof metadata === 'object') {
+            Object.keys(metadata).forEach(function (k) {
+                var v = metadata[k];
+                if (v !== HISTORY_MASKED && String(v).indexOf('***') === -1) out[k] = v;
+            });
+        }
+        return (typeof applyAuth === 'function') ? await applyAuth(out) : out;
+    }
+
     function addHistory(entry) {
         const history = getHistory();
         history.unshift({
             ...entry,
-            // #679 - never the internal markers (passwords, keys) in stored history.
-            metadata: entry && entry.metadata ? withoutBowireMarkers(entry.metadata) : entry && entry.metadata,
+            metadata: entry && entry.metadata ? historySafeMetadata(entry.metadata) : entry && entry.metadata,
+            body: entry && typeof entry.body === 'string' && typeof sanitiseForExport === 'function'
+                ? sanitiseForExport(entry.body) : entry && entry.body,
+            messages: entry && Array.isArray(entry.messages) && typeof sanitiseForExport === 'function'
+                ? sanitiseForExport(entry.messages) : entry && entry.messages,
             timestamp: Date.now()
         });
         if (history.length > MAX_HISTORY) history.length = MAX_HISTORY;
