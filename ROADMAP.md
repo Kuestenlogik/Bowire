@@ -10,24 +10,16 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ## Overview
 
-### v2.8.1 — Security fixes
-
-**0/1 done** · 1 backlog
-
-| # | Project | Title | Status | Tags |
-|---|---|---|---|---|
-| [759](https://github.com/Kuestenlogik/Bowire/issues/759) | Bowire | [Security fixes for 2.8.1: credentials sent as headers, stored in history, and an SSRF through a locked server URL](#issue-kuestenlogik-bowire-759) | ⬜ Backlog |  |
-
 ### v2.9 — Corporate networks: outbound proxy, Windows auth, cookies *(due 2026-12-14)*
 
-**2/5 done** · 3 backlog
+**4/5 done** · 1 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
-| [679](https://github.com/Kuestenlogik/Bowire/issues/679) | Bowire | [Windows-integrated auth (Negotiate/NTLM) and Digest — the .NET tool cannot call .NET intranet APIs](#issue-kuestenlogik-bowire-679) | ⬜ Backlog | `area:workbench` |
-| [680](https://github.com/Kuestenlogik/Bowire/issues/680) | Bowire | [Outbound proxy and custom CA support — Bowire is unusable behind a corporate proxy](#issue-kuestenlogik-bowire-680) | ⬜ Backlog | `area:workbench` |
 | [681](https://github.com/Kuestenlogik/Bowire/issues/681) | Bowire | [Persistent cookie manager, and cookies beyond REST](#issue-kuestenlogik-bowire-681) | ⬜ Backlog | `area:workbench` |
 | [671](https://github.com/Kuestenlogik/Bowire/issues/671) | Bowire | [Site: /alternatives/* landing pages, a changelog page, and the trust claim in the hero](#issue-kuestenlogik-bowire-671) | ✅ Done | `area:site` |
+| [679](https://github.com/Kuestenlogik/Bowire/issues/679) | Bowire | [Windows-integrated auth (Negotiate/NTLM) and Digest — the .NET tool cannot call .NET intranet APIs](#issue-kuestenlogik-bowire-679) | ✅ Done | `area:workbench` |
+| [680](https://github.com/Kuestenlogik/Bowire/issues/680) | Bowire | [Outbound proxy and custom CA support — Bowire is unusable behind a corporate proxy](#issue-kuestenlogik-bowire-680) | ✅ Done | `area:workbench` |
 | [755](https://github.com/Kuestenlogik/Bowire/issues/755) | Bowire | [Link-Check der Site prüft seit dem Umzug nach scripts/site nichts mehr](#issue-kuestenlogik-bowire-755) | ✅ Done |  |
 
 ### v2.10 — Discoverability: the pitch, the directories, the star ask *(due 2027-01-11)*
@@ -161,25 +153,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ## Details
 
-### v2.8.1 — Security fixes
-
-#### <a id="issue-kuestenlogik-bowire-759"></a>⬜ Backlog · [#759](https://github.com/Kuestenlogik/Bowire/issues/759) Security fixes for 2.8.1: credentials sent as headers, stored in history, and an SSRF through a locked server URL
-
-Three defects in 2.8.0 that expose credentials or the host's network. They are fixed on `main` (5a920d4c, f6d22b43, da3c8412) but ship there only with 2.9's features; 2.8.0 users need them as a patch. [[more]](https://github.com/Kuestenlogik/Bowire/issues/759)
-
 ### v2.9 — Corporate networks: outbound proxy, Windows auth, cookies *(due 2026-12-14)*
-
-#### <a id="issue-kuestenlogik-bowire-679"></a>⬜ Backlog · [#679](https://github.com/Kuestenlogik/Bowire/issues/679) Windows-integrated auth (Negotiate/NTLM) and Digest — the .NET tool cannot call .NET intranet APIs
-
-> `area:workbench`
-
-The auth surface is broad — Bearer, Basic, API key, signed JWT, OAuth 2.0 (client credentials and authorization code + PKCE), custom token endpoint, AWS SigV4, mTLS, cookie jar. **Windows-integrated auth is missing.** [[more]](https://github.com/Kuestenlogik/Bowire/issues/679)
-
-#### <a id="issue-kuestenlogik-bowire-680"></a>⬜ Backlog · [#680](https://github.com/Kuestenlogik/Bowire/issues/680) Outbound proxy and custom CA support — Bowire is unusable behind a corporate proxy
-
-> `area:workbench`
-
-`WebProxy` does not appear anywhere in the source. `--proxy` exists only as the mock server's upstream forwarder — it has nothing to do with how Bowire's own requests leave the machine. [[more]](https://github.com/Kuestenlogik/Bowire/issues/680)
 
 #### <a id="issue-kuestenlogik-bowire-681"></a>⬜ Backlog · [#681](https://github.com/Kuestenlogik/Bowire/issues/681) Persistent cookie manager, and cookies beyond REST
 
@@ -192,6 +166,18 @@ The cookie jar today is a per-environment in-memory `CookieContainer`, and it is
 > `area:site`
 
 Two structural gaps on bowire.io. Both cheap, neither risky. [[more]](https://github.com/Kuestenlogik/Bowire/issues/671)
+
+#### <a id="issue-kuestenlogik-bowire-679"></a>✅ Done · [#679](https://github.com/Kuestenlogik/Bowire/issues/679) Windows-integrated auth (Negotiate/NTLM) and Digest — the .NET tool cannot call .NET intranet APIs
+
+> `area:workbench`
+
+The auth surface is broad — Bearer, Basic, API key, signed JWT, OAuth 2.0 (client credentials and authorization code + PKCE), custom token endpoint, AWS SigV4, mTLS, cookie jar. **Windows-integrated auth is missing.** [[more]](https://github.com/Kuestenlogik/Bowire/issues/679)
+
+#### <a id="issue-kuestenlogik-bowire-680"></a>✅ Done · [#680](https://github.com/Kuestenlogik/Bowire/issues/680) Outbound proxy and custom CA support — Bowire is unusable behind a corporate proxy
+
+> `area:workbench`
+
+`WebProxy` does not appear anywhere in the source. `--proxy` exists only as the mock server's upstream forwarder — it has nothing to do with how Bowire's own requests leave the machine. [[more]](https://github.com/Kuestenlogik/Bowire/issues/680)
 
 #### <a id="issue-kuestenlogik-bowire-755"></a>✅ Done · [#755](https://github.com/Kuestenlogik/Bowire/issues/755) Link-Check der Site prüft seit dem Umzug nach scripts/site nichts mehr
 
