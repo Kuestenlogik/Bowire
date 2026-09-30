@@ -136,8 +136,15 @@ if (command === 'notes' || command === 'cut') {
   // cut
   if (product !== productOfRepo(repo)) { console.error(`cut tags this repository; ${product} is released by its own pipeline.`); process.exit(2); }
   if (stillOpen.length) { console.error(`Not cutting: ${stillOpen.length} ticket(s) planned for ${release} are open. Finish them or move them to a later release.`); process.exit(1); }
-  if (!existsSync(notesPath)) { console.error(`no ${notesPath} — run 'notes ${version}' and write it first`); process.exit(2); }
-  const notes = readFileSync(notesPath, 'utf8');
+  // Read, don't check-then-read: the file could go between the two calls.
+  let notes;
+  try {
+    notes = readFileSync(notesPath, 'utf8');
+  } catch (e) {
+    if (e.code !== 'ENOENT') throw e;
+    console.error(`no ${notesPath} — run 'notes ${version}' and write it first`);
+    process.exit(2);
+  }
   if (/title:\s*<fill in/.test(notes) || /<headline>/.test(notes) || !/^### /m.test(notes)) {
     console.error(`${notesPath} is still a draft: it needs a real title, no <headline> placeholders, and at least one ### section.`);
     process.exit(1);
