@@ -10,7 +10,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ## Overview
 
-### v2.9 — Discoverability: the pitch, the directories, the star ask *(due 2026-12-14)*
+### v2.9 — Corporate networks: outbound proxy, Windows auth, cookies *(due 2026-12-14)*
 
 **2/6 done** · 4 backlog
 
@@ -23,7 +23,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [671](https://github.com/Kuestenlogik/Bowire/issues/671) | Bowire | [Site: /alternatives/* landing pages, a changelog page, and the trust claim in the hero](#issue-kuestenlogik-bowire-671) | ✅ Done | `area:site` |
 | [755](https://github.com/Kuestenlogik/Bowire/issues/755) | Bowire | [Link-Check der Site prüft seit dem Umzug nach scripts/site nichts mehr](#issue-kuestenlogik-bowire-755) | ✅ Done |  |
 
-### v2.10 — Corporate networks: outbound proxy, Windows auth, cookies *(due 2027-01-11)*
+### v2.10 — Discoverability: the pitch, the directories, the star ask *(due 2027-01-11)*
 
 **0/3 done** · 3 backlog
 
@@ -153,7 +153,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ## Details
 
-### v2.9 — Discoverability: the pitch, the directories, the star ask *(due 2026-12-14)*
+### v2.9 — Corporate networks: outbound proxy, Windows auth, cookies *(due 2026-12-14)*
 
 #### <a id="issue-kuestenlogik-bowire-639"></a>⬜ Backlog · [#639](https://github.com/Kuestenlogik/Bowire/issues/639) SCIM: live Okta and Entra ID provisioning round-trips
 
@@ -189,7 +189,7 @@ Two structural gaps on bowire.io. Both cheap, neither risky. [[more]](https://gi
 
 `scripts/site/check-internal-links.mjs` löst die Repo-Wurzel mit `resolve(__dirname, '..')` auf. Seit das Skript in `scripts/site/` liegt (02adf0b7), ist das `scripts/`. Die Folge: Es scannt eine einzige Datei und keinen Link, und meldet trotzdem „all internal links resolve“. [[more]](https://github.com/Kuestenlogik/Bowire/issues/755)
 
-### v2.10 — Corporate networks: outbound proxy, Windows auth, cookies *(due 2027-01-11)*
+### v2.10 — Discoverability: the pitch, the directories, the star ask *(due 2027-01-11)*
 
 #### <a id="issue-kuestenlogik-bowire-679"></a>⬜ Backlog · [#679](https://github.com/Kuestenlogik/Bowire/issues/679) Windows-integrated auth (Negotiate/NTLM) and Digest — the .NET tool cannot call .NET intranet APIs
 
