@@ -925,7 +925,7 @@
         return Math.round(diff / 86400000) + 'd ago';
     }
 
-    function replayHistoryEntry(entry) {
+    async function replayHistoryEntry(entry) {
         var S = activeState();
         // Find and select the matching service/method
         var foundSvc = null, foundMethod = null;
@@ -951,8 +951,11 @@
         var replayMessages = (entry.messages && entry.messages.length > 0)
             ? entry.messages.slice()
             : (entry.body && !entry.body.startsWith('(channel:') ? [entry.body] : ['{}']);
+        // History keeps no credential values (masked on the way in), so the
+        // environment's auth is applied again here; everything else goes out
+        // as it was recorded.
         var replayMetadata = (entry.metadata && typeof entry.metadata === 'object')
-            ? Object.assign({}, entry.metadata)
+            ? await historyReplayMetadata(entry.metadata)
             : null;
 
         // Mirror into the live request state so the Body tab — if the
