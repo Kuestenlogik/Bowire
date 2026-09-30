@@ -14,9 +14,22 @@ import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const html = readFileSync(resolve(__dirname, '../../../site/quickstart.html'), 'utf8')
-    // Comments may quote markup; only live elements count.
-    .replace(/<!--[\s\S]*?-->/g, '');
+// Comments may quote markup; only live elements count. A scan rather than a
+// regex replace: no `<!--` survives, and an unclosed comment runs to the end
+// of the file, as it does in a browser.
+function stripComments(text) {
+    let out = '';
+    let at = 0;
+    for (;;) {
+        const open = text.indexOf('<!--', at);
+        if (open < 0) return out + text.slice(at);
+        out += text.slice(at, open);
+        const close = text.indexOf('-->', open + 4);
+        if (close < 0) return out;
+        at = close + 3;
+    }
+}
+const html = stripComments(readFileSync(resolve(__dirname, '../../../site/quickstart.html'), 'utf8'));
 
 // The paths the picker offers.
 function pickerPaths() {
