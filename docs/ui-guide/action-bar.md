@@ -47,8 +47,12 @@ The server URL is displayed in the action bar. By default, it connects to the sa
 app.MapBowire(options =>
 {
     options.ServerUrl = "https://grpc.example.com:443";
-    options.LockServerUrl = true; // Prevent editing in the UI
+    options.LockServerUrl = true; // Read-only in the UI, other targets refused server-side
 });
 ```
+
+`LockServerUrl` is enforced by the server as well: a request that names any
+other `serverUrl` is answered with `403`. See
+[Options → `LockServerUrl`](../embedding/options.md#lockserverurl-bool-default-false).
 
 See also: [Keyboard Shortcuts](../features/keyboard-shortcuts.md), [Streaming](../features/streaming.md)

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Text.Json;
+using Kuestenlogik.Bowire.Net;
 using Kuestenlogik.Bowire.Parallel;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -43,7 +44,7 @@ internal static class BowireParallelEndpoints
     internal const string JobHeader = "X-Bowire-Parallel-Job";
 
     public static IEndpointRouteBuilder MapBowireParallelEndpoints(
-        this IEndpointRouteBuilder endpoints, string basePath)
+        this IEndpointRouteBuilder endpoints, string basePath, BowireOptions? options = null)
     {
         endpoints.MapPost($"{basePath}/api/parallel/start-local", async (HttpContext ctx) =>
         {
@@ -92,6 +93,9 @@ internal static class BowireParallelEndpoints
             }
 
             if (Refuse(policy, req, audit, caller, job, ctx) is { } refusal) return refusal;
+            if (BowireTargetPolicy.For(options, ctx.Request)
+                    .Refuse(ctx, [.. req.Targets.Select(t => t.Url)]) is { } targetRefusal)
+                return targetRefusal;
 
             var logger = BowireEndpointHelpers.GetLogger(ctx);
             var result = await BowireParallelRunner.RunAsync(
@@ -145,6 +149,12 @@ internal static class BowireParallelEndpoints
             // allowlist governs them. With hosts, each executor applies its own.
             var hasHosts = req.Hosts?.Any(h => !string.IsNullOrWhiteSpace(h)) == true;
             if (!hasHosts && Refuse(policy, req, audit, caller, job, ctx) is { } refusal) return refusal;
+            // The server-URL lock is this host's, and it holds whoever runs
+            // the targets: a locked coordinator does not farm out targets it
+            // would refuse to dial itself.
+            if (BowireTargetPolicy.For(options, ctx.Request)
+                    .Refuse(ctx, [.. req.Targets.Select(t => t.Url)]) is { } targetRefusal)
+                return targetRefusal;
 
             var logger = BowireEndpointHelpers.GetLogger(ctx);
             var result = await BowireParallelCoordinator.RunAsync(

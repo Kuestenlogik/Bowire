@@ -127,12 +127,36 @@ public sealed class BowireOptions
     public List<string> DisabledPlugins { get; } = [];
 
     /// <summary>
-    /// When <c>true</c>, the server-URL input in the UI is read-only.
-    /// Use this for CI, demos, or hardened deployments where you want users
-    /// to browse the pre-configured service but not point the workbench at
-    /// other hosts.
+    /// When <c>true</c>, the workbench is locked to its configured server
+    /// URLs: the server-URL input in the UI is read-only, and every
+    /// server-side endpoint that dials a target (invoke, streaming,
+    /// channels, discovery, fuzz, parallel runs) refuses any other URL with
+    /// a 403 problem-details response. Use this for CI, demos, or hardened
+    /// deployments where users may browse the pre-configured service but
+    /// must not point the workbench — and the host it runs on — at other
+    /// hosts.
     /// </summary>
+    /// <remarks>
+    /// The allowed set is <see cref="ServerUrl"/>, <see cref="ServerUrls"/>,
+    /// <see cref="AllowedServerUrls"/> and, in <see cref="BowireMode.Embedded"/>
+    /// mode, the host's own origin. See
+    /// <see cref="Net.BowireTargetPolicy"/> for how URLs are compared.
+    /// </remarks>
     public bool LockServerUrl { get; set; }
+
+    /// <summary>
+    /// Additional server URLs the server-side endpoints may dial besides
+    /// <see cref="ServerUrl"/> / <see cref="ServerUrls"/>. A non-empty list
+    /// switches target enforcement on even without
+    /// <see cref="LockServerUrl"/>: the UI stays editable, but a target
+    /// outside the configured set is refused with a 403. Each entry is a
+    /// URL whose path acts as a base path (<c>https://api.example.com/v1</c>
+    /// also allows <c>https://api.example.com/v1/orders</c>); a
+    /// <c>hint@</c> prefix is ignored. Bound from
+    /// <c>Bowire:AllowedServerUrls</c> and <c>--allowed-server-url</c> by the
+    /// CLI tool.
+    /// </summary>
+    public List<string> AllowedServerUrls { get; } = [];
 
     /// <summary>
     /// When <c>true</c>, the sidebar lists well-known internal services such

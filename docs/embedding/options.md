@@ -135,9 +135,71 @@ flag funnels into the same list.)
 
 ### `LockServerUrl` (`bool`, default `false`)
 
-When `true`, the server-URL input in the UI is read-only. Use for CI,
-demos, or hardened deployments where the operator should browse the
-pre-configured service but not point the workbench at other hosts.
+When `true`, the workbench is locked to its configured server URLs —
+**enforced on the server, not just in the UI**. The server-URL input is
+read-only, and every endpoint that dials a caller-named target refuses
+any other URL with `403 Forbidden` and a problem-details body
+(`type: urn:bowire:target-not-allowed`) before a single byte goes out:
+
+| Endpoint | Target it checks |
+|---|---|
+| `POST /api/invoke`, `GET /api/invoke/stream` | `?serverUrl=` (or the default target) |
+| `POST /api/channel/open` | `?serverUrl=` |
+| `GET /api/services` | `?serverUrl=` |
+| `POST /api/security/fuzz` | `target` and `target` + `httpPath` |
+| `POST /api/parallel/start-local`, `POST /api/parallel/start` | every `targets[].url` |
+
+Use it for CI, demos, shared or hardened deployments where users may
+browse the pre-configured service but must not turn the Bowire host into
+a relay to other hosts (cloud metadata endpoints, internal services).
+
+The allowed set is `ServerUrl` + `ServerUrls` + [`AllowedServerUrls`](#allowedserverurls-liststring-default-empty),
+plus — in embedded mode — the host's own origin, which is the target the
+endpoints fall back to when no `serverUrl` is passed. That origin is taken
+from the request's `Host` header, so an embedded host reachable under
+foreign names should restrict `AllowedHosts` or set `ServerUrl`
+explicitly.
+
+URLs are compared after normalisation, so neither a plugin hint nor
+spelling variants get around the check:
+
+- the `hint@` prefix is stripped (`grpcweb@https://api` → `https://api`);
+- scheme and host compare case-insensitively, a default port equals its
+  explicit form (`https://api` = `https://api:443`), a trailing slash and
+  query/fragment are ignored, dot segments are resolved;
+- the path of an allowed entry is a **base path**: `https://api/v1` allows
+  `https://api/v1/orders` but not `https://api/v10` or `https://api/`;
+- `https://api@evil.test` is the host `evil.test` and is refused;
+- a value that is not an absolute `scheme://` URL only matches an entry
+  spelled the same way.
+
+The standalone tool sets `LockServerUrl` whenever it is started with
+`--url` (or `Bowire:ServerUrls`), so `bowire --url https://api` only ever
+dials `https://api`.
+
+### `AllowedServerUrls` (`List<string>`, default empty)
+
+Extra targets the server-side endpoints may dial besides `ServerUrl` /
+`ServerUrls`. A non-empty list turns the same enforcement on **without**
+locking the UI: users can still type a URL, but anything outside the
+configured set is refused with `403`. Entries follow the matching rules
+above (base paths, hint prefix ignored).
+
+```csharp
+app.MapBowire(options =>
+{
+    options.ServerUrl = "https://payments.staging";
+    options.AllowedServerUrls.Add("https://notifications.staging/api");
+    options.AllowedServerUrls.Add("mqtt://broker.staging:1883");
+});
+```
+
+The standalone tool binds it from `Bowire:AllowedServerUrls` in
+`appsettings.json` (or `BOWIRE_Bowire__AllowedServerUrls__0=…`) and the
+repeatable, comma-separable `--allowed-server-url` flag.
+
+`Bowire:Parallel:TargetAllowlist` still applies to parallel runs on top of
+this: a parallel target must pass both.
 
 ### `ShowInternalServices` (`bool`, default `false`)
 
