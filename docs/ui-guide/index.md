@@ -56,6 +56,7 @@ app.MapBowire(options =>
 | `ServerUrl` | `null` | Override server URL (for reverse proxies) |
 | `LockServerUrl` | `false` | Locks the workbench to its configured server URLs — read-only in the UI and enforced server-side (other targets get `403`) |
 | `AllowedServerUrls` | empty | Extra targets the server may dial; non-empty enforces the allowlist without locking the UI |
+| `AllowedAuthUrls` | empty | Identity providers the OAuth / custom-token helpers and auth-flow capture may call once targets are restricted |
 | `ShowInternalServices` | `false` | Show internal services like `grpc.reflection` |
 
 See also: [Keyboard Shortcuts](../features/keyboard-shortcuts.md), [Responsive & Mobile](../features/responsive-mobile.md)

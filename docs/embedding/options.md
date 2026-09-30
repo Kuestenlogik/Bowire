@@ -148,6 +148,10 @@ any other URL with `403 Forbidden` and a problem-details body
 | `GET /api/services` | `?serverUrl=` |
 | `POST /api/security/fuzz` | `target` and `target` + `httpPath` |
 | `POST /api/parallel/start-local`, `POST /api/parallel/start` | every `targets[].url` |
+| `POST /api/network/test` | `url` |
+| `POST /api/auth/oauth-token`, `/oauth-code-exchange`, `/oauth-refresh` | `tokenUrl` — against the auth list, see [`AllowedAuthUrls`](#allowedauthurls-liststring-default-empty) |
+| `POST /api/auth/custom-token` | `url` — auth list |
+| `POST /api/auth-recordings/{id}/capture` | every request the auth flow sends, after `{{var}}` substitution — auth list |
 
 Use it for CI, demos, shared or hardened deployments where users may
 browse the pre-configured service but must not turn the Bowire host into
@@ -200,6 +204,43 @@ repeatable, comma-separable `--allowed-server-url` flag.
 
 `Bowire:Parallel:TargetAllowlist` still applies to parallel runs on top of
 this: a parallel target must pass both.
+
+### `AllowedAuthUrls` (`List<string>`, default empty)
+
+Identity-provider URLs the auth helpers may call on the caller's behalf:
+the OAuth token proxies (`/api/auth/oauth-token`, `/oauth-code-exchange`,
+`/oauth-refresh`), the custom-token proxy (`/api/auth/custom-token`) and
+auth-flow capture (`/api/auth-recordings/{id}/capture`). Token endpoints
+usually live on another host than the API, so they have their own list —
+adding the IdP to `AllowedServerUrls` would also let invoke and discovery
+reach it.
+
+The auth helpers are checked whenever `LockServerUrl` is set or either
+allowlist is non-empty. They may then call the server URLs (`ServerUrl`,
+`ServerUrls`, `AllowedServerUrls`, the embedded host's own origin) plus
+`AllowedAuthUrls`; anything else gets the same `403`. A non-empty
+`AllowedAuthUrls` on its own restricts only the auth helpers.
+
+```csharp
+app.MapBowire(options =>
+{
+    options.ServerUrl = "https://payments.staging";
+    options.LockServerUrl = true;
+    // Covers …/realms/acme/protocol/openid-connect/token and friends.
+    options.AllowedAuthUrls.Add("https://login.example.com/realms/acme");
+});
+```
+
+While the check is active, the auth helpers also stop following redirects —
+a `302` from an allowed token endpoint would otherwise carry the request to
+a host that was never checked; it comes back as an upstream error instead.
+Auth-flow capture checks each step on the wire, because step URLs are only
+final after `{{var}}` substitution; a custom `IAuthFlowCapturer` that does
+not implement the restricted `CaptureAsync(flowJson, allowTarget, ct)`
+overload refuses to run on such a host rather than run unchecked.
+
+The standalone tool binds it from `Bowire:AllowedAuthUrls` and the
+repeatable, comma-separable `--allowed-auth-url` flag.
 
 ### `ShowInternalServices` (`bool`, default `false`)
 

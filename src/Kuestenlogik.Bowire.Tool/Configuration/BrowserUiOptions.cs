@@ -109,6 +109,14 @@ internal sealed class BrowserUiOptions
     public List<string> AllowedServerUrls { get; set; } = [];
 
     /// <summary>
+    /// Identity-provider URLs the auth helpers may call. Bound from
+    /// <c>Bowire:AllowedAuthUrls</c> and merged with any
+    /// <c>--allowed-auth-url</c> flags, then forwarded into
+    /// <see cref="BowireOptions.AllowedAuthUrls"/>.
+    /// </summary>
+    public List<string> AllowedAuthUrls { get; set; } = [];
+
+    /// <summary>
     /// Plugin ids to skip when scanning for protocol implementations.
     /// Bound from <c>Bowire:DisabledPlugins</c> in appsettings.json
     /// and merged with any <c>--disable-plugin</c> CLI flags by

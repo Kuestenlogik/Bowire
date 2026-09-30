@@ -3,6 +3,7 @@
 
 using System.Text.Json;
 using Kuestenlogik.Bowire.Mocking;
+using Kuestenlogik.Bowire.Net;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Http;
@@ -23,7 +24,7 @@ namespace Kuestenlogik.Bowire.Endpoints;
 internal static class BowireMockConfigEndpoints
 {
     public static IEndpointRouteBuilder MapBowireMockConfigEndpoints(
-        this IEndpointRouteBuilder endpoints, string basePath)
+        this IEndpointRouteBuilder endpoints, string basePath, BowireOptions? options = null)
     {
         endpoints.MapGet($"{basePath}/api/mocks/{{mockId}}/config", (string mockId, HttpContext ctx) =>
         {
@@ -136,10 +137,25 @@ internal static class BowireMockConfigEndpoints
             if (string.IsNullOrWhiteSpace(flowJson))
                 return Problem(ctx, "Missing flow", 400, "The request body must carry the auth-flow definition JSON.");
 
+            // Step URLs only exist after {{var}} substitution, so the auth
+            // policy rides along and is checked on every request the flow sends.
+            var authPolicy = BowireTargetPolicy.ForAuth(options, ctx.Request);
             AuthFlowCaptureResult captured;
             try
             {
-                captured = await capturer.CaptureAsync(flowJson, ctx.RequestAborted);
+                captured = authPolicy.IsEnforced
+                    ? await capturer.CaptureAsync(flowJson, uri => authPolicy.Allows(uri.AbsoluteUri), ctx.RequestAborted)
+                    : await capturer.CaptureAsync(flowJson, ctx.RequestAborted);
+            }
+            catch (AuthFlowCaptureException ex) when (ex.InnerException is BowireTargetRefusedException refusedTarget)
+            {
+                return authPolicy.Refuse(ctx, refusedTarget.Target ?? string.Empty)
+                    ?? BowireEndpointHelpers.Problem(
+                        type: BowireTargetPolicy.RefusedProblemType,
+                        title: "Target not allowed on this server",
+                        status: StatusCodes.Status403Forbidden,
+                        detail: ex.Message,
+                        instance: ctx.Request.Path);
             }
             catch (AuthFlowCaptureException ex)
             {

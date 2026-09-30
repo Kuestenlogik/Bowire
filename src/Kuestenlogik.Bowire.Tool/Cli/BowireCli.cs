@@ -170,6 +170,11 @@ internal static class BowireCli
             Description = "Extra server URL the workbench may dial besides --url. Repeat or comma-separate. Any value switches server-side target enforcement on: a target outside --url + this list is refused with 403. Equivalent to Bowire:AllowedServerUrls.",
             AllowMultipleArgumentsPerToken = true,
         });
+        root.Add(new Option<string[]>("--allowed-auth-url")
+        {
+            Description = "Identity-provider URL the auth helpers (OAuth token proxies, custom-token proxy, auth-flow capture) may call. Repeat or comma-separate. Needed for a token endpoint outside --url once targets are restricted; on its own it restricts only the auth helpers. Equivalent to Bowire:AllowedAuthUrls.",
+            AllowMultipleArgumentsPerToken = true,
+        });
         root.Add(new Option<bool>("--telemetry") { Description = "Enable OpenTelemetry self-observability (#29). Bowire emits traces + Bowire-domain metrics (bowire.invoke.count / duration / bowire.discover.count / bowire.plugin.load / bowire.mock.requests) through the canonical 'Kuestenlogik.Bowire' Meter and ActivitySource. Wire endpoint, headers, and protocol come from the standard OTEL_EXPORTER_OTLP_* env vars. Off by default — laptop installs stay quiet." });
         root.Add(new Option<bool>("--telemetry-strip-method-labels") { Description = "When --telemetry is on, drop the high-cardinality service + method dimensions from emitted metrics. Shared multi-tenant installs (GDPR / HIPAA / SOX) almost always want this; private-network deploys usually leave it off so per-method breakdowns survive." });
         root.Add(new Option<string>("--ai-provider") { Description = "AI provider id for the workbench's chat / hint surface (#25 Phase 2). Default 'ollama' speaks the local Ollama HTTP API on 127.0.0.1:11434; LM Studio on :1234 works through the same client because the wire shape matches. Cloud connectors slot in via the same Microsoft.Extensions.AI IChatClient seam in Phase 3. Maps to Bowire:Ai:ProviderId." });

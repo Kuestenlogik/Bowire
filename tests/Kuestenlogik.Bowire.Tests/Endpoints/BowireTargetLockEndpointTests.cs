@@ -101,6 +101,7 @@ public sealed class BowireTargetLockEndpointTests
         app.MapBowireChannelEndpoints(options, "");
         app.MapBowireSecurityEndpoints("", options);
         app.MapBowireParallelEndpoints("", options);
+        app.MapBowireNetworkEndpoints("", options);
         await app.StartAsync(ct).ConfigureAwait(false);
         return new Host(app, new HttpClient { BaseAddress = new Uri(app.Urls.First()) }, protocol);
     }
@@ -381,5 +382,49 @@ public sealed class BowireTargetLockEndpointTests
         // Every route reached the plugin with the foreign URL, as before.
         Assert.True(h.Protocol.Dialed.Count >= 4);
         Assert.All(h.Protocol.Dialed, url => Assert.StartsWith("http://169.254.169.254", url, StringComparison.Ordinal));
+    }
+
+    // ---------------------------- network test --------------------------------
+
+    private static Task<HttpResponseMessage> NetworkTestAsync(Host h, string url, CancellationToken ct) =>
+        h.Http.PostAsync(new Uri("/api/network/test", UriKind.Relative),
+            Json(JsonSerializer.Serialize(new { url })), ct);
+
+    [Fact]
+    public async Task Locked_network_test_refuses_foreign_target()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var h = await StartAsync(LockedOptions(), ct);
+
+        using var resp = await NetworkTestAsync(h, Foreign, ct);
+
+        await AssertRefusedAsync(resp, ct);
+    }
+
+    [Fact]
+    public async Task Locked_network_test_checks_an_allowed_target()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var options = LockedOptions();
+        await using var h = await StartAsync(options, ct);
+        options.AllowedServerUrls.Add(h.Origin);
+
+        using var resp = await NetworkTestAsync(h, h.Origin + "/nowhere", ct);
+
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+        var body = JsonDocument.Parse(await resp.Content.ReadAsStringAsync(ct)).RootElement;
+        Assert.True(body.GetProperty("ok").GetBoolean());
+        Assert.Equal(404, body.GetProperty("status").GetInt32());
+    }
+
+    [Fact]
+    public async Task Unlocked_network_test_behaves_as_before()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var h = await StartAsync(new BowireOptions(), ct);
+
+        using var resp = await NetworkTestAsync(h, h.Origin + "/nowhere", ct);
+
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
     }
 }
