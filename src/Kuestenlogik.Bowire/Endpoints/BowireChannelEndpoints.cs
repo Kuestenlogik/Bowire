@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Text.Json;
+using Kuestenlogik.Bowire.Net;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -35,6 +36,8 @@ internal static class BowireChannelEndpoints
 
             var rawServerUrl = ctx.Request.Query["serverUrl"].FirstOrDefault()
                 ?? BowireEndpointHelpers.ResolveServerUrl(options, ctx.Request);
+            if (BowireTargetPolicy.For(options, ctx.Request).Refuse(ctx, rawServerUrl) is { } refused)
+                return refused;
             var (urlHint, serverUrl) = BowireServerUrl.Parse(rawServerUrl);
             if (urlHint is not null)
             {

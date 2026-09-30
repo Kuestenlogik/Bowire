@@ -194,6 +194,29 @@ public sealed class BowireConfigurationTests : IDisposable
     }
 
     [Fact]
+    public void BuildBrowserUiOptions_AllowedServerUrls_MergeConfigAndRepeatedFlag()
+    {
+        // Bowire:AllowedServerUrls from config plus --allowed-server-url
+        // (repeated, '=' form and comma-separated), de-duplicated
+        // case-insensitively — the list BrowserUiHost forwards into
+        // BowireOptions.AllowedServerUrls for server-side enforcement.
+        var config = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Bowire:AllowedServerUrls:0"] = "https://a.local",
+            })
+            .Build();
+        var options = BowireConfiguration.BuildBrowserUiOptions(
+            config,
+            ["--allowed-server-url", "https://b.local,https://c.local",
+             "--allowed-server-url=HTTPS://A.LOCAL"]);
+
+        Assert.Equal("https://a.local,https://b.local,https://c.local", string.Join(',', options.AllowedServerUrls));
+        // An allowlist alone does not lock the UI.
+        Assert.False(options.LockServerUrl);
+    }
+
+    [Fact]
     public void AddBowirePlugins_IConfigurationOverload_UsesBoundPluginDir()
     {
         // An empty but valid directory — the extension is a no-op since

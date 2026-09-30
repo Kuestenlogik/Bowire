@@ -257,6 +257,19 @@ internal static class BowireConfiguration
             }
         }
 
+        // --allowed-server-url merges with Bowire:AllowedServerUrls the same
+        // way --disable-plugin does: repeatable, comma-separable, additive.
+        foreach (var raw in ExtractRepeatedTokens(args, "--allowed-server-url"))
+        {
+            var fresh = raw
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Where(part => !options.AllowedServerUrls.Contains(part, StringComparer.OrdinalIgnoreCase));
+            foreach (var part in fresh)
+            {
+                options.AllowedServerUrls.Add(part);
+            }
+        }
+
         // Keep ServerUrl and ServerUrls in sync. When the list is
         // non-empty the primary is always its first element — this
         // matters most when AddCommandLine's switch mapping picked the
