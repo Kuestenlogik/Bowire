@@ -22,7 +22,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [681](https://github.com/Kuestenlogik/Bowire/issues/681) | Bowire | [Persistent cookie manager, and cookies beyond REST](#issue-kuestenlogik-bowire-681) | ✅ Done | `area:workbench` |
 | [755](https://github.com/Kuestenlogik/Bowire/issues/755) | Bowire | [Link-Check der Site prüft seit dem Umzug nach scripts/site nichts mehr](#issue-kuestenlogik-bowire-755) | ✅ Done |  |
 
-### v2.10 — Discoverability: the pitch, the directories, the star ask *(due 2027-01-11)*
+### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
 
 **0/4 done** · 4 backlog
 
@@ -183,7 +183,7 @@ The cookie jar today is a per-environment in-memory `CookieContainer`, and it is
 
 `scripts/site/check-internal-links.mjs` löst die Repo-Wurzel mit `resolve(__dirname, '..')` auf. Seit das Skript in `scripts/site/` liegt (02adf0b7), ist das `scripts/`. Die Folge: Es scannt eine einzige Datei und keinen Link, und meldet trotzdem „all internal links resolve“. [[more]](https://github.com/Kuestenlogik/Bowire/issues/755)
 
-### v2.10 — Discoverability: the pitch, the directories, the star ask *(due 2027-01-11)*
+### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
 
 #### <a id="issue-kuestenlogik-bowire-639"></a>⬜ Backlog · [#639](https://github.com/Kuestenlogik/Bowire/issues/639) SCIM: live Okta and Entra ID provisioning round-trips
 
