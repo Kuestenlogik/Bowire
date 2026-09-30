@@ -158,6 +158,14 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: node scripts/site/build-activity-snapshot.mjs
 
+      # #671 - /changelog.html is the release notes (docs/release-notes/v*.md)
+      # rendered newest first, dated from the GitHub Releases. Generated here,
+      # never edited by hand.
+      - name: Build the changelog page data
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/site/build-changelog.mjs
+
       # Install counts, same reasoning as the activity snapshot: baked at
       # build time so the page makes no third-party call at load. Two of the
       # three sources would allow a browser read; Docker Hub sends no CORS

@@ -18,3 +18,5 @@
   href: scim.md
 - name: Updating Bowire and its plugins
   href: updating.md
+- name: Outbound connections
+  href: outbound-connections.md

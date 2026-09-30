@@ -9486,3 +9486,90 @@ select.ai-picker-input {
     font-size: 13px;
     color: var(--text-secondary);
 }
+
+/* #671 - the trust claim under the hero slogan, with its proof one click away. */
+.hero-trust {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 4px 8px;
+    max-width: 760px;
+    margin: 4px auto 28px;
+    padding: 8px 14px;
+    font-size: 14px;
+    color: var(--text-secondary);
+    background: color-mix(in srgb, var(--success) 7%, transparent);
+    border: 1px solid color-mix(in srgb, var(--success) 30%, transparent);
+    border-radius: var(--radius);
+}
+.hero-trust svg {
+    color: var(--success);
+    flex: none;
+}
+.hero-trust a {
+    color: var(--accent-light);
+    white-space: nowrap;
+}
+
+/* #671 - the changelog page, generated from the release notes. */
+.changelog-hero {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 48px 24px 16px;
+    text-align: center;
+}
+.changelog-hero-tagline {
+    color: var(--text-secondary);
+}
+.changelog-index {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 16px;
+}
+.changelog-index a {
+    padding: 3px 10px;
+    font-size: 13px;
+    font-family: var(--font-mono);
+    color: var(--text);
+    text-decoration: none;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+}
+.changelog-index a:hover {
+    border-color: var(--accent);
+}
+.changelog {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 16px 24px 64px;
+}
+.changelog-entry {
+    padding: 28px 0;
+    border-top: 1px solid var(--border);
+    scroll-margin-top: calc(var(--header-height) + 16px);
+}
+.changelog-entry-head h2 {
+    margin: 0 0 4px;
+    font-size: 22px;
+    line-height: 1.3;
+}
+.changelog-version {
+    font-family: var(--font-mono);
+    color: var(--accent-light);
+    text-decoration: none;
+    margin-right: 6px;
+}
+.changelog-meta {
+    margin: 0 0 12px;
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+.changelog-body h3 {
+    margin-top: 24px;
+}
+.changelog-body h4 {
+    margin-top: 16px;
+}

@@ -1,0 +1,39 @@
+---
+layout: page
+title: Changelog — Bowire
+description: Every Bowire release, newest first — what each one delivers, in the words of its release notes.
+---
+
+{%- comment -%}
+#671 — generated from docs/release-notes/v*.md by scripts/site/build-changelog.mjs
+(site/_data/changelog.json), which the site build runs before Jekyll. The
+notes are the same text each GitHub Release is published with; nothing here
+is maintained by hand.
+{%- endcomment -%}
+
+<section class="changelog-hero">
+  <h1>Changelog</h1>
+  <p class="changelog-hero-tagline">Every release, newest first. Downloads and the full commit list for each one are on <a href="https://github.com/Kuestenlogik/Bowire/releases">GitHub Releases</a>; what is coming next is on the <a href="https://github.com/Kuestenlogik/Bowire/blob/main/ROADMAP.md">roadmap</a>.</p>
+  <nav class="changelog-index" aria-label="Releases">
+    {%- for entry in site.data.changelog -%}
+      <a href="#{{ entry.anchor }}">{{ entry.version }}</a>
+    {%- endfor -%}
+  </nav>
+</section>
+
+<div class="changelog">
+  {%- for entry in site.data.changelog %}
+  <article class="changelog-entry" id="{{ entry.anchor }}">
+    <header class="changelog-entry-head">
+      <h2><a href="#{{ entry.anchor }}" class="changelog-version">{{ entry.version }}</a>{% if entry.title %} <span class="changelog-title">{{ entry.title }}</span>{% endif %}</h2>
+      <p class="changelog-meta">
+        {%- if entry.date %}<time datetime="{{ entry.date }}">{{ entry.date }}</time> · {% endif -%}
+        <a href="{{ entry.url }}">Release, downloads and commits &rarr;</a>
+      </p>
+    </header>
+    <div class="changelog-body">
+      {{ entry.body | markdownify }}
+    </div>
+  </article>
+  {%- endfor %}
+</div>
