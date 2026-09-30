@@ -14,12 +14,40 @@ is maintained by hand.
 <section class="changelog-hero">
   <h1>Changelog</h1>
   <p class="changelog-hero-tagline">Every release, newest first. Downloads and the full commit list for each one are on <a href="https://github.com/Kuestenlogik/Bowire/releases">GitHub Releases</a>; what is coming next is on the <a href="https://github.com/Kuestenlogik/Bowire/blob/main/ROADMAP.md">roadmap</a>.</p>
-  <nav class="changelog-index" aria-label="Releases">
-    {%- for entry in site.data.changelog -%}
-      <a href="#{{ entry.anchor }}">{{ entry.version }}</a>
-    {%- endfor -%}
-  </nav>
 </section>
+
+{%- comment -%}
+The version list, rendered once and placed twice: a sticky side list on wide
+screens, a collapsible "Jump to a version" on narrow ones. Both are plain links,
+so they work without JavaScript; the script below only marks the version in view.
+Patch releases (x.y.z, z > 0) sit indented under their minor release.
+{%- endcomment -%}
+{%- capture toc -%}
+      <ol class="changelog-toc-list">
+        {%- for entry in site.data.changelog %}
+        {%- assign parts = entry.version | split: '.' %}
+        <li class="changelog-toc-item{% if parts[2] != '0' %} changelog-toc-patch{% endif %}">
+          <a href="#{{ entry.anchor }}" data-anchor="{{ entry.anchor }}">
+            <span class="changelog-toc-version">{{ entry.version }}</span>
+            {%- if entry.title %}<span class="changelog-toc-title">{{ entry.title }}</span>{% endif %}
+            {%- if entry.date %}<time class="changelog-toc-date" datetime="{{ entry.date }}">{{ entry.date }}</time>{% endif %}
+          </a>
+        </li>
+        {%- endfor %}
+      </ol>
+{%- endcapture -%}
+
+<div class="changelog-layout">
+  <aside class="changelog-side" aria-label="Releases">
+    <details class="changelog-jump">
+      <summary>Jump to a version <span class="changelog-jump-latest">latest {{ site.data.changelog[0].version }}</span></summary>
+      {{ toc }}
+    </details>
+    <nav class="changelog-toc">
+      <p class="changelog-toc-heading">Releases</p>
+      {{ toc }}
+    </nav>
+  </aside>
 
 <div class="changelog">
   {%- for entry in site.data.changelog %}
@@ -37,3 +65,29 @@ is maintained by hand.
   </article>
   {%- endfor %}
 </div>
+</div>
+
+<script>
+  // Marks the release in view in both version lists; the lists work without it.
+  (function () {
+    var links = document.querySelectorAll('.changelog-toc-list a[data-anchor]');
+    var jump = document.querySelector('.changelog-jump');
+    if (!links.length || !('IntersectionObserver' in window)) return;
+    function mark(id) {
+      links.forEach(function (a) {
+        if (a.getAttribute('data-anchor') === id) a.setAttribute('aria-current', 'true');
+        else a.removeAttribute('aria-current');
+      });
+    }
+    var visible = {};
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) { visible[e.target.id] = e.isIntersecting; });
+      var first = Array.prototype.find.call(document.querySelectorAll('.changelog-entry'), function (el) { return visible[el.id]; });
+      if (first) mark(first.id);
+    }, { rootMargin: '-80px 0px -60% 0px' });
+    document.querySelectorAll('.changelog-entry').forEach(function (el) { io.observe(el); });
+    if (jump) jump.addEventListener('click', function (e) {
+      if (e.target.closest('a')) jump.open = false;
+    });
+  })();
+</script>

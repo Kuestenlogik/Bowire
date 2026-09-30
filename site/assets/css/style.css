@@ -9522,29 +9522,127 @@ select.ai-picker-input {
 .changelog-hero-tagline {
     color: var(--text-secondary);
 }
-.changelog-index {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 6px;
-    margin-top: 16px;
+.changelog-layout {
+    max-width: 1160px;
+    margin: 0 auto;
+    padding: 0 24px;
+    display: grid;
+    grid-template-columns: 250px minmax(0, 1fr);
+    gap: 48px;
+    align-items: start;
 }
-.changelog-index a {
-    padding: 3px 10px;
-    font-size: 13px;
-    font-family: var(--font-mono);
+.changelog-side {
+    position: sticky;
+    top: calc(var(--header-height) + 24px);
+    max-height: calc(100vh - var(--header-height) - 48px);
+    overflow-y: auto;
+    scrollbar-width: thin;
+    padding: 28px 0 24px;
+}
+.changelog-toc-heading {
+    margin: 0 0 8px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-secondary);
+}
+.changelog-toc-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border-left: 1px solid var(--border);
+}
+.changelog-toc-list a {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    column-gap: 8px;
+    margin-left: -1px;
+    padding: 6px 10px 6px 14px;
+    border-left: 2px solid transparent;
     color: var(--text);
     text-decoration: none;
-    border: 1px solid var(--border);
-    border-radius: 999px;
+    font-size: 13px;
+    line-height: 1.35;
 }
-.changelog-index a:hover {
-    border-color: var(--accent);
+.changelog-toc-list a:hover {
+    border-left-color: var(--border);
+    background: var(--bg-elevated);
+}
+.changelog-toc-list a[aria-current] {
+    border-left-color: var(--accent);
+    background: var(--bg-elevated);
+}
+.changelog-toc-version {
+    font-family: var(--font-mono);
+    font-weight: 600;
+    color: var(--accent-light);
+}
+.changelog-toc-title {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
+}
+.changelog-toc-date {
+    grid-column: 2;
+    font-size: 11px;
+    color: var(--text-secondary);
+}
+.changelog-toc-patch a {
+    padding-left: 28px;
+    font-size: 12px;
+}
+.changelog-toc-patch .changelog-toc-version {
+    font-weight: 400;
+}
+.changelog-jump {
+    display: none;
+}
+.changelog-jump summary {
+    cursor: pointer;
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--bg-elevated);
+    font-weight: 600;
+}
+.changelog-jump-latest {
+    margin-left: 6px;
+    font-family: var(--font-mono);
+    font-weight: 400;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+.changelog-jump[open] .changelog-toc-list {
+    margin-top: 8px;
+    max-height: 60vh;
+    overflow-y: auto;
+}
+@media (max-width: 900px) {
+    .changelog-layout {
+        display: block;
+        padding: 0 16px;
+    }
+    .changelog-side {
+        top: var(--header-height);
+        z-index: 5;
+        max-height: none;
+        overflow: visible;
+        padding: 8px 0;
+        background: var(--bg);
+    }
+    .changelog-toc {
+        display: none;
+    }
+    .changelog-jump {
+        display: block;
+    }
 }
 .changelog {
-    max-width: 860px;
-    margin: 0 auto;
-    padding: 16px 24px 64px;
+    min-width: 0;
+    padding: 0 0 64px;
 }
 .changelog-entry {
     padding: 28px 0;
@@ -9566,6 +9664,10 @@ select.ai-picker-input {
     margin: 0 0 12px;
     font-size: 13px;
     color: var(--text-secondary);
+}
+.changelog-body pre {
+    max-width: 100%;
+    overflow-x: auto;
 }
 .changelog-body h3 {
     margin-top: 24px;
