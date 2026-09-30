@@ -78,7 +78,6 @@ Labels live on the GitHub issue itself (not on the Project board). They're the s
 
 | Label namespace | Purpose |
 |---|---|
-| **`roadmap`** | Marks an issue as tracked on the Project board. Throwaway bug reports don't need it. |
 | **`community-vote`** | Feature requests where reactions are read as priority signal. Don't comment "+1" — react with 👍. |
 
 ## Recommended views
@@ -117,7 +116,7 @@ The board ships with the default *All items* view. The four views below are the 
 
 - **One field per concept**: `Status` is the *where in the flow*, `Product` the *what ships it*, `Release` the *when* (in that product's count), `Area` the *component*, the issue **Type** the *kind* (Bug / Feature / Task). `Status` and `Release` are independent axes — an item can be planned for `2.9` and still rest in `Backlog`. `Area`, `Product`, `Release` and the milestone are set when the ticket is planned. (The old `Track` field was dropped — it overlapped with `Area`.)
 - **Labels duplicate fields on purpose**: GitHub issue search needs labels (`is:open label:area:security`). Project filters need fields. The two are kept in sync so an issue is findable from either side.
-- **`roadmap` label** flags items that are tracked on the board. Throwaway bug reports don't need it.
+- **Every issue is on the board.** There is no label to opt in: a new issue in this repository is added the moment it is filed ([`project-add.yml`](../../.github/workflows/project-add.yml)), and the daily guard adds any open issue of a product repository that is still missing. (The `roadmap` label did that job until 2026-09-30 and was retired: 20 issues filed without it had never reached a plan.)
 - **`community-vote` label** marks feature requests where reactions on the issue are read as priority signal. Don't comment "+1" — react with 👍.
 - **PRs close issues via `Closes #N`** so Status flips to `Done` automatically and the item drops off the active views.
 
@@ -129,7 +128,7 @@ The board ships with the default *All items* view. The four views below are the 
 
 ### When you create an issue
 
-Put it on the board (the `roadmap` label does that on its own; without it, add it), and give it:
+It lands on the board on its own, with its repository's product. At triage give it:
 
 - **Product** — the artifact that ships it;
 - **Release** — the release it is planned for, in that product's count;
@@ -157,11 +156,12 @@ The open releases live on the [milestones page](https://github.com/Kuestenlogik/
 
 ## Automation
 
-The roadmap is wired to maintain itself once an issue lands with `label:roadmap`:
+The roadmap maintains itself; every issue of a product repository takes part:
 
 | Event | What happens |
 |---|---|
-| New issue with `roadmap` label | The Project's own **Auto-add to project** rule attaches it (Status defaults to `Backlog`); Product, Release and milestone are set at triage — the field guard lists it until they are |
+| New issue in this repository | [`project-add.yml`](../../.github/workflows/project-add.yml) puts it on the board with `Product = Bowire` (Status defaults to `Backlog`); Release and milestone are set at triage — the field guard lists it until they are |
+| New issue in another product repository | The daily field guard adds it (`check-board.mjs --add`) with its repository's product, then lists it until it is planned |
 | Issue closed | `roadmap-sync.yml` regenerates `ROADMAP.md` from the Project + commits |
 | Issue title / label / milestone change | same — `roadmap-sync.yml` re-renders |
 | PR merged that uses `Closes #N` | Status flips to `Done` via Project workflow (UI-side, see below) |
@@ -186,6 +186,6 @@ Configure once in the Project UI — these aren't exposed via API yet, so they l
 1. Open https://github.com/orgs/Kuestenlogik/projects/2 → **⚙ Settings** → **Workflows**
 2. **Item closed** → enable → Set status to `Done`.
 3. **Pull request merged** → enable → Set status to `Done`.
-4. **Auto-add to project** → leave **disabled** for `Kuestenlogik/Bowire` (the GitHub Action above handles that with the label filter). For sibling Bowire.* repos that don't carry the workflow file, enable Auto-add with filter `repo:Kuestenlogik/<RepoName> label:roadmap is:issue,pr`.
+4. **Auto-add to project** → optional. The field guard adds every open issue of a product repository daily, so the rule only makes that immediate for the sibling repositories. If you enable it, use one filter per repository **without a label clause**: `repo:Kuestenlogik/<RepoName> is:issue`.
 
 Sibling-repo wiring options (Project-side vs Action-side vs back-fill) are documented separately in [`multi-repo-project-add.md`](multi-repo-project-add.md).

@@ -1,9 +1,10 @@
 name: Concept / Design doc
 description: ADR, design discussion, spec — discussable via issue comments + reactions
 # `kind:concept` dropped — the label does not exist in this repo and GitHub
-# discards unknown template labels silently. `roadmap` is what puts the issue
-# on the board; the kind lives in the native issue Type.
-labels: ["roadmap"]
+# discards unknown template labels silently. The kind lives in the native
+# issue Type.
+# Every issue lands on the board without a label (project-add.yml); the
+# `roadmap` label was retired on 2026-09-30.
 body:
   - type: markdown
     attributes:

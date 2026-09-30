@@ -10,8 +10,10 @@ name: Roadmap field guard
 # empty before it. Nothing then said when the next release was due, and 2.8
 # waited three weeks behind 43 finished tickets. A release is planned again;
 # this guard is what keeps it planned. It also sweeps every product repository
-# for open issues that are not on the board at all: the board only adds issues
-# labelled `roadmap` on its own, and 20 of them had been missed.
+# and puts every open issue that is not on the board yet onto it (--add), with
+# its repository's product. There is no opt-in label any more: the `roadmap`
+# label was retired on 2026-09-30, after 20 issues filed without it had never
+# reached a plan.
 #
 # Runs daily + on demand.
 
@@ -45,7 +47,7 @@ jobs:
         id: scan
         run: |
           set +e
-          node scripts/ci/check-board.mjs --markdown > offenders.md
+          node scripts/ci/check-board.mjs --add --markdown > offenders.md
           code=$?
           set -e
           cat offenders.md >> "$GITHUB_STEP_SUMMARY"

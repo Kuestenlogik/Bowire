@@ -1,12 +1,12 @@
 name: Feature Request
 description: Suggest a new feature
-# `roadmap` gets it onto the board (the Project's own "Auto-add to project"
-# rule filters on it);
+# Every issue lands on the board without a label (project-add.yml); the
+# `roadmap` label was retired on 2026-09-30.
 # `community-vote` is what the voting view filters by. The old
 # `kind:feature` is gone — the label does not exist here, GitHub drops
 # unknown template labels silently, and the kind now lives in the native
 # issue Type rather than in a label.
-labels: ["roadmap", "community-vote"]
+labels: ["community-vote"]
 body:
   - type: textarea
     attributes:

@@ -5,7 +5,9 @@ title: Linking sibling Bowire.* repos to the Project board
 
 # Linking sibling Bowire.* repos to the Project board
 
-The [Bowire Project board](https://github.com/orgs/Kuestenlogik/projects/2) is org-level and can hold issues from any repo in the `Kuestenlogik` org. To make sure roadmap-flagged issues from `Bowire.Bootcamp`, `Bowire.Templates`, `Bowire.VulnDb`, `Bowire.Protocol.*`, `Bowire.Sdk.*`, … land on the board automatically, each sibling repo needs one of two wires.
+The [Bowire Project board](https://github.com/orgs/Kuestenlogik/projects/2) is org-level and can hold issues from any repo in the `Kuestenlogik` org. Every issue of every product repository belongs on it — `Bowire.Bootcamp`, `Bowire.Templates`, `Bowire.VulnDb`, `Bowire.Protocol.*`, `Bowire.Sdk.*`, …; there is no opt-in label (the `roadmap` label was retired on 2026-09-30).
+
+**Nothing has to be wired for that.** The daily [field guard](../../.github/workflows/roadmap-field-guard.yml) sweeps every repository listed in [`release-plan.mjs`](../../scripts/ci/release-plan.mjs) (`PRODUCT_OF_REPO`) and adds any open issue that is missing, with its repository's product. A new product repository is one line in that map. The options below only make the add immediate instead of daily.
 
 ## Option A — Project workflow "Auto-add to project"
 
@@ -16,16 +18,16 @@ Configured **inside the Project**, no per-repo workflow file. Recommended for th
 3. **Auto-add to project** → **Edit**
 4. Add one rule per repo with this filter:
    ```
-   repo:Kuestenlogik/Bowire.Bootcamp label:roadmap is:issue
+   repo:Kuestenlogik/Bowire.Bootcamp is:issue
    ```
-   Adjust the `label:` clause if you don't want every triage issue on the board.
+   No label clause: every issue belongs on the board.
 5. **Save and turn on workflow**.
 
 Trigger fires on every *new* issue matching the filter. Existing issues in the sibling repo need a one-shot backfill — see Option C below.
 
 ## Option B — Per-repo workflow file (more granular)
 
-When you want repo-side control (e.g. only PRs that close a roadmap issue should land on the board), drop this into the sibling repo:
+When you want it repo-side, drop this into the sibling repo (the Bowire repository's own is [`project-add.yml`](../../.github/workflows/project-add.yml), which also sets the Product):
 
 ```yaml
 # .github/workflows/project-add.yml
@@ -33,7 +35,7 @@ name: Add to Bowire Project
 
 on:
   issues:
-    types: [opened, labeled]
+    types: [opened, reopened, transferred]
 
 permissions:
   contents: read
@@ -41,7 +43,6 @@ permissions:
 jobs:
   add-to-project:
     runs-on: ubuntu-latest
-    if: contains(github.event.issue.labels.*.name, 'roadmap')
     steps:
       - uses: actions/add-to-project@v1
         with:
@@ -59,7 +60,7 @@ For issues that already exist in a sibling repo before either workflow is in pla
 
 ```bash
 # Replace <REPO> with the sibling, e.g. Bowire.Bootcamp
-for url in $(gh issue list --repo Kuestenlogik/<REPO> --label roadmap --limit 200 --json url --jq '.[].url'); do
+for url in $(gh issue list --repo Kuestenlogik/<REPO> --state open --limit 500 --json url --jq '.[].url'); do
     gh project item-add 2 --owner Kuestenlogik --url "$url"
 done
 ```

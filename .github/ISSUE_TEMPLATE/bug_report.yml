@@ -1,13 +1,12 @@
 name: Bug Report
 description: Report a bug in Bowire
-# `roadmap` is the board's admission ticket — the Project's own "Auto-add to
-# project" rule filters on it.
+# Every issue lands on the board without a label (project-add.yml); the
+# `roadmap` label was retired on 2026-09-30.
 # The old `kind:bug` is gone: that label does not exist in this repo, and
 # GitHub drops unknown labels from a template SILENTLY, so bug reports were
 # arriving with no label at all, never reaching the board through the
 # workflow. What kind of issue this is now lives in the native issue Type,
 # not in a label.
-labels: ["roadmap"]
 body:
   - type: textarea
     attributes:

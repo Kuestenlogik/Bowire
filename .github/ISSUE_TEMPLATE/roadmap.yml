@@ -1,11 +1,10 @@
 name: Roadmap item
 description: Track a roadmap-scoped piece of work (lands on the Project board, version-targeted)
-labels: ["roadmap"]
 body:
   - type: markdown
     attributes:
       value: |
-        For roadmap-scoped work. This template lands on the [Bowire Project board](https://github.com/orgs/Kuestenlogik/projects/2) automatically (via Auto-add-to-project). For bug reports use the *Bug Report* template; for one-off feature ideas use *Feature Request*.
+        For roadmap-scoped work. Every issue lands on the [Bowire Project board](https://github.com/orgs/Kuestenlogik/projects/2) automatically; its release and milestone are set at triage. For bug reports use the *Bug Report* template; for one-off feature ideas use *Feature Request*.
   - type: textarea
     attributes:
       label: Summary

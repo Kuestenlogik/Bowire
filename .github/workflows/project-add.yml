@@ -1,0 +1,39 @@
+name: Put new issues on the board
+
+# Every issue of a product repository belongs on the board, with no label to
+# opt in (docs/contributing/project-board.md, "Products, releases and
+# milestones"; the `roadmap` label was retired on 2026-09-30). For this
+# repository that happens the moment an issue is filed; the other product
+# repositories are swept daily by roadmap-field-guard.yml (check-board.mjs
+# --add). Product is set to the repository's own — a ticket for the VS Code
+# extension is moved to `VS Code` at triage, where Release and the milestone
+# are set too.
+
+on:
+  issues:
+    types: [opened, reopened, transferred]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: project-add-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
+jobs:
+  add:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.BOWIRE_DISPATCH_TOKEN }}
+      ISSUE_URL: ${{ github.event.issue.html_url }}
+    steps:
+      - name: Add to the board with its product
+        run: |
+          set -euo pipefail
+          ITEM=$(gh project item-add 2 --owner Kuestenlogik --url "$ISSUE_URL" --format json --jq '.id')
+          read -r PROJECT FIELD OPTION < <(gh api graphql -f query='
+            { organization(login: "Kuestenlogik") { projectV2(number: 2) { id
+                field(name: "Product") { ... on ProjectV2SingleSelectField { id options { id name } } } } } }' \
+            --jq '.data.organization.projectV2 | "\(.id) \(.field.id) \(.field.options[] | select(.name == "Bowire") | .id)"')
+          gh project item-edit --project-id "$PROJECT" --id "$ITEM" --field-id "$FIELD" --single-select-option-id "$OPTION"
+          echo "On the board as Product Bowire: $ISSUE_URL — Release and milestone are set at triage." >> "$GITHUB_STEP_SUMMARY"
