@@ -12,14 +12,14 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.9 — Corporate networks: outbound proxy, Windows auth, cookies *(due 2026-12-14)*
 
-**4/5 done** · 1 backlog
+**5/5 done**
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
-| [681](https://github.com/Kuestenlogik/Bowire/issues/681) | Bowire | [Persistent cookie manager, and cookies beyond REST](#issue-kuestenlogik-bowire-681) | ⬜ Backlog | `area:workbench` |
 | [671](https://github.com/Kuestenlogik/Bowire/issues/671) | Bowire | [Site: /alternatives/* landing pages, a changelog page, and the trust claim in the hero](#issue-kuestenlogik-bowire-671) | ✅ Done | `area:site` |
 | [679](https://github.com/Kuestenlogik/Bowire/issues/679) | Bowire | [Windows-integrated auth (Negotiate/NTLM) and Digest — the .NET tool cannot call .NET intranet APIs](#issue-kuestenlogik-bowire-679) | ✅ Done | `area:workbench` |
 | [680](https://github.com/Kuestenlogik/Bowire/issues/680) | Bowire | [Outbound proxy and custom CA support — Bowire is unusable behind a corporate proxy](#issue-kuestenlogik-bowire-680) | ✅ Done | `area:workbench` |
+| [681](https://github.com/Kuestenlogik/Bowire/issues/681) | Bowire | [Persistent cookie manager, and cookies beyond REST](#issue-kuestenlogik-bowire-681) | ✅ Done | `area:workbench` |
 | [755](https://github.com/Kuestenlogik/Bowire/issues/755) | Bowire | [Link-Check der Site prüft seit dem Umzug nach scripts/site nichts mehr](#issue-kuestenlogik-bowire-755) | ✅ Done |  |
 
 ### v2.10 — Discoverability: the pitch, the directories, the star ask *(due 2027-01-11)*
@@ -155,12 +155,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.9 — Corporate networks: outbound proxy, Windows auth, cookies *(due 2026-12-14)*
 
-#### <a id="issue-kuestenlogik-bowire-681"></a>⬜ Backlog · [#681](https://github.com/Kuestenlogik/Bowire/issues/681) Persistent cookie manager, and cookies beyond REST
-
-> `area:workbench`
-
-The cookie jar today is a per-environment in-memory `CookieContainer`, and it is **REST-only** (`src/Kuestenlogik.Bowire/Auth/CookieJar.cs`). It replays what a previous response set on the same origin, and that is all. [[more]](https://github.com/Kuestenlogik/Bowire/issues/681)
-
 #### <a id="issue-kuestenlogik-bowire-671"></a>✅ Done · [#671](https://github.com/Kuestenlogik/Bowire/issues/671) Site: /alternatives/* landing pages, a changelog page, and the trust claim in the hero
 
 > `area:site`
@@ -178,6 +172,12 @@ The auth surface is broad — Bearer, Basic, API key, signed JWT, OAuth 2.0 (cli
 > `area:workbench`
 
 `WebProxy` does not appear anywhere in the source. `--proxy` exists only as the mock server's upstream forwarder — it has nothing to do with how Bowire's own requests leave the machine. [[more]](https://github.com/Kuestenlogik/Bowire/issues/680)
+
+#### <a id="issue-kuestenlogik-bowire-681"></a>✅ Done · [#681](https://github.com/Kuestenlogik/Bowire/issues/681) Persistent cookie manager, and cookies beyond REST
+
+> `area:workbench`
+
+The cookie jar today is a per-environment in-memory `CookieContainer`, and it is **REST-only** (`src/Kuestenlogik.Bowire/Auth/CookieJar.cs`). It replays what a previous response set on the same origin, and that is all. [[more]](https://github.com/Kuestenlogik/Bowire/issues/681)
 
 #### <a id="issue-kuestenlogik-bowire-755"></a>✅ Done · [#755](https://github.com/Kuestenlogik/Bowire/issues/755) Link-Check der Site prüft seit dem Umzug nach scripts/site nichts mehr
 
