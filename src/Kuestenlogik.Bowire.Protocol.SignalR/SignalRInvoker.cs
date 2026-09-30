@@ -38,6 +38,8 @@ internal sealed class SignalRInvoker : IAsyncDisposable
         // Loopback double-guard mirrors SignalRBowireChannel.
         var allowSelfSigned = trustLocalhostCert && LocalhostCertTrust.IsLocalhostUrl(hubUrl) && _mtlsOwner is null;
 
+        var cookieJar = CookieJar.EnvIdOf(headers) is { } cookieEnv ? CookieJar.For(cookieEnv) : null;
+
         var builder = new HubConnectionBuilder()
             .WithUrl(hubUrl, options =>
             {
@@ -118,6 +120,9 @@ internal sealed class SignalRInvoker : IAsyncDisposable
                 // #679 — Negotiate / NTLM / Digest on the negotiate request,
                 // the long-polling / SSE transports and the WebSocket upgrade.
                 var httpAuth = BowireHttpAuth.TryParse(headers);
+                // #681 — the environment's cookie jar on negotiate, the
+                // long-polling / SSE requests and the WebSocket upgrade.
+                if (cookieJar is not null) options.Cookies = cookieJar.Container;
                 var configuredHandler = options.HttpMessageHandlerFactory;
                 options.HttpMessageHandlerFactory = inner =>
                 {
@@ -125,6 +130,13 @@ internal sealed class SignalRInvoker : IAsyncDisposable
                     if (handler is HttpClientHandler httpHandler)
                     {
                         BowireNetworkPolicy.Apply(httpHandler);
+                        // The mTLS / self-signed handlers above are new ones; give
+                        // them the jar the default handler would have had.
+                        if (cookieJar is not null)
+                        {
+                            httpHandler.UseCookies = true;
+                            httpHandler.CookieContainer = cookieJar.Container;
+                        }
                         if (httpAuth is not null) BowireHttpAuth.ApplyTo(httpHandler, httpAuth);
                     }
                     return httpAuth is null ? handler : BowireHttpAuth.Wrap(handler, httpAuth);
@@ -141,6 +153,7 @@ internal sealed class SignalRInvoker : IAsyncDisposable
 
         _connection = builder.Build();
         await _connection.StartAsync(ct);
+        cookieJar?.Persist();
     }
 
     public Task<InvokeResult> InvokeAsync(

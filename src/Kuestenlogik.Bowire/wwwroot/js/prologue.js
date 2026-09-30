@@ -29,7 +29,7 @@
      */
     function bowireCaptureStep(step) {
         if (typeof captureRecordingStep !== 'function') return;
-        if (step && step.metadata) step = Object.assign({}, step, { metadata: withoutBowireMarkers(step.metadata) });
+        if (step && step.metadata) step = Object.assign({}, step, { metadata: redactCookieValues(withoutBowireMarkers(step.metadata)) });
         captureRecordingStep(step);
     }
 
@@ -41,6 +41,24 @@
      * the headers and never the markers (#679); the auth helper adds them
      * again on the next call.
      */
+    /**
+     * #681 - cookie values are credentials. A recorded Cookie header keeps its
+     * name and loses its value, unless the user switched "keep cookie values
+     * in recordings" on (the environment's cookie section).
+     */
+    function redactCookieValues(headers) {
+        if (!headers || typeof headers !== 'object') return headers;
+        var keep = false;
+        try { keep = localStorage.getItem('bowire_record_cookie_values') === 'true'; } catch (e) { keep = false; }
+        if (keep) return headers;
+        var out = {};
+        Object.keys(headers).forEach(function (k) {
+            var lower = k.toLowerCase();
+            out[k] = (lower === 'cookie' || lower === 'set-cookie') ? '***redacted***' : headers[k];  // i18n-exempt: a stored placeholder value, the same one the HAR export writes
+        });
+        return out;
+    }
+
     function withoutBowireMarkers(metadata) {
         if (!metadata || typeof metadata !== 'object') return metadata;
         var out = {};
@@ -4505,9 +4523,36 @@
         };
     }
 
+    /**
+     * #681 - the cookie jars live on the server (the workspace's cookies.json),
+     * not in localStorage, so the export asks for them. A server that does
+     * not answer leaves the export without cookies rather than failing it.
+     */
+    function _workspaceScopeQuery(wsId) {
+        var ws = workspaces.find(function (w) { return w.id === wsId; });
+        return '?workspaceId=' + encodeURIComponent(wsId)
+            + (ws && ws.storageRoot ? '&storageRoot=' + encodeURIComponent(ws.storageRoot) : '');
+    }
+
+    function withCookieJars(payload, wsId) {
+        if (!payload || !payload.data) return Promise.resolve(payload);
+        return fetch(config.prefix + '/api/auth/cookie-jars' + _workspaceScopeQuery(wsId))
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .catch(function () { return null; })
+            .then(function (jars) {
+                if (jars && typeof jars === 'object' && Object.keys(jars).length > 0) payload.data.cookies = jars;
+                return payload;
+            });
+    }
+
     function downloadWorkspaceExport(wsId) {
         var payload = exportWorkspaceJson(wsId);
         if (!payload) return false;
+        withCookieJars(payload, wsId).then(function (withJars) { _saveWorkspaceExport(withJars, wsId); });
+        return true;
+    }
+
+    function _saveWorkspaceExport(payload, wsId) {
         var ws = workspaces.find(function (w) { return w.id === wsId; });
         var safeName = (ws && ws.name ? ws.name : wsId)
             .replace(/[^a-zA-Z0-9_-]+/g, '-').replace(/^-+|-+$/g, '');
@@ -4697,6 +4742,16 @@
                     writeKey('bowire_presets_' + m, data.presets[m]);
                 }
             });
+        }
+        // #681 - the cookie jars go back to the server, into the new
+        // workspace's cookies.json. Fire and forget: the workspace itself is
+        // imported either way.
+        if (data.cookies && typeof data.cookies === 'object' && Object.keys(data.cookies).length > 0) {
+            fetch(config.prefix + '/api/auth/cookie-jars' + _workspaceScopeQuery(targetId), {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data.cookies)
+            }).catch(function () { /* the rest of the import stands */ });
         }
         return targetId;
     }

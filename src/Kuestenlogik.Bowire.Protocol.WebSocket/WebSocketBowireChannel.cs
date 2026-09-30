@@ -108,6 +108,16 @@ internal sealed class WebSocketBowireChannel : IBowireChannel
             // #679 — Negotiate / NTLM / Digest on the upgrade request.
             if (Kuestenlogik.Bowire.Auth.BowireHttpAuth.TryParse(headers) is { } httpAuth)
                 Kuestenlogik.Bowire.Auth.BowireHttpAuth.ApplyTo(socket.Options, httpAuth);
+            // #681 — the environment's cookie jar on the upgrade request; a
+            // session-based WebSocket API is where cookies matter most.
+            var cookieJar = Kuestenlogik.Bowire.Auth.CookieJar.EnvIdOf(headers) is { } cookieEnv
+                ? Kuestenlogik.Bowire.Auth.CookieJar.For(cookieEnv)
+                : null;
+            if (cookieJar is not null)
+            {
+                socket.Options.Cookies = cookieJar.Container;
+                socket.Options.CollectHttpResponseDetails = true;
+            }
 
             if (headers is not null)
             {
@@ -123,6 +133,13 @@ internal sealed class WebSocketBowireChannel : IBowireChannel
             }
 
             await socket.ConnectAsync(uri, ct);
+            // The handshake's Set-Cookie went into the container; persist it.
+            if (cookieJar is not null)
+            {
+                var upgrade = socket.HttpResponseHeaders;
+                if (upgrade is not null && upgrade.TryGetValue("Set-Cookie", out var setCookies))
+                    cookieJar.Accept(uri, setCookies);
+            }
         }
         catch
         {

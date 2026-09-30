@@ -422,8 +422,85 @@ internal static class BowireAuthEndpoints
                     title: "Missing 'env' query parameter",
                     status: 400,
                     instance: ctx.Request.Path);
-            var cleared = CookieJar.Clear(envId);
-            return Results.Json(new { env = envId, cleared }, BowireEndpointHelpers.JsonOptions);
+            // #681 — one cookie (domain + name [+ path]), one domain, or all.
+            var jar = CookieJar.For(envId);
+            var domain = ctx.Request.Query["domain"].ToString();
+            var name = ctx.Request.Query["name"].ToString();
+            int removed;
+            if (!string.IsNullOrEmpty(name) && !string.IsNullOrEmpty(domain))
+            {
+                var path = ctx.Request.Query["path"].ToString();
+                removed = jar.Remove(domain, string.IsNullOrEmpty(path) ? "/" : path, name) ? 1 : 0;
+            }
+            else if (!string.IsNullOrEmpty(domain))
+            {
+                removed = jar.ClearDomain(domain);
+            }
+            else
+            {
+                removed = jar.Clear();
+            }
+            return Results.Json(new { env = envId, cleared = removed > 0, removed, cookies = jar.Snapshot() }, BowireEndpointHelpers.JsonOptions);
+        }).ExcludeFromDescription();
+
+        // #681 — every persisted jar of the workspace, for the workspace export / import.
+        endpoints.MapGet($"{basePath}/api/auth/cookie-jars", () =>
+            Results.Content(CookieJar.ExportJson(), "application/json")).ExcludeFromDescription();
+
+        endpoints.MapPut($"{basePath}/api/auth/cookie-jars", async (HttpContext ctx) =>
+        {
+            using var reader = new StreamReader(ctx.Request.Body);
+            var body = await reader.ReadToEndAsync(ctx.RequestAborted).ConfigureAwait(false);
+            try
+            {
+                var count = CookieJar.ImportJson(string.IsNullOrWhiteSpace(body) ? "{}" : body);
+                return Results.Json(new { imported = count }, BowireEndpointHelpers.JsonOptions);
+            }
+            catch (Exception ex) when (ex is JsonException or InvalidOperationException)
+            {
+                return Results.Json(new { error = ex.Message }, BowireEndpointHelpers.JsonOptions, statusCode: 400);
+            }
+        }).ExcludeFromDescription();
+
+        // #681 — add a cookie, or replace the one with the same domain, path and name.
+        endpoints.MapPut($"{basePath}/api/auth/cookie-jar", async (HttpContext ctx) =>
+        {
+            var envId = ctx.Request.Query["env"].ToString();
+            if (string.IsNullOrEmpty(envId))
+                return BowireEndpointHelpers.Problem(
+                    type: "urn:bowire:invalid-input",
+                    title: "Missing 'env' query parameter",
+                    status: 400,
+                    instance: ctx.Request.Path);
+            CookieSnapshot? cookie;
+            try
+            {
+                cookie = await ctx.Request.ReadFromJsonAsync<CookieSnapshot>(BowireEndpointHelpers.JsonOptions, ctx.RequestAborted).ConfigureAwait(false);
+            }
+            catch (Exception ex) when (ex is JsonException or BadHttpRequestException)
+            {
+                return Results.Json(new { error = "Malformed cookie: " + ex.Message }, BowireEndpointHelpers.JsonOptions, statusCode: 400);
+            }
+            if (cookie is null) return Results.Json(new { error = "Request body required." }, BowireEndpointHelpers.JsonOptions, statusCode: 400);
+
+            var jar = CookieJar.For(envId);
+            try
+            {
+                // Replacing an edited cookie: the old key goes first when it changed.
+                var originalName = ctx.Request.Query["name"].ToString();
+                var originalDomain = ctx.Request.Query["domain"].ToString();
+                if (!string.IsNullOrEmpty(originalName) && !string.IsNullOrEmpty(originalDomain))
+                {
+                    var originalPath = ctx.Request.Query["path"].ToString();
+                    jar.Remove(originalDomain, string.IsNullOrEmpty(originalPath) ? "/" : originalPath, originalName);
+                }
+                jar.Set(cookie);
+            }
+            catch (Exception ex) when (ex is ArgumentException or System.Net.CookieException)
+            {
+                return Results.Json(new { error = ex.Message }, BowireEndpointHelpers.JsonOptions, statusCode: 400);
+            }
+            return Results.Json(new { env = envId, cookies = jar.Snapshot() }, BowireEndpointHelpers.JsonOptions);
         }).ExcludeFromDescription();
 
         // #32: hand the workbench's own bearer/JWT-bearer access token

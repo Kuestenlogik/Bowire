@@ -237,6 +237,7 @@ internal static class BowireCli
         // #177 - a CRUD service from a sentence or a spec.
         root.Add(ScaffoldCommand.Build());
         root.Add(WorkspaceCommand.Build());
+        root.Add(CookiesCommand.Build());
         // #97 — the operator's side of per-identity storage: what is on disk,
         // and moving a single-user install's data into a named subject's slot.
         root.Add(UsersCommand.Build());
