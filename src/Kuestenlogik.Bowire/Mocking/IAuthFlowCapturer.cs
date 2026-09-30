@@ -47,4 +47,24 @@ public interface IAuthFlowCapturer
     /// token (fail closed — never returns an empty credential).
     /// </summary>
     Task<AuthFlowCaptureResult> CaptureAsync(string flowJson, CancellationToken ct = default);
+
+    /// <summary>
+    /// Same, but every request the flow sends must pass
+    /// <paramref name="allowTarget"/> — the auth-recording endpoint passes the
+    /// host's <see cref="Net.BowireTargetPolicy.ForAuth"/> check while targets
+    /// are restricted. A refused request fails the capture with an
+    /// <see cref="AuthFlowCaptureException"/> whose inner exception is a
+    /// <see cref="Net.BowireTargetRefusedException"/>.
+    /// </summary>
+    /// <remarks>
+    /// The default implementation cannot restrict anything, so it runs the
+    /// flow only when there is nothing to restrict and otherwise refuses
+    /// outright (fail closed). Capturers that make outbound calls override it.
+    /// </remarks>
+    Task<AuthFlowCaptureResult> CaptureAsync(string flowJson, Func<Uri, bool>? allowTarget, CancellationToken ct)
+        => allowTarget is null
+            ? CaptureAsync(flowJson, ct)
+            : throw new AuthFlowCaptureException(
+                "This auth-flow capturer cannot restrict the hosts a flow calls, and this server restricts its targets.",
+                new Net.BowireTargetRefusedException());
 }

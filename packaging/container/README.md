@@ -104,8 +104,13 @@ or the `BOWIRE_Bowire__AllowedServerUrls__0` environment variable:
 docker run --rm -p 5080:5080 \
     ghcr.io/kuestenlogik/bowire:latest \
     --url https://api.example.com \
-    --allowed-server-url https://auth.example.com
+    --allowed-server-url https://status.example.com \
+    --allowed-auth-url https://login.example.com/realms/acme
 ```
+
+`--allowed-auth-url` (`BOWIRE_Bowire__AllowedAuthUrls__0`) lists the
+identity providers the OAuth / custom-token helpers and auth-flow capture
+may call; they are not opened up for invoke or discovery.
 
 Without `--url` or `--allowed-server-url` the workbench can dial anything
 the container can reach — fine on a laptop, not on a shared network.

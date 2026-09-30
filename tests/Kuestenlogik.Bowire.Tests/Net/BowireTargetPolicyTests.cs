@@ -200,4 +200,66 @@ public sealed class BowireTargetPolicyTests
         Assert.False(policy.Allows("mqtt://broker.local:1884"));
         Assert.False(policy.Allows("nats://broker.local:1883"));
     }
+
+    // ------------------------------ ForAuth ----------------------------------
+
+    [Fact]
+    public void ForAuth_is_unrestricted_by_default()
+    {
+        var policy = BowireTargetPolicy.ForAuth(new BowireOptions());
+
+        Assert.False(policy.IsEnforced);
+        Assert.True(policy.Allows("https://idp.example.com/token"));
+    }
+
+    [Fact]
+    public void ForAuth_on_a_locked_host_allows_server_urls_plus_auth_urls()
+    {
+        var options = Locked("https://api.example.com");
+        options.AllowedAuthUrls.Add("https://idp.example.com/realms/acme");
+
+        var policy = BowireTargetPolicy.ForAuth(options);
+
+        Assert.True(policy.IsEnforced);
+        Assert.True(policy.Allows("https://api.example.com/oauth/token"));
+        Assert.True(policy.Allows("https://IDP.example.com/realms/acme/protocol/openid-connect/token"));
+        Assert.False(policy.Allows("https://idp.example.com/realms/other/token"));
+        Assert.False(policy.Allows("http://169.254.169.254/latest/meta-data"));
+    }
+
+    [Fact]
+    public void AllowedAuthUrls_do_not_widen_the_server_policy()
+    {
+        var options = Locked("https://api.example.com");
+        options.AllowedAuthUrls.Add("https://idp.example.com");
+
+        Assert.False(BowireTargetPolicy.For(options).Allows("https://idp.example.com"));
+        Assert.True(BowireTargetPolicy.ForAuth(options).Allows("https://idp.example.com"));
+    }
+
+    [Fact]
+    public void AllowedAuthUrls_alone_restrict_only_the_auth_helpers()
+    {
+        var options = new BowireOptions { Mode = BowireMode.Standalone };
+        options.AllowedAuthUrls.Add("https://idp.example.com");
+
+        Assert.False(BowireTargetPolicy.For(options).IsEnforced);
+        var auth = BowireTargetPolicy.ForAuth(options);
+        Assert.True(auth.IsEnforced);
+        Assert.True(auth.Allows("https://idp.example.com/token"));
+        Assert.False(auth.Allows("https://evil.test/token"));
+    }
+
+    [Fact]
+    public void AllowedServerUrls_alone_also_restrict_the_auth_helpers()
+    {
+        var options = new BowireOptions { Mode = BowireMode.Standalone };
+        options.AllowedServerUrls.Add("https://api.example.com");
+
+        var auth = BowireTargetPolicy.ForAuth(options);
+
+        Assert.True(auth.IsEnforced);
+        Assert.True(auth.Allows("https://api.example.com/token"));
+        Assert.False(auth.Allows("https://evil.test/token"));
+    }
 }

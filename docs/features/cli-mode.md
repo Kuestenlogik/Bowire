@@ -248,7 +248,7 @@ a script that starts Bowire idempotently keeps working.
 
 Flags that shape the *server* cannot be applied to an instance that is already
 up. If the second invocation carries any of `--url`, `--enable-mcp-adapter`,
-`--title`, `--disable-plugin`, `--allowed-server-url`, `--plugin-dir`, `--map-basemap` or
+`--title`, `--disable-plugin`, `--allowed-server-url`, `--allowed-auth-url`, `--plugin-dir`, `--map-basemap` or
 `--auto-create-initial-workspace`, they are named on stderr rather than
 silently dropped. Stop the running instance first if you need them.
 

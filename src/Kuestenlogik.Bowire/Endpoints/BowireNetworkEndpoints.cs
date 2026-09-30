@@ -18,7 +18,7 @@ namespace Kuestenlogik.Bowire.Endpoints;
 internal static class BowireNetworkEndpoints
 {
     public static IEndpointRouteBuilder MapBowireNetworkEndpoints(
-        this IEndpointRouteBuilder endpoints, string basePath)
+        this IEndpointRouteBuilder endpoints, string basePath, BowireOptions? options = null)
     {
         endpoints.MapGet($"{basePath}/api/network", (HttpContext ctx) =>
         {
@@ -77,7 +77,12 @@ internal static class BowireNetworkEndpoints
                 || (url.Scheme != Uri.UriSchemeHttp && url.Scheme != Uri.UriSchemeHttps))
                 return Error("url must be an absolute http:// or https:// URL.");
 
-            var result = await TestAsync(url, ctx.RequestAborted).ConfigureAwait(false);
+            // The test is a real request from this host — a locked host only
+            // tests the targets it would dial anyway, and follows no redirect.
+            var policy = BowireTargetPolicy.For(options, ctx.Request);
+            if (policy.Refuse(ctx, raw) is { } refused) return refused;
+
+            var result = await TestAsync(url, followRedirects: !policy.IsEnforced, ctx.RequestAborted).ConfigureAwait(false);
             return Results.Json(result, BowireEndpointHelpers.JsonOptions);
         }).ExcludeFromDescription();
 
@@ -135,11 +140,13 @@ internal static class BowireNetworkEndpoints
         : bundle.Contains("-----BEGIN", StringComparison.Ordinal) ? "(inline PEM)"
         : bundle;
 
-    private static async Task<object> TestAsync(Uri url, CancellationToken ct)
+    private static async Task<object> TestAsync(Uri url, bool followRedirects, CancellationToken ct)
     {
         var effective = BowireNetworkPolicy.Current;
         var proxy = effective.ProxyFor(url);
-        using var client = BowireHttpClientFactory.Create(null, "network-test", TimeSpan.FromSeconds(15));
+        using var client = followRedirects
+            ? BowireHttpClientFactory.Create(null, "network-test", TimeSpan.FromSeconds(15))
+            : CreateNoRedirectClient();
         try
         {
             using var request = new HttpRequestMessage(HttpMethod.Get, url);
@@ -154,6 +161,16 @@ internal static class BowireNetworkEndpoints
         {
             return new { ok = false, via = proxy?.ToString() ?? "direct", error = "No answer within 15 seconds." };
         }
+    }
+
+    /// <summary>The same proxy/CA setup as <see cref="BowireHttpClientFactory.Create"/>, without following redirects.</summary>
+    private static HttpClient CreateNoRedirectClient()
+    {
+#pragma warning disable CA2000, CA5400 // Ownership of the handler moves into the HttpClient; same TLS settings as BowireHttpClientFactory.Create.
+        var handler = BowireHttpClientFactory.CreateHandler(null, "network-test");
+        handler.AllowAutoRedirect = false;
+        return new HttpClient(handler, disposeHandler: true) { Timeout = TimeSpan.FromSeconds(15) };
+#pragma warning restore CA2000, CA5400
     }
 
     private static string Explain(HttpRequestException ex, BowireEffectiveNetwork effective)

@@ -228,6 +228,25 @@ public sealed class BowireConfigurationTests : IDisposable
     }
 
     [Fact]
+    public void BuildBrowserUiOptions_AllowedAuthUrls_MergeConfigAndRepeatedFlag()
+    {
+        var config = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Bowire:AllowedAuthUrls:0"] = "https://login.local/realms/a",
+            })
+            .Build();
+        var options = BowireConfiguration.BuildBrowserUiOptions(
+            config,
+            ["--allowed-auth-url", "https://idp-b.local,https://idp-c.local",
+             "--allowed-auth-url=HTTPS://LOGIN.LOCAL/realms/a"]);
+
+        Assert.Equal("https://login.local/realms/a,https://idp-b.local,https://idp-c.local", string.Join(',', options.AllowedAuthUrls));
+        // Auth URLs never widen the server-target list.
+        Assert.Empty(options.AllowedServerUrls);
+    }
+
+    [Fact]
     public void AddBowirePlugins_IConfigurationOverload_UsesBoundPluginDir()
     {
         // An empty but valid directory — the extension is a no-op since

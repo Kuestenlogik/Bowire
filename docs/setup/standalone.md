@@ -112,12 +112,13 @@ syntax above for per-URL plugin selection without disabling anything
 else, and per-plugin UI toggles (rendered from `BowirePluginSetting`)
 for runtime feature switches inside an already-loaded plugin.
 
-### Restricting targets (`--url` lock, `--allowed-server-url`)
+### Restricting targets (`--url` lock, `--allowed-server-url`, `--allowed-auth-url`)
 
 Starting Bowire with `--url` locks the workbench to those URLs. The lock
 is enforced **server-side**: `/api/invoke`, `/api/invoke/stream`,
-`/api/channel/open`, `/api/services`, `/api/security/fuzz` and the
-`/api/parallel/*` runs refuse any other target with `403 Forbidden`
+`/api/channel/open`, `/api/services`, `/api/security/fuzz`,
+`/api/network/test` and the `/api/parallel/*` runs refuse any other target
+with `403 Forbidden`
 (problem type `urn:bowire:target-not-allowed`) before dialing it — so a
 Bowire reachable by other people cannot be used to reach cloud metadata
 endpoints or internal hosts through `?serverUrl=…`.
@@ -145,6 +146,16 @@ bowire --allowed-server-url https://staging-a.example.com,https://staging-b.exam
 }
 ```
 
+The OAuth / custom-token helpers and auth-flow capture call identity
+providers, which are usually not the API host. List those with
+`--allowed-auth-url` (or `Bowire:AllowedAuthUrls`) — they are then allowed
+for the auth helpers only, not for invoke or discovery:
+
+```bash
+bowire --url https://api.example.com \
+       --allowed-auth-url https://login.example.com/realms/acme
+```
+
 The `hint@` prefix, case, a trailing slash and the default port do not
 matter when comparing (`grpc@HTTPS://API.example.com:443/` matches
 `https://api.example.com`); an entry's path is a base path. Full rules:
@@ -163,6 +174,7 @@ matter when comparing (`grpc@HTTPS://API.example.com:443/` matches
 | `--auto-create-initial-workspace` | Seed a default "Personal" workspace on first run instead of the empty Home + Create-Workspace CTA. Also bindable as `Bowire:AutoCreateInitialWorkspace` in appsettings.json or `BOWIRE_Bowire__AutoCreateInitialWorkspace`. Embedded hosts seed one by default; standalone does not. | `false` |
 | `--disable-plugin <id>` | Skip a protocol plugin at startup. Repeat or comma-separate. | none |
 | `--allowed-server-url <url>` | Extra target the server may dial besides `--url`. Repeat or comma-separate; also `Bowire:AllowedServerUrls`. Any value turns server-side target enforcement on (other targets get `403`) without locking the UI. | none |
+| `--allowed-auth-url <url>` | Identity-provider URL the OAuth / custom-token helpers and auth-flow capture may call once targets are restricted. Repeat or comma-separate; also `Bowire:AllowedAuthUrls`. On its own it restricts only the auth helpers. | none |
 | `--update-check` | Opt in to the daily plugin-update check (off by default — outbound calls to nuget.org are opt-in). When enabled, the workbench sidebar surfaces a count badge when sibling-plugin updates are available. See [Updating Bowire and its plugins](updating.md#automatic-update-check-opt-in). | `false` |
 
 ## Examples

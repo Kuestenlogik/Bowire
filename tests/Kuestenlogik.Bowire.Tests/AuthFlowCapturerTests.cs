@@ -4,6 +4,7 @@
 using System.Net;
 using Kuestenlogik.Bowire.App.Cli;
 using Kuestenlogik.Bowire.Mocking;
+using Kuestenlogik.Bowire.Net;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -76,6 +77,62 @@ public sealed class AuthFlowCapturerTests
             new AuthFlowCapturer().CaptureAsync(flow, Ct));
     }
 
+    // ---- restricted capture (LockServerUrl / AllowedAuthUrls) ----
+
+    [Fact]
+    public async Task Restricted_Capture_Refuses_A_Step_Outside_The_Allowlist_Before_Sending()
+    {
+        // The guard sits on the wire, so the refusal comes before any socket
+        // is opened — the metadata address is never dialed.
+        const string flow = """{ "steps": [ { "url": "http://169.254.169.254/latest/meta-data" } ] }""";
+
+        var ex = await Assert.ThrowsAsync<AuthFlowCaptureException>(() =>
+            new AuthFlowCapturer().CaptureAsync(flow, _ => false, Ct));
+
+        var refused = Assert.IsType<BowireTargetRefusedException>(ex.InnerException);
+        Assert.Equal("http://169.254.169.254/latest/meta-data", refused.Target);
+    }
+
+    [Fact]
+    public async Task Restricted_Capture_Runs_Steps_The_Allowlist_Covers()
+    {
+        await using var idp = await StartTokenEndpointAsync(Ct);
+        var authority = new Uri(idp.Urls.First()).Authority;
+        var flow = TokenFlow(idp.Urls.First() + "/token");
+
+        var result = await new AuthFlowCapturer().CaptureAsync(flow, uri => uri.Authority == authority, Ct);
+
+        Assert.Equal("tok-svc-x", result.Credential);
+    }
+
+    [Fact]
+    public async Task Restricted_Capture_Does_Not_Follow_Redirects_Past_The_Guard()
+    {
+        // /hop redirects to /token. Only /hop is allowed: a followed redirect
+        // would be resolved below the guard and fetch the token anyway, so
+        // the capture succeeding would mean the guard was bypassed.
+        await using var idp = await StartTokenEndpointAsync(Ct);
+        var flow = TokenFlow(idp.Urls.First() + "/hop");
+
+        await Assert.ThrowsAsync<AuthFlowCaptureException>(() =>
+            new AuthFlowCapturer().CaptureAsync(flow, uri => uri.AbsolutePath == "/hop", Ct));
+    }
+
+    [Fact]
+    public async Task Unrestricted_Capture_Still_Follows_Redirects()
+    {
+        await using var idp = await StartTokenEndpointAsync(Ct);
+        var flow = TokenFlow(idp.Urls.First() + "/hop");
+
+        var result = await new AuthFlowCapturer().CaptureAsync(flow, Ct);
+
+        Assert.Equal("tok-svc-x", result.Credential);
+    }
+
+    private static string TokenFlow(string url) =>
+        "{ \"steps\": [ { \"url\": \"" + url + "\", "
+        + "\"capture\": [ { \"var\": \"access_token\", \"json\": \"access_token\" } ] } ] }";
+
     // Loopback token endpoint: /token → { access_token: "tok-<client_id>-<client_secret>" }
     // (or an empty token when emptyToken is set, to exercise the fail-closed guard).
     private static async Task<WebApplication> StartTokenEndpointAsync(CancellationToken ct, bool emptyToken = false)
@@ -98,6 +155,13 @@ public sealed class AuthFlowCapturerTests
             await ctx.Response.WriteAsJsonAsync(
                 new { access_token = emptyToken ? "" : $"tok-{clientId}-{secret}", token_type = "Bearer" },
                 ctx.RequestAborted);
+        });
+
+        // /hop → 302 to /token, for the redirect tests.
+        app.MapPost("/hop", (HttpContext ctx) =>
+        {
+            ctx.Response.Redirect("/token");
+            return Task.CompletedTask;
         });
 
         await app.StartAsync(ct);

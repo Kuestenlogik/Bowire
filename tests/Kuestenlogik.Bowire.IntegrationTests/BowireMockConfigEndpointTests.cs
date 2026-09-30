@@ -357,7 +357,77 @@ public sealed class BowireMockConfigEndpointTests : IDisposable
         Assert.Equal(HttpStatusCode.NotImplemented, resp.StatusCode);
     }
 
-    private static async Task<IHost> BuildHost(IAuthFlowCapturer? capturer = null)
+    // ---- capture on a host with restricted targets (LockServerUrl / AllowedAuthUrls) ----
+
+    private static BowireOptions LockedWithIdp(params string[] authUrls)
+    {
+        var options = new BowireOptions { Mode = BowireMode.Standalone, LockServerUrl = true };
+        options.ServerUrls.Add("https://api.bowire.test");
+        foreach (var url in authUrls) options.AllowedAuthUrls.Add(url);
+        return options;
+    }
+
+    private static async Task<HttpResponseMessage> PostCaptureAsync(IHost host, string id)
+    {
+        using var content = new StringContent("""{"steps":[]}""", Encoding.UTF8, "application/json");
+        return await host.GetTestClient().PostAsync(
+            new Uri($"/api/auth-recordings/{id}/capture?workspaceId=ws-1", UriKind.Relative), content, TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task POST_capture_on_a_locked_host_refuses_a_step_outside_the_allowlist()
+    {
+        var capturer = new GuardedCapturer("http://169.254.169.254/latest/meta-data");
+        using var host = await BuildHost(capturer, LockedWithIdp("https://idp.bowire.test"));
+
+        using var resp = await PostCaptureAsync(host, "meta");
+
+        Assert.Equal(HttpStatusCode.Forbidden, resp.StatusCode);
+        var body = await resp.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        Assert.Contains(Kuestenlogik.Bowire.Net.BowireTargetPolicy.RefusedProblemType, body, StringComparison.Ordinal);
+        Assert.True(capturer.RanRestricted);
+        Assert.Null(AuthRecordingStore.LoadRecording("ws-1", storageRoot: null, "meta"));
+    }
+
+    [Fact]
+    public async Task POST_capture_on_a_locked_host_runs_steps_the_allowlist_covers()
+    {
+        var capturer = new GuardedCapturer("https://IDP.bowire.test/realms/acme/token");
+        using var host = await BuildHost(capturer, LockedWithIdp("https://idp.bowire.test/realms/acme"));
+
+        using var resp = await PostCaptureAsync(host, "idp");
+
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+        Assert.True(capturer.RanRestricted);
+        Assert.Equal("guarded-tok", AuthRecordingStore.LoadRecording("ws-1", storageRoot: null, "idp")!.Credential);
+    }
+
+    [Fact]
+    public async Task POST_capture_with_a_capturer_that_cannot_restrict_fails_closed_on_a_locked_host()
+    {
+        // FakeCapturer only implements the unrestricted overload; the interface
+        // default for the restricted one refuses rather than run unchecked.
+        using var host = await BuildHost(new FakeCapturer("flow-tok", "bearer", null), LockedWithIdp());
+
+        using var resp = await PostCaptureAsync(host, "legacy");
+
+        Assert.Equal(HttpStatusCode.Forbidden, resp.StatusCode);
+        Assert.Null(AuthRecordingStore.LoadRecording("ws-1", storageRoot: null, "legacy"));
+    }
+
+    [Fact]
+    public async Task POST_capture_on_an_unlocked_host_runs_unrestricted()
+    {
+        var capturer = new GuardedCapturer("http://169.254.169.254/latest/meta-data");
+        using var host = await BuildHost(capturer, new BowireOptions());
+
+        using var resp = await PostCaptureAsync(host, "free");
+
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+        Assert.False(capturer.RanRestricted);
+    }
+
+    private static async Task<IHost> BuildHost(IAuthFlowCapturer? capturer = null, BowireOptions? options = null)
     {
         var host = new HostBuilder()
             .ConfigureWebHost(web =>
@@ -366,7 +436,7 @@ public sealed class BowireMockConfigEndpointTests : IDisposable
                    .Configure(app =>
                    {
                        app.UseRouting();
-                       app.UseEndpoints(e => e.MapBowireMockConfigEndpoints(basePath: string.Empty));
+                       app.UseEndpoints(e => e.MapBowireMockConfigEndpoints(basePath: string.Empty, options: options));
                    })
                    .ConfigureServices(s =>
                    {
@@ -383,6 +453,28 @@ public sealed class BowireMockConfigEndpointTests : IDisposable
     {
         public Task<AuthFlowCaptureResult> CaptureAsync(string flowJson, CancellationToken ct = default)
             => Task.FromResult(new AuthFlowCaptureResult(credential, scheme, header));
+    }
+
+    /// <summary>
+    /// A capturer whose flow "calls" <paramref name="stepUrl"/>: the restricted
+    /// overload asks the allow-callback about it like the real guard handler does.
+    /// </summary>
+    private sealed class GuardedCapturer(string stepUrl) : IAuthFlowCapturer
+    {
+        public bool RanRestricted { get; private set; }
+
+        public Task<AuthFlowCaptureResult> CaptureAsync(string flowJson, CancellationToken ct = default)
+            => Task.FromResult(new AuthFlowCaptureResult("guarded-tok", "bearer", null));
+
+        public Task<AuthFlowCaptureResult> CaptureAsync(string flowJson, Func<Uri, bool>? allowTarget, CancellationToken ct)
+        {
+            if (allowTarget is null) return CaptureAsync(flowJson, ct);
+            RanRestricted = true;
+            if (!allowTarget(new Uri(stepUrl)))
+                throw new AuthFlowCaptureException("Auth flow failed",
+                    new Kuestenlogik.Bowire.Net.BowireTargetRefusedException(stepUrl));
+            return Task.FromResult(new AuthFlowCaptureResult("guarded-tok", "bearer", null));
+        }
     }
 
     private sealed class TempStore(string root) : IBowireUserStore

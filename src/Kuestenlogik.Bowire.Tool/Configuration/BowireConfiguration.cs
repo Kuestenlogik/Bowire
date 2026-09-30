@@ -261,18 +261,11 @@ internal static class BowireConfiguration
             }
         }
 
-        // --allowed-server-url merges with Bowire:AllowedServerUrls the same
-        // way --disable-plugin does: repeatable, comma-separable, additive.
-        foreach (var raw in ExtractRepeatedTokens(args, "--allowed-server-url"))
-        {
-            var fresh = raw
-                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                .Where(part => !options.AllowedServerUrls.Contains(part, StringComparer.OrdinalIgnoreCase));
-            foreach (var part in fresh)
-            {
-                options.AllowedServerUrls.Add(part);
-            }
-        }
+        // --allowed-server-url / --allowed-auth-url merge with their
+        // Bowire:* lists the same way --disable-plugin does: repeatable,
+        // comma-separable, additive.
+        MergeRepeatedList(args, "--allowed-server-url", options.AllowedServerUrls);
+        MergeRepeatedList(args, "--allowed-auth-url", options.AllowedAuthUrls);
 
         // Keep ServerUrl and ServerUrls in sync. When the list is
         // non-empty the primary is always its first element — this
@@ -384,6 +377,20 @@ internal static class BowireConfiguration
     /// and <c>--flag=value</c> forms, in order of appearance. Caller is
     /// responsible for any further splitting (e.g. comma-separated).
     /// </summary>
+    private static void MergeRepeatedList(string[] args, string flagName, List<string> target)
+    {
+        foreach (var raw in ExtractRepeatedTokens(args, flagName))
+        {
+            var fresh = raw
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Where(part => !target.Contains(part, StringComparer.OrdinalIgnoreCase));
+            foreach (var part in fresh)
+            {
+                target.Add(part);
+            }
+        }
+    }
+
     private static List<string> ExtractRepeatedTokens(string[] args, string flagName)
     {
         var prefix = flagName + "=";

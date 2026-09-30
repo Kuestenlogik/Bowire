@@ -100,6 +100,21 @@ internal static class BowireEndpointHelpers
         return (hint, null);
     }
 
+    /// <summary>Named HttpClient the auth helpers use on an unrestricted host.</summary>
+    internal const string OAuthClient = "bowire-oauth";
+
+    /// <summary>
+    /// Named HttpClient the auth helpers use while <see cref="Net.BowireTargetPolicy.ForAuth"/>
+    /// is enforced: the same handler, but it does not follow redirects — a
+    /// 302 from an allowed token endpoint must not carry the call to a host
+    /// the policy never saw. The 3xx reaches the caller as an upstream error.
+    /// </summary>
+    internal const string OAuthLockedClient = "bowire-oauth-locked";
+
+    /// <summary>Which of the two auth HttpClients a call under <paramref name="policy"/> uses.</summary>
+    internal static string OAuthClientName(Net.BowireTargetPolicy policy) =>
+        policy.IsEnforced ? OAuthLockedClient : OAuthClient;
+
     private static BowireProtocolRegistry? _registry;
 
     /// <summary>

@@ -159,6 +159,26 @@ public sealed class BowireOptions
     public List<string> AllowedServerUrls { get; } = [];
 
     /// <summary>
+    /// Identity-provider URLs the auth helpers may call on the caller's
+    /// behalf — the OAuth token proxies (<c>/api/auth/oauth-*</c>), the
+    /// custom-token proxy (<c>/api/auth/custom-token</c>) and auth-flow
+    /// capture. Token endpoints usually live on another host than the API,
+    /// so they are listed separately from <see cref="AllowedServerUrls"/>.
+    /// </summary>
+    /// <remarks>
+    /// Checked whenever <see cref="LockServerUrl"/> is set or either
+    /// allowlist is non-empty; the auth helpers may then call the server URLs
+    /// plus these. A non-empty list on its own restricts only the auth
+    /// helpers, not invoke/discovery. Same matching rules as
+    /// <see cref="AllowedServerUrls"/> (the path is a base path, so
+    /// <c>https://idp.example.com/realms/acme</c> covers its
+    /// <c>…/protocol/openid-connect/token</c>). Bound from
+    /// <c>Bowire:AllowedAuthUrls</c> and <c>--allowed-auth-url</c> by the CLI
+    /// tool.
+    /// </remarks>
+    public List<string> AllowedAuthUrls { get; } = [];
+
+    /// <summary>
     /// When <c>true</c>, the sidebar lists well-known internal services such
     /// as <c>grpc.reflection.v1alpha.ServerReflection</c> and the gRPC health
     /// endpoint. Useful for debugging reflection itself; hidden by default

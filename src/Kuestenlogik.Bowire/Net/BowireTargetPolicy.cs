@@ -15,7 +15,9 @@ namespace Kuestenlogik.Bowire.Net;
 /// Every endpoint that opens a connection to a caller-named URL —
 /// <c>/api/invoke</c>, <c>/api/invoke/stream</c>, <c>/api/channel/open</c>,
 /// <c>/api/services</c>, <c>/api/security/fuzz</c> and the
-/// <c>/api/parallel/*</c> runs — asks this policy before it dials. Without
+/// <c>/api/parallel/*</c> runs, <c>/api/network/test</c> — asks this policy
+/// before it dials; the auth helpers (token proxies, flow capture) ask
+/// <see cref="ForAuth"/>. Without
 /// it <see cref="BowireOptions.LockServerUrl"/> only made the URL input
 /// read-only in the browser, while <c>?serverUrl=http://169.254.169.254/</c>
 /// still went out from the server: an open relay into whatever network the
@@ -78,13 +80,36 @@ public sealed class BowireTargetPolicy
     {
         if (options is null || (!options.LockServerUrl && options.AllowedServerUrls.Count == 0))
             return Unrestricted;
+        return Build(options, request, options.AllowedServerUrls);
+    }
 
-        var entries = new List<string?>(options.ServerUrls.Count + options.AllowedServerUrls.Count + 2)
+    /// <summary>
+    /// The policy for the auth helpers that call identity providers on the
+    /// caller's behalf — the OAuth token proxies, the custom-token proxy and
+    /// auth-flow capture. Token endpoints usually live on another host than
+    /// the API, so they get their own list:
+    /// <see cref="BowireOptions.AllowedAuthUrls"/>. Enforced when
+    /// <see cref="BowireOptions.LockServerUrl"/> is set or either allowlist is
+    /// non-empty; the allowed set is everything <see cref="For"/> allows plus
+    /// <see cref="BowireOptions.AllowedAuthUrls"/> (a token endpoint on the API
+    /// host itself needs no extra entry).
+    /// </summary>
+    public static BowireTargetPolicy ForAuth(BowireOptions? options, HttpRequest? request = null)
+    {
+        if (options is null
+            || (!options.LockServerUrl && options.AllowedServerUrls.Count == 0 && options.AllowedAuthUrls.Count == 0))
+            return Unrestricted;
+        return Build(options, request, [.. options.AllowedServerUrls, .. options.AllowedAuthUrls]);
+    }
+
+    private static BowireTargetPolicy Build(BowireOptions options, HttpRequest? request, IReadOnlyCollection<string> extra)
+    {
+        var entries = new List<string?>(options.ServerUrls.Count + extra.Count + 2)
         {
             options.ServerUrl,
         };
         entries.AddRange(options.ServerUrls);
-        entries.AddRange(options.AllowedServerUrls);
+        entries.AddRange(extra);
         if (options.Mode == BowireMode.Embedded && request is not null)
             entries.Add(BowireEndpointHelpers.ResolveServerUrl(options, request));
 
@@ -124,8 +149,8 @@ public sealed class BowireTargetPolicy
                 type: RefusedProblemType,
                 title: "Target not allowed on this server",
                 status: StatusCodes.Status403Forbidden,
-                detail: "This Bowire host only dials the server URLs it was configured with "
-                    + "(LockServerUrl / AllowedServerUrls). Refused: " + BowireEndpointHelpers.SafeLog(raw),
+                detail: "This Bowire host only dials the URLs it was configured with "
+                    + "(LockServerUrl / AllowedServerUrls / AllowedAuthUrls). Refused: " + BowireEndpointHelpers.SafeLog(raw),
                 instance: ctx.Request.Path,
                 extensions: new Dictionary<string, object?> { ["target"] = raw });
         }

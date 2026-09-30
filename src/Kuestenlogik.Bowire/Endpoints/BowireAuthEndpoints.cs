@@ -4,6 +4,7 @@
 using System.Text;
 using System.Text.Json;
 using Kuestenlogik.Bowire.Auth;
+using Kuestenlogik.Bowire.Net;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -62,6 +63,9 @@ internal static class BowireAuthEndpoints
                     title: "Missing clientId",
                     status: 400,
                     instance: ctx.Request.Path);
+            var authPolicy = BowireTargetPolicy.ForAuth(options, ctx.Request);
+            if (authPolicy.Refuse(ctx, body.TokenUrl) is { } refused)
+                return refused;
 
             try
             {
@@ -83,7 +87,7 @@ internal static class BowireAuthEndpoints
 
                 var http = ctx.RequestServices
                     .GetRequiredService<IHttpClientFactory>()
-                    .CreateClient("bowire-oauth");
+                    .CreateClient(BowireEndpointHelpers.OAuthClientName(authPolicy));
                 using var content = new FormUrlEncodedContent(form);
                 using var resp = await http.PostAsync(tokenUri, content, ctx.RequestAborted);
                 var responseBody = await resp.Content.ReadAsStringAsync(ctx.RequestAborted);
@@ -159,6 +163,9 @@ internal static class BowireAuthEndpoints
                     title: "tokenUrl is not a valid absolute URL",
                     status: 400,
                     instance: ctx.Request.Path);
+            var authPolicy = BowireTargetPolicy.ForAuth(options, ctx.Request);
+            if (authPolicy.Refuse(ctx, body.TokenUrl) is { } refused)
+                return refused;
 
             try
             {
@@ -174,7 +181,7 @@ internal static class BowireAuthEndpoints
 
                 var http = ctx.RequestServices
                     .GetRequiredService<IHttpClientFactory>()
-                    .CreateClient("bowire-oauth");
+                    .CreateClient(BowireEndpointHelpers.OAuthClientName(authPolicy));
                 using var content = new FormUrlEncodedContent(form);
                 using var resp = await http.PostAsync(tokenUri, content, ctx.RequestAborted);
                 var responseBody = await resp.Content.ReadAsStringAsync(ctx.RequestAborted);
@@ -242,6 +249,9 @@ internal static class BowireAuthEndpoints
                     title: "tokenUrl is not a valid absolute URL",
                     status: 400,
                     instance: ctx.Request.Path);
+            var authPolicy = BowireTargetPolicy.ForAuth(options, ctx.Request);
+            if (authPolicy.Refuse(ctx, body.TokenUrl) is { } refused)
+                return refused;
 
             try
             {
@@ -256,7 +266,7 @@ internal static class BowireAuthEndpoints
 
                 var http = ctx.RequestServices
                     .GetRequiredService<IHttpClientFactory>()
-                    .CreateClient("bowire-oauth");
+                    .CreateClient(BowireEndpointHelpers.OAuthClientName(authPolicy));
                 using var content = new FormUrlEncodedContent(form);
                 using var resp = await http.PostAsync(tokenUri, content, ctx.RequestAborted);
                 var responseBody = await resp.Content.ReadAsStringAsync(ctx.RequestAborted);
@@ -322,12 +332,15 @@ internal static class BowireAuthEndpoints
                     title: "url is not a valid absolute URL",
                     status: 400,
                     instance: ctx.Request.Path);
+            var authPolicy = BowireTargetPolicy.ForAuth(options, ctx.Request);
+            if (authPolicy.Refuse(ctx, body.Url) is { } refused)
+                return refused;
 
             try
             {
                 var http = ctx.RequestServices
                     .GetRequiredService<IHttpClientFactory>()
-                    .CreateClient("bowire-oauth");
+                    .CreateClient(BowireEndpointHelpers.OAuthClientName(authPolicy));
                 using var request = new HttpRequestMessage(
                     new HttpMethod(string.IsNullOrEmpty(body.Method) ? "POST" : body.Method.ToUpperInvariant()),
                     tokenUri);

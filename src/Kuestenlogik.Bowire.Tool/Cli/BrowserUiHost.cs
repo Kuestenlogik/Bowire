@@ -413,6 +413,7 @@ internal static class BrowserUiHost
         if (!string.Equals(ui.Title, "Bowire", StringComparison.Ordinal)) ignored.Add("--title");
         if (ui.DisabledPlugins.Count > 0) ignored.Add("--disable-plugin");
         if (ui.AllowedServerUrls.Count > 0) ignored.Add("--allowed-server-url");
+        if (ui.AllowedAuthUrls.Count > 0) ignored.Add("--allowed-auth-url");
         if (!string.IsNullOrEmpty(ui.PluginDir)) ignored.Add("--plugin-dir");
         if (!string.IsNullOrEmpty(ui.MapBasemap)) ignored.Add("--map-basemap");
         if (ui.AutoCreateInitialWorkspace is not null) ignored.Add("--auto-create-initial-workspace");
@@ -797,6 +798,9 @@ internal static class BrowserUiHost
             // non-empty, the switch that turns target enforcement on even
             // without a lock).
             foreach (var u in ui.AllowedServerUrls) options.AllowedServerUrls.Add(u);
+            // Identity-provider URLs the auth helpers may call once targets
+            // are restricted (token proxies, auth-flow capture).
+            foreach (var u in ui.AllowedAuthUrls) options.AllowedAuthUrls.Add(u);
             // Forward --disable-plugin / Bowire:DisabledPlugins through
             // so the protocol-registry assembly scan honours it.
             foreach (var p in ui.DisabledPlugins) options.DisabledPlugins.Add(p);

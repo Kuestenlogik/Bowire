@@ -3,6 +3,7 @@
 
 using System.Text.Json;
 using Kuestenlogik.Bowire.Mocking;
+using Kuestenlogik.Bowire.Net;
 using Kuestenlogik.Bowire.Security.Scanner;
 
 namespace Kuestenlogik.Bowire.App.Cli;
@@ -19,7 +20,10 @@ namespace Kuestenlogik.Bowire.App.Cli;
 /// </summary>
 internal sealed class AuthFlowCapturer : IAuthFlowCapturer
 {
-    public async Task<AuthFlowCaptureResult> CaptureAsync(string flowJson, CancellationToken ct = default)
+    public Task<AuthFlowCaptureResult> CaptureAsync(string flowJson, CancellationToken ct = default) =>
+        CaptureAsync(flowJson, null, ct);
+
+    public async Task<AuthFlowCaptureResult> CaptureAsync(string flowJson, Func<Uri, bool>? allowTarget, CancellationToken ct)
     {
         AuthFlowDefinition flow;
         try
@@ -33,7 +37,17 @@ internal sealed class AuthFlowCapturer : IAuthFlowCapturer
             throw new AuthFlowCaptureException(ex.Message, ex);
         }
 
-        using var http = new HttpClient();
+        // Restricted: every step URL is checked as it is sent (after {{var}}
+        // substitution), and redirects are not followed — they would resolve
+        // below the guard and reach a host it never saw.
+#pragma warning disable CA2000, CA5400 // Ownership of both handlers moves into the HttpClient; revocation checking as for the unrestricted client above.
+        using var http = allowTarget is null
+            ? new HttpClient()
+            : new HttpClient(new BowireTargetGuardHandler(allowTarget)
+            {
+                InnerHandler = new HttpClientHandler { AllowAutoRedirect = false },
+            });
+#pragma warning restore CA2000, CA5400
         AuthFlowResult result;
         try
         {

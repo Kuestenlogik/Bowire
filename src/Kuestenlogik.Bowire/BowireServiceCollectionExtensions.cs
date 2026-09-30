@@ -237,12 +237,25 @@ public static class BowireServiceCollectionExtensions
         // the same Bowire:TrustLocalhostCert / Bowire:oauth:TrustLocalhostCert
         // opt-in that the protocol plugins honour also covers OAuth-proxy
         // calls against a local IdP with a self-signed cert.
-        services.AddHttpClient("bowire-oauth", client =>
+        services.AddHttpClient(Endpoints.BowireEndpointHelpers.OAuthClient, client =>
         {
             client.Timeout = TimeSpan.FromSeconds(15);
         }).ConfigurePrimaryHttpMessageHandler(sp =>
             BowireHttpClientFactory.CreateHandler(
                 sp.GetService<IConfiguration>(), "oauth"));
+        // The same client for a host whose auth targets are restricted
+        // (LockServerUrl / AllowedServerUrls / AllowedAuthUrls): redirects
+        // are not followed, so the allowlist check on the token URL is also
+        // the last word on where the request goes.
+        services.AddHttpClient(Endpoints.BowireEndpointHelpers.OAuthLockedClient, client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(15);
+        }).ConfigurePrimaryHttpMessageHandler(sp =>
+        {
+            var handler = BowireHttpClientFactory.CreateHandler(sp.GetService<IConfiguration>(), "oauth");
+            handler.AllowAutoRedirect = false;
+            return handler;
+        });
 
         foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies()
             .Where(a => a.FullName?.Contains("Bowire") == true))
