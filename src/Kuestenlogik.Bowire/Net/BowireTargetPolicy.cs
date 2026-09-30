@@ -58,11 +58,13 @@ public sealed class BowireTargetPolicy
     public const string RefusedProblemType = "urn:bowire:target-not-allowed";
 
     private readonly Target[] _allowed;
+    private readonly bool _forAuth;
 
-    private BowireTargetPolicy(bool isEnforced, Target[] allowed)
+    private BowireTargetPolicy(bool isEnforced, Target[] allowed, bool forAuth = false)
     {
         IsEnforced = isEnforced;
         _allowed = allowed;
+        _forAuth = forAuth;
     }
 
     /// <summary>A policy that allows every target — what an unlocked host runs with.</summary>
@@ -80,7 +82,7 @@ public sealed class BowireTargetPolicy
     {
         if (options is null || (!options.LockServerUrl && options.AllowedServerUrls.Count == 0))
             return Unrestricted;
-        return Build(options, request, options.AllowedServerUrls);
+        return Build(options, request, options.AllowedServerUrls, forAuth: false);
     }
 
     /// <summary>
@@ -99,10 +101,10 @@ public sealed class BowireTargetPolicy
         if (options is null
             || (!options.LockServerUrl && options.AllowedServerUrls.Count == 0 && options.AllowedAuthUrls.Count == 0))
             return Unrestricted;
-        return Build(options, request, [.. options.AllowedServerUrls, .. options.AllowedAuthUrls]);
+        return Build(options, request, [.. options.AllowedServerUrls, .. options.AllowedAuthUrls], forAuth: true);
     }
 
-    private static BowireTargetPolicy Build(BowireOptions options, HttpRequest? request, IReadOnlyCollection<string> extra)
+    private static BowireTargetPolicy Build(BowireOptions options, HttpRequest? request, IReadOnlyCollection<string> extra, bool forAuth)
     {
         var entries = new List<string?>(options.ServerUrls.Count + extra.Count + 2)
         {
@@ -118,7 +120,7 @@ public sealed class BowireTargetPolicy
             .OfType<Target>()
             .Distinct()
             .ToArray();
-        return new BowireTargetPolicy(true, allowed);
+        return new BowireTargetPolicy(true, allowed, forAuth);
     }
 
     /// <summary>
@@ -134,7 +136,11 @@ public sealed class BowireTargetPolicy
 
     /// <summary>
     /// A 403 problem-details result when any of <paramref name="rawTargets"/>
-    /// is refused, or null when all are allowed. Each refusal is logged.
+    /// is refused, or null when all are allowed. Each refusal is logged. The
+    /// body names the remedy — the option and CLI flag that would allow the
+    /// target, with the target's origin filled in — so an operator who meets
+    /// the lock with a legitimate target (typically an external identity
+    /// provider) can act on the response alone.
     /// </summary>
     internal IResult? Refuse(HttpContext ctx, params ReadOnlySpan<string?> rawTargets)
     {
@@ -145,16 +151,38 @@ public sealed class BowireTargetPolicy
             BowireEndpointHelpers.GetLogger(ctx).LogWarning(
                 "Refused target {Target} on {Path}: not in the server's allowed targets",
                 BowireEndpointHelpers.SafeLog(raw), BowireEndpointHelpers.SafeLog(ctx.Request.Path));
+            var remedy = Remedy(raw);
             return BowireEndpointHelpers.Problem(
                 type: RefusedProblemType,
                 title: "Target not allowed on this server",
                 status: StatusCodes.Status403Forbidden,
-                detail: "This Bowire host only dials the URLs it was configured with "
-                    + "(LockServerUrl / AllowedServerUrls / AllowedAuthUrls). Refused: " + BowireEndpointHelpers.SafeLog(raw),
+                detail: "This Bowire host only dials the URLs it was configured with. Refused: "
+                    + BowireEndpointHelpers.SafeLog(raw) + ". " + remedy,
                 instance: ctx.Request.Path,
-                extensions: new Dictionary<string, object?> { ["target"] = raw });
+                extensions: new Dictionary<string, object?>
+                {
+                    ["target"] = raw,
+                    ["allowWith"] = _forAuth ? "AllowedAuthUrls" : "AllowedServerUrls",
+                    ["remedy"] = remedy,
+                });
         }
         return null;
+    }
+
+    /// <summary>
+    /// What an operator does to allow <paramref name="raw"/>: the option and
+    /// the CLI flag, with the target's origin (or the raw value when it is not
+    /// a URL) as the example entry.
+    /// </summary>
+    internal string Remedy(string? raw)
+    {
+        var url = BowireServerUrl.StripHint(raw?.Trim()).Trim();
+        var example = Uri.TryCreate(url, UriKind.Absolute, out var uri) && !string.IsNullOrEmpty(uri.Host)
+            ? uri.Scheme + "://" + uri.Authority   // Authority carries no userinfo
+            : url;
+        return _forAuth
+            ? $"If this is your identity provider, allow it with --allowed-auth-url {example} (Bowire:AllowedAuthUrls / BowireOptions.AllowedAuthUrls)."
+            : $"If this target is legitimate, allow it with --allowed-server-url {example} (Bowire:AllowedServerUrls / BowireOptions.AllowedServerUrls).";
     }
 
     /// <summary>

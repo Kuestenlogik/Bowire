@@ -156,6 +156,10 @@ internal static class BrowserUiHost
                 io.OutLine($"  MCP adapter (opt-in):   {url.TrimEnd('/')}/mcp");
             foreach (var u in ui.ServerUrls)
                 io.OutLine($"  Connected to:           {u}");
+            foreach (var u in ui.AllowedAuthUrls)
+                io.OutLine($"  Auth provider allowed:  {u}");
+            foreach (var line in TargetLockNotice(ui))
+                io.OutLine(line);
             io.OutLine();
             io.OutLine("  Press Ctrl+C to stop.");
             io.OutLine();
@@ -269,6 +273,25 @@ internal static class BrowserUiHost
     /// language, so a Bowire started on a German Windows would otherwise need
     /// German string matching to recognise its own failure.
     /// </remarks>
+    /// <summary>
+    /// Banner lines that say the targets are locked and, when no
+    /// identity provider is listed, how to allow one — the case an operator
+    /// otherwise only meets as a 403 on the first OAuth token call. Empty when
+    /// nothing is restricted.
+    /// </summary>
+    internal static IReadOnlyList<string> TargetLockNotice(BrowserUiOptions ui)
+    {
+        if (!ui.LockServerUrl && ui.AllowedServerUrls.Count == 0 && ui.AllowedAuthUrls.Count == 0)
+            return [];
+        var lines = new List<string>
+        {
+            "  Targets locked:         only the URLs above are dialed; anything else gets 403.",
+        };
+        if (ui.AllowedAuthUrls.Count == 0)
+            lines.Add("  External OAuth provider? Allow it with --allowed-auth-url <url>.");
+        return lines;
+    }
+
     private static bool IsAddressInUse(Exception? ex)
     {
         for (var e = ex; e is not null; e = e.InnerException)

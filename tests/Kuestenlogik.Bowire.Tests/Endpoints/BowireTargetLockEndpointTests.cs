@@ -121,6 +121,8 @@ public sealed class BowireTargetLockEndpointTests
         var body = JsonDocument.Parse(await resp.Content.ReadAsStringAsync(ct)).RootElement;
         Assert.Equal(BowireTargetPolicy.RefusedProblemType, body.GetProperty("type").GetString());
         Assert.Equal(403, body.GetProperty("status").GetInt32());
+        Assert.Equal("AllowedServerUrls", body.GetProperty("allowWith").GetString());
+        Assert.Contains("--allowed-server-url", body.GetProperty("remedy").GetString()!, StringComparison.Ordinal);
     }
 
     private static Task<HttpResponseMessage> InvokeAsync(Host h, string? serverUrl, CancellationToken ct) =>

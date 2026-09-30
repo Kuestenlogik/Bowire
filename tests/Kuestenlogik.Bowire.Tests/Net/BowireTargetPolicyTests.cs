@@ -262,4 +262,29 @@ public sealed class BowireTargetPolicyTests
         Assert.True(auth.Allows("https://api.example.com/token"));
         Assert.False(auth.Allows("https://evil.test/token"));
     }
+
+    // ------------------------------ remedy -----------------------------------
+
+    [Fact]
+    public void Server_remedy_names_the_server_flag_with_the_origin()
+    {
+        var policy = BowireTargetPolicy.For(Locked("https://api.example.com"));
+
+        var remedy = policy.Remedy("grpc@https://user:pw@other.example.com:8443/v1/x?y=1");
+
+        // Origin only — no hint, no userinfo, no path.
+        Assert.Contains("--allowed-server-url https://other.example.com:8443 ", remedy, StringComparison.Ordinal);
+        Assert.DoesNotContain("pw", remedy, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Auth_remedy_names_the_auth_flag_with_the_origin()
+    {
+        var policy = BowireTargetPolicy.ForAuth(Locked("https://api.example.com"));
+
+        var remedy = policy.Remedy("https://login.example.com/realms/acme/protocol/openid-connect/token");
+
+        Assert.Contains("--allowed-auth-url https://login.example.com ", remedy, StringComparison.Ordinal);
+        Assert.Contains("AllowedAuthUrls", remedy, StringComparison.Ordinal);
+    }
 }
