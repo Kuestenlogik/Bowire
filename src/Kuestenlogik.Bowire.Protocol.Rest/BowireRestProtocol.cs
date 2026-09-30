@@ -27,7 +27,9 @@ public sealed class BowireRestProtocol
     // localhost-cert opt-in (Bowire:TrustLocalhostCert) reaches the
     // certificate validation callback. Falls back to a vanilla HttpClient
     // for test paths that skip Initialize.
-    private HttpClient _http = new() { Timeout = TimeSpan.FromSeconds(30) };
+    // Before Initialize (the CLI never calls it) the client still comes from the
+    // factory: proxy, CA bundle (#680) and Negotiate / NTLM / Digest (#679).
+    private HttpClient _http = Kuestenlogik.Bowire.Net.BowireHttpClientFactory.Create(null, "rest", TimeSpan.FromSeconds(30));
 
     // Cache parsed OpenAPI docs per server URL so InvokeAsync doesn't re-fetch.
     // Key: serverUrl. Value: discovered services + lookup index.

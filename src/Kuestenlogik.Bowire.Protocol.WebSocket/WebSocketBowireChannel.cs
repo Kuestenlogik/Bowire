@@ -105,6 +105,9 @@ internal sealed class WebSocketBowireChannel : IBowireChannel
 
             // #680 — the proxy and the CA bundle, after the trust callbacks above.
             Kuestenlogik.Bowire.Net.BowireNetworkPolicy.Apply(socket.Options);
+            // #679 — Negotiate / NTLM / Digest on the upgrade request.
+            if (Kuestenlogik.Bowire.Auth.BowireHttpAuth.TryParse(headers) is { } httpAuth)
+                Kuestenlogik.Bowire.Auth.BowireHttpAuth.ApplyTo(socket.Options, httpAuth);
 
             if (headers is not null)
             {

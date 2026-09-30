@@ -33,7 +33,7 @@ public sealed class BowireODataProtocol : IBowireProtocol, Kuestenlogik.Bowire.N
     // localhost-cert opt-in (Bowire:TrustLocalhostCert) reaches the
     // certificate validation callback. Discovery uses a 10 s timeout, but
     // invocations may be slower (server-side joins) — give them the default.
-    private HttpClient _http = new();
+    private HttpClient _http = Kuestenlogik.Bowire.Net.BowireHttpClientFactory.Create(null, "odata");
 
     /// <summary>
     /// Declared key property name per entity set, captured during
@@ -266,15 +266,16 @@ public sealed class BowireODataProtocol : IBowireProtocol, Kuestenlogik.Bowire.N
             var body = StripNonPayloadProperties(payload, httpVerb == "PATCH" ? keyPropertyName : null);
             using var content = new StringContent(body, System.Text.Encoding.UTF8, "application/json");
             using var req = new HttpRequestMessage(new HttpMethod(httpVerb), requestUrl) { Content = content };
+            // Headers and Negotiate / NTLM / Digest credentials (#679) — OData
+            // used to send none of the metadata, so no auth reached it.
+            Kuestenlogik.Bowire.Auth.BowireHttpAuth.ApplyMetadata(req, metadata);
             resp = await _http.SendAsync(req, ct);
-        }
-        else if (httpVerb == "DELETE")
-        {
-            resp = await _http.DeleteAsync(requestUrl, ct);
         }
         else
         {
-            resp = await _http.GetAsync(requestUrl, ct);
+            using var req = new HttpRequestMessage(httpVerb == "DELETE" ? HttpMethod.Delete : HttpMethod.Get, requestUrl);
+            Kuestenlogik.Bowire.Auth.BowireHttpAuth.ApplyMetadata(req, metadata);
+            resp = await _http.SendAsync(req, ct);
         }
 
         var responseBody = await resp.Content.ReadAsStringAsync(ct);

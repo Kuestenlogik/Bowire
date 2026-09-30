@@ -115,18 +115,26 @@ internal sealed class SignalRInvoker : IAsyncDisposable
                 // #680 — the proxy and the CA bundle on every transport,
                 // on top of whichever handler the branch above chose.
                 options.Proxy = BowireNetworkPolicy.Proxy;
+                // #679 — Negotiate / NTLM / Digest on the negotiate request,
+                // the long-polling / SSE transports and the WebSocket upgrade.
+                var httpAuth = BowireHttpAuth.TryParse(headers);
                 var configuredHandler = options.HttpMessageHandlerFactory;
                 options.HttpMessageHandlerFactory = inner =>
                 {
                     var handler = configuredHandler is null ? inner : configuredHandler(inner);
-                    if (handler is HttpClientHandler httpHandler) BowireNetworkPolicy.Apply(httpHandler);
-                    return handler;
+                    if (handler is HttpClientHandler httpHandler)
+                    {
+                        BowireNetworkPolicy.Apply(httpHandler);
+                        if (httpAuth is not null) BowireHttpAuth.ApplyTo(httpHandler, httpAuth);
+                    }
+                    return httpAuth is null ? handler : BowireHttpAuth.Wrap(handler, httpAuth);
                 };
                 var configuredWs = options.WebSocketConfiguration;
                 options.WebSocketConfiguration = ws =>
                 {
                     configuredWs?.Invoke(ws);
                     BowireNetworkPolicy.Apply(ws);
+                    if (httpAuth is not null) BowireHttpAuth.ApplyTo(ws, httpAuth);
                 };
             })
             .WithAutomaticReconnect();

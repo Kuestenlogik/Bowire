@@ -49,8 +49,28 @@ public static class BowireHttpClientFactory
         // the honest answer.
 #pragma warning disable CA2000
         var handler = CreateHandler(config, pluginId);
+        // #679 — a request carrying Negotiate / NTLM / Digest credentials goes
+        // through a handler of its own per credential set.
+        var routed = new BowireHttpAuthRoutingHandler(handler, () => CreateHandler(config, pluginId));
 #pragma warning restore CA2000
-        var client = new HttpClient(handler, disposeHandler: true);
+        var client = new HttpClient(routed, disposeHandler: true);
+        if (timeout.HasValue) client.Timeout = timeout.Value;
+        return client;
+    }
+
+    /// <summary>
+    /// A client that authenticates every request with <paramref name="auth"/>
+    /// (#679) — for a caller whose requests are built by a library, so the
+    /// credentials cannot ride on each request. With <c>null</c> it is a plain <c>Create</c>.
+    /// </summary>
+    public static HttpClient CreateAuthenticated(IConfiguration? config, string pluginId, TimeSpan? timeout, Auth.BowireHttpAuthConfig? auth)
+    {
+        if (auth is null) return Create(config, pluginId, timeout);
+#pragma warning disable CA2000 // Ownership moves into the HttpClient (disposeHandler: true).
+        var handler = CreateHandler(config, pluginId);
+        Auth.BowireHttpAuth.ApplyTo(handler, auth);
+        var client = new HttpClient(Auth.BowireHttpAuth.Wrap(handler, auth), disposeHandler: true);
+#pragma warning restore CA2000
         if (timeout.HasValue) client.Timeout = timeout.Value;
         return client;
     }

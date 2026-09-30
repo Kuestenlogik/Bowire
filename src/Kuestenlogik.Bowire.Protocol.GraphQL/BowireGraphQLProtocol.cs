@@ -28,10 +28,7 @@ public sealed class BowireGraphQLProtocol : IBowireProtocol, Kuestenlogik.Bowire
     // localhost-cert opt-in (Bowire:TrustLocalhostCert) reaches the
     // certificate validation callback. Falls back to a vanilla HttpClient
     // for test paths that skip Initialize.
-    private HttpClient _http = new()
-    {
-        Timeout = TimeSpan.FromSeconds(30)
-    };
+    private HttpClient _http = Kuestenlogik.Bowire.Net.BowireHttpClientFactory.Create(null, "graphql", TimeSpan.FromSeconds(30));
 
     private static readonly JsonSerializerOptions s_jsonOptions = new()
     {
@@ -563,6 +560,7 @@ public sealed class BowireGraphQLProtocol : IBowireProtocol, Kuestenlogik.Bowire
         if (headers is not null)
         {
             foreach (var (k, v) in BowireMetadataKeys.WireHeaders(headers)) request.Headers.TryAddWithoutValidation(k, v);
+            Kuestenlogik.Bowire.Auth.BowireHttpAuth.Attach(request, headers);
         }
 
         HttpResponseMessage? response = null;
@@ -1054,6 +1052,7 @@ public sealed class BowireGraphQLProtocol : IBowireProtocol, Kuestenlogik.Bowire
         {
             foreach (var (key, value) in BowireMetadataKeys.WireHeaders(headers))
                 request.Headers.TryAddWithoutValidation(key, value);
+            Kuestenlogik.Bowire.Auth.BowireHttpAuth.Attach(request, headers);
         }
 
         if (!useGet)
@@ -1164,6 +1163,7 @@ public sealed class BowireGraphQLProtocol : IBowireProtocol, Kuestenlogik.Bowire
         {
             foreach (var (key, value) in BowireMetadataKeys.WireHeaders(headers))
                 request.Headers.TryAddWithoutValidation(key, value);
+            Kuestenlogik.Bowire.Auth.BowireHttpAuth.Attach(request, headers);
         }
 
         request.Content = GraphQLMultipartRequest.Build(query, variables, operationName, uploads);
@@ -1204,6 +1204,7 @@ public sealed class BowireGraphQLProtocol : IBowireProtocol, Kuestenlogik.Bowire
         {
             foreach (var (key, value) in BowireMetadataKeys.WireHeaders(headers))
                 request.Headers.TryAddWithoutValidation(key, value);
+            Kuestenlogik.Bowire.Auth.BowireHttpAuth.Attach(request, headers);
         }
 
         var body = "[" + string.Join(",", jsonMessages) + "]";

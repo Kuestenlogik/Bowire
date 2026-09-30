@@ -392,6 +392,14 @@ internal static class BowireAuthEndpoints
         // calls these to render the current jar contents and to clear the
         // jar when the user wants to log out / start over. The actual
         // store lives in Kuestenlogik.Bowire.Auth.CookieJar (in-memory, per envId).
+        // #679 — which challenge-response schemes this host can use. The
+        // workbench hides Windows-integrated auth on a host where it cannot
+        // work and says why, instead of offering something that will fail.
+        endpoints.MapGet($"{basePath}/api/auth/capabilities", () => Results.Json(new
+        {
+            schemes = BowireHttpAuth.Capabilities.Select(c => new { id = c.Id, available = c.Available, reason = c.Reason }),
+        }, BowireEndpointHelpers.JsonOptions)).ExcludeFromDescription();
+
         endpoints.MapGet($"{basePath}/api/auth/cookie-jar", (HttpContext ctx) =>
         {
             var envId = ctx.Request.Query["env"].ToString();

@@ -76,6 +76,7 @@ internal sealed class JsonRpcClient
             {
                 req.Headers.TryAddWithoutValidation(k, v);
             }
+            Kuestenlogik.Bowire.Auth.BowireHttpAuth.Attach(req, _headers);
         }
 
         using var resp = await _http.SendAsync(req, HttpCompletionOption.ResponseContentRead, ct)

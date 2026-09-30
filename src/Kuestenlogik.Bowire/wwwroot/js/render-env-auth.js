@@ -5584,6 +5584,9 @@
                 if (a.type === 'bearer') return 'Bearer';  // i18n-exempt: the name of an authentication scheme
                 if (a.type === 'basic')  return 'Basic';  // i18n-exempt: the name of an authentication scheme
                 if (a.type === 'apikey') return 'API Key';  // i18n-exempt: the name of an authentication scheme
+                if (a.type === 'negotiate') return 'Negotiate';  // i18n-exempt: the name of an authentication scheme
+                if (a.type === 'ntlm') return 'NTLM';  // i18n-exempt: the name of an authentication scheme
+                if (a.type === 'digest') return 'Digest';  // i18n-exempt: the name of an authentication scheme
                 return 'Auth';  // i18n-exempt: the name of an authentication scheme
             })();
             bar.appendChild(el('span', {
@@ -5747,6 +5750,35 @@
     // happens at request time, so users can store secrets as variables and
     // reference them as ${token}, ${apiKey}, etc.
 
+    // #679 - which challenge-response schemes the server can use (Windows-
+    // integrated needs a Windows host). Fetched once; until it answers, the
+    // scheme is offered, and the server refuses it with the same reason.
+    var httpAuthCapabilities = null;
+    var httpAuthCapabilitiesLoading = false;
+    function loadHttpAuthCapabilities() {
+        if (httpAuthCapabilities || httpAuthCapabilitiesLoading) return;
+        httpAuthCapabilitiesLoading = true;
+        fetch(config.prefix + '/api/auth/capabilities')
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .catch(function () { return null; })
+            .then(function (data) {
+                httpAuthCapabilities = (data && data.schemes) || [];
+                httpAuthCapabilitiesLoading = false;
+                if (typeof renderEnvManager === 'function') renderEnvManager();
+            });
+    }
+    function _httpAuthCapability(id) {
+        return (httpAuthCapabilities || []).find(function (c) { return c.id === id; });
+    }
+    function httpAuthCapabilityAvailable(id) {
+        var c = _httpAuthCapability(id);
+        return !httpAuthCapabilities || !c || c.available;
+    }
+    function httpAuthCapabilityReason(id) {
+        var c = _httpAuthCapability(id);
+        return c && !c.available ? t('auth.notAvailableHere', { reason: c.reason || '' }) : '';
+    }
+
     function renderAuthSection(getAuth, setAuth) {
         var section = el('div', { className: 'bowire-auth-section' });
 
@@ -5832,8 +5864,17 @@
             { value: 'oauth2_ac', label: t('auth.oauthAc') },
             { value: 'custom_token', label: t('auth.customToken') },
             { value: 'aws_sigv4', label: t('auth.awsSigv4') },
-            { value: 'mtls', label: t('auth.mtls') }
+            { value: 'mtls', label: t('auth.mtls') },
+            // #679 - challenge-response schemes. Windows-integrated only where
+            // the host can use it; elsewhere the note below says why not.
+            { value: 'negotiate', label: t('auth.negotiate'), capability: 'negotiate' },
+            { value: 'ntlm', label: 'NTLM' },  // i18n-exempt: the name of an authentication scheme
+            { value: 'digest', label: 'Digest' }  // i18n-exempt: the name of an authentication scheme
         ];
+        loadHttpAuthCapabilities();
+        types = types.filter(function (tp) {
+            return !tp.capability || httpAuthCapabilityAvailable(tp.capability) || auth.type === tp.value;
+        });
         for (var ti = 0; ti < types.length; ti++) {
             var opt = el('option', { value: types[ti].value, textContent: types[ti].label });
             if (auth.type === types[ti].value) opt.setAttribute('selected', 'selected');
@@ -5863,6 +5904,26 @@
             section.appendChild(renderAuthField(t('rbAuth.password'), 'bowire-auth-password', auth.password || '',
                 'Password (supports ${var})', 'password',
                 function (v) { setAuth(Object.assign({}, getAuth(), { type: 'basic', password: v })); }));
+        } else if (auth.type === 'negotiate') {
+            section.appendChild(el('p', { className: 'bowire-auth-session-note', textContent: t('auth.negotiateHint') }));
+            if (!httpAuthCapabilityAvailable('negotiate')) {
+                section.appendChild(el('p', { className: 'bowire-auth-session-note', textContent: httpAuthCapabilityReason('negotiate') }));
+            }
+        } else if (auth.type === 'ntlm' || auth.type === 'digest') {
+            var httpType = auth.type;
+            if (httpType === 'ntlm') {
+                section.appendChild(renderAuthField(t('auth.domain'), 'bowire-auth-domain', auth.domain || '',
+                    'CORP (supports ${var})', 'text',
+                    function (v) { setAuth(Object.assign({}, getAuth(), { type: httpType, domain: v })); }));
+            }
+            section.appendChild(renderAuthField(t('rbAuth.username'), 'bowire-auth-username', auth.username || '',
+                'Username (supports ${var})', 'text',
+                function (v) { setAuth(Object.assign({}, getAuth(), { type: httpType, username: v })); }));
+            section.appendChild(renderAuthField(t('rbAuth.password'), 'bowire-auth-password', auth.password || '',
+                'Password (supports ${var} / {{secret.name}})', 'password',
+                function (v) { setAuth(Object.assign({}, getAuth(), { type: httpType, password: v })); }));
+            section.appendChild(el('p', { className: 'bowire-auth-session-note',
+                textContent: t(httpType === 'ntlm' ? 'auth.ntlmHint' : 'auth.digestHint') }));
         } else if (auth.type === 'apikey') {
             // Location toggle — header (default) vs query string. Some
             // services (legacy REST APIs, public APIs that want a clickable

@@ -37,7 +37,7 @@ public sealed class BowireSoapProtocol : IBowireProtocol, Kuestenlogik.Bowire.Ne
     /// <inheritdoc />
     public Kuestenlogik.Bowire.Net.BowireProxySupport ProxySupport => Kuestenlogik.Bowire.Net.BowireProxySupport.Full;
 
-    private HttpClient _http = new() { Timeout = TimeSpan.FromSeconds(30) };
+    private HttpClient _http = Kuestenlogik.Bowire.Net.BowireHttpClientFactory.Create(null, "soap", TimeSpan.FromSeconds(30));
 
     public string Name => "SOAP";
     public string Description => "Legacy SOAP services — WSDL discovery + envelope invoke.";
@@ -149,6 +149,11 @@ public sealed class BowireSoapProtocol : IBowireProtocol, Kuestenlogik.Bowire.Ne
             MediaTypeHeaderValue.Parse(SoapEnvelopeBuilder.ContentTypeFor(soapVersion, soapAction));
 
         using var req = new HttpRequestMessage(HttpMethod.Post, endpoint) { Content = content };
+        // Headers from the metadata (auth helpers, custom headers) and the
+        // Negotiate / NTLM / Digest credentials (#679). SOAP used to send none
+        // of them, so an authenticated SOAP service was unreachable. The four
+        // SOAP settings are read above and are not headers.
+        Kuestenlogik.Bowire.Auth.BowireHttpAuth.ApplyMetadata(req, metadata, IsSoapSetting);
         // SOAP 1.1 spec: the SOAPAction header is required (may be empty
         // string, but the header itself must be present). SOAP 1.2 folds
         // it into Content-Type so we leave it off there.
@@ -252,6 +257,12 @@ public sealed class BowireSoapProtocol : IBowireProtocol, Kuestenlogik.Bowire.Ne
     /// discovery. Anything else is treated as a bare operation name
     /// the user typed.
     /// </summary>
+    private static bool IsSoapSetting(string key) =>
+        key.Equals("endpoint_url", StringComparison.OrdinalIgnoreCase)
+        || key.Equals("soap_version", StringComparison.OrdinalIgnoreCase)
+        || key.Equals("soap_action", StringComparison.OrdinalIgnoreCase)
+        || key.Equals("target_namespace", StringComparison.OrdinalIgnoreCase);
+
     internal static string ExtractOperationName(string method)
     {
         if (string.IsNullOrEmpty(method)) return "";

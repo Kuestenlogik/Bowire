@@ -39,7 +39,7 @@ public sealed class BowireSseProtocol : IBowireProtocol, Kuestenlogik.Bowire.Net
     // a 1-hour timeout — short enough that an actual broken connection
     // eventually surfaces, long enough that legitimate keep-alive
     // streams (every 5 s) keep the channel open indefinitely.
-    private HttpClient _http = new() { Timeout = TimeSpan.FromHours(1) };
+    private HttpClient _http = Kuestenlogik.Bowire.Net.BowireHttpClientFactory.Create(null, "sse", TimeSpan.FromHours(1));
 
     public string Name => "SSE";
     public string Description => "Server-Sent Events — subscribe to a one-way server-pushed event stream.";

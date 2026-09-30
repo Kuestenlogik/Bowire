@@ -29,7 +29,25 @@
      */
     function bowireCaptureStep(step) {
         if (typeof captureRecordingStep !== 'function') return;
+        if (step && step.metadata) step = Object.assign({}, step, { metadata: withoutBowireMarkers(step.metadata) });
         captureRecordingStep(step);
+    }
+
+    /**
+     * The metadata without Bowire's internal markers (__bowireMtls__,
+     * __bowireHttpAuth__, __bowireAwsSigV4__, ...). They carry plugin
+     * configuration - private keys, passwords, secret keys - resolved for one
+     * call. A recording or a history entry is kept and exported, so it gets
+     * the headers and never the markers (#679); the auth helper adds them
+     * again on the next call.
+     */
+    function withoutBowireMarkers(metadata) {
+        if (!metadata || typeof metadata !== 'object') return metadata;
+        var out = {};
+        Object.keys(metadata).forEach(function (k) {
+            if (k.toLowerCase().indexOf('__bowire') !== 0) out[k] = metadata[k];
+        });
+        return out;
     }
 
     const config = window.__BOWIRE_CONFIG__ || {

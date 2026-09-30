@@ -38,10 +38,8 @@ internal sealed class SseSubscriber : IAsyncDisposable
     /// </summary>
     public SseSubscriber()
     {
-        _client = new HttpClient
-        {
-            Timeout = TimeSpan.FromHours(1), // SSE connections are long-lived
-        };
+        // SSE connections are long-lived.
+        _client = Kuestenlogik.Bowire.Net.BowireHttpClientFactory.Create(null, "sse", TimeSpan.FromHours(1));
         _ownsClient = true;
     }
 
@@ -61,6 +59,7 @@ internal sealed class SseSubscriber : IAsyncDisposable
         {
             foreach (var (key, value) in BowireMetadataKeys.WireHeaders(headers))
                 request.Headers.TryAddWithoutValidation(key, value);
+            Kuestenlogik.Bowire.Auth.BowireHttpAuth.Attach(request, headers);
         }
 
         using var response = await _client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct);
