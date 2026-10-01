@@ -10,18 +10,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ## Overview
 
-### v2.9 — Corporate networks: outbound proxy, Windows auth, cookies *(due 2026-12-14)*
-
-**5/5 done**
-
-| # | Project | Title | Status | Tags |
-|---|---|---|---|---|
-| [671](https://github.com/Kuestenlogik/Bowire/issues/671) | Bowire | [Site: /alternatives/* landing pages, a changelog page, and the trust claim in the hero](#issue-kuestenlogik-bowire-671) | ✅ Done | `area:site` |
-| [679](https://github.com/Kuestenlogik/Bowire/issues/679) | Bowire | [Windows-integrated auth (Negotiate/NTLM) and Digest — the .NET tool cannot call .NET intranet APIs](#issue-kuestenlogik-bowire-679) | ✅ Done | `area:workbench` |
-| [680](https://github.com/Kuestenlogik/Bowire/issues/680) | Bowire | [Outbound proxy and custom CA support — Bowire is unusable behind a corporate proxy](#issue-kuestenlogik-bowire-680) | ✅ Done | `area:workbench` |
-| [681](https://github.com/Kuestenlogik/Bowire/issues/681) | Bowire | [Persistent cookie manager, and cookies beyond REST](#issue-kuestenlogik-bowire-681) | ✅ Done | `area:workbench` |
-| [755](https://github.com/Kuestenlogik/Bowire/issues/755) | Bowire | [Link-Check der Site prüft seit dem Umzug nach scripts/site nichts mehr](#issue-kuestenlogik-bowire-755) | ✅ Done |  |
-
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
 
 **0/4 done** · 4 backlog
@@ -152,36 +140,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [613](https://github.com/Kuestenlogik/Bowire/issues/613) | Bowire | [Move the VS Code Marketplace publish off PATs to Entra ID before 2026-12-01](#issue-kuestenlogik-bowire-613) | ⬜ Backlog | `area:cli` |
 
 ## Details
-
-### v2.9 — Corporate networks: outbound proxy, Windows auth, cookies *(due 2026-12-14)*
-
-#### <a id="issue-kuestenlogik-bowire-671"></a>✅ Done · [#671](https://github.com/Kuestenlogik/Bowire/issues/671) Site: /alternatives/* landing pages, a changelog page, and the trust claim in the hero
-
-> `area:site`
-
-Two structural gaps on bowire.io. Both cheap, neither risky. [[more]](https://github.com/Kuestenlogik/Bowire/issues/671)
-
-#### <a id="issue-kuestenlogik-bowire-679"></a>✅ Done · [#679](https://github.com/Kuestenlogik/Bowire/issues/679) Windows-integrated auth (Negotiate/NTLM) and Digest — the .NET tool cannot call .NET intranet APIs
-
-> `area:workbench`
-
-The auth surface is broad — Bearer, Basic, API key, signed JWT, OAuth 2.0 (client credentials and authorization code + PKCE), custom token endpoint, AWS SigV4, mTLS, cookie jar. **Windows-integrated auth is missing.** [[more]](https://github.com/Kuestenlogik/Bowire/issues/679)
-
-#### <a id="issue-kuestenlogik-bowire-680"></a>✅ Done · [#680](https://github.com/Kuestenlogik/Bowire/issues/680) Outbound proxy and custom CA support — Bowire is unusable behind a corporate proxy
-
-> `area:workbench`
-
-`WebProxy` does not appear anywhere in the source. `--proxy` exists only as the mock server's upstream forwarder — it has nothing to do with how Bowire's own requests leave the machine. [[more]](https://github.com/Kuestenlogik/Bowire/issues/680)
-
-#### <a id="issue-kuestenlogik-bowire-681"></a>✅ Done · [#681](https://github.com/Kuestenlogik/Bowire/issues/681) Persistent cookie manager, and cookies beyond REST
-
-> `area:workbench`
-
-The cookie jar today is a per-environment in-memory `CookieContainer`, and it is **REST-only** (`src/Kuestenlogik.Bowire/Auth/CookieJar.cs`). It replays what a previous response set on the same origin, and that is all. [[more]](https://github.com/Kuestenlogik/Bowire/issues/681)
-
-#### <a id="issue-kuestenlogik-bowire-755"></a>✅ Done · [#755](https://github.com/Kuestenlogik/Bowire/issues/755) Link-Check der Site prüft seit dem Umzug nach scripts/site nichts mehr
-
-`scripts/site/check-internal-links.mjs` löst die Repo-Wurzel mit `resolve(__dirname, '..')` auf. Seit das Skript in `scripts/site/` liegt (02adf0b7), ist das `scripts/`. Die Folge: Es scannt eine einzige Datei und keinen Link, und meldet trotzdem „all internal links resolve“. [[more]](https://github.com/Kuestenlogik/Bowire/issues/755)
 
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
 
@@ -533,4 +491,4 @@ The plugin surface declares a duplex capability that no dispatcher routes. `the 
 
 ---
 
-*Generated 2026-09-30 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
+*Generated 2026-10-01 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
