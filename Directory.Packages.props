@@ -38,7 +38,7 @@
          known-good version. -->
     <PackageVersion Include="Kuestenlogik.Bowire.Protocol.TacticalApi" Version="1.0.4" />
     <PackageVersion Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.12" />
-    <PackageVersion Include="Microsoft.Identity.Web" Version="4.15.0" />
+    <PackageVersion Include="Microsoft.Identity.Web" Version="4.16.0" />
     <!-- Held at 3.8.0. The original reason (CS0200 in the code the
          Microsoft.AspNetCore.OpenApi XML-comment source generator emits)
          is GONE as of AspNetCore.OpenApi 10.0.11: Sample.Rest and
