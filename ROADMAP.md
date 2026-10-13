@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
 
-**0/4 done** · 4 backlog
+**0/5 done** · 5 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -20,6 +20,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [647](https://github.com/Kuestenlogik/Bowire/issues/647) | Bowire | [Lizenz entscheiden und je Projekt führen](#issue-kuestenlogik-bowire-647) | ⬜ Backlog | `area:multi` |
 | [668](https://github.com/Kuestenlogik/Bowire/issues/668) | Bowire | [Sharpen the one-line pitch, and carry the same sentence everywhere](#issue-kuestenlogik-bowire-668) | ⬜ Backlog | `area:site` |
 | [670](https://github.com/Kuestenlogik/Bowire/issues/670) | Bowire | [Get listed where developers and models actually look](#issue-kuestenlogik-bowire-670) | ⬜ Backlog | `area:site` |
+| [777](https://github.com/Kuestenlogik/Bowire/issues/777) | Bowire | [English only: translate German comments, docs and issues, and guard against new German](#issue-kuestenlogik-bowire-777) | ⬜ Backlog |  |
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
@@ -95,6 +96,14 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [709](https://github.com/Kuestenlogik/Bowire/issues/709) | Bowire | [UnaryReplayer: eight protocol paths, each with its own copy of the shared rules](#issue-kuestenlogik-bowire-709) | ⬜ Backlog |  |
 | [215](https://github.com/Kuestenlogik/Bowire/issues/215) | Bowire | [Test infra: IProcessLauncher seam in PluginManager to cover dotnet-shell-out paths](#issue-kuestenlogik-bowire-215) | ✅ Done | `area:plugin-sdk` |
 
+### Protocol.Dis v1.2 — Interaktive DIS-Sandbox *(due 2026-11-29)*
+
+**0/1 done** · 1 backlog
+
+| # | Project | Title | Status | Tags |
+|---|---|---|---|---|
+| [67](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/67) | Protocol.Dis | [DIS-Sandbox: Objekte auf einer Karte platzieren und bewegen, Zustand als Key-Value-Paare](#issue-kuestenlogik-bowire-protocol-dis-67) | ⬜ Backlog |  |
+
 ### Sdk.Go v0.1 — Polyglot SDK parity: settings, channels, manifests
 
 **0/2 done** · 2 backlog
@@ -166,6 +175,10 @@ In every directory, every search result and every model-generated answer, Bowire
 > `area:site`
 
 Six credible competitors turned up during the competitive survey **via openalternative.co**. Bowire was not there. That is the whole diagnosis: when a developer — or a language model — asks for "open source Postman alternative", the answer is assembled from these directories, not from bowire.io. [[more]](https://github.com/Kuestenlogik/Bowire/issues/670)
+
+#### <a id="issue-kuestenlogik-bowire-777"></a>⬜ Backlog · [#777](https://github.com/Kuestenlogik/Bowire/issues/777) English only: translate German comments, docs and issues, and guard against new German
+
+Everything in this repository is English: code, comments, identifiers, configuration comments, API descriptions, CLI and UI strings, tests, docs, CHANGELOG and release notes, the roadmap and the issues. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/777)
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
@@ -440,6 +453,12 @@ Sidecars speak JSON-RPC 2.0 over two transports today: `stdio` (NDJSON) and `htt
 > `area:plugin-sdk`
 
 > **Status:** obsolete, not done. The premise no longer holds — the body below records why; the original proposal is in the issue history. [[more]](https://github.com/Kuestenlogik/Bowire/issues/215)
+
+### Protocol.Dis v1.2 — Interaktive DIS-Sandbox *(due 2026-11-29)*
+
+#### <a id="issue-kuestenlogik-bowire-protocol-dis-67"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Dis#67](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/67) DIS-Sandbox: Objekte auf einer Karte platzieren und bewegen, Zustand als Key-Value-Paare
+
+Ein Testprogramm, mit dem man DIS in Bowire **von Hand antreibt**. Das vorhandene Sample (`samples/Kuestenlogik.Bowire.Protocol.Dis.Sample`) spielt nur eine feste Aufnahme mit drei `EntityState`-PDUs in Schleife ab. … [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/67)
 
 ### Sdk.Go v0.1 — Polyglot SDK parity: settings, channels, manifests
 
