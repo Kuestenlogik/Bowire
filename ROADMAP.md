@@ -18,7 +18,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 |---|---|---|---|---|
 | [777](https://github.com/Kuestenlogik/Bowire/issues/777) | Bowire | [English only: translate German comments, docs and issues, and guard against new German](#issue-kuestenlogik-bowire-777) | 🟡 In progress | `area:multi` |
 | [639](https://github.com/Kuestenlogik/Bowire/issues/639) | Bowire | [SCIM: live Okta and Entra ID provisioning round-trips](#issue-kuestenlogik-bowire-639) | ⬜ Backlog | `area:workbench` |
-| [647](https://github.com/Kuestenlogik/Bowire/issues/647) | Bowire | [Lizenz entscheiden und je Projekt führen](#issue-kuestenlogik-bowire-647) | ⬜ Backlog | `area:multi` |
+| [647](https://github.com/Kuestenlogik/Bowire/issues/647) | Bowire | [Decide the licence and carry it per project](#issue-kuestenlogik-bowire-647) | ⬜ Backlog | `area:multi` |
 | [668](https://github.com/Kuestenlogik/Bowire/issues/668) | Bowire | [Sharpen the one-line pitch, and carry the same sentence everywhere](#issue-kuestenlogik-bowire-668) | ⬜ Backlog | `area:site` |
 | [670](https://github.com/Kuestenlogik/Bowire/issues/670) | Bowire | [Get listed where developers and models actually look](#issue-kuestenlogik-bowire-670) | ⬜ Backlog | `area:site` |
 
@@ -38,8 +38,8 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [687](https://github.com/Kuestenlogik/Bowire/issues/687) | Bowire | [Tray icon and no console window: give the running workbench a handle of its own](#issue-kuestenlogik-bowire-687) | ⬜ Backlog | `area:cli` |
 | [688](https://github.com/Kuestenlogik/Bowire/issues/688) | Bowire | [Plurals: the translation layer cannot express a sentence whose shape depends on a number](#issue-kuestenlogik-bowire-688) | ⬜ Backlog | `area:workbench` |
 | [690](https://github.com/Kuestenlogik/Bowire/issues/690) | Bowire | [Translate the CLI help surface, or decide not to](#issue-kuestenlogik-bowire-690) | ⬜ Backlog | `area:cli` |
-| [753](https://github.com/Kuestenlogik/Bowire/issues/753) | Bowire | [Pane in ein eigenes Browserfenster abloesen (Pop-out)](#issue-kuestenlogik-bowire-753) | ⬜ Backlog |  |
-| [754](https://github.com/Kuestenlogik/Bowire/issues/754) | Bowire | [Scaffolding: weitere Stub-Sprachen und Protokolle (Folge von #177)](#issue-kuestenlogik-bowire-754) | ⬜ Backlog |  |
+| [753](https://github.com/Kuestenlogik/Bowire/issues/753) | Bowire | [Detach a pane into a browser window of its own (pop-out)](#issue-kuestenlogik-bowire-753) | ⬜ Backlog |  |
+| [754](https://github.com/Kuestenlogik/Bowire/issues/754) | Bowire | [Scaffolding: more stub languages and protocols (follow-up to #177)](#issue-kuestenlogik-bowire-754) | ⬜ Backlog |  |
 
 ### v2.12 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
 
@@ -164,11 +164,11 @@ Everything in this repository is English: code, comments, identifiers, configura
 
 Split from #96 so the SCIM surface can ship on its own merits. [[more]](https://github.com/Kuestenlogik/Bowire/issues/639)
 
-#### <a id="issue-kuestenlogik-bowire-647"></a>⬜ Backlog · [#647](https://github.com/Kuestenlogik/Bowire/issues/647) Lizenz entscheiden und je Projekt führen
+#### <a id="issue-kuestenlogik-bowire-647"></a>⬜ Backlog · [#647](https://github.com/Kuestenlogik/Bowire/issues/647) Decide the licence and carry it per project
 
 > `area:multi`
 
-Die Lizenzfrage für Bowire steht laut Lizenz- und Stufenkonzept aus („TBD"), und sie ist hier keine Formalie: Bowire ist im Bestand ein **Sicherheitswerkzeug** — Schwachstellendatenbank, Scanner, Protokollmodule, SDKs in Go, Node, Python und Rust, CI-Action. [[more]](https://github.com/Kuestenlogik/Bowire/issues/647)
+According to the licence and tier concept, the licence question for Bowire is still open ("TBD"), and here it is no formality: in substance Bowire is a **security tool** — vulnerability database, scanner, protocol modules, SDKs in Go, Node, Python and Rust, CI action. [[more]](https://github.com/Kuestenlogik/Bowire/issues/647)
 
 #### <a id="issue-kuestenlogik-bowire-668"></a>⬜ Backlog · [#668](https://github.com/Kuestenlogik/Bowire/issues/668) Sharpen the one-line pitch, and carry the same sentence everywhere
 
@@ -244,13 +244,13 @@ The translation layer from #117 substitutes `{name}` placeholders and nothing mo
 
 `bowire --help` is still English in every locale. The machinery it needs already exists — `BowireLocale` resolves `BOWIRE_LOCALE` / `LC_ALL` / `LANG` / the OS culture and reads the same catalogues the workbench does — but nothing in the help surface calls it yet. [[more]](https://github.com/Kuestenlogik/Bowire/issues/690)
 
-#### <a id="issue-kuestenlogik-bowire-753"></a>⬜ Backlog · [#753](https://github.com/Kuestenlogik/Bowire/issues/753) Pane in ein eigenes Browserfenster abloesen (Pop-out)
+#### <a id="issue-kuestenlogik-bowire-753"></a>⬜ Backlog · [#753](https://github.com/Kuestenlogik/Bowire/issues/753) Detach a pane into a browser window of its own (pop-out)
 
-Ausgegliedert aus #250 Phase 2, wo es schon als *„long deferred — needs proper inter-window state sync"* stand. [[more]](https://github.com/Kuestenlogik/Bowire/issues/753)
+Split out of #250 phase 2, where it already stood as *"long deferred — needs proper inter-window state sync"*. [[more]](https://github.com/Kuestenlogik/Bowire/issues/753)
 
-#### <a id="issue-kuestenlogik-bowire-754"></a>⬜ Backlog · [#754](https://github.com/Kuestenlogik/Bowire/issues/754) Scaffolding: weitere Stub-Sprachen und Protokolle (Folge von #177)
+#### <a id="issue-kuestenlogik-bowire-754"></a>⬜ Backlog · [#754](https://github.com/Kuestenlogik/Bowire/issues/754) Scaffolding: more stub languages and protocols (follow-up to #177)
 
-#177 hat den ersten Schnitt geliefert: REST (OpenAPI 3) und gRPC (proto3), Server-Stubs in C#. Die Templates liegen in `src/Kuestenlogik.Bowire.Scaffold/Templates/<protokoll>/`, die Spec ist sprachneutral – eine neue Sprache ist ein Satz Templates plus ein Eintrag im Generator. [[more]](https://github.com/Kuestenlogik/Bowire/issues/754)
+#177 delivered the first cut: REST (OpenAPI 3) and gRPC (proto3), server stubs in C#. The templates live in `src/Kuestenlogik.Bowire.Scaffold/Templates/<protocol>/`, the spec is language-neutral – a new language is a set of templates plus an entry in the generator. [[more]](https://github.com/Kuestenlogik/Bowire/issues/754)
 
 ### v2.12 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
 
@@ -448,7 +448,7 @@ Sidecars speak JSON-RPC 2.0 over two transports today: `stdio` (NDJSON) and `htt
 
 #### <a id="issue-kuestenlogik-bowire-709"></a>⬜ Backlog · [#709](https://github.com/Kuestenlogik/Bowire/issues/709) UnaryReplayer: eight protocol paths, each with its own copy of the shared rules
 
-`UnaryReplayer.cs` ist ~2700 Zeilen mit acht Protokollpfaden — REST, gRPC unary/stream/client-stream/bidi, SSE, WebSocket, GraphQL-Subscription, SignalR, Socket.IO. Jeder führt seine eigene Frame-Schleife, und die Regeln, die alle teilen, sind in jede hineinkopiert. [[more]](https://github.com/Kuestenlogik/Bowire/issues/709)
+`UnaryReplayer.cs` is ~2700 lines with eight protocol paths — REST, gRPC unary/stream/client-stream/bidi, SSE, WebSocket, GraphQL subscription, SignalR, Socket.IO. Each runs its own frame loop, and the rules they all share are copied into each one. [[more]](https://github.com/Kuestenlogik/Bowire/issues/709)
 
 #### <a id="issue-kuestenlogik-bowire-215"></a>✅ Done · [#215](https://github.com/Kuestenlogik/Bowire/issues/215) Test infra: IProcessLauncher seam in PluginManager to cover dotnet-shell-out paths
 
