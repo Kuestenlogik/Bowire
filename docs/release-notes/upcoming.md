@@ -36,6 +36,8 @@ The library is fetched only once a frame actually carries a geometry, and it is 
 
 Comments, configuration notes and a few documentation passages had kept the operator's feedback in the German it was given in. They are English now, as are the open issues and milestones the roadmap is generated from. The German UI catalogue stays, because it is a translation the product ships, and so do the German words the scaffold parser recognises. A CI step (`npm run lang:check`) names the file and line of any new German outside an allowlist that gives its reasons.
 
+The generated `ROADMAP.md` is outside that check (#778): it is made from the issue titles, and a German issue should not fail a build that changed no code. The roadmap sync reports issues and milestones that read as German instead, as a warning, and asks once on each such issue for English; `npm run lang:issues` shows the same list locally.
+
 ## Breaking changes
 
 <!-- Each change has been on a back-compat ramp through the prior minor

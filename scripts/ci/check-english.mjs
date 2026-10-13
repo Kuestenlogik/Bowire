@@ -3,9 +3,13 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 // #777 - everything in this repository is English: code, comments,
-// configuration, docs, tests, the roadmap. Another language belongs only in
-// a translation resource the product ships (the UI catalogues under
-// wwwroot/locales/) or in data the code has to read.
+// configuration, docs, tests. Another language belongs only in a translation
+// resource the product ships (the UI catalogues under wwwroot/locales/) or in
+// data the code has to read.
+//
+// The generated ROADMAP.md is allowlisted: it is made from the issue and
+// milestone titles, and a German issue must not turn main red. Those are read
+// by scripts/ci/report-issue-language.mjs, which reports and never fails (#778).
 //
 // This guard reads every tracked text file and reports each line that reads
 // as German, as file:line, and exits non-zero while there is any. It is a

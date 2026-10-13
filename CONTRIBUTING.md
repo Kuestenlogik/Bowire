@@ -43,6 +43,10 @@ ships (the UI catalogues under `src/Kuestenlogik.Bowire/wwwroot/locales/`, see
 read. `npm run lang:check` reports every line that reads as German as `file:line`;
 CI runs the same check. Where German is right, say why: `lang-exempt: <reason>` on the
 line, or an entry with its reason in `scripts/ci/english-allowlist.json` for a whole file.
+The generated `ROADMAP.md` is not checked there; the issues and milestones it is made from
+are. `npm run lang:issues` lists every open issue and milestone that reads as German (it
+needs `gh`), and the roadmap sync runs the same report: it warns, and asks once on each
+such issue for an English title and body. It never fails a build.
 
 ### Code Style
 - Follow existing patterns in the codebase

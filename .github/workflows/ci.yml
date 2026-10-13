@@ -112,8 +112,10 @@ jobs:
         run: node scripts/site/check-internal-links.mjs
 
       # #777 - the repository is English: code, comments, configuration, docs,
-      # tests, the roadmap. Fails with file:line on a line that reads as German
-      # outside scripts/ci/english-allowlist.json or a `lang-exempt:` marker.
+      # tests. Fails with file:line on a line that reads as German outside
+      # scripts/ci/english-allowlist.json or a `lang-exempt:` marker. The
+      # generated ROADMAP.md is allowlisted; the issues and milestones it is
+      # made from are reported by the roadmap sync instead, without failing (#778).
       - name: English-only guard
         run: node scripts/ci/check-english.mjs
 

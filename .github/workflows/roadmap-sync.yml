@@ -26,6 +26,10 @@ name: Roadmap sync
 #   - Organization projects: Read and write
 #   - Issues: Read and write
 #   - Pull requests: Read
+#
+# The issue language report (#778) runs after the sync, with the
+# workflow's own GITHUB_TOKEN so its comments come from the Actions bot.
+# It never fails the job.
 
 on:
   issues:
@@ -43,7 +47,8 @@ on:
 
 permissions:
   contents: write
-  issues: read
+  # write: the issue language report comments on an issue that reads as German.
+  issues: write
 
 concurrency:
   group: roadmap-sync
@@ -93,10 +98,26 @@ jobs:
           echo "::error::Could not push ROADMAP.md after 5 attempts."
           exit 1
 
+      # #778 - ROADMAP.md is generated from the issue and milestone titles,
+      # so the English-only guard leaves it alone and this report reads the
+      # open issues and milestones instead: a warning annotation for each
+      # that reads as German, and one English comment on a newly flagged
+      # issue asking for an English title and body (never twice). A report,
+      # not a gate - it exits 0, and the step may not fail the job either.
+      - name: Issue language report
+        if: always()
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/ci/report-issue-language.mjs --comment
+
   check:
     name: PR check — ROADMAP.md matches Project
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: read
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
