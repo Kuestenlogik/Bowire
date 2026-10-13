@@ -12,16 +12,16 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
 
-**1/6 done** · 1 in progress · 4 backlog
+**2/6 done** · 4 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
-| [778](https://github.com/Kuestenlogik/Bowire/issues/778) | Bowire | [Issue language report instead of guarding the generated ROADMAP.md](#issue-kuestenlogik-bowire-778) | 🟡 In progress | `area:multi` |
 | [639](https://github.com/Kuestenlogik/Bowire/issues/639) | Bowire | [SCIM: live Okta and Entra ID provisioning round-trips](#issue-kuestenlogik-bowire-639) | ⬜ Backlog | `area:workbench` |
 | [647](https://github.com/Kuestenlogik/Bowire/issues/647) | Bowire | [Decide the licence and carry it per project](#issue-kuestenlogik-bowire-647) | ⬜ Backlog | `area:multi` |
 | [668](https://github.com/Kuestenlogik/Bowire/issues/668) | Bowire | [Sharpen the one-line pitch, and carry the same sentence everywhere](#issue-kuestenlogik-bowire-668) | ⬜ Backlog | `area:site` |
 | [670](https://github.com/Kuestenlogik/Bowire/issues/670) | Bowire | [Get listed where developers and models actually look](#issue-kuestenlogik-bowire-670) | ⬜ Backlog | `area:site` |
 | [777](https://github.com/Kuestenlogik/Bowire/issues/777) | Bowire | [English only: translate German comments, docs and issues, and guard against new German](#issue-kuestenlogik-bowire-777) | ✅ Done | `area:multi` |
+| [778](https://github.com/Kuestenlogik/Bowire/issues/778) | Bowire | [Issue language report instead of guarding the generated ROADMAP.md](#issue-kuestenlogik-bowire-778) | ✅ Done | `area:multi` |
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
@@ -154,12 +154,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
 
-#### <a id="issue-kuestenlogik-bowire-778"></a>🟡 In progress · [#778](https://github.com/Kuestenlogik/Bowire/issues/778) Issue language report instead of guarding the generated ROADMAP.md
-
-> `area:multi`
-
-Follow-up to #777. [[more]](https://github.com/Kuestenlogik/Bowire/issues/778)
-
 #### <a id="issue-kuestenlogik-bowire-639"></a>⬜ Backlog · [#639](https://github.com/Kuestenlogik/Bowire/issues/639) SCIM: live Okta and Entra ID provisioning round-trips
 
 > `area:workbench`
@@ -189,6 +183,12 @@ Six credible competitors turned up during the competitive survey **via openalter
 > `area:multi`
 
 Everything in this repository is English: code, comments, identifiers, configuration comments, API descriptions, CLI and UI strings, tests, docs, CHANGELOG and release notes, the roadmap and the issues. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/777)
+
+#### <a id="issue-kuestenlogik-bowire-778"></a>✅ Done · [#778](https://github.com/Kuestenlogik/Bowire/issues/778) Issue language report instead of guarding the generated ROADMAP.md
+
+> `area:multi`
+
+Follow-up to #777. [[more]](https://github.com/Kuestenlogik/Bowire/issues/778)
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
