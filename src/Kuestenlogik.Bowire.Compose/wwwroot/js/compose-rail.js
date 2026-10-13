@@ -189,9 +189,9 @@
     // Duplicate a Compose tab — deep-clones the request state of the
     // source tab into a new tab inserted immediately after it, then
     // switches to the clone. Used by the tab context menu's
-    // 'Duplicate tab' action. Operator feedback: 'auf dem tab context
-    // (rechtsklick) im compose rail … den tab mit seinem aktuellen
-    // inhalt/zustand kopieren.'
+    // 'Duplicate tab' action. Operator feedback: 'on the tab context
+    // (right-click) in the compose rail … copy the tab with its
+    // current content/state.'
     function _duplicateDesignTab(srcId) {
         if (!srcId) return null;
         // Snapshot the currently-active tab first so any unsaved edits
@@ -1444,12 +1444,12 @@
                         var hasOthers = composeTabs.length > 1;
                         var hasRight = idx >= 0 && idx < composeTabs.length - 1;
                         showContextMenu(e.clientX, e.clientY, [
-                            // Operator feedback: 'auf dem tab context
-                            // (rechtsklick) im compose rail geht aktuell
-                            // nur verschiedene varianten von schließen,
-                            // aber dort könnte man auch den tab kopieren
-                            // bzw. clonen anbieten. also den tab mit
-                            // seinem aktuellen inhalt/zustand kopieren.'
+                            // Operator feedback: 'on the tab context
+                            // (right-click) in the compose rail there
+                            // are currently only different variants of
+                            // close, but you could also offer copying or
+                            // cloning the tab there. i.e. copy the tab
+                            // with its current content/state.'
                             { label: t('compose.duplicateTab'), icon: 'copy', onClick: function () { _duplicateDesignTab(id); } },
                             { separator: true },
                             { label: t('common.close'), icon: 'close', onClick: function () { closeDesignTab(id); } },

@@ -65,8 +65,8 @@ Favoriting is a per-method toggle on the Discover tree row (the hover-reveal sta
 
 Favorites persist per-workspace in localStorage (browser mode) or in the workspace's `.bww` (git-backed mode).
 
-## Drawer-Modus auf schmalen Viewports
+## Drawer mode on narrow viewports
 
-Bei < 1400 px wird die rechte Drawer-Familie (Assistant, Help, Tests, Activity) automatisch zu einem `position: fixed`-Overlay. Die linke Sidebar bleibt im Flex-Flow.
+Below 1400 px the right-hand drawer family (Assistant, Help, Tests, Activity) automatically becomes a `position: fixed` overlay. The left sidebar stays in the flex flow.
 
 See also: [Action bar](action-bar.md), [Request pane](request-pane.md), [Response pane](response-pane.md), [Favorites & History](../features/favorites-history.md), [Keyboard Shortcuts](../features/keyboard-shortcuts.md)

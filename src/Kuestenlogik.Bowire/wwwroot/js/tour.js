@@ -372,8 +372,8 @@
             // z-index 10003 — ABOVE the tour overlay (10001) — and
             // captures its own clicks + focus + keyboard. The gate
             // here should yield entirely so the dialog's input
-            // fields work. Operator feedback: 'ich kann im popup für
-            // einen neuen workspace nichts eingeben.' The tooltip
+            // fields work. Operator feedback: 'I can't type anything
+            // into the popup for a new workspace.' The tooltip
             // (10004) still floats above the dialog for skip / next
             // / X-close affordances.
             if (document.querySelector('.bowire-confirm-overlay, .bowire-prompt-overlay')) {
@@ -693,8 +693,8 @@
         // so it's findable without thinking. The Skip button at the
         // footer still works the same; this just gives the operator
         // a second affordance in the place dialog-closes usually live.
-        // Operator feedback: 'man sollte auch immer eine möglichkeit
-        // haben die tour abzubrechen, z.B. (x)-button oben im tour
+        // Operator feedback: 'there should always be a way to cancel
+        // the tour, e.g. an (x) button at the top of the tour
         // dialog?'.
         var closeBtn = document.createElement('button');
         closeBtn.type = 'button';
@@ -804,10 +804,10 @@
         // Helper: build an icon-only button with a tooltip. The text
         // labels for Skip/Back/Skip-step on a 4-button row used to
         // wrap onto two lines on narrower spotlights — operator
-        // feedback: 'in der tour sind die buttons unten manchmal sehr
-        // gedrängt und umgebrochen. es würde auch helfen, wenn man
-        // statt dem text für die buttons diesen lieber als symbol mit
-        // tooltip anzeigen würde.' Primary CTA / Next / Finish stay
+        // feedback: 'in the tour the buttons at the bottom are
+        // sometimes very cramped and wrapped. it would also help if
+        // the buttons showed a symbol with a tooltip instead of the
+        // text.' Primary CTA / Next / Finish stay
         // text-labelled because their wording is meaningful per-step.
         function _iconBtn(cls, iconKey, tooltip, onClick, iconStyle) {
             var b = document.createElement('button');
@@ -865,8 +865,8 @@
             // can drive the workflow from the tour itself — the
             // previous render used a passive italic span that LOOKED
             // like a link but had no handler. Operator feedback:
-            // '"Create workspace…" button link aus der tour heraus
-            // geht auch nicht. warum?'.
+            // '"Create workspace…" button link from within the
+            // tour doesn't work either. why?'.
             if (step.cta && typeof step.cta.onClick === 'function') {
                 var ctaBtnE = document.createElement('button');
                 ctaBtnE.type = 'button';
@@ -1144,11 +1144,12 @@
             },
             {
                 // In-dialog walkthrough A: name the workspace.
-                // Operator feedback: 'in der tour um einen workspace
-                // anzulegen, da fehlt im bzw. nach schritt 2/6, dass er
-                // den popup dialog auch highlighted nach dem klick auf
-                // new workspace und dann durch den popup dialog führt
-                // (eingabe name des workspaces, auswahl des templates)'.
+                // Operator feedback: 'in the tour for creating a
+                // workspace, what's missing in or after step 2/6 is that
+                // it also highlights the popup dialog after the click on
+                // new workspace and then guides through the popup dialog
+                // (entering the workspace's name, choosing the
+                // template)'.
                 id: 'ws-dialog-name',
                 title: t('tour.ws-dialog-name.title'),
                 body: t('tour.ws-dialog-name.body'),

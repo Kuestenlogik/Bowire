@@ -1620,13 +1620,13 @@
             // the rail button when the rail needs a workspace and
             // none is active. Operator feedback (revised after
             // pattern B's toast / inline empty state shipped):
-            // 'irgendwie fühlt sich das merkwürdig an, dass der rail
-            // wählbar aussieht, aber wenn man den anklickt, … typisch
-            // würde man einen nicht klickbaren (deaktivierten) rail
-            // button zeigen (ggf. mit einem hint bei hover warum).
-            // dann bleibt home aktiv und nur zu rails mit im zustand
-            // der app ausführbaren funktionen im rail kann gewechselt
-            // werden.' The inline empty state stays for the case
+            // 'somehow it feels odd that the rail looks selectable,
+            // but when you click it, … typically you would show a
+            // non-clickable (disabled) rail button (possibly with a
+            // hint on hover why). then home stays active, and you can
+            // only switch to rails whose functions can be executed in
+            // the app's current state.' The inline empty state stays
+            // for the case
             // where railMode is restored from localStorage but the
             // last workspace was meanwhile deleted.
             var isDisabled = !!m.requiresWorkspace && !activeWorkspaceId;
@@ -1966,9 +1966,9 @@
         // border box only. Ignoring it under-counted the rail by 12px per
         // group divider, so the layout believed everything fitted while
         // Settings was already clipped by the bottom bar. Operator
-        // feedback: 'der umbruch bei den rails kommt etwas zu spät bzw.
-        // der einstellungs button ist angeschnitten von der unteren
-        // leiste.' _railOuterHeight() adds the margins back.
+        // feedback: 'the wrapping of the rails comes a bit too late,
+        // i.e. the settings button is cut off by the bottom bar.'
+        // _railOuterHeight() adds the margins back.
         var dividerHeight = dividers.length > 0 ? _railOuterHeight(dividers[0], 1) : 1;
 
         // Build an in-order list of [el, height, modeId|null (null=divider)].
@@ -3133,9 +3133,9 @@
                                         // at line ~1898 carries the same
                                         // fallback (splice + persist) so the
                                         // tree's right-click flow now matches.
-                                        // Operator: 'remove url per rechtsklick
-                                        // context-menü in der sidebar
-                                        // funktioniert nicht.'
+                                        // Operator: 'remove url via the
+                                        // right-click context menu in the
+                                        // sidebar doesn't work.'
                                         if (typeof removeServerUrl === 'function') removeServerUrl(u);
                                         else {
                                             var ri = serverUrls.indexOf(u);

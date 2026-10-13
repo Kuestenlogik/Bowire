@@ -243,11 +243,11 @@ internal static class BowireHtmlGenerator
                    <!-- Reader-Mode hint. Bowire is an interactive
                         workbench, not a document; Edge's Reader Mode
                         otherwise picks up stale JSON snippets and
-                        renders them as "the article". Operator: 'die
-                        bowire ui hat keinen lese-modus, ist viel zu
-                        interaktiv. aktuell im edge führt der lese-
-                        modus dazu, dass man nur alte oder teil-inhalte
-                        liest.' og:type=website (not 'article') +
+                        renders them as "the article". Operator: 'the
+                        bowire ui has no reading mode, it is far too
+                        interactive. currently in edge the reading mode
+                        means that you only read old or partial
+                        content.' og:type=website (not 'article') +
                         role=application on the workbench root suppress
                         the Reader-Mode heuristic on Chromium-based
                         browsers. We deliberately DO NOT set
@@ -255,8 +255,8 @@ internal static class BowireHtmlGenerator
                         remotely by MCP / AI agents; noai would tell
                         AI crawlers to skip the page entirely. -->
                    <meta property="og:type" content="website">
-                   <!-- Positive AI-discovery hints. Operator: 'stattdessen
-                        ai auf die mcp url beim crawlen aufmerksam machen'.
+                   <!-- Positive AI-discovery hints. Operator: 'instead, make
+                        the ai aware of the mcp url while crawling'.
                         We deliberately want AI agents to FIND the workbench's
                         MCP adapter so they can drive it — the opposite of
                         a noai stance. Both a <link rel="mcp"> (semantic

@@ -30,6 +30,12 @@ A pin is a point, and a point is the one shape a symbol renderer draws from the 
 
 The library is fetched only once a frame actually carries a geometry, and it is vendored trimmed and gzipped: `scripts/vendor/mil-sym-ts.mjs` cuts the upstream build's single-point icon tables — six megabytes of unit and equipment icons milsymbol already draws — down to the control-measure icons a few multipoint graphics carry, proves in Chromium that every control measure still renders identically, and writes the 0.6 MB that goes over the wire. The extension asset endpoint (`/api/ui/extensions/{id}/{name}`) serves an asset declared with a `.gz` suffix under its plain leaf — passed through with `Content-Encoding: gzip` for a client that accepts it, inflated for one that does not, `Vary: Accept-Encoding` on both — so the `Kuestenlogik.Bowire.Map` package carries what the wire carries. The TacticalAPI sample gained an overlay of seven control measures, one per `SymbolLocation` case, as the data to see this against.
 
+## Under the hood
+
+### The repository reads in one language (#777)
+
+Comments, configuration notes and a few documentation passages had kept the operator's feedback in the German it was given in. They are English now, as are the open issues and milestones the roadmap is generated from. The German UI catalogue stays, because it is a translation the product ships, and so do the German words the scaffold parser recognises. A CI step (`npm run lang:check`) names the file and line of any new German outside an allowlist that gives its reasons.
+
 ## Breaking changes
 
 <!-- Each change has been on a back-compat ramp through the prior minor

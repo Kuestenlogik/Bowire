@@ -99,9 +99,9 @@ jobs:
       # scripts out of .github/sibling-templates/ and run them against
       # fixtures of every sibling's real reference shapes.
       - name: Release-cascade workflow tests
-        # Deckt auch die VS-Code-Extension ab (#101): deren testbare
-        # Logik liegt in extensions/bowire-vscode/lib und wird von
-        # ci/vscode-extension.test.mjs geprueft.
+        # Also covers the VS Code extension (#101): its testable
+        # logic lives in extensions/bowire-vscode/lib and is checked
+        # by ci/vscode-extension.test.mjs.
         run: node --test tests/Kuestenlogik.Bowire.Tests/ci/*.test.mjs
 
       # #755 - every internal link of the site and the docs resolves. Offline
@@ -110,6 +110,12 @@ jobs:
       # It used to live outside CI and had been checking nothing for months.
       - name: Site link check
         run: node scripts/site/check-internal-links.mjs
+
+      # #777 - the repository is English: code, comments, configuration, docs,
+      # tests, the roadmap. Fails with file:line on a line that reads as German
+      # outside scripts/ci/english-allowlist.json or a `lang-exempt:` marker.
+      - name: English-only guard
+        run: node scripts/ci/check-english.mjs
 
       # No version step needed — MinVer derives the version from git for
       # every build (untagged CI => an X.Y.Z-alpha.N prerelease). CI packages

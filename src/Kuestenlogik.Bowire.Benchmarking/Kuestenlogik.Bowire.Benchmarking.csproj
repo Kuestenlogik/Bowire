@@ -8,9 +8,9 @@
          v2.1 (#325): renamed from Kuestenlogik.Bowire.Rail.Benchmarks to
          Kuestenlogik.Bowire.Benchmarking. The gerund matches the
          activity-rail naming pattern (Compose / Mock / Discover / Help
-         / Telemetry) — operator quote: 'ist Benchmarks als name gut?
-         Kuestenlogik.Bowire.Benchmarks klingt so als ob dort Bowire
-         gemessen wird. es sollte eher das "tun" ausdrücken'. -->
+         / Telemetry) — operator quote: 'is Benchmarks a good name?
+         Kuestenlogik.Bowire.Benchmarks sounds as if Bowire is being
+         measured there. it should rather express the "doing"'. -->
     <Description>Bowire Benchmarking rail — performance + load measurement surface. Adds the Benchmarks rail descriptor + per-rail JS fragment to the workbench.</Description>
     <PackageId>Kuestenlogik.Bowire.Benchmarking</PackageId>
     <PackageTags>bowire;rail;benchmarking;performance;workbench;plugin</PackageTags>

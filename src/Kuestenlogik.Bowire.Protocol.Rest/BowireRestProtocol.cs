@@ -242,12 +242,12 @@ public sealed class BowireRestProtocol
             // apiBaseUrl resolution, but the SERVICES' OriginUrl must
             // carry the operator-supplied docUrl so the workbench groups
             // them under the URL the operator actually typed — not the
-            // well-known path the probe found. Operator feedback: 'wenn
-            // ich http://localhost:5181 habe ich nach discover 2 einträge:
-            // http://localhost:5181 → 0 services und
-            // http://localhost:5181/openapi/v1.json → 5 services. das ist
-            // merkwürdig, ich hätte die unter http://localhost:5181
-            // erwartet und nur einen eintrag.'
+            // well-known path the probe found. Operator feedback: 'when I
+            // have http://localhost:5181 I get 2 entries after discover:
+            // http://localhost:5181 → 0 services and
+            // http://localhost:5181/openapi/v1.json → 5 services. that is
+            // odd, I would have expected them under http://localhost:5181
+            // and only one entry.'
             if (fromCache is not null)
             {
                 var result = CommitDiscovery(cachedUrl, fromCache);
@@ -347,7 +347,7 @@ public sealed class BowireRestProtocol
     /// second lookup also missed and the call surfaced 'No OpenAPI
     /// document found at &lt;serverUrl&gt;' on every Execute. Operator
     /// feedback: 'ListLocations -&gt; Error … No OpenAPI document found
-    /// at http://localhost:5181 wenn ich execute aufrufe.'
+    /// at http://localhost:5181 when I call execute.'
     /// </summary>
     private void AliasSchemaCache(string realUrl, string aliasUrl)
     {

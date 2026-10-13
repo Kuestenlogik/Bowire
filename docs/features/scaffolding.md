@@ -28,7 +28,7 @@ Which model is asked:
 2. When the configured provider is a cloud one, a local Ollama or LM Studio that answers first, and the cloud provider only when the local one fails. `Bowire:Ai:Scaffold:PreferLocal=false` asks the configured provider only.
 3. When no model gives a usable spec — none configured, none reachable, or an answer that is not a spec — a deterministic parser reads the sentence. The dialog and the CLI say which one wrote the spec, and why the others did not.
 
-The parser understands the shape above: the protocol from `rest` / `grpc`, the entity from the word after `for`, the fields from the list after `with`, split on commas, `+` and `and`. A type word next to a field sets its type (`total: double`, `paid bool`, `year int`), and `required`, `(required)` or a trailing `*` makes it required. German works too: `für`, `mit`, `und`, `Pflicht`.
+The parser understands the shape above: the protocol from `rest` / `grpc`, the entity from the word after `for`, the fields from the list after `with`, split on commas, `+` and `and`. A type word next to a field sets its type (`total: double`, `paid bool`, `year int`), and `required`, `(required)` or a trailing `*` makes it required. German works too: `für`, `mit`, `und`, `Pflicht`. <!-- lang-exempt: the German words the parser recognises -->
 
 ## In the workbench
 

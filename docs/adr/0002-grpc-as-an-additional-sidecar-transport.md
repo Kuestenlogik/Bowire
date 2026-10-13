@@ -94,7 +94,7 @@ sequencing above matters more than the decision itself.
   gRPC.
 - **`docs/architecture/sidecar-plugins.md` stays unchanged until this
   ships.** Per the rule in [the ADR README](README.md), unimplemented design
-  does not go into the Ist-Stand documentation — this record is where it
+  does not go into the as-built documentation — this record is where it
   lives in the meantime.
 
 ## Related

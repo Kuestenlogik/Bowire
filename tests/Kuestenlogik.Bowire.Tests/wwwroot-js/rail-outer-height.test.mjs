@@ -5,9 +5,9 @@
 // box only, so the group dividers' vertical margin (6px top + 6px bottom
 // in bowire.css) was invisible to the sum: with several groups the rail
 // believed everything fitted while the bottom-anchored Settings button
-// was already clipped by the status bar. Operator feedback: 'der umbruch
-// bei den rails kommt etwas zu spät bzw. der einstellungs button ist
-// angeschnitten von der unteren leiste.'
+// was already clipped by the status bar. Operator feedback: 'the
+// wrapping of the rails comes a bit too late, i.e. the settings button
+// is cut off by the bottom bar.'
 //
 // _railOuterHeight() adds the vertical margins back. Same standalone
 // fragment wrap as rail-attention.test.mjs.

@@ -36,8 +36,8 @@ public sealed class SseEndpointDiscoveryUnitTests : IDisposable
     public async Task An_External_Source_Does_Not_Pick_Up_The_Workbench_Own_Routes()
     {
         // The operator adds a source and sees a service they never
-        // configured: "unter der source http://localhost:5181/api/locations
-        // sehe ich 1 service (SSE ENDPOINTS), … beim aufruf nur: Stream
+        // configured: "under the source http://localhost:5181/api/locations
+        // I see 1 service (SSE ENDPOINTS), … on invoking it only: Stream
         // error occurred." The workbench's own SSE routes were being
         // reported under every external URL, and invoking one went nowhere,
         // because the stream it named is not on that host.

@@ -354,9 +354,9 @@
                     // Topic id rides as a data-attribute + the click
                     // handler reads it back via the live element. Without
                     // this morphdom preserved nodes across re-renders
-                    // and the OLD closure fired — operator: 'help klappt
-                    // nur beim ersten mal eine topic-auswahl. zweites
-                    // mahl wird selektion ignoriert.' Preserved across
+                    // and the OLD closure fired — operator: 'help only
+                    // takes a topic selection the first time. the second
+                    // time the selection is ignored.' Preserved across
                     // the #324 rail refactor.
                     var row = el('button', {
                         className: 'bowire-help-topic-row'

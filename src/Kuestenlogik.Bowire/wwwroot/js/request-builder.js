@@ -768,9 +768,9 @@
 
         // URL input + variable overlay
         var urlWrap = el('div', { className: 'bowire-request-builder-url-wrap' });
-        // #117 - der Schluessel, nicht der Text: die Tabelle entsteht beim
-        // Laden, und setLocale laedt nicht neu. Ein hier schon uebersetzter
-        // Platzhalter friere die Sprache des Starts ein.
+        // #117 - the key, not the text: the table is built at load time,
+        // and setLocale does not reload. A placeholder already translated
+        // here would freeze the language of the start.
         var urlPlaceholder = t((layout && layout.urlPlaceholderKey)
             || 'rb.urlPlaceholder');
         var urlInput = el('input', {
@@ -1216,7 +1216,7 @@
         // next keystroke landed in the freshly-rendered add-row, NOT in
         // the row the user thought they were typing into. Result: 'Tab
         // to value' wrote the value into the NEXT row's value column.
-        // User feedback: 'so ist das überhaupt nicht nutzbar.'
+        // User feedback: 'like this it is not usable at all.'
         //
         // New model: the rows array carries one trailing empty row. The
         // user types into it; rows[idx][field] updates in-place via

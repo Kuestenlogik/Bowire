@@ -614,8 +614,8 @@
         // attempt to leave Home re-fired the guard, snapping railMode
         // back to 'home', so every rail icon was visually clickable
         // (hover highlight + transition) but the click had no
-        // effect. The user's complaint: 'die buttons werden als
-        // klickbar dargestellt'. Drop the guard; each rail owns its
+        // effect. The user's complaint: 'the buttons are shown as
+        // clickable'. Drop the guard; each rail owns its
         // own no-workspace empty state already.
 
         // #248 Phase 1 — Fall back to Home if the operator just
@@ -751,11 +751,11 @@
             // width (10 px). Reads as jumpy when the operator clicks
             // through the rail strip. Reserve the splitter's slot
             // here so main starts at the same x in both layouts.
-            // Operator feedback: 'wenn man die rails durchklickt,
-            // wirkt das unruhig, weil der abstand nach oben und
-            // links nicht gleich ist. dort wo kein sidepanel ist,
-            // sollte der platz für den splitter dazuberechnet
-            // werden.'
+            // Operator feedback: 'when you click through the
+            // rails, it looks restless because the spacing to the
+            // top and to the left is not the same. where there is
+            // no side panel, the space for the splitter should be
+            // added.'
             body.appendChild(el('div', {
                 className: 'bowire-sidebar-splitter-placeholder',
                 'aria-hidden': 'true'
@@ -765,8 +765,8 @@
             // The splitter doubles as the 'show sidebar' affordance when
             // collapsed — same DOM element, same hover behaviour, chevron
             // rotation + click intent flipped via a class. Operator
-            // feedback: 'könnte man nicht einfach den splitter selbst
-            // nutzen?'. No drag-to-resize when collapsed (nothing to
+            // feedback: 'couldn't you simply use the splitter
+            // itself?'. No drag-to-resize when collapsed (nothing to
             // resize from a 0-width sidebar); layout.js's mousedown path
             // short-circuits when the body carries .bowire-sidebar-is-
             // collapsed and treats any down → up as a click.
@@ -1363,8 +1363,8 @@
         splitter.addEventListener('mousedown', function (e) {
             // Snapshot the starting posture. When collapsed + the user
             // drags right, reveal the sidebar progressively (pan-open).
-            // Operator: 'jetzt könnte die bedienung beim splitter auch
-            // links angedockt per pan/drag öffnen.' Previous behaviour
+            // Operator: 'now the splitter, docked on the left, could
+            // also open by pan/drag.' Previous behaviour
             // early-returned on collapsed + let the click delegate do
             // the expand only on click; now any drag past DRAG_THRESHOLD
             // ALSO opens + follows the pointer for width. Pure click
@@ -1510,9 +1510,9 @@
         // once the Option-Y anchor+overlay refactor stabilised the
         // splitter node (before that, morphdom's swap-out of the
         // splitter mid-double-click killed the native event before
-        // it could fire, hiding the duplication). Operator: 'getestet:
-        // zum schließen, weil ich nicht mehr in den gedockten modus
-        // komme'. Only the pop-up-suppression dblclick handler at
+        // it could fire, hiding the duplication). Operator: 'tested:
+        // for closing, because I no longer get into the docked mode'.
+        // Only the pop-up-suppression dblclick handler at
         // ~1283 remains — that one just preventDefaults the browser's
         // default word-select behaviour.
     }
@@ -2080,8 +2080,8 @@
 
     // Unified searchable + filter-chipped list inside the global
     // trash overlay. Replaces the previous per-bucket sections after
-    // operator feedback: "die gruppen bei den trash items sollten
-    // eher über search und vordefinierte filter chips gelöst sein".
+    // operator feedback: "the groups for the trash items should
+    // rather be solved via search and predefined filter chips".
     // Header: search input (debounced 100ms) + filter-chip row, one
     // chip per kind with its count. Body: filtered, sorted (newest
     // deletedAt first) list of rows. Each row carries a small
@@ -3234,9 +3234,9 @@
         // Pills are bucketed into .bowire-statusbar-group containers
         // so the divider-between-groups CSS rule paints subtle
         // separators between logical clusters, matching the topbar's
-        // grouping pattern. Operator feedback: 'die status-leiste
-        // sollte auch optische/räumliche trenner haben so wie in
-        // der top bar.'
+        // grouping pattern. Operator feedback: 'the status bar
+        // should also have visual/spatial separators like in the
+        // top bar.'
         var right = el('div', { className: 'bowire-statusbar-right' });
         // Console toggle — promoted to the statusbar so the activity
         // log is reachable from any rail (Discover / Home / Recordings
@@ -3851,8 +3851,8 @@
             // 14×14 matches the rest of the topbar's icon size — the
             // legacy 16×16 made the info / help pair read as visually
             // heavier than the neighbouring chips + buttons. Operator
-            // feedback: 'das info/about-symbol passt von der größe her
-            // nicht in die top bar'.
+            // feedback: 'the info/about symbol does not fit into the
+            // top bar in size'.
             style: 'width:14px;height:14px;display:flex'
         }));
 
@@ -4326,8 +4326,8 @@
 
         var right = el('div', { id: 'bowire-topbar-right', className: 'bowire-topbar-right' },
             // Search trigger leads the right cluster (operator
-            // feedback: 'search tool sollte noch vor die auswahl des
-            // workspaces kommen'). Click or Cmd/Ctrl+K opens the
+            // feedback: 'the search tool should come even before the
+            // workspace selection'). Click or Cmd/Ctrl+K opens the
             // omnibox modal. Hosted as a bare button — its own group
             // with no neighbours — so it reads as the primary
             // discovery affordance ahead of the editor-context group.

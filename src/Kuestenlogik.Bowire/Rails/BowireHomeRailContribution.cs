@@ -33,8 +33,8 @@ public sealed class BowireHomeRailContribution : IBowireRailContribution
     /// Own 'home' group so the rail-divider logic in render-sidebar.js
     /// draws a separator BELOW Home (the group-change boundary),
     /// visually anchoring it at the top the way Settings is anchored
-    /// at the bottom. Operator feedback: 'home sollte ebenso abgesetzt
-    /// sein wie einstellungen mit trennstrich'.
+    /// at the bottom. Operator feedback: 'home should be set off just
+    /// like settings, with a divider'.
     /// </remarks>
     public string Group => "home";
     /// <inheritdoc />

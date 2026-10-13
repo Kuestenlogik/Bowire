@@ -59,7 +59,7 @@ public sealed class ScaffoldTests
     [Fact]
     public void A_German_sentence_works_too()
     {
-        var (spec, _) = ScaffoldIntentParser.Parse("REST-API für Kunden mit Name (Pflicht), E-Mail und Größe");
+        var (spec, _) = ScaffoldIntentParser.Parse("REST-API für Kunden mit Name (Pflicht), E-Mail und Größe"); // lang-exempt: a German prompt is the input under test
         Assert.Equal("Kunden", spec.Entity);
         Assert.Equal(["name", "email", "groesse"], spec.Fields.Select(f => f.Name));
         Assert.True(spec.Fields[0].Required);

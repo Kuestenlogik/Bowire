@@ -6,7 +6,7 @@ summary: "Architecture audit for extracting Bowire's Trash subsystem into a plug
 
 > Read-only design audit. No code changes accompany this document.
 > Baseline commit: `df638e61` (refactor(action-log): decouple snapshot from Trash — W2a).
-> Operator question: *"könnte der Papierkorb vielleicht sogar selbst ein Plugin sein?"*
+> Operator question: *"could the Trash perhaps even be a plugin itself?"*
 > v2.2 R3 decoupled the action log from Trash; v2.3 can extract Trash itself.
 
 ## Section 1 — Current state inventory

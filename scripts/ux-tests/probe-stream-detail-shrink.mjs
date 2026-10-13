@@ -1,7 +1,7 @@
 // Probe: when many stream messages arrive, does the detail pane get
-// crushed? Operator: 'bei mehreren messages als antwort (subscribe)
-// scheint es so zu sein, dass die liste der nachrichten dann die
-// anzeige des inhalts einer message (JSON etc.) verdrängt.'
+// crushed? Operator: 'with several messages as a response
+// (subscribe) it seems that the list of messages then crowds out
+// the display of a message's content (JSON etc.).'
 //
 // Drives the Combined Harbor sample's WatchCrane stream, waits for ~8
 // messages, then logs the computed heights of the list pane + detail

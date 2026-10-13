@@ -488,15 +488,15 @@ test('tNodes follows the slot when a translation moves it', () => {
     // German wants the name later in the clause. That is the whole point.
     const api = withCatalogues({
         en: { greet: 'Viewing as {name}. Anything you change is yours.' },
-        de: { greet: 'Sie sehen den Arbeitsplatz von {name}. Ihre Änderungen bleiben Ihre.' },
+        de: { greet: 'Sie sehen den Arbeitsplatz von {name}. Ihre Änderungen bleiben Ihre.' }, // lang-exempt: German catalogue fixture
         store: { bowire_locale: 'de' },
     });
     api.loadLocale();
     const node = { tag: 'strong' };
     const parts = api.tNodes('greet', 'name', node);
-    assert.equal(parts[0], 'Sie sehen den Arbeitsplatz von ');
+    assert.equal(parts[0], 'Sie sehen den Arbeitsplatz von '); // lang-exempt: German catalogue fixture
     assert.equal(parts[1], node);
-    assert.equal(parts[2], '. Ihre Änderungen bleiben Ihre.');
+    assert.equal(parts[2], '. Ihre Änderungen bleiben Ihre.'); // lang-exempt: German catalogue fixture
 });
 
 test('tNodes takes several nodes for one slot', () => {

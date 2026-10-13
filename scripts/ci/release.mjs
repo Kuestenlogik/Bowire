@@ -170,8 +170,8 @@ if (command === 'notes' || command === 'cut') {
   else { say(`gh release create ${tag} --notes-file ${notesPath}`); if (!dry) gh('release', 'create', tag, '--repo', repo, '--title', version, '--notes-file', notesPath); }
   for (const m of ms) {
     if (m.open_issues > 0) { say(`keep '${m.title}' open: ${m.open_issues} issue(s) still in it`); continue; }
-    say(`close '${m.title}': Ausgeliefert in ${tag}`);
-    if (!dry) gh('api', '-X', 'PATCH', `repos/${repo}/milestones/${m.number}`, '-f', 'state=closed', '-f', `description=${(m.description ?? '').trim()} Ausgeliefert in ${tag}.`.trim());
+    say(`close '${m.title}': shipped in ${tag}`);
+    if (!dry) gh('api', '-X', 'PATCH', `repos/${repo}/milestones/${m.number}`, '-f', 'state=closed', '-f', `description=${(m.description ?? '').trim()} Shipped in ${tag}.`.trim());
   }
   console.log(`\nNext: set version in docs/release-notes/upcoming.md to the next release, and plan it — every ticket names Product, Release and milestone.`);
   process.exit(0);

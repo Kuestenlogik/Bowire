@@ -3494,9 +3494,9 @@
         // in-memory caches (serverUrls / recordings / collections / …)
         // get refilled from the restored per-workspace localStorage
         // namespace. Without it, the topbar chip + every rail keeps
-        // pointing at the empty fallback state. Operator feedback:
-        // 'wiederhergestellter workspace müsste eigentlich automatisch
-        // aktiviert werden, weil er der einzige ist'.
+        // pointing at the empty fallback state. Operator feedback: 'a
+        // restored workspace should actually be activated
+        // automatically, because it is the only one'.
         if (!activeWorkspaceId && typeof switchWorkspace === 'function') {
             switchWorkspace(ws.id);
         }

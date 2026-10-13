@@ -736,10 +736,9 @@
         // Lines that ARE collapsible (object/array opener lines) carry
         // the toggle path on the row too so a click on the JSON body
         // toggles in addition to the gutter chevron — Hoppscotch
-        // parity. Operator feedback: 'das man auch alternativ einfach
-        // auf den knoten klicken kann zum öffnen soll aber beibehalten
-        // werden, nur das öffnen/schließen symbol in das vertikale
-        // band verschieben.'
+        // parity. Operator feedback: 'that you can alternatively
+        // simply click on the node to open it should be kept, just
+        // move the open/close symbol into the vertical band.'
         if (collapsePath) row.setAttribute('data-collapse-line-path', collapsePath);
 
         var gutter = document.createElement('span');
@@ -1590,10 +1589,10 @@
         // divider DOM node but re-mount it under a fresh parent — the
         // captured reference then points at a detached element and the
         // class toggle has no visual effect. Operator: 'split movement
-        // mit click klappt auch nur beim ersten mal, beim zweiten mal
-        // nachdem man die größe wiederhergestellt hat passiert nichts
-        // bei click auf den chevron.' Fresh-read fixes the third-click
-        // dead state. ---
+        // with click also only works the first time; the second time,
+        // after you have restored the size, nothing happens on a click
+        // on the chevron.' Fresh-read fixes the third-click dead
+        // state. ---
         function _liveParent() {
             return divider && divider.parentElement;
         }
@@ -4057,8 +4056,8 @@ var railName = opts.railLabel || t('prereq.thisRail');
         });
         // Leading type-icon so info / success / warning / error read
         // at a glance, not just by border tint. Operator feedback:
-        // 'es wäre gut, wenn man bei den toast infos von warnungen
-        // und fehlern gut unterscheiden kann.'
+        // 'it would be good if you could tell warnings and errors
+        // in the toast infos apart well.'
         var typeIconKey = {
             info: 'info',
             success: 'checkCircle',
@@ -4141,8 +4140,9 @@ var railName = opts.railLabel || t('prereq.thisRail');
         //                                                object + caller
         //                                                .then()s the result.
         // Detect by sniffing arg2 — function means callback path; object
-        // means options-only Promise path. Operator-reported bug: 'delete
-        // einer source (im test eine url) geht nicht.' Root cause was a
+        // means options-only Promise path. Operator-reported bug:
+        // 'deleting a source (in the test a url) doesn't work.' Root
+        // cause was a
         // caller in render-main.js using the Promise shape against the
         // callback API — clicking Remove silently TypeError'd inside
         // .then() because the return value was undefined.
@@ -4398,8 +4398,8 @@ var railName = opts.railLabel || t('prereq.thisRail');
             // filled style. Reads clearly at 14 px. Redo is the same
             // shape mirrored horizontally via a g/transform wrapper —
             // no need for a second hand-tuned path. Operator feedback:
-            // 'die undo/redo-pfeile sind nicht korrekt (voller kreis
-            // mit pfeil, kreis müsste aber offen sein)'.
+            // 'the undo/redo arrows are not right (full circle with an
+            // arrow, but the circle should be open)'.
             undo: '<svg viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" clip-rule="evenodd" d="M7.53033 3.46967C7.82322 3.76256 7.82322 4.23744 7.53033 4.53033L5.81066 6.25H15C18.1756 6.25 20.75 8.82436 20.75 12C20.75 15.1756 18.1756 17.75 15 17.75H8.00001C7.58579 17.75 7.25001 17.4142 7.25001 17C7.25001 16.5858 7.58579 16.25 8.00001 16.25H15C17.3472 16.25 19.25 14.3472 19.25 12C19.25 9.65279 17.3472 7.75 15 7.75H5.81066L7.53033 9.46967C7.82322 9.76256 7.82322 10.2374 7.53033 10.5303C7.23744 10.8232 6.76256 10.8232 6.46967 10.5303L3.46967 7.53033C3.17678 7.23744 3.17678 6.76256 3.46967 6.46967L6.46967 3.46967C6.76256 3.17678 7.23744 3.17678 7.53033 3.46967Z"/></svg>',
             redo: '<svg viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" clip-rule="evenodd" d="M16.4697 3.46967C16.7626 3.17678 17.2374 3.17678 17.5303 3.46967L20.5303 6.46967C20.8232 6.76256 20.8232 7.23744 20.5303 7.53033L17.5303 10.5303C17.2374 10.8232 16.7626 10.8232 16.4697 10.5303C16.1768 10.2374 16.1768 9.76256 16.4697 9.46967L18.1893 7.75H9.00001C6.6528 7.75 4.75 9.65279 4.75 12C4.75 14.3472 6.65279 16.25 9 16.25H16C16.4142 16.25 16.75 16.5858 16.75 17C16.75 17.4142 16.4142 17.75 16 17.75H9C5.82436 17.75 3.25 15.1756 3.25 12C3.25 8.82436 5.82437 6.25 9.00001 6.25H18.1893L16.4697 4.53033C16.1768 4.23744 16.1768 3.76256 16.4697 3.46967Z"/></svg>',
             // #135 split-mode toggle icons. Side-by-side pictogram for
@@ -4466,9 +4466,10 @@ var railName = opts.railLabel || t('prereq.thisRail');
             // Stroke width bumped 1.5 → 2 + circle radius 10 → 11 so
             // the info glyph fills the viewbox to roughly the same
             // optical density as the filled help life-ring next to it.
-            // Operator feedback: 'der info button hat ein kleineres
-            // symbol als die anderen in der top bar (info i mit kreis
-            // wirkt kleiner als zum beispiel hilfe-symbol).'
+            // Operator feedback: 'the info button has a smaller
+            // symbol than the others in the top bar (the info i with
+            // a circle looks smaller than, for example, the help
+            // symbol).'
             info: '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="11" stroke="currentColor" stroke-width="2"/><path d="M12 17V11" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="1" cy="1" r="1.25" transform="matrix(1 0 0 -1 11 9)" fill="currentColor"/></svg>',
             // Life-ring (SVGRepo) — topbar help button. Operator picked
             // the rescue-ring shape over the question-mark; reads as
@@ -4520,15 +4521,15 @@ var railName = opts.railLabel || t('prereq.thisRail');
             // Rail glyphs for the two quality rails. They used to share
             // the plain `check` above, which made them indistinguishable
             // in the rail and said nothing about what either one does.
-            // Operator feedback: 'lint und contracts haben in der rail das
-            // gleiche symbol. das passt nicht. das checkmark als symbol ist
-            // auch etwas simpel und langweilig bzw. auch unklar.'
+            // Operator feedback: 'lint and contracts have the same symbol
+            // in the rail. that doesn't fit. the checkmark as a symbol is
+            // also somewhat simple and boring, or rather unclear.'
             //
             // certificate — a document with a wax seal and ribbons: the
             // signed agreement itself. The previous handshake glyph turned
-            // to mush at rail size ('contracts kann ich auch gar nicht
-            // erkennen was das sein soll') — clasping hands need more pixels
-            // than a rail offers, a sealed document reads at any size.
+            // to mush at rail size ('I can't even make out what contracts is
+            // supposed to be') — clasping hands need more pixels than a rail
+            // offers, a sealed document reads at any size.
             certificate: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 22h9a2 2 0 0 0 2-2V7l-4-4H8a2 2 0 0 0-2 2v6"/><path d="M16 3v4h4"/><circle cx="6" cy="16" r="3"/><path d="M4.5 18.4 4 22l2-1.2L8 22l-.5-3.6"/></svg>',
             // inspect — a magnifier over lines of a document: reading the
             // API surface for design smells, which is what the linter does.
@@ -4536,9 +4537,9 @@ var railName = opts.railLabel || t('prereq.thisRail');
             // paints beneath a lint finding. The previous magnifier-over-text
             // glyph read as 'search', not 'lint'.
             squiggle: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="11" x2="15" y2="11"/><path d="M4 17.5c1.33-2 2.67-2 4 0s2.67 2 4 0 2.67-2 4 0"/></svg>',
-            // Toast type leading-icons. Operator feedback: 'es wäre
-            // gut, wenn man bei den toast infos von warnungen und
-            // fehlern gut unterscheiden kann.' Each toast type now
+            // Toast type leading-icons. Operator feedback: 'it
+            // would be good if you could tell warnings and errors
+            // in the toast infos apart well.' Each toast type now
             // gets a colour-coded glyph in front of its message.
             warning: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
             errorCircle: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>',

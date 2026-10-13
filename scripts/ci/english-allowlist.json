@@ -1,0 +1,14 @@
+[
+  {
+    "path": "src/Kuestenlogik.Bowire/wwwroot/locales/de.json",
+    "reason": "The German UI catalogue - a translation resource the product ships."
+  },
+  {
+    "path": "scripts/ci/check-english.mjs",
+    "reason": "The guard itself - its word list is the German it looks for."
+  },
+  {
+    "path": "tests/Kuestenlogik.Bowire.Tests/ci/english-only.test.mjs",
+    "reason": "The guard's test - German samples the detector has to find."
+  }
+]

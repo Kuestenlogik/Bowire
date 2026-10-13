@@ -1693,8 +1693,9 @@
                 // 'Add a source' is workspace-scoped — the sources rail
                 // adds URLs / schemas to the ACTIVE workspace, so
                 // without one there's nowhere to land. Operator
-                // feedback: 'add a source würde aber doch workspace
-                // erfordern, oder?' Gate the CTA + carry a tooltip
+                // feedback: 'but add a source would require a
+                // workspace, wouldn't it?' Gate the CTA + carry a
+                // tooltip
                 // that says why, mirroring the rail-strip disabled
                 // pattern from commit 327fbe8. 'Open Discover' stays
                 // enabled — Discover is workspace-independent (you

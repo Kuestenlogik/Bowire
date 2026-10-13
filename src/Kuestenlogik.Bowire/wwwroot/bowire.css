@@ -1478,10 +1478,10 @@ but
 .bowire-rail-divider {
     /* Visible group separator between rail-strip clusters. The
        previous 1px border-subtle stripe was below visual threshold
-       and read as 'no divider at all' — operator feedback: 'die
-       rails sind nur die reihenfolge. eine trennung sollte sich in
-       der railbar generieren, wenn eine neue gruppe beginnt'. Wider
-       gutter + a slightly more pronounced colour token. */
+       and read as 'no divider at all' — operator feedback: 'the
+       rails are only the order. a separation should be generated in
+       the railbar when a new group begins'. Wider gutter + a
+       slightly more pronounced colour token. */
     width: calc(100% - 16px);
     margin: 6px 8px;
     height: 1px;
@@ -1780,8 +1780,8 @@ but
 /* Pattern A — workspace-prerequisite disabled state. Greyed out +
    blocks hover lift, but keeps the tooltip so hovering still
    surfaces 'create a workspace first to use this rail.' Operator
-   feedback: 'typisch würde man einen nicht klickbaren (deaktivierten)
-   rail button zeigen (ggf. mit einem hint bei hover warum).' */
+   feedback: 'typically you would show a non-clickable (disabled) rail
+   button (possibly with a hint on hover why).' */
 .bowire-rail-btn-disabled,
 .bowire-rail-btn[disabled] {
     opacity: 0.35;
@@ -1865,8 +1865,8 @@ but
    that lives in it. Color matches the splitter's grip-dots; on
    splitter-hover both deepen together. */
 .bowire-sidebar-edge-toggle {
-    /* Chevron arrow retired per operator ask: 'mach mal nur die 3
-       dots, keinen pfeil im chevron'. The grip-dot cluster (::before,
+    /* Chevron arrow retired per operator ask: 'just make it the 3
+       dots, no arrow in the chevron'. The grip-dot cluster (::before,
        consolidated below) is the sole hover affordance now. Kept the
        button element in the DOM because layout.js still checks
        `e.target.closest('.bowire-sidebar-edge-toggle')` in a few
@@ -1895,8 +1895,8 @@ but
    + position as the expanded variant, just NO 180deg rotation so
    the arrow points right (→) as a 'show sidebar' affordance.
    The splitter itself is the clickable bar; this rule only handles
-   the chevron's centring. Operator feedback: 'könnte man nicht
-   einfach den splitter selbst nutzen?'. */
+   the chevron's centring. Operator feedback: 'couldn't you
+   simply use the splitter itself?'. */
 .bowire-sidebar-edge-toggle-collapsed {
     left: 50%;
     transform: translate(-50%, -50%);
@@ -1958,8 +1958,8 @@ plus future hint / save indicators. */
 /* Pill clusters inside the statusbar — same shape as
    .bowire-topbar-group: each group reads as one cohesive bucket and
    the second-and-later groups draw a subtle vertical divider on
-   their left edge. Operator feedback: 'die status-leiste sollte
-   auch optische/räumliche trenner haben so wie in der top bar.' */
+   their left edge. Operator feedback: 'the status bar should also
+   have visual/spatial separators like in the top bar.' */
 .bowire-statusbar-group {
     display: flex;
     align-items: center;
@@ -1987,9 +1987,9 @@ plus future hint / save indicators. */
     /* Statusbar buttons read as pills, matching the GET/POST method
        badges + conn-pill + env-bar that sit on the same row. The
        topbar theme-toggle-btn keeps its default rounding (toolbar
-       chrome, not a pill row). Operator feedback: 'die activity pill
-       ist eckig. für die pills verwenden wir eigentlich runde pills,
-       oder? siehe z.b. get/post usw.' */
+       chrome, not a pill row). Operator feedback: 'the activity pill
+       is square. for the pills we actually use round pills, don't
+       we? see e.g. get/post etc.' */
     border-radius: var(--bowire-radius-pill);
 }
 
@@ -3473,8 +3473,8 @@ not just
 /* Left-top anchor for the empty-card when it's the only thing in the
    pad. Keeps every rail's welcome at the SAME visual position (top-
    left of the pane) instead of letting some rails read as full-page
-   splash. Operator preference: 'ich finde links oben ausgerichtet für
-   die inhalte der Rail welcomes/startseiten besser.' The :has()
+   splash. Operator preference: 'I find top-left alignment better for
+   the contents of the rail welcomes/start pages.' The :has()
    selector keeps populated panes (multi-child) untouched. */
 .bowire-main-pad:has(> .bowire-empty-card:only-child) {
     display: flex;
@@ -6965,7 +6965,7 @@ body.bowire-panes-resizing iframe { pointer-events: none; }
    surface uses one of these two shapes, both visually aligned with
    the Home portal aesthetic (left-aligned, modest icon, restrained
    headline). The previous centered-hero look was inconsistent across
-   rails ("mal sehr klein, mal sehr groß, zentriert vs. links") —
+   rails ("sometimes very small, sometimes very large, centred vs. left") —
    restyled here once so every rail's first impression reads the same. */
 /* Request / Response section header above each pane's tab strip
    — anchors the operator on which half they're looking at without
@@ -8098,9 +8098,9 @@ orange = coordination event). */
    percentage height resolves to auto against an auto-height parent. The
    output then intrinsic-sized to its content, the frame list grew without
    bound instead of scrolling, and the detail pane was pushed past the
-   bottom of the viewport. Operator, on harbor-demo WatchCrane: 'die
-   eingehenden messages verdrängen die anzeige ... ich habe keinen scrollbar
-   beim streaming'. Measured at 27 frames before this rule existed: pane
+   bottom of the viewport. Operator, on harbor-demo WatchCrane: 'the
+   incoming messages crowd out the display ... I have no scrollbar while
+   streaming'. Measured at 27 frames before this rule existed: pane
    body 555 px, wrapper and output both 1229 px, list 902 px with
    scrollHeight == clientHeight (no scrollbar), detail pane off-screen.
    The split path (.bowire-widget-split-host) always had its own sizing;
@@ -8140,9 +8140,9 @@ orange = coordination event). */
        full detail body), growing PAST the parent pane-body's height. Once it
        grows, list-pane's `flex: 0 0 45%` is computed against the inflated
        container height, and detail-pane's `flex: 1 1 0` shrinks below the
-       visible viewport. Operator: 'bei mehreren messages als antwort
-       (subscribe) scheint es so zu sein, dass die liste der nachrichten dann
-       die anzeige des inhalts einer message (JSON etc.) verdrängt.' Clamping
+       visible viewport. Operator: 'with several messages as a response
+       (subscribe) it seems that the list of messages then crowds out the
+       display of a message's content (JSON etc.).' Clamping
        to 0 + max-height 100% keeps the container at the parent's height + the
        list scrolls internally as designed. */
     min-height: 0;
@@ -8677,9 +8677,9 @@ not through to the children of
    sidebar (sidebar.kind === 'none') so flipping between sidebar-
    bearing and no-sidebar rails doesn't shift the main pane left/
    right. Same width + flex shape as the live splitter; no border,
-   no cursor, no interaction. Operator feedback: 'dort wo kein
-   sidepanel links ist, sollte der platz für den splitter
-   dazuberechnet werden.' */
+   no cursor, no interaction. Operator feedback: 'where there
+   is no side panel on the left, the space for the splitter
+   should be added.' */
 .bowire-sidebar-splitter-placeholder {
     flex: 0 0 10px;
     width: 10px;
@@ -8728,8 +8728,8 @@ not through to the children of
     z-index: 3;
     /* Default transition: no delay on hover-OUT (snap back). The hover
        rule below adds a delay so the highlight only appears if the
-       cursor stays on the bar — operator feedback: 'der splitter zeigt
-       sich zu schnell, wenn man mit der maus drüberfährt.' */
+       cursor stays on the bar — operator feedback: 'the splitter shows
+       up too quickly when you move the mouse over it.' */
     transition: background 150ms ease;
 }
 .bowire-sidebar-splitter:hover,
@@ -8745,8 +8745,9 @@ not through to the children of
 }
 
 /* Single 3-dot grip cluster, vertically centred on the splitter.
-   Operator: 'auch nur 1x die 3 dots anstelle von 2x (der pfeil in
-   der mitte fehlt ja nun).' Previous double-cluster shape sandwiched
+   Operator: 'also only 1x the 3 dots instead of 2x (the arrow in the
+   middle is gone now anyway).' Previous double-cluster shape
+   sandwiched
    a chevron between top + bottom dot columns; now that the chevron
    is retired the two clusters merge into one centred column. */
 .bowire-sidebar-splitter::before {
@@ -8882,9 +8883,9 @@ detail fills 100% ---------- */
     /* min-width matches the widest label across method types
        (Disconnect, Subscribe, Execute, Connect, Stop) so the action
        button doesn't jitter when the operator switches between unary
-       and streaming methods. Operator: 'aktuell springt es bei der
-       breite von execute und subscribe etwas hin und her, wenn man
-       die methoden wechselt.' */
+       and streaming methods. Operator: 'currently the width of
+       execute and subscribe jumps back and forth a bit when you
+       switch methods.' */
     min-width: 132px;
     justify-content: center;
     background: var(--bowire-accent);
@@ -10014,8 +10015,8 @@ they're a way
 /* Toast type variants. Each gets a 4 px coloured left rail + a
    subtle bg tint + a tinted leading icon so the operator can tell
    info / success / warning / error apart at a glance. Operator
-   feedback: 'es wäre gut, wenn man bei den toast infos von warnungen
-   und fehlern gut unterscheiden kann. ist das die farbe?' (Was
+   feedback: 'it would be good if you could tell warnings and errors
+   in the toast infos apart well. is that the colour?' (Was
    previously just a 3 px border on info / success / error and
    nothing at all for warning.) */
 .bowire-toast.info {
@@ -10310,8 +10311,8 @@ details.bowire-json-tree-node[open]::after {
 }
 
 /* ---------- Hover-revealed semantic-kind hint (right gutter) ----------
-   Operator request: 'rechts beim hover sehen, was für ein gemappter typ
-   das ist'. The decorator in widgets/semantics-menu.js appends a
+   Operator request: 'on hover, see on the right which mapped type this
+   is'. The decorator in widgets/semantics-menu.js appends a
    `<span class="bowire-json-tree-meta">` to every annotated row /
    summary; the rule below pins it to the row's right edge and hides
    it until the row is hovered. Mirrors the line-number gutter on the
@@ -11971,8 +11972,8 @@ and chip row */
    this, the empty toolbar stacks its border-bottom directly under the
    sidebar-toolbar's border-bottom, producing two thin horizontal lines
    above the 'No services discovered yet' empty state with no visual
-   meaning. Operator: 'warum sind unter discover zwei linien horizontal
-   über No service discovered yet? unklar.' */
+   meaning. Operator: 'why are there two horizontal lines under
+   discover above No service discovered yet? unclear.' */
 .bowire-services-toolbar:empty {
     display: none;
 }
@@ -13839,9 +13840,10 @@ duplicate) */
     bottom: 18px;
 }
 /* Horizontal: chevron points in the direction the SPLITTER MOVES
-   when clicked, not toward the pane that fills. Operator: 'die pfeile
-   müssten im splitpane bei der beschreibung anders herum sein
-   (splitter bewegt sich ja in andere richtung als der pfeil).'
+   when clicked, not toward the pane that fills. Operator: 'the arrows
+   in the split pane should be the other way round at the description
+   (the splitter moves in a different direction than the arrow, after
+   all).'
    Click leading → request pane fills, splitter moves trailing/right
    → leading chevron points RIGHT (default, no rotation).
    Click trailing → response pane fills, splitter moves leading/left
@@ -14915,15 +14917,16 @@ textarea.bowire-form-input {
 /* Icon-only tour buttons — Skip / Back / Skip-step show as 28×28
    square buttons with a tooltip instead of text labels so they don't
    line-wrap on the cramped spotlight. Primary CTA / Next / Finish
-   keep their text. Operator feedback: 'in der tour sind die buttons
-   unten manchmal sehr gedrängt und umgebrochen … statt dem text für
-   die buttons diesen lieber als symbol mit tooltip anzeigen'.
+   keep their text. Operator feedback: 'in the tour the buttons at
+   the bottom are sometimes very cramped and wrapped … rather show
+   them as a symbol with a tooltip instead of the text for the
+   buttons'.
    The selector compounds .bowire-tour-btn-iconic with the
    skip/secondary base classes so the icon-button reset wins over the
    later text-button padding (5px 12px) — without this the box-sizing:
    border-box reset shrinks the 28×28 content area to 4×18 and clips
-   the SVG entirely. Operator feedback: 'die icon-buttons unten in der
-   tour zeigen leere kästen ohne icon'. */
+   the SVG entirely. Operator feedback: 'the icon buttons at the
+   bottom of the tour show empty boxes without an icon'. */
 .bowire-tour-btn-iconic,
 .bowire-tour-btn-skip.bowire-tour-btn-iconic,
 .bowire-tour-btn-secondary.bowire-tour-btn-iconic {
@@ -23471,8 +23474,8 @@ not as the
 .bowire-request-builder-kv-input {
     /* box-sizing keeps the input width AT the grid cell — without it
        width:100% + padding overflows the cell and the row shifts when
-       the input gets focused (user repro: 'die längen springen hin
-       und her'). */
+       the input gets focused (user repro: 'the lengths jump back and
+       forth'). */
     box-sizing: border-box;
     width: 100%;
     height: 32px;
@@ -25250,9 +25253,9 @@ not as the
 }
 
 /* Unified trash list (refactor of the per-bucket sections). Operator
-   feedback: "die gruppen bei den trash items sollten eher über search
-   und vordefinierte filter chips gelöst sein, die man einfach zum
-   filter hinzufügen kann." Search box on top, filter-chip row below,
+   feedback: "the groups for the trash items should rather be solved
+   via search and predefined filter chips that you can simply add to
+   the filter." Search box on top, filter-chip row below,
    then the flat list (sorted newest deletedAt first). Chips use the
    workbench's pill convention via --bowire-radius-pill. */
 .bowire-trash-unified {

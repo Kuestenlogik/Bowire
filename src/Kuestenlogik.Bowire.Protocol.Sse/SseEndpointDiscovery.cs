@@ -33,8 +33,8 @@ internal static class SseEndpointDiscovery
         // (e.g. /mcp from --enable-mcp-adapter) leaked into every external
         // serverUrl the operator added, showing up as a phantom 'SSE
         // Endpoints' service whose invoke landed nowhere. Operator
-        // feedback: 'unter der source http://localhost:5181/api/locations
-        // sehe ich 1 service (SSE ENDPOINTS), … beim aufruf nur: Stream
+        // feedback: 'under the source http://localhost:5181/api/locations
+        // I see 1 service (SSE ENDPOINTS), … on invoking it only: Stream
         // error occurred.'
         // Self-origin gate only when an explicit external serverUrl
         // is supplied. Null / empty means embedded-mode with no URL

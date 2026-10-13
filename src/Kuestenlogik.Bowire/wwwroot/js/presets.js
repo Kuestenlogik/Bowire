@@ -502,10 +502,10 @@
 
         // Save button. Disabled when `opts.canSave` reports false —
         // each mode passes a guard so the operator can't bookmark an
-        // empty selection. Operator (Mocks case): 'der save preset
-        // button bei mocks ist irgendwie komisch. ich müsste doch
-        // ein recording oder irgendwas selektieren, damit das aktiv
-        // ist oder nicht?' Default (no canSave passed) is enabled —
+        // empty selection. Operator (Mocks case): 'the save preset
+        // button for mocks is somehow odd. I'd have to select a
+        // recording or something for it to be active, wouldn't I?'
+        // Default (no canSave passed) is enabled —
         // back-compat with callers that have nothing to gate on.
         var saveAllowed = (typeof opts.canSave !== 'function') || !!opts.canSave();
         bar.appendChild(el('button', {

@@ -7,6 +7,7 @@
     "i18n:report": "node tests/Kuestenlogik.Bowire.Tests/wwwroot-js/untranslated-report.mjs",
     "i18n:baseline": "node tests/Kuestenlogik.Bowire.Tests/wwwroot-js/untranslated-report.mjs --write",
     "test:ci-workflows": "node --test tests/Kuestenlogik.Bowire.Tests/ci/*.test.mjs",
+    "lang:check": "node scripts/ci/check-english.mjs",
     "test:e2e": "playwright test"
   },
   "devDependencies": {

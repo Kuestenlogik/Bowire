@@ -842,8 +842,8 @@
                     })(labels[j], badge, opts);
                 }
                 // Row-level hover hint (right gutter). Operator request:
-                // 'rechts beim hover sehen, was für ein gemappter typ
-                // das ist'. The hint sits on the containing row /
+                // 'on hover, see on the right which mapped type this
+                // is'. The hint sits on the containing row /
                 // summary so leaves AND container openers both surface
                 // it. CSS hides the span by default and unhides on
                 // .bowire-json-tree-row:hover so the gutter stays clean

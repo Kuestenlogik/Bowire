@@ -34,6 +34,16 @@ Follow conventional commits:
 3. Add tests for new features
 4. Update documentation if needed
 
+### Language
+Everything in this repository is English: code, comments, identifiers, configuration
+comments, API descriptions, CLI and UI strings, tests, docs, release notes, the roadmap
+and the issues. Another language appears only as a translation resource the product
+ships (the UI catalogues under `src/Kuestenlogik.Bowire/wwwroot/locales/`, see
+[Translating Bowire](docs/contributing/translations.md)) or as data the code has to
+read. `npm run lang:check` reports every line that reads as German as `file:line`;
+CI runs the same check. Where German is right, say why: `lang-exempt: <reason>` on the
+line, or an entry with its reason in `scripts/ci/english-allowlist.json` for a whole file.
+
 ### Code Style
 - Follow existing patterns in the codebase
 - One class/interface per file, named by content

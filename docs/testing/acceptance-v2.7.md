@@ -61,7 +61,7 @@ tests.
 - `/bowire` and `/bowire/` → 200; the host's own `/api/users` → 200.
 - **In-process discovery works**: the embedded workbench enumerated its own
   host's REST surface (`GET /api/users`, `POST /api/users`) without going
-  over the wire — the "In-Prozess-Oberfläche, same contract surface, no
+  over the wire — the "in-process surface, same contract surface, no
   transport" case.
 - `/bowire/bowire.js` 404 — not a defect; the page references no external
   script, assets are inlined.

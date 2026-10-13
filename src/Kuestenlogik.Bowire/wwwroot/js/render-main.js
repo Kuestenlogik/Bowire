@@ -1602,10 +1602,10 @@
         // rail) updates the tree selection but renderMain dispatches
         // to the current rail and never reaches
         // renderWorkspaceDetailMain — the click appears to do
-        // nothing. Operator feedback: 'der hover settings button für
-        // den workspace dropdown funktioniert nicht (settings seite
-        // für workspace öffnet sich nicht). rename und löschen bei
-        // hover im workspace dropdown gehen aber.' (Rename + delete
+        // nothing. Operator feedback: 'the hover settings button for
+        // the workspace dropdown doesn't work (settings page for the
+        // workspace doesn't open). rename and delete on hover in the
+        // workspace dropdown do work, though.' (Rename + delete
         // open in-place dialogs, so they didn't need the rail flip.)
         railMode = 'workspaces';
         try { localStorage.setItem('bowire_rail_mode', 'workspaces'); } catch { /* ignore */ }
@@ -4787,9 +4787,9 @@
                     // Match the rail-strip glyph: this empty card is
                     // the Home rail's no-workspace state, so it should
                     // show the rail's house icon — NOT the Workspaces
-                    // rail's layers icon. Operator feedback: 'im home
-                    // welcome sehe ich das workspace icon, ich müsste
-                    // aber doch das haus des rails sehen.'
+                    // rail's layers icon. Operator feedback: 'in the
+                    // home welcome I see the workspace icon, but I
+                    // should be seeing the rail's house.'
                     icon: 'house',
                     headline: t('main.ws.createFirst'),
                     body: t('main.ws.createFirstBody'),
@@ -6255,8 +6255,8 @@
         // Request tab bar — always visible whenever there's a
         // selected method context so the "+" button stays reachable
         // even after the operator closes the last tab. Operator:
-        // 'beim schließen eines method tabs in discovery verschwindet
-        // der tab button [+] zum erzeugen eines neuen tabs.' The
+        // 'when closing a method tab in discovery, the tab button [+]
+        // for creating a new tab disappears.' The
         // strip used to gate on requestTabs.length >= 1 which hid
         // the "+" together with the tabs.
         // Render the strip whenever Discover is showing a work surface
@@ -7269,10 +7269,10 @@
             // JSON validation pill — used to live UNDER the editor where
             // a long payload pushed it below the fold. Now sits in the
             // pane header so the status is always visible while editing.
-            // Operator: 'Valid JSON müsste eigentlich eine pill weiter
-            // oben in der payload toolbar sein, nicht unten nach dem
-            // json, wo man durch scroll das ergebnis eventuell nicht
-            // sieht.'
+            // Operator: 'Valid JSON should actually be a pill further
+            // up in the payload toolbar, not at the bottom after the
+            // json, where you may not see the result because of
+            // scrolling.'
             const jsonStatus = el('div', { className: 'bowire-json-status bowire-json-status-pill empty' });
             const paneHeader = el('div', { className: 'bowire-pane-header' },
                 el('span', { className: 'bowire-pane-title', textContent: 'JSON' }),
@@ -8781,10 +8781,10 @@
         // panes — gives the streaming detail the same line numbers +
         // gutter toggle column as the unary response output. Carries
         // the same [data-json-path] markers the semantics decorator
-        // anchors badges onto. Operator feedback: 'nach dem refactor
-        // funktioniert das aufklappen noch per click, aber die
-        // zeilennummern fehlen und die symbole zum auf/zuklappen sind
-        // nicht in einer extra reihe.'
+        // anchors badges onto. Operator feedback: 'after the refactor
+        // expanding still works by click, but the line numbers are
+        // missing and the symbols for expanding/collapsing are not in
+        // a separate column.'
         var body = el('div', {
             className: 'bowire-stream-detail-body',
             id: pid('bowire-stream-detail-body')

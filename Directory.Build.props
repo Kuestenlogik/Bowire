@@ -42,18 +42,18 @@
     <PackageOutputPath>$(ArtifactsPath)\packages</PackageOutputPath>
   </PropertyGroup>
 
-  <!-- Was gehoert auf nuget.org?
-       Ein Projekt ist paketierbar, solange es etwas ist, das jemand REFERENZIEREN kann - das ist
-       der Default und gilt hier fuer alles unter src/ ausser dem Tool. Genau eine Kategorie
-       faellt sonst raus: HOSTS, also Exe-/Web-SDK-Projekte, die gestartet und nicht referenziert
-       werden; ein Paket davon waere eine ID, die niemand installieren kann. Die setzen
-       `IsPackable=false` und gehen ueber Publish/Container raus.
+  <!-- What belongs on nuget.org?
+       A project is packable as long as it is something somebody can REFERENCE - that is
+       the default and applies here to everything under src/ except the Tool. Exactly one category
+       drops out otherwise: HOSTS, i.e. Exe/Web SDK projects that are started and not referenced;
+       a package of one would be an ID nobody can install. Those set
+       `IsPackable=false` and ship via publish/container.
 
-       Bowire hat davon aktuell keines. Das einzige Exe-Projekt ist Tool, und das ist mit
-       `PackAsTool=true` ein dotnet-Global-Tool - also gerade doch etwas, das ueber NuGet
-       installiert wird, und damit zu Recht paketierbar.
+       Bowire currently has none of those. The only Exe project is Tool, and with
+       `PackAsTool=true` that is a dotnet global tool - so precisely something that is installed
+       via NuGet, and therefore rightly packable.
 
-       Beim Anlegen eines neuen Projekts also nur die Frage: Host ohne PackAsTool? Dann
+       So when creating a new project the only question is: a host without PackAsTool? Then
        IsPackable=false. -->
 
   <PropertyGroup Condition="'$(IsPackable)' != 'false'">

@@ -27,7 +27,7 @@ public static class ScaffoldIntentParser
 
     private static readonly HashSet<string> s_notEntity = new(StringComparer.OrdinalIgnoreCase)
     {
-        "a", "an", "the", "ein", "eine", "einen", "crud", "rest", "grpc", "api", "service", "simple", "basic", "new",
+        "a", "an", "the", "ein", "eine", "einen", "crud", "rest", "grpc", "api", "service", "simple", "basic", "new", // lang-exempt: German articles the parser skips
     };
 
     private static readonly HashSet<string> s_requiredWords = new(StringComparer.OrdinalIgnoreCase)
@@ -74,7 +74,7 @@ public static class ScaffoldIntentParser
 
     private static string? FindEntity(string text)
     {
-        foreach (Match m in Regex.Matches(text, @"\b(?:for|für|of|called|named|manage|managing|verwaltet)\s+(?:(?:a|an|the|ein|eine|einen|all|alle)\s+)?([A-Za-zÄÖÜäöüß][\w-]*)", RegexOptions.IgnoreCase, s_timeout))
+        foreach (Match m in Regex.Matches(text, @"\b(?:for|für|of|called|named|manage|managing|verwaltet)\s+(?:(?:a|an|the|ein|eine|einen|all|alle)\s+)?([A-Za-zÄÖÜäöüß][\w-]*)", RegexOptions.IgnoreCase, s_timeout)) // lang-exempt: German intent words the parser recognises
         {
             var word = m.Groups[1].Value;
             if (!s_notEntity.Contains(word)) return Ascii(word);
