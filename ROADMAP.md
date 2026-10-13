@@ -12,15 +12,15 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
 
-**0/5 done** · 5 backlog
+**0/5 done** · 1 in progress · 4 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
+| [777](https://github.com/Kuestenlogik/Bowire/issues/777) | Bowire | [English only: translate German comments, docs and issues, and guard against new German](#issue-kuestenlogik-bowire-777) | 🟡 In progress | `area:multi` |
 | [639](https://github.com/Kuestenlogik/Bowire/issues/639) | Bowire | [SCIM: live Okta and Entra ID provisioning round-trips](#issue-kuestenlogik-bowire-639) | ⬜ Backlog | `area:workbench` |
 | [647](https://github.com/Kuestenlogik/Bowire/issues/647) | Bowire | [Lizenz entscheiden und je Projekt führen](#issue-kuestenlogik-bowire-647) | ⬜ Backlog | `area:multi` |
 | [668](https://github.com/Kuestenlogik/Bowire/issues/668) | Bowire | [Sharpen the one-line pitch, and carry the same sentence everywhere](#issue-kuestenlogik-bowire-668) | ⬜ Backlog | `area:site` |
 | [670](https://github.com/Kuestenlogik/Bowire/issues/670) | Bowire | [Get listed where developers and models actually look](#issue-kuestenlogik-bowire-670) | ⬜ Backlog | `area:site` |
-| [777](https://github.com/Kuestenlogik/Bowire/issues/777) | Bowire | [English only: translate German comments, docs and issues, and guard against new German](#issue-kuestenlogik-bowire-777) | ⬜ Backlog |  |
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
@@ -152,6 +152,12 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
 
+#### <a id="issue-kuestenlogik-bowire-777"></a>🟡 In progress · [#777](https://github.com/Kuestenlogik/Bowire/issues/777) English only: translate German comments, docs and issues, and guard against new German
+
+> `area:multi`
+
+Everything in this repository is English: code, comments, identifiers, configuration comments, API descriptions, CLI and UI strings, tests, docs, CHANGELOG and release notes, the roadmap and the issues. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/777)
+
 #### <a id="issue-kuestenlogik-bowire-639"></a>⬜ Backlog · [#639](https://github.com/Kuestenlogik/Bowire/issues/639) SCIM: live Okta and Entra ID provisioning round-trips
 
 > `area:workbench`
@@ -175,10 +181,6 @@ In every directory, every search result and every model-generated answer, Bowire
 > `area:site`
 
 Six credible competitors turned up during the competitive survey **via openalternative.co**. Bowire was not there. That is the whole diagnosis: when a developer — or a language model — asks for "open source Postman alternative", the answer is assembled from these directories, not from bowire.io. [[more]](https://github.com/Kuestenlogik/Bowire/issues/670)
-
-#### <a id="issue-kuestenlogik-bowire-777"></a>⬜ Backlog · [#777](https://github.com/Kuestenlogik/Bowire/issues/777) English only: translate German comments, docs and issues, and guard against new German
-
-Everything in this repository is English: code, comments, identifiers, configuration comments, API descriptions, CLI and UI strings, tests, docs, CHANGELOG and release notes, the roadmap and the issues. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/777)
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
