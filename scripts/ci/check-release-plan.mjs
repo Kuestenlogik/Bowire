@@ -40,7 +40,7 @@ const ITEMS = `query($org: String!, $num: Int!, $cursor: String) {
     nodes { id
       product: fieldValueByName(name: "Product") { ... on ProjectV2ItemFieldSingleSelectValue { name } }
       release: fieldValueByName(name: "Release") { ... on ProjectV2ItemFieldTextValue { text } }
-      content { __typename ... on Issue { number title state stateReason closedAt milestone { title } repository { nameWithOwner } } }
+      content { __typename ... on Issue { number title state stateReason closedAt body milestone { title } repository { nameWithOwner } } }
     }
   } } }
 }`;

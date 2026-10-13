@@ -16,7 +16,7 @@ import { dirname, resolve } from 'node:path';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const plan = await import(pathToFileURL(resolve(__dirname, '../../../scripts/ci/release-plan.mjs')).href);
 const check = await import(pathToFileURL(resolve(__dirname, '../../../scripts/ci/check-release-plan.mjs')).href);
-const { parseMilestone, releaseOfVersion, releaseMatches, compareVersions, planFor, problems, releases, productOfRepo, view } = plan;
+const { parseMilestone, releaseOfVersion, releaseMatches, compareVersions, planFor, problems, releases, productOfRepo, view, isFailureTracker } = plan;
 
 const CUT = '2026-09-07T20:39:34Z';
 let seq = 0;
@@ -80,6 +80,10 @@ describe('planFor', () => {
         const r = planFor([before, after, dropped], 'Bowire', '2.8.0', CUT);
         assert.deepEqual(r.unplanned.map(x => x.number), [after.number]);
     });
+    it('never claims a publish-failure tracking issue', () => {
+        const tracker = it_({ state: 'CLOSED', release: null, closedAt: '2026-09-20T00:00:00Z', tracker: true });
+        assert.deepEqual(planFor([tracker], 'Bowire', '2.8.0', CUT).unplanned, []);
+    });
 });
 
 describe('problems', () => {
@@ -97,6 +101,21 @@ describe('problems', () => {
     });
     it('leaves closed tickets alone', () => {
         assert.deepEqual(problems(it_({ state: 'CLOSED', release: null, milestone: null })), []);
+    });
+    it('leaves a publish-failure tracking issue alone (#764)', () => {
+        assert.deepEqual(problems(it_({ release: null, milestone: null, tracker: true })), []);
+    });
+});
+
+describe('isFailureTracker', () => {
+    it('recognises the marker the publish-failure action writes', () => {
+        assert.equal(isFailureTracker('<!-- publish-failure:roadmap-release-field -->\nThe publish failed.'), true);
+        assert.equal(view({ content: { body: 'x <!-- publish-failure:winget --> y' } }).tracker, true);
+    });
+    it('is false for an ordinary or missing body', () => {
+        assert.equal(isFailureTracker('A ticket about publish failures.'), false);
+        assert.equal(isFailureTracker(undefined), false);
+        assert.equal(view({ content: {} }).tracker, false);
     });
 });
 

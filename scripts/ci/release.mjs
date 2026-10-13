@@ -63,7 +63,7 @@ function boardItems() {
       product: fieldValueByName(name: "Product") { ... on ProjectV2ItemFieldSingleSelectValue { name } }
       release: fieldValueByName(name: "Release") { ... on ProjectV2ItemFieldTextValue { text } }
       area: fieldValueByName(name: "Area") { ... on ProjectV2ItemFieldSingleSelectValue { name } }
-      content { __typename ... on Issue { number title state stateReason closedAt url issueType { name } milestone { title } repository { nameWithOwner } } } } } } } }`, cursor ? { c: cursor } : {});
+      content { __typename ... on Issue { number title state stateReason closedAt body url issueType { name } milestone { title } repository { nameWithOwner } } } } } } } }`, cursor ? { c: cursor } : {});
     const page = d.organization.projectV2.items;
     for (const n of page.nodes) if (n.content?.__typename === 'Issue') items.push(view(n));
     if (!page.pageInfo.hasNextPage) return items;

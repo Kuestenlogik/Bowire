@@ -14,7 +14,7 @@
 // Usage: node scripts/ci/check-board.mjs [--add] [--markdown]
 // Exit 1 when anything is off; the list goes to stdout (Markdown with --markdown).
 import { execFileSync } from 'node:child_process';
-import { PRODUCT_OF_REPO, productOfRepo, problems, view } from './release-plan.mjs';
+import { PRODUCT_OF_REPO, isFailureTracker, productOfRepo, problems, view } from './release-plan.mjs';
 
 const ORG = 'Kuestenlogik', PROJECT = 2;
 const gh = (...a) => execFileSync('gh', a, { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
@@ -26,7 +26,7 @@ const ITEMS = `query($cursor: String) { organization(login: "${ORG}") { projectV
   nodes { id
     product: fieldValueByName(name: "Product") { ... on ProjectV2ItemFieldSingleSelectValue { name } }
     release: fieldValueByName(name: "Release") { ... on ProjectV2ItemFieldTextValue { text } }
-    content { __typename ... on Issue { number title url state stateReason closedAt milestone { title } repository { nameWithOwner } } } } } } } }`;
+    content { __typename ... on Issue { number title url state stateReason closedAt body milestone { title } repository { nameWithOwner } } } } } } } }`;
 
 const items = [];
 for (let cursor = null; ;) {
@@ -53,10 +53,10 @@ function putOnBoard(name, issue) {
 }
 for (const name of Object.keys(PRODUCT_OF_REPO)) {
   let open;
-  try { open = JSON.parse(gh('issue', 'list', '-R', `${ORG}/${name}`, '--state', 'open', '--limit', '1000', '--json', 'number,title,url,milestone')); }
+  try { open = JSON.parse(gh('issue', 'list', '-R', `${ORG}/${name}`, '--state', 'open', '--limit', '1000', '--json', 'number,title,url,milestone,body')); }
   catch { continue; }   // a repository without issues enabled
   for (const i of open) {
-    if (onBoard.has(`${ORG}/${name}#${i.number}`)) continue;
+    if (onBoard.has(`${ORG}/${name}#${i.number}`) || isFailureTracker(i.body)) continue;
     if (!add) { offenders.push({ ref: `${name}#${i.number}`, url: i.url, title: i.title, why: ['not on the board'] }); continue; }
     putOnBoard(name, i);
     // Now on the board with its product; release and milestone are for triage.

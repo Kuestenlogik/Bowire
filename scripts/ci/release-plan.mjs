@@ -79,9 +79,22 @@ export function compareVersions(a, b) {
 }
 
 /**
+ * The marker `.github/actions/publish-failure-issue` puts in every tracking issue it files. Such
+ * an issue reports a broken channel; it is not work any release plans or ships, so the rules
+ * leave it out. Without that the guard's own tracking issue, unplanned by nature, kept the guard
+ * red after everything it had reported was fixed (#764).
+ */
+export const FAILURE_TRACKER_MARKER = '<!-- publish-failure:';
+
+/** Whether an issue body is one of those tracking issues. */
+export function isFailureTracker(body) {
+  return typeof body === 'string' && body.includes(FAILURE_TRACKER_MARKER);
+}
+
+/**
  * A board item reduced to what the rules read. `raw` is a project item as the scripts query it:
- * `content` (number, state, stateReason, closedAt, milestone.title, repository.nameWithOwner),
- * `product` and `release` field values.
+ * `content` (number, state, stateReason, closedAt, milestone.title, repository.nameWithOwner,
+ * body), `product` and `release` field values.
  */
 export function view(raw) {
   const c = raw?.content ?? {};
@@ -100,6 +113,7 @@ export function view(raw) {
     release: raw?.release?.text ?? null,
     type: c.issueType?.name ?? null,
     area: raw?.area?.name ?? null,
+    tracker: isFailureTracker(c.body),
   };
 }
 
@@ -113,7 +127,7 @@ export function planFor(items, product, version, since = null) {
   const after = since ? new Date(since).getTime() : null;
   const shipped = [], stillOpen = [], unplanned = [];
   for (const it of items) {
-    if (it.product !== product) continue;
+    if (it.product !== product || it.tracker) continue;
     if (releaseMatches(it.release, version)) {
       if (it.state === 'OPEN') stillOpen.push(it);
       else if (!it.notPlanned) shipped.push(it);
@@ -134,7 +148,7 @@ export function planFor(items, product, version, since = null) {
  */
 export function problems(it) {
   const out = [];
-  if (it.state !== 'OPEN') return out;
+  if (it.state !== 'OPEN' || it.tracker) return out;
   if (!it.product) out.push('no Product');
   if (!it.release) out.push('no Release');
   if (!it.milestone) { out.push('no milestone'); return out; }
