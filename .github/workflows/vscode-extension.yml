@@ -14,22 +14,20 @@ name: "VS Code extension"
 # is deliberately independent of Bowire's release cadence (#101) — tying it to
 # the release train would recreate the lockstep the design set out to avoid.
 #
-# Two ways to authenticate the publish, and which one runs is decided by
-# whether the AZURE_CLIENT_ID repository variable is set (#613):
+# The publish authenticates with Microsoft Entra ID (#613): an app
+# registration with a federated credential for this repository, a member of
+# the `kuestenlogik` publisher with the Contributor role. The credential is
+# minted per run over OIDC, so no secret for it exists in this repository.
+# The repository variables AZURE_CLIENT_ID and AZURE_TENANT_ID name the
+# identity; the repository's OIDC subject uses the immutable form
+# (repo:Kuestenlogik@<org id>/Bowire@<repo id>:...), which is what the
+# federated credential expects.
 #
-#   Entra ID (variable set)   — OIDC federated credential, minted per run.
-#                               No secret in this repository. Required from
-#                               2026-12-01, when Azure DevOps retires the
-#                               globally-scoped PATs `vsce` asks for.
-#   PAT (variable unset)      — the VSCE_PAT secret. Still works until then,
-#                               and warns on every run that it is on a clock.
+# The PAT path was removed after 1.0.1 published this way: Azure DevOps
+# retires the globally scoped PATs `vsce` used on 2026-12-01.
 #
-# To flip over, set the AZURE_CLIENT_ID + AZURE_TENANT_ID repository
-# variables. What has to exist on the Azure side first: a user-assigned
-# managed identity (or app registration) with a federated credential for
-# this repository, added as a member of the `kuestenlogik` publisher with
-# the Contributor role. Then publish once for real — this path only fails
-# when it runs, which is the lesson #237 left behind.
+# To add the identity to a publisher you need its Marketplace user id, which
+# only the identity itself can read; `whoami: true` prints it.
 
 on:
   push:
@@ -101,17 +99,21 @@ jobs:
           path: extensions/bowire-vscode/bowire-vscode.vsix
           retention-days: 30
 
-      # Entra ID, when the repository variable says it is configured (#613).
-      # Azure DevOps retires globally-scoped PATs on 2026-12-01, and that
-      # scope is what `vsce publish` has always wanted — so the PAT path has
-      # an expiry date of its own, independent of the token's.
-      #
-      # Gated on AZURE_CLIENT_ID rather than switched outright: until the
-      # federated credential exists and a real publish has proven it, the PAT
-      # path below has to keep working. Setting the two variables is what
-      # flips this repository over; unsetting them flips it back.
+      # Without the two variables azure/login fails with a message about a
+      # missing client id that does not say where it should come from.
+      - name: Check the Entra ID identity is configured
+        if: github.event_name == 'workflow_dispatch' && (inputs.publish || inputs.whoami)
+        env:
+          HAS_ENTRA: ${{ vars.AZURE_CLIENT_ID != '' && vars.AZURE_TENANT_ID != '' }}
+        run: |
+          if [ "${HAS_ENTRA}" != "true" ]; then
+            echo "::error::Set the AZURE_CLIENT_ID and AZURE_TENANT_ID repository variables (#613)."
+            exit 1
+          fi
+
+      # Entra ID over OIDC (#613). The same login serves `whoami`.
       - name: Azure login (OIDC)
-        if: github.event_name == 'workflow_dispatch' && (inputs.publish || inputs.whoami) && vars.AZURE_CLIENT_ID != ''
+        if: github.event_name == 'workflow_dispatch' && (inputs.publish || inputs.whoami)
         # Pinned to a commit, not to `v2`: this is a third-party action that
         # runs in a job holding an id-token, and a moving tag is a decision
         # someone else can make on our behalf later. (CodeQL alert #1828.)
@@ -129,14 +131,8 @@ jobs:
       # sign in from a run like this one, so the run asks for it (#613).
       - name: Marketplace user id of the Entra ID identity
         if: github.event_name == 'workflow_dispatch' && inputs.whoami
-        env:
-          HAS_ENTRA: ${{ vars.AZURE_CLIENT_ID != '' }}
         run: |
           set -euo pipefail
-          if [ "${HAS_ENTRA}" != "true" ]; then
-            echo "::error::Set the AZURE_CLIENT_ID and AZURE_TENANT_ID repository variables first (#613)."
-            exit 1
-          fi
           # 499b84ac-1321-427f-aa17-267ca6975798 is Azure DevOps, which the
           # Marketplace profile belongs to.
           profile=$(az rest -u https://app.vssps.visualstudio.com/_apis/profile/profiles/me --resource 499b84ac-1321-427f-aa17-267ca6975798)
@@ -157,22 +153,8 @@ jobs:
       - name: Publish to Marketplace
         if: github.event_name == 'workflow_dispatch' && inputs.publish
         working-directory: extensions/bowire-vscode
-        env:
-          VSCE_PAT: ${{ secrets.VSCE_PAT }}
-          USE_ENTRA: ${{ vars.AZURE_CLIENT_ID != '' }}
         run: |
-          set -euo pipefail
-          if [ "${USE_ENTRA}" = "true" ]; then
-            # --azure-credential picks up the login above through
-            # DefaultAzureCredential. No secret exists in this repository for
-            # it: the token is minted per run and dies with the job.
-            echo "Publishing with Entra ID (federated credential, no stored secret)."
-            npx --yes @vscode/vsce@latest publish --no-dependencies --azure-credential --packagePath bowire-vscode.vsix
-            exit 0
-          fi
-          if [ -z "${VSCE_PAT:-}" ]; then
-            echo "::error::Neither path is configured. Either set the AZURE_CLIENT_ID + AZURE_TENANT_ID repository variables for the Entra ID path (#613, required from 2026-12-01), or add a VSCE_PAT secret — a PAT with the Marketplace (Manage) scope in Azure DevOps for the 'kuestenlogik' publisher."
-            exit 1
-          fi
-          echo "::warning::Publishing with a PAT. Globally-scoped PATs stop working on 2026-12-01 — see #613 for the Entra ID migration."
-          npx --yes @vscode/vsce@latest publish --no-dependencies --packagePath bowire-vscode.vsix
+          # --azure-credential picks up the login above through
+          # DefaultAzureCredential. The token is minted per run and dies
+          # with the job.
+          npx --yes @vscode/vsce@latest publish --no-dependencies --azure-credential --packagePath bowire-vscode.vsix
