@@ -5,6 +5,15 @@ All notable changes to the Bowire VS Code extension.
 The extension version is deliberately independent of the Bowire version it
 hosts — it drives whatever CLI you have installed, from 2.5 upwards.
 
+## [1.0.1] — 2026-10-14
+
+Nothing in this release changes behaviour. It is the first version published
+through Microsoft Entra ID instead of a personal access token: a federated
+credential lets the publish workflow sign in without any secret stored in the
+repository. Azure DevOps stops accepting the globally scoped tokens `vsce` used
+on 2026-12-01, and this release proves the replacement before that date
+([#613](https://github.com/Kuestenlogik/Bowire/issues/613)).
+
 ## [1.0.0] — 2026-09-03
 
 1.0 is a promise about the surface, not a claim about ambition: the
