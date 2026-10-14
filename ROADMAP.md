@@ -12,11 +12,10 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
 
-**5/8 done** · 1 in progress · 2 backlog
+**6/8 done** · 2 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
-| [781](https://github.com/Kuestenlogik/Bowire/issues/781) | Bowire | [Build: no blanket warning suppressions — NuGet audit fails on known advisories](#issue-kuestenlogik-bowire-781) | 🟡 In progress |  |
 | [639](https://github.com/Kuestenlogik/Bowire/issues/639) | Bowire | [SCIM: live Okta and Entra ID provisioning round-trips](#issue-kuestenlogik-bowire-639) | ⬜ Backlog | `area:workbench` |
 | [670](https://github.com/Kuestenlogik/Bowire/issues/670) | Bowire | [Get listed where developers and models actually look](#issue-kuestenlogik-bowire-670) | ⬜ Backlog | `area:site` |
 | [647](https://github.com/Kuestenlogik/Bowire/issues/647) | Bowire | [Decide the licence and carry it per project](#issue-kuestenlogik-bowire-647) | ✅ Done | `area:multi` |
@@ -24,6 +23,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [777](https://github.com/Kuestenlogik/Bowire/issues/777) | Bowire | [English only: translate German comments, docs and issues, and guard against new German](#issue-kuestenlogik-bowire-777) | ✅ Done | `area:multi` |
 | [778](https://github.com/Kuestenlogik/Bowire/issues/778) | Bowire | [Issue language report instead of guarding the generated ROADMAP.md](#issue-kuestenlogik-bowire-778) | ✅ Done | `area:multi` |
 | [780](https://github.com/Kuestenlogik/Bowire/issues/780) | Bowire | [Dependency hygiene: SDK 10.0.402, no package with a known advisory](#issue-kuestenlogik-bowire-780) | ✅ Done | `area:multi` |
+| [781](https://github.com/Kuestenlogik/Bowire/issues/781) | Bowire | [Build: no blanket warning suppressions — NuGet audit fails on known advisories](#issue-kuestenlogik-bowire-781) | ✅ Done |  |
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
@@ -160,10 +160,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
 
-#### <a id="issue-kuestenlogik-bowire-781"></a>🟡 In progress · [#781](https://github.com/Kuestenlogik/Bowire/issues/781) Build: no blanket warning suppressions — NuGet audit fails on known advisories
-
-`Directory.Build.props` suppresses `NU1510;NU1902;NU1903;NU5104` for every project. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/781)
-
 #### <a id="issue-kuestenlogik-bowire-639"></a>⬜ Backlog · [#639](https://github.com/Kuestenlogik/Bowire/issues/639) SCIM: live Okta and Entra ID provisioning round-trips
 
 > `area:workbench`
@@ -205,6 +201,10 @@ Follow-up to #777. [[more]](https://github.com/Kuestenlogik/Bowire/issues/778)
 > `area:multi`
 
 `dotnet list Kuestenlogik.Bowire.slnx package --vulnerable --include-transitive` reports four packages with high advisories. The restore stays green only because `Directory.Build.props` suppresses NU1902/NU1903: [[more]](https://github.com/Kuestenlogik/Bowire/issues/780)
+
+#### <a id="issue-kuestenlogik-bowire-781"></a>✅ Done · [#781](https://github.com/Kuestenlogik/Bowire/issues/781) Build: no blanket warning suppressions — NuGet audit fails on known advisories
+
+`Directory.Build.props` suppresses `NU1510;NU1902;NU1903;NU5104` for every project. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/781)
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
