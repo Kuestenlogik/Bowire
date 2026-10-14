@@ -14,5 +14,9 @@
   <ItemGroup>
     <ProjectReference Include="..\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
     <PackageReference Include="Microsoft.Identity.Web" />
+    <!-- Lifts Microsoft.Identity.Web's transitive 10.0.10 out of the
+         advisories listed in Directory.Packages.props. -->
+    <PackageReference Include="System.Security.Cryptography.Pkcs" />
+    <PackageReference Include="System.Security.Cryptography.Xml" />
   </ItemGroup>
 </Project>

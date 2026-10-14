@@ -88,6 +88,9 @@
          build` (and without requiring the .NET SDK on the install
          host — only the runtime). -->
     <PackageReference Include="NuGet.Protocol" />
+    <!-- Lifts NuGet.Packaging's transitive Pkcs 8.0.1 out of the advisories
+         listed in Directory.Packages.props. -->
+    <PackageReference Include="System.Security.Cryptography.Pkcs" />
   </ItemGroup>
   <ItemGroup>
     <!--
