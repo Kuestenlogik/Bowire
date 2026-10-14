@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
 
-**4/6 done** · 2 backlog
+**5/7 done** · 2 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -22,6 +22,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [668](https://github.com/Kuestenlogik/Bowire/issues/668) | Bowire | [Sharpen the one-line pitch, and carry the same sentence everywhere](#issue-kuestenlogik-bowire-668) | ✅ Done | `area:site` |
 | [777](https://github.com/Kuestenlogik/Bowire/issues/777) | Bowire | [English only: translate German comments, docs and issues, and guard against new German](#issue-kuestenlogik-bowire-777) | ✅ Done | `area:multi` |
 | [778](https://github.com/Kuestenlogik/Bowire/issues/778) | Bowire | [Issue language report instead of guarding the generated ROADMAP.md](#issue-kuestenlogik-bowire-778) | ✅ Done | `area:multi` |
+| [780](https://github.com/Kuestenlogik/Bowire/issues/780) | Bowire | [Dependency hygiene: SDK 10.0.402, no package with a known advisory](#issue-kuestenlogik-bowire-780) | ✅ Done | `area:multi` |
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
@@ -99,13 +100,14 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### Protocol.Dis v1.2 — Interactive DIS sandbox *(due 2026-11-29)*
 
-**1/3 done** · 2 backlog
+**2/4 done** · 2 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [68](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/68) | Protocol.Dis | [Show datum IDs with their SISO name (Variable Record Types)](#issue-kuestenlogik-bowire-protocol-dis-68) | ⬜ Backlog |  |
 | [69](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/69) | Protocol.Dis | [DIS-Sandbox: Objekte anderer Instanzen empfangen und schreibgeschützt anzeigen](#issue-kuestenlogik-bowire-protocol-dis-69) | ⬜ Backlog |  |
 | [67](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/67) | Protocol.Dis | [DIS sandbox: place and move objects on a map, state as key-value pairs](#issue-kuestenlogik-bowire-protocol-dis-67) | ✅ Done |  |
+| [70](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/70) | Protocol.Dis | [Pin the .NET SDK to 10.0.402 and check for packages with known advisories](#issue-kuestenlogik-bowire-protocol-dis-70) | ✅ Done | `area:plugin-sdk` |
 
 ### Sdk.Go v0.1 — Polyglot SDK parity: settings, channels, manifests
 
@@ -156,8 +158,8 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
-| [75](https://github.com/Kuestenlogik/Bowire.Protocol.Amqp/issues/75) | Protocol.Amqp | [Pin the .NET SDK to 10.0.402 and check for packages with known advisories](#issue-kuestenlogik-bowire-protocol-amqp-75) | 🟡 In progress | `area:plugin-sdk` |
-| [81](https://github.com/Kuestenlogik/Bowire.Protocol.Kafka/issues/81) | Protocol.Kafka | [Pin the .NET SDK to 10.0.402 and check for packages with known advisories](#issue-kuestenlogik-bowire-protocol-kafka-81) | 🟡 In progress | `area:plugin-sdk` |
+| [23](https://github.com/Kuestenlogik/Bowire.Templates/issues/23) | Templates | [Scaffolded plugins start without a known advisory: SignalR.Client and TestHost pins to 10.0.13](#issue-kuestenlogik-bowire-templates-23) | 🟡 In progress | `area:plugin-sdk` |
+| [41](https://github.com/Kuestenlogik/Bowire.Bootcamp/issues/41) | Bootcamp | [Exercise projects pull Microsoft.OpenApi 2.0.0 (GHSA-v5pm-xwqc-g5wc): OpenApi pin to 10.0.13](#issue-kuestenlogik-bowire-bootcamp-41) | 🟡 In progress | `area:bootcamp` |
 
 ## Details
 
@@ -198,6 +200,12 @@ Everything in this repository is English: code, comments, identifiers, configura
 > `area:multi`
 
 Follow-up to #777. [[more]](https://github.com/Kuestenlogik/Bowire/issues/778)
+
+#### <a id="issue-kuestenlogik-bowire-780"></a>✅ Done · [#780](https://github.com/Kuestenlogik/Bowire/issues/780) Dependency hygiene: SDK 10.0.402, no package with a known advisory
+
+> `area:multi`
+
+`dotnet list Kuestenlogik.Bowire.slnx package --vulnerable --include-transitive` reports four packages with high advisories. The restore stays green only because `Directory.Build.props` suppresses NU1902/NU1903: [[more]](https://github.com/Kuestenlogik/Bowire/issues/780)
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
@@ -487,6 +495,12 @@ Die DIS-Sandbox (#67) sendet nur. Laufen zwei Instanzen nebeneinander, zeigt kei
 
 A test program with which you **drive DIS in Bowire by hand**. The existing sample (`samples/Kuestenlogik.Bowire.Protocol.Dis.Sample`) only plays a fixed recording with three `EntityState` PDUs in a loop. … [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/67)
 
+#### <a id="issue-kuestenlogik-bowire-protocol-dis-70"></a>✅ Done · [Kuestenlogik/Bowire.Protocol.Dis#70](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/70) Pin the .NET SDK to 10.0.402 and check for packages with known advisories
+
+> `area:plugin-sdk`
+
+`global.json` pins the .NET SDK to 10.0.401, which has been superseded by the 10.0.402 patch (a machine that took the update only has 10.0.402). [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/70)
+
 ### Sdk.Go v0.1 — Polyglot SDK parity: settings, channels, manifests
 
 #### <a id="issue-kuestenlogik-bowire-sdk-go-3"></a>⬜ Backlog · [Kuestenlogik/Bowire.Sdk.Go#3](https://github.com/Kuestenlogik/Bowire.Sdk.Go/issues/3) openChannel is declared but nothing routes it
@@ -541,17 +555,17 @@ The plugin surface declares a duplex capability that no dispatcher routes. `the 
 
 ### Backlog (not yet scheduled)
 
-#### <a id="issue-kuestenlogik-bowire-protocol-amqp-75"></a>🟡 In progress · [Kuestenlogik/Bowire.Protocol.Amqp#75](https://github.com/Kuestenlogik/Bowire.Protocol.Amqp/issues/75) Pin the .NET SDK to 10.0.402 and check for packages with known advisories
+#### <a id="issue-kuestenlogik-bowire-templates-23"></a>🟡 In progress · [Kuestenlogik/Bowire.Templates#23](https://github.com/Kuestenlogik/Bowire.Templates/issues/23) Scaffolded plugins start without a known advisory: SignalR.Client and TestHost pins to 10.0.13
 
 > `area:plugin-sdk`
 
-`global.json` pins the .NET SDK to 10.0.401, which has been superseded by the 10.0.402 patch (a machine that took the update only has 10.0.402). [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Amqp/issues/75)
+The `bowire-plugin` template writes package pins into every project it scaffolds, and two of them are old 10.0.x patches: [[more]](https://github.com/Kuestenlogik/Bowire.Templates/issues/23)
 
-#### <a id="issue-kuestenlogik-bowire-protocol-kafka-81"></a>🟡 In progress · [Kuestenlogik/Bowire.Protocol.Kafka#81](https://github.com/Kuestenlogik/Bowire.Protocol.Kafka/issues/81) Pin the .NET SDK to 10.0.402 and check for packages with known advisories
+#### <a id="issue-kuestenlogik-bowire-bootcamp-41"></a>🟡 In progress · [Kuestenlogik/Bowire.Bootcamp#41](https://github.com/Kuestenlogik/Bowire.Bootcamp/issues/41) Exercise projects pull Microsoft.OpenApi 2.0.0 (GHSA-v5pm-xwqc-g5wc): OpenApi pin to 10.0.13
 
-> `area:plugin-sdk`
+> `area:bootcamp`
 
-`global.json` pins the .NET SDK to 10.0.401, which has been superseded by the 10.0.402 patch (a machine that took the update only has 10.0.402). [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Kafka/issues/81)
+Six exercise projects (unit 4 lessons 1 and 2, start and completed; the HarborTour and Berthing capstones) pin Microsoft.AspNetCore.OpenApi 10.0.0. … [[more]](https://github.com/Kuestenlogik/Bowire.Bootcamp/issues/41)
 
 ---
 
