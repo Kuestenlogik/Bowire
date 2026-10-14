@@ -21,6 +21,7 @@ const PITCH_INLINE = 'API workbench that embeds in your own service';
 
 const SURFACES = [
     'README.md',
+    '.asyncapi-tool',
     'CONTRIBUTING.md',
     'docs/brand-guide.md',
     'docs/index.md',

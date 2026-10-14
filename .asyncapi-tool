@@ -1,0 +1,21 @@
+title: Bowire
+description: >-
+  The API workbench that embeds in your own service.
+  Loads an AsyncAPI 2.x or 3.0 document and turns its channels into methods you
+  can publish to and subscribe from, over MQTT, Kafka, WebSocket, AMQP and the
+  other transports Bowire speaks - in a browser UI, from the CLI or through an
+  AI agent over MCP.
+links:
+  websiteUrl: https://bowire.io
+  docsUrl: https://bowire.io/docs/features/asyncapi.html
+  repoUrl: https://github.com/Kuestenlogik/Bowire
+filters:
+  language: C#
+  technology:
+    - .NET
+    - ASP.NET
+    - Docker
+  categories:
+    - mocking-and-testing
+    - cli
+  hasCommercial: false
