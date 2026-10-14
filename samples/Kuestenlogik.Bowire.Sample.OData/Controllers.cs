@@ -1,3 +1,6 @@
+// Copyright 2026 Küstenlogik
+// SPDX-License-Identifier: Apache-2.0
+
 // The OData controllers, one per entity set. Between them they implement
 // exactly the five methods Bowire's OData plugin discovers per entity set
 // — GET, GET_BY_KEY, POST, PATCH, DELETE — so every method in the Sources

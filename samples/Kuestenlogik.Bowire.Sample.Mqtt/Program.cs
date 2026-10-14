@@ -1,3 +1,6 @@
+// Copyright 2026 Küstenlogik
+// SPDX-License-Identifier: Apache-2.0
+
 // Combined MQTT sample for Bowire — fully self-contained, no docker.
 // MQTT has a pure-.NET embeddable broker (MQTTnet.Server), so one project
 // runs all three pieces and tells both stories:

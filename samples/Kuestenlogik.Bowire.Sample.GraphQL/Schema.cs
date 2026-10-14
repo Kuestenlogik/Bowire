@@ -1,3 +1,6 @@
+// Copyright 2026 Küstenlogik
+// SPDX-License-Identifier: Apache-2.0
+
 // The GraphQL schema this sample serves: one query root, one mutation
 // root, one subscription root, over a tiny in-memory book list.
 //

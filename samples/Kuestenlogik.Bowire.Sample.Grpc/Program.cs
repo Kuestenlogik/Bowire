@@ -1,3 +1,6 @@
+// Copyright 2026 Küstenlogik
+// SPDX-License-Identifier: Apache-2.0
+
 // Combined gRPC sample for Bowire. This one project tells both stories
 // at once:
 //

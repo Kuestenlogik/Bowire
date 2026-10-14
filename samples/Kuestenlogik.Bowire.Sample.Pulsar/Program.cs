@@ -1,3 +1,6 @@
+// Copyright 2026 Küstenlogik
+// SPDX-License-Identifier: Apache-2.0
+
 // Combined Pulsar sample for Bowire. Pulsar has no .NET-embeddable
 // broker, so this sample points at an *external* one (docker-compose.yml
 // alongside) while still telling both stories from one project:

@@ -1,3 +1,6 @@
+// Copyright 2026 Küstenlogik
+// SPDX-License-Identifier: Apache-2.0
+
 // Combined SignalR sample for Bowire. One project, both stories:
 //
 //   * Embedded — the workbench is mounted at /bowire and the bundled

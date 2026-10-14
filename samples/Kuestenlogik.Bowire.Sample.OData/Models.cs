@@ -1,3 +1,6 @@
+// Copyright 2026 Küstenlogik
+// SPDX-License-Identifier: Apache-2.0
+
 // Entity types + the in-memory store behind them. They must be public
 // (the EDM model and OData routing discover them by type), so they live
 // in a namespace here rather than as top-level types in Program.cs.

@@ -119,6 +119,12 @@ jobs:
       - name: English-only guard
         run: node scripts/ci/check-english.mjs
 
+      # #647 - everything here is Apache-2.0. Fails with the file name when a
+      # C# file has no Apache-2.0 SPDX header, a project packs a licence of
+      # its own, or the root LICENSE is not the Apache licence.
+      - name: Licence guard
+        run: node scripts/ci/check-license.mjs
+
       # No version step needed — MinVer derives the version from git for
       # every build (untagged CI => an X.Y.Z-alpha.N prerelease). CI packages
       # are inspection-only artefacts and never published, so the exact

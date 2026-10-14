@@ -1,3 +1,6 @@
+// Copyright 2026 Küstenlogik
+// SPDX-License-Identifier: Apache-2.0
+
 // Combined NATS sample for Bowire. NATS has no .NET-embeddable server, so
 // this sample points at an *external* broker (docker-compose.yml
 // alongside) while still telling both stories from one project:

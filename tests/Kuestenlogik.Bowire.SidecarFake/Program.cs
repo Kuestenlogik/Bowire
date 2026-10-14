@@ -1,4 +1,7 @@
-﻿// A tiny fake sidecar plugin that follows the JSON-RPC-over-stdio
+﻿// Copyright 2026 Küstenlogik
+// SPDX-License-Identifier: Apache-2.0
+
+// A tiny fake sidecar plugin that follows the JSON-RPC-over-stdio
 // contract documented in docs/architecture/sidecar-plugins.md.
 // Used by SidecarBowireProtocolIntegrationTests as a process target
 // so the test can exercise spawn / initialize / discover / invoke /

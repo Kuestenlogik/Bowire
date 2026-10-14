@@ -1,3 +1,6 @@
+// Copyright 2026 Küstenlogik
+// SPDX-License-Identifier: Apache-2.0
+
 // Minimal embedded Bowire sample. Hosts:
 //  - Bowire workbench at /bowire
 //  - A handful of sample REST endpoints under /api/... so the operator
