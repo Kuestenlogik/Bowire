@@ -152,6 +152,13 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [779](https://github.com/Kuestenlogik/Bowire/issues/779) | Bowire | [Revoke the old VSCE_PAT in Azure DevOps](#issue-kuestenlogik-bowire-779) | ⬜ Backlog |  |
 | [613](https://github.com/Kuestenlogik/Bowire/issues/613) | Bowire | [Move the VS Code Marketplace publish off PATs to Entra ID before 2026-12-01](#issue-kuestenlogik-bowire-613) | ✅ Done | `area:cli` |
 
+### Backlog (not yet scheduled)
+
+| # | Project | Title | Status | Tags |
+|---|---|---|---|---|
+| [75](https://github.com/Kuestenlogik/Bowire.Protocol.Amqp/issues/75) | Protocol.Amqp | [Pin the .NET SDK to 10.0.402 and check for packages with known advisories](#issue-kuestenlogik-bowire-protocol-amqp-75) | 🟡 In progress | `area:plugin-sdk` |
+| [81](https://github.com/Kuestenlogik/Bowire.Protocol.Kafka/issues/81) | Protocol.Kafka | [Pin the .NET SDK to 10.0.402 and check for packages with known advisories](#issue-kuestenlogik-bowire-protocol-kafka-81) | 🟡 In progress | `area:plugin-sdk` |
+
 ## Details
 
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
@@ -531,6 +538,20 @@ The plugin surface declares a duplex capability that no dispatcher routes. `the 
 > `area:cli`
 
 > **Hard deadline: 2026-12-01.** Azure DevOps stops supporting Personal Access Tokens scoped to *all accessible organizations* on that date. That scope is what `vsce publish` has traditionally required. [[more]](https://github.com/Kuestenlogik/Bowire/issues/613)
+
+### Backlog (not yet scheduled)
+
+#### <a id="issue-kuestenlogik-bowire-protocol-amqp-75"></a>🟡 In progress · [Kuestenlogik/Bowire.Protocol.Amqp#75](https://github.com/Kuestenlogik/Bowire.Protocol.Amqp/issues/75) Pin the .NET SDK to 10.0.402 and check for packages with known advisories
+
+> `area:plugin-sdk`
+
+`global.json` pins the .NET SDK to 10.0.401, which has been superseded by the 10.0.402 patch (a machine that took the update only has 10.0.402). [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Amqp/issues/75)
+
+#### <a id="issue-kuestenlogik-bowire-protocol-kafka-81"></a>🟡 In progress · [Kuestenlogik/Bowire.Protocol.Kafka#81](https://github.com/Kuestenlogik/Bowire.Protocol.Kafka/issues/81) Pin the .NET SDK to 10.0.402 and check for packages with known advisories
+
+> `area:plugin-sdk`
+
+`global.json` pins the .NET SDK to 10.0.401, which has been superseded by the 10.0.402 patch (a machine that took the update only has 10.0.402). [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Kafka/issues/81)
 
 ---
 
