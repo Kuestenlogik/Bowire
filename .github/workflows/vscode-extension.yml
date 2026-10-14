@@ -47,6 +47,10 @@ on:
         description: 'Publish to the VS Code Marketplace (otherwise: package only)'
         type: boolean
         default: false
+      whoami:
+        description: 'Print the Marketplace user id of the Entra ID identity, to add it to the publisher (#613). Publishes nothing.'
+        type: boolean
+        default: false
 
 concurrency:
   # A push-triggered run must not be cancelled by the next push: on main
@@ -107,7 +111,7 @@ jobs:
       # path below has to keep working. Setting the two variables is what
       # flips this repository over; unsetting them flips it back.
       - name: Azure login (OIDC)
-        if: github.event_name == 'workflow_dispatch' && inputs.publish && vars.AZURE_CLIENT_ID != ''
+        if: github.event_name == 'workflow_dispatch' && (inputs.publish || inputs.whoami) && vars.AZURE_CLIENT_ID != ''
         # Pinned to a commit, not to `v2`: this is a third-party action that
         # runs in a job holding an id-token, and a moving tag is a decision
         # someone else can make on our behalf later. (CodeQL alert #1828.)
@@ -118,6 +122,34 @@ jobs:
           # The publisher identity needs no subscription, and demanding one
           # would mean granting this run more than it uses.
           allow-no-subscriptions: true
+
+      # The publisher takes a new member by its Marketplace user id, not by
+      # client id or e-mail, and that id is only visible to the identity
+      # itself. An identity with nothing but a federated credential can only
+      # sign in from a run like this one, so the run asks for it (#613).
+      - name: Marketplace user id of the Entra ID identity
+        if: github.event_name == 'workflow_dispatch' && inputs.whoami
+        env:
+          HAS_ENTRA: ${{ vars.AZURE_CLIENT_ID != '' }}
+        run: |
+          set -euo pipefail
+          if [ "${HAS_ENTRA}" != "true" ]; then
+            echo "::error::Set the AZURE_CLIENT_ID and AZURE_TENANT_ID repository variables first (#613)."
+            exit 1
+          fi
+          # 499b84ac-1321-427f-aa17-267ca6975798 is Azure DevOps, which the
+          # Marketplace profile belongs to.
+          profile=$(az rest -u https://app.vssps.visualstudio.com/_apis/profile/profiles/me --resource 499b84ac-1321-427f-aa17-267ca6975798)
+          id=$(jq -r '.id' <<<"${profile}")
+          name=$(jq -r '.displayName // empty' <<<"${profile}")
+          echo "Marketplace user id: ${id} (${name})"
+          {
+            echo "### Marketplace user id"
+            echo
+            echo "\`${id}\` — ${name}"
+            echo
+            echo "Add it at https://marketplace.visualstudio.com/manage/publishers/kuestenlogik → Members → Add, role **Contributor**."
+          } >> "${GITHUB_STEP_SUMMARY}"
 
       # Deliberately not `continue-on-error`. If you asked for a publish and it
       # cannot happen, that is a failure worth seeing — the winget channel
