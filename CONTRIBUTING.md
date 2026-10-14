@@ -116,6 +116,20 @@ Or on Linux/macOS:
 ./scripts/ci/pack-local.sh
 ```
 
+## How we describe Bowire
+
+Wherever Bowire gets one line next to its name - the repository description,
+the README, the site, `llms.txt`, package and installer descriptions - that
+line is, verbatim:
+
+> The API workbench that embeds in your own service.
+
+It names something no other API client can say. The long form and the
+exceptions (Homebrew's `desc`, which may not start with an article; the
+in-product descriptor) are in the [brand guide](docs/brand-guide.md#writing-bowire).
+`tests/Kuestenlogik.Bowire.Tests/ci/pitch.test.mjs` checks that the surfaces
+still quote it (#668).
+
 ## License
 
 By contributing, you agree that your contributions will be licensed under the [Apache 2.0 License](LICENSE).

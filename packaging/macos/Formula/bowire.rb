@@ -13,7 +13,7 @@
 #   brew install bowire
 #
 class Bowire < Formula
-  desc "Interactive multi-protocol API workbench and CLI for .NET"
+  desc "API workbench that embeds in your own service"
   homepage "https://github.com/Kuestenlogik/Bowire"
   version "__VERSION__"
   license "Apache-2.0"

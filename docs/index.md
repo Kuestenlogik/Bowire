@@ -1,7 +1,7 @@
 ---
 title: Documentation
 _layout: landing
-summary: 'The reference manual for the multi-protocol API workbench: how to install it, how every pane of the UI works, how each protocol plugin behaves, and how to extend Bowire with your'
+summary: 'The reference manual for Bowire, the API workbench that embeds in your own service: how to install it, how every pane of the UI works, how each protocol plugin behaves, and how to extend Bowire with your'
 ---
 
 <div class="bowire-docs-hero">
@@ -29,7 +29,7 @@ summary: 'The reference manual for the multi-protocol API workbench: how to inst
   <h1 class="bowire-docs-hero-title standalone-only">Bowire Documentation</h1>
   <h1 class="bowire-docs-hero-title online-only">Documentation</h1>
   <p class="bowire-docs-hero-tagline">
-    The reference manual for the multi-protocol API workbench: how to install it, how every pane of the UI works, how each protocol plugin behaves, and how to extend Bowire with your own protocols.
+    The reference manual for Bowire, the API workbench that embeds in your own service: how to install it, how every pane of the UI works, how each protocol plugin behaves, and how to extend Bowire with your own protocols.
   </p>
 </div>
 

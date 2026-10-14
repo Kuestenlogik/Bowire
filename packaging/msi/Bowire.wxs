@@ -42,7 +42,7 @@
              Compressed="yes"
              InstallerVersion="500">
 
-        <SummaryInformation Description="Bowire — interactive multi-protocol API workbench and CLI for .NET"
+        <SummaryInformation Description="Bowire — the API workbench that embeds in your own service"
                             Manufacturer="Küstenlogik" />
 
         <!-- Major-upgrade rule: any older version is silently uninstalled
@@ -91,7 +91,7 @@
             <Component Id="StartMenuShortcut" Guid="3F5BFAE3-7BE4-4E69-8CFE-6CF0C44CFAA8">
                 <Shortcut Id="BowireShortcut"
                           Name="Bowire"
-                          Description="Interactive multi-protocol API workbench"
+                          Description="The API workbench that embeds in your own service."
                           Target="[INSTALLFOLDER]bowire.exe"
                           WorkingDirectory="INSTALLFOLDER"
                           Icon="bowire.ico" />
@@ -120,7 +120,7 @@
                        Condition="DESKTOPSHORTCUT = &quot;1&quot;">
                 <Shortcut Id="BowireDesktopShortcut"
                           Name="Bowire"
-                          Description="Interactive multi-protocol API workbench"
+                          Description="The API workbench that embeds in your own service."
                           Target="[INSTALLFOLDER]bowire.exe"
                           WorkingDirectory="INSTALLFOLDER"
                           Icon="bowire.ico" />
@@ -160,7 +160,7 @@
              into ~/.bowire/plugins/, not into Program Files. -->
         <Feature Id="MainFeature"
                  Title="Bowire"
-                 Description="Interactive multi-protocol API workbench and CLI."
+                 Description="The API workbench that embeds in your own service."
                  Level="1">
             <ComponentGroupRef Id="ProductFiles" />
             <ComponentRef Id="StartMenuShortcut" />

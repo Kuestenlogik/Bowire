@@ -28,7 +28,7 @@ homepage: https://github.com/Kuestenlogik/Bowire
 license: Apache-2.0
 
 description: |
-  Interactive multi-protocol API workbench and CLI for .NET.
+  The API workbench that embeds in your own service. Browser UI and CLI for .NET.
   Discover and invoke gRPC, REST, GraphQL, SignalR, MCP, SSE,
   WebSocket, MQTT, Socket.IO, OData, Surgewave, Kafka, DIS, and UDP
   endpoints from one tool. Embed it next to your ASP.NET service

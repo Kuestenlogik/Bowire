@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk.Razor">
   <PropertyGroup>
-    <Description>Bowire — multi-protocol API workbench for ASP.NET. Core host package: plugin infrastructure (IBowireProtocol), UI shell, HTML generator, recording + mock contracts. Pair with Kuestenlogik.Bowire.Protocol.* plugins (gRPC, REST, GraphQL, MQTT, SignalR, WebSocket, SSE, MCP, OData, Socket.IO) to discover, invoke, record, mock, and replay live network traffic across protocols.</Description>
+    <Description>Bowire — the API workbench that embeds in your own service. Core host package for ASP.NET: plugin infrastructure (IBowireProtocol), UI shell, HTML generator, recording + mock contracts. Pair with Kuestenlogik.Bowire.Protocol.* plugins (gRPC, REST, GraphQL, MQTT, SignalR, WebSocket, SSE, MCP, OData, Socket.IO) to discover, invoke, record, mock, and replay live network traffic across protocols.</Description>
     <PackageId>Kuestenlogik.Bowire</PackageId>
     <PackageTags>bowire;api;workbench;multi-protocol;grpc;rest;graphql;mqtt;signalr;websocket;sse;mcp;mock-server;recording;developer-tools;aspnet</PackageTags>
     <IsPackable>true</IsPackable>

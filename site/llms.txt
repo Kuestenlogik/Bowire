@@ -1,6 +1,6 @@
 # Bowire
 
-> The multi-protocol API workbench. Auto-discovers gRPC, REST/OpenAPI, GraphQL, SignalR, WebSocket, SSE, MQTT, NATS, Pulsar, JSON-RPC, SOAP, Socket.IO, OData, MCP, and OTLP services from a running endpoint and gives you a single browser UI to inspect schemas, call methods, stream messages, receive telemetry, mock backends, record/replay sessions, and assert on responses. Ships embedded as ASP.NET middleware (`MapBowire()`) or as a standalone .NET tool / container.
+> The API workbench that embeds in your own service. Auto-discovers gRPC, REST/OpenAPI, GraphQL, SignalR, WebSocket, SSE, MQTT, NATS, Pulsar, JSON-RPC, SOAP, Socket.IO, OData, MCP, and OTLP services from a running endpoint and gives you a single browser UI to inspect schemas, call methods, stream messages, receive telemetry, mock backends, record/replay sessions, and assert on responses. Ships embedded as ASP.NET middleware (`MapBowire()`) or as a standalone .NET tool / container.
 
 Bowire is plugin-based: each protocol is a separate NuGet package implementing `IBowireProtocol`, loaded out of `~/.bowire/plugins/` at startup. Sister repos extend the surface to wire-protocols (DIS, UDP), event streams (Surgewave, Kafka, AMQP), actor-systems (Akka), and specialty/domain plugins (Tactical API). New plugins can be scaffolded with `dotnet new bowire-plugin`.
 

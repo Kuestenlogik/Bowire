@@ -1,6 +1,6 @@
 # Bowire for VS Code
 
-The [Bowire](https://bowire.io/) multi-protocol API workbench, hosted in VS Code.
+[Bowire](https://bowire.io/) — the API workbench that embeds in your own service — hosted in VS Code.
 
 gRPC, REST, GraphQL, SignalR, MQTT, NATS, WebSocket, SSE, SOAP, OData, MCP — the same workbench you get from the standalone tool, in a side panel, with collections and environments stored in your workspace so they travel with the repo.
 

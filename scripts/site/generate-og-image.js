@@ -1,10 +1,10 @@
 /**
- * Renders scripts/og-image-template.html to site/assets/images/og-image.png
+ * Renders scripts/site/og-image-template.html to site/assets/images/og-image.png
  * at the Open Graph standard 1200×630. Run after editing the template (e.g.
  * adding / removing a protocol name) so the social-media preview stays in
  * sync with the actual feature list.
  *
- * Usage:   node scripts/generate-og-image.js
+ * Usage:   node scripts/site/generate-og-image.js
  * Requires Playwright (npm i -g playwright or run from a node_modules with it).
  *
  * Notes on Discord / social previews:
@@ -19,7 +19,7 @@ const path = require('path');
 const fs = require('fs');
 
 const TEMPLATE = path.resolve(__dirname, 'og-image-template.html');
-const OUT = path.resolve(__dirname, '..', 'site', 'assets', 'images', 'og-image.png');
+const OUT = path.resolve(__dirname, '..', '..', 'site', 'assets', 'images', 'og-image.png');
 
 (async () => {
     if (!fs.existsSync(TEMPLATE)) {

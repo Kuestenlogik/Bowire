@@ -219,15 +219,17 @@ the SVG.
 
 - **Bowire** — one word, capital B, lowercase rest. Always. Never *BoWire*,
   *bowire* (in prose), *BOWIRE*, or *Bow Wire*.
-- The descriptor is "**the multi-protocol API workbench**."
+- The one-liner is "**The API workbench that embeds in your own service.**" Quote it verbatim everywhere Bowire gets one line —
+  a wording that differs between surfaces reads as a different product (#668).
+- Inside the product - the UI taglines, the default `BowireOptions.Description`
+  an embedding host shows, the CLI help - Bowire describes itself as a
+  "multi-protocol API workbench". That is a description for someone already
+  using it, not the pitch, and it is shown inside other people's services.
 - Built by **Küstenlogik**. Bowire is part of the Küstenlogik family.
 
-A ready one-liner for articles, talks, or READMEs:
+The long form, for directories and articles that allow more than one line:
 
-> Bowire is the multi-protocol API workbench by Küstenlogik — auto-discover,
-> invoke, stream, mock, record, and replay gRPC, REST, GraphQL, MQTT, SignalR,
-> WebSocket, SSE, MCP, OData and more from one UI, embedded in your app or as a
-> standalone CLI. Open source, Apache-2.0. https://bowire.io
+> The API workbench that embeds in your own service. Bowire mounts into your own ASP.NET service with one line, or runs standalone as a CLI. It discovers and calls gRPC, REST, GraphQL, MQTT, SignalR, WebSocket, MCP and more — and your own protocols through plugins. Open source, Apache-2.0. https://bowire.io
 
 ## Usage rights & permissions
 

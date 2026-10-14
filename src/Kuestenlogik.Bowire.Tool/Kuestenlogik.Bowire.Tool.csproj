@@ -12,7 +12,7 @@
     <RootNamespace>Kuestenlogik.Bowire.App</RootNamespace>
     <AssemblyName>bowire</AssemblyName>
     <PackageId>Kuestenlogik.Bowire.Tool</PackageId>
-    <Description>Bowire — standalone CLI + browser UI for the multi-protocol API workbench. Discover, invoke, record, mock, and replay across gRPC, REST, GraphQL, MQTT, SignalR, WebSocket, SSE, MCP, OData, and Socket.IO — every first-party plugin pre-bundled. Run `bowire --url …` for the browser UI or `bowire list/describe/call` / `bowire mock` for grpcurl-style scripting and recording replay.</Description>
+    <Description>Bowire — the API workbench that embeds in your own service. This is the standalone CLI + browser UI. Discover, invoke, record, mock, and replay across gRPC, REST, GraphQL, MQTT, SignalR, WebSocket, SSE, MCP, OData, and Socket.IO — every first-party plugin pre-bundled. Run `bowire --url …` for the browser UI or `bowire list/describe/call` / `bowire mock` for grpcurl-style scripting and recording replay.</Description>
     <IsPackable>true</IsPackable>
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>bowire</ToolCommandName>
@@ -67,7 +67,7 @@
     <ContainerPort Include="5080" Type="tcp" />
     <ContainerEnvironmentVariable Include="ASPNETCORE_URLS" Value="http://+:5080" />
     <ContainerLabel Include="org.opencontainers.image.title" Value="Bowire" />
-    <ContainerLabel Include="org.opencontainers.image.description" Value="Interactive multi-protocol API browser and CLI tool for gRPC, REST, GraphQL, SignalR, MCP, SSE, and WebSocket endpoints." />
+    <ContainerLabel Include="org.opencontainers.image.description" Value="The API workbench that embeds in your own service. Browser UI and CLI for gRPC, REST, GraphQL, MQTT, SignalR, WebSocket, MCP and more." />
     <ContainerLabel Include="org.opencontainers.image.vendor" Value="Kuestenlogik" />
     <ContainerLabel Include="org.opencontainers.image.source" Value="https://github.com/Kuestenlogik/Bowire" />
     <ContainerLabel Include="org.opencontainers.image.licenses" Value="Apache-2.0" />

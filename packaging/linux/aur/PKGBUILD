@@ -22,7 +22,7 @@
 pkgname=bowire
 pkgver=0.9.4
 pkgrel=1
-pkgdesc="Interactive multi-protocol API workbench and CLI for .NET (gRPC, REST, GraphQL, SignalR, MCP, SSE, WebSocket, MQTT, Socket.IO, OData, …)"
+pkgdesc="The API workbench that embeds in your own service. Browser UI and CLI for .NET (gRPC, REST, GraphQL, SignalR, MCP, SSE, WebSocket, MQTT, Socket.IO, OData, …)"
 arch=('x86_64' 'aarch64')
 url="https://github.com/Kuestenlogik/Bowire"
 license=('Apache-2.0')
