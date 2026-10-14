@@ -12,14 +12,14 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
 
-**2/6 done** · 4 backlog
+**3/6 done** · 3 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [639](https://github.com/Kuestenlogik/Bowire/issues/639) | Bowire | [SCIM: live Okta and Entra ID provisioning round-trips](#issue-kuestenlogik-bowire-639) | ⬜ Backlog | `area:workbench` |
-| [647](https://github.com/Kuestenlogik/Bowire/issues/647) | Bowire | [Decide the licence and carry it per project](#issue-kuestenlogik-bowire-647) | ⬜ Backlog | `area:multi` |
 | [668](https://github.com/Kuestenlogik/Bowire/issues/668) | Bowire | [Sharpen the one-line pitch, and carry the same sentence everywhere](#issue-kuestenlogik-bowire-668) | ⬜ Backlog | `area:site` |
 | [670](https://github.com/Kuestenlogik/Bowire/issues/670) | Bowire | [Get listed where developers and models actually look](#issue-kuestenlogik-bowire-670) | ⬜ Backlog | `area:site` |
+| [647](https://github.com/Kuestenlogik/Bowire/issues/647) | Bowire | [Decide the licence and carry it per project](#issue-kuestenlogik-bowire-647) | ✅ Done | `area:multi` |
 | [777](https://github.com/Kuestenlogik/Bowire/issues/777) | Bowire | [English only: translate German comments, docs and issues, and guard against new German](#issue-kuestenlogik-bowire-777) | ✅ Done | `area:multi` |
 | [778](https://github.com/Kuestenlogik/Bowire/issues/778) | Bowire | [Issue language report instead of guarding the generated ROADMAP.md](#issue-kuestenlogik-bowire-778) | ✅ Done | `area:multi` |
 
@@ -145,10 +145,11 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### VS Code v1.1 — Marketplace publish via Entra ID *(due 2026-11-30)*
 
-**1/1 done**
+**1/2 done** · 1 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
+| [779](https://github.com/Kuestenlogik/Bowire/issues/779) | Bowire | [Revoke the old VSCE_PAT in Azure DevOps](#issue-kuestenlogik-bowire-779) | ⬜ Backlog |  |
 | [613](https://github.com/Kuestenlogik/Bowire/issues/613) | Bowire | [Move the VS Code Marketplace publish off PATs to Entra ID before 2026-12-01](#issue-kuestenlogik-bowire-613) | ✅ Done | `area:cli` |
 
 ## Details
@@ -161,12 +162,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 Split from #96 so the SCIM surface can ship on its own merits. [[more]](https://github.com/Kuestenlogik/Bowire/issues/639)
 
-#### <a id="issue-kuestenlogik-bowire-647"></a>⬜ Backlog · [#647](https://github.com/Kuestenlogik/Bowire/issues/647) Decide the licence and carry it per project
-
-> `area:multi`
-
-According to the licence and tier concept, the licence question for Bowire is still open ("TBD"), and here it is no formality: in substance Bowire is a **security tool** — vulnerability database, scanner, protocol modules, SDKs in Go, Node, Python and Rust, CI action. [[more]](https://github.com/Kuestenlogik/Bowire/issues/647)
-
 #### <a id="issue-kuestenlogik-bowire-668"></a>⬜ Backlog · [#668](https://github.com/Kuestenlogik/Bowire/issues/668) Sharpen the one-line pitch, and carry the same sentence everywhere
 
 > `area:site`
@@ -178,6 +173,12 @@ In every directory, every search result and every model-generated answer, Bowire
 > `area:site`
 
 Six credible competitors turned up during the competitive survey **via openalternative.co**. Bowire was not there. That is the whole diagnosis: when a developer — or a language model — asks for "open source Postman alternative", the answer is assembled from these directories, not from bowire.io. [[more]](https://github.com/Kuestenlogik/Bowire/issues/670)
+
+#### <a id="issue-kuestenlogik-bowire-647"></a>✅ Done · [#647](https://github.com/Kuestenlogik/Bowire/issues/647) Decide the licence and carry it per project
+
+> `area:multi`
+
+According to the licence and tier concept, the licence question for Bowire is still open ("TBD"), and here it is no formality: in substance Bowire is a **security tool** — vulnerability database, scanner, protocol modules, SDKs in Go, Node, Python and Rust, CI action. [[more]](https://github.com/Kuestenlogik/Bowire/issues/647)
 
 #### <a id="issue-kuestenlogik-bowire-777"></a>✅ Done · [#777](https://github.com/Kuestenlogik/Bowire/issues/777) English only: translate German comments, docs and issues, and guard against new German
 
@@ -520,6 +521,10 @@ The settings hook this SDK already has now reaches somewhere, and the other half
 The plugin surface declares a duplex capability that no dispatcher routes. `the BowirePlugin trait's open_channel` is part of the public API — a plugin author implements it, ships it, and nothing ever calls it, because the dispatcher has no `openChannel` case at all. [[more]](https://github.com/Kuestenlogik/Bowire.Sdk.Rust/issues/5)
 
 ### VS Code v1.1 — Marketplace publish via Entra ID *(due 2026-11-30)*
+
+#### <a id="issue-kuestenlogik-bowire-779"></a>⬜ Backlog · [#779](https://github.com/Kuestenlogik/Bowire/issues/779) Revoke the old VSCE_PAT in Azure DevOps
+
+#613 moved the VS Code Marketplace publish to Microsoft Entra ID: 1.0.1 went out through the federated credential, the workflow no longer has a PAT path (d5291351) and the `VSCE_PAT` repository secret is deleted. [[more]](https://github.com/Kuestenlogik/Bowire/issues/779)
 
 #### <a id="issue-kuestenlogik-bowire-613"></a>✅ Done · [#613](https://github.com/Kuestenlogik/Bowire/issues/613) Move the VS Code Marketplace publish off PATs to Entra ID before 2026-12-01
 
