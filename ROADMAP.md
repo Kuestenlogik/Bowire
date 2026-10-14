@@ -12,12 +12,13 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
 
-**5/7 done** · 2 backlog
+**5/8 done** · 3 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [639](https://github.com/Kuestenlogik/Bowire/issues/639) | Bowire | [SCIM: live Okta and Entra ID provisioning round-trips](#issue-kuestenlogik-bowire-639) | ⬜ Backlog | `area:workbench` |
 | [670](https://github.com/Kuestenlogik/Bowire/issues/670) | Bowire | [Get listed where developers and models actually look](#issue-kuestenlogik-bowire-670) | ⬜ Backlog | `area:site` |
+| [781](https://github.com/Kuestenlogik/Bowire/issues/781) | Bowire | [Build: no blanket warning suppressions — NuGet audit fails on known advisories](#issue-kuestenlogik-bowire-781) | ⬜ Backlog |  |
 | [647](https://github.com/Kuestenlogik/Bowire/issues/647) | Bowire | [Decide the licence and carry it per project](#issue-kuestenlogik-bowire-647) | ✅ Done | `area:multi` |
 | [668](https://github.com/Kuestenlogik/Bowire/issues/668) | Bowire | [Sharpen the one-line pitch, and carry the same sentence everywhere](#issue-kuestenlogik-bowire-668) | ✅ Done | `area:site` |
 | [777](https://github.com/Kuestenlogik/Bowire/issues/777) | Bowire | [English only: translate German comments, docs and issues, and guard against new German](#issue-kuestenlogik-bowire-777) | ✅ Done | `area:multi` |
@@ -67,7 +68,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v3.0 — Cleanups + breaking-change cuts *(due 2027-07-27)*
 
-**1/26 done** · 25 backlog
+**1/27 done** · 26 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -96,6 +97,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [584](https://github.com/Kuestenlogik/Bowire/issues/584) | Bowire | [Secrets redaction: extend to HTML report, snapshot files, and recordings](#issue-kuestenlogik-bowire-584) | ⬜ Backlog |  |
 | [611](https://github.com/Kuestenlogik/Bowire/issues/611) | Bowire | [Sidecar: add gRPC as a third transport alongside stdio and HTTP](#issue-kuestenlogik-bowire-611) | ⬜ Backlog |  |
 | [709](https://github.com/Kuestenlogik/Bowire/issues/709) | Bowire | [UnaryReplayer: eight protocol paths, each with its own copy of the shared rules](#issue-kuestenlogik-bowire-709) | ⬜ Backlog |  |
+| [782](https://github.com/Kuestenlogik/Bowire/issues/782) | Bowire | [Document the public API and drop the CS1591 suppression](#issue-kuestenlogik-bowire-782) | ⬜ Backlog |  |
 | [215](https://github.com/Kuestenlogik/Bowire/issues/215) | Bowire | [Test infra: IProcessLauncher seam in PluginManager to cover dotnet-shell-out paths](#issue-kuestenlogik-bowire-215) | ✅ Done | `area:plugin-sdk` |
 
 ### Protocol.Dis v1.2 — Interactive DIS sandbox *(due 2026-11-29)*
@@ -154,13 +156,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [779](https://github.com/Kuestenlogik/Bowire/issues/779) | Bowire | [Revoke the old VSCE_PAT in Azure DevOps](#issue-kuestenlogik-bowire-779) | ⬜ Backlog |  |
 | [613](https://github.com/Kuestenlogik/Bowire/issues/613) | Bowire | [Move the VS Code Marketplace publish off PATs to Entra ID before 2026-12-01](#issue-kuestenlogik-bowire-613) | ✅ Done | `area:cli` |
 
-### Backlog (not yet scheduled)
-
-| # | Project | Title | Status | Tags |
-|---|---|---|---|---|
-| [23](https://github.com/Kuestenlogik/Bowire.Templates/issues/23) | Templates | [Scaffolded plugins start without a known advisory: SignalR.Client and TestHost pins to 10.0.13](#issue-kuestenlogik-bowire-templates-23) | 🟡 In progress | `area:plugin-sdk` |
-| [41](https://github.com/Kuestenlogik/Bowire.Bootcamp/issues/41) | Bootcamp | [Exercise projects pull Microsoft.OpenApi 2.0.0 (GHSA-v5pm-xwqc-g5wc): OpenApi pin to 10.0.13](#issue-kuestenlogik-bowire-bootcamp-41) | 🟡 In progress | `area:bootcamp` |
-
 ## Details
 
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
@@ -176,6 +171,10 @@ Split from #96 so the SCIM surface can ship on its own merits. [[more]](https://
 > `area:site`
 
 Six credible competitors turned up during the competitive survey **via openalternative.co**. Bowire was not there. That is the whole diagnosis: when a developer — or a language model — asks for "open source Postman alternative", the answer is assembled from these directories, not from bowire.io. [[more]](https://github.com/Kuestenlogik/Bowire/issues/670)
+
+#### <a id="issue-kuestenlogik-bowire-781"></a>⬜ Backlog · [#781](https://github.com/Kuestenlogik/Bowire/issues/781) Build: no blanket warning suppressions — NuGet audit fails on known advisories
+
+`Directory.Build.props` suppresses `NU1510;NU1902;NU1903;NU5104` for every project. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/781)
 
 #### <a id="issue-kuestenlogik-bowire-647"></a>✅ Done · [#647](https://github.com/Kuestenlogik/Bowire/issues/647) Decide the licence and carry it per project
 
@@ -475,6 +474,10 @@ Sidecars speak JSON-RPC 2.0 over two transports today: `stdio` (NDJSON) and `htt
 
 `UnaryReplayer.cs` is ~2700 lines with eight protocol paths — REST, gRPC unary/stream/client-stream/bidi, SSE, WebSocket, GraphQL subscription, SignalR, Socket.IO. Each runs its own frame loop, and the rules they all share are copied into each one. [[more]](https://github.com/Kuestenlogik/Bowire/issues/709)
 
+#### <a id="issue-kuestenlogik-bowire-782"></a>⬜ Backlog · [#782](https://github.com/Kuestenlogik/Bowire/issues/782) Document the public API and drop the CS1591 suppression
+
+Every packable project generates its XML documentation file, but `Directory.Build.props` suppresses CS1591 (missing XML comment for a publicly visible member). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/782)
+
 #### <a id="issue-kuestenlogik-bowire-215"></a>✅ Done · [#215](https://github.com/Kuestenlogik/Bowire/issues/215) Test infra: IProcessLauncher seam in PluginManager to cover dotnet-shell-out paths
 
 > `area:plugin-sdk`
@@ -552,20 +555,6 @@ The plugin surface declares a duplex capability that no dispatcher routes. `the 
 > `area:cli`
 
 > **Hard deadline: 2026-12-01.** Azure DevOps stops supporting Personal Access Tokens scoped to *all accessible organizations* on that date. That scope is what `vsce publish` has traditionally required. [[more]](https://github.com/Kuestenlogik/Bowire/issues/613)
-
-### Backlog (not yet scheduled)
-
-#### <a id="issue-kuestenlogik-bowire-templates-23"></a>🟡 In progress · [Kuestenlogik/Bowire.Templates#23](https://github.com/Kuestenlogik/Bowire.Templates/issues/23) Scaffolded plugins start without a known advisory: SignalR.Client and TestHost pins to 10.0.13
-
-> `area:plugin-sdk`
-
-The `bowire-plugin` template writes package pins into every project it scaffolds, and two of them are old 10.0.x patches: [[more]](https://github.com/Kuestenlogik/Bowire.Templates/issues/23)
-
-#### <a id="issue-kuestenlogik-bowire-bootcamp-41"></a>🟡 In progress · [Kuestenlogik/Bowire.Bootcamp#41](https://github.com/Kuestenlogik/Bowire.Bootcamp/issues/41) Exercise projects pull Microsoft.OpenApi 2.0.0 (GHSA-v5pm-xwqc-g5wc): OpenApi pin to 10.0.13
-
-> `area:bootcamp`
-
-Six exercise projects (unit 4 lessons 1 and 2, start and completed; the HarborTour and Berthing capstones) pin Microsoft.AspNetCore.OpenApi 10.0.0. … [[more]](https://github.com/Kuestenlogik/Bowire.Bootcamp/issues/41)
 
 ---
 
