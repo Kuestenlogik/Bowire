@@ -99,12 +99,13 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### Protocol.Dis v1.2 — Interactive DIS sandbox *(due 2026-11-29)*
 
-**0/2 done** · 2 backlog
+**1/3 done** · 2 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
-| [67](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/67) | Protocol.Dis | [DIS sandbox: place and move objects on a map, state as key-value pairs](#issue-kuestenlogik-bowire-protocol-dis-67) | ⬜ Backlog |  |
 | [68](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/68) | Protocol.Dis | [Show datum IDs with their SISO name (Variable Record Types)](#issue-kuestenlogik-bowire-protocol-dis-68) | ⬜ Backlog |  |
+| [69](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/69) | Protocol.Dis | [DIS-Sandbox: Objekte anderer Instanzen empfangen und schreibgeschützt anzeigen](#issue-kuestenlogik-bowire-protocol-dis-69) | ⬜ Backlog |  |
+| [67](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/67) | Protocol.Dis | [DIS sandbox: place and move objects on a map, state as key-value pairs](#issue-kuestenlogik-bowire-protocol-dis-67) | ✅ Done |  |
 
 ### Sdk.Go v0.1 — Polyglot SDK parity: settings, channels, manifests
 
@@ -144,11 +145,11 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### VS Code v1.1 — Marketplace publish via Entra ID *(due 2026-11-30)*
 
-**0/1 done** · 1 backlog
+**1/1 done**
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
-| [613](https://github.com/Kuestenlogik/Bowire/issues/613) | Bowire | [Move the VS Code Marketplace publish off PATs to Entra ID before 2026-12-01](#issue-kuestenlogik-bowire-613) | ⬜ Backlog | `area:cli` |
+| [613](https://github.com/Kuestenlogik/Bowire/issues/613) | Bowire | [Move the VS Code Marketplace publish off PATs to Entra ID before 2026-12-01](#issue-kuestenlogik-bowire-613) | ✅ Done | `area:cli` |
 
 ## Details
 
@@ -466,13 +467,17 @@ Sidecars speak JSON-RPC 2.0 over two transports today: `stdio` (NDJSON) and `htt
 
 ### Protocol.Dis v1.2 — Interactive DIS sandbox *(due 2026-11-29)*
 
-#### <a id="issue-kuestenlogik-bowire-protocol-dis-67"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Dis#67](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/67) DIS sandbox: place and move objects on a map, state as key-value pairs
-
-A test program with which you **drive DIS in Bowire by hand**. The existing sample (`samples/Kuestenlogik.Bowire.Protocol.Dis.Sample`) only plays a fixed recording with three `EntityState` PDUs in a loop. … [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/67)
-
 #### <a id="issue-kuestenlogik-bowire-protocol-dis-68"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Dis#68](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/68) Show datum IDs with their SISO name (Variable Record Types)
 
 Variable and Fixed Datum Records show only the bare datum ID (`30000`) in Bowire and the value as raw bytes. What the ID means you have to look up in SISO-REF-010. [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/68)
+
+#### <a id="issue-kuestenlogik-bowire-protocol-dis-69"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Dis#69](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/69) DIS-Sandbox: Objekte anderer Instanzen empfangen und schreibgeschützt anzeigen
+
+Die DIS-Sandbox (#67) sendet nur. Laufen zwei Instanzen nebeneinander, zeigt keine von beiden, was die andere sendet. Was zwischen den beiden auf dem Netz passiert, sieht nur Bowire. … [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/69)
+
+#### <a id="issue-kuestenlogik-bowire-protocol-dis-67"></a>✅ Done · [Kuestenlogik/Bowire.Protocol.Dis#67](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/67) DIS sandbox: place and move objects on a map, state as key-value pairs
+
+A test program with which you **drive DIS in Bowire by hand**. The existing sample (`samples/Kuestenlogik.Bowire.Protocol.Dis.Sample`) only plays a fixed recording with three `EntityState` PDUs in a loop. … [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/67)
 
 ### Sdk.Go v0.1 — Polyglot SDK parity: settings, channels, manifests
 
@@ -516,7 +521,7 @@ The plugin surface declares a duplex capability that no dispatcher routes. `the 
 
 ### VS Code v1.1 — Marketplace publish via Entra ID *(due 2026-11-30)*
 
-#### <a id="issue-kuestenlogik-bowire-613"></a>⬜ Backlog · [#613](https://github.com/Kuestenlogik/Bowire/issues/613) Move the VS Code Marketplace publish off PATs to Entra ID before 2026-12-01
+#### <a id="issue-kuestenlogik-bowire-613"></a>✅ Done · [#613](https://github.com/Kuestenlogik/Bowire/issues/613) Move the VS Code Marketplace publish off PATs to Entra ID before 2026-12-01
 
 > `area:cli`
 
@@ -524,4 +529,4 @@ The plugin surface declares a duplex capability that no dispatcher routes. `the 
 
 ---
 
-*Generated 2026-10-13 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
+*Generated 2026-10-14 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
