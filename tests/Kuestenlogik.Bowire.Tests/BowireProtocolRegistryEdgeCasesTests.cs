@@ -263,16 +263,12 @@ public sealed class BowireProtocolRegistryEdgeCasesTests
             Dictionary<string, string>? metadata = null, CancellationToken ct = default)
             => Task.FromResult(new InvokeResult(null, 0, "OK", new Dictionary<string, string>()));
 
-#pragma warning disable CS1998
-        public async IAsyncEnumerable<string> InvokeStreamAsync(
+        public IAsyncEnumerable<string> InvokeStreamAsync(
             string serverUrl, string service, string method,
             List<string> jsonMessages, bool showInternalServices,
             Dictionary<string, string>? metadata = null,
-            [EnumeratorCancellation] CancellationToken ct = default)
-        {
-            yield break;
-        }
-#pragma warning restore CS1998
+            CancellationToken ct = default)
+            => AsyncEnumerable.Empty<string>();
 
         public Task<IBowireChannel?> OpenChannelAsync(
             string serverUrl, string service, string method,

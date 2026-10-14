@@ -4,10 +4,6 @@
     <PackageId>Kuestenlogik.Bowire.Security.Scanner</PackageId>
     <PackageTags>bowire;security;vulnerability-scanner;sarif;owasp;api-security;developer-tools</PackageTags>
     <IsPackable>true</IsPackable>
-    <!-- CA1303 (literal strings should be resourced) is suppressed
-         to match Tool's policy — this project carries the same kind
-         of CLI banner / progress output, no localisation planned. -->
-    <NoWarn>$(NoWarn);CA1303</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="bowire" />

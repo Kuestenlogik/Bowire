@@ -23,6 +23,7 @@ namespace Kuestenlogik.Bowire.IntegrationTests.Pulsar;
 /// so dev / CI hosts without a Docker daemon can opt out via
 /// <c>dotnet test --filter "Category!=Docker"</c>.
 /// </remarks>
+[System.Diagnostics.CodeAnalysis.SuppressMessage("Maintainability", "CA1515:Consider making public types internal", Justification = "xUnit injects this fixture into a public test class constructor, so it must be as accessible as that constructor (CS0051 otherwise).")]
 public sealed class PulsarContainerFixture : IAsyncLifetime
 {
     // Pin the image — Testcontainers.Pulsar 4.12 deprecated the

@@ -201,10 +201,13 @@ public sealed class GraphQlSchemaHandler
 
         var response = new JsonObject { ["data"] = data };
         await WriteJsonAsync(ctx, response.ToJsonString(), ct);
-        _logger.LogInformation(
-            "graphql-schema(operation={Name}, rootFields={Fields})",
-            operation.Name?.StringValue ?? "<anonymous>",
-            operation.SelectionSet.Selections.Count);
+        if (_logger.IsEnabled(LogLevel.Information))
+        {
+            _logger.LogInformation(
+                "graphql-schema(operation={Name}, rootFields={Fields})",
+                operation.Name?.StringValue ?? "<anonymous>",
+                operation.SelectionSet.Selections.Count);
+        }
         return true;
     }
 

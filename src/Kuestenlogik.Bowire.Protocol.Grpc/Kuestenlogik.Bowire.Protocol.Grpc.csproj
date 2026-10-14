@@ -4,9 +4,6 @@
     <PackageId>Kuestenlogik.Bowire.Protocol.Grpc</PackageId>
     <PackageTags>bowire;bowire-plugin;grpc;reflection;protobuf;developer-tools</PackageTags>
     <IsPackable>true</IsPackable>
-    <!-- CA1873: false positive on debug log calls whose arguments are
-         property/local reads. Same suppression as Mock and Mqtt. -->
-    <NoWarn>$(NoWarn);CA1873</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="bowire" />

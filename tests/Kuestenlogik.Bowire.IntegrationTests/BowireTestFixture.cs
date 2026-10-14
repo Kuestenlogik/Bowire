@@ -12,6 +12,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Kuestenlogik.Bowire.IntegrationTests;
 
+[System.Diagnostics.CodeAnalysis.SuppressMessage("Maintainability", "CA1515:Consider making public types internal", Justification = "xUnit injects this fixture into a public test class constructor, so it must be as accessible as that constructor (CS0051 otherwise).")]
 public sealed class BowireTestFixture : IAsyncLifetime
 {
     public IHost Host { get; private set; } = null!;

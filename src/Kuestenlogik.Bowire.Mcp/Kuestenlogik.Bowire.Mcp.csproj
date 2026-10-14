@@ -4,10 +4,6 @@
     <PackageId>Kuestenlogik.Bowire.Mcp</PackageId>
     <PackageTags>bowire;mcp;ai;claude;copilot;cursor;model-context-protocol;tools;workbench;developer-tools</PackageTags>
     <IsPackable>true</IsPackable>
-    <!-- CA1873: false positive on debug log calls whose template arguments
-         are property/local reads (no allocation, no virtual dispatch).
-         Same suppression as Kuestenlogik.Bowire.Mock. -->
-    <NoWarn>$(NoWarn);CA1873</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="bowire" />

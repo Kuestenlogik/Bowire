@@ -7,7 +7,17 @@
     <AnalysisLevel>latest-all</AnalysisLevel>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <NoWarn>$(NoWarn);NU1510;NU1902;NU1903;NU5104</NoWarn>
+    <!-- NuGet audit: every package in the graph, direct and transitive, with
+         an advisory of any severity (NU1901-NU1904) fails the restore, since
+         TreatWarningsAsErrors turns the warning into an error. No NuGet
+         warning is suppressed here: a vulnerable package is fixed by raising
+         it (Directory.Packages.props), and a pruned or unneeded reference
+         (NU1510) by removing it. Should an advisory ever have no patched
+         version, it goes in as a single <NuGetAuditSuppress> item with the
+         advisory link and the reason, never as a NoWarn. -->
+    <NuGetAudit>true</NuGetAudit>
+    <NuGetAuditMode>all</NuGetAuditMode>
+    <NuGetAuditLevel>low</NuGetAuditLevel>
   </PropertyGroup>
 
   <!-- Build output goes to artifacts/, never into per-project bin/ + obj/.
@@ -56,6 +66,10 @@
        So when creating a new project the only question is: a host without PackAsTool? Then
        IsPackable=false. -->
 
+  <!-- CS1591 (missing XML comment on a public member) stays off for now:
+       the public API has around 560 undocumented members, and the
+       documentation file is still generated so the documented ones ship
+       their comments. Tracked for removal in #782. -->
   <PropertyGroup Condition="'$(IsPackable)' != 'false'">
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <NoWarn>$(NoWarn);CS1591</NoWarn>

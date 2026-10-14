@@ -38,7 +38,7 @@ internal static class MqttDiscovery
         client.ApplicationMessageReceivedAsync += e =>
         {
             var topic = e.ApplicationMessage.Topic;
-            if (!string.IsNullOrEmpty(topic) && !topic.StartsWith("$SYS"))
+            if (!string.IsNullOrEmpty(topic) && !topic.StartsWith("$SYS", StringComparison.Ordinal))
                 topics.Add(topic);
             return Task.CompletedTask;
         };

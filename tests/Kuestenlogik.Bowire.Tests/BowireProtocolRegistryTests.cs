@@ -253,16 +253,12 @@ public class BowireProtocolRegistryTests
             Dictionary<string, string>? metadata = null, CancellationToken ct = default)
             => Task.FromResult(new InvokeResult(null, 0, "OK", new Dictionary<string, string>()));
 
-#pragma warning disable CS1998 // No-op stream stub
-        public async IAsyncEnumerable<string> InvokeStreamAsync(
+        public IAsyncEnumerable<string> InvokeStreamAsync(
             string serverUrl, string service, string method,
             List<string> jsonMessages, bool showInternalServices,
             Dictionary<string, string>? metadata = null,
-            [EnumeratorCancellation] CancellationToken ct = default)
-        {
-            yield break;
-        }
-#pragma warning restore CS1998
+            CancellationToken ct = default)
+            => AsyncEnumerable.Empty<string>();
 
         public Task<IBowireChannel?> OpenChannelAsync(
             string serverUrl, string service, string method,
@@ -285,14 +281,10 @@ public class BowireProtocolRegistryTests
     {
         public SseSubscriberPlugin() : base("sse-stub", "SseStub") { }
 
-#pragma warning disable CS1998 // Stub
-        public async IAsyncEnumerable<string> SubscribeAsync(
+        public IAsyncEnumerable<string> SubscribeAsync(
             string url, Dictionary<string, string>? headers,
-            [EnumeratorCancellation] CancellationToken ct = default)
-        {
-            yield break;
-        }
-#pragma warning restore CS1998
+            CancellationToken ct = default)
+            => AsyncEnumerable.Empty<string>();
     }
 
     private sealed class WebSocketChannelPlugin : StubProtocol, IInlineWebSocketChannel

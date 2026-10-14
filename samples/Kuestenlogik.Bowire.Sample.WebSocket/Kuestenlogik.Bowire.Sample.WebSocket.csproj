@@ -6,7 +6,6 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>Kuestenlogik.Bowire.Sample.WebSocket</RootNamespace>
     <IsPackable>false</IsPackable>
-    <NoWarn>$(NoWarn);CA1515;CA1812;CA1873</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

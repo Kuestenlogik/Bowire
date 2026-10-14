@@ -43,10 +43,4 @@
        IBowireMockHostingExtension the mock server discovers at
        startup. Kuestenlogik.Bowire.Mock has zero compile-time protocol-library
        knowledge — pure orchestrator. -->
-  <PropertyGroup>
-    <!-- CA1873: the rule fires on structured-logging arguments that are just
-         property accesses. For this project's volume of log calls the
-         source-generated LoggerMessage alternative is overkill. -->
-    <NoWarn>$(NoWarn);CA1873</NoWarn>
-  </PropertyGroup>
 </Project>

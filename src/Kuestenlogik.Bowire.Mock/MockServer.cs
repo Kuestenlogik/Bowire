@@ -402,11 +402,14 @@ public sealed class MockServer : IAsyncDisposable
                 hasGrpcSchema ? "grpc-schema:" + _options.GrpcSchemaPath :
                 hasSchema ? "schema:" + _options.SchemaPath :
                 "recording:" + _options.RecordingPath;
-            logger.LogInformation(
-                "Bowire mock listening on {Scheme}://{Host}:{Port} (source={Source}, steps={StepCount}, watch={Watch})",
-                _options.Https ? "https" : "http", _options.Host, BoundPort, sourceLabel,
-                recording.Steps.Count,
-                hasRecording && _options.Watch);
+            if (logger.IsEnabled(LogLevel.Information))
+            {
+                logger.LogInformation(
+                    "Bowire mock listening on {Scheme}://{Host}:{Port} (source={Source}, steps={StepCount}, watch={Watch})",
+                    _options.Https ? "https" : "http", _options.Host, BoundPort, sourceLabel,
+                    recording.Steps.Count,
+                    hasRecording && _options.Watch);
+            }
 
             // Plugin-contributed transport hosts — MQTT broker since the
             // plugin-isation refactor (was hardcoded here previously),
@@ -457,7 +460,10 @@ public sealed class MockServer : IAsyncDisposable
                         if (!emitter.CanEmit(recording)) continue;
                         await emitter.StartAsync(recording, mockOptions.ForEmitter(), logger, ct);
                         _startedEmitters.Add(emitter);
-                        logger.LogInformation("mock-emitter started: {EmitterId}", emitter.Id);
+                        if (logger.IsEnabled(LogLevel.Information))
+                        {
+                            logger.LogInformation("mock-emitter started: {EmitterId}", emitter.Id);
+                        }
                     }
                     catch (Exception ex)
 #pragma warning restore CA1031
@@ -490,7 +496,10 @@ public sealed class MockServer : IAsyncDisposable
                 // any other, and the summary says so under their name.
                 if (protocol != "GRPC" && group.All(Mocking.GrpcWire.IsGrpcStep))
                 {
-                    logger.LogInformation("steps[{Protocol}]: {Count} — carry gRPC wire bytes, replay over gRPC (HTTP/2)", display, count);
+                    if (logger.IsEnabled(LogLevel.Information))
+                    {
+                        logger.LogInformation("steps[{Protocol}]: {Count} — carry gRPC wire bytes, replay over gRPC (HTTP/2)", display, count);
+                    }
                     continue;
                 }
                 switch (protocol)
@@ -500,7 +509,12 @@ public sealed class MockServer : IAsyncDisposable
                             !string.IsNullOrEmpty(s.ResponseBinary)
                             || s.ReceivedMessages is { Count: > 0 });
                         if (replayable == count)
-                            logger.LogInformation("steps[grpc]: {Count} — replay over gRPC (HTTP/2)", count);
+                        {
+                            if (logger.IsEnabled(LogLevel.Information))
+                            {
+                                logger.LogInformation("steps[grpc]: {Count} — replay over gRPC (HTTP/2)", count);
+                            }
+                        }
                         else
                             logger.LogWarning(
                                 "steps[grpc]: {Missing}/{Count} have no responseBinary wire bytes — those cannot replay. Re-record with a current Bowire, or serve the contract schema-only via --grpc-schema.",
@@ -509,7 +523,12 @@ public sealed class MockServer : IAsyncDisposable
 
                     case "MQTT":
                         if (_transportPorts.TryGetValue("mqtt", out var mqttPort))
-                            logger.LogInformation("steps[mqtt]: {Count} — replay via embedded broker on port {Port}", count, mqttPort);
+                        {
+                            if (logger.IsEnabled(LogLevel.Information))
+                            {
+                                logger.LogInformation("steps[mqtt]: {Count} — replay via embedded broker on port {Port}", count, mqttPort);
+                            }
+                        }
                         else
                             logger.LogWarning(
                                 "steps[mqtt]: {Count} — no MQTT broker started (MQTT plugin not loaded, or the steps carry nothing to replay) — those cannot replay.",
@@ -517,17 +536,23 @@ public sealed class MockServer : IAsyncDisposable
                         break;
 
                     case "SOCKETIO":
-                        logger.LogInformation("steps[socketio]: {Count} — replay on GET /socket.io/ upgrades", count);
+                        if (logger.IsEnabled(LogLevel.Information))
+                        {
+                            logger.LogInformation("steps[socketio]: {Count} — replay on GET /socket.io/ upgrades", count);
+                        }
                         break;
 
                     default:
                         var routed = group.Count(s => !string.IsNullOrEmpty(s.HttpPath) && !string.IsNullOrEmpty(s.HttpVerb));
                         if (routed == count)
                         {
-                            logger.LogInformation(
-                                "steps[{Protocol}]: {Count} — replay on {Routes}",
-                                display, count,
-                                string.Join(", ", group.Select(s => $"{s.HttpVerb} {s.HttpPath}").Distinct(StringComparer.Ordinal)));
+                            if (logger.IsEnabled(LogLevel.Information))
+                            {
+                                logger.LogInformation(
+                                    "steps[{Protocol}]: {Count} — replay on {Routes}",
+                                    display, count,
+                                    string.Join(", ", group.Select(s => $"{s.HttpVerb} {s.HttpPath}").Distinct(StringComparer.Ordinal)));
+                            }
                         }
                         else
                         {
@@ -585,8 +610,11 @@ public sealed class MockServer : IAsyncDisposable
                     var bound = await host.StartAsync(recording, ctx, ct).ConfigureAwait(false);
                     _transportPorts[host.Id] = bound;
                     _startedTransports.Add(host);
-                    logger.LogInformation(
-                        "mock-transport started: id={Id} port={Port}", host.Id, bound);
+                    if (logger.IsEnabled(LogLevel.Information))
+                    {
+                        logger.LogInformation(
+                            "mock-transport started: id={Id} port={Port}", host.Id, bound);
+                    }
                 }
                 // Plugin transport host StartAsync: 3rd-party socket bind,
                 // protocol-specific handshake. Same isolation rule as

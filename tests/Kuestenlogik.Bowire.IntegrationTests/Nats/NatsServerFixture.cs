@@ -31,6 +31,7 @@ namespace Kuestenlogik.Bowire.IntegrationTests.Nats;
 /// live in a per-instance temp dir that's removed on dispose.
 /// </para>
 /// </remarks>
+[System.Diagnostics.CodeAnalysis.SuppressMessage("Maintainability", "CA1515:Consider making public types internal", Justification = "xUnit injects this fixture into a public test class constructor, so it must be as accessible as that constructor (CS0051 otherwise).")]
 public sealed class NatsServerFixture : IAsyncLifetime
 {
     // Pin a specific nats-server release so CI is reproducible. Bump

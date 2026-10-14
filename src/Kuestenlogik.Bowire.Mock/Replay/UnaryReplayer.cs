@@ -280,9 +280,12 @@ public static class UnaryReplayer
         var resumeAfter = ParseLastEventId(ctx.Request.Headers["Last-Event-ID"].ToString());
         if (resumeAfter is int lastId)
         {
-            logger.LogInformation(
-                "sse-resume(step={StepId}, lastEventId={LastEventId}, totalFrames={Total})",
-                step.Id, lastId, frames.Count);
+            if (logger.IsEnabled(LogLevel.Information))
+            {
+                logger.LogInformation(
+                    "sse-resume(step={StepId}, lastEventId={LastEventId}, totalFrames={Total})",
+                    step.Id, lastId, frames.Count);
+            }
         }
 
         ctx.Response.StatusCode = 200;
@@ -622,9 +625,12 @@ public static class UnaryReplayer
         // mirroring that timing avoids surprising clients that rely on
         // stream-half-close ordering.
         var framesReceived = await DrainGrpcRequestStreamAsync(ctx, logger, ct);
-        logger.LogInformation(
-            "grpc-client-stream(step={StepId}, framesReceived={FramesReceived})",
-            step.Id, framesReceived);
+        if (logger.IsEnabled(LogLevel.Information))
+        {
+            logger.LogInformation(
+                "grpc-client-stream(step={StepId}, framesReceived={FramesReceived})",
+                step.Id, framesReceived);
+        }
 
         var envelope = new byte[5 + payload.Length];
         envelope[0] = 0;
@@ -733,9 +739,12 @@ public static class UnaryReplayer
                     if (!ticketAvailable) break;
                     clientTickets.Reader.TryRead(out _);
                     pacer.Advance(evt.TimestampMs);
-                    logger.LogInformation(
-                        "grpc-bidi-gate(step={StepId}, sentIndex={Index}) → released",
-                        step.Id, evt.SentIndex);
+                    if (logger.IsEnabled(LogLevel.Information))
+                    {
+                        logger.LogInformation(
+                            "grpc-bidi-gate(step={StepId}, sentIndex={Index}) → released",
+                            step.Id, evt.SentIndex);
+                    }
                 }
             }
         }
@@ -1034,9 +1043,12 @@ public static class UnaryReplayer
                     // gate-unlock moment — not from the replay start,
                     // which would bunch frames up after a slow client.
                     pacer.Advance(evt.TimestampMs);
-                    logger.LogInformation(
-                        "ws-input-gate(step={StepId}, sentIndex={Index}) → released",
-                        step.Id, evt.SentIndex);
+                    if (logger.IsEnabled(LogLevel.Information))
+                    {
+                        logger.LogInformation(
+                            "ws-input-gate(step={StepId}, sentIndex={Index}) → released",
+                            step.Id, evt.SentIndex);
+                    }
                 }
             }
         }
@@ -1656,6 +1668,7 @@ public static class UnaryReplayer
             catch (OperationCanceledException) { /* shutdown */ }
             catch { /* socket errors — the emit loop will notice */ }
         }, sessionCts.Token);
+#pragma warning restore CA2025
 
         // ---- Server-push loop: recorded ReceivedMessages ----
         var frames2 = step.ReceivedMessages;
@@ -1852,7 +1865,10 @@ public static class UnaryReplayer
         try { doc = System.Text.Json.JsonDocument.Parse(frameJson); }
         catch (System.Text.Json.JsonException)
         {
-            logger.LogDebug("signalr: ignoring non-JSON client frame ({Len} bytes)", frameJson.Length);
+            if (logger.IsEnabled(LogLevel.Debug))
+            {
+                logger.LogDebug("signalr: ignoring non-JSON client frame ({Len} bytes)", frameJson.Length);
+            }
             return;
         }
 
@@ -2208,9 +2224,12 @@ public static class UnaryReplayer
                         }
                         if (ackPayload is null)
                         {
-                            logger.LogDebug(
-                                "socket.io-ack: client sent ack id {AckId} but no ack response queued on step {StepId}.",
-                                ackId, step.Id);
+                            if (logger.IsEnabled(LogLevel.Debug))
+                            {
+                                logger.LogDebug(
+                                    "socket.io-ack: client sent ack id {AckId} but no ack response queued on step {StepId}.",
+                                    ackId, step.Id);
+                            }
                             continue;
                         }
                         var ackNamespace = clientNamespace ?? namespaceName;

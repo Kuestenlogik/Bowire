@@ -231,7 +231,10 @@ public sealed class MockHandler
         if (step.Scenario is { } sc && !string.IsNullOrEmpty(sc.Name) && !string.IsNullOrEmpty(sc.NewState))
         {
             _scenarioStates[sc.Name] = sc.NewState!;
-            _logger.LogDebug("scenario-transition(name={Name}, newState={State})", sc.Name, sc.NewState);
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug("scenario-transition(name={Name}, newState={State})", sc.Name, sc.NewState);
+            }
         }
     }
 
@@ -409,9 +412,12 @@ public sealed class MockHandler
 
         if (_options.PassThroughOnMiss)
         {
-            _logger.LogDebug(
-                "no-match(path={Path}, method={Method}) → pass-through",
-                SafeLog(request.Path), SafeLog(request.HttpMethod));
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug(
+                    "no-match(path={Path}, method={Method}) → pass-through",
+                    SafeLog(request.Path), SafeLog(request.HttpMethod));
+            }
             await next();
             return;
         }
@@ -543,9 +549,12 @@ public sealed class MockHandler
         ReplaceRecording(newRecording);
         _currentSelect = targetSelect;
 
-        _logger.LogInformation(
-            "scenario-switch(path={Path}, select={Select}, stepCount={StepCount})",
-            targetPath, targetSelect ?? "<default>", newRecording.Steps.Count);
+        if (_logger.IsEnabled(LogLevel.Information))
+        {
+            _logger.LogInformation(
+                "scenario-switch(path={Path}, select={Select}, stepCount={StepCount})",
+                targetPath, targetSelect ?? "<default>", newRecording.Steps.Count);
+        }
 
         await WriteControlStatusAsync(ctx);
     }
@@ -647,15 +656,21 @@ public sealed class MockHandler
             if (_options.Matcher.TryMatch(request, window, out _))
             {
                 _cursor++;
-                _logger.LogDebug(
-                    "stateful-advance(step={StepId}, nextCursor={Cursor}/{Total})",
-                    candidate.Id, _cursor, steps.Count);
+                if (_logger.IsEnabled(LogLevel.Debug))
+                {
+                    _logger.LogDebug(
+                        "stateful-advance(step={StepId}, nextCursor={Cursor}/{Total})",
+                        candidate.Id, _cursor, steps.Count);
+                }
                 return candidate;
             }
 
-            _logger.LogDebug(
-                "stateful-miss(expectedStep={StepId}, cursor={Cursor}/{Total}, path={Path})",
-                candidate.Id, _cursor, steps.Count, request.Path);
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug(
+                    "stateful-miss(expectedStep={StepId}, cursor={Cursor}/{Total}, path={Path})",
+                    candidate.Id, _cursor, steps.Count, request.Path);
+            }
             return null;
         }
     }
@@ -700,9 +715,12 @@ public sealed class MockHandler
                 await ctx.Response.WriteAsync(
                     $"{{\"error\":\"chaos: simulated failure ({chaos.FailStatusCode})\"}}",
                     ctx.RequestAborted);
-                _logger.LogInformation(
-                    "chaos-fail(step={StepId}, statusCode={StatusCode})",
-                    step.Id, chaos.FailStatusCode);
+                if (_logger.IsEnabled(LogLevel.Information))
+                {
+                    _logger.LogInformation(
+                        "chaos-fail(step={StepId}, statusCode={StatusCode})",
+                        step.Id, chaos.FailStatusCode);
+                }
                 return;
             }
         }
@@ -731,9 +749,12 @@ public sealed class MockHandler
                 && (fault.Rate >= 1.0 || FaultRandom.NextDouble() < fault.Rate))
             {
                 ctx.Items[FaultItemKey] = fault.Describe();
-                _logger.LogInformation(
-                    "fault(step={StepId}, service={Service}, method={Method}, fault={Fault})",
-                    step.Id, step.Service, step.Method, fault.Describe());
+                if (_logger.IsEnabled(LogLevel.Information))
+                {
+                    _logger.LogInformation(
+                        "fault(step={StepId}, service={Service}, method={Method}, fault={Fault})",
+                        step.Id, step.Service, step.Method, fault.Describe());
+                }
 
                 switch (fault.Kind)
                 {
@@ -796,9 +817,12 @@ public sealed class MockHandler
 
         var statusCode = await UnaryReplayer.ReplayAsync(
             ctx, step, _options, _logger, requestTemplate, ctx.RequestAborted);
-        _logger.LogInformation(
-            "match(step={StepId}, protocol={Protocol}, service={Service}, method={Method}) → {StatusCode}",
-            step.Id, step.Protocol, step.Service, step.Method, statusCode);
+        if (_logger.IsEnabled(LogLevel.Information))
+        {
+            _logger.LogInformation(
+                "match(step={StepId}, protocol={Protocol}, service={Service}, method={Method}) → {StatusCode}",
+                step.Id, step.Protocol, step.Service, step.Method, statusCode);
+        }
     }
 
     // #411: apply an `onMiss` fault rule to an unmatched request. Returns true
@@ -821,8 +845,11 @@ public sealed class MockHandler
         if (fault.Rate < 1.0 && FaultRandom.NextDouble() >= fault.Rate) return false;
 
         ctx.Items[FaultItemKey] = fault.Describe();
-        _logger.LogInformation("fault-on-miss(path={Path}, fault={Fault})",
-            SafeLog(ctx.Request.Path.Value), fault.Describe());
+        if (_logger.IsEnabled(LogLevel.Information))
+        {
+            _logger.LogInformation("fault-on-miss(path={Path}, fault={Fault})",
+                SafeLog(ctx.Request.Path.Value), fault.Describe());
+        }
 
         switch (fault.Kind)
         {
@@ -918,7 +945,10 @@ public sealed class MockHandler
                 await ctx.Response.WriteAsync(bodyText, ctx.RequestAborted);
                 AppendProxiedStep(ctx, (int)upstream.StatusCode, bodyText);
             }
-            _logger.LogDebug("proxy(path={Path}, status={Status})", SafeLog(ctx.Request.Path.Value), (int)upstream.StatusCode);
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug("proxy(path={Path}, status={Status})", SafeLog(ctx.Request.Path.Value), (int)upstream.StatusCode);
+            }
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException && !ctx.RequestAborted.IsCancellationRequested)
         {

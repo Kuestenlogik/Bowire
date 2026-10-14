@@ -287,11 +287,12 @@ public sealed class OAuthEndpointTests : IClassFixture<OAuthEndpointTests.OAuthF
 
     // ---- Fixture: own WebApplication so we can swap the bowire-oauth handler ----
 
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Maintainability", "CA1515:Consider making public types internal", Justification = "xUnit injects this fixture into a public test class constructor, so it must be as accessible as that constructor (CS0051 otherwise).")]
     public sealed class OAuthFixture : IAsyncLifetime
     {
         public IHost Host { get; private set; } = null!;
         public HttpClient Client { get; private set; } = null!;
-        public RecordingMockHandler MockHandler { get; } = new();
+        internal RecordingMockHandler MockHandler { get; } = new();
 
         public async ValueTask InitializeAsync()
         {
@@ -347,7 +348,7 @@ public sealed class OAuthEndpointTests : IClassFixture<OAuthEndpointTests.OAuthF
     /// next queued <c>(status, body)</c> pair. Tests reset the queue
     /// + recordings in their constructor so each test sees a clean slate.
     /// </summary>
-    public sealed class RecordingMockHandler : HttpMessageHandler
+    internal sealed class RecordingMockHandler : HttpMessageHandler
     {
         private readonly System.Collections.Concurrent.ConcurrentQueue<(HttpStatusCode Status, string Body)> _responses = new();
         private readonly object _captureLock = new();
@@ -403,7 +404,7 @@ public sealed class OAuthEndpointTests : IClassFixture<OAuthEndpointTests.OAuthF
         }
     }
 
-    public sealed record CapturedRequest(
+    internal sealed record CapturedRequest(
         HttpMethod Method,
         Uri Url,
         string Body,

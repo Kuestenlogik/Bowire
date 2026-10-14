@@ -13,6 +13,7 @@
 
 namespace Kuestenlogik.Bowire.Sample.OData;
 
+[System.Diagnostics.CodeAnalysis.SuppressMessage("Maintainability", "CA1515:Consider making public types internal", Justification = "ASP.NET Core discovers controllers only among public types; the entity and store types appear in their public signatures.")]
 public class Category
 {
     public int Id { get; set; }
@@ -22,6 +23,7 @@ public class Category
     public ICollection<Product> Products { get; } = [];
 }
 
+[System.Diagnostics.CodeAnalysis.SuppressMessage("Maintainability", "CA1515:Consider making public types internal", Justification = "ASP.NET Core discovers controllers only among public types; the entity and store types appear in their public signatures.")]
 public class Product
 {
     public int Id { get; set; }
@@ -45,6 +47,7 @@ public class Product
 /// PATCH / DELETE really do change what the next GET returns, which is
 /// what makes the write methods worth clicking in the workbench.
 /// </summary>
+[System.Diagnostics.CodeAnalysis.SuppressMessage("Maintainability", "CA1515:Consider making public types internal", Justification = "ASP.NET Core discovers controllers only among public types; the entity and store types appear in their public signatures.")]
 public sealed class NorthwindStore
 {
     /// <summary>

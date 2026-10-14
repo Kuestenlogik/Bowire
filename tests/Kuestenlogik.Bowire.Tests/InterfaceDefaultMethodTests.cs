@@ -148,16 +148,12 @@ public class InterfaceDefaultMethodTests
             Dictionary<string, string>? metadata = null, CancellationToken ct = default)
             => Task.FromResult(new InvokeResult(null, 0, "OK", new Dictionary<string, string>()));
 
-#pragma warning disable CS1998
-        public async IAsyncEnumerable<string> InvokeStreamAsync(
+        public IAsyncEnumerable<string> InvokeStreamAsync(
             string serverUrl, string service, string method,
             List<string> jsonMessages, bool showInternalServices,
             Dictionary<string, string>? metadata = null,
-            [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct = default)
-        {
-            yield break;
-        }
-#pragma warning restore CS1998
+            CancellationToken ct = default)
+            => AsyncEnumerable.Empty<string>();
 
         public Task<IBowireChannel?> OpenChannelAsync(
             string serverUrl, string service, string method,
@@ -179,13 +175,9 @@ public class InterfaceDefaultMethodTests
 
         public Task CloseAsync(CancellationToken ct = default) => Task.CompletedTask;
 
-#pragma warning disable CS1998
-        public async IAsyncEnumerable<string> ReadResponsesAsync(
-            [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct = default)
-        {
-            yield break;
-        }
-#pragma warning restore CS1998
+        public IAsyncEnumerable<string> ReadResponsesAsync(
+            CancellationToken ct = default)
+            => AsyncEnumerable.Empty<string>();
 
         public ValueTask DisposeAsync() => ValueTask.CompletedTask;
     }

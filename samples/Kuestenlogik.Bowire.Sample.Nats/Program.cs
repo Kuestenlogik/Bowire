@@ -129,9 +129,12 @@ sealed class NatsSampleWorkload(ILogger<NatsSampleWorkload> logger) : Background
                         },
                         cancellationToken: ct);
                     streamReady = true;
-                    logger.LogInformation(
-                        "JetStream stream {Stream} ready over {Cpu} + {Memory}",
-                        StreamName, CpuSubject, MemorySubject);
+                    if (logger.IsEnabled(LogLevel.Information))
+                    {
+                        logger.LogInformation(
+                            "JetStream stream {Stream} ready over {Cpu} + {Memory}",
+                            StreamName, CpuSubject, MemorySubject);
+                    }
                 }
 
                 i++;
@@ -244,9 +247,12 @@ sealed class NatsSampleWorkload(ILogger<NatsSampleWorkload> logger) : Background
                         $"say: {msg.Data} ({DateTime.UtcNow:O})", cancellationToken: ct),
                     cancellationToken: ct);
 
-                logger.LogInformation(
-                    "NATS service {Service} advertised with endpoint {Subject}",
-                    ServiceName, ServiceEndpointSubject);
+                if (logger.IsEnabled(LogLevel.Information))
+                {
+                    logger.LogInformation(
+                        "NATS service {Service} advertised with endpoint {Subject}",
+                        ServiceName, ServiceEndpointSubject);
+                }
 
                 // Stay registered until shutdown — the service answers
                 // `$SRV.*` on its own from here.

@@ -104,9 +104,12 @@ public sealed class MqttReactiveResponder : IDisposable
             var responseTopic = ResolveResponseTopic(incoming, step, extras);
             if (string.IsNullOrEmpty(responseTopic))
             {
-                _logger.LogDebug(
-                    "mqtt-react(step={StepId}, topic={Topic}) — no response topic; fire-and-forget",
-                    step.Id, topic);
+                if (_logger.IsEnabled(LogLevel.Debug))
+                {
+                    _logger.LogDebug(
+                        "mqtt-react(step={StepId}, topic={Topic}) — no response topic; fire-and-forget",
+                        step.Id, topic);
+                }
                 continue;
             }
 
@@ -128,9 +131,12 @@ public sealed class MqttReactiveResponder : IDisposable
             try
             {
                 await _broker.InjectApplicationMessage(new InjectedMqttApplicationMessage(response));
-                _logger.LogInformation(
-                    "mqtt-react(step={StepId}, request={Topic}) -> {ResponseTopic} ({Bytes} bytes)",
-                    step.Id, LogSanitizer.Strip(topic), LogSanitizer.Strip(responseTopic), payloadBytes.Length);
+                if (_logger.IsEnabled(LogLevel.Information))
+                {
+                    _logger.LogInformation(
+                        "mqtt-react(step={StepId}, request={Topic}) -> {ResponseTopic} ({Bytes} bytes)",
+                        step.Id, LogSanitizer.Strip(topic), LogSanitizer.Strip(responseTopic), payloadBytes.Length);
+                }
             }
             catch (Exception ex)
             {

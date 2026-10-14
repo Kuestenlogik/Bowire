@@ -6,9 +6,6 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>Kuestenlogik.Bowire.Sample.SignalR</RootNamespace>
     <IsPackable>false</IsPackable>
-    <!-- CA1822: SignalR hub methods must be instance methods even when
-         they touch no instance state — the hub is activated per call. -->
-    <NoWarn>$(NoWarn);CA1515;CA1812;CA1873;CA1822</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

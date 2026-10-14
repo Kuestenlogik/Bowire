@@ -71,9 +71,12 @@ public sealed class RecordingWatcher : IDisposable
                 await Task.Delay(_debounce, newCts.Token);
                 var recording = RecordingLoader.Load(_path, _select);
                 _onReload(recording);
-                _logger?.LogInformation(
-                    "Recording reloaded from {Path} (version={Version}, steps={StepCount})",
-                    _path, recording.RecordingFormatVersion, recording.Steps.Count);
+                if (_logger?.IsEnabled(LogLevel.Information) == true)
+                {
+                    _logger?.LogInformation(
+                        "Recording reloaded from {Path} (version={Version}, steps={StepCount})",
+                        _path, recording.RecordingFormatVersion, recording.Steps.Count);
+                }
             }
             catch (OperationCanceledException)
             {

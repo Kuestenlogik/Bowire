@@ -337,9 +337,12 @@ public sealed class MqttProactiveEmitter : IAsyncDisposable
             var injected = new InjectedMqttApplicationMessage(message);
             await _broker.InjectApplicationMessage(injected, ct);
 
-            _logger.LogInformation(
-                "mqtt-emit(step={StepId}, topic={Topic}, qos={Qos}, retain={Retain}, bytes={Bytes})",
-                LogSanitizer.Strip(emission.StepId), LogSanitizer.Strip(topic), (int)qos, retain, payloadBytes.Length);
+            if (_logger.IsEnabled(LogLevel.Information))
+            {
+                _logger.LogInformation(
+                    "mqtt-emit(step={StepId}, topic={Topic}, qos={Qos}, retain={Retain}, bytes={Bytes})",
+                    LogSanitizer.Strip(emission.StepId), LogSanitizer.Strip(topic), (int)qos, retain, payloadBytes.Length);
+            }
         }
         catch (Exception ex)
         {

@@ -52,7 +52,7 @@ public sealed class BowireTargetLockEndpointTests
             Dialed.Enqueue(serverUrl);
             return Task.FromResult(new InvokeResult("""{"ok":true}""", 1, "OK", new Dictionary<string, string>()));
         }
-#pragma warning disable CS1998
+#pragma warning disable CS1998 // Frames come from memory; the iterator has nothing to await.
         public async IAsyncEnumerable<string> InvokeStreamAsync(string serverUrl, string service, string method, List<string> jsonMessages, bool showInternalServices, Dictionary<string, string>? metadata = null, [EnumeratorCancellation] CancellationToken ct = default)
         {
             Dialed.Enqueue(serverUrl);

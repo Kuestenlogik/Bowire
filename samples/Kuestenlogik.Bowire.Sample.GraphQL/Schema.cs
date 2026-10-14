@@ -30,6 +30,7 @@ namespace Kuestenlogik.Bowire.Sample.GraphQL;
 /// the environment default would silently break the thing the sample
 /// exists to demonstrate.
 /// </summary>
+[System.Diagnostics.CodeAnalysis.SuppressMessage("Maintainability", "CA1515:Consider making public types internal", Justification = "HotChocolate's schema builder resolves only public types (see the note at the top of this file).")]
 public sealed class IntrospectionInterceptor : DefaultHttpRequestInterceptor
 {
     public override ValueTask OnCreateAsync(
@@ -45,6 +46,7 @@ public sealed class IntrospectionInterceptor : DefaultHttpRequestInterceptor
     }
 }
 
+[System.Diagnostics.CodeAnalysis.SuppressMessage("Maintainability", "CA1515:Consider making public types internal", Justification = "HotChocolate's schema builder resolves only public types (see the note at the top of this file).")]
 public sealed class Query
 {
     private static readonly List<Book> s_books =
@@ -59,6 +61,7 @@ public sealed class Query
     internal static List<Book> All => s_books;
 }
 
+[System.Diagnostics.CodeAnalysis.SuppressMessage("Maintainability", "CA1515:Consider making public types internal", Justification = "HotChocolate's schema builder resolves only public types (see the note at the top of this file).")]
 public sealed class Mutation
 {
     // Adds a book and publishes it to the `bookAdded` subscription stream.
@@ -75,6 +78,7 @@ public sealed class Mutation
     }
 }
 
+[System.Diagnostics.CodeAnalysis.SuppressMessage("Maintainability", "CA1515:Consider making public types internal", Justification = "HotChocolate's schema builder resolves only public types (see the note at the top of this file).")]
 public sealed class Subscription
 {
     // subscription { bookAdded { id title author } } — pushes every
@@ -83,4 +87,5 @@ public sealed class Subscription
     public Book BookAdded([EventMessage] Book book) => book;
 }
 
+[System.Diagnostics.CodeAnalysis.SuppressMessage("Maintainability", "CA1515:Consider making public types internal", Justification = "HotChocolate's schema builder resolves only public types (see the note at the top of this file).")]
 public sealed record Book(int Id, string Title, string Author);

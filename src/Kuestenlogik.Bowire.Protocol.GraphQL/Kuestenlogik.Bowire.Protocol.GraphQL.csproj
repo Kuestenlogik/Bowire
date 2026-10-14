@@ -5,7 +5,6 @@
     <PackageTags>bowire;bowire-plugin;graphql;introspection;query;mutation;subscription;developer-tools</PackageTags>
     <IsPackable>true</IsPackable>
     <RootNamespace>Kuestenlogik.Bowire.Protocol.GraphQL</RootNamespace>
-    <NoWarn>$(NoWarn);CA1873</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="bowire" />

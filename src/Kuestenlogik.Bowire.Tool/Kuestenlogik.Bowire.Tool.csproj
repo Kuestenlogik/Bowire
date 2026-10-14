@@ -16,7 +16,6 @@
     <IsPackable>true</IsPackable>
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>bowire</ToolCommandName>
-    <NoWarn>$(NoWarn);CA1303</NoWarn>
     <!--
       Windows application icon for the compiled bowire.exe. Embedded as a
       PE resource so Task Manager, Explorer, and the title bar all show

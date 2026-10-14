@@ -5,10 +5,6 @@
     <PackageId>Kuestenlogik.Bowire.Protocol.Mqtt</PackageId>
     <PackageTags>bowire;bowire-plugin;mqtt;broker;iot;pubsub;developer-tools</PackageTags>
     <IsPackable>true</IsPackable>
-    <!-- CA1873: false positive on debug log calls whose template
-         arguments are property/local reads (no allocation, no virtual
-         dispatch). Same suppression as Kuestenlogik.Bowire.Mock and Mcp. -->
-    <NoWarn>$(NoWarn);CA1873</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

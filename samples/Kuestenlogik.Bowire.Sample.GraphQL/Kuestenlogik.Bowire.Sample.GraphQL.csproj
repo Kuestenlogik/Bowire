@@ -6,11 +6,6 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>Kuestenlogik.Bowire.Sample.GraphQL</RootNamespace>
     <IsPackable>false</IsPackable>
-    <!-- Sample-app code, not a library: CA1515 (internal types) / CA1812
-         (uninstantiated internal) / CA1873 (defer logger args) don't apply.
-         CA1822: HotChocolate resolver methods are invoked on an instance
-         of the query/mutation/subscription type — instance is idiomatic. -->
-    <NoWarn>$(NoWarn);CA1515;CA1812;CA1873;CA1822</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

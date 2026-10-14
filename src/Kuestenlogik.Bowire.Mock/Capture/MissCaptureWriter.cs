@@ -78,9 +78,12 @@ internal static class MissCaptureWriter
             var recording = await LoadOrCreateAsync(path, ct);
             recording.Steps.Add(step);
             await SaveAsync(path, recording, ct);
-            logger.LogInformation(
-                "miss-capture: appended {StepId} ({Protocol} {Verb} {Path}) to {File}",
-                step.Id, step.Protocol, Safe(step.HttpVerb), Safe(step.HttpPath ?? ("/" + step.Service + "/" + step.Method)), path);
+            if (logger.IsEnabled(LogLevel.Information))
+            {
+                logger.LogInformation(
+                    "miss-capture: appended {StepId} ({Protocol} {Verb} {Path}) to {File}",
+                    step.Id, step.Protocol, Safe(step.HttpVerb), Safe(step.HttpPath ?? ("/" + step.Service + "/" + step.Method)), path);
+            }
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Text.Json.JsonException or InvalidOperationException or InvalidDataException)
         {

@@ -96,13 +96,9 @@ public class ChannelStoreTests
 
         public Task CloseAsync(CancellationToken ct = default) => Task.CompletedTask;
 
-#pragma warning disable CS1998 // Stub — yield-break async iterator with no awaits
-        public async IAsyncEnumerable<string> ReadResponsesAsync(
-            [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct = default)
-        {
-            yield break;
-        }
-#pragma warning restore CS1998
+        public IAsyncEnumerable<string> ReadResponsesAsync(
+            CancellationToken ct = default)
+            => AsyncEnumerable.Empty<string>();
 
         public ValueTask DisposeAsync() => ValueTask.CompletedTask;
     }

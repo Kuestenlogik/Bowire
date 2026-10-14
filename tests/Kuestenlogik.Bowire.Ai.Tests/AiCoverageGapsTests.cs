@@ -1,18 +1,6 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
-// CA1849: file IO calls are intentionally synchronous in test bodies —
-//   the temp store paths sit on local disk and the production code under
-//   test is itself synchronous (BowireAiUserConfigStore + AppendAuditLog
-//   use sync File.* APIs).
-// CA1861: anonymous-object payloads in the request bodies use array
-//   literals; promoting them to static readonly fields would lose the
-//   anonymous-record inference the JSON serializer needs.
-// xUnit1051: AIFunction.InvokeAsync overloads accept a CancellationToken
-//   but the function bodies under test never block on it; passing
-//   TestContext's token would be noise.
-#pragma warning disable CA1849, CA1861, xUnit1051
-
 using System.Net;
 using System.Net.Http.Json;
 using System.Runtime.CompilerServices;
@@ -43,6 +31,9 @@ namespace Kuestenlogik.Bowire.Ai.Tests;
 [Collection("BowireUserContext")]
 public sealed class AiCoverageGapsTests : IDisposable
 {
+    private static readonly string[] s_localServerUrls = ["http://localhost:5000"];
+    private static readonly string[] s_fallbackServerUrls = ["http://fallback:9000"];
+
     private readonly IBowireUserStore _originalStore;
     private readonly string _tempRoot;
 
@@ -1300,7 +1291,7 @@ public sealed class AiCoverageGapsTests : IDisposable
                 messages = new[] { new { role = "user", content = "list services" } },
                 context = new
                 {
-                    serverUrls = new[] { "http://localhost:5000" },
+                    serverUrls = s_localServerUrls,
                     services = new[]
                     {
                         new
@@ -1612,7 +1603,7 @@ public sealed class AiCoverageGapsTests : IDisposable
         {
             { "service", "PETS" },     // case-insensitive match
             { "method", "getPet" },
-        });
+        }, TestContext.Current.CancellationToken);
         var okText = ok?.ToString() ?? "";
         Assert.Contains("getPet", okText, StringComparison.Ordinal);
 
@@ -1621,7 +1612,7 @@ public sealed class AiCoverageGapsTests : IDisposable
         {
             { "service", "nope" },
             { "method", "x" },
-        });
+        }, TestContext.Current.CancellationToken);
         Assert.Contains("not in the workbench", noSvc?.ToString() ?? "", StringComparison.Ordinal);
 
         // Known service, unknown method.
@@ -1629,7 +1620,7 @@ public sealed class AiCoverageGapsTests : IDisposable
         {
             { "service", "pets" },
             { "method", "missing" },
-        });
+        }, TestContext.Current.CancellationToken);
         Assert.Contains("not on service", noMethod?.ToString() ?? "", StringComparison.Ordinal);
     }
 
@@ -1663,14 +1654,14 @@ public sealed class AiCoverageGapsTests : IDisposable
             .First(t => t.Name == "bowire_recent_history");
 
         // Default limit (null arg): min(5, 8) = 5 rows.
-        var defaultResult = await recent.InvokeAsync(new AIFunctionArguments { { "limit", null } });
+        var defaultResult = await recent.InvokeAsync(new AIFunctionArguments { { "limit", null } }, TestContext.Current.CancellationToken);
         var defaultJson = JsonSerializer.Serialize(defaultResult);
         Assert.Contains("m0", defaultJson, StringComparison.Ordinal);
         Assert.Contains("m4", defaultJson, StringComparison.Ordinal);
         Assert.DoesNotContain("m5", defaultJson, StringComparison.Ordinal);
 
         // Explicit limit higher than the list: capped at the list length.
-        var biggerResult = await recent.InvokeAsync(new AIFunctionArguments { { "limit", 50 } });
+        var biggerResult = await recent.InvokeAsync(new AIFunctionArguments { { "limit", 50 } }, TestContext.Current.CancellationToken);
         var biggerJson = JsonSerializer.Serialize(biggerResult);
         Assert.Contains("m7", biggerJson, StringComparison.Ordinal);
     }
@@ -1715,7 +1706,7 @@ public sealed class AiCoverageGapsTests : IDisposable
         {
             { "service", "pets" },
             { "method", "getPet" },
-        });
+        }, TestContext.Current.CancellationToken);
         var okJson = JsonSerializer.Serialize(ok);
         Assert.Contains("\"ok\":true", okJson, StringComparison.Ordinal);
 
@@ -1723,7 +1714,7 @@ public sealed class AiCoverageGapsTests : IDisposable
         {
             { "service", "nope" },
             { "method", "x" },
-        });
+        }, TestContext.Current.CancellationToken);
         var badSvcJson = JsonSerializer.Serialize(badSvc);
         Assert.Contains("\"ok\":false", badSvcJson, StringComparison.Ordinal);
 
@@ -1731,7 +1722,7 @@ public sealed class AiCoverageGapsTests : IDisposable
         {
             { "service", "pets" },
             { "method", "missing" },
-        });
+        }, TestContext.Current.CancellationToken);
         Assert.Contains("\"ok\":false", JsonSerializer.Serialize(badMethod), StringComparison.Ordinal);
     }
 
@@ -1778,7 +1769,7 @@ public sealed class AiCoverageGapsTests : IDisposable
         var list = stub.LastOptions!.Tools!
             .OfType<AIFunction>()
             .First(t => t.Name == "bowire_list_services");
-        var result = await list.InvokeAsync(new AIFunctionArguments());
+        var result = await list.InvokeAsync(new AIFunctionArguments(), TestContext.Current.CancellationToken);
         var json = JsonSerializer.Serialize(result);
         Assert.Contains("pets", json, StringComparison.Ordinal);
         Assert.Contains("core", json, StringComparison.Ordinal);
@@ -2019,7 +2010,7 @@ public sealed class AiCoverageGapsTests : IDisposable
                 messages = new[] { new { role = "user", content = "hi" } },
                 context = new
                 {
-                    serverUrls = new[] { "http://fallback:9000" },
+                    serverUrls = s_fallbackServerUrls,
                     services = new[]
                     {
                         new

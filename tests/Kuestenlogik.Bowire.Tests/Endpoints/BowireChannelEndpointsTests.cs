@@ -51,7 +51,7 @@ public sealed class BowireChannelEndpointsTests
             return Task.FromResult(true);
         }
         public Task CloseAsync(CancellationToken ct = default) { IsClosed = true; return Task.CompletedTask; }
-#pragma warning disable CS1998
+#pragma warning disable CS1998 // Frames come from memory; the iterator has nothing to await.
         public async IAsyncEnumerable<string> ReadResponsesAsync([EnumeratorCancellation] CancellationToken ct = default)
         {
             foreach (var r in _responses) yield return r;
@@ -69,10 +69,8 @@ public sealed class BowireChannelEndpointsTests
             => Task.FromResult(new List<BowireServiceInfo>());
         public Task<InvokeResult> InvokeAsync(string serverUrl, string service, string method, List<string> jsonMessages, bool showInternalServices, Dictionary<string, string>? metadata = null, CancellationToken ct = default)
             => Task.FromResult(new InvokeResult(null, 0, "OK", new Dictionary<string, string>()));
-#pragma warning disable CS1998
-        public async IAsyncEnumerable<string> InvokeStreamAsync(string serverUrl, string service, string method, List<string> jsonMessages, bool showInternalServices, Dictionary<string, string>? metadata = null, [EnumeratorCancellation] CancellationToken ct = default)
-        { yield break; }
-#pragma warning restore CS1998
+        public IAsyncEnumerable<string> InvokeStreamAsync(string serverUrl, string service, string method, List<string> jsonMessages, bool showInternalServices, Dictionary<string, string>? metadata = null, CancellationToken ct = default)
+            => AsyncEnumerable.Empty<string>();
         public Task<IBowireChannel?> OpenChannelAsync(string serverUrl, string service, string method, bool showInternalServices, Dictionary<string, string>? metadata = null, CancellationToken ct = default)
         {
             if (openThrows) throw new InvalidOperationException("open boom");

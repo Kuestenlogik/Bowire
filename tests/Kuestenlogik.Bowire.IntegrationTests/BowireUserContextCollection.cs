@@ -11,6 +11,7 @@ namespace Kuestenlogik.Bowire.IntegrationTests;
 /// </summary>
 [CollectionDefinition("BowireUserContext", DisableParallelization = true)]
 #pragma warning disable CA1711 // *Collection suffix is the xUnit convention for collection-definition classes.
+[System.Diagnostics.CodeAnalysis.SuppressMessage("Maintainability", "CA1515:Consider making public types internal", Justification = "xUnit discovers collection definitions by reflection and requires them to be public (xUnit1027).")]
 public sealed class BowireUserContextCollection
 #pragma warning restore CA1711
 {

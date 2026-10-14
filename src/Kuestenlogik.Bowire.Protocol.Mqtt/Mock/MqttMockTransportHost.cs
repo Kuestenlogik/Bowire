@@ -90,9 +90,12 @@ public sealed class MqttMockTransportHost : IBowireMockTransportHost, IAsyncDisp
         _reactive = new MqttReactiveResponder(_broker, recording, context.Logger);
         _reactive.Start();
 
-        context.Logger.LogInformation(
-            "Bowire mock MQTT broker listening on mqtt://{Host}:{Port}",
-            context.Host, chosenPort);
+        if (context.Logger.IsEnabled(LogLevel.Information))
+        {
+            context.Logger.LogInformation(
+                "Bowire mock MQTT broker listening on mqtt://{Host}:{Port}",
+                context.Host, chosenPort);
+        }
 
         return chosenPort;
     }

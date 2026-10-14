@@ -39,8 +39,10 @@ sealed class ChatHub : Hub
     public Task SendMessage(string user, string message)
         => Clients.All.SendAsync("ReceiveMessage", user, message);
 
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "SignalR binds hub methods only among public instance methods, so this cannot be static.")]
     public string Echo(string text) => "echo: " + text;
 
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "SignalR binds hub methods only among public instance methods, so this cannot be static.")]
     public async IAsyncEnumerable<int> Counter(
         int count, int delayMs,
         [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct = default)

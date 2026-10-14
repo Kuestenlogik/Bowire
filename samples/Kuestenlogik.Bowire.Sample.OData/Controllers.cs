@@ -23,6 +23,7 @@ using Microsoft.AspNetCore.OData.Routing.Controllers;
 
 namespace Kuestenlogik.Bowire.Sample.OData;
 
+[System.Diagnostics.CodeAnalysis.SuppressMessage("Maintainability", "CA1515:Consider making public types internal", Justification = "ASP.NET Core discovers controllers only among public types; the entity and store types appear in their public signatures.")]
 public class CategoriesController(NorthwindStore store) : ODataController
 {
     [EnableQuery]
@@ -81,6 +82,7 @@ public class CategoriesController(NorthwindStore store) : ODataController
     }
 }
 
+[System.Diagnostics.CodeAnalysis.SuppressMessage("Maintainability", "CA1515:Consider making public types internal", Justification = "ASP.NET Core discovers controllers only among public types; the entity and store types appear in their public signatures.")]
 public class ProductsController(NorthwindStore store) : ODataController
 {
     // Snapshot for the same reason as CategoriesController.Get().

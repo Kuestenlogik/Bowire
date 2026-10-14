@@ -21,7 +21,7 @@ namespace Kuestenlogik.Bowire.IntegrationTests.Fakes;
 /// real gRPC or WebSocket listener.
 /// </para>
 /// </summary>
-public sealed class FakeChannelProtocol : IBowireProtocol
+internal sealed class FakeChannelProtocol : IBowireProtocol
 {
     public string Name => "Fake (test)";
     public string Id => "fake";
@@ -37,16 +37,12 @@ public sealed class FakeChannelProtocol : IBowireProtocol
         Dictionary<string, string>? metadata = null, CancellationToken ct = default)
         => Task.FromResult(new InvokeResult(null, 0, "OK", []));
 
-#pragma warning disable CS1998 // async without await — empty enumerable
-    public async IAsyncEnumerable<string> InvokeStreamAsync(
+    public IAsyncEnumerable<string> InvokeStreamAsync(
         string serverUrl, string service, string method,
         List<string> jsonMessages, bool showInternalServices,
         Dictionary<string, string>? metadata = null,
-        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct = default)
-    {
-        yield break;
-    }
-#pragma warning restore CS1998
+        CancellationToken ct = default)
+        => AsyncEnumerable.Empty<string>();
 
     public Task<IBowireChannel?> OpenChannelAsync(
         string serverUrl, string service, string method,

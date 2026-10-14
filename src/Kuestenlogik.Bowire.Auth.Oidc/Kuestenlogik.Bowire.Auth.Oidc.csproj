@@ -17,6 +17,15 @@
     <!-- Lifts Microsoft.Identity.Web's transitive 10.0.10 out of the
          advisories listed in Directory.Packages.props. -->
     <PackageReference Include="System.Security.Cryptography.Pkcs" />
-    <PackageReference Include="System.Security.Cryptography.Xml" />
+    <!-- NU1510 is suppressed for this one reference only. This project
+         references the ASP.NET Core shared framework, so NuGet prunes the
+         package here and calls the reference unnecessary. It is not: it is
+         what carries the 10.0.13 floor (GHSA-r955-8q5j-3h83) to every project
+         and package consumer that reaches Microsoft.Identity.Web through this
+         project without referencing the shared framework itself (prune rules
+         follow a project's own FrameworkReference, not a transitive one).
+         Without it, Auth.Oidc.Tests resolves Xml 10.0.10 again
+         (the vulnerable-package listing reports it). -->
+    <PackageReference Include="System.Security.Cryptography.Xml" NoWarn="NU1510" />
   </ItemGroup>
 </Project>

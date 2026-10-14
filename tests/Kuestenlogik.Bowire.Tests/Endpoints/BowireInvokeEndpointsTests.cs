@@ -46,7 +46,7 @@ public sealed class BowireInvokeEndpointsTests
             if (invokeThrows) throw new InvalidOperationException("invoke boom");
             return Task.FromResult(invoke?.Invoke() ?? new InvokeResult("""{"ok":true}""", 3, "OK", new Dictionary<string, string>()));
         }
-#pragma warning disable CS1998
+#pragma warning disable CS1998 // Frames come from memory; the iterator has nothing to await.
         public async IAsyncEnumerable<string> InvokeStreamAsync(string serverUrl, string service, string method, List<string> jsonMessages, bool showInternalServices, Dictionary<string, string>? metadata = null, [EnumeratorCancellation] CancellationToken ct = default)
         {
             foreach (var f in streamFrames ?? []) yield return f;

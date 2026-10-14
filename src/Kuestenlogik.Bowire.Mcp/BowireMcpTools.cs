@@ -1141,7 +1141,10 @@ public sealed class BowireMcpTools
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
         {
-            _logger.LogDebug(ex, "Recording flush to {Path} failed", BowireConfigPath("recordings.json"));
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug(ex, "Recording flush to {Path} failed", BowireConfigPath("recordings.json"));
+            }
         }
         return recording;
     }
