@@ -156,6 +156,12 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [779](https://github.com/Kuestenlogik/Bowire/issues/779) | Bowire | [Revoke the old VSCE_PAT in Azure DevOps](#issue-kuestenlogik-bowire-779) | ⬜ Backlog |  |
 | [613](https://github.com/Kuestenlogik/Bowire/issues/613) | Bowire | [Move the VS Code Marketplace publish off PATs to Entra ID before 2026-12-01](#issue-kuestenlogik-bowire-613) | ✅ Done | `area:cli` |
 
+### Backlog (not yet scheduled)
+
+| # | Project | Title | Status | Tags |
+|---|---|---|---|---|
+| [24](https://github.com/Kuestenlogik/Bowire.Templates/issues/24) | Templates | [Warning suppressions: NU5128 on the template pack, CS1591 in the plugin template](#issue-kuestenlogik-bowire-templates-24) | 🟡 In progress | `area:plugin-sdk` |
+
 ## Details
 
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
@@ -556,6 +562,14 @@ The plugin surface declares a duplex capability that no dispatcher routes. `the 
 
 > **Hard deadline: 2026-12-01.** Azure DevOps stops supporting Personal Access Tokens scoped to *all accessible organizations* on that date. That scope is what `vsce publish` has traditionally required. [[more]](https://github.com/Kuestenlogik/Bowire/issues/613)
 
+### Backlog (not yet scheduled)
+
+#### <a id="issue-kuestenlogik-bowire-templates-24"></a>🟡 In progress · [Kuestenlogik/Bowire.Templates#24](https://github.com/Kuestenlogik/Bowire.Templates/issues/24) Warning suppressions: NU5128 on the template pack, CS1591 in the plugin template
+
+> `area:plugin-sdk`
+
+Two warning suppressions in this repo, reviewed under the rule that warnings are fixed at the cause and a suppression stays only where no fix exists, narrowly and with a reason: [[more]](https://github.com/Kuestenlogik/Bowire.Templates/issues/24)
+
 ---
 
-*Generated 2026-10-14 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
+*Generated 2026-10-15 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
