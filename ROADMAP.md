@@ -161,6 +161,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [24](https://github.com/Kuestenlogik/Bowire.Templates/issues/24) | Templates | [Warning suppressions: NU5128 on the template pack, CS1591 in the plugin template](#issue-kuestenlogik-bowire-templates-24) | 🟡 In progress | `area:plugin-sdk` |
+| [783](https://github.com/Kuestenlogik/Bowire/issues/783) | Bowire | [roadmap-release-field publish is failing](#issue-kuestenlogik-bowire-783) | ⬜ Backlog |  |
 
 ## Details
 
@@ -570,6 +571,10 @@ The plugin surface declares a duplex capability that no dispatcher routes. `the 
 
 Two warning suppressions in this repo, reviewed under the rule that warnings are fixed at the cause and a suppression stays only where no fix exists, narrowly and with a reason: [[more]](https://github.com/Kuestenlogik/Bowire.Templates/issues/24)
 
+#### <a id="issue-kuestenlogik-bowire-783"></a>⬜ Backlog · [#783](https://github.com/Kuestenlogik/Bowire/issues/783) roadmap-release-field publish is failing
+
+<!-- publish-failure:roadmap-release-field --> The **roadmap-release-field** publish failed. - Run: https://github.com/Kuestenlogik/Bowire/actions/runs/38728477658 - Workflow: `Roadmap field guard` - Commit: ab6803c16ef4714f8344c14b77f336e984e6858f [[more]](https://github.com/Kuestenlogik/Bowire/issues/783)
+
 ---
 
-*Generated 2026-10-15 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
+*Generated 2026-10-16 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
