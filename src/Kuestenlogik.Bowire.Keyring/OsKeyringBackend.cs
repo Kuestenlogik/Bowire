@@ -167,6 +167,9 @@ public sealed class OsKeyringBackend : IKeyringBackend
     internal delegate ProcessOutput ProcessRunner(string fileName, IReadOnlyList<string> args);
 
     internal static ProcessOutput DefaultRunProcess(string fileName, IReadOnlyList<string> args)
+        => RunProcess(fileName, args, CliTimeout);
+
+    internal static ProcessOutput RunProcess(string fileName, IReadOnlyList<string> args, TimeSpan timeout)
     {
         var psi = new ProcessStartInfo(fileName)
         {
@@ -180,14 +183,19 @@ public sealed class OsKeyringBackend : IKeyringBackend
         var proc = Process.Start(psi) ?? throw new InvalidOperationException($"{fileName} failed to start");
         using (proc)
         {
-            var stdout = proc.StandardOutput.ReadToEnd();
-            _ = proc.StandardError.ReadToEnd();
-            if (!proc.WaitForExit(CliTimeout))
+            // Drain both pipes in the background and wait on the process: a
+            // blocking ReadToEnd only returns when the child exits, so a CLI
+            // stuck on an unlock prompt never reached the timeout (#848).
+            // Draining stderr too keeps a chatty child from filling that pipe.
+            var stdout = proc.StandardOutput.ReadToEndAsync();
+            var stderr = proc.StandardError.ReadToEndAsync();
+            if (!proc.WaitForExit(timeout))
             {
                 try { proc.Kill(entireProcessTree: true); } catch (InvalidOperationException) { /* already gone */ }
                 throw new TimeoutException($"{fileName} timed out");
             }
-            return new ProcessOutput(proc.ExitCode, stdout);
+            Task.WaitAll(stdout, stderr);
+            return new ProcessOutput(proc.ExitCode, stdout.Result);
         }
     }
 

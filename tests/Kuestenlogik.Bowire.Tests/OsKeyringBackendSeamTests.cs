@@ -201,6 +201,26 @@ public sealed class OsKeyringBackendSeamTests
     }
 
     [Fact]
+    public async Task RunProcess_HangingCommand_TimesOut()
+    {
+        // A CLI that never exits (secret-tool waiting on an unlock prompt)
+        // keeps stdout open, so the timeout must hold while output is still
+        // being read. The child runs for minutes; the timeout is 200 ms.
+        var (fileName, args) = OperatingSystem.IsWindows()
+            ? ("ping", new[] { "-n", "300", "127.0.0.1" })
+            : ("sleep", new[] { "300" });
+
+        var run = Task.Run(() => OsKeyringBackend.RunProcess(fileName, args, TimeSpan.FromMilliseconds(200)));
+
+        // Guard only: a regression must fail the test rather than block the
+        // run for the child's full five minutes.
+        var finished = await Task.WhenAny(run, Task.Delay(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken));
+        Assert.Same(run, finished);
+        var ex = await Assert.ThrowsAsync<TimeoutException>(() => run);
+        Assert.Contains(fileName, ex.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void DefaultRunProcess_MissingCommand_ThrowsWin32()
     {
         Assert.Throws<Win32Exception>(
