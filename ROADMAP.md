@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
 
-**3/31 done** · 28 backlog
+**3/33 done** · 30 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -44,6 +44,8 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [845](https://github.com/Kuestenlogik/Bowire/issues/845) | Bowire | [OpenAPI discovery ignores body, response and error schemas keyed application/json; charset=utf-8](#issue-kuestenlogik-bowire-845) | ⬜ Backlog |  |
 | [846](https://github.com/Kuestenlogik/Bowire/issues/846) | Bowire | [SignalR binds body fields by JSON order instead of parameter name](#issue-kuestenlogik-bowire-846) | ⬜ Backlog |  |
 | [847](https://github.com/Kuestenlogik/Bowire/issues/847) | Bowire | [SignalR client-streaming and duplex channels send messages as positional arguments instead of a stream](#issue-kuestenlogik-bowire-847) | ⬜ Backlog |  |
+| [848](https://github.com/Kuestenlogik/Bowire/issues/848) | Bowire | [Keyring CLI timeout never applies: output is read to the end before the wait](#issue-kuestenlogik-bowire-848) | ⬜ Backlog |  |
+| [849](https://github.com/Kuestenlogik/Bowire/issues/849) | Bowire | [Kubernetes catalogue finds nothing in a kubeconfig written by kubectl or kind](#issue-kuestenlogik-bowire-849) | ⬜ Backlog |  |
 | [816](https://github.com/Kuestenlogik/Bowire/issues/816) | Bowire | [SCIM trace records status 200 for every request](#issue-kuestenlogik-bowire-816) | ✅ Done |  |
 | [817](https://github.com/Kuestenlogik/Bowire/issues/817) | Bowire | [OIDC provider cannot run as an installed plugin](#issue-kuestenlogik-bowire-817) | ✅ Done |  |
 | [818](https://github.com/Kuestenlogik/Bowire/issues/818) | Bowire | [--auth-oidc-* flags are documented but never read](#issue-kuestenlogik-bowire-818) | ✅ Done |  |
@@ -315,6 +317,14 @@ A SignalR request body is one JSON object keyed by parameter name, but the plugi
 #### <a id="issue-kuestenlogik-bowire-847"></a>⬜ Backlog · [#847](https://github.com/Kuestenlogik/Bowire/issues/847) SignalR client-streaming and duplex channels send messages as positional arguments instead of a stream
 
 A client-streaming or duplex SignalR call opened as a channel never reaches the hub's stream parameter. Instead, every message sent is passed as a separate positional argument. [[more]](https://github.com/Kuestenlogik/Bowire/issues/847)
+
+#### <a id="issue-kuestenlogik-bowire-848"></a>⬜ Backlog · [#848](https://github.com/Kuestenlogik/Bowire/issues/848) Keyring CLI timeout never applies: output is read to the end before the wait
+
+`OsKeyringBackend.DefaultRunProcess` (`src/Kuestenlogik.Bowire.Keyring/OsKeyringBackend.cs`, L169–L192) shells out to `security` / `secret-tool` with a 5 s timeout, but reads stdout and stderr with blocking `ReadToEnd()` *before* `WaitForExit(CliTimeout)`. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/848)
+
+#### <a id="issue-kuestenlogik-bowire-849"></a>⬜ Backlog · [#849](https://github.com/Kuestenlogik/Bowire/issues/849) Kubernetes catalogue finds nothing in a kubeconfig written by kubectl or kind
+
+`KubernetesCatalogueProvider.TryParseKubeconfig` (`src/Kuestenlogik.Bowire.Catalogue.Kubernetes/KubernetesCatalogueProvider.cs`, L341–L438) only opens a record on a `- name:` line. kubectl and kind write clusters and contexts the other way round: [[more]](https://github.com/Kuestenlogik/Bowire/issues/849)
 
 #### <a id="issue-kuestenlogik-bowire-816"></a>✅ Done · [#816](https://github.com/Kuestenlogik/Bowire/issues/816) SCIM trace records status 200 for every request
 
