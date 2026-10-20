@@ -1,6 +1,7 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Globalization;
 using System.Reflection;
 using System.Threading.Channels;
 using Kuestenlogik.Bowire.Models;
@@ -439,9 +440,19 @@ internal static class SignalRHubDiscovery
 
     private static List<BowireEnumValue> BuildEnumValues(Type enumType)
     {
+        // A boxed enum unboxes only to its own underlying type, so (int)v
+        // threw for `enum : byte` / `: long` and failed the whole hub
+        // discovery (#827). Go through the underlying value instead; a
+        // ulong beyond long's range wraps like the int narrowing below,
+        // which is display-only.
+        var unsigned64 = Enum.GetUnderlyingType(enumType) == typeof(ulong);
         return Enum.GetValues(enumType)
             .Cast<object>()
-            .Select(v => new BowireEnumValue(v.ToString()!, (int)v))
+            .Select(v => new BowireEnumValue(
+                v.ToString()!,
+                unchecked((int)(unsigned64
+                    ? (long)Convert.ToUInt64(v, CultureInfo.InvariantCulture)
+                    : Convert.ToInt64(v, CultureInfo.InvariantCulture)))))
             .ToList();
     }
 }

@@ -398,6 +398,26 @@ public sealed class SignalRHubDiscoveryTests
         Assert.Null(child.MessageType!.Fields.Single(f => f.Name == "Parent").MessageType);
     }
 
+    [Fact]
+    public void DiscoverHubs_Enum_With_Non_Int_Underlying_Type_Is_Mapped()
+    {
+        // #827 — BuildEnumValues unboxed every value with (int)v, which
+        // throws InvalidCastException for `enum : byte` / `: long` and took
+        // the whole hub discovery down with it.
+        var sp = BuildProvider(new[] { BuildHubEndpoint("/paint", new HubMetadata(typeof(PaintHub))) });
+
+        var svc = Assert.Single(InvokeDiscoverHubs(sp));
+
+        var paint = svc.Methods.Single(m => m.Name == "Paint");
+        var shade = paint.InputType.Fields.Single(f => f.Name == "shade");
+        Assert.Equal(["Light", "Dark"], shade.EnumValues!.Select(v => v.Name));
+        Assert.Equal([1, 200], shade.EnumValues!.Select(v => v.Number));
+        var weight = paint.InputType.Fields.Single(f => f.Name == "weight");
+        // Enum.GetValues orders by the unsigned bit pattern, so -1 sorts last.
+        Assert.Contains(weight.EnumValues!, v => v is { Name: "Unknown", Number: -1 });
+        Assert.Contains(weight.EnumValues!, v => v is { Name: "Heavy", Number: 7 });
+    }
+
     [Theory]
     [InlineData(typeof(string), "string")]
     [InlineData(typeof(int), "int32")]
@@ -736,6 +756,12 @@ internal sealed class GraphHub : Hub
     public Task<FamilyParent> Family() => Task.FromResult(new FamilyParent());
 }
 
+/// <summary>Hub fixture for enums whose underlying type is not int (#827).</summary>
+internal sealed class PaintHub : Hub
+{
+    public Task Paint(ByteShade shade, LongWeight weight) => Task.CompletedTask;
+}
+
 internal sealed class LinkedNode
 {
     public int Value { get; set; }
@@ -751,6 +777,10 @@ internal sealed class FamilyChild
 {
     public FamilyParent? Parent { get; set; }
 }
+
+internal enum ByteShade : byte { Light = 1, Dark = 200 }
+
+internal enum LongWeight : long { Unknown = -1, Heavy = 7 }
 
 internal sealed class UserDto
 {
