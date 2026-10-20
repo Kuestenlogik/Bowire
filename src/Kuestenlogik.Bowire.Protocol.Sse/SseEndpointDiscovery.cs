@@ -25,8 +25,6 @@ internal static class SseEndpointDiscovery
         IServiceProvider? serviceProvider,
         string? serverUrl = null)
     {
-        var endpoints = new List<SseEndpointInfo>(configuredEndpoints);
-
         // Scan endpoint data sources for auto-discoverable SSE endpoints —
         // but ONLY when the discover request targets this very workbench
         // host. Without the self-origin gate the workbench's own routes
@@ -39,9 +37,20 @@ internal static class SseEndpointDiscovery
         // Self-origin gate only when an explicit external serverUrl
         // is supplied. Null / empty means embedded-mode with no URL
         // context — scan unconditionally (pre-gate behaviour).
+        //
+        // The gate covers the statically registered endpoints too: they
+        // describe streams on this host just like the scanned routes, and
+        // listed under an external URL they were the same phantom service —
+        // whose presence also kept the sse@ ad-hoc fallback from running
+        // (#862). Without a service provider there is no host to compare
+        // against, so the registrations stand on their own as before.
         var selfOrigin = string.IsNullOrWhiteSpace(serverUrl)
+            || serviceProvider is null
             || Helpers.SelfOriginCheck.IsSelfOrigin(serverUrl, serviceProvider);
-        if (serviceProvider is not null && selfOrigin)
+        if (!selfOrigin) return [];
+
+        var endpoints = new List<SseEndpointInfo>(configuredEndpoints);
+        if (serviceProvider is not null)
         {
             var dataSources = serviceProvider.GetService<IEnumerable<EndpointDataSource>>();
             if (dataSources is not null)

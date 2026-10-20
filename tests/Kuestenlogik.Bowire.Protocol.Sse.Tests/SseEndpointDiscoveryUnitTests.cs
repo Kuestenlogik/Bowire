@@ -50,6 +50,34 @@ public sealed class SseEndpointDiscoveryUnitTests : IDisposable
     }
 
     [Fact]
+    public async Task An_External_Source_Does_Not_Pick_Up_Statically_Registered_Endpoints()
+    {
+        // #862 — RegisterEndpoint describes streams on THIS host, the
+        // same as the scanned routes. Listed under an external URL they are
+        // the same phantom service, and their presence also kept the
+        // sse@ ad-hoc fallback from ever being added.
+        await using var app = await StartedHostAsync();
+
+        var services = SseEndpointDiscovery.Discover(
+            [new SseEndpointInfo("/events/manual", "Manual")],
+            app.Services,
+            "https://somewhere-else.example.com/api/locations");
+
+        Assert.Empty(services);
+    }
+
+    [Fact]
+    public async Task The_Workbench_Own_Url_Still_Sees_Statically_Registered_Endpoints()
+    {
+        await using var app = await StartedHostAsync();
+
+        var services = SseEndpointDiscovery.Discover(
+            [new SseEndpointInfo("/events/manual", "Manual")], app.Services, app.Urls.First());
+
+        Assert.Contains(Assert.Single(services).Methods, m => m.Name == "Manual");
+    }
+
+    [Fact]
     public async Task The_Workbench_Own_Url_Still_Sees_Them()
     {
         // The gate must not cost the case it was added around.
