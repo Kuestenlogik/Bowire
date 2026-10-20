@@ -135,6 +135,31 @@ public sealed class OastServeCommandTests : IDisposable
     }
 
     [Fact]
+    public async Task A_Dns_Port_That_Is_Taken_Fails_The_Run()
+    {
+        // Hold a UDP port the OS picked, so the DNS listener cannot have it.
+        // A server that cannot answer DNS catches nothing, and saying
+        // "Stopped." with exit 0 hides that from the script that started it.
+        using var squatter = new System.Net.Sockets.UdpClient(System.Net.Sockets.AddressFamily.InterNetwork)
+        {
+            ExclusiveAddressUse = true,
+        };
+        squatter.Client.Bind(new System.Net.IPEndPoint(System.Net.IPAddress.Loopback, 0));
+        var takenPort = ((System.Net.IPEndPoint)squatter.Client.LocalEndPoint!).Port;
+
+        // Not cancelled: the run has to end on its own, because the DNS half
+        // failed. The timeout is a backstop against a hang.
+        var exit = await BowireOastServer.RunAsync(Options(dnsPort: takenPort), TestContext.Current.CancellationToken, _banner, _stderr)
+            .WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
+
+        Assert.Equal(1, exit);
+        Assert.Contains(
+            string.Create(CultureInfo.InvariantCulture, $"DNS listener failed on port {takenPort}"),
+            _stderr.ToString(), StringComparison.Ordinal);
+        Assert.DoesNotContain("Stopped.", _stdout.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task Cancelling_Stops_Cleanly_Rather_Than_Throwing()
     {
         // Ctrl+C is the documented way to stop it, so the cancellation has to

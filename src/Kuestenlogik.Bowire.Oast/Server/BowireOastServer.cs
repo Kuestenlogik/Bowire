@@ -121,6 +121,10 @@ public static class BowireOastServer
             return 1;
         }
 
+        // Read only once Listen has ended (see #832 below); a bind failure is
+        // raised here before that task completes.
+        var dnsError = new TaskCompletionSource<Exception>(TaskCreationOptions.RunContinuationsAsynchronously);
+        dns.Errored += (_, e) => dnsError.TrySetResult(e.Exception);
         var dnsListen = dns.Listen(options.DnsPort, listenIp);
 
         await stdout.WriteLineAsync().ConfigureAwait(false);
@@ -143,9 +147,24 @@ public static class BowireOastServer
         // `using` here would dispose it while the task still runs.
         var eviction = EvictLoopAsync(store, TimeSpan.FromMinutes(5), ct);
 
+        Exception? dnsFailure = null;
         try
         {
-            await Task.WhenAny(dnsListen, eviction, Task.Delay(Timeout.Infinite, ct)).ConfigureAwait(false);
+            // WhenAny hands back the task that ended without rethrowing its
+            // failure, so the winner is awaited for that.
+            var ended = await Task.WhenAny(dnsListen, eviction, Task.Delay(Timeout.Infinite, ct)).ConfigureAwait(false);
+            await ended.ConfigureAwait(false);
+
+            // #832 — the listener only ends on its own when it could not run:
+            // the DNS library reports a failed bind through Errored and then
+            // completes Listen normally. Taking that for a clean stop printed
+            // "Stopped." and exit 0 for a server that catches no DNS at all.
+            if (ended == dnsListen)
+            {
+                dnsFailure = dnsError.Task.IsCompleted
+                    ? await dnsError.Task.ConfigureAwait(false)
+                    : new IOException("the listener stopped unexpectedly");
+            }
         }
         catch (OperationCanceledException)
         {
@@ -153,7 +172,12 @@ public static class BowireOastServer
         }
         catch (SocketException ex)
         {
-            await stderr.WriteLineAsync($"  DNS listener failed on port {options.DnsPort}: {ex.Message}").ConfigureAwait(false);
+            dnsFailure = ex;
+        }
+
+        if (dnsFailure is not null)
+        {
+            await stderr.WriteLineAsync($"  DNS listener failed on port {options.DnsPort}: {dnsFailure.Message}").ConfigureAwait(false);
             await stderr.WriteLineAsync("  Port 53 is usually held by systemd-resolved on Linux; disable its stub listener or pass --dns-port for a local test.").ConfigureAwait(false);
             await app.StopAsync(CancellationToken.None).ConfigureAwait(false);
             return 1;
