@@ -153,6 +153,40 @@ public sealed class OpenApiDiscoveryInputShapeTests
         }
     }
 
+    [Theory]
+    [InlineData("application/json; charset=utf-8")]
+    [InlineData("application/problem+json; charset=utf-8")]
+    [InlineData("Application/JSON")]
+    public async Task Json_Media_Type_With_Parameters_Is_Read_For_Body_Response_And_Errors(string mediaType)
+    {
+        var doc = $$"""
+            {
+              "openapi": "3.0.0",
+              "info": { "title": "Charset", "version": "1" },
+              "paths": {
+                "/pets": {
+                  "post": {
+                    "operationId": "createPet",
+                    "requestBody": { "content": { "{{mediaType}}": { "schema": { "type": "object", "properties": { "name": { "type": "string" } } } } } },
+                    "responses": {
+                      "200": { "description": "ok", "content": { "{{mediaType}}": { "schema": { "type": "object", "properties": { "id": { "type": "integer" } } } } } },
+                      "400": { "description": "bad", "content": { "{{mediaType}}": { "schema": { "type": "object", "properties": { "detail": { "type": "string" } } } } } }
+                    }
+                  }
+                }
+              }
+            }
+            """;
+
+        var parsed = await OpenApiDiscovery.ParseRawAsync(doc, TestContext.Current.CancellationToken);
+        var method = Assert.Single(Assert.Single(OpenApiDiscovery.BuildServices(parsed!.Document)).Methods);
+
+        Assert.Equal("name", Assert.Single(method.InputType.Fields).Name);
+        Assert.Equal("id", Assert.Single(method.OutputType.Fields).Name);
+        var error = Assert.Single(method.ErrorTypes!);
+        Assert.Equal("detail", Assert.Single(error.Fields).Name);
+    }
+
     private sealed class FixedResponseHandler(string body, string mediaType) : HttpMessageHandler
     {
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
