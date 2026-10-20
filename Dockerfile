@@ -14,7 +14,10 @@
 # src/Kuestenlogik.Bowire.Tool (see the Downloads page).
 
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS install
-RUN dotnet tool install --tool-path /opt/bowire Kuestenlogik.Bowire.Tool
+# Empty installs the latest release. CI pins it right after a release, when
+# nuget.org already lists the new version but still resolves the previous one.
+ARG BOWIRE_VERSION=""
+RUN dotnet tool install --tool-path /opt/bowire Kuestenlogik.Bowire.Tool ${BOWIRE_VERSION:+--version "$BOWIRE_VERSION"}
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0
 COPY --from=install /opt/bowire /opt/bowire

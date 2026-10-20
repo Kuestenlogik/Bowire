@@ -83,8 +83,23 @@ jobs:
           echo "expected=${expected}" >> "$GITHUB_OUTPUT"
           echo "Expecting Kuestenlogik.Bowire.Tool ${expected} in the image."
 
+      # Pinned to the expected version, which is what holds the patch number:
+      # the server reports its AssemblyVersion, Major.Minor.0.0, so the probe
+      # can only check Major.Minor. Right after a release the version may not
+      # install yet; retry once a minute.
       - name: Build the image
-        run: docker build --pull --no-cache -t bowire-mcp .
+        env:
+          EXPECTED: ${{ steps.version.outputs.expected }}
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 20); do
+            if docker build --pull --no-cache --build-arg BOWIRE_VERSION="$EXPECTED" -t bowire-mcp .; then
+              exit 0
+            fi
+            echo "Kuestenlogik.Bowire.Tool ${EXPECTED} does not install yet (attempt ${attempt}); retrying in a minute."
+            sleep 60
+          done
+          exit 1
 
       - name: Probe initialize and tools/list
         run: node scripts/ci/probe-mcp-image.mjs bowire-mcp --expect-version "${{ steps.version.outputs.expected }}"

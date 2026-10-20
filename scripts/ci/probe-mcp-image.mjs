@@ -42,8 +42,12 @@ export function checkProbe(stdout, { expectVersion } = {}) {
     if (!init) problems.push('no response to initialize');
     else if (init.error) problems.push(`initialize failed: ${init.error.message}`);
     else {
+        // serverInfo.version is the AssemblyVersion, which Directory.Build.props binds to
+        // Major.Minor: 2.9.1 reports 2.9.0.0. So only Major.Minor can be checked here; the
+        // patch is held by the build, which installs the expected version or fails.
         const version = init.result?.serverInfo?.version ?? '';
-        if (expectVersion && version !== expectVersion && !version.startsWith(`${expectVersion}.`)) {
+        const majorMinor = v => v.split('.').slice(0, 2).join('.');
+        if (expectVersion && majorMinor(version) !== majorMinor(expectVersion)) {
             problems.push(`the image runs ${version || 'an unknown version'}, expected ${expectVersion}`);
         }
     }

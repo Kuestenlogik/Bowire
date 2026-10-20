@@ -40,6 +40,16 @@ describe('checkProbe', () => {
         assert.deepEqual(checkProbe([initialize('2.10.0'), toolsList()].join('\n'), { expectVersion: '2.10.0' }), []);
     });
 
+    it('accepts a patch release, whose AssemblyVersion stays at Major.Minor.0.0', () => {
+        // Directory.Build.props binds AssemblyVersion to Major.Minor, so 2.9.1 reports 2.9.0.0.
+        assert.deepEqual(checkProbe([initialize('2.9.0.0'), toolsList()].join('\n'), { expectVersion: '2.9.1' }), []);
+    });
+
+    it('reports an image of an earlier minor even when the patch numbers agree', () => {
+        const problems = checkProbe([initialize('2.8.0.0'), toolsList()].join('\n'), { expectVersion: '2.9.0' });
+        assert.match(problems.join('\n'), /2\.8\.0\.0.*2\.9\.0/);
+    });
+
     it('reports an image that still carries the previous release', () => {
         const problems = checkProbe([initialize('2.9.0.0'), toolsList()].join('\n'), { expectVersion: '2.10.0' });
         assert.match(problems.join('\n'), /2\.9\.0\.0.*2\.10\.0/);
