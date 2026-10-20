@@ -17,15 +17,27 @@
     <!-- Lifts Microsoft.Identity.Web's transitive 10.0.10 out of the
          advisories listed in Directory.Packages.props. -->
     <PackageReference Include="System.Security.Cryptography.Pkcs" />
-    <!-- NU1510 is suppressed for this one reference only. This project
-         references the ASP.NET Core shared framework, so NuGet prunes the
-         package here and calls the reference unnecessary. It is not: it is
-         what carries the 10.0.13 floor (GHSA-r955-8q5j-3h83) to every project
-         and package consumer that reaches Microsoft.Identity.Web through this
-         project without referencing the shared framework itself (prune rules
-         follow a project's own FrameworkReference, not a transitive one).
-         Without it, Auth.Oidc.Tests resolves Xml 10.0.10 again
-         (the vulnerable-package listing reports it). -->
-    <PackageReference Include="System.Security.Cryptography.Xml" NoWarn="NU1510" />
+    <!-- Carries the 10.0.13 floor (GHSA-r955-8q5j-3h83) to every consumer that
+         reaches Microsoft.Identity.Web through this package. Microsoft.Identity.Web
+         4.16 still asks for Xml 10.0.10 (through TokenCache and
+         Microsoft.AspNetCore.DataProtection), and a consumer prunes it only when it
+         references the ASP.NET Core shared framework itself: prune rules follow a
+         project's own FrameworkReference, not one that arrives through a package.
+         See KeepCryptographyXmlInPackage below for why the reference needs help to
+         reach the nuspec. -->
+    <PackageReference Include="System.Security.Cryptography.Xml" />
   </ItemGroup>
+
+  <!-- This project references the shared framework, so the SDK puts
+       System.Security.Cryptography.Xml on its prune list. A pruned direct reference
+       is made PrivateAssets=all (NU1510 asks to remove it) and is left out of the
+       nuspec, so the floor above never reached a package consumer: a consumer
+       without its own FrameworkReference resolved Xml 10.0.10 again. Taking the
+       package off this project's prune list keeps it an ordinary reference, which
+       the nuspec carries. -->
+  <Target Name="KeepCryptographyXmlInPackage" AfterTargets="AddPrunePackageReferences">
+    <ItemGroup>
+      <PrunePackageReference Remove="System.Security.Cryptography.Xml" />
+    </ItemGroup>
+  </Target>
 </Project>
