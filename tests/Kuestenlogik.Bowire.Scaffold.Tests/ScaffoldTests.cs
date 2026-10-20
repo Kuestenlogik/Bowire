@@ -137,6 +137,16 @@ public sealed class ScaffoldTests
         Assert.Equal("X(1, 2)?", text);
     }
 
+    [Theory]
+    [InlineData("{{#a}}X{{/ a }}Y")]
+    [InlineData("{{#a}}X{{/a  }}Y")]
+    [InlineData("{{# a }}X{{ /a }}Y")]
+    public void A_closing_tag_written_with_spaces_closes_cleanly(string template)
+    {
+        var text = ScaffoldTemplate.Render(template, new Dictionary<string, object?> { ["a"] = true });
+        Assert.Equal("XY", text);
+    }
+
     [Fact]
     public void An_unknown_name_in_a_template_fails_instead_of_leaving_a_hole()
     {

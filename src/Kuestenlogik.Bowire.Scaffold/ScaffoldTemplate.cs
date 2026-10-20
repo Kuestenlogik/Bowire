@@ -55,11 +55,13 @@ internal static class ScaffoldTemplate
             if (tag.Length > 1 && (tag[0] == '#' || tag[0] == '^'))
             {
                 var name = tag[1..].Trim();
-                var endTag = "{{/" + name + "}}";
                 var end = FindSectionEnd(template, i, name);
                 if (end < 0) throw new FormatException($"section '{name}' is not closed");
                 var body = template[i..end];
-                i = end + endTag.Length;
+                // #836 — continue after the closing tag as written. Its length
+                // is not that of "{{/name}}": FindSectionEnd also accepts
+                // `{{/ name }}`, and skipping the shorter form left "}}" behind.
+                i = template.IndexOf("}}", end + 2, StringComparison.Ordinal) + 2;
 
                 var value = Lookup(scopes, name);
                 if (tag[0] == '^')
