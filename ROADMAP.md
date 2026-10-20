@@ -12,11 +12,10 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.9.1 — Dependency security fixes *(due 2026-10-20)*
 
-**8/9 done** · 1 in progress
+**9/9 done**
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
-| [808](https://github.com/Kuestenlogik/Bowire/issues/808) | Bowire | [Auth.Oidc package still brings System.Security.Cryptography.Xml 10.0.10 to its consumers](#issue-kuestenlogik-bowire-808) | 🟡 In progress | `area:security` |
 | [647](https://github.com/Kuestenlogik/Bowire/issues/647) | Bowire | [Decide the licence and carry it per project](#issue-kuestenlogik-bowire-647) | ✅ Done | `area:multi` |
 | [668](https://github.com/Kuestenlogik/Bowire/issues/668) | Bowire | [Sharpen the one-line pitch, and carry the same sentence everywhere](#issue-kuestenlogik-bowire-668) | ✅ Done | `area:site` |
 | [777](https://github.com/Kuestenlogik/Bowire/issues/777) | Bowire | [English only: translate German comments, docs and issues, and guard against new German](#issue-kuestenlogik-bowire-777) | ✅ Done | `area:multi` |
@@ -25,6 +24,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [781](https://github.com/Kuestenlogik/Bowire/issues/781) | Bowire | [Build: no blanket warning suppressions — NuGet audit fails on known advisories](#issue-kuestenlogik-bowire-781) | ✅ Done |  |
 | [797](https://github.com/Kuestenlogik/Bowire/issues/797) | Bowire | [SDK pin 10.0.402 with rollForward latestFeature](#issue-kuestenlogik-bowire-797) | ✅ Done |  |
 | [798](https://github.com/Kuestenlogik/Bowire/issues/798) | Bowire | [Microsoft.OpenApi.YamlReader advisory GHSA-7pxr-59rr-hqj2 stops the restore](#issue-kuestenlogik-bowire-798) | ✅ Done |  |
+| [808](https://github.com/Kuestenlogik/Bowire/issues/808) | Bowire | [Auth.Oidc package still brings System.Security.Cryptography.Xml 10.0.10 to its consumers](#issue-kuestenlogik-bowire-808) | ✅ Done | `area:security` |
 
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
 
@@ -180,12 +180,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.9.1 — Dependency security fixes *(due 2026-10-20)*
 
-#### <a id="issue-kuestenlogik-bowire-808"></a>🟡 In progress · [#808](https://github.com/Kuestenlogik/Bowire/issues/808) Auth.Oidc package still brings System.Security.Cryptography.Xml 10.0.10 to its consumers
-
-> `area:security`
-
-The `Kuestenlogik.Bowire.Auth.Oidc` package still brings `System.Security.Cryptography.Xml` 10.0.10 ([GHSA-r955-8q5j-3h83](https://github.com/advisories/GHSA-r955-8q5j-3h83), high) into a consumer that does not reference the ASP.NET Core shared framework itself. [[more]](https://github.com/Kuestenlogik/Bowire/issues/808)
-
 #### <a id="issue-kuestenlogik-bowire-647"></a>✅ Done · [#647](https://github.com/Kuestenlogik/Bowire/issues/647) Decide the licence and carry it per project
 
 > `area:multi`
@@ -227,6 +221,12 @@ CI installs the SDK through `setup-dotnet` with a floating `10.0.x` (`dogfood-pr
 #### <a id="issue-kuestenlogik-bowire-798"></a>✅ Done · [#798](https://github.com/Kuestenlogik/Bowire/issues/798) Microsoft.OpenApi.YamlReader advisory GHSA-7pxr-59rr-hqj2 stops the restore
 
 A new high-severity advisory, [GHSA-7pxr-59rr-hqj2](https://github.com/advisories/GHSA-7pxr-59rr-hqj2) (Microsoft.OpenApi.YamlReader: denial of service via YAML alias expansion), covers `Microsoft.OpenApi.YamlReader` >= 3.0.0 < 3.10.0 and >= 2.0.0-preview.11 < 2.12.0. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/798)
+
+#### <a id="issue-kuestenlogik-bowire-808"></a>✅ Done · [#808](https://github.com/Kuestenlogik/Bowire/issues/808) Auth.Oidc package still brings System.Security.Cryptography.Xml 10.0.10 to its consumers
+
+> `area:security`
+
+The `Kuestenlogik.Bowire.Auth.Oidc` package still brings `System.Security.Cryptography.Xml` 10.0.10 ([GHSA-r955-8q5j-3h83](https://github.com/advisories/GHSA-r955-8q5j-3h83), high) into a consumer that does not reference the ASP.NET Core shared framework itself. [[more]](https://github.com/Kuestenlogik/Bowire/issues/808)
 
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
 
