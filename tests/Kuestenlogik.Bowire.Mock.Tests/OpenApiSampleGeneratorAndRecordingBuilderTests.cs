@@ -355,6 +355,89 @@ public sealed class OpenApiSampleGeneratorTests
         Assert.Equal(1, doc.RootElement.GetProperty("x").GetInt32());
     }
 
+    [Fact]
+    public void Generate_Typeless_Schema_With_Properties_Yields_Object()
+    {
+        // `type` is optional in JSON Schema; a schema that declares
+        // properties is an object whether or not it says so.
+        var json = OpenApiSampleGenerator.Generate(GetPropertySchema("""
+            {
+              "openapi": "3.0.0",
+              "info": { "title": "T", "version": "1" },
+              "paths": { "/x": { "get": { "operationId": "g", "responses": { "200": { "description": "ok" } } } } },
+              "components": {
+                "schemas": {
+                  "Sample": {
+                    "type": "object",
+                    "properties": {
+                      "v": { "properties": { "x": { "type": "integer" } } }
+                    }
+                  }
+                }
+              }
+            }
+            """, "Sample", "v"));
+
+        Assert.Equal("""{"x":1}""", json);
+    }
+
+    [Fact]
+    public void Generate_AllOf_Only_Schema_Merges_The_Members_Into_One_Object()
+    {
+        var json = OpenApiSampleGenerator.Generate(GetPropertySchema("""
+            {
+              "openapi": "3.0.0",
+              "info": { "title": "T", "version": "1" },
+              "paths": { "/x": { "get": { "operationId": "g", "responses": { "200": { "description": "ok" } } } } },
+              "components": {
+                "schemas": {
+                  "Base": { "type": "object", "properties": { "id": { "type": "integer" } } },
+                  "Sample": {
+                    "type": "object",
+                    "properties": {
+                      "v": {
+                        "allOf": [
+                          { "$ref": "#/components/schemas/Base" },
+                          { "properties": { "name": { "type": "string" } } }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+            """, "Sample", "v"));
+
+        Assert.Equal("""{"id":1,"name":"sample"}""", json);
+    }
+
+    [Fact]
+    public void Generate_AllOf_Wrapping_A_Scalar_Yields_The_Scalar()
+    {
+        // `allOf: [$ref]` is the usual way to attach a description to a
+        // referenced enum or string; it is not an object.
+        var json = OpenApiSampleGenerator.Generate(GetPropertySchema("""
+            {
+              "openapi": "3.0.0",
+              "info": { "title": "T", "version": "1" },
+              "paths": { "/x": { "get": { "operationId": "g", "responses": { "200": { "description": "ok" } } } } },
+              "components": {
+                "schemas": {
+                  "Status": { "type": "string", "enum": ["active", "closed"] },
+                  "Sample": {
+                    "type": "object",
+                    "properties": {
+                      "v": { "description": "current status", "allOf": [ { "$ref": "#/components/schemas/Status" } ] }
+                    }
+                  }
+                }
+              }
+            }
+            """, "Sample", "v"));
+
+        Assert.Equal("\"active\"", json);
+    }
+
     private static IOpenApiSchema? GetPropertySchema(string openApiJson, string componentName, string propertyName)
     {
         // Resolve a $ref'd schema's property by parsing through the official

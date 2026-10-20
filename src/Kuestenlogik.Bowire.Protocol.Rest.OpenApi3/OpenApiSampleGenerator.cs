@@ -23,7 +23,7 @@ namespace Kuestenlogik.Bowire.Protocol.Rest.OpenApi3;
 /// <item><c>string</c> → <c>"sample"</c>, or a format-aware placeholder (<c>date-time</c>, <c>uuid</c>, <c>email</c>, <c>uri</c>, <c>byte</c>)</item>
 /// <item><c>boolean</c> → <c>true</c></item>
 /// <item><c>array</c> → 3 items of the inner schema</item>
-/// <item><c>object</c> → walks properties recursively, emitting the required set plus every defined property</item>
+/// <item><c>object</c> → walks properties recursively, emitting the required set plus every defined property and those its <c>allOf</c> members contribute; a schema without <c>type</c> that declares properties or composes objects with <c>allOf</c> is an object too</item>
 /// <item>enums → the first enum value</item>
 /// </list>
 /// <para>
@@ -72,7 +72,18 @@ public static class OpenApiSampleGenerator
             if (firstNonNull is not null) return firstNonNull.DeepClone();
         }
 
-        var type = schema.Type ?? JsonSchemaType.String;
+        // `type` is optional in JSON Schema. Without it, a schema that
+        // declares properties or composes objects with allOf is an object; an
+        // allOf that only wraps a scalar (a $ref'd enum given a description)
+        // is that scalar. Reading every typeless schema as a string answered
+        // "sample" for all of them (#859).
+        if (schema.Type is null && schema.AllOf is { Count: > 0 } allOf && !IsObjectShaped(schema))
+        {
+            var member = allOf.FirstOrDefault(m => m is not null);
+            if (member is not null) return BuildNode(member, depth + 1);
+        }
+
+        var type = schema.Type ?? (IsObjectShaped(schema) ? JsonSchemaType.Object : JsonSchemaType.String);
         var nonNull = type & ~JsonSchemaType.Null;
 
         if ((nonNull & JsonSchemaType.Array) != 0)
@@ -117,9 +128,31 @@ public static class OpenApiSampleGenerator
         return BuildString(schema);
     }
 
+    private static bool IsObjectShaped(IOpenApiSchema schema)
+    {
+        if (schema.Type is { } type) return (type & JsonSchemaType.Object) != 0;
+        return schema.Properties is { Count: > 0 }
+            || (schema.AllOf?.Any(m => m is not null && IsObjectShaped(m)) ?? false);
+    }
+
     private static JsonObject BuildObject(IOpenApiSchema schema, int depth)
     {
         var obj = new JsonObject();
+        AddProperties(schema, obj, depth);
+        return obj;
+    }
+
+    private static void AddProperties(IOpenApiSchema schema, JsonObject obj, int depth)
+    {
+        // allOf members contribute their properties to the same object
+        // (#859); the schema's own properties come last, so they win a clash.
+        if (schema.AllOf is { Count: > 0 } allOf)
+        {
+            foreach (var member in allOf)
+            {
+                if (member is not null) AddProperties(member, obj, depth);
+            }
+        }
         if (schema.Properties is { Count: > 0 } props)
         {
             foreach (var (name, propSchema) in props)
@@ -127,7 +160,6 @@ public static class OpenApiSampleGenerator
                 obj[name] = BuildNode(propSchema, depth + 1);
             }
         }
-        return obj;
     }
 
     private static JsonValue BuildInteger(IOpenApiSchema schema)
