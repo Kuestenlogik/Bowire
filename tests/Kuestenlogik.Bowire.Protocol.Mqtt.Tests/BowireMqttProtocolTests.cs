@@ -472,6 +472,19 @@ public sealed class MqttPayloadHelperTests
         Assert.Equal("hello world", result);
     }
 
+    [Theory]
+    [InlineData("42 apples")]
+    [InlineData("{\"a\":1} trailing")]
+    [InlineData("true or false")]
+    public void Text_That_Starts_With_Json_Is_Shown_Whole(string text)
+    {
+        // Only a payload that is one JSON value end to end is JSON; text
+        // that merely begins with a JSON token must not be cut to it.
+        var result = InvokePayloadToDisplayString(System.Text.Encoding.UTF8.GetBytes(text));
+
+        Assert.Equal(text, result);
+    }
+
     [Fact]
     public void Text_With_Whitespace_Is_Allowed_Through_The_Text_Path()
     {

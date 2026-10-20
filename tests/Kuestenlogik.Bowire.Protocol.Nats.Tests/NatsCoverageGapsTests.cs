@@ -35,6 +35,19 @@ public sealed class NatsCoverageGapsTests
         Assert.Equal("42", s);
     }
 
+    [Theory]
+    [InlineData("42 apples")]
+    [InlineData("{\"a\":1} trailing")]
+    [InlineData("true or false")]
+    public void PayloadToDisplayString_TextThatStartsWithJson_IsShownWhole(string text)
+    {
+        // Only a payload that is one JSON value end to end is JSON; text
+        // that merely begins with a JSON token must not be cut to it.
+        var s = Invoke<string>("NatsPayloadHelper", "PayloadToDisplayString",
+            Encoding.UTF8.GetBytes(text));
+        Assert.Equal(text, s);
+    }
+
     [Fact]
     public void PayloadToDisplayString_JsonString_IsKeptQuoted()
     {

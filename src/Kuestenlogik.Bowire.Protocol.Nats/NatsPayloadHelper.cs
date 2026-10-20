@@ -23,12 +23,10 @@ internal static class NatsPayloadHelper
 
         try
         {
-            var reader = new Utf8JsonReader(payload);
-            if (JsonDocument.TryParseValue(ref reader, out var doc))
-            {
-                using (doc)
-                    return JsonSerializer.Serialize(doc.RootElement, s_indented);
-            }
+            // Parse rejects trailing content (#855); TryParseValue read the
+            // first value only and cut "42 apples" down to 42.
+            using var doc = JsonDocument.Parse(payload);
+            return JsonSerializer.Serialize(doc.RootElement, s_indented);
         }
         catch
         {
