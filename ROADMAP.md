@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
 
-**3/9 done** · 6 backlog
+**3/12 done** · 9 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -22,6 +22,9 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [823](https://github.com/Kuestenlogik/Bowire/issues/823) | Bowire | [Help search counts repeated query terms and gives the title bonus for substrings](#issue-kuestenlogik-bowire-823) | ⬜ Backlog |  |
 | [824](https://github.com/Kuestenlogik/Bowire/issues/824) | Bowire | [Help search does not index fenced code blocks](#issue-kuestenlogik-bowire-824) | ⬜ Backlog |  |
 | [825](https://github.com/Kuestenlogik/Bowire/issues/825) | Bowire | [Help index lists a topic twice when its title repeats a word](#issue-kuestenlogik-bowire-825) | ⬜ Backlog |  |
+| [826](https://github.com/Kuestenlogik/Bowire/issues/826) | Bowire | [SignalR discovery overflows the stack on a self-referencing DTO](#issue-kuestenlogik-bowire-826) | ⬜ Backlog |  |
+| [827](https://github.com/Kuestenlogik/Bowire/issues/827) | Bowire | [SignalR discovery fails on an enum whose underlying type is not int](#issue-kuestenlogik-bowire-827) | ⬜ Backlog |  |
+| [828](https://github.com/Kuestenlogik/Bowire/issues/828) | Bowire | [OpenAPI 3 discovery of a YAML document silently finds nothing](#issue-kuestenlogik-bowire-828) | ⬜ Backlog |  |
 | [816](https://github.com/Kuestenlogik/Bowire/issues/816) | Bowire | [SCIM trace records status 200 for every request](#issue-kuestenlogik-bowire-816) | ✅ Done |  |
 | [817](https://github.com/Kuestenlogik/Bowire/issues/817) | Bowire | [OIDC provider cannot run as an installed plugin](#issue-kuestenlogik-bowire-817) | ✅ Done |  |
 | [818](https://github.com/Kuestenlogik/Bowire/issues/818) | Bowire | [--auth-oidc-* flags are documented but never read](#issue-kuestenlogik-bowire-818) | ✅ Done |  |
@@ -205,6 +208,18 @@ Six credible competitors turned up during the competitive survey **via openalter
 #### <a id="issue-kuestenlogik-bowire-825"></a>⬜ Backlog · [#825](https://github.com/Kuestenlogik/Bowire/issues/825) Help index lists a topic twice when its title repeats a word
 
 The `MarkdownHelpProvider` constructor (`src/Kuestenlogik.Bowire.Help/MarkdownHelpProvider.cs`, L69–L72) adds the topic id to the index once per title token, without the duplicate check the body loop has. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/825)
+
+#### <a id="issue-kuestenlogik-bowire-826"></a>⬜ Backlog · [#826](https://github.com/Kuestenlogik/Bowire/issues/826) SignalR discovery overflows the stack on a self-referencing DTO
+
+A hub method whose parameter or return type refers to itself, directly or through another type, overflows the stack during SignalR discovery. [[more]](https://github.com/Kuestenlogik/Bowire/issues/826)
+
+#### <a id="issue-kuestenlogik-bowire-827"></a>⬜ Backlog · [#827](https://github.com/Kuestenlogik/Bowire/issues/827) SignalR discovery fails on an enum whose underlying type is not int
+
+SignalR discovery fails for any hub that uses an enum whose underlying type is not `int`. [[more]](https://github.com/Kuestenlogik/Bowire/issues/827)
+
+#### <a id="issue-kuestenlogik-bowire-828"></a>⬜ Backlog · [#828](https://github.com/Kuestenlogik/Bowire/issues/828) OpenAPI 3 discovery of a YAML document silently finds nothing
+
+`OpenApiDiscovery.FetchAndParseAsync` and `OpenApiDiscovery.ParseRawAsync` in `src/Kuestenlogik.Bowire.Protocol.Rest.OpenApi3/OpenApiDiscovery.cs` (L54, L91) call `OpenApiDocument.LoadAsync(stream, format: null, settings: null, ct)`. Microsoft.OpenApi registers only the JSON reader by default, so a … [[more]](https://github.com/Kuestenlogik/Bowire/issues/828)
 
 #### <a id="issue-kuestenlogik-bowire-816"></a>✅ Done · [#816](https://github.com/Kuestenlogik/Bowire/issues/816) SCIM trace records status 200 for every request
 
