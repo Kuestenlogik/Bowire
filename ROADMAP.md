@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
 
-**3/42 done** · 39 backlog
+**3/43 done** · 40 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -55,6 +55,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [856](https://github.com/Kuestenlogik/Bowire/issues/856) | Bowire | [MQTT and NATS show invalid UTF-8 payloads as replacement characters instead of hex](#issue-kuestenlogik-bowire-856) | ⬜ Backlog |  |
 | [857](https://github.com/Kuestenlogik/Bowire/issues/857) | Bowire | [NATS service discovery publishes $SRV.PING before its reply subscription exists](#issue-kuestenlogik-bowire-857) | ⬜ Backlog |  |
 | [858](https://github.com/Kuestenlogik/Bowire/issues/858) | Bowire | [Mock replays a recorded MQTT subscription on the topic group instead of the topic](#issue-kuestenlogik-bowire-858) | ⬜ Backlog |  |
+| [859](https://github.com/Kuestenlogik/Bowire/issues/859) | Bowire | [OpenAPI sample generator answers "sample" for objects without type and for allOf compositions](#issue-kuestenlogik-bowire-859) | ⬜ Backlog |  |
 | [816](https://github.com/Kuestenlogik/Bowire/issues/816) | Bowire | [SCIM trace records status 200 for every request](#issue-kuestenlogik-bowire-816) | ✅ Done |  |
 | [817](https://github.com/Kuestenlogik/Bowire/issues/817) | Bowire | [OIDC provider cannot run as an installed plugin](#issue-kuestenlogik-bowire-817) | ✅ Done |  |
 | [818](https://github.com/Kuestenlogik/Bowire/issues/818) | Bowire | [--auth-oidc-* flags are documented but never read](#issue-kuestenlogik-bowire-818) | ✅ Done |  |
@@ -370,6 +371,10 @@ NATS service discovery can miss the services it looks for: it publishes `$SRV.PI
 #### <a id="issue-kuestenlogik-bowire-858"></a>⬜ Backlog · [#858](https://github.com/Kuestenlogik/Bowire/issues/858) Mock replays a recorded MQTT subscription on the topic group instead of the topic
 
 `bowire mock` replays a recorded MQTT subscription on the topic group instead of the topic. [[more]](https://github.com/Kuestenlogik/Bowire/issues/858)
+
+#### <a id="issue-kuestenlogik-bowire-859"></a>⬜ Backlog · [#859](https://github.com/Kuestenlogik/Bowire/issues/859) OpenAPI sample generator answers "sample" for objects without type and for allOf compositions
+
+`OpenApiSampleGenerator.BuildNode` (both `src/Kuestenlogik.Bowire.Protocol.Rest.OpenApi3/OpenApiSampleGenerator.cs` and the OpenApi2 copy, L75) reads a missing `type` as `string` (`schema.Type ?? JsonSchemaType.String`) and never looks at `allOf`. [[more]](https://github.com/Kuestenlogik/Bowire/issues/859)
 
 #### <a id="issue-kuestenlogik-bowire-816"></a>✅ Done · [#816](https://github.com/Kuestenlogik/Bowire/issues/816) SCIM trace records status 200 for every request
 
