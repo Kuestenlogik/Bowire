@@ -24,7 +24,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**0/19 done** · 19 backlog
+**0/20 done** · 20 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -47,6 +47,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [811](https://github.com/Kuestenlogik/Bowire/issues/811) | Bowire | [MCP Apps, server side: Bowire's MCP tools answer with apps (test run first)](#issue-kuestenlogik-bowire-811) | ⬜ Backlog |  |
 | [812](https://github.com/Kuestenlogik/Bowire/issues/812) | Bowire | [MCP Apps in testing and security: assert on apps, record their traffic, scan their CSP](#issue-kuestenlogik-bowire-812) | ⬜ Backlog |  |
 | [819](https://github.com/Kuestenlogik/Bowire/issues/819) | Bowire | [MCP discovery reports a fault for a tools-only server](#issue-kuestenlogik-bowire-819) | ⬜ Backlog |  |
+| [820](https://github.com/Kuestenlogik/Bowire/issues/820) | Bowire | [MCP tasks: answer sampling requests, by hand or with the configured model](#issue-kuestenlogik-bowire-820) | ⬜ Backlog |  |
 
 ### v2.12 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
 
@@ -293,6 +294,10 @@ Once Bowire hosts MCP Apps (#810), the people building them need what Bowire off
 #### <a id="issue-kuestenlogik-bowire-819"></a>⬜ Backlog · [#819](https://github.com/Kuestenlogik/Bowire/issues/819) MCP discovery reports a fault for a tools-only server
 
 Discovering an MCP server that offers only tools (an SDK 2.2 server with `WithTools` and nothing else, stateless HTTP) reports a fault: [[more]](https://github.com/Kuestenlogik/Bowire/issues/819)
+
+#### <a id="issue-kuestenlogik-bowire-820"></a>⬜ Backlog · [#820](https://github.com/Kuestenlogik/Bowire/issues/820) MCP tasks: answer sampling requests, by hand or with the configured model
+
+An MCP server can ask its client to run a model completion for it — `sampling/createMessage`: the server borrows the client's LLM instead of holding its own model access, and the user stays in control of what the model sees. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/820)
 
 ### v2.12 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
 
