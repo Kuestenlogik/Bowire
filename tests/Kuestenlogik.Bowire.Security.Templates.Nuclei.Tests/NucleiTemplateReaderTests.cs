@@ -165,4 +165,23 @@ public sealed class NucleiTemplateReaderTests
         var matcher = template.Http[0].Matchers[0];
         Assert.True(matcher.Negative);
     }
+
+    [Fact]
+    public void ReadText_comma_separated_tags_and_a_scalar_reference_are_kept()
+    {
+        // Nuclei's info.tags is a string slice that also takes one
+        // comma-separated scalar, and most of the public corpus writes it
+        // that way. info.reference likewise takes a single scalar.
+        var yaml = """
+            id: x
+            info:
+              name: Scalar lists
+              severity: low
+              tags: cve, rce,exposure
+              reference: https://example.com/advisory
+            """;
+        var template = NucleiTemplateReader.ReadText(yaml);
+        Assert.Equal(["cve", "rce", "exposure"], template.Info.Tags);
+        Assert.Equal(["https://example.com/advisory"], template.Info.Reference);
+    }
 }

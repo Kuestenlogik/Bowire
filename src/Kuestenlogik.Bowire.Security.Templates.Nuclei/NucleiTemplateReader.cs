@@ -48,8 +48,12 @@ public static class NucleiTemplateReader
             template.Info.Author = GetScalar(infoNode!, "author") ?? "";
             template.Info.Severity = GetScalar(infoNode!, "severity") ?? "";
             template.Info.Description = GetScalar(infoNode!, "description") ?? "";
-            CollectStringList(infoNode!, "reference", template.Info.Reference);
-            CollectStringList(infoNode!, "tags", template.Info.Tags);
+            // #829 — both are Nuclei string slices that also take one scalar,
+            // and the corpus mostly writes tags as `tags: cve,rce`. Tags split
+            // on commas; a reference is one URL.
+            CollectStringList(infoNode!, "reference", template.Info.Reference, fromScalar: s => [s]);
+            CollectStringList(infoNode!, "tags", template.Info.Tags,
+                fromScalar: s => s.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries));
         }
 
         if (TryGetSequence(root, "http", out var httpSeq))
@@ -347,8 +351,17 @@ public static class NucleiTemplateReader
         return false;
     }
 
-    private static void CollectStringList(YamlMappingNode parent, string key, List<string> sink)
+    // `fromScalar` says how a single scalar written in place of the sequence
+    // turns into entries, for keys where Nuclei accepts that form; null keeps
+    // the key sequence-only.
+    private static void CollectStringList(
+        YamlMappingNode parent, string key, List<string> sink, Func<string, IEnumerable<string>>? fromScalar = null)
     {
+        if (fromScalar is not null && GetScalar(parent, key) is { } value)
+        {
+            sink.AddRange(fromScalar(value));
+            return;
+        }
         if (!TryGetSequence(parent, key, out var seq)) return;
         foreach (var item in seq!.Children)
         {
