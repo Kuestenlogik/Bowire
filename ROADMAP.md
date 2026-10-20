@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
 
-**3/27 done** · 24 backlog
+**3/28 done** · 25 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -40,6 +40,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [841](https://github.com/Kuestenlogik/Bowire/issues/841) | Bowire | [Contract results of different consumer/provider pairs overwrite each other when their names sanitise alike](#issue-kuestenlogik-bowire-841) | ⬜ Backlog |  |
 | [842](https://github.com/Kuestenlogik/Bowire/issues/842) | Bowire | [AddBowireTelemetry wires the OTel pipeline again on each call, exporting every metric and span twice](#issue-kuestenlogik-bowire-842) | ⬜ Backlog |  |
 | [843](https://github.com/Kuestenlogik/Bowire/issues/843) | Bowire | [Pulsar ignores its namespaces and subscribeFromLatest settings](#issue-kuestenlogik-bowire-843) | ⬜ Backlog |  |
+| [844](https://github.com/Kuestenlogik/Bowire/issues/844) | Bowire | [OpenAPI discovery fails on a self-referencing schema: SchemaToField/SchemaToMessage recurse without a cycle guard](#issue-kuestenlogik-bowire-844) | ⬜ Backlog |  |
 | [816](https://github.com/Kuestenlogik/Bowire/issues/816) | Bowire | [SCIM trace records status 200 for every request](#issue-kuestenlogik-bowire-816) | ✅ Done |  |
 | [817](https://github.com/Kuestenlogik/Bowire/issues/817) | Bowire | [OIDC provider cannot run as an installed plugin](#issue-kuestenlogik-bowire-817) | ✅ Done |  |
 | [818](https://github.com/Kuestenlogik/Bowire/issues/818) | Bowire | [--auth-oidc-* flags are documented but never read](#issue-kuestenlogik-bowire-818) | ✅ Done |  |
@@ -295,6 +296,10 @@ SignalR discovery fails for any hub that uses an enum whose underlying type is n
 #### <a id="issue-kuestenlogik-bowire-843"></a>⬜ Backlog · [#843](https://github.com/Kuestenlogik/Bowire/issues/843) Pulsar ignores its namespaces and subscribeFromLatest settings
 
 The Pulsar plugin declares the settings `namespaces` and `subscribeFromLatest`, but `BowirePulsarProtocol.GetSetting` returns the declared default and never the user's value (`src/Kuestenlogik.Bowire.Protocol.Pulsar/BowirePulsarProtocol.cs:285-289`). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/843)
+
+#### <a id="issue-kuestenlogik-bowire-844"></a>⬜ Backlog · [#844](https://github.com/Kuestenlogik/Bowire/issues/844) OpenAPI discovery fails on a self-referencing schema: SchemaToField/SchemaToMessage recurse without a cycle guard
+
+`SchemaToField` and `SchemaToMessage` in `OpenApiDiscovery.cs` call each other for every object-typed property with no cycle guard and no depth limit (`src/Kuestenlogik.Bowire.Protocol.Rest.OpenApi3/OpenApiDiscovery.cs` L464, `src/Kuestenlogik.Bowire.Protocol.Rest.OpenApi2/OpenApiDiscovery.cs` L476). [[more]](https://github.com/Kuestenlogik/Bowire/issues/844)
 
 #### <a id="issue-kuestenlogik-bowire-816"></a>✅ Done · [#816](https://github.com/Kuestenlogik/Bowire/issues/816) SCIM trace records status 200 for every request
 
