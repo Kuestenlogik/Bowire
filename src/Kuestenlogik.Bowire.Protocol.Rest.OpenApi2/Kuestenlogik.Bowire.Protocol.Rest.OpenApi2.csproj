@@ -16,7 +16,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
     <ProjectReference Include="..\Kuestenlogik.Bowire.Protocol.Rest\Kuestenlogik.Bowire.Protocol.Rest.csproj" />
-    <PackageReference Include="Microsoft.OpenApi" VersionOverride="2.9.0" />
-    <PackageReference Include="Microsoft.OpenApi.YamlReader" VersionOverride="2.9.0" />
+    <PackageReference Include="Microsoft.OpenApi" VersionOverride="2.12.2" />
+    <PackageReference Include="Microsoft.OpenApi.YamlReader" VersionOverride="2.12.2" />
   </ItemGroup>
 </Project>

@@ -48,28 +48,25 @@
          Microsoft/System pin follows the runtime patch of the pinned SDK. -->
     <PackageVersion Include="System.Security.Cryptography.Pkcs" Version="10.0.13" />
     <PackageVersion Include="System.Security.Cryptography.Xml" Version="10.0.13" />
-    <!-- Held at 3.8.0. The original reason (CS0200 in the code the
-         Microsoft.AspNetCore.OpenApi XML-comment source generator emits)
-         is GONE as of AspNetCore.OpenApi 10.0.11: Sample.Rest and
-         Sample.Embedded both build clean against Microsoft.OpenApi 3.10.0.
+    <!-- 3.10.2: GHSA-7pxr-59rr-hqj2 (YamlReader, DoS via YAML alias
+         expansion, high) covers 3.0.0 to below 3.10.0, so the old hold at
+         3.8.0 is over; Microsoft.OpenApi and the YamlReader move together.
+         The OpenApi2 adapter's VersionOverride follows the 2.x fix (2.12.2).
 
-         A second, worse reason took its place. 3.9 deprecates
-         IOpenApiSchema.Example in favour of Examples, but the reader does
-         NOT fold a 3.0 document's `example:` into that collection — it
-         still lands only in the deprecated property. Dropping the
-         deprecated read to satisfy CS0618 therefore loses schema examples
-         for every OpenAPI 3.0 API, which is most of them. Measured, not
-         assumed: with 3.10.0 and the deprecated read removed,
-         OpenApiSampleGeneratorTests.Generate_Example_Wins_Over_Type_Driven_Guess
-         returns "sample" where the document says "custom".
-
-         So the choice is between a silent data loss and a suppression, and
-         neither is worth taking for a patch bump. Re-bump when upstream
-         either populates Examples from a 3.0 `example:` or un-deprecates
-         the singular. dependabot.yml ignores >= 3.9.0 (a range, because
-         the old exact-version rule let 3.10.0 through). -->
-    <PackageVersion Include="Microsoft.OpenApi" Version="3.8.0" />
-    <PackageVersion Include="Microsoft.OpenApi.YamlReader" Version="3.8.0" />
+         The reason for the hold remains in the code: 3.9+ (and the 2.x line
+         after 2.9.0)
+         deprecate IOpenApiSchema.Example in favour of Examples, but the
+         reader does NOT fold a 3.0 document's `example:` into that
+         collection (verified on 2.12.2, 3.10.2 and 3.11.0). Dropping the
+         deprecated read loses schema examples for every OpenAPI 3.0 API
+         (OpenApiSampleGeneratorTests.Generate_Example_Wins_Over_Type_Driven_Guess
+         returns "sample" where the document says "custom"). So each adapter
+         reads it in exactly one place, SchemaExample.Singular, under a
+         CS0618 suppression with that reason. Remove it when upstream
+         populates Examples from a 3.0 `example:` or un-deprecates the
+         singular. -->
+    <PackageVersion Include="Microsoft.OpenApi" Version="3.10.2" />
+    <PackageVersion Include="Microsoft.OpenApi.YamlReader" Version="3.10.2" />
     <!-- Neuroglia.AsyncApi is the official AsyncAPI .NET SDK
          (asyncapi/net-sdk repo, Neuroglia maintains the
          implementation). Core = AsyncAPI 2.x + 3.0 models; IO =

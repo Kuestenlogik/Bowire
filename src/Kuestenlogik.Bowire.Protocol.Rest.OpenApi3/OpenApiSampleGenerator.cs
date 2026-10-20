@@ -56,7 +56,7 @@ public static class OpenApiSampleGenerator
         // the singular `example`, then the OpenAPI 3.1 / JSON Schema 2020-12
         // `examples` array, then `default` — `default` is a fallback value, not
         // a representative example, so an author's `examples[0]` outranks it.
-        if (schema.Example is JsonNode example) return example.DeepClone();
+        if (SchemaExample.Singular(schema) is JsonNode example) return example.DeepClone();
         if (schema.Examples is { Count: > 0 } schemaExamples)
         {
             var first = schemaExamples.FirstOrDefault(e => e is not null);

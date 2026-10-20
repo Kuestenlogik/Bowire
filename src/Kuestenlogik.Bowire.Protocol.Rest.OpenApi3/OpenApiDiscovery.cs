@@ -481,7 +481,7 @@ public static class OpenApiDiscovery
         // schema example, then schema default. All converted to a JSON string
         // so the JS can parse them when generating the default form values.
         var example = ExampleToString(parameterExample)
-            ?? ExampleToString(schema.Example)
+            ?? ExampleToString(SchemaExample.Singular(schema))
             ?? ExampleToString(schema.Default);
 
         var effectiveDescription = description ?? schema.Description;
