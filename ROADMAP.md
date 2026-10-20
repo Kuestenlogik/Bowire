@@ -12,16 +12,20 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.9.1 — Dependency security fixes *(due 2026-10-20)*
 
-**2/2 done**
+**6/6 done**
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
+| [777](https://github.com/Kuestenlogik/Bowire/issues/777) | Bowire | [English only: translate German comments, docs and issues, and guard against new German](#issue-kuestenlogik-bowire-777) | ✅ Done | `area:multi` |
+| [778](https://github.com/Kuestenlogik/Bowire/issues/778) | Bowire | [Issue language report instead of guarding the generated ROADMAP.md](#issue-kuestenlogik-bowire-778) | ✅ Done | `area:multi` |
 | [780](https://github.com/Kuestenlogik/Bowire/issues/780) | Bowire | [Dependency hygiene: SDK 10.0.402, no package with a known advisory](#issue-kuestenlogik-bowire-780) | ✅ Done | `area:multi` |
+| [781](https://github.com/Kuestenlogik/Bowire/issues/781) | Bowire | [Build: no blanket warning suppressions — NuGet audit fails on known advisories](#issue-kuestenlogik-bowire-781) | ✅ Done |  |
+| [797](https://github.com/Kuestenlogik/Bowire/issues/797) | Bowire | [SDK pin 10.0.402 with rollForward latestFeature](#issue-kuestenlogik-bowire-797) | ✅ Done |  |
 | [798](https://github.com/Kuestenlogik/Bowire/issues/798) | Bowire | [Microsoft.OpenApi.YamlReader advisory GHSA-7pxr-59rr-hqj2 stops the restore](#issue-kuestenlogik-bowire-798) | ✅ Done |  |
 
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
 
-**5/7 done** · 2 backlog
+**2/4 done** · 2 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -29,9 +33,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [670](https://github.com/Kuestenlogik/Bowire/issues/670) | Bowire | [Get listed where developers and models actually look](#issue-kuestenlogik-bowire-670) | ⬜ Backlog | `area:site` |
 | [647](https://github.com/Kuestenlogik/Bowire/issues/647) | Bowire | [Decide the licence and carry it per project](#issue-kuestenlogik-bowire-647) | ✅ Done | `area:multi` |
 | [668](https://github.com/Kuestenlogik/Bowire/issues/668) | Bowire | [Sharpen the one-line pitch, and carry the same sentence everywhere](#issue-kuestenlogik-bowire-668) | ✅ Done | `area:site` |
-| [777](https://github.com/Kuestenlogik/Bowire/issues/777) | Bowire | [English only: translate German comments, docs and issues, and guard against new German](#issue-kuestenlogik-bowire-777) | ✅ Done | `area:multi` |
-| [778](https://github.com/Kuestenlogik/Bowire/issues/778) | Bowire | [Issue language report instead of guarding the generated ROADMAP.md](#issue-kuestenlogik-bowire-778) | ✅ Done | `area:multi` |
-| [781](https://github.com/Kuestenlogik/Bowire/issues/781) | Bowire | [Build: no blanket warning suppressions — NuGet audit fails on known advisories](#issue-kuestenlogik-bowire-781) | ✅ Done |  |
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
@@ -175,11 +176,31 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.9.1 — Dependency security fixes *(due 2026-10-20)*
 
+#### <a id="issue-kuestenlogik-bowire-777"></a>✅ Done · [#777](https://github.com/Kuestenlogik/Bowire/issues/777) English only: translate German comments, docs and issues, and guard against new German
+
+> `area:multi`
+
+Everything in this repository is English: code, comments, identifiers, configuration comments, API descriptions, CLI and UI strings, tests, docs, CHANGELOG and release notes, the roadmap and the issues. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/777)
+
+#### <a id="issue-kuestenlogik-bowire-778"></a>✅ Done · [#778](https://github.com/Kuestenlogik/Bowire/issues/778) Issue language report instead of guarding the generated ROADMAP.md
+
+> `area:multi`
+
+Follow-up to #777. [[more]](https://github.com/Kuestenlogik/Bowire/issues/778)
+
 #### <a id="issue-kuestenlogik-bowire-780"></a>✅ Done · [#780](https://github.com/Kuestenlogik/Bowire/issues/780) Dependency hygiene: SDK 10.0.402, no package with a known advisory
 
 > `area:multi`
 
 `dotnet list Kuestenlogik.Bowire.slnx package --vulnerable --include-transitive` reports four packages with high advisories. The restore stays green only because `Directory.Build.props` suppresses NU1902/NU1903: [[more]](https://github.com/Kuestenlogik/Bowire/issues/780)
+
+#### <a id="issue-kuestenlogik-bowire-781"></a>✅ Done · [#781](https://github.com/Kuestenlogik/Bowire/issues/781) Build: no blanket warning suppressions — NuGet audit fails on known advisories
+
+`Directory.Build.props` suppresses `NU1510;NU1902;NU1903;NU5104` for every project. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/781)
+
+#### <a id="issue-kuestenlogik-bowire-797"></a>✅ Done · [#797](https://github.com/Kuestenlogik/Bowire/issues/797) SDK pin 10.0.402 with rollForward latestFeature
+
+CI installs the SDK through `setup-dotnet` with a floating `10.0.x` (`dogfood-pr-report.yml` and the `bowire-scan` composite action used by `scan-bowire.yml`, `scan-dogfood.yml` and `scan-smoke.yml`; the other workflows read `global-json-file`), which takes the newest 10.0 feature band (10.0.5xx and … [[more]](https://github.com/Kuestenlogik/Bowire/issues/797)
 
 #### <a id="issue-kuestenlogik-bowire-798"></a>✅ Done · [#798](https://github.com/Kuestenlogik/Bowire/issues/798) Microsoft.OpenApi.YamlReader advisory GHSA-7pxr-59rr-hqj2 stops the restore
 
@@ -210,22 +231,6 @@ According to the licence and tier concept, the licence question for Bowire is st
 > `area:site`
 
 In every directory, every search result and every model-generated answer, Bowire gets **one line** next to its name. Ours is *"The multi-protocol API workbench."* It is accurate, and it names neither an opponent nor a problem. [[more]](https://github.com/Kuestenlogik/Bowire/issues/668)
-
-#### <a id="issue-kuestenlogik-bowire-777"></a>✅ Done · [#777](https://github.com/Kuestenlogik/Bowire/issues/777) English only: translate German comments, docs and issues, and guard against new German
-
-> `area:multi`
-
-Everything in this repository is English: code, comments, identifiers, configuration comments, API descriptions, CLI and UI strings, tests, docs, CHANGELOG and release notes, the roadmap and the issues. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/777)
-
-#### <a id="issue-kuestenlogik-bowire-778"></a>✅ Done · [#778](https://github.com/Kuestenlogik/Bowire/issues/778) Issue language report instead of guarding the generated ROADMAP.md
-
-> `area:multi`
-
-Follow-up to #777. [[more]](https://github.com/Kuestenlogik/Bowire/issues/778)
-
-#### <a id="issue-kuestenlogik-bowire-781"></a>✅ Done · [#781](https://github.com/Kuestenlogik/Bowire/issues/781) Build: no blanket warning suppressions — NuGet audit fails on known advisories
-
-`Directory.Build.props` suppresses `NU1510;NU1902;NU1903;NU5104` for every project. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/781)
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
