@@ -235,7 +235,7 @@
          indexer walks parsed markdown to strip layout and code-block
          noise before tokenising. The on-the-wire body stays raw
          markdown so the client renderer keeps full control. -->
-    <PackageVersion Include="Markdig" Version="1.4.0" />
+    <PackageVersion Include="Markdig" Version="1.4.2" />
     <!-- YARP — direct-forwarding mode (IHttpForwarder.SendAsync) for
          the standalone reverse-proxy host shipped by the Interceptor
          package (#323, follow-up to #153 / #307). Replaces the
