@@ -192,6 +192,36 @@ public sealed class BowireJsonRpcProtocolTests
     }
 
     [Fact]
+    public void ExtractMethodsFromOpenRpc_Non_String_Fields_Are_Ignored_Not_Fatal()
+    {
+        // #865 — GetString() throws InvalidOperationException on
+        // a number or object, and the throw came out of DiscoverAsync. A
+        // field of the wrong type now reads as absent.
+        using var doc = JsonDocument.Parse("""
+            {
+              "methods": [
+                { "name": 5 },
+                {
+                  "name": "ok",
+                  "summary": 42,
+                  "description": { "text": "nested" },
+                  "params": [ { "name": 7, "description": true } ]
+                }
+              ]
+            }
+            """);
+
+        var method = Assert.Single(BowireJsonRpcProtocol.ExtractMethodsFromOpenRpc(doc.RootElement));
+
+        Assert.Equal("ok", method.Name);
+        Assert.Null(method.Summary);
+        Assert.Null(method.Description);
+        var param = Assert.Single(method.InputType.Fields);
+        Assert.Equal("arg1", param.Name);
+        Assert.Null(param.Description);
+    }
+
+    [Fact]
     public void ExtractMethodsFromOpenRpc_Missing_Methods_Returns_Empty()
     {
         var doc = JsonSerializer.SerializeToElement(new { openrpc = "1.2.6", info = new { title = "demo" } });

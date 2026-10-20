@@ -261,11 +261,11 @@ public sealed class BowireJsonRpcProtocol : IBowireProtocol, Kuestenlogik.Bowire
         {
             if (m.ValueKind != JsonValueKind.Object) continue;
 
-            var name = m.TryGetProperty("name", out var n) ? n.GetString() ?? "" : "";
+            var name = StringOf(m, "name");
             if (string.IsNullOrEmpty(name)) continue;
 
-            var summary = m.TryGetProperty("summary", out var s) ? s.GetString() : null;
-            var description = m.TryGetProperty("description", out var d) ? d.GetString() : null;
+            var summary = StringOf(m, "summary");
+            var description = StringOf(m, "description");
 
             var input = BuildInputType(name, m);
             var output = new BowireMessageInfo(name + "Result", "jsonrpc." + name + "Result", []);
@@ -286,6 +286,17 @@ public sealed class BowireJsonRpcProtocol : IBowireProtocol, Kuestenlogik.Bowire
         return methods;
     }
 
+    /// <summary>
+    /// The named member when it is a JSON string, else <c>null</c>.
+    /// GetString() throws on a number or object, and that throw escaped
+    /// DiscoverAsync for a document with e.g. <c>"summary": 42</c> (#865);
+    /// a member of the wrong type reads as absent instead.
+    /// </summary>
+    private static string? StringOf(JsonElement obj, string member)
+        => obj.TryGetProperty(member, out var v) && v.ValueKind == JsonValueKind.String
+            ? v.GetString()
+            : null;
+
     private static BowireMessageInfo BuildInputType(string methodName, JsonElement methodDef)
     {
         var fields = new List<BowireFieldInfo>();
@@ -299,8 +310,8 @@ public sealed class BowireJsonRpcProtocol : IBowireProtocol, Kuestenlogik.Bowire
         foreach (var p in paramsArr.EnumerateArray())
         {
             if (p.ValueKind != JsonValueKind.Object) continue;
-            var pname = p.TryGetProperty("name", out var n) ? n.GetString() ?? $"arg{i}" : $"arg{i}";
-            var pdesc = p.TryGetProperty("description", out var d) ? d.GetString() : null;
+            var pname = StringOf(p, "name") ?? $"arg{i}";
+            var pdesc = StringOf(p, "description");
             var required = p.TryGetProperty("required", out var r) && r.ValueKind == JsonValueKind.True;
 
             // OpenRPC nests JSON-Schema under .schema.type; treat
