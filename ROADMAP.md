@@ -12,16 +12,19 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
 
-**0/2 done** · 2 backlog
+**0/5 done** · 5 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [639](https://github.com/Kuestenlogik/Bowire/issues/639) | Bowire | [SCIM: live Okta and Entra ID provisioning round-trips](#issue-kuestenlogik-bowire-639) | ⬜ Backlog | `area:workbench` |
 | [670](https://github.com/Kuestenlogik/Bowire/issues/670) | Bowire | [Get listed where developers and models actually look](#issue-kuestenlogik-bowire-670) | ⬜ Backlog | `area:site` |
+| [816](https://github.com/Kuestenlogik/Bowire/issues/816) | Bowire | [SCIM trace records status 200 for every request](#issue-kuestenlogik-bowire-816) | ⬜ Backlog |  |
+| [817](https://github.com/Kuestenlogik/Bowire/issues/817) | Bowire | [OIDC provider cannot run as an installed plugin](#issue-kuestenlogik-bowire-817) | ⬜ Backlog |  |
+| [818](https://github.com/Kuestenlogik/Bowire/issues/818) | Bowire | [--auth-oidc-* flags are documented but never read](#issue-kuestenlogik-bowire-818) | ⬜ Backlog |  |
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**0/18 done** · 18 backlog
+**0/19 done** · 19 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -43,6 +46,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [810](https://github.com/Kuestenlogik/Bowire/issues/810) | Bowire | [MCP Apps, host side: render and debug MCP Apps of the servers Bowire talks to](#issue-kuestenlogik-bowire-810) | ⬜ Backlog |  |
 | [811](https://github.com/Kuestenlogik/Bowire/issues/811) | Bowire | [MCP Apps, server side: Bowire's MCP tools answer with apps (test run first)](#issue-kuestenlogik-bowire-811) | ⬜ Backlog |  |
 | [812](https://github.com/Kuestenlogik/Bowire/issues/812) | Bowire | [MCP Apps in testing and security: assert on apps, record their traffic, scan their CSP](#issue-kuestenlogik-bowire-812) | ⬜ Backlog |  |
+| [819](https://github.com/Kuestenlogik/Bowire/issues/819) | Bowire | [MCP discovery reports a fault for a tools-only server](#issue-kuestenlogik-bowire-819) | ⬜ Backlog |  |
 
 ### v2.12 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
 
@@ -180,6 +184,18 @@ Split from #96 so the SCIM surface can ship on its own merits. [[more]](https://
 
 Six credible competitors turned up during the competitive survey **via openalternative.co**. Bowire was not there. That is the whole diagnosis: when a developer — or a language model — asks for "open source Postman alternative", the answer is assembled from these directories, not from bowire.io. [[more]](https://github.com/Kuestenlogik/Bowire/issues/670)
 
+#### <a id="issue-kuestenlogik-bowire-816"></a>⬜ Backlog · [#816](https://github.com/Kuestenlogik/Bowire/issues/816) SCIM trace records status 200 for every request
+
+`ScimTraceFilter` (src/Kuestenlogik.Bowire.Scim/ScimTraceFilter.cs) records `http.Response.StatusCode` in the `finally` after `await next(context)`. In an endpoint filter, `next` returns the handler's `IResult` — it has not been executed yet, so the response status is still the default 200. [[more]](https://github.com/Kuestenlogik/Bowire/issues/816)
+
+#### <a id="issue-kuestenlogik-bowire-817"></a>⬜ Backlog · [#817](https://github.com/Kuestenlogik/Bowire/issues/817) OIDC provider cannot run as an installed plugin
+
+`Kuestenlogik.Bowire.Auth.Oidc` cannot be used as an installed plugin in the standalone tool: [[more]](https://github.com/Kuestenlogik/Bowire/issues/817)
+
+#### <a id="issue-kuestenlogik-bowire-818"></a>⬜ Backlog · [#818](https://github.com/Kuestenlogik/Bowire/issues/818) --auth-oidc-* flags are documented but never read
+
+The `--auth-provider` help text (src/Kuestenlogik.Bowire.Tool/Cli/BowireCli.cs) and `docs/setup/multi-user.md` name provider-namespaced flags — `--auth-oidc-authority`, `--auth-oidc-client-id`, `--auth-oidc-required-claim` — "forwarded as Bowire:Auth:Oidc:*". … [[more]](https://github.com/Kuestenlogik/Bowire/issues/818)
+
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
 #### <a id="issue-kuestenlogik-bowire-672"></a>⬜ Backlog · [#672](https://github.com/Kuestenlogik/Bowire/issues/672) Server-side script engine so pre/post scripts run in bowire test, not only in the browser
@@ -273,6 +289,10 @@ Bowire's own MCP server (`bowire mcp serve`) answers agents with JSON. Some of w
 #### <a id="issue-kuestenlogik-bowire-812"></a>⬜ Backlog · [#812](https://github.com/Kuestenlogik/Bowire/issues/812) MCP Apps in testing and security: assert on apps, record their traffic, scan their CSP
 
 Once Bowire hosts MCP Apps (#810), the people building them need what Bowire offers for every other protocol: does the UI resource load, does the app behave, and is it safe? An app is third-party HTML running next to a model with tool access, so its CSP and permissions are a security surface that no … [[more]](https://github.com/Kuestenlogik/Bowire/issues/812)
+
+#### <a id="issue-kuestenlogik-bowire-819"></a>⬜ Backlog · [#819](https://github.com/Kuestenlogik/Bowire/issues/819) MCP discovery reports a fault for a tools-only server
+
+Discovering an MCP server that offers only tools (an SDK 2.2 server with `WithTools` and nothing else, stateless HTTP) reports a fault: [[more]](https://github.com/Kuestenlogik/Bowire/issues/819)
 
 ### v2.12 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
 
