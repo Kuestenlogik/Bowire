@@ -157,8 +157,8 @@ internal sealed class SignalRInvoker : IAsyncDisposable
     }
 
     public Task<InvokeResult> InvokeAsync(
-        string method, List<string> jsonMessages, CancellationToken ct, int? expectedParameterCount = null)
-        => InvokeWithArgsAsync(method, ParseArguments(jsonMessages, expectedParameterCount), ct);
+        string method, List<string> jsonMessages, CancellationToken ct, IReadOnlyList<string>? parameterNames = null)
+        => InvokeWithArgsAsync(method, ParseArguments(jsonMessages, parameterNames), ct);
 
     /// <summary>
     /// Invoke with pre-built positional arguments. Used by the ad-hoc
@@ -201,8 +201,8 @@ internal sealed class SignalRInvoker : IAsyncDisposable
     }
 
     public IAsyncEnumerable<string> StreamAsync(
-        string method, List<string> jsonMessages, CancellationToken ct, int? expectedParameterCount = null)
-        => StreamWithArgsAsync(method, ParseArguments(jsonMessages, expectedParameterCount), ct);
+        string method, List<string> jsonMessages, CancellationToken ct, IReadOnlyList<string>? parameterNames = null)
+        => StreamWithArgsAsync(method, ParseArguments(jsonMessages, parameterNames), ct);
 
     /// <summary>
     /// Streaming twin of <see cref="InvokeWithArgsAsync"/> — see there
@@ -232,7 +232,7 @@ internal sealed class SignalRInvoker : IAsyncDisposable
         _mtlsOwner = null;
     }
 
-    private static object?[] ParseArguments(List<string> jsonMessages, int? expectedParameterCount = null)
+    private static object?[] ParseArguments(List<string> jsonMessages, IReadOnlyList<string>? parameterNames = null)
     {
         // No-arg streaming methods (e.g. SubscribeToChanges() with only
         // the implicit CancellationToken) receive an empty body "{}" from
@@ -263,6 +263,11 @@ internal sealed class SignalRInvoker : IAsyncDisposable
         // wrapper object and answered HubException "Failed to invoke".
         // Without a known arity (caller didn't supply one) the old
         // >1 heuristic still applies.
+        //
+        // A JSON object has no member order, so when every property names
+        // a parameter the values go to those parameters, not to the
+        // positions they were written in: {"label":"x","count":3} is
+        // Describe(count: 3, label: "x"), not Describe("x", 3) (#846).
         if (jsonMessages.Count == 1 && !string.IsNullOrWhiteSpace(jsonMessages[0]))
         {
             var only = jsonMessages[0];
@@ -274,11 +279,18 @@ internal sealed class SignalRInvoker : IAsyncDisposable
                     if (doc.RootElement.ValueKind == JsonValueKind.Object)
                     {
                         var props = doc.RootElement.EnumerateObject().ToArray();
-                        var unfold = expectedParameterCount is { } expected
-                            ? props.Length == expected
+                        var unfold = parameterNames is not null
+                            ? props.Length == parameterNames.Count
                             : props.Length > 1;
                         if (unfold)
                         {
+                            if (parameterNames is not null && NamesEveryParameter(props, parameterNames))
+                            {
+                                props = parameterNames
+                                    .Select(name => props.First(p => string.Equals(p.Name, name, StringComparison.OrdinalIgnoreCase)))
+                                    .ToArray();
+                            }
+
                             var unfolded = new object?[props.Length];
                             for (var i = 0; i < props.Length; i++)
                                 unfolded[i] = JsonElementToArg(props[i].Value);
@@ -305,6 +317,15 @@ internal sealed class SignalRInvoker : IAsyncDisposable
             }
         }).ToArray();
     }
+
+    /// <summary>
+    /// True when each parameter is named by exactly one property. Names
+    /// compare case-insensitively, the way SignalR's own JSON binding and
+    /// the form's camelCase output meet C# parameter names.
+    /// </summary>
+    private static bool NamesEveryParameter(JsonProperty[] props, IReadOnlyList<string> parameterNames)
+        => parameterNames.All(name =>
+            props.Count(p => string.Equals(p.Name, name, StringComparison.OrdinalIgnoreCase)) == 1);
 
     internal static object? JsonElementToArg(JsonElement el) => el.ValueKind switch
     {
