@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
 
-**3/48 done** · 45 backlog
+**3/50 done** · 47 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -61,6 +61,8 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [862](https://github.com/Kuestenlogik/Bowire/issues/862) | Bowire | [SSE endpoints registered statically show up under external source URLs](#issue-kuestenlogik-bowire-862) | ⬜ Backlog |  |
 | [863](https://github.com/Kuestenlogik/Bowire/issues/863) | Bowire | [SSE parser trims all leading whitespace, drops bare field names and keeps a stale event type](#issue-kuestenlogik-bowire-863) | ⬜ Backlog |  |
 | [864](https://github.com/Kuestenlogik/Bowire/issues/864) | Bowire | [SSE discovery fails on an [SseEndpoint] endpoint without a route](#issue-kuestenlogik-bowire-864) | ⬜ Backlog |  |
+| [865](https://github.com/Kuestenlogik/Bowire/issues/865) | Bowire | [JSON-RPC discovery fails on an OpenRPC document with non-string name or summary](#issue-kuestenlogik-bowire-865) | ⬜ Backlog |  |
+| [866](https://github.com/Kuestenlogik/Bowire/issues/866) | Bowire | [JSON-RPC client accepts a reply whose id does not match the request](#issue-kuestenlogik-bowire-866) | ⬜ Backlog |  |
 | [816](https://github.com/Kuestenlogik/Bowire/issues/816) | Bowire | [SCIM trace records status 200 for every request](#issue-kuestenlogik-bowire-816) | ✅ Done |  |
 | [817](https://github.com/Kuestenlogik/Bowire/issues/817) | Bowire | [OIDC provider cannot run as an installed plugin](#issue-kuestenlogik-bowire-817) | ✅ Done |  |
 | [818](https://github.com/Kuestenlogik/Bowire/issues/818) | Bowire | [--auth-oidc-* flags are documented but never read](#issue-kuestenlogik-bowire-818) | ✅ Done |  |
@@ -400,6 +402,14 @@ The `text/event-stream` parser in `SseSubscriber.SubscribeAsync` (`src/Kuestenlo
 #### <a id="issue-kuestenlogik-bowire-864"></a>⬜ Backlog · [#864](https://github.com/Kuestenlogik/Bowire/issues/864) SSE discovery fails on an [SseEndpoint] endpoint without a route
 
 SSE discovery fails completely when the host has an `[SseEndpoint]`-marked endpoint that is not a route endpoint. [[more]](https://github.com/Kuestenlogik/Bowire/issues/864)
+
+#### <a id="issue-kuestenlogik-bowire-865"></a>⬜ Backlog · [#865](https://github.com/Kuestenlogik/Bowire/issues/865) JSON-RPC discovery fails on an OpenRPC document with non-string name or summary
+
+JSON-RPC discovery fails with an exception when an OpenRPC document has a non-string `name`, `summary` or `description`. [[more]](https://github.com/Kuestenlogik/Bowire/issues/865)
+
+#### <a id="issue-kuestenlogik-bowire-866"></a>⬜ Backlog · [#866](https://github.com/Kuestenlogik/Bowire/issues/866) JSON-RPC client accepts a reply whose id does not match the request
+
+The JSON-RPC client accepts a reply without checking that it answers the request it sent. [[more]](https://github.com/Kuestenlogik/Bowire/issues/866)
 
 #### <a id="issue-kuestenlogik-bowire-816"></a>✅ Done · [#816](https://github.com/Kuestenlogik/Bowire/issues/816) SCIM trace records status 200 for every request
 
