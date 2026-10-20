@@ -21,6 +21,8 @@ bowire --url … \
        --auth-oidc-required-claim "groups=bowire-users"
 ```
 
+A provider's settings live under `Bowire:Auth:<Provider>:*`, and every `--auth-<provider>-<setting>` flag lands there: `--auth-oidc-client-id bowire` is `Bowire:Auth:Oidc:ClientId`. A value shaped `name=value` is an entry of a map setting — `--auth-oidc-required-claim groups=bowire-users` is `Bowire:Auth:Oidc:RequiredClaim:groups` — and the flag can repeat. The same keys work in `appsettings.json` and as `BOWIRE_Bowire__Auth__Oidc__ClientId` environment variables.
+
 With no provider selected, nothing changes and the endpoints stay open — the laptop-friendly default. With one selected, every Bowire route requires an authenticated caller, and a provider named on the command line that cannot be found is a startup failure rather than a silent fallback to no auth.
 
 `Kuestenlogik.Bowire.Auth.Oidc` is the first concrete provider: any OIDC-compliant IdP — Entra ID, Okta, Keycloak — without provider-specific code paths.

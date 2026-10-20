@@ -82,7 +82,10 @@ internal static class BowireCli
         // through InvokeAsync untouched. Colour is enabled only when we own
         // the real console (no custom writer) and it isn't redirected, so
         // piped output and captured test streams stay ANSI-free.
-        var parseResult = root.Parse(args);
+        // #818 — provider-namespaced auth flags (--auth-oidc-authority …)
+        // belong to a plugin and cannot be declared here; they reach the
+        // configuration through AuthProviderFlags, not through the parser.
+        var parseResult = root.Parse(Kuestenlogik.Bowire.App.Configuration.AuthProviderFlags.Extract(args).Remaining);
         if (parseResult.Errors.Count > 0)
         {
             var useColor = stderr is null && !Console.IsErrorRedirected;
@@ -197,7 +200,12 @@ internal static class BowireCli
         root.Add(new Option<string>("--catalogue-path") { Description = "Path to the catalogue JSON document read by the 'local' provider. Defaults to ~/.bowire/catalogue.json. Implies --catalogue-provider local when that flag is absent. Maps to Bowire:Discovery:Catalogue:Local:Path." });
         root.Add(new Option<string>("--catalogue-url") { Description = "URL the 'http' catalogue provider GETs every refresh interval. Must return the catalogue document shape ({ \"version\": 1, \"entries\": [...] }). Implies --catalogue-provider http when that flag is absent. Maps to Bowire:Discovery:Catalogue:Http:Url." });
         root.Add(new Option<string>("--catalogue-consul") { Description = "Consul agent address for the 'consul' catalogue provider (e.g. http://localhost:8500). Implies --catalogue-provider consul when that flag is absent. Maps to Bowire:Discovery:Catalogue:Consul:Address." });
-        root.Add(new Option<string>("--plugin-dir") { Description = "Override the plugin directory." });
+        // #818 — recursive: the plugin verbs' usage lines and `plugin --help`
+        // advertise `--plugin-dir` (`bowire plugin list --plugin-dir ./x`), and
+        // as a root-only option the parser refused it after any subcommand.
+        // The value itself is read from the bootstrap configuration, which
+        // sees the whole argument list wherever the flag stands.
+        root.Add(new Option<string>("--plugin-dir") { Description = "Override the plugin directory.", Recursive = true });
         var mapBasemapOpt = new Option<string>("--map-basemap")
         {
             Description = "Map widget basemap: 'osm' / 'satellite' / 'demotiles' / 'none', a tile URL with {z}/{x}/{y}, or a style.json URL. Default: 'demotiles'.",

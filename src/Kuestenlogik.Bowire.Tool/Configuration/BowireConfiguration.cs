@@ -168,9 +168,13 @@ internal static class BowireConfiguration
         IDictionary<string, string> switchMappings,
         HashSet<string> booleanFlags)
     {
+        // #818 — --auth-<provider>-<setting> flags become Bowire:Auth:* entries;
+        // AddCommandLine would file them under a meaningless root key.
+        var (cliArgs, authSettings) = AuthProviderFlags.Extract(args);
+
         // AddCommandLine treats `--no-browser` (no value) ambiguously; an
         // explicit `true` behind the bare flag makes the binding obvious.
-        var expandedArgs = ExpandBooleanFlags(args, booleanFlags);
+        var expandedArgs = ExpandBooleanFlags(cliArgs, booleanFlags);
 
         var environment =
             Environment.GetEnvironmentVariable(EnvironmentVarName)
@@ -206,7 +210,8 @@ internal static class BowireConfiguration
             .AddJsonFile($"appsettings.{environment}.json", optional: true, reloadOnChange: false)
             .AddEnvironmentVariables(prefix: "BOWIRE_")
             .AddInMemoryCollection(legacyEnvBindings)
-            .AddCommandLine(expandedArgs, switchMappings);
+            .AddCommandLine(expandedArgs, switchMappings)
+            .AddInMemoryCollection(authSettings);
 
         return builder.Build();
     }

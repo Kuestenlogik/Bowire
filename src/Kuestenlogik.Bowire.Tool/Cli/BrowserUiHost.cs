@@ -483,27 +483,33 @@ internal static class BrowserUiHost
         });
     }
 
-    private static async Task<int> DefaultHostRunner(string[] args, BrowserUiOptions ui, IBowirePluginLoader plugins,
-        Func<string, CancellationToken, Task> onListening, CancellationToken ct)
+    /// <summary>
+    /// The command-line flags this host's own configuration needs. The
+    /// command-line source <c>CreateBuilder(args)</c> adds carries no switch
+    /// mappings, so a flag mapped only in the bootstrap configuration (which
+    /// feeds <see cref="BrowserUiOptions"/>) never reaches services that read
+    /// <c>builder.Configuration</c>. Env and appsettings reach it directly.
+    /// </summary>
+    internal static void AddHostCommandLine(IConfigurationBuilder configuration, string[] args)
     {
-        var builder = Microsoft.AspNetCore.Builder.WebApplication.CreateBuilder(args);
+        // #818 — provider-namespaced auth flags (--auth-oidc-authority …),
+        // taken out before the switch-mapped source sees them.
+        var (cliArgs, authSettings) = AuthProviderFlags.Extract(args);
         // #537 — expand bare boolean flags before handing the args to a
         // second command-line source. CommandLineConfigurationProvider
         // reads the token AFTER a valueless flag as that flag's value, so
         // `--no-browser --catalogue-provider local` bound
         // no-browser="--catalogue-provider" and dropped the catalogue flag
-        // on the floor. The bootstrap config has always done this
-        // expansion; this container never did, which quietly made every
-        // switch-mapped flag below order-dependent.
-        var hostArgs = BowireConfiguration.ExpandKnownBooleanFlags(args);
-        // #486 — bridge the OAST flags into THIS host's configuration. The
-        // command-line source CreateBuilder(args) adds carries no switch
-        // mappings, so --oast-server would land only in the bootstrap config
-        // (which feeds BrowserUiOptions, not this container). The workbench OAST
-        // service reads builder.Configuration, so map the flags here too. Env /
-        // appsettings (Bowire__Oast__Server) already reach this config directly.
-        builder.Configuration.AddCommandLine(hostArgs, new Dictionary<string, string>(StringComparer.Ordinal)
+        // on the floor.
+        var hostArgs = BowireConfiguration.ExpandKnownBooleanFlags(cliArgs);
+        configuration.AddCommandLine(hostArgs, new Dictionary<string, string>(StringComparer.Ordinal)
         {
+            // #818 — AddBowireAuth reads Bowire:Auth:ProviderId off THIS
+            // configuration. Mapped only in the bootstrap one, the flag never
+            // arrived: `--auth-provider oidc` served an open workbench, and an
+            // unknown provider did not fail fast.
+            [AuthProviderFlags.ProviderFlag] = "Bowire:Auth:ProviderId",
+            // #486 — the workbench OAST service reads this configuration.
             ["--oast-server"] = "Bowire:Oast:Server",
             ["--oast-token"] = "Bowire:Oast:Token",
             // #537 — same reasoning for the catalogue flags. AddBowireCatalogue
@@ -521,6 +527,14 @@ internal static class BrowserUiHost
             ["--no-proxy"] = "Bowire:Network:NoProxy",
             ["--ca-bundle"] = "Bowire:Network:CaBundle",
         });
+        configuration.AddInMemoryCollection(authSettings);
+    }
+
+    private static async Task<int> DefaultHostRunner(string[] args, BrowserUiOptions ui, IBowirePluginLoader plugins,
+        Func<string, CancellationToken, Task> onListening, CancellationToken ct)
+    {
+        var builder = Microsoft.AspNetCore.Builder.WebApplication.CreateBuilder(args);
+        AddHostCommandLine(builder.Configuration, args);
         InferCatalogueProvider(builder.Configuration);
 
         // #634 — UseUrls sits at the very top of ASP.NET's address precedence,
