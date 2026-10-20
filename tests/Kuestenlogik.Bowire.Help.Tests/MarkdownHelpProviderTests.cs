@@ -395,6 +395,19 @@ public sealed class MarkdownHelpProviderTests
     }
 
     [Fact]
+    public void Search_FencedCodeBlock_IsIndexed()
+    {
+        var sut = BuildWith(new()
+        {
+            ["bowire-help-docs/code.md"] =
+                "# Topic\n\nIntro paragraph.\n\n```bash\nbowire uniquecodetoken --flag\n```\n",
+        });
+
+        var hit = Assert.Single(sut.Search("uniquecodetoken"));
+        Assert.Equal("code", hit.Id);
+    }
+
+    [Fact]
     public void Search_LimitClampsResults()
     {
         var sut = BuildWith(new()

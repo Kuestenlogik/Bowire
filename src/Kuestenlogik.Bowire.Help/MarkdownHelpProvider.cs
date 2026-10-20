@@ -302,6 +302,12 @@ public sealed class MarkdownHelpProvider : IBowireHelpProvider
             {
                 sb.Append(ci.Content).Append(' ');
             }
+            else if (child is CodeBlock block)
+            {
+                // Code blocks carry no inlines, so without this arm the
+                // commands and flags in examples never reached the index (#824).
+                for (var i = 0; i < block.Lines.Count; i++) sb.Append(block.Lines.Lines[i]).Append(' ');
+            }
         }
     }
 
