@@ -540,4 +540,93 @@ public sealed class MqttEmissionTests : IDisposable
 
         await subscriber.DisconnectAsync(cancellationToken: TestContext.Current.CancellationToken);
     }
+
+    [Fact]
+    public async Task Subscription_Frames_Replay_On_The_Recorded_Topic()
+    {
+        // The workbench records an MQTT subscription the way the plugin
+        // names it: service = the topic group ("sensors"), method = the
+        // topic. Hand-written lean recordings put the topic on `service`
+        // and a label like "receive" on `method`. Both must replay on the
+        // topic, never on the group name.
+        var recording = new
+        {
+            id = "rec_mqtt_sub",
+            name = "mqtt subscription replay",
+            recordingFormatVersion = 2,
+            steps = new object[]
+            {
+                new
+                {
+                    id = "step_recorded",
+                    capturedAt = 1_000L,
+                    protocol = "mqtt",
+                    service = "sensors",
+                    method = "sensors/temperature",
+                    methodType = "ServerStreaming",
+                    status = "OK",
+                    durationMs = 10L,
+                    receivedMessages = new[] { new { index = 0, timestampMs = 0L, data = (object)new { temp = 21.5 } } }
+                },
+                new
+                {
+                    id = "step_lean",
+                    capturedAt = 1_001L,
+                    protocol = "mqtt",
+                    service = "harbor/crane/1/status",
+                    method = "receive",
+                    methodType = "ServerStreaming",
+                    status = "OK",
+                    durationMs = 10L,
+                    receivedMessages = new[] { new { index = 0, timestampMs = 0L, data = (object)new { state = "idle" } } }
+                }
+            }
+        };
+
+        var path = Path.Combine(_tempDir, "mqtt-sub.json");
+        await File.WriteAllTextAsync(path, JsonSerializer.Serialize(recording), TestContext.Current.CancellationToken);
+
+        await using var server = await MockServer.StartAsync(
+            new MockServerOptions
+            {
+                RecordingPath = path,
+                Port = 0,
+                TransportPorts = new Dictionary<string,int>(StringComparer.OrdinalIgnoreCase) { ["mqtt"] = 0 },
+                TransportHosts = new IBowireMockTransportHost[] { new MqttMockTransportHost() },
+                Watch = false,
+                ReplaySpeed = 0
+            },
+            TestContext.Current.CancellationToken);
+
+        var factory = new MqttClientFactory();
+        using var subscriber = factory.CreateMqttClient();
+        var received = new List<(string Topic, string Payload)>();
+        var done = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        subscriber.ApplicationMessageReceivedAsync += args =>
+        {
+            lock (received)
+            {
+                received.Add((args.ApplicationMessage.Topic, Encoding.UTF8.GetString(args.ApplicationMessage.Payload)));
+                if (received.Count >= 2) done.TrySetResult();
+            }
+            return Task.CompletedTask;
+        };
+
+        await subscriber.ConnectAsync(
+            factory.CreateClientOptionsBuilder()
+                .WithTcpServer("127.0.0.1", server.TransportPorts["mqtt"])
+                .WithClientId("bowire-mqtt-sub-topic")
+                .Build(),
+            TestContext.Current.CancellationToken);
+        await subscriber.SubscribeAsync(
+            factory.CreateSubscribeOptionsBuilder().WithTopicFilter("#").Build(),
+            TestContext.Current.CancellationToken);
+
+        await done.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
+
+        Assert.Contains(("sensors/temperature", """{"temp":21.5}"""), received);
+        Assert.Contains(("harbor/crane/1/status", """{"state":"idle"}"""), received);
+
+        await subscriber.DisconnectAsync(cancellationToken: TestContext.Current.CancellationToken);
+    }
 }

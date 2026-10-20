@@ -131,10 +131,7 @@ public sealed class MqttProactiveEmitter : IAsyncDisposable
             else if (string.Equals(step.MethodType, "ServerStreaming", StringComparison.OrdinalIgnoreCase)
                 && step.ReceivedMessages is { Count: > 0 } frames)
             {
-                // Subscription steps: step.service carries the topic the
-                // client subscribed to (method is the synthetic
-                // "receive"/"subscribe" label).
-                var topic = !string.IsNullOrEmpty(step.Service) ? step.Service : step.Method;
+                var topic = SubscriptionTopic(step);
                 if (string.IsNullOrEmpty(topic))
                 {
                     _logger.LogWarning("Skipping MQTT step '{StepId}' — no topic on 'service' or 'method'.", step.Id);
@@ -150,6 +147,22 @@ public sealed class MqttProactiveEmitter : IAsyncDisposable
             }
         }
         return emissions.OrderBy(e => e.OffsetMs).ToList();
+    }
+
+    /// <summary>
+    /// The topic a recorded subscription listened on (#858). The workbench
+    /// records it as the plugin names it: service = the topic group (the
+    /// first segment), method = the topic, or its full name
+    /// <c>mqtt/&lt;topic&gt;/subscribe</c> (#664). Hand-written lean
+    /// recordings put the topic on service and a label on method instead.
+    /// </summary>
+    private static string SubscriptionTopic(BowireRecordingStep step)
+    {
+        var method = BowireMqttProtocol.TopicFromMethodName(step.Method);
+        var isLabel = string.IsNullOrEmpty(method)
+            || string.Equals(method, "receive", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(method, "subscribe", StringComparison.OrdinalIgnoreCase);
+        return isLabel && !string.IsNullOrEmpty(step.Service) ? step.Service : method;
     }
 
     private static string? FramePayload(BowireRecordingFrame frame) => frame.Data switch

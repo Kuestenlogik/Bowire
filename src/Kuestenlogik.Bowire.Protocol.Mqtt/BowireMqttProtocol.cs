@@ -115,7 +115,10 @@ public sealed class BowireMqttProtocol : IBowireProtocol, Kuestenlogik.Bowire.Ne
     /// paths read the topic. Both forms are accepted: the route is reduced
     /// to its topic, a topic passes through.
     /// </summary>
-    public string ResolveMethodName(string service, string method)
+    public string ResolveMethodName(string service, string method) => TopicFromMethodName(method);
+
+    /// <summary>The topic a method name or its <c>mqtt/&lt;topic&gt;/…</c> route names.</summary>
+    internal static string TopicFromMethodName(string method)
     {
         const string prefix = "mqtt/";
         if (string.IsNullOrEmpty(method) || !method.StartsWith(prefix, StringComparison.Ordinal)) return method;
