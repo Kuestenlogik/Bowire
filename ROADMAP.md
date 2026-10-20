@@ -12,10 +12,12 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.9.1 — Dependency security fixes *(due 2026-10-20)*
 
-**6/6 done**
+**8/8 done**
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
+| [647](https://github.com/Kuestenlogik/Bowire/issues/647) | Bowire | [Decide the licence and carry it per project](#issue-kuestenlogik-bowire-647) | ✅ Done | `area:multi` |
+| [668](https://github.com/Kuestenlogik/Bowire/issues/668) | Bowire | [Sharpen the one-line pitch, and carry the same sentence everywhere](#issue-kuestenlogik-bowire-668) | ✅ Done | `area:site` |
 | [777](https://github.com/Kuestenlogik/Bowire/issues/777) | Bowire | [English only: translate German comments, docs and issues, and guard against new German](#issue-kuestenlogik-bowire-777) | ✅ Done | `area:multi` |
 | [778](https://github.com/Kuestenlogik/Bowire/issues/778) | Bowire | [Issue language report instead of guarding the generated ROADMAP.md](#issue-kuestenlogik-bowire-778) | ✅ Done | `area:multi` |
 | [780](https://github.com/Kuestenlogik/Bowire/issues/780) | Bowire | [Dependency hygiene: SDK 10.0.402, no package with a known advisory](#issue-kuestenlogik-bowire-780) | ✅ Done | `area:multi` |
@@ -25,14 +27,12 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
 
-**2/4 done** · 2 backlog
+**0/2 done** · 2 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [639](https://github.com/Kuestenlogik/Bowire/issues/639) | Bowire | [SCIM: live Okta and Entra ID provisioning round-trips](#issue-kuestenlogik-bowire-639) | ⬜ Backlog | `area:workbench` |
 | [670](https://github.com/Kuestenlogik/Bowire/issues/670) | Bowire | [Get listed where developers and models actually look](#issue-kuestenlogik-bowire-670) | ⬜ Backlog | `area:site` |
-| [647](https://github.com/Kuestenlogik/Bowire/issues/647) | Bowire | [Decide the licence and carry it per project](#issue-kuestenlogik-bowire-647) | ✅ Done | `area:multi` |
-| [668](https://github.com/Kuestenlogik/Bowire/issues/668) | Bowire | [Sharpen the one-line pitch, and carry the same sentence everywhere](#issue-kuestenlogik-bowire-668) | ✅ Done | `area:site` |
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
@@ -176,6 +176,18 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.9.1 — Dependency security fixes *(due 2026-10-20)*
 
+#### <a id="issue-kuestenlogik-bowire-647"></a>✅ Done · [#647](https://github.com/Kuestenlogik/Bowire/issues/647) Decide the licence and carry it per project
+
+> `area:multi`
+
+According to the licence and tier concept, the licence question for Bowire is still open ("TBD"), and here it is no formality: in substance Bowire is a **security tool** — vulnerability database, scanner, protocol modules, SDKs in Go, Node, Python and Rust, CI action. [[more]](https://github.com/Kuestenlogik/Bowire/issues/647)
+
+#### <a id="issue-kuestenlogik-bowire-668"></a>✅ Done · [#668](https://github.com/Kuestenlogik/Bowire/issues/668) Sharpen the one-line pitch, and carry the same sentence everywhere
+
+> `area:site`
+
+In every directory, every search result and every model-generated answer, Bowire gets **one line** next to its name. Ours is *"The multi-protocol API workbench."* It is accurate, and it names neither an opponent nor a problem. [[more]](https://github.com/Kuestenlogik/Bowire/issues/668)
+
 #### <a id="issue-kuestenlogik-bowire-777"></a>✅ Done · [#777](https://github.com/Kuestenlogik/Bowire/issues/777) English only: translate German comments, docs and issues, and guard against new German
 
 > `area:multi`
@@ -219,18 +231,6 @@ Split from #96 so the SCIM surface can ship on its own merits. [[more]](https://
 > `area:site`
 
 Six credible competitors turned up during the competitive survey **via openalternative.co**. Bowire was not there. That is the whole diagnosis: when a developer — or a language model — asks for "open source Postman alternative", the answer is assembled from these directories, not from bowire.io. [[more]](https://github.com/Kuestenlogik/Bowire/issues/670)
-
-#### <a id="issue-kuestenlogik-bowire-647"></a>✅ Done · [#647](https://github.com/Kuestenlogik/Bowire/issues/647) Decide the licence and carry it per project
-
-> `area:multi`
-
-According to the licence and tier concept, the licence question for Bowire is still open ("TBD"), and here it is no formality: in substance Bowire is a **security tool** — vulnerability database, scanner, protocol modules, SDKs in Go, Node, Python and Rust, CI action. [[more]](https://github.com/Kuestenlogik/Bowire/issues/647)
-
-#### <a id="issue-kuestenlogik-bowire-668"></a>✅ Done · [#668](https://github.com/Kuestenlogik/Bowire/issues/668) Sharpen the one-line pitch, and carry the same sentence everywhere
-
-> `area:site`
-
-In every directory, every search result and every model-generated answer, Bowire gets **one line** next to its name. Ours is *"The multi-protocol API workbench."* It is accurate, and it names neither an opponent nor a problem. [[more]](https://github.com/Kuestenlogik/Bowire/issues/668)
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
