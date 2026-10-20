@@ -6,6 +6,10 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>Kuestenlogik.Bowire.Sample.Mcp</RootNamespace>
     <IsPackable>false</IsPackable>
+    <!-- MCPEXP001/MCPEXP002: the Tasks extension's server surface
+         (WithTasks, InMemoryMcpTaskStore, McpTaskExecutionMode) is marked
+         [Experimental] by the SDK and has no stable equivalent yet. -->
+    <NoWarn>$(NoWarn);MCPEXP001;MCPEXP002</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -18,6 +22,9 @@
     <!-- The MCP server this sample also *is* — the official C# SDK's
          ASP.NET streamable-HTTP transport. Version from central PM. -->
     <PackageReference Include="ModelContextProtocol.AspNetCore" />
+    <!-- MCP tasks (the io.modelcontextprotocol/tasks extension): WithTasks
+         and an in-memory task store for generate_report / confirm_shipment. -->
+    <PackageReference Include="ModelContextProtocol.Extensions.Tasks" />
   </ItemGroup>
 
   <ItemGroup>

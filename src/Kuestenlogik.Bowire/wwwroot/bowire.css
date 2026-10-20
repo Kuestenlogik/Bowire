@@ -7839,6 +7839,308 @@ response below.
 }
 
 /* ---- WebSocket Frame Type Badges (response viewer) ---- */
+/* ---------- MCP tasks (#801) ----------
+   The status card a tool call gets when the server runs it as a task, the
+   badges on its frames, and the "still running" panel after a reload. All
+   colours come from the status tokens, which both themes define. */
+.bowire-mcp-task-host {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+}
+.bowire-mcp-task-host > .bowire-mcp-task-card {
+    flex: 0 0 auto;
+    /* A long form or result must not take the stream's space. */
+    max-height: 55%;
+    overflow: auto;
+}
+.bowire-mcp-task-host > .bowire-mcp-task-card.is-input-required {
+    /* The form is what the operator is here for; give it the room. */
+    max-height: 75%;
+}
+.bowire-mcp-task-host > :not(.bowire-mcp-task-card) {
+    flex: 1 1 auto;
+    min-height: 0;
+}
+.bowire-mcp-task-card,
+.bowire-mcp-task-resume-list {
+    margin: 10px 12px;
+    padding: 10px 12px;
+    border: 1px solid var(--bowire-border);
+    border-left: 3px solid var(--bowire-mcp-task-tone, var(--bowire-border));
+    border-radius: var(--bowire-radius-sm);
+    background: var(--bowire-bg-elevated);
+    color: var(--bowire-text);
+    font-family: var(--bowire-font-sans);
+    font-size: 12px;
+}
+.bowire-mcp-task-card.is-working,
+.bowire-mcp-task-chip.is-working,
+.bowire-mcp-frame-task.is-working {
+    --bowire-mcp-task-tone: var(--bowire-info);
+    --bowire-mcp-task-tone-bg: var(--bowire-info-bg);
+}
+.bowire-mcp-task-card.is-input-required,
+.bowire-mcp-task-chip.is-input-required,
+.bowire-mcp-frame-task.is-input-required {
+    --bowire-mcp-task-tone: var(--bowire-warning);
+    --bowire-mcp-task-tone-bg: var(--bowire-warning-bg);
+}
+.bowire-mcp-task-card.is-completed,
+.bowire-mcp-task-chip.is-completed,
+.bowire-mcp-frame-task.is-completed,
+.bowire-mcp-frame-badge.bowire-mcp-frame-result {
+    --bowire-mcp-task-tone: var(--bowire-success);
+    --bowire-mcp-task-tone-bg: var(--bowire-success-bg);
+}
+.bowire-mcp-task-card.is-failed,
+.bowire-mcp-task-chip.is-failed,
+.bowire-mcp-frame-task.is-failed,
+.bowire-mcp-frame-badge.bowire-mcp-frame-error {
+    --bowire-mcp-task-tone: var(--bowire-error);
+    --bowire-mcp-task-tone-bg: var(--bowire-error-bg);
+}
+.bowire-mcp-task-card.is-cancelled,
+.bowire-mcp-task-chip.is-cancelled,
+.bowire-mcp-task-chip.is-unknown,
+.bowire-mcp-frame-task.is-cancelled,
+.bowire-mcp-frame-task.is-unknown {
+    --bowire-mcp-task-tone: var(--bowire-text-tertiary);
+    --bowire-mcp-task-tone-bg: var(--bowire-surface-hover);
+}
+.bowire-mcp-frame-badge.bowire-mcp-frame-log,
+.bowire-mcp-frame-badge.bowire-mcp-frame-progress {
+    --bowire-mcp-task-tone: var(--bowire-text-secondary);
+}
+.bowire-mcp-task-head {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.bowire-mcp-task-spacer { flex: 1 1 auto; }
+.bowire-mcp-task-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 999px;
+    border: 1px solid var(--bowire-mcp-task-tone, var(--bowire-border));
+    background: var(--bowire-mcp-task-tone-bg, transparent);
+    color: var(--bowire-mcp-task-tone, var(--bowire-text-secondary));
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+.bowire-mcp-task-title {
+    font-weight: 600;
+    color: var(--bowire-text-secondary);
+}
+.bowire-mcp-task-id {
+    font-family: var(--bowire-font-mono);
+    font-size: 11px;
+    color: var(--bowire-text);
+    user-select: all;
+    word-break: break-all;
+}
+.bowire-mcp-task-message {
+    margin-top: 6px;
+    color: var(--bowire-text);
+}
+.bowire-mcp-task-facts {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 6px 16px;
+    margin: 8px 0 0;
+}
+.bowire-mcp-task-fact dt {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: var(--bowire-text-tertiary);
+}
+.bowire-mcp-task-fact dd {
+    margin: 0;
+    font-family: var(--bowire-font-mono);
+    font-size: 11px;
+    color: var(--bowire-text);
+}
+.bowire-mcp-task-hint {
+    margin-top: 8px;
+    font-size: 11px;
+    color: var(--bowire-text-secondary);
+}
+.bowire-mcp-task-inputs {
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid var(--bowire-border-subtle);
+}
+.bowire-mcp-task-inputs-title {
+    font-weight: 600;
+    margin-bottom: 6px;
+}
+.bowire-mcp-task-request {
+    padding: 8px;
+    margin-bottom: 8px;
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius-sm);
+    background: var(--bowire-surface);
+}
+.bowire-mcp-task-request.is-answered { opacity: 0.75; }
+.bowire-mcp-task-request-head {
+    display: flex;
+    gap: 8px;
+    align-items: baseline;
+    font-size: 11px;
+    color: var(--bowire-text-tertiary);
+}
+.bowire-mcp-task-request-key,
+.bowire-mcp-task-request-method { font-family: var(--bowire-font-mono); }
+.bowire-mcp-task-request-message {
+    margin: 4px 0 8px;
+    font-weight: 600;
+}
+.bowire-mcp-task-request-state {
+    color: var(--bowire-text-secondary);
+    font-style: italic;
+}
+.bowire-mcp-task-request-raw,
+.bowire-mcp-task-outcome-body {
+    margin: 6px 0 0;
+    padding: 6px 8px;
+    max-height: 160px;
+    overflow: auto;
+    font-family: var(--bowire-font-mono);
+    font-size: 11px;
+    white-space: pre-wrap;
+    word-break: break-word;
+    background: var(--bowire-bg);
+    border-radius: var(--bowire-radius-sm);
+    color: var(--bowire-text);
+}
+.bowire-mcp-task-form {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 8px 14px;
+}
+.bowire-mcp-task-field {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+.bowire-mcp-task-field-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--bowire-text-secondary);
+}
+.bowire-mcp-task-field-req { color: var(--bowire-error); }
+.bowire-mcp-task-check {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 28px;
+}
+.bowire-mcp-task-field input.bowire-mcp-task-input:not([type="checkbox"]),
+.bowire-mcp-task-field select.bowire-mcp-task-input {
+    height: 28px;
+    padding: 0 8px;
+    background: var(--bowire-bg);
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius-sm);
+    color: var(--bowire-text);
+    font-size: 12px;
+    font-family: var(--bowire-font-sans);
+}
+.bowire-mcp-task-field select[multiple].bowire-mcp-task-input {
+    height: auto;
+    min-height: 56px;
+    padding: 4px;
+}
+.bowire-mcp-task-field.has-error .bowire-mcp-task-input { border-color: var(--bowire-error); }
+.bowire-mcp-task-field-desc {
+    font-size: 10px;
+    color: var(--bowire-text-tertiary);
+}
+.bowire-mcp-task-field-error {
+    font-size: 11px;
+    color: var(--bowire-error);
+}
+.bowire-mcp-task-field-unsupported {
+    font-size: 11px;
+    font-style: italic;
+    color: var(--bowire-text-tertiary);
+}
+.bowire-mcp-task-form-actions {
+    grid-column: 1 / -1;
+    display: flex;
+    gap: 8px;
+}
+.bowire-pane-btn.is-primary {
+    background: var(--bowire-accent);
+    border-color: var(--bowire-accent);
+    color: var(--bowire-text-inverse);
+}
+.bowire-pane-btn.is-primary:hover:not(:disabled) {
+    background: var(--bowire-accent-hover);
+    border-color: var(--bowire-accent-hover);
+    color: var(--bowire-text-inverse);
+}
+.bowire-pane-btn.bowire-mcp-task-cancel {
+    color: var(--bowire-error);
+    border-color: var(--bowire-error);
+}
+.bowire-mcp-task-outcome { margin-top: 10px; }
+.bowire-mcp-task-outcome-title {
+    font-weight: 600;
+    color: var(--bowire-success);
+}
+.bowire-mcp-task-outcome.is-failed .bowire-mcp-task-outcome-title { color: var(--bowire-error); }
+.bowire-mcp-task-notice {
+    margin-top: 8px;
+    padding: 6px 8px;
+    border-radius: var(--bowire-radius-sm);
+    background: var(--bowire-info-bg);
+    color: var(--bowire-text);
+    font-size: 11px;
+}
+.bowire-mcp-task-notice.is-error {
+    background: var(--bowire-error-bg);
+    color: var(--bowire-error);
+}
+.bowire-mcp-task-resume-list { --bowire-mcp-task-tone: var(--bowire-info); }
+.bowire-mcp-task-resume-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 6px 0;
+    border-top: 1px solid var(--bowire-border-subtle);
+}
+.bowire-mcp-task-resume-text {
+    font-family: var(--bowire-font-mono);
+    font-size: 11px;
+}
+.bowire-mcp-task-resume-when {
+    font-size: 11px;
+    color: var(--bowire-text-secondary);
+}
+.bowire-mcp-task-resume-row.is-expired .bowire-mcp-task-resume-when { color: var(--bowire-warning); }
+.bowire-mcp-frame-badge {
+    display: inline-block;
+    padding: 1px 6px;
+    margin: 0 6px;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    border-radius: var(--bowire-radius-sm);
+    vertical-align: middle;
+    font-family: var(--bowire-font-mono);
+    white-space: nowrap;
+    color: var(--bowire-mcp-task-tone, var(--bowire-protocol-mcp));
+    background: var(--bowire-mcp-task-tone-bg, transparent);
+    border: 1px solid var(--bowire-mcp-task-tone, var(--bowire-protocol-mcp));
+}
+
 .bowire-ws-frame-badge {
     display: inline-block;
     padding: 1px 6px;

@@ -20,8 +20,14 @@
 //                 one (bowire://sample/sensors/{sensorId}/readings).
 //   * Prompts   — summarise_sensor, with one required and one optional
 //                 argument.
+//   * Tasks     — generate_report and confirm_shipment run as MCP tasks
+//                 (the io.modelcontextprotocol/tasks extension, 2026-07-28):
+//                 the call answers with a task at once, the work goes on
+//                 behind it, and confirm_shipment asks the client a question
+//                 (elicitation) before it finishes. Every other tool stays
+//                 synchronous, so its call answers with its result as before.
 //
-// Everything is stateless: the tool computes its answer from the batch it
+// Apart from the in-memory task store, everything is stateless: the tool computes its answer from the batch it
 // is handed and the resources derive their readings from the sensor id,
 // so the sample stays a single project with nothing to reset. As of MCP
 // revision 2026-07-28 the *transport* is stateless too — the revision
@@ -37,6 +43,9 @@ using System.ComponentModel;
 using System.Text.Json;
 using Kuestenlogik.Bowire;
 using Kuestenlogik.Bowire.Sources;
+using ModelContextProtocol;
+using ModelContextProtocol.Extensions.Tasks;
+using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -53,6 +62,16 @@ builder.Services
     // round trip.
     .WithHttpTransport(o => o.Stateless = true)
     .WithTools<SampleTools>()
+    .WithTools<SampleTaskTools>()
+    // Tasks (#801): the server, not the client, decides which calls become
+    // tasks. Only the SampleTaskTools do; the store forgets a task ten
+    // minutes after it was created, which is the TTL the client is told.
+    .WithTasks(
+        new InMemoryMcpTaskStore { DefaultPollIntervalMs = 500, DefaultTimeToLive = TimeSpan.FromMinutes(10) },
+        o => o.ExecutionModeSelector = ctx =>
+            ctx.MatchedPrimitive is McpServerTool { ProtocolTool.Name: var name } && SampleTaskTools.Names.Contains(name)
+                ? McpTaskExecutionMode.Optional
+                : McpTaskExecutionMode.Synchronous)
     .WithResources<SampleResources>()
     .WithPrompts<SamplePrompts>();
 
@@ -116,6 +135,67 @@ internal sealed class SampleTools
             tag,
         });
     }
+}
+
+/// <summary>
+/// The tools that run as MCP tasks. The delays stand in for real work, so
+/// there is something to watch while the task is <c>working</c>.
+/// </summary>
+[McpServerToolType]
+internal sealed class SampleTaskTools
+{
+    public static readonly HashSet<string> Names = new(StringComparer.Ordinal) { "generate_report", "confirm_shipment" };
+
+    [McpServerTool(Name = "generate_report")]
+    [Description("Build a report for one sensor. Runs as a task: it works for a few seconds, then answers.")]
+    public static async Task<string> GenerateReport(
+        [Description("Sensor to report on, e.g. 'dock-1'.")] string sensorId = "dock-1",
+        [Description("How long the report takes to build, in seconds (1-60).")] int seconds = 4,
+        CancellationToken ct = default)
+    {
+        await Task.Delay(TimeSpan.FromSeconds(Math.Clamp(seconds, 1, 60)), ct);
+        return JsonSerializer.Serialize(new { report = "sensor-summary", sensorId, readings = JsonDocument.Parse(SampleData.ReadingsJson(sensorId)).RootElement });
+    }
+
+    [McpServerTool(Name = "confirm_shipment")]
+    [Description("Book a shipment. Runs as a task and asks the client to confirm it (elicitation) before it books.")]
+    public static async Task<string> ConfirmShipment(
+        McpServer server,
+        [Description("Shipment to book, e.g. 'SHP-1042'.")] string shipmentId = "SHP-1042",
+        CancellationToken ct = default)
+    {
+        var answer = await server.ElicitAsync(new ElicitRequestParams
+        {
+            Message = $"Book shipment {shipmentId}?",
+            RequestedSchema = new()
+            {
+                Properties = new Dictionary<string, ElicitRequestParams.PrimitiveSchemaDefinition>
+                {
+                    ["confirm"] = new ElicitRequestParams.BooleanSchema { Title = "Confirm booking", Default = true },
+                    ["quantity"] = new ElicitRequestParams.NumberSchema { Type = "integer", Title = "Pallets", Minimum = 1, Maximum = 40, Default = 1 },
+                    ["carrier"] = new ElicitRequestParams.UntitledSingleSelectEnumSchema { Title = "Carrier", Enum = ["road", "rail", "sea"], Default = "road" },
+                    ["note"] = new ElicitRequestParams.StringSchema { Title = "Note for the dock", Description = "Optional." },
+                },
+                Required = ["confirm", "quantity", "carrier"],
+            },
+        }, ct);
+
+        if (!answer.IsAccepted || answer.Content is not { } content)
+            return JsonSerializer.Serialize(new { shipmentId, booked = false, reason = "the client " + answer.Action + "d" });
+        var confirmed = content.TryGetValue("confirm", out var c) && c.ValueKind == JsonValueKind.True;
+        return JsonSerializer.Serialize(new
+        {
+            shipmentId,
+            booked = confirmed,
+            quantity = Answer(content, "quantity"),
+            carrier = Answer(content, "carrier"),
+            note = Answer(content, "note"),
+        });
+    }
+
+    // An optional field the client left empty is absent from the content.
+    private static JsonElement? Answer(IDictionary<string, JsonElement> content, string key) =>
+        content.TryGetValue(key, out var value) ? value : null;
 }
 
 /// <summary>One measurement — nested inside the tool's input schema.</summary>

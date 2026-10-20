@@ -3,6 +3,9 @@
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
     <OutputType>Exe</OutputType>
+    <!-- MCPEXP001/MCPEXP002: the Tasks extension's server surface is
+         [Experimental] and has no stable equivalent (see the plugin). -->
+    <NoWarn>$(NoWarn);MCPEXP001;MCPEXP002</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
@@ -10,6 +13,8 @@
     <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" />
     <!-- An SDK-built server for the notification stream (#46). -->
     <PackageReference Include="ModelContextProtocol.AspNetCore" />
+    <!-- An SDK-built task server (#801): WithTasks + InMemoryMcpTaskStore. -->
+    <PackageReference Include="ModelContextProtocol.Extensions.Tasks" />
   </ItemGroup>
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />

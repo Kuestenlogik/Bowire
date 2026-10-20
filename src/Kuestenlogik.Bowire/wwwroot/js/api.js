@@ -1041,6 +1041,9 @@
         var _sentInvocationUrl = (typeof invocationUrlFor === 'function'
             ? invocationUrlFor(selectedService, selectedMethod)
             : (selectedService && selectedService.originUrl)) || (serverUrls[0] || null);
+        // #801 - the service the stream runs against, for the MCP task
+        // list; held for the same reason as the URL above.
+        var _streamService = selectedService;
         S.isExecuting = true;
         markJobActive(service, method);
         S.responseData = null;
@@ -1115,6 +1118,9 @@
                 if (parsed.id === undefined) parsed.id = service + '/' + method + '#' + frameIndex;
                 S.streamMessages.push(parsed);
                 markSubscriptionFrame(service, method);
+                // #801 - keep the list of MCP tasks still running in step,
+                // so a reload can offer to follow one again.
+                if (typeof mcpTaskObserveStream === 'function') mcpTaskObserveStream(_streamService, method, S.streamMessages);
                 // Chaining: capture the inner data payload (last message wins)
                 if (parsed && parsed.data !== undefined) captureResponse(parsed.data);
                 addConsoleEntry({ type: 'stream', method: fullName, body: parsed.data || event.data });

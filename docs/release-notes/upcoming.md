@@ -18,6 +18,10 @@ template for a filled-in body:
   <2-4 sentences>
 -->
 
+### MCP tasks: call, follow, answer and cancel long-running tools (#801)
+
+When an MCP server answers a tool call with a durable task, Bowire now follows it: the task's status streams in as it changes, then its result or error. Bowire speaks the `io.modelcontextprotocol/tasks` extension (2026-07-28) and the older 2025-11-25 shape, polls at the interval the server asks for, and switches to pushed status where the server agrees to send it. A new **Tasks** service answers a task's input requests (`update`), cancels it (`cancel`, cooperative), reads it (`get`) and resumes following it after a reload (`follow`) — from the workbench, the CLI and REST alike. Servers without tasks behave exactly as before.
+
 ## Breaking changes
 
 <!-- Each change has been on a back-compat ramp through the prior minor

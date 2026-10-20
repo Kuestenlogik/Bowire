@@ -131,6 +131,16 @@ export default defineConfig({
             reuseExistingServer: !process.env.CI,
             env: serverEnv
         },
+        // mcp-tasks.spec.ts drives MCP tasks end to end: the MCP sample is a
+        // task-capable server and hosts its own workbench at /bowire with
+        // the server already in the Sources rail.
+        {
+            command: 'dotnet run --project samples/Kuestenlogik.Bowire.Sample.Mcp -c Release',
+            url: 'http://localhost:5190/bowire',
+            timeout: 180_000,
+            reuseExistingServer: !process.env.CI,
+            env: serverEnv
+        },
         {
             command: 'dotnet run --project src/Kuestenlogik.Bowire.Tool -c Release -- '
                 + '--port 5191 --no-browser --url soap@http://localhost:5195/Calculator.asmx?wsdl',

@@ -20,6 +20,8 @@ the sidebar shows one service per category:
 | **Tools** | `echo` | Echoes the input text. |
 | | `add` | Adds two integers. |
 | | `record_readings` | The non-trivial one — see below. |
+| | `generate_report` | Runs as an MCP task: works a few seconds (`seconds`, default 4), then answers. |
+| | `confirm_shipment` | Runs as an MCP task and asks the client to confirm the booking (elicitation) first. |
 | **Resources** | `bowire://sample/sensors` | Direct resource; the sensor ids the sample knows about. |
 | | `bowire://sample/sensors/{sensorId}/readings` | Templated resource; the last five readings for one sensor. |
 | **Prompts** | `summarise_sensor` | One required argument (`sensorId`) and one optional (`tone`). |
@@ -30,7 +32,25 @@ array of nested objects** (`readings`, each with a described `sensorId`,
 `value` and optional `at`), a **required nested object** (`source`), and
 two optional scalars — every property carrying a description.
 
-Everything is stateless: the tool answers from the batch it is handed and
+## MCP tasks
+
+The server also speaks the `io.modelcontextprotocol/tasks` extension
+(schema 2026-07-28) through `WithTasks` and an in-memory task store. Only
+`generate_report` and `confirm_shipment` run as tasks — the
+`ExecutionModeSelector` keeps every other tool synchronous, so their calls
+answer as before. Discovery therefore also lists a **Tasks** service
+(`get`, `follow`, `update`, `cancel`).
+
+In the workbench, calling a task tool shows a status card above the stream:
+the status, the task id, how long it has run, how long the server keeps it
+(10 minutes here), and how the last update arrived. `confirm_shipment`
+turns into **input required** and the card renders the server's form —
+Accept or Decline sends the answer through `Tasks/update`. **Cancel task**
+calls `Tasks/cancel`; **Stop** only stops following, the task keeps running.
+After a reload, the tool offers to **resume following** a task that was
+still running, through `Tasks/follow`.
+
+Apart from the task store, everything is stateless: the tool answers from the batch it is handed and
 the resources derive their readings from the sensor id, so there is
 nothing to reset between runs.
 

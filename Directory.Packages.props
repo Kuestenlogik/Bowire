@@ -191,6 +191,11 @@
          mount the SDK maps POST only; the standalone SSE GET is gone. -->
     <PackageVersion Include="ModelContextProtocol" Version="2.2.0" />
     <PackageVersion Include="ModelContextProtocol.AspNetCore" Version="2.2.0" />
+    <!-- The official io.modelcontextprotocol/tasks extension (SEP-2663,
+         schema 2026-07-28) for the same SDK version: tasks/get, update,
+         cancel on the client, WithTasks on a server (#801). Pinned to the
+         SDK's version — the package depends on exactly [2.2.0]. -->
+    <PackageVersion Include="ModelContextProtocol.Extensions.Tasks" Version="2.2.0" />
     <!-- System.CommandLine 2.0.7 — stable after the beta-to-stable
          API rework. Used by Kuestenlogik.Bowire.Tool to declare the CLI's
          subcommand tree (list/describe/call/mock/mcp/plugin/test) and

@@ -8468,6 +8468,10 @@
                 textContent: wsType.toUpperCase()
             }));
         }
+        // #801 - an MCP frame says what kind it is (progress, log, result,
+        // error) and a task frame the status it reports.
+        var mcpBadge = (typeof mcpFrameBadge === 'function') ? mcpFrameBadge(msg) : null;
+        if (mcpBadge) item.appendChild(mcpBadge);
         if (surgewaveTap) {
             item.appendChild(el('span', {
                 className: 'bowire-surgewave-tap-badge bowire-surgewave-tap-' + surgewaveTap.event,
@@ -10121,6 +10125,11 @@
 
         var idx = S.streamMessages.length - 1;
         var msg = S.streamMessages[idx];
+        // #801 - a frame that changes the MCP task card takes the full
+        // render: the card sits above the list and is rebuilt from the
+        // whole stream. Task frames come only when the status changes, so
+        // this is rare even on a long stream.
+        if (typeof mcpTaskFrameNeedsRender === 'function' && mcpTaskFrameNeedsRender(S, msg)) return false;
         // Filtered out: skip the DOM append but still update the count
         // and (if auto-scroll is on) the detail pane — the user should
         // still see "X / Y" climb so they know the stream is alive.
@@ -10862,7 +10871,18 @@
             // the original
             // single-pane render when no such widget is mountable —
             // identical behaviour for every other method.
-            respBody.appendChild(renderStreamingPaneWithWidgets(S));
+            //
+            // #801 - a tool the server runs as an MCP task gets its status
+            // card above the stream; the frames stay below, unchanged.
+            var mcpTaskCard = (typeof renderMcpTaskCard === 'function')
+                ? renderMcpTaskCard(S, svc, method, pid)
+                : null;
+            if (mcpTaskCard) {
+                respBody.appendChild(el('div', { className: 'bowire-mcp-task-host' },
+                    mcpTaskCard, renderStreamingPaneWithWidgets(S)));
+            } else {
+                respBody.appendChild(renderStreamingPaneWithWidgets(S));
+            }
         } else if (diffViewOpen && getResponseSnapshots().length >= 2) {
             // Multi-snapshot diff view — replaces the normal response body
             // with snapshot selectors and a line-by-line comparison.
@@ -10982,6 +11002,12 @@ t(mcpContent.count === 1 ? 'main.mcp.itemOne' : 'main.mcp.itemMany',
                 }
             }
         } else {
+            // #801 - an MCP task this tool started that was still running
+            // when the page went away: offer to follow it again.
+            var mcpResume = (typeof renderMcpTaskResume === 'function')
+                ? renderMcpTaskResume(svc, method)
+                : null;
+            if (mcpResume) respBody.appendChild(mcpResume);
             respBody.appendChild(el('div', { className: 'bowire-no-response' },
                 el('div', { className: 'bowire-no-response-icon', innerHTML: svgIcon('play') }),
                 el('div', { textContent: t('main.sendToSee') }),

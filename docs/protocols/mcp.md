@@ -33,6 +33,7 @@ After the handshake (`initialize` + `notifications/initialized`), Bowire calls `
 | **Tools** | one per discovered tool | `tools/call` with the tool arguments — server-streaming: what the server reports while the tool runs, then the result |
 | **Resources** | one per resource (method name = URI) | `resources/read` |
 | **Prompts** | one per prompt | `prompts/get` with the prompt arguments |
+| **Tasks** | `get`, `follow`, `update`, `cancel` — only on a server that runs tasks | `tasks/get`, `tasks/update`, `tasks/cancel` by `taskId`; see [Tasks](#tasks-long-running-tool-calls) |
 
 Tool input schemas (`inputSchema`, JSON Schema with `type: "object"`) are mapped to the standard form-based UI: strings become text inputs, numbers become number fields, booleans become checkboxes, arrays become repeated fields, and nested objects become message fields. Required fields are marked with an asterisk.
 
@@ -52,11 +53,61 @@ A tool call is one request, but the server can say things while it runs. Bowire 
 
 A tool that says nothing is a stream of one frame, its result. Resources and prompts have no progress and answer with a single frame too.
 
+### Tasks — long-running tool calls
+
+A server can answer a `tools/call` with a durable **task** instead of a result: a handle the client follows until the work is done, answers when the server needs input, and can cancel. Bowire speaks both shapes in use:
+
+| Shape | Where it comes from | How Bowire knows |
+|---|---|---|
+| **2026-07-28** | the `io.modelcontextprotocol/tasks` extension (SEP-2663) | the server lists the extension under `capabilities.extensions` in its `server/discover` answer |
+| **2025-11-25** | tasks as the experimental part of the 2025-11-25 core spec | the session negotiated 2025-11-25 and a tool declares `execution.taskSupport: "optional"` or `"required"` |
+
+On such a server, discovery adds a **Tasks** service, and the Tools service says that calls may run as tasks; on a 2025-11-25 server each task-capable tool says so in its description. A server with neither is called exactly as before.
+
+**Calling a tool.** With the extension, Bowire declares it on every `tools/call` (`_meta["io.modelcontextprotocol/clientCapabilities"].extensions`), and the server decides per call whether to answer with a result or a task. Under 2025-11-25 Bowire adds `task: {}` to the call for the tools marked `optional` or `required` — Bowire is the place to watch one run. A result is the one `result` frame, as without tasks. A task streams its status instead:
+
+```json
+{ "event": "task",   "data": { "shape": "2026-07-28", "taskId": "786512e2…", "status": "working", "via": "create",
+                               "createdAt": "2026-10-20T10:30:00Z", "ttlMs": 3600000, "pollIntervalMs": 5000 } }
+{ "event": "task",   "data": { "status": "input_required", "via": "poll", "inputRequests": { "name": { "method": "elicitation/create", … } }, … } }
+{ "event": "task",   "data": { "status": "completed", "via": "poll", … } }
+{ "event": "result", "data": { "content": [ { "type": "text", "text": "hello Ada" } ] } }
+```
+
+- A **`task`** frame comes whenever the server reports something new: status, status message, input requests, TTL or poll interval. `via` says how Bowire learned it — `create`, `poll` or `notification`.
+- The stream ends with the **`result`** of a `completed` task; with an **`error`** frame for a `failed` one (the JSON-RPC error the server recorded); or with the `cancelled` task frame itself.
+- **Polling** honours the server's `pollIntervalMs`. Under the extension Bowire also sends `subscriptions/listen` for the task id; when the server acknowledges that id, its `notifications/tasks` replace polling until the subscription stream ends. Under 2025-11-25, `notifications/tasks/status` are shown when they arrive, but polling carries on, as that spec asks.
+- **TTL.** Past `createdAt + ttlMs` a task that has not ended may be considered gone; Bowire stops following it and says so. A server that already purged a task answers `-32602`, which Bowire reports as "expired or never existed" — the two look the same from the client.
+- **Stopping the stream stops following.** It does not cancel the task: the server keeps working on it, and `Tasks/follow` picks it up again.
+
+**In the workbench.** A tool call that becomes a task shows a task card above the stream: status, the server's status message, the spec shape, the task id, how long it has been running, the TTL left, and how the last update arrived. While the task waits for input, the card renders a form per elicitation request — **Accept** and **Decline** send it with `Tasks/update`, and a key already answered is not offered again. **Cancel task** sends `Tasks/cancel` and shows the server's answer; **Stop** only stops following. A task still running when the page is reloaded is listed in the tool's response pane with **Resume following**, which opens `Tasks/follow` for it.
+
+**The Tasks service.** Each method takes the `taskId` from a task frame, so the CLI, REST and the MCP adapter reach a task the same way the workbench does:
+
+| Method | Request | Answer |
+|---|---|---|
+| `get` | `{ "taskId": "…" }` | the task's state, with `result` or `error` once it ended |
+| `follow` | `{ "taskId": "…" }` | a stream like the tool call's, from the task's current state on — what the workbench uses to resume after a reload |
+| `update` | `{ "taskId": "…", "inputResponses": { "<key>": { "action": "accept", "content": { … } } } }` | an acknowledgement; keys match the task's `inputRequests` |
+| `cancel` | `{ "taskId": "…" }` | an acknowledgement, plus the task's status right after |
+
+Cancellation is **cooperative**: the server is asked to stop, and the task may still complete or fail before it does. The answer to `cancel` says so and shows the status the server reported right after the request; the followed stream shows how it actually ended.
+
+A unary invoke of a tool (`bowire call`, REST) follows the task itself and answers with its result. When the task needs input, the call ends with a message naming the `taskId` — answer it with `Tasks/update` and pick it up with `Tasks/follow`.
+
+**Limits of this release.**
+
+- Input requests of a **2025-11-25** task are not answered: in that shape they arrive as `elicitation/create` requests while the client blocks on `tasks/result`, not through `tasks/update`. The `input_required` status still shows, and `Tasks/update` says why it cannot help.
+- **Sampling** requests (`sampling/createMessage`) inside `inputRequests` are shown but not answered.
+- A 2025-11-25 server that binds tasks to its session may refuse `Tasks/get`, `follow` or `cancel` from a new session; following the tool call's own stream is not affected.
+- Bowire calls tools as tasks; it does not run its own MCP tools as tasks yet (#802), and tests and mocks do not assert on task lifecycles yet (#803).
+
 ### Sample target
 
 [`samples/Kuestenlogik.Bowire.Sample.Mcp`](https://github.com/Kuestenlogik/Bowire/tree/main/samples/Kuestenlogik.Bowire.Sample.Mcp) is a combined sample — one project that both serves MCP over the official C# SDK's streamable-HTTP transport (message endpoint `http://localhost:5190/mcp`) **and** mounts the embedded workbench at `/bowire`. It exposes two tools:
 
 - **Tools** — `echo` (echoes the input text) and `add` (adds two integers)
+- **Task tools** — `generate_report` (works for a few seconds, then answers) and `confirm_shipment` (asks for a confirmation through an input request first). The sample runs only these two as [tasks](#tasks-long-running-tool-calls); every other tool stays synchronous.
 
 Because it plays both roles at once, you can reach it either way:
 

@@ -4,6 +4,7 @@
 using System.Collections.Concurrent;
 using System.Text.Json;
 using Kuestenlogik.Bowire.Models;
+using Kuestenlogik.Bowire.Protocol.Mcp.Tasks;
 using ModelContextProtocol;
 using ModelContextProtocol.Client;
 using ModelContextProtocol.Protocol;
@@ -68,6 +69,9 @@ public sealed class BowireMcpProtocol : IBowireProtocol, Kuestenlogik.Bowire.Net
     // process lifetime.
     private readonly ConcurrentDictionary<string, IReadOnlyList<Tool>> _knownTools =
         new(StringComparer.Ordinal);
+
+    // MCP tasks (#801): which shape a server speaks and the Tasks service.
+    private readonly McpTaskService _tasks = new();
 
     public string Name => "MCP";
     public string Description => "Model Context Protocol — Claude / Cursor / Copilot tool + resource server discovery + invoke.";
@@ -259,11 +263,12 @@ public sealed class BowireMcpProtocol : IBowireProtocol, Kuestenlogik.Bowire.Net
 
                 JsonElement payload = service switch
                 {
-                    "Tools" => await CallToolAsync(client, method, jsonMessages, ct).ConfigureAwait(false),
+                    "Tools" => await CallToolAsync(client, serverUrl, method, jsonMessages, ct).ConfigureAwait(false),
                     "Resources" => await ReadResourceAsync(client, method, ct).ConfigureAwait(false),
                     "Prompts" => await GetPromptAsync(client, method, jsonMessages, ct).ConfigureAwait(false),
+                    McpTaskService.ServiceName => await McpTaskService.InvokeAsync(client, method, jsonMessages, ct).ConfigureAwait(false),
                     _ => throw new InvalidOperationException(
-                        $"MCP service '{service}' is not supported. Use 'Tools', 'Resources', or 'Prompts'."),
+                        $"MCP service '{service}' is not supported. Use 'Tools', 'Resources', 'Prompts', or 'Tasks'."),
                 };
 
                 var elapsedMs = (long)(DateTime.UtcNow - startedAt).TotalMilliseconds;
@@ -305,6 +310,13 @@ public sealed class BowireMcpProtocol : IBowireProtocol, Kuestenlogik.Bowire.Net
         Dictionary<string, string>? metadata = null,
         [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct = default)
     {
+        if (service == McpTaskService.ServiceName && method == McpTaskService.Follow)
+        {
+            await foreach (var frame in FollowTaskAsync(serverUrl, jsonMessages, metadata, ct).ConfigureAwait(false))
+                yield return frame;
+            yield break;
+        }
+
         if (service != "Tools")
         {
             var unary = await InvokeAsync(serverUrl, service, method, jsonMessages, showInternalServices, metadata, ct).ConfigureAwait(false);
@@ -369,10 +381,17 @@ public sealed class BowireMcpProtocol : IBowireProtocol, Kuestenlogik.Bowire.Net
             {
                 try
                 {
+                    var dialect = await _tasks.ForToolAsync(client, NormalizeUrl(serverUrl), method, ct).ConfigureAwait(false);
+                    if (dialect is not null)
+                    {
+                        await RunToolAsTaskAsync(client, dialect, method, jsonMessages, frames.Writer, ct).ConfigureAwait(false);
+                        return;
+                    }
+                    var progress = new FrameProgress(frames.Writer);
                     var result = await client.CallToolAsync(
                         method, ParseArguments(jsonMessages),
-                        new FrameProgress(frames.Writer), cancellationToken: ct).ConfigureAwait(false);
-                    frames.Writer.TryWrite(Frame("result", JsonSerializer.SerializeToElement(result)));
+                        progress, cancellationToken: ct).ConfigureAwait(false);
+                    progress.End(Frame("result", JsonSerializer.SerializeToElement(result)));
                 }
                 catch (Exception ex) when (ex is not OperationCanceledException)
                 {
@@ -394,6 +413,94 @@ public sealed class BowireMcpProtocol : IBowireProtocol, Kuestenlogik.Bowire.Net
         JsonSerializer.Serialize(new { @event = kind, data });
 
     /// <summary>
+    /// A tool call the server may answer with a task (#801). An ordinary
+    /// result is the one <c>result</c> frame, exactly as without tasks; a
+    /// task is a <c>task</c> frame per status the server reports, then its
+    /// result or error. Ending the stream stops following — it does not
+    /// cancel the task, which is what <c>Tasks/cancel</c> is for.
+    /// </summary>
+    private static async Task RunToolAsTaskAsync(
+        McpClient client, IMcpTaskDialect dialect, string tool, List<string> jsonMessages,
+        System.Threading.Channels.ChannelWriter<string> frames, CancellationToken ct)
+    {
+        // The SDK attaches progress only to its own CallToolAsync; this call
+        // goes through the dialect, so the token and its handler are
+        // Bowire's — kept for the whole run, since a 2025-11-25 task may
+        // report progress until it ends.
+        var token = new ProgressToken(Guid.NewGuid().ToString("N"));
+        var progress = new FrameProgress(frames);
+        await using var progressHandler = client.RegisterNotificationHandler(NotificationMethods.ProgressNotification, (notification, _) =>
+        {
+            if (notification.Params?.Deserialize<ProgressNotificationParams>(McpJsonUtilities.DefaultOptions) is { } p
+                && p.ProgressToken.Equals(token))
+            {
+                progress.Report(p.Progress);
+            }
+            return ValueTask.CompletedTask;
+        });
+
+        var outcome = await dialect.CallToolAsync(client, tool, ParseArgumentElements(jsonMessages), token, ct).ConfigureAwait(false);
+        if (outcome.Task is not { } created)
+        {
+            progress.End(Frame("result", outcome.Result));
+            return;
+        }
+        await foreach (var step in McpTaskFollower.FollowAsync(client, dialect, created.TaskId, created, ct: ct).ConfigureAwait(false))
+        {
+            var frame = Frame(step.Kind, step.Data);
+            if (step.Kind == "task") frames.TryWrite(frame);
+            else progress.End(frame);
+        }
+    }
+
+    /// <summary><c>Tasks/follow</c>: pick a task up by id — after a reload, or from the CLI.</summary>
+    private static async IAsyncEnumerable<string> FollowTaskAsync(
+        string serverUrl, List<string> jsonMessages, Dictionary<string, string>? metadata,
+        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct)
+    {
+        McpClient? client = null;
+        string? failure = null;
+        try { client = await CreateClientAsync(serverUrl, metadata, ct).ConfigureAwait(false); }
+        catch (Exception ex) when (ex is not OperationCanceledException) { failure = ex.Message; }
+        if (client is null)
+        {
+            yield return Frame("error", JsonSerializer.SerializeToElement(new { message = failure }));
+            yield break;
+        }
+
+        await using (client)
+        {
+            var steps = McpTaskService.FollowAsync(client, jsonMessages, ct).GetAsyncEnumerator(ct);
+            try
+            {
+                while (true)
+                {
+                    string frame;
+                    var stop = false;
+                    try
+                    {
+                        if (!await steps.MoveNextAsync().ConfigureAwait(false)) break;
+                        frame = Frame(steps.Current.Kind, steps.Current.Data);
+                    }
+                    catch (Exception ex) when (ex is not OperationCanceledException)
+                    {
+                        // A bad request (no taskId) or a server without
+                        // tasks: say it on the stream, as a call would.
+                        frame = Frame("error", JsonSerializer.SerializeToElement(new { message = ex.Message }));
+                        stop = true;
+                    }
+                    yield return frame;
+                    if (stop) break;
+                }
+            }
+            finally
+            {
+                await steps.DisposeAsync().ConfigureAwait(false);
+            }
+        }
+    }
+
+    /// <summary>
     /// Writes each progress report straight to the frame channel, on the
     /// thread that reports it. <see cref="Progress{T}"/> would post it to the
     /// thread pool instead, and a progress frame could then arrive after the
@@ -403,6 +510,7 @@ public sealed class BowireMcpProtocol : IBowireProtocol, Kuestenlogik.Bowire.Net
     {
         private readonly Lock _gate = new();
         private float? _last;
+        private bool _ended;
 
         public void Report(ProgressNotificationValue value)
         {
@@ -412,11 +520,26 @@ public sealed class BowireMcpProtocol : IBowireProtocol, Kuestenlogik.Bowire.Net
             // would make a progress bar step backwards.
             lock (_gate)
             {
+                if (_ended) return;
                 if (_last is { } last && value.Progress <= last) return;
                 _last = value.Progress;
                 // camelCase like the protocol types around it; this one
                 // carries no JSON names of its own.
                 writer.TryWrite(Frame("progress", JsonSerializer.SerializeToElement(value, s_web)));
+            }
+        }
+
+        /// <summary>
+        /// Write the frame that ends the call. A progress notification the
+        /// SDK is still dispatching when the response lands would otherwise
+        /// come after the result; under the same lock, it is dropped instead.
+        /// </summary>
+        public void End(string frame)
+        {
+            lock (_gate)
+            {
+                _ended = true;
+                writer.TryWrite(frame);
             }
         }
     }
@@ -530,7 +653,8 @@ public sealed class BowireMcpProtocol : IBowireProtocol, Kuestenlogik.Bowire.Net
         // Server-streaming (#46): a tool call is one request, but the server
         // can report progress and log while it runs. The stream carries those
         // as they come and the tool's result as the last frame; a tool that
-        // says nothing is a stream of one.
+        // says nothing is a stream of one. A tool that runs as a task (#801)
+        // streams the task's status instead, then its result.
         var methods = tools.Select(tool => new BowireMethodInfo(
             Name: tool.Name,
             FullName: "Tools/" + tool.Name,
@@ -544,12 +668,30 @@ public sealed class BowireMcpProtocol : IBowireProtocol, Kuestenlogik.Bowire.Net
             Description = tool.Description,
         }).ToList();
 
+        // Tasks (#801) are added after Tools in the tree; the legacy shape
+        // also annotates the tools it marks, so this runs before Tools is
+        // built. A failure here costs the Tasks service, not the tools.
+        var taskServices = new List<BowireServiceInfo>();
+        string? taskShape = null;
+        try
+        {
+            taskShape = await _tasks.DescribeAsync(client, NormalizeUrl(serverUrl), methods, taskServices, ct).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex)
+        {
+            if (ClassifyListFailure("tasks", ex) is { } failure) failures.Add(failure);
+        }
+
         services.Add(new BowireServiceInfo("Tools", "mcp", methods)
         {
             Source = "mcp",
             OriginUrl = serverUrl,
-            Description = "MCP tools — invoke with the form-based UI; progress and log messages the server sends during a call stream in live, the result last.",
+            Description = taskShape == McpTaskShapes.Extension
+                ? "MCP tools — invoke with the form-based UI. This server may run any call as a task: its status streams in as it changes, the result last."
+                : "MCP tools — invoke with the form-based UI; progress and log messages the server sends during a call stream in live, the result last.",
         });
+        services.AddRange(taskServices);
     }
 
     private static async Task AddResourcesAsync(
@@ -624,9 +766,37 @@ public sealed class BowireMcpProtocol : IBowireProtocol, Kuestenlogik.Bowire.Net
 
     // ----- invocation ---------------------------------------------------
 
-    private static async Task<JsonElement> CallToolAsync(
-        McpClient client, string toolName, List<string> jsonMessages, CancellationToken ct)
+    private async Task<JsonElement> CallToolAsync(
+        McpClient client, string serverUrl, string toolName, List<string> jsonMessages, CancellationToken ct)
     {
+        // A server that runs the call as a task (#801): there is no stream
+        // to show its status on, so follow it here and answer with what it
+        // ended in — the result, as a 2025-11-25 client would see it.
+        if (await _tasks.ForToolAsync(client, NormalizeUrl(serverUrl), toolName, ct).ConfigureAwait(false) is { } dialect)
+        {
+            var outcome = await dialect.CallToolAsync(client, toolName, ParseArgumentElements(jsonMessages), progressToken: null, ct).ConfigureAwait(false);
+            if (outcome.Task is not { } created) return outcome.Result ?? default;
+
+            McpTaskEvent last = default;
+            await foreach (var step in McpTaskFollower.FollowAsync(client, dialect, created.TaskId, created, ct: ct).ConfigureAwait(false))
+            {
+                last = step;
+                // Nobody here can answer: say how to, and leave the task be.
+                if (step.State is { Status: McpTaskStatuses.InputRequired })
+                {
+                    throw new InvalidOperationException(
+                        $"Task '{created.TaskId}' needs input. Answer it with Tasks/update and follow it with Tasks/follow, using that taskId.");
+                }
+            }
+            return last.Kind switch
+            {
+                "result" => last.Data,
+                "error" => throw new InvalidOperationException(
+                    last.Data.TryGetProperty("message", out var m) ? m.GetString() : $"Task '{created.TaskId}' failed."),
+                _ => throw new InvalidOperationException($"Task '{created.TaskId}' was cancelled."),
+            };
+        }
+
         var args = ParseArguments(jsonMessages);
         var result = await client.CallToolAsync(toolName, args, cancellationToken: ct).ConfigureAwait(false);
         return JsonSerializer.SerializeToElement(result);
@@ -648,6 +818,22 @@ public sealed class BowireMcpProtocol : IBowireProtocol, Kuestenlogik.Bowire.Net
             ?.ToDictionary(kv => kv.Key, kv => (object?)kv.Value);
         var result = await client.GetPromptAsync(name, args, cancellationToken: ct).ConfigureAwait(false);
         return JsonSerializer.SerializeToElement(result);
+    }
+
+    /// <summary>The arguments as JSON values, the shape the task-aware calls send.</summary>
+    private static Dictionary<string, JsonElement>? ParseArgumentElements(List<string> jsonMessages)
+    {
+        if (jsonMessages.Count == 0 || string.IsNullOrWhiteSpace(jsonMessages[0])) return null;
+        try
+        {
+            using var doc = JsonDocument.Parse(jsonMessages[0]);
+            if (doc.RootElement.ValueKind != JsonValueKind.Object) return null;
+            return doc.RootElement.EnumerateObject().ToDictionary(p => p.Name, p => p.Value.Clone(), StringComparer.Ordinal);
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
     }
 
     private static Dictionary<string, object?>? ParseArguments(List<string> jsonMessages)

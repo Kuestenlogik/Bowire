@@ -286,6 +286,13 @@
     <BowireJsFragment Include="wwwroot\js\perf-diff.js" />
     <BowireJsFragment Include="wwwroot\js\response-diff.js" />
     <BowireJsFragment Include="wwwroot\js\service-compare.js" />
+    <!-- #801 - MCP tasks: the pure frame / schema / pending-list logic, then
+         the task card, its Tasks/update and Tasks/cancel calls and the
+         resume-after-reload panel. render-main.js and api.js reach both
+         through typeof-guarded calls at run time; the fragments declare only
+         functions and `var` state, so their position is free. -->
+    <BowireJsFragment Include="wwwroot\js\mcp-tasks-model.js" />
+    <BowireJsFragment Include="wwwroot\js\mcp-tasks.js" />
     <BowireJsFragment Include="wwwroot\js\lint.js" />
     <!-- #587 — the Rollup rail. After lint.js so the two quality surfaces sit
          together; both only declare functions, so relative order is free. -->

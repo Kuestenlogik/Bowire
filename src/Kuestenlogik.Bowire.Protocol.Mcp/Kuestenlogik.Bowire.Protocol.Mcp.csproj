@@ -4,6 +4,12 @@
     <PackageId>Kuestenlogik.Bowire.Protocol.Mcp</PackageId>
     <PackageTags>bowire;bowire-plugin;mcp;ai;claude;copilot;cursor;tools;model-context-protocol</PackageTags>
     <IsPackable>true</IsPackable>
+    <!-- MCPEXP001/MCPEXP002: the Tasks extension package marks its whole
+         client surface [Experimental]. There is no non-experimental
+         equivalent to call instead, so the diagnostics are acknowledged
+         here, scoped to this project, rather than with #pragma per call
+         site (#355). https://github.com/modelcontextprotocol/csharp-sdk -->
+    <NoWarn>$(NoWarn);MCPEXP001;MCPEXP002</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="bowire" />
@@ -28,6 +34,10 @@
          JSON-RPC pipeline. The adapter-server side (McpAdapterServer)
          is still self-contained and doesn't take a runtime dep. -->
     <PackageReference Include="ModelContextProtocol" />
+    <!-- MCP Tasks (#801): a tools/call may come back as a durable task
+         handle. The 2026-07-28 extension shape is this package's; the
+         older 2025-11-25 core shape is handled in Tasks/ by hand. -->
+    <PackageReference Include="ModelContextProtocol.Extensions.Tasks" />
     <!-- AspNetCore package brings app.MapMcp(pattern) for mounting
          the streamable-HTTP transport on the host's route table.
          The adapter (Bowire-as-MCP-server) leans on that for the
