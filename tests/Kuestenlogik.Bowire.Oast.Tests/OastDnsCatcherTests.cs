@@ -206,6 +206,43 @@ public sealed class OastDnsCatcherTests
     }
 
     [Fact]
+    public async Task A_Lookup_Over_The_Wire_Records_Who_Asked()
+    {
+        // The asking resolver's address is part of the evidence — it tells
+        // the reader which network the target sits in. Only the server sees
+        // it, so this goes through a real UDP listener.
+        var (catcher, store, _) = Build();
+        using var server = catcher.CreateServer();
+        var listening = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        server.Listening += (_, _) => listening.TrySetResult();
+        server.Errored += (_, e) => listening.TrySetException(e.Exception);
+
+        var port = FreeUdpPort();
+        var serve = server.Listen(port, IPAddress.Loopback);
+        await listening.Task.WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
+
+        var request = new DNS.Client.ClientRequest(new IPEndPoint(IPAddress.Loopback, port));
+        request.Questions.Add(new Question(new Domain($"{CorrelationId}.{Domain}"), RecordType.A));
+        await request.Resolve(TestContext.Current.CancellationToken);
+
+        var interaction = Assert.Single(Drain(store));
+        Assert.Equal(IPAddress.Loopback.ToString(), interaction.RemoteAddress);
+
+        server.Dispose();
+        await serve.WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
+    }
+
+    /// <summary>
+    /// A UDP port the OS just handed out. <see cref="DNS.Server.DnsServer"/>
+    /// cannot report the port it bound, so it has to be told one.
+    /// </summary>
+    private static int FreeUdpPort()
+    {
+        using var probe = new System.Net.Sockets.UdpClient(new IPEndPoint(IPAddress.Loopback, 0));
+        return ((IPEndPoint)probe.Client.LocalEndPoint!).Port;
+    }
+
+    [Fact]
     public async Task A_Catcher_Without_A_Log_Still_Records()
     {
         // The log callback is optional; the evidence is not.

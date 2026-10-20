@@ -4,7 +4,6 @@
 using System.Globalization;
 using System.Net;
 using System.Net.Sockets;
-using DNS.Server;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
@@ -96,7 +95,7 @@ public static class BowireOastServer
 
         // ---- DNS catcher ----
         var catcher = new OastDnsCatcher(options.Domain, publicIp, store, Log);
-        using var dns = new DnsServer(catcher);
+        using var dns = catcher.CreateServer();
 
         try
         {

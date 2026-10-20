@@ -3,9 +3,11 @@
 
 using System.Globalization;
 using System.Net;
+using System.Runtime.CompilerServices;
 using DNS.Client.RequestResolver;
 using DNS.Protocol;
 using DNS.Protocol.ResourceRecords;
+using DNS.Server;
 
 namespace Kuestenlogik.Bowire.Oast.Server;
 
@@ -34,6 +36,12 @@ internal sealed class OastDnsCatcher : IRequestResolver
     private readonly OastInteractionStore _store;
     private readonly Action<string>? _log;
 
+    // #834 — the resolver never sees who asked. DnsServer raises Requested
+    // with the sender first and then hands the very same request object to
+    // Resolve, so the sender is remembered per request in between. Weak keys:
+    // an entry lives exactly as long as its request.
+    private readonly ConditionalWeakTable<IRequest, IPEndPoint> _senders = new();
+
     public OastDnsCatcher(string domain, IPAddress publicIp, OastInteractionStore store, Action<string>? log = null)
     {
         _domain = domain.TrimEnd('.');
@@ -42,12 +50,24 @@ internal sealed class OastDnsCatcher : IRequestResolver
         _log = log;
     }
 
+    /// <summary>
+    /// A DNS server that answers through this catcher, wired so every recorded
+    /// interaction carries the address of the resolver that asked.
+    /// </summary>
+    public DnsServer CreateServer()
+    {
+        var server = new DnsServer(this);
+        server.Requested += (_, e) => _senders.AddOrUpdate(e.Request, e.Remote);
+        return server;
+    }
+
     public Task<IResponse> Resolve(IRequest request, CancellationToken cancellationToken = default)
     {
         var response = Response.FromRequest(request);
         // We are the delegated authority for this zone; say so, or resolvers
         // treat the answer as a referral.
         response.AuthorativeServer = true;
+        var remoteAddress = _senders.TryGetValue(request, out var sender) ? sender.Address.ToString() : null;
 
         foreach (var question in request.Questions)
         {
@@ -60,7 +80,7 @@ internal sealed class OastDnsCatcher : IRequestResolver
                 FullId = name,
                 UniqueId = OastInteractionStore.CorrelationIdOf(name),
                 QType = question.Type.ToString(),
-                RemoteAddress = null, // filled by the server hook — see BowireOastServer
+                RemoteAddress = remoteAddress,
                 Timestamp = DateTimeOffset.UtcNow,
                 RawRequest = string.Create(CultureInfo.InvariantCulture, $";; QUESTION\n;{name}. IN {question.Type}"),
             };
