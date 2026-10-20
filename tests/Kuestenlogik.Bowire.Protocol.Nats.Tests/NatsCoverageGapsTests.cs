@@ -49,6 +49,18 @@ public sealed class NatsCoverageGapsTests
     }
 
     [Fact]
+    public void PayloadToDisplayString_InvalidUtf8_FallsBackToHex()
+    {
+        // FF FE FD is not UTF-8. A lenient decode turns it into three
+        // U+FFFD replacement characters, which pass the control-char check
+        // and hide the bytes; the payload must show as a hex dump.
+        var s = Invoke<string>("NatsPayloadHelper", "PayloadToDisplayString",
+            new byte[] { 0xFF, 0xFE, 0xFD });
+        Assert.Contains("[binary: 3 bytes]", s, StringComparison.Ordinal);
+        Assert.Contains("FF FE FD", s, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void PayloadToDisplayString_JsonString_IsKeptQuoted()
     {
         // A bare JSON string keeps its surrounding quotes after the

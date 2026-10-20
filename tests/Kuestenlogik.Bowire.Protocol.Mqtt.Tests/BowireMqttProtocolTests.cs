@@ -486,6 +486,18 @@ public sealed class MqttPayloadHelperTests
     }
 
     [Fact]
+    public void Invalid_Utf8_Falls_Through_To_Hex_Dump()
+    {
+        // FF FE FD is not UTF-8. A lenient decode turns it into three
+        // U+FFFD replacement characters, which pass the control-char check
+        // and hide the bytes; the payload must show as a hex dump.
+        var result = InvokePayloadToDisplayString(new byte[] { 0xFF, 0xFE, 0xFD });
+
+        Assert.Contains("[binary: 3 bytes]", result, StringComparison.Ordinal);
+        Assert.Contains("FF FE FD", result, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Text_With_Whitespace_Is_Allowed_Through_The_Text_Path()
     {
         var bytes = System.Text.Encoding.UTF8.GetBytes("line one\nline two\tcol\r");

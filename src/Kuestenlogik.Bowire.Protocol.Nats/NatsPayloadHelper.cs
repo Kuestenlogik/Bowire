@@ -17,6 +17,10 @@ internal static class NatsPayloadHelper
 {
     private static readonly JsonSerializerOptions s_indented = new() { WriteIndented = true };
 
+    // Throws on invalid bytes (#856). Encoding.UTF8 replaces them with
+    // U+FFFD, which passes LooksLikeText, so binary never reached the hex dump.
+    private static readonly UTF8Encoding s_strictUtf8 = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+
     public static string PayloadToDisplayString(byte[] payload)
     {
         if (payload.Length == 0) return "";
@@ -35,10 +39,10 @@ internal static class NatsPayloadHelper
 
         try
         {
-            var text = Encoding.UTF8.GetString(payload);
+            var text = s_strictUtf8.GetString(payload);
             if (LooksLikeText(text)) return text;
         }
-        catch
+        catch (DecoderFallbackException)
         {
             // Invalid UTF-8.
         }

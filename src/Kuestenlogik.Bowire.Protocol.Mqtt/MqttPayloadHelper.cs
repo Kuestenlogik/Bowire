@@ -23,6 +23,10 @@ internal static class MqttPayloadHelper
 {
     private static readonly JsonSerializerOptions IndentedOptions = new() { WriteIndented = true };
 
+    // Throws on invalid bytes (#856). Encoding.UTF8 replaces them with
+    // U+FFFD, which passes LooksLikeText, so binary never reached the hex dump.
+    private static readonly UTF8Encoding StrictUtf8 = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+
     public static string PayloadToDisplayString(byte[] payload)
     {
         if (payload.Length == 0)
@@ -44,11 +48,11 @@ internal static class MqttPayloadHelper
         // 2. Try UTF-8 text (reject if it contains control chars other than whitespace)
         try
         {
-            var text = Encoding.UTF8.GetString(payload);
+            var text = StrictUtf8.GetString(payload);
             if (LooksLikeText(text))
                 return text;
         }
-        catch
+        catch (DecoderFallbackException)
         {
             // Invalid UTF-8
         }
