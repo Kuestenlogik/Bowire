@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
 
-**3/29 done** · 26 backlog
+**3/30 done** · 27 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -42,6 +42,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [843](https://github.com/Kuestenlogik/Bowire/issues/843) | Bowire | [Pulsar ignores its namespaces and subscribeFromLatest settings](#issue-kuestenlogik-bowire-843) | ⬜ Backlog |  |
 | [844](https://github.com/Kuestenlogik/Bowire/issues/844) | Bowire | [OpenAPI discovery fails on a self-referencing schema: SchemaToField/SchemaToMessage recurse without a cycle guard](#issue-kuestenlogik-bowire-844) | ⬜ Backlog |  |
 | [845](https://github.com/Kuestenlogik/Bowire/issues/845) | Bowire | [OpenAPI discovery ignores body, response and error schemas keyed application/json; charset=utf-8](#issue-kuestenlogik-bowire-845) | ⬜ Backlog |  |
+| [846](https://github.com/Kuestenlogik/Bowire/issues/846) | Bowire | [SignalR binds body fields by JSON order instead of parameter name](#issue-kuestenlogik-bowire-846) | ⬜ Backlog |  |
 | [816](https://github.com/Kuestenlogik/Bowire/issues/816) | Bowire | [SCIM trace records status 200 for every request](#issue-kuestenlogik-bowire-816) | ✅ Done |  |
 | [817](https://github.com/Kuestenlogik/Bowire/issues/817) | Bowire | [OIDC provider cannot run as an installed plugin](#issue-kuestenlogik-bowire-817) | ✅ Done |  |
 | [818](https://github.com/Kuestenlogik/Bowire/issues/818) | Bowire | [--auth-oidc-* flags are documented but never read](#issue-kuestenlogik-bowire-818) | ✅ Done |  |
@@ -305,6 +306,10 @@ The Pulsar plugin declares the settings `namespaces` and `subscribeFromLatest`, 
 #### <a id="issue-kuestenlogik-bowire-845"></a>⬜ Backlog · [#845](https://github.com/Kuestenlogik/Bowire/issues/845) OpenAPI discovery ignores body, response and error schemas keyed application/json; charset=utf-8
 
 OpenAPI discovery picks the JSON media type of a request body, a 2xx response and an error response by comparing the content-type key verbatim with `application/json` (or by looking for `+json`): [[more]](https://github.com/Kuestenlogik/Bowire/issues/845)
+
+#### <a id="issue-kuestenlogik-bowire-846"></a>⬜ Backlog · [#846](https://github.com/Kuestenlogik/Bowire/issues/846) SignalR binds body fields by JSON order instead of parameter name
+
+A SignalR request body is one JSON object keyed by parameter name, but the plugin binds its fields by position in the JSON text, not by name. [[more]](https://github.com/Kuestenlogik/Bowire/issues/846)
 
 #### <a id="issue-kuestenlogik-bowire-816"></a>✅ Done · [#816](https://github.com/Kuestenlogik/Bowire/issues/816) SCIM trace records status 200 for every request
 
