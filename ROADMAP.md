@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
 
-**3/12 done** · 9 backlog
+**3/14 done** · 11 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -25,6 +25,8 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [826](https://github.com/Kuestenlogik/Bowire/issues/826) | Bowire | [SignalR discovery overflows the stack on a self-referencing DTO](#issue-kuestenlogik-bowire-826) | ⬜ Backlog |  |
 | [827](https://github.com/Kuestenlogik/Bowire/issues/827) | Bowire | [SignalR discovery fails on an enum whose underlying type is not int](#issue-kuestenlogik-bowire-827) | ⬜ Backlog |  |
 | [828](https://github.com/Kuestenlogik/Bowire/issues/828) | Bowire | [OpenAPI 3 discovery of a YAML document silently finds nothing](#issue-kuestenlogik-bowire-828) | ⬜ Backlog |  |
+| [829](https://github.com/Kuestenlogik/Bowire/issues/829) | Bowire | [Nuclei reader drops tags written as one comma-separated value, and a scalar reference](#issue-kuestenlogik-bowire-829) | ⬜ Backlog |  |
+| [830](https://github.com/Kuestenlogik/Bowire/issues/830) | Bowire | [Nuclei negative matcher with an empty word or pattern fires where Nuclei never would](#issue-kuestenlogik-bowire-830) | ⬜ Backlog |  |
 | [816](https://github.com/Kuestenlogik/Bowire/issues/816) | Bowire | [SCIM trace records status 200 for every request](#issue-kuestenlogik-bowire-816) | ✅ Done |  |
 | [817](https://github.com/Kuestenlogik/Bowire/issues/817) | Bowire | [OIDC provider cannot run as an installed plugin](#issue-kuestenlogik-bowire-817) | ✅ Done |  |
 | [818](https://github.com/Kuestenlogik/Bowire/issues/818) | Bowire | [--auth-oidc-* flags are documented but never read](#issue-kuestenlogik-bowire-818) | ✅ Done |  |
@@ -220,6 +222,14 @@ SignalR discovery fails for any hub that uses an enum whose underlying type is n
 #### <a id="issue-kuestenlogik-bowire-828"></a>⬜ Backlog · [#828](https://github.com/Kuestenlogik/Bowire/issues/828) OpenAPI 3 discovery of a YAML document silently finds nothing
 
 `OpenApiDiscovery.FetchAndParseAsync` and `OpenApiDiscovery.ParseRawAsync` in `src/Kuestenlogik.Bowire.Protocol.Rest.OpenApi3/OpenApiDiscovery.cs` (L54, L91) call `OpenApiDocument.LoadAsync(stream, format: null, settings: null, ct)`. Microsoft.OpenApi registers only the JSON reader by default, so a … [[more]](https://github.com/Kuestenlogik/Bowire/issues/828)
+
+#### <a id="issue-kuestenlogik-bowire-829"></a>⬜ Backlog · [#829](https://github.com/Kuestenlogik/Bowire/issues/829) Nuclei reader drops tags written as one comma-separated value, and a scalar reference
+
+`NucleiTemplateReader.CollectStringList` (src/Kuestenlogik.Bowire.Security.Templates.Nuclei/NucleiTemplateReader.cs:350) only reads YAML sequences. Nuclei's `info.tags` is a string slice that also accepts one comma-separated scalar, and most of the public template corpus writes it that way: [[more]](https://github.com/Kuestenlogik/Bowire/issues/829)
+
+#### <a id="issue-kuestenlogik-bowire-830"></a>⬜ Backlog · [#830](https://github.com/Kuestenlogik/Bowire/issues/830) Nuclei negative matcher with an empty word or pattern fires where Nuclei never would
+
+`NucleiMatcherTranslator.TranslateWord` / `TranslateRegex` (src/Kuestenlogik.Bowire.Security.Templates.Nuclei/NucleiMatcherTranslator.cs) drop empty words and empty patterns before building the predicate. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/830)
 
 #### <a id="issue-kuestenlogik-bowire-816"></a>✅ Done · [#816](https://github.com/Kuestenlogik/Bowire/issues/816) SCIM trace records status 200 for every request
 
