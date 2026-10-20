@@ -107,9 +107,21 @@ internal sealed class JsonRpcClient
                     data: default);
             }
 
-            // Spec doesn't require id-echo to match, but we still verify
-            // when present — saves diagnostic time when a proxy
-            // re-orders responses.
+            // JSON-RPC 2.0 has the response carry the request's id; one
+            // with a different id answers some other call (a proxy
+            // re-ordering responses) and must not pass as this call's
+            // result (#866). A null id is the spec's answer to a request
+            // the server could not read, so that error still belongs here.
+            if (root.TryGetProperty("id", out var replyId)
+                && replyId.ValueKind != JsonValueKind.Null
+                && !IsRequestId(replyId, id))
+            {
+                throw new JsonRpcException(
+                    code: -32603,
+                    message: $"JSON-RPC response id {replyId.GetRawText()} does not match request id {id}.",
+                    data: default);
+            }
+
             if (root.TryGetProperty("error", out var error) && error.ValueKind == JsonValueKind.Object)
             {
                 var code = error.TryGetProperty("code", out var c) && c.ValueKind == JsonValueKind.Number
@@ -132,6 +144,17 @@ internal sealed class JsonRpcClient
                 data: default);
         }
     }
+
+    /// <summary>
+    /// The request goes out with a numeric id; a server that echoes it as
+    /// the same number in string form is still answering this call.
+    /// </summary>
+    private static bool IsRequestId(JsonElement replyId, long id) => replyId.ValueKind switch
+    {
+        JsonValueKind.Number => replyId.TryGetInt64(out var n) && n == id,
+        JsonValueKind.String => replyId.GetString() == id.ToString(System.Globalization.CultureInfo.InvariantCulture),
+        _ => false,
+    };
 
     private static string BuildRequestEnvelope(
         string method, JsonElement? parameters, long id)
