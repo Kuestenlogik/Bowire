@@ -111,22 +111,40 @@ public static class NucleiVariableResolver
         var randStrMatch = RandStrPattern.Match(name);
         if (randStrMatch.Success)
         {
-            var length = randStrMatch.Groups["n"].Success
-                ? int.Parse(randStrMatch.Groups["n"].Value, System.Globalization.CultureInfo.InvariantCulture)
-                : 8;
-            return context.RandomString(name, length);
+            return TryLength(randStrMatch, 8, out var length)
+                ? context.RandomString(name, length)
+                : null;
         }
 
         var randIntMatch = RandIntPattern.Match(name);
         if (randIntMatch.Success)
         {
-            var digits = randIntMatch.Groups["n"].Success
-                ? int.Parse(randIntMatch.Groups["n"].Value, System.Globalization.CultureInfo.InvariantCulture)
-                : 6;
-            return context.RandomInteger(name, digits);
+            return TryLength(randIntMatch, 6, out var digits)
+                ? context.RandomInteger(name, digits)
+                : null;
         }
 
         return null;
+    }
+
+    /// <summary>
+    /// The <c>_N</c> suffix of a random placeholder, or the default without one.
+    /// </summary>
+    /// <remarks>
+    /// #831 — the pattern takes any run of digits, and a template is untrusted
+    /// input. A length that does not fit an int is a placeholder we cannot
+    /// honour, so it passes through rather than aborting the conversion.
+    /// </remarks>
+    private static bool TryLength(Match match, int fallback, out int length)
+    {
+        var n = match.Groups["n"];
+        if (!n.Success)
+        {
+            length = fallback;
+            return true;
+        }
+        return int.TryParse(n.Value, System.Globalization.NumberStyles.None,
+            System.Globalization.CultureInfo.InvariantCulture, out length);
     }
 
     /// <summary>

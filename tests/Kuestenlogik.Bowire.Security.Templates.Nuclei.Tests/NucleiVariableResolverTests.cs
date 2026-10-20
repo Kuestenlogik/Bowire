@@ -126,6 +126,17 @@ public sealed class NucleiVariableResolverTests
         Assert.Equal("path-with-{{unknown}}-placeholder", output);
     }
 
+    [Theory]
+    [InlineData("{{RandStr_99999999999}}")]
+    [InlineData("{{RandInt_99999999999}}")]
+    public void Random_placeholder_with_an_out_of_range_length_passes_through(string input)
+    {
+        // A template is untrusted input. A length that does not fit an int
+        // is a placeholder we cannot honour, not a reason to abort the run.
+        var ctx = NucleiVariableContext.FromTarget("https://x", seed: 42);
+        Assert.Equal(input, NucleiVariableResolver.Resolve(input, ctx));
+    }
+
     [Fact]
     public void Empty_input_passes_through_untouched()
     {
