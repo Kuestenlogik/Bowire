@@ -1,6 +1,8 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -87,10 +89,23 @@ public static class ContractResultStore
 
     /// <summary>
     /// Stable, filesystem-safe file name for a consumer × provider pair.
-    /// Characters that are illegal in a path are replaced with '_'.
+    /// Characters that are illegal in a path are replaced with '_' for a
+    /// readable prefix; a hash of the exact pair follows it, because the
+    /// prefix alone is not one-to-one (#841): <c>("a__b","c")</c> and
+    /// <c>("a","b__c")</c>, or <c>"my svc"</c> and <c>"my_svc"</c>, would
+    /// share a file and overwrite each other's verdict.
     /// </summary>
     internal static string FileNameFor(string consumer, string provider)
-        => Sanitise(consumer) + "__" + Sanitise(provider) + ".json";
+        => Sanitise(consumer) + "__" + Sanitise(provider) + "-" + PairHash(consumer, provider) + ".json";
+
+    // Lower-case hex, so names that differ only in case still get distinct
+    // files on a case-insensitive file system. The NUL separator can't
+    // occur inside a name, which keeps the hashed input unambiguous.
+    private static string PairHash(string consumer, string provider)
+    {
+        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(consumer + "\0" + provider));
+        return Convert.ToHexStringLower(bytes, 0, 8);
+    }
 
     private static string Sanitise(string value)
     {

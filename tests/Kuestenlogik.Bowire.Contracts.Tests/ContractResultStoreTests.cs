@@ -113,6 +113,27 @@ public sealed class ContractResultStoreTests : IDisposable
         Assert.Equal("orders:v2", round.Provider);
     }
 
+    [Theory]
+    [InlineData("a__b", "c", "a", "b__c")]   // the separator inside a name
+    [InlineData("my svc", "p", "my_svc", "p")] // a sanitised character
+    [InlineData("web/ui", "p", "web:ui", "p")] // two different path-hostile characters
+    public async Task Save_DistinctPairs_ThatSanitiseAlike_KeepBothResults(
+        string consumerA, string providerA, string consumerB, string providerB)
+    {
+        // #841 — each consumer × provider pair owns its own file; two
+        // different pairs must never overwrite each other's verdict.
+        await ContractResultStore.SaveAsync(
+            Report(consumerA, providerA, passed: true), _root, TestContext.Current.CancellationToken);
+        await ContractResultStore.SaveAsync(
+            Report(consumerB, providerB, passed: false), _root, TestContext.Current.CancellationToken);
+
+        var loaded = await ContractResultStore.LoadAllAsync(_root, TestContext.Current.CancellationToken);
+
+        Assert.Equal(2, loaded.Count);
+        Assert.Contains(loaded, r => r.Consumer == consumerA && r.Provider == providerA && r.Passed);
+        Assert.Contains(loaded, r => r.Consumer == consumerB && r.Provider == providerB && !r.Passed);
+    }
+
     private static ContractVerificationReport Report(string consumer, string provider, bool passed)
     {
         var report = new ContractVerificationReport
