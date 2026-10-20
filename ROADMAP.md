@@ -12,13 +12,14 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
 
-**2/5 done** · 3 backlog
+**2/6 done** · 4 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [639](https://github.com/Kuestenlogik/Bowire/issues/639) | Bowire | [SCIM: live Okta and Entra ID provisioning round-trips](#issue-kuestenlogik-bowire-639) | ⬜ Backlog | `area:workbench` |
 | [670](https://github.com/Kuestenlogik/Bowire/issues/670) | Bowire | [Get listed where developers and models actually look](#issue-kuestenlogik-bowire-670) | ⬜ Backlog | `area:site` |
 | [817](https://github.com/Kuestenlogik/Bowire/issues/817) | Bowire | [OIDC provider cannot run as an installed plugin](#issue-kuestenlogik-bowire-817) | ⬜ Backlog |  |
+| [822](https://github.com/Kuestenlogik/Bowire/issues/822) | Bowire | [Help markdown renderer hangs on an empty heading or a fence like ```c++](#issue-kuestenlogik-bowire-822) | ⬜ Backlog |  |
 | [816](https://github.com/Kuestenlogik/Bowire/issues/816) | Bowire | [SCIM trace records status 200 for every request](#issue-kuestenlogik-bowire-816) | ✅ Done |  |
 | [818](https://github.com/Kuestenlogik/Bowire/issues/818) | Bowire | [--auth-oidc-* flags are documented but never read](#issue-kuestenlogik-bowire-818) | ✅ Done |  |
 
@@ -189,6 +190,10 @@ Six credible competitors turned up during the competitive survey **via openalter
 #### <a id="issue-kuestenlogik-bowire-817"></a>⬜ Backlog · [#817](https://github.com/Kuestenlogik/Bowire/issues/817) OIDC provider cannot run as an installed plugin
 
 `Kuestenlogik.Bowire.Auth.Oidc` cannot be used as an installed plugin in the standalone tool: [[more]](https://github.com/Kuestenlogik/Bowire/issues/817)
+
+#### <a id="issue-kuestenlogik-bowire-822"></a>⬜ Backlog · [#822](https://github.com/Kuestenlogik/Bowire/issues/822) Help markdown renderer hangs on an empty heading or a fence like ```c++
+
+`helpRenderMarkdown` in `src/Kuestenlogik.Bowire.Help/wwwroot/js/help.js` (~L203–L285) never returns for a line that no block branch claims but that the paragraph collector's stop pattern matches: [[more]](https://github.com/Kuestenlogik/Bowire/issues/822)
 
 #### <a id="issue-kuestenlogik-bowire-816"></a>✅ Done · [#816](https://github.com/Kuestenlogik/Bowire/issues/816) SCIM trace records status 200 for every request
 
