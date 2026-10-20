@@ -387,8 +387,18 @@ internal static class SignalRHubDiscovery
     /// <summary>
     /// Builds a <see cref="BowireMessageInfo"/> by reflecting over the public properties of a complex type.
     /// </summary>
-    private static BowireMessageInfo BuildMessageInfoFromType(Type type)
+    /// <param name="type">The type to describe.</param>
+    /// <param name="expanding">
+    /// The types being expanded on the current path. A DTO that refers to
+    /// itself (<c>Node.Next</c>), directly or through another type, used to
+    /// recurse until the stack overflowed and took the host down (#826). A
+    /// type already on the path is listed by name without a nested message.
+    /// </param>
+    private static BowireMessageInfo BuildMessageInfoFromType(Type type, HashSet<Type>? expanding = null)
     {
+        expanding ??= [];
+        expanding.Add(type);
+
         var fields = new List<BowireFieldInfo>();
         var fieldNumber = 1;
 
@@ -396,6 +406,7 @@ internal static class SignalRHubDiscovery
         {
             if (!prop.CanRead) continue;
 
+            var expand = IsComplexType(prop.PropertyType) && !expanding.Contains(prop.PropertyType);
             fields.Add(new BowireFieldInfo(
                 Name: prop.Name,
                 Number: fieldNumber,
@@ -403,11 +414,14 @@ internal static class SignalRHubDiscovery
                 Label: "LABEL_OPTIONAL",
                 IsMap: IsDictionaryType(prop.PropertyType),
                 IsRepeated: IsCollectionType(prop.PropertyType),
-                MessageType: IsComplexType(prop.PropertyType) ? BuildMessageInfoFromType(prop.PropertyType) : null,
+                MessageType: expand ? BuildMessageInfoFromType(prop.PropertyType, expanding) : null,
                 EnumValues: prop.PropertyType.IsEnum ? BuildEnumValues(prop.PropertyType) : null));
 
             fieldNumber++;
         }
+
+        // Off the path again: a sibling property of the same type is not a cycle.
+        expanding.Remove(type);
 
         return new BowireMessageInfo(
             Name: type.Name,

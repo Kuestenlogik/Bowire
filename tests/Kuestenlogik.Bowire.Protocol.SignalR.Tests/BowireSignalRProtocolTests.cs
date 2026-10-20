@@ -371,6 +371,33 @@ public sealed class SignalRHubDiscoveryTests
         Assert.Equal("repeated string", tagsField.Type);
     }
 
+    [Fact]
+    public void DiscoverHubs_Self_Referencing_Dto_Is_Expanded_Once_Not_Forever()
+    {
+        // #826 — a linked-list node (Node.Next is a Node) used as a hub
+        // parameter recursed in BuildMessageInfoFromType until the stack
+        // overflowed, which kills the process rather than failing the
+        // discovery. The type is now expanded once per path; the
+        // self-reference is listed with its type name and no nested message.
+        var sp = BuildProvider(new[] { BuildHubEndpoint("/graph", new HubMetadata(typeof(GraphHub))) });
+
+        var svc = Assert.Single(InvokeDiscoverHubs(sp));
+
+        var walk = svc.Methods.Single(m => m.Name == "Walk");
+        var head = Assert.Single(walk.InputType.Fields);
+        Assert.NotNull(head.MessageType);
+        var next = head.MessageType!.Fields.Single(f => f.Name == "Next");
+        Assert.Equal(nameof(LinkedNode), next.Type);
+        Assert.Null(next.MessageType);
+
+        // Indirect cycles (Parent -> Child -> Parent) end the same way, and
+        // the return type takes the same path as the parameters.
+        var family = svc.Methods.Single(m => m.Name == "Family");
+        var child = family.OutputType.Fields.Single(f => f.Name == "Child");
+        Assert.NotNull(child.MessageType);
+        Assert.Null(child.MessageType!.Fields.Single(f => f.Name == "Parent").MessageType);
+    }
+
     [Theory]
     [InlineData(typeof(string), "string")]
     [InlineData(typeof(int), "int32")]
@@ -701,6 +728,29 @@ internal sealed class FakeHub : Hub
 }
 
 internal enum SeverityLevel { Low, Medium, High }
+
+/// <summary>Hub fixture for self-referencing DTOs (#826).</summary>
+internal sealed class GraphHub : Hub
+{
+    public Task<int> Walk(LinkedNode head) => Task.FromResult(head.Value);
+    public Task<FamilyParent> Family() => Task.FromResult(new FamilyParent());
+}
+
+internal sealed class LinkedNode
+{
+    public int Value { get; set; }
+    public LinkedNode? Next { get; set; }
+}
+
+internal sealed class FamilyParent
+{
+    public FamilyChild? Child { get; set; }
+}
+
+internal sealed class FamilyChild
+{
+    public FamilyParent? Parent { get; set; }
+}
 
 internal sealed class UserDto
 {
