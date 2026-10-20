@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
 
-**3/14 done** · 11 backlog
+**3/20 done** · 17 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -27,6 +27,12 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [828](https://github.com/Kuestenlogik/Bowire/issues/828) | Bowire | [OpenAPI 3 discovery of a YAML document silently finds nothing](#issue-kuestenlogik-bowire-828) | ⬜ Backlog |  |
 | [829](https://github.com/Kuestenlogik/Bowire/issues/829) | Bowire | [Nuclei reader drops tags written as one comma-separated value, and a scalar reference](#issue-kuestenlogik-bowire-829) | ⬜ Backlog |  |
 | [830](https://github.com/Kuestenlogik/Bowire/issues/830) | Bowire | [Nuclei negative matcher with an empty word or pattern fires where Nuclei never would](#issue-kuestenlogik-bowire-830) | ⬜ Backlog |  |
+| [831](https://github.com/Kuestenlogik/Bowire/issues/831) | Bowire | [Nuclei resolver throws OverflowException on a RandStr/RandInt length that does not fit an int](#issue-kuestenlogik-bowire-831) | ⬜ Backlog |  |
+| [832](https://github.com/Kuestenlogik/Bowire/issues/832) | Bowire | [bowire oast serve exits 0 and prints "Stopped." when the DNS port cannot be bound](#issue-kuestenlogik-bowire-832) | ⬜ Backlog |  |
+| [833](https://github.com/Kuestenlogik/Bowire/issues/833) | Bowire | [OAST /register and /deregister answer 500 to a body that is not the expected JSON](#issue-kuestenlogik-bowire-833) | ⬜ Backlog |  |
+| [834](https://github.com/Kuestenlogik/Bowire/issues/834) | Bowire | [OAST DNS interactions never carry the remote address of the resolver that asked](#issue-kuestenlogik-bowire-834) | ⬜ Backlog |  |
+| [835](https://github.com/Kuestenlogik/Bowire/issues/835) | Bowire | [Scaffold keeps a plural entity name and pluralizes it again for the service (Users / Userses)](#issue-kuestenlogik-bowire-835) | ⬜ Backlog |  |
+| [836](https://github.com/Kuestenlogik/Bowire/issues/836) | Bowire | [Scaffold template prints a stray }} after a closing tag written with spaces](#issue-kuestenlogik-bowire-836) | ⬜ Backlog |  |
 | [816](https://github.com/Kuestenlogik/Bowire/issues/816) | Bowire | [SCIM trace records status 200 for every request](#issue-kuestenlogik-bowire-816) | ✅ Done |  |
 | [817](https://github.com/Kuestenlogik/Bowire/issues/817) | Bowire | [OIDC provider cannot run as an installed plugin](#issue-kuestenlogik-bowire-817) | ✅ Done |  |
 | [818](https://github.com/Kuestenlogik/Bowire/issues/818) | Bowire | [--auth-oidc-* flags are documented but never read](#issue-kuestenlogik-bowire-818) | ✅ Done |  |
@@ -230,6 +236,30 @@ SignalR discovery fails for any hub that uses an enum whose underlying type is n
 #### <a id="issue-kuestenlogik-bowire-830"></a>⬜ Backlog · [#830](https://github.com/Kuestenlogik/Bowire/issues/830) Nuclei negative matcher with an empty word or pattern fires where Nuclei never would
 
 `NucleiMatcherTranslator.TranslateWord` / `TranslateRegex` (src/Kuestenlogik.Bowire.Security.Templates.Nuclei/NucleiMatcherTranslator.cs) drop empty words and empty patterns before building the predicate. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/830)
+
+#### <a id="issue-kuestenlogik-bowire-831"></a>⬜ Backlog · [#831](https://github.com/Kuestenlogik/Bowire/issues/831) Nuclei resolver throws OverflowException on a RandStr/RandInt length that does not fit an int
+
+`NucleiVariableResolver.ResolveRandom` (src/Kuestenlogik.Bowire.Security.Templates.Nuclei/NucleiVariableResolver.cs:114 and :123) parses the length of `{{RandStr_N}}` / `{{RandInt_N}}` with `int.Parse`. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/831)
+
+#### <a id="issue-kuestenlogik-bowire-832"></a>⬜ Backlog · [#832](https://github.com/Kuestenlogik/Bowire/issues/832) bowire oast serve exits 0 and prints "Stopped." when the DNS port cannot be bound
+
+`BowireOastServer.RunAsync` (src/Kuestenlogik.Bowire.Oast/Server/BowireOastServer.cs) waits on `Task.WhenAny(dnsListen, eviction, Task.Delay(Infinite, ct))`. When the DNS port cannot be bound, the DNS listener task ends at once. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/832)
+
+#### <a id="issue-kuestenlogik-bowire-833"></a>⬜ Backlog · [#833](https://github.com/Kuestenlogik/Bowire/issues/833) OAST /register and /deregister answer 500 to a body that is not the expected JSON
+
+`/register` and `/deregister` in `BowireOastEndpoints` (src/Kuestenlogik.Bowire.Oast/Server/BowireOastEndpoints.cs:57 and :124) call `JsonSerializer.DeserializeAsync` without handling `JsonException`. [[more]](https://github.com/Kuestenlogik/Bowire/issues/833)
+
+#### <a id="issue-kuestenlogik-bowire-834"></a>⬜ Backlog · [#834](https://github.com/Kuestenlogik/Bowire/issues/834) OAST DNS interactions never carry the remote address of the resolver that asked
+
+`OastDnsCatcher.Resolve` (src/Kuestenlogik.Bowire.Oast/Server/OastDnsCatcher.cs:63) records every DNS interaction with `RemoteAddress = null` and a comment saying it is "filled by the server hook — see BowireOastServer". … [[more]](https://github.com/Kuestenlogik/Bowire/issues/834)
+
+#### <a id="issue-kuestenlogik-bowire-835"></a>⬜ Backlog · [#835](https://github.com/Kuestenlogik/Bowire/issues/835) Scaffold keeps a plural entity name and pluralizes it again for the service (Users / Userses)
+
+`ScaffoldSpec.Normalize` (src/Kuestenlogik.Bowire.Scaffold/ScaffoldSpec.cs:48) only PascalCases the entity, although its contract says the entity comes out singular. The default service name is then the plural of an already plural name. [[more]](https://github.com/Kuestenlogik/Bowire/issues/835)
+
+#### <a id="issue-kuestenlogik-bowire-836"></a>⬜ Backlog · [#836](https://github.com/Kuestenlogik/Bowire/issues/836) Scaffold template prints a stray }} after a closing tag written with spaces
+
+`ScaffoldTemplate.RenderInto` (src/Kuestenlogik.Bowire.Scaffold/ScaffoldTemplate.cs) finds a section's closing tag with `FindSectionEnd`, which trims the tag and so accepts `{{/ a }}`. It then skips ahead by the length of `"{{/" + name + "}}"`, which is shorter than the tag that was actually written. [[more]](https://github.com/Kuestenlogik/Bowire/issues/836)
 
 #### <a id="issue-kuestenlogik-bowire-816"></a>✅ Done · [#816](https://github.com/Kuestenlogik/Bowire/issues/816) SCIM trace records status 200 for every request
 
