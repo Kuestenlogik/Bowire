@@ -358,6 +358,8 @@ public sealed class KubernetesCatalogueProvider : IBowireCatalogueProvider
         string? user = null;
         string? server = null;
         string? token = null;
+        var itemIndent = -1;        // column of the current section's `-` markers
+        var recordKeyIndent = -1;   // column of an item's own keys (`name:`)
 
         void Commit()
         {
@@ -380,35 +382,44 @@ public sealed class KubernetesCatalogueProvider : IBowireCatalogueProvider
             if (string.IsNullOrWhiteSpace(line) || line.TrimStart().StartsWith('#')) continue;
 
             var trimmed = line.TrimStart();
+            var indent = line.Length - trimmed.Length;
+            var isListItem = trimmed == "-" || trimmed.StartsWith("- ", StringComparison.Ordinal);
 
-            // List-item markers take precedence — `- name: foo`
-            // opens a new record inside the current section. The `-`
-            // character can sit at column 0 (top-level lists) or at
-            // any indent under a parent mapping; either way the
-            // record-open semantics are the same.
-            if (trimmed.StartsWith("- name:", StringComparison.Ordinal))
-            {
-                if (section is not null)
-                {
-                    Commit();
-                    entryName = trimmed["- name:".Length..].Trim().Trim('"');
-                }
-                continue;
-            }
-
-            // Top-level keys (no indent + not a list item handled above).
-            if (!char.IsWhiteSpace(line[0]) && trimmed.Contains(':', StringComparison.Ordinal))
+            // Top-level keys (no indent, not a list item — a section's
+            // items may sit at column 0 too, as kubectl writes them).
+            if (indent == 0 && !isListItem && trimmed.Contains(':', StringComparison.Ordinal))
             {
                 Commit();
                 var kv = trimmed.Split(':', 2);
                 var key = kv[0].Trim();
                 var value = kv.Length > 1 ? kv[1].Trim().Trim('"') : string.Empty;
-                if (key == "current-context") { currentContext = value; section = null; continue; }
-                if (key is "contexts" or "clusters" or "users") { section = key; continue; }
-                section = null;
+                section = key is "contexts" or "clusters" or "users" ? key : null;
+                itemIndent = -1;
+                if (key == "current-context") currentContext = value;
                 continue;
             }
             if (section is null) continue;
+
+            // A list item at the section's item indent opens a record,
+            // whichever key follows the dash: kubectl and kind write
+            // `- cluster:` / `- context:` with `name:` as the item's last
+            // key, and the parser used to open records on `- name:` only
+            // (#849). Deeper list items (an exec plugin's args / env)
+            // stay inside the current record.
+            if (isListItem && (itemIndent < 0 || indent == itemIndent))
+            {
+                Commit();
+                itemIndent = indent;
+                trimmed = trimmed[1..].TrimStart();
+                recordKeyIndent = line.Length - trimmed.Length;
+                indent = recordKeyIndent;
+            }
+
+            if (indent == recordKeyIndent && trimmed.StartsWith("name:", StringComparison.Ordinal))
+            {
+                entryName = trimmed["name:".Length..].Trim().Trim('"');
+                continue;
+            }
 
             // Inner fields under the current entry. Order matters: a
             // bare `cluster:` or `user:` mapping marker (no value) is

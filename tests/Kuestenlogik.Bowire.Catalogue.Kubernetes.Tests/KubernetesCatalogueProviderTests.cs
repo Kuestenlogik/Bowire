@@ -227,6 +227,59 @@ public sealed class KubernetesCatalogueProviderTests
     }
 
     [Fact]
+    public void TryParseKubeconfig_Reads_The_Shape_Kubectl_Writes()
+    {
+        // kubectl / kind write each list item as `- cluster:` / `- context:`
+        // with `name:` as the item's last key, and keep keys sorted, so
+        // `current-context` sits between the lists. A user with an exec
+        // plugin carries nested lists of its own (`args`, `env`) that must
+        // not be mistaken for records.
+        var yaml = """
+            apiVersion: v1
+            clusters:
+            - cluster:
+                certificate-authority-data: LS0tLS1CRUdJTg==
+                server: https://127.0.0.1:6443
+              name: kind-kind
+            - cluster:
+                server: https://other.example.com
+              name: other
+            contexts:
+            - context:
+                cluster: other
+                user: aws
+              name: other
+            - context:
+                cluster: kind-kind
+                user: kind-kind
+              name: kind-kind
+            current-context: kind-kind
+            kind: Config
+            preferences: {}
+            users:
+            - name: aws
+              user:
+                exec:
+                  args:
+                  - --region
+                  - eu-west-1
+                  command: aws
+                  env:
+                  - name: AWS_PROFILE
+                    value: dev
+            - name: kind-kind
+              user:
+                token: kind-token
+            """;
+
+        var result = KubernetesCatalogueProvider.TryParseKubeconfig(yaml);
+
+        Assert.NotNull(result);
+        Assert.Equal("https://127.0.0.1:6443", result!.Value.Server);
+        Assert.Equal("kind-token", result.Value.Token);
+    }
+
+    [Fact]
     public void TryParseKubeconfig_Returns_Null_For_Missing_Current_Context()
     {
         var result = KubernetesCatalogueProvider.TryParseKubeconfig("apiVersion: v1\nkind: Config\n");
