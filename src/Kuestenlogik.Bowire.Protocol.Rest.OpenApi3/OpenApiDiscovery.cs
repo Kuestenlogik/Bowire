@@ -6,6 +6,7 @@ using System.Text.Json.Nodes;
 using Kuestenlogik.Bowire.Models;
 using Microsoft.OpenApi;
 using Microsoft.OpenApi.Reader;
+using Microsoft.OpenApi.YamlReader;
 
 namespace Kuestenlogik.Bowire.Protocol.Rest.OpenApi3;
 
@@ -51,7 +52,7 @@ public static class OpenApiDiscovery
             // the original contract, not just the recorded slice.
             var rawText = await resp.Content!.ReadAsStringAsync(ct).ConfigureAwait(false);
             using var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(rawText));
-            var readResult = await OpenApiDocument.LoadAsync(stream, format: null, settings: null, ct).ConfigureAwait(false);
+            var readResult = await OpenApiDocument.LoadAsync(stream, format: null, settings: CreateReaderSettings(), ct).ConfigureAwait(false);
 
             if (readResult?.Document is null) return null;
             // Require at least one path to count it as "an OpenAPI document" — that's
@@ -88,7 +89,7 @@ public static class OpenApiDiscovery
         {
             var bytes = System.Text.Encoding.UTF8.GetBytes(content);
             await using var stream = new MemoryStream(bytes);
-            var readResult = await OpenApiDocument.LoadAsync(stream, format: null, settings: null, ct).ConfigureAwait(false);
+            var readResult = await OpenApiDocument.LoadAsync(stream, format: null, settings: CreateReaderSettings(), ct).ConfigureAwait(false);
             if (readResult?.Document is null) return null;
             if (readResult.Document.Paths is null || readResult.Document.Paths.Count == 0) return null;
             return new DiscoveredApi("uploaded", readResult.Document, readResult.Diagnostic, content);
@@ -97,6 +98,19 @@ public static class OpenApiDiscovery
         {
             return null;
         }
+    }
+
+    /// <summary>
+    /// Reader settings for both entry points. Microsoft.OpenApi registers
+    /// only the JSON reader by default; without an explicit YAML reader a
+    /// YAML document fails to parse, the failure is swallowed, and the
+    /// discovery silently finds nothing (#828).
+    /// </summary>
+    private static OpenApiReaderSettings CreateReaderSettings()
+    {
+        var settings = new OpenApiReaderSettings();
+        settings.AddYamlReader();
+        return settings;
     }
 
     /// <summary>
