@@ -30,9 +30,9 @@ namespace Kuestenlogik.Bowire.App.Plugins;
 ///   <item>Pick the best-matching lib folder for the host's target
 ///   framework (<c>net10.0</c>) via NuGet's own framework-reducer.</item>
 ///   <item>Copy those DLLs into <c>&lt;pluginDir&gt;/&lt;packageId&gt;/</c>,
-///   skipping assemblies that are already loaded by the Bowire host
-///   (<c>Kuestenlogik.Bowire*</c>, <c>System.*</c>, <c>Microsoft.*</c>,
-///   <c>NETStandard.*</c>).</item>
+///   skipping assemblies the Bowire host already provides
+///   (<c>Kuestenlogik.Bowire*</c> it has loaded, and the <c>System.*</c> /
+///   <c>Microsoft.*</c> ones on its trusted-platform list).</item>
 ///   <item>Recurse into transitive deps, deduping by <c>packageId</c>.</item>
 /// </list>
 /// <para>
@@ -410,8 +410,8 @@ internal static class NuGetPackageInstaller
     /// <summary>
     /// Pick the best <c>lib/&lt;tfm&gt;/</c> folder for the host's
     /// framework and copy its DLLs into <paramref name="targetDir"/>.
-    /// Skips assemblies the host already provides (Kuestenlogik.Bowire*,
-    /// System.*, Microsoft.*, NETStandard.*) so plugin packages don't
+    /// Skips assemblies the host already provides (Kuestenlogik.Bowire*, and
+    /// the System.* / Microsoft.* ones it actually ships) so plugin packages don't
     /// drag along Bowire's contract DLLs and break type identity in
     /// the load context.
     /// </summary>
@@ -638,17 +638,29 @@ internal static class NuGetPackageInstaller
     }
 
     // Framework/Bowire-provided packages — don't try to download them,
-    // they're either brought by the runtime (System.*/Microsoft.*) or
-    // already loaded by the Bowire host (Kuestenlogik.Bowire*).
+    // they're either brought by the runtime or already loaded by the
+    // Bowire host (Kuestenlogik.Bowire*).
     private static bool IsHostProvided(string packageId)
     {
-        // Framework packages — always loaded in the default ALC.
-        if (packageId.StartsWith("System.", StringComparison.OrdinalIgnoreCase) ||
-            packageId.StartsWith("Microsoft.", StringComparison.OrdinalIgnoreCase) ||
-            packageId.StartsWith("NETStandard.", StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(packageId, "NETStandard.Library", StringComparison.OrdinalIgnoreCase))
+        // Build-time framework packages carry no runtime assembly of
+        // their own; nothing to install.
+        if (packageId.StartsWith("NETStandard.", StringComparison.OrdinalIgnoreCase) ||
+            packageId.StartsWith("Microsoft.NETCore.", StringComparison.OrdinalIgnoreCase))
         {
             return true;
+        }
+
+        // #817 — System.* / Microsoft.* are host-provided only when the
+        // host actually has them (its trusted-platform list: the app and
+        // its shared frameworks). A blanket prefix skip dropped
+        // Microsoft.Identity.Web, the OIDC provider's dependency, so the
+        // plugin installed without it and could not load. The load
+        // context applies the same test, so what is skipped here is
+        // exactly what it delegates to the host.
+        if (packageId.StartsWith("System.", StringComparison.OrdinalIgnoreCase) ||
+            packageId.StartsWith("Microsoft.", StringComparison.OrdinalIgnoreCase))
+        {
+            return Kuestenlogik.Bowire.PluginLoading.BowirePluginLoadContext.HostProvides(packageId);
         }
 
         // Kuestenlogik.Bowire.* — the CLI tool bakes in the core + first-party

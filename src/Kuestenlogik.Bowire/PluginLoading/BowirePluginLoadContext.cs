@@ -20,10 +20,14 @@ namespace Kuestenlogik.Bowire.PluginLoading;
 /// Resolution rules inside the plugin's own <c>Load</c> hook:
 /// </para>
 /// <list type="number">
-///   <item>Assembly name matches a shared prefix → return <c>null</c>,
-///   which tells the runtime to fall back to the default ALC. That's
-///   how the plugin gets the host's copy of <see cref="IBowireProtocol"/>
-///   instead of a plugin-local type that wouldn't be assignable.</item>
+///   <item>Assembly name matches a shared prefix <em>and the host can
+///   provide it</em> → return <c>null</c>, which tells the runtime to fall
+///   back to the default ALC. That's how the plugin gets the host's copy of
+///   <see cref="IBowireProtocol"/> instead of a plugin-local type that
+///   wouldn't be assignable. A shared-prefix name the host does not have —
+///   <c>Microsoft.Identity.Web</c> for the OIDC provider (#817) — is a
+///   plugin-private dependency like any other and resolves from the plugin
+///   folder; delegating it would only fail.</item>
 ///   <item>Otherwise, look for <c>&lt;AssemblyName&gt;.dll</c> in the
 ///   plugin's directory and load it through this context.</item>
 ///   <item>Nothing found → <c>null</c>, runtime raises
@@ -138,7 +142,7 @@ public sealed class BowirePluginLoadContext : AssemblyLoadContext
     /// <inheritdoc />
     protected override Assembly? Load(AssemblyName assemblyName)
     {
-        if (IsShared(assemblyName.Name))
+        if (IsShared(assemblyName.Name) && HostProvides(assemblyName.Name!))
         {
             // Delegate to default ALC — returning null lets the runtime
             // fall back. Doing this for the shared contract assemblies
@@ -163,6 +167,32 @@ public sealed class BowirePluginLoadContext : AssemblyLoadContext
         var candidate = Path.Combine(_pluginDir, assemblyName.Name + ".dll");
         return File.Exists(candidate) ? LoadFromAssemblyPath(candidate) : null;
     }
+
+    /// <summary>
+    /// Whether the default ALC can resolve <paramref name="assemblyName"/>:
+    /// it is on the host's trusted-platform list (the app and its shared
+    /// frameworks), or already loaded there.
+    /// </summary>
+    /// <remarks>
+    /// <c>bowire plugin install</c> skips exactly these when it resolves a
+    /// plugin's dependencies, so an install brings what this context will
+    /// look for in the plugin folder.
+    /// </remarks>
+    public static bool HostProvides(string assemblyName) =>
+        s_hostAssemblies.Value.Contains(assemblyName)
+        || AssemblyLoadContext.Default.Assemblies.Any(a =>
+            string.Equals(a.GetName().Name, assemblyName, StringComparison.OrdinalIgnoreCase));
+
+    private static readonly Lazy<HashSet<string>> s_hostAssemblies = new(() =>
+    {
+        var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        if (AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES") is string list)
+        {
+            foreach (var path in list.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries))
+                names.Add(Path.GetFileNameWithoutExtension(path));
+        }
+        return names;
+    });
 
     /// <inheritdoc />
     protected override IntPtr LoadUnmanagedDll(string unmanagedDllName)

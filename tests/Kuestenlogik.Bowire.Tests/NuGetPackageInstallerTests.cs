@@ -287,6 +287,10 @@ public sealed class NuGetPackageInstallerTests
     [InlineData("Microsoft.Extensions.Logging", true)]
     [InlineData("NETStandard.Library", true)]
     [InlineData("ThirdParty.Random", false)]
+    // #817 — a Microsoft.* package the host does not ship is a dependency
+    // to install, not a framework package to skip.
+    [InlineData("Microsoft.Identity.Web", false)]
+    [InlineData("Microsoft.Bowire.Not.A.Framework.Assembly", false)]
     public void IsHostProvided_FrameworkPackages(string packageId, bool expected)
     {
         Assert.Equal(expected, InvokeStatic<bool>("IsHostProvided", packageId));

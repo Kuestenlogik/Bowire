@@ -24,7 +24,10 @@ public sealed class BowirePluginLoadContextLoadTests : IDisposable
 
     public void Dispose()
     {
-        if (Directory.Exists(_tempDir)) Directory.Delete(_tempDir, recursive: true);
+        // Best-effort: an assembly loaded from the folder stays mapped until
+        // its collectible context is actually collected, which is not now.
+        try { if (Directory.Exists(_tempDir)) Directory.Delete(_tempDir, recursive: true); }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
         GC.SuppressFinalize(this);
     }
 
@@ -59,6 +62,38 @@ public sealed class BowirePluginLoadContextLoadTests : IDisposable
         var result = loadMethod.Invoke(ctx, [nameWithoutSimpleName]);
 
         Assert.Null(result);
+    }
+
+    [Fact]
+    public void A_Shared_Prefix_Assembly_The_Host_Lacks_Loads_From_The_Plugin_Folder()
+    {
+        // #817 — Microsoft.Identity.Web, the OIDC provider's dependency, is
+        // a Microsoft.* name the host does not ship. Delegating it to the
+        // default ALC only failed; it is plugin-private like any other.
+        const string name = "Microsoft.Bowire.PluginOnlyDependency";
+        var builder = new System.Reflection.Emit.PersistedAssemblyBuilder(new AssemblyName(name), typeof(object).Assembly);
+        builder.DefineDynamicModule(name).DefineType("Marker", TypeAttributes.Public).CreateType();
+        builder.Save(Path.Combine(_tempDir, name + ".dll"));
+
+        var ctx = new BowirePluginLoadContext(_tempDir);
+        Assert.True(ctx.IsShared(name));
+        Assert.False(BowirePluginLoadContext.HostProvides(name));
+
+        var loaded = (Assembly?)GetLoadMethod().Invoke(ctx, [new AssemblyName(name)]);
+
+        Assert.NotNull(loaded);
+        Assert.Equal(name, loaded!.GetName().Name);
+        Assert.Same(ctx, System.Runtime.Loader.AssemblyLoadContext.GetLoadContext(loaded));
+        ctx.Unload();
+    }
+
+    [Fact]
+    public void A_Shared_Assembly_The_Host_Has_Still_Comes_From_The_Host()
+    {
+        // The contract and the framework keep one identity across contexts.
+        var ctx = new BowirePluginLoadContext(_tempDir);
+        Assert.Null(GetLoadMethod().Invoke(ctx, [new AssemblyName("Microsoft.AspNetCore.Http.Abstractions")]));
+        Assert.Null(GetLoadMethod().Invoke(ctx, [new AssemblyName("Kuestenlogik.Bowire")]));
     }
 
     [Fact]
