@@ -136,4 +136,27 @@ public sealed class BowireTelemetryServiceCollectionExtensionsTests
         var optsList = sp.GetServices<BowireTelemetryOptions>().ToList();
         Assert.Single(optsList);
     }
+
+    [Fact]
+    public void Second_Enabled_Call_Registers_Nothing_More()
+    {
+        // #842 — with telemetry on, a second call used to wire the metrics
+        // and tracing pipeline (and its OTLP exporter) again, so every
+        // metric and span left the process twice. Re-calling is a no-op:
+        // the service collection doesn't grow.
+        var services = new ServiceCollection();
+        services.AddLogging();
+        var cfg = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Bowire:Telemetry:Enabled"] = "true",
+            })
+            .Build();
+
+        services.AddBowireTelemetry(cfg);
+        var afterFirst = services.Count;
+        services.AddBowireTelemetry(cfg);
+
+        Assert.Equal(afterFirst, services.Count);
+    }
 }

@@ -47,6 +47,16 @@ public static class BowireTelemetryServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(configuration);
 
+        // #842 — only the options were TryAdd'ed; a second call wired the
+        // metrics and tracing pipeline (and its OTLP exporters) again, so
+        // everything was exported twice. The first call decides; later
+        // calls are the documented no-op.
+        if (services.Any(d => d.ServiceType == typeof(TelemetryRegisteredMarker)))
+        {
+            return services;
+        }
+        services.AddSingleton<TelemetryRegisteredMarker>();
+
         var opts = new BowireTelemetryOptions();
         configuration.GetSection("Bowire:Telemetry").Bind(opts);
         configure?.Invoke(opts);
@@ -102,4 +112,7 @@ public static class BowireTelemetryServiceCollectionExtensions
 
         return services;
     }
+
+    /// <summary>Marks a service collection <see cref="AddBowireTelemetry"/> has already run on.</summary>
+    private sealed class TelemetryRegisteredMarker;
 }
