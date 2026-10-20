@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
 
-**3/35 done** · 32 backlog
+**3/37 done** · 34 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -48,6 +48,8 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [849](https://github.com/Kuestenlogik/Bowire/issues/849) | Bowire | [Kubernetes catalogue finds nothing in a kubeconfig written by kubectl or kind](#issue-kuestenlogik-bowire-849) | ⬜ Backlog |  |
 | [850](https://github.com/Kuestenlogik/Bowire/issues/850) | Bowire | [Calling AddBowireWebSocketEndpoints twice drops the endpoints of the first call](#issue-kuestenlogik-bowire-850) | ⬜ Backlog |  |
 | [851](https://github.com/Kuestenlogik/Bowire/issues/851) | Bowire | [WebSocket channel URL loses the base path of the server URL](#issue-kuestenlogik-bowire-851) | ⬜ Backlog |  |
+| [852](https://github.com/Kuestenlogik/Bowire/issues/852) | Bowire | [WebSocket and MQTT channel send fails on a non-string type or a malformed envelope](#issue-kuestenlogik-bowire-852) | ⬜ Backlog |  |
+| [853](https://github.com/Kuestenlogik/Bowire/issues/853) | Bowire | [[WebSocketGroup] on the declaring class of Minimal API handlers is ignored](#issue-kuestenlogik-bowire-853) | ⬜ Backlog |  |
 | [816](https://github.com/Kuestenlogik/Bowire/issues/816) | Bowire | [SCIM trace records status 200 for every request](#issue-kuestenlogik-bowire-816) | ✅ Done |  |
 | [817](https://github.com/Kuestenlogik/Bowire/issues/817) | Bowire | [OIDC provider cannot run as an installed plugin](#issue-kuestenlogik-bowire-817) | ✅ Done |  |
 | [818](https://github.com/Kuestenlogik/Bowire/issues/818) | Bowire | [--auth-oidc-* flags are documented but never read](#issue-kuestenlogik-bowire-818) | ✅ Done |  |
@@ -335,6 +337,14 @@ A client-streaming or duplex SignalR call opened as a channel never reaches the 
 #### <a id="issue-kuestenlogik-bowire-851"></a>⬜ Backlog · [#851](https://github.com/Kuestenlogik/Bowire/issues/851) WebSocket channel URL loses the base path of the server URL
 
 A WebSocket channel against a server URL with a base path connects to the host root instead. [[more]](https://github.com/Kuestenlogik/Bowire/issues/851)
+
+#### <a id="issue-kuestenlogik-bowire-852"></a>⬜ Backlog · [#852](https://github.com/Kuestenlogik/Bowire/issues/852) WebSocket and MQTT channel send fails on a non-string type or a malformed envelope
+
+Sending a message whose JSON has a non-string `type`, or a malformed send envelope, fails the whole send on a WebSocket or MQTT channel. [[more]](https://github.com/Kuestenlogik/Bowire/issues/852)
+
+#### <a id="issue-kuestenlogik-bowire-853"></a>⬜ Backlog · [#853](https://github.com/Kuestenlogik/Bowire/issues/853) [WebSocketGroup] on the declaring class of Minimal API handlers is ignored
+
+`[WebSocketGroup]` on the class that declares Minimal API handlers is ignored, although the attribute's documentation shows exactly that usage ("every endpoint defined inside inherits the group"). [[more]](https://github.com/Kuestenlogik/Bowire/issues/853)
 
 #### <a id="issue-kuestenlogik-bowire-816"></a>✅ Done · [#816](https://github.com/Kuestenlogik/Bowire/issues/816) SCIM trace records status 200 for every request
 
