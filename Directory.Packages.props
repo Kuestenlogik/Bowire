@@ -65,8 +65,8 @@
          CS0618 suppression with that reason. Remove it when upstream
          populates Examples from a 3.0 `example:` or un-deprecates the
          singular. -->
-    <PackageVersion Include="Microsoft.OpenApi" Version="3.10.2" />
-    <PackageVersion Include="Microsoft.OpenApi.YamlReader" Version="3.10.2" />
+    <PackageVersion Include="Microsoft.OpenApi" Version="3.11.0" />
+    <PackageVersion Include="Microsoft.OpenApi.YamlReader" Version="3.11.0" />
     <!-- Neuroglia.AsyncApi is the official AsyncAPI .NET SDK
          (asyncapi/net-sdk repo, Neuroglia maintains the
          implementation). Core = AsyncAPI 2.x + 3.0 models; IO =
