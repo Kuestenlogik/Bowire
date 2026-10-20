@@ -201,8 +201,10 @@
         while (i < lines.length) {
             var line = lines[i];
 
-            // Fenced code block
-            var fenceMatch = /^```(\w+)?\s*$/.exec(line);
+            // Fenced code block. Any info string opens a fence (c++, c#,
+            // objective-c) — a narrower match left ```c++ to the paragraph
+            // branch, which refuses lines starting with ``` (#822).
+            var fenceMatch = /^```\s*([^`\s]*)[^`]*$/.exec(line);
             if (fenceMatch) {
                 var lang = fenceMatch[1] || '';
                 var codeLines = [];
@@ -278,6 +280,13 @@
             var paraLines = [];
             while (i < lines.length && lines[i].trim() !== ''
                 && !/^(#{1,6}\s+|>\s|[-*]\s+|\d+\.\s+|---\s*$|```)/.test(lines[i])) {
+                paraLines.push(lines[i]);
+                i++;
+            }
+            // A line no block branch claimed but the stop pattern matches
+            // (`# ` with no heading text) would leave i unchanged and spin
+            // forever; take it as paragraph text instead (#822).
+            if (paraLines.length === 0) {
                 paraLines.push(lines[i]);
                 i++;
             }
