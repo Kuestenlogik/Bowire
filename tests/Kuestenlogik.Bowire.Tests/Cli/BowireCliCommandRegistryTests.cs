@@ -74,6 +74,34 @@ public sealed class BowireCliCommandRegistryTests
         Assert.Equal("fake", registry.Commands[0].Id);
     }
 
+    [Fact]
+    public void Discover_skips_command_types_it_cannot_instantiate()
+    {
+        // This assembly is scanned too, and it carries a command type with
+        // no parameterless constructor and an open generic one (below).
+        // Neither can be created by the scan; they must be skipped, not
+        // abort CLI startup.
+        var scannerAssembly = typeof(Kuestenlogik.Bowire.Security.Scanner.Cli.ScanCliCommand).Assembly;
+        Assert.NotNull(scannerAssembly);
+
+        var registry = BowireCliCommandRegistry.Discover();
+
+        Assert.Contains(registry.Commands, c => c.Id == "scan");
+        Assert.DoesNotContain(registry.Commands, c => c.Id is "needs-args" or "generic");
+    }
+
+    private sealed class NeedsArgsCliCommand(string id) : IBowireCliCommand
+    {
+        public string Id => id;
+        public System.CommandLine.Command Build() => new(id, "constructed explicitly");
+    }
+
+    private sealed class GenericCliCommand<T> : IBowireCliCommand
+    {
+        public string Id => "generic";
+        public System.CommandLine.Command Build() => new("generic", typeof(T).Name);
+    }
+
     private sealed class FakeCliCommand : IBowireCliCommand
     {
         public string Id => "fake";

@@ -22,9 +22,11 @@ public sealed class BowireCliCommandRegistry
     public void Register(IBowireCliCommand command) => _commands.Add(command);
 
     /// <summary>
-    /// Scan every loaded <c>Kuestenlogik.Bowire*</c> assembly for
-    /// concrete <see cref="IBowireCliCommand"/> implementations and
-    /// instantiate one of each. Skips ids in
+    /// Scan every loaded assembly whose name contains <c>Bowire</c>
+    /// (the protocol registry's filter, so third-party plugins count)
+    /// for concrete <see cref="IBowireCliCommand"/> implementations
+    /// with a public parameterless constructor and instantiate one of
+    /// each. Skips ids in
     /// <paramref name="disabledCommandIds"/> so operators can mask
     /// a noisy / heavy command (`--disable-cli-command scan` etc.)
     /// without rebuilding the tool.
@@ -45,9 +47,13 @@ public sealed class BowireCliCommandRegistry
         {
             try
             {
+                // Open generics and types without a parameterless ctor (a
+                // host constructs those itself) cannot be created here; one
+                // such type used to abort the whole CLI bootstrap (#860).
                 var commandTypes = assembly.GetTypes()
-                    .Where(t => !t.IsAbstract && !t.IsInterface)
-                    .Where(typeof(IBowireCliCommand).IsAssignableFrom);
+                    .Where(t => !t.IsAbstract && !t.IsInterface && !t.ContainsGenericParameters)
+                    .Where(typeof(IBowireCliCommand).IsAssignableFrom)
+                    .Where(t => t.GetConstructor(Type.EmptyTypes) is not null);
                 foreach (var type in commandTypes)
                 {
                     if (Activator.CreateInstance(type) is IBowireCliCommand command)
