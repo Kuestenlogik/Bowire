@@ -12,10 +12,11 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.9.1 — Dependency security fixes *(due 2026-10-20)*
 
-**8/8 done**
+**8/9 done** · 1 in progress
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
+| [808](https://github.com/Kuestenlogik/Bowire/issues/808) | Bowire | [Auth.Oidc package still brings System.Security.Cryptography.Xml 10.0.10 to its consumers](#issue-kuestenlogik-bowire-808) | 🟡 In progress | `area:security` |
 | [647](https://github.com/Kuestenlogik/Bowire/issues/647) | Bowire | [Decide the licence and carry it per project](#issue-kuestenlogik-bowire-647) | ✅ Done | `area:multi` |
 | [668](https://github.com/Kuestenlogik/Bowire/issues/668) | Bowire | [Sharpen the one-line pitch, and carry the same sentence everywhere](#issue-kuestenlogik-bowire-668) | ✅ Done | `area:site` |
 | [777](https://github.com/Kuestenlogik/Bowire/issues/777) | Bowire | [English only: translate German comments, docs and issues, and guard against new German](#issue-kuestenlogik-bowire-777) | ✅ Done | `area:multi` |
@@ -36,7 +37,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**0/12 done** · 12 backlog
+**0/15 done** · 15 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -52,6 +53,9 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [690](https://github.com/Kuestenlogik/Bowire/issues/690) | Bowire | [Translate the CLI help surface, or decide not to](#issue-kuestenlogik-bowire-690) | ⬜ Backlog | `area:cli` |
 | [753](https://github.com/Kuestenlogik/Bowire/issues/753) | Bowire | [Detach a pane into a browser window of its own (pop-out)](#issue-kuestenlogik-bowire-753) | ⬜ Backlog |  |
 | [754](https://github.com/Kuestenlogik/Bowire/issues/754) | Bowire | [Scaffolding: more stub languages and protocols (follow-up to #177)](#issue-kuestenlogik-bowire-754) | ⬜ Backlog |  |
+| [801](https://github.com/Kuestenlogik/Bowire/issues/801) | Bowire | [MCP Tasks, client side: discover, call and follow tasks of task-capable MCP servers](#issue-kuestenlogik-bowire-801) | ⬜ Backlog |  |
+| [802](https://github.com/Kuestenlogik/Bowire/issues/802) | Bowire | [MCP Tasks, server side: run long Bowire MCP tools (bowire.test.run first) as durable tasks](#issue-kuestenlogik-bowire-802) | ⬜ Backlog |  |
+| [803](https://github.com/Kuestenlogik/Bowire/issues/803) | Bowire | [MCP Tasks in testing and mocking: assert on task lifecycles, record and replay them](#issue-kuestenlogik-bowire-803) | ⬜ Backlog |  |
 
 ### v2.12 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
 
@@ -175,6 +179,12 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 ## Details
 
 ### v2.9.1 — Dependency security fixes *(due 2026-10-20)*
+
+#### <a id="issue-kuestenlogik-bowire-808"></a>🟡 In progress · [#808](https://github.com/Kuestenlogik/Bowire/issues/808) Auth.Oidc package still brings System.Security.Cryptography.Xml 10.0.10 to its consumers
+
+> `area:security`
+
+The `Kuestenlogik.Bowire.Auth.Oidc` package still brings `System.Security.Cryptography.Xml` 10.0.10 ([GHSA-r955-8q5j-3h83](https://github.com/advisories/GHSA-r955-8q5j-3h83), high) into a consumer that does not reference the ASP.NET Core shared framework itself. [[more]](https://github.com/Kuestenlogik/Bowire/issues/808)
 
 #### <a id="issue-kuestenlogik-bowire-647"></a>✅ Done · [#647](https://github.com/Kuestenlogik/Bowire/issues/647) Decide the licence and carry it per project
 
@@ -301,6 +311,18 @@ Split out of #250 phase 2, where it already stood as *"long deferred — needs p
 #### <a id="issue-kuestenlogik-bowire-754"></a>⬜ Backlog · [#754](https://github.com/Kuestenlogik/Bowire/issues/754) Scaffolding: more stub languages and protocols (follow-up to #177)
 
 #177 delivered the first cut: REST (OpenAPI 3) and gRPC (proto3), server stubs in C#. The templates live in `src/Kuestenlogik.Bowire.Scaffold/Templates/<protocol>/`, the spec is language-neutral – a new language is a set of templates plus an entry in the generator. [[more]](https://github.com/Kuestenlogik/Bowire/issues/754)
+
+#### <a id="issue-kuestenlogik-bowire-801"></a>⬜ Backlog · [#801](https://github.com/Kuestenlogik/Bowire/issues/801) MCP Tasks, client side: discover, call and follow tasks of task-capable MCP servers
+
+MCP Tasks let a server answer a long-running request with a durable handle instead of blocking: the client polls, answers mid-flight questions and fetches the result later, even after reconnecting. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/801)
+
+#### <a id="issue-kuestenlogik-bowire-802"></a>⬜ Backlog · [#802](https://github.com/Kuestenlogik/Bowire/issues/802) MCP Tasks, server side: run long Bowire MCP tools (bowire.test.run first) as durable tasks
+
+Bowire's own MCP server (`bowire mcp serve`, the workbench tools for agents) answers every call synchronously. That is fine for the 25 tools it has today, none of which runs long. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/802)
+
+#### <a id="issue-kuestenlogik-bowire-803"></a>⬜ Backlog · [#803](https://github.com/Kuestenlogik/Bowire/issues/803) MCP Tasks in testing and mocking: assert on task lifecycles, record and replay them
+
+Once Bowire can call task-capable MCP servers, the next question from anyone building one is: does my server's task lifecycle actually work? Polling, `input_required`, cancellation, TTL expiry and the final result are exactly the parts that break, and no tool tests them. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/803)
 
 ### v2.12 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
 
