@@ -42,10 +42,14 @@ public sealed class BowireODataProtocol : IBowireProtocol, Kuestenlogik.Bowire.N
     /// (b) strip that same property from a PATCH body, where OData refuses
     /// it. Discovery and invoke run on the same plugin instance, so this
     /// survives between them; the invoke path degrades to a first-scalar
-    /// heuristic when a caller invokes without discovering first.
+    /// heuristic when a caller invokes without discovering first. Whether
+    /// the key is an Edm.String rides along so the URL quotes it however
+    /// its value looks (#867).
     /// </summary>
-    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, string> _entitySetKeys =
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, EntityKey> _entitySetKeys =
         new(StringComparer.OrdinalIgnoreCase);
+
+    private sealed record EntityKey(string Name, bool IsString);
 
     public string Name => "OData";
     public string Description => "OData V4 entity-set queries, actions, and metadata-driven discovery.";
@@ -114,9 +118,9 @@ public sealed class BowireODataProtocol : IBowireProtocol, Kuestenlogik.Bowire.N
 
                 // Remember the declared key so the invoke path can address
                 // entities and keep the key out of PATCH bodies.
-                var declaredKey = entityType.DeclaredKey?.FirstOrDefault()?.Name;
-                if (!string.IsNullOrEmpty(declaredKey))
-                    _entitySetKeys[entitySet.Name] = declaredKey;
+                var declaredKey = entityType.DeclaredKey?.FirstOrDefault();
+                if (!string.IsNullOrEmpty(declaredKey?.Name))
+                    _entitySetKeys[entitySet.Name] = new EntityKey(declaredKey.Name, declaredKey.Type.IsString());
                 var inputType = new BowireMessageInfo(entityType.Name, entityType.FullName(), inputFields);
                 var outputType = new BowireMessageInfo(entityType.Name + "Response", entityType.FullName() + "Response", inputFields);
 
@@ -227,10 +231,10 @@ public sealed class BowireODataProtocol : IBowireProtocol, Kuestenlogik.Bowire.N
                 // entity, so guessing there would be wrong — it relies on
                 // the recorded name.
                 if (_entitySetKeys.TryGetValue(entitySet, out var known)
-                    && doc.RootElement.TryGetProperty(known, out var kv))
+                    && doc.RootElement.TryGetProperty(known.Name, out var kv))
                 {
                     key = kv.ToString();
-                    keyPropertyName = known;
+                    keyPropertyName = known.Name;
                 }
                 else if (httpVerb is "GET_BY_KEY" or "DELETE")
                 {
@@ -252,7 +256,10 @@ public sealed class BowireODataProtocol : IBowireProtocol, Kuestenlogik.Bowire.N
         catch { /* payload is just a body */ }
 
         if (key is not null && (httpVerb == "GET_BY_KEY" || httpVerb == "PATCH" || httpVerb == "DELETE"))
-            requestUrl = new Uri($"{baseUrl}/{entitySet}({FormatKey(key)})");
+        {
+            var isStringKey = _entitySetKeys.TryGetValue(entitySet, out var declared) && declared.IsString;
+            requestUrl = new Uri($"{baseUrl}/{entitySet}({FormatKey(key, isStringKey)})");
+        }
         if (httpVerb == "GET_BY_KEY") httpVerb = "GET";
 
         HttpResponseMessage resp;
@@ -340,19 +347,24 @@ public sealed class BowireODataProtocol : IBowireProtocol, Kuestenlogik.Bowire.N
 
     /// <summary>
     /// OData addresses string keys quoted (<c>/People('alice')</c>) and
-    /// numeric keys bare (<c>/Products(2)</c>). The key arrives here as
-    /// text, so decide by shape: anything that isn't a plain number (or
-    /// a GUID, which OData also takes bare) gets quoted.
+    /// numeric keys bare (<c>/Products(2)</c>). A key discovery declared as
+    /// Edm.String is always quoted: by shape alone "1234" went out bare and
+    /// OData read it as a number (#867). Otherwise the key arrives as text
+    /// of unknown type, so decide by shape: anything that isn't a plain
+    /// number (or a GUID, which OData also takes bare) gets quoted.
     /// </summary>
-    private static string FormatKey(string key)
+    private static string FormatKey(string key, bool isStringKey)
     {
         if (key.Length == 0) return "''";
         if (key.StartsWith('\'')) return key; // caller already quoted
+        if (isStringKey) return Quote(key);
         var numeric = key.All(c => char.IsDigit(c) || c is '-' or '.' or '+');
         if (numeric) return key;
         if (Guid.TryParse(key, out _)) return key;
-        return "'" + key.Replace("'", "''", StringComparison.Ordinal) + "'";
+        return Quote(key);
     }
+
+    private static string Quote(string key) => "'" + key.Replace("'", "''", StringComparison.Ordinal) + "'";
 
     /// <summary>
     /// Strip everything from a write payload that is URL-level rather

@@ -131,6 +131,30 @@ public sealed class WriteAndKeyAddressingTests
         _ = StringKeyMetadataXml; // documents the model this mirrors
     }
 
+    [Theory]
+    [InlineData("""{"UserName": "1234"}""")]
+    [InlineData("""{"key": "1234"}""")]
+    public async Task A_Digit_Only_String_Key_Is_Still_Quoted(string payload)
+    {
+        // #867 — the key's shape decided the quoting, so an Edm.String
+        // key that happens to be all digits went out bare (/People(1234)),
+        // which OData reads as a number and rejects for a string key.
+        // Discovery knows the declared type; that decides now.
+        await using var metaStub = await StubServer.StartAsync(StringKeyMetadataXml, "application/xml");
+        using var protocol = new BowireODataProtocol();
+        await protocol.DiscoverAsync(
+            metaStub.BaseUrl + "/$metadata", showInternalServices: false, TestContext.Current.CancellationToken);
+
+        await using var stub = await StubServer.StartAsync("{}", "application/json");
+
+        await protocol.InvokeAsync(
+            stub.BaseUrl, "People", "odata/People/GET_BY_KEY",
+            [payload], showInternalServices: false,
+            metadata: null, TestContext.Current.CancellationToken);
+
+        Assert.Contains("/People('1234')", stub.LastRequestUrl, StringComparison.Ordinal);
+    }
+
     [Fact]
     public async Task Patch_Keeps_The_Key_Out_Of_The_Body()
     {
