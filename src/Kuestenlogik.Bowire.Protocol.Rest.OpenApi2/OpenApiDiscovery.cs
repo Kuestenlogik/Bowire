@@ -445,7 +445,8 @@ public static class OpenApiDiscovery
         int number,
         bool required = false,
         string? description = null,
-        JsonNode? parameterExample = null)
+        JsonNode? parameterExample = null,
+        HashSet<IOpenApiSchema>? path = null)
     {
         if (schema is null)
         {
@@ -473,7 +474,7 @@ public static class OpenApiDiscovery
         BowireMessageInfo? nested = null;
         if (element is not null && SchemaIsType(element, JsonSchemaType.Object) && element.Properties is { Count: > 0 })
         {
-            nested = SchemaToMessage(name + "Type", element);
+            nested = SchemaToMessage(name + "Type", element, path);
             typeName = "message";
         }
 
@@ -515,7 +516,43 @@ public static class OpenApiDiscovery
         };
     }
 
-    private static BowireMessageInfo SchemaToMessage(string name, IOpenApiSchema schema)
+    /// <summary>
+    /// How deep one shape is expanded. An acyclic schema may nest further;
+    /// past this the shape is marked truncated rather than expanded (#844).
+    /// </summary>
+    private const int MaxSchemaDepth = 8;
+
+    /// <remarks>
+    /// <c>path</c> holds the schemas currently being expanded, from the root
+    /// down to here, and is unwound on the way out. A schema that reaches
+    /// itself (<c>Node { child: $ref Node }</c>) is cut where it recurs and
+    /// comes back as a truncated stub; a schema that is merely used twice
+    /// (two fields of the same type) expands at both sites. Without the guard
+    /// the walk recursed until the reader's stack guard threw and the whole
+    /// document failed to discover (#844).
+    /// </remarks>
+    private static BowireMessageInfo SchemaToMessage(
+        string name, IOpenApiSchema schema, HashSet<IOpenApiSchema>? path = null)
+    {
+        path ??= new HashSet<IOpenApiSchema>(ReferenceEqualityComparer.Instance);
+        // Every $ref site is its own reference object; the target it resolves
+        // to is what identifies the schema.
+        var key = schema is OpenApiSchemaReference { Target: { } target } ? target : schema;
+        if (path.Count >= MaxSchemaDepth || !path.Add(key))
+            return new BowireMessageInfo(Name: name, FullName: name, Fields: []) { Truncated = true };
+
+        try
+        {
+            return BuildMessageFields(name, schema, path);
+        }
+        finally
+        {
+            path.Remove(key);
+        }
+    }
+
+    private static BowireMessageInfo BuildMessageFields(
+        string name, IOpenApiSchema schema, HashSet<IOpenApiSchema> path)
     {
         var fields = new List<BowireFieldInfo>();
         // #663 — a top-level array (the shape of every list endpoint) has
@@ -531,7 +568,8 @@ public static class OpenApiDiscovery
                 number: 1,
                 required: false,
                 description: schema.Description,
-                parameterExample: null));
+                parameterExample: null,
+                path: path));
             return new BowireMessageInfo(Name: name, FullName: name, Fields: fields);
         }
         if (schema.Properties is not null)
@@ -547,7 +585,8 @@ public static class OpenApiDiscovery
                     number: i++,
                     required: requiredSet.Contains(propName),
                     description: propSchema?.Description,
-                    parameterExample: null));
+                    parameterExample: null,
+                    path: path));
             }
         }
         return new BowireMessageInfo(
