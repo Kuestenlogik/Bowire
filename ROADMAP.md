@@ -24,7 +24,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**0/20 done** · 20 backlog
+**1/21 done** · 20 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -40,7 +40,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [690](https://github.com/Kuestenlogik/Bowire/issues/690) | Bowire | [Translate the CLI help surface, or decide not to](#issue-kuestenlogik-bowire-690) | ⬜ Backlog | `area:cli` |
 | [753](https://github.com/Kuestenlogik/Bowire/issues/753) | Bowire | [Detach a pane into a browser window of its own (pop-out)](#issue-kuestenlogik-bowire-753) | ⬜ Backlog |  |
 | [754](https://github.com/Kuestenlogik/Bowire/issues/754) | Bowire | [Scaffolding: more stub languages and protocols (follow-up to #177)](#issue-kuestenlogik-bowire-754) | ⬜ Backlog |  |
-| [801](https://github.com/Kuestenlogik/Bowire/issues/801) | Bowire | [MCP Tasks, client side: discover, call and follow tasks of task-capable MCP servers](#issue-kuestenlogik-bowire-801) | ⬜ Backlog |  |
 | [802](https://github.com/Kuestenlogik/Bowire/issues/802) | Bowire | [MCP Tasks, server side: run long Bowire MCP tools (bowire.test.run first) as durable tasks](#issue-kuestenlogik-bowire-802) | ⬜ Backlog |  |
 | [803](https://github.com/Kuestenlogik/Bowire/issues/803) | Bowire | [MCP Tasks in testing and mocking: assert on task lifecycles, record and replay them](#issue-kuestenlogik-bowire-803) | ⬜ Backlog |  |
 | [810](https://github.com/Kuestenlogik/Bowire/issues/810) | Bowire | [MCP Apps, host side: render and debug MCP Apps of the servers Bowire talks to](#issue-kuestenlogik-bowire-810) | ⬜ Backlog |  |
@@ -48,6 +47,8 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [812](https://github.com/Kuestenlogik/Bowire/issues/812) | Bowire | [MCP Apps in testing and security: assert on apps, record their traffic, scan their CSP](#issue-kuestenlogik-bowire-812) | ⬜ Backlog |  |
 | [819](https://github.com/Kuestenlogik/Bowire/issues/819) | Bowire | [MCP discovery reports a fault for a tools-only server](#issue-kuestenlogik-bowire-819) | ⬜ Backlog |  |
 | [820](https://github.com/Kuestenlogik/Bowire/issues/820) | Bowire | [MCP tasks: answer sampling requests, by hand or with the configured model](#issue-kuestenlogik-bowire-820) | ⬜ Backlog |  |
+| [821](https://github.com/Kuestenlogik/Bowire/issues/821) | Bowire | [MCP tasks: answer input requests of 2025-11-25 tasks](#issue-kuestenlogik-bowire-821) | ⬜ Backlog |  |
+| [801](https://github.com/Kuestenlogik/Bowire/issues/801) | Bowire | [MCP Tasks, client side: discover, call and follow tasks of task-capable MCP servers](#issue-kuestenlogik-bowire-801) | ✅ Done |  |
 
 ### v2.12 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
 
@@ -267,10 +268,6 @@ Split out of #250 phase 2, where it already stood as *"long deferred — needs p
 
 #177 delivered the first cut: REST (OpenAPI 3) and gRPC (proto3), server stubs in C#. The templates live in `src/Kuestenlogik.Bowire.Scaffold/Templates/<protocol>/`, the spec is language-neutral – a new language is a set of templates plus an entry in the generator. [[more]](https://github.com/Kuestenlogik/Bowire/issues/754)
 
-#### <a id="issue-kuestenlogik-bowire-801"></a>⬜ Backlog · [#801](https://github.com/Kuestenlogik/Bowire/issues/801) MCP Tasks, client side: discover, call and follow tasks of task-capable MCP servers
-
-MCP Tasks let a server answer a long-running request with a durable handle instead of blocking: the client polls, answers mid-flight questions and fetches the result later, even after reconnecting. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/801)
-
 #### <a id="issue-kuestenlogik-bowire-802"></a>⬜ Backlog · [#802](https://github.com/Kuestenlogik/Bowire/issues/802) MCP Tasks, server side: run long Bowire MCP tools (bowire.test.run first) as durable tasks
 
 Bowire's own MCP server (`bowire mcp serve`, the workbench tools for agents) answers every call synchronously. That is fine for the 25 tools it has today, none of which runs long. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/802)
@@ -298,6 +295,14 @@ Discovering an MCP server that offers only tools (an SDK 2.2 server with `WithTo
 #### <a id="issue-kuestenlogik-bowire-820"></a>⬜ Backlog · [#820](https://github.com/Kuestenlogik/Bowire/issues/820) MCP tasks: answer sampling requests, by hand or with the configured model
 
 An MCP server can ask its client to run a model completion for it — `sampling/createMessage`: the server borrows the client's LLM instead of holding its own model access, and the user stays in control of what the model sees. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/820)
+
+#### <a id="issue-kuestenlogik-bowire-821"></a>⬜ Backlog · [#821](https://github.com/Kuestenlogik/Bowire/issues/821) MCP tasks: answer input requests of 2025-11-25 tasks
+
+Since #801 Bowire follows tasks of the 2025-11-25 core shape — create, poll, `tasks/result`, cancel — but cannot answer their input requests. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/821)
+
+#### <a id="issue-kuestenlogik-bowire-801"></a>✅ Done · [#801](https://github.com/Kuestenlogik/Bowire/issues/801) MCP Tasks, client side: discover, call and follow tasks of task-capable MCP servers
+
+MCP Tasks let a server answer a long-running request with a durable handle instead of blocking: the client polls, answers mid-flight questions and fetches the result later, even after reconnecting. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/801)
 
 ### v2.12 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
 
