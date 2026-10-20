@@ -1,0 +1,105 @@
+name: "MCP image"
+
+# The root Dockerfile is the MCP server Glama starts and scores, and
+# awesome-mcp-servers lists only servers Glama has scored (#670). It installs
+# the latest released Kuestenlogik.Bowire.Tool, so nothing has to be edited
+# for a release - but a release that breaks `bowire mcp serve` would break
+# the listing without anyone touching the Dockerfile. This workflow builds the
+# image and runs scripts/ci/probe-mcp-image.mjs against it:
+#
+#   - after every published release, once nuget.org serves that version, and
+#     checks the image carries it;
+#   - weekly, against the latest stable version on nuget.org;
+#   - when the Dockerfile or the probe changes.
+#
+# A failed release or weekly run files a tracking issue: a red scheduled run
+# is not a notification.
+
+on:
+  release:
+    types: [published]
+  schedule:
+    - cron: "41 5 * * 1"   # Mondays, 05:41 UTC
+  push:
+    branches: [main]
+    paths:
+      - 'Dockerfile'
+      - 'scripts/ci/probe-mcp-image.mjs'
+      - '.github/workflows/mcp-image.yml'
+  pull_request:
+    paths:
+      - 'Dockerfile'
+      - 'scripts/ci/probe-mcp-image.mjs'
+      - '.github/workflows/mcp-image.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  # The publish-failure reporter files a tracking issue when a run fails.
+  issues: write
+
+concurrency:
+  group: mcp-image-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    name: build and probe
+    # A pre-release is never what `dotnet tool install` picks without a
+    # version, so there is nothing new for the image to carry.
+    if: github.event_name != 'release' || !github.event.release.prerelease
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+
+      # Which version the image has to carry: the release's own, or the
+      # latest stable one on nuget.org. After a release, wait until nuget.org
+      # serves it - indexing takes minutes, and the image would otherwise
+      # still install the previous version.
+      - name: Resolve the expected version
+        id: version
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          set -euo pipefail
+          index=https://api.nuget.org/v3-flatcontainer/kuestenlogik.bowire.tool/index.json
+          if [ -n "${TAG:-}" ]; then
+            expected="${TAG#v}"
+            for _ in $(seq 1 45); do
+              if curl -fsS "$index" | jq -e --arg v "$expected" '.versions | index($v)' >/dev/null; then
+                break
+              fi
+              echo "nuget.org does not serve ${expected} yet; waiting a minute."
+              sleep 60
+            done
+          else
+            expected=$(curl -fsS "$index" | jq -r '[.versions[] | select(contains("-") | not)] | last')
+          fi
+          echo "expected=${expected}" >> "$GITHUB_OUTPUT"
+          echo "Expecting Kuestenlogik.Bowire.Tool ${expected} in the image."
+
+      - name: Build the image
+        run: docker build --pull --no-cache -t bowire-mcp .
+
+      - name: Probe initialize and tools/list
+        run: node scripts/ci/probe-mcp-image.mjs bowire-mcp --expect-version "${{ steps.version.outputs.expected }}"
+
+      - name: File a tracking issue
+        if: failure() && (github.event_name == 'release' || github.event_name == 'schedule')
+        uses: ./.github/actions/publish-failure-issue
+        with:
+          channel: mcp-image
+          version: ${{ steps.version.outputs.expected }}
+          hint: >-
+            the MCP image built from the root Dockerfile no longer answers
+            initialize and tools/list, or carries another version than nuget.org
+            serves. Run it locally with
+            `docker build -t bowire-mcp . && node scripts/ci/probe-mcp-image.mjs bowire-mcp`.
+            Glama scores the server from this image, and awesome-mcp-servers
+            lists it only with a Glama score (#670).
+          token: ${{ secrets.GITHUB_TOKEN }}
