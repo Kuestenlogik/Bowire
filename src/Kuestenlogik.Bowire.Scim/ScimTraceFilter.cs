@@ -52,25 +52,47 @@ internal sealed class ScimTraceFilter(ScimProvisioningTrace trace) : IEndpointFi
         }
 
         var started = Stopwatch.GetTimestamp();
+        void Record(int status) => trace.Record(
+            method,
+            http.Request.Path.Value ?? string.Empty,
+            http.Request.QueryString.HasValue ? http.Request.QueryString.Value : null,
+            status,
+            Stopwatch.GetElapsedTime(started).TotalMilliseconds,
+            dialect,
+            unmodelled);
+
+        object? result;
         try
         {
-            return await next(context);
+            result = await next(context);
         }
-        finally
+        catch
         {
-            // `finally`, so a handler that throws is still recorded. A 500
-            // during a live round-trip is the single most interesting line
-            // the file can contain, and it is the one a happy-path trace
-            // would miss.
-            trace.Record(
-                method,
-                http.Request.Path.Value ?? string.Empty,
-                http.Request.QueryString.HasValue ? http.Request.QueryString.Value : null,
-                http.Response.StatusCode,
-                Stopwatch.GetElapsedTime(started).TotalMilliseconds,
-                dialect,
-                unmodelled);
+            // A handler that throws is still recorded. A 500 during a live
+            // round-trip is the single most interesting line the file can
+            // contain, and it is the one a happy-path trace would miss.
+            Record(StatusCodes.Status500InternalServerError);
+            throw;
         }
+
+        // What `next` hands back is the handler's IResult, not yet executed:
+        // the status is still the default 200 here, whatever the result will
+        // write (#816). It is final when the response starts — and that is
+        // before the connector sees a byte, so the line exists by the time
+        // it has its answer.
+        if (http.Response.HasStarted)
+        {
+            Record(http.Response.StatusCode);
+        }
+        else
+        {
+            http.Response.OnStarting(() =>
+            {
+                Record(http.Response.StatusCode);
+                return Task.CompletedTask;
+            });
+        }
+        return result;
     }
 
     private static bool HasBody(HttpRequest request)
