@@ -147,6 +147,14 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 |---|---|---|---|---|
 | [5](https://github.com/Kuestenlogik/Bowire.Sdk.Rust/issues/5) | Sdk.Rust | [openChannel is declared but nothing routes it](#issue-kuestenlogik-bowire-sdk-rust-5) | ⬜ Backlog |  |
 
+### Templates v1.1.17 — No warning suppressions *(due 2026-11-14)*
+
+**0/1 done** · 1 in progress
+
+| # | Project | Title | Status | Tags |
+|---|---|---|---|---|
+| [24](https://github.com/Kuestenlogik/Bowire.Templates/issues/24) | Templates | [Warning suppressions: NU5128 on the template pack, CS1591 in the plugin template](#issue-kuestenlogik-bowire-templates-24) | 🟡 In progress | `area:plugin-sdk` |
+
 ### VS Code v1.1 — Marketplace publish via Entra ID *(due 2026-11-30)*
 
 **1/2 done** · 1 backlog
@@ -155,13 +163,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 |---|---|---|---|---|
 | [779](https://github.com/Kuestenlogik/Bowire/issues/779) | Bowire | [Revoke the old VSCE_PAT in Azure DevOps](#issue-kuestenlogik-bowire-779) | ⬜ Backlog |  |
 | [613](https://github.com/Kuestenlogik/Bowire/issues/613) | Bowire | [Move the VS Code Marketplace publish off PATs to Entra ID before 2026-12-01](#issue-kuestenlogik-bowire-613) | ✅ Done | `area:cli` |
-
-### Backlog (not yet scheduled)
-
-| # | Project | Title | Status | Tags |
-|---|---|---|---|---|
-| [24](https://github.com/Kuestenlogik/Bowire.Templates/issues/24) | Templates | [Warning suppressions: NU5128 on the template pack, CS1591 in the plugin template](#issue-kuestenlogik-bowire-templates-24) | 🟡 In progress | `area:plugin-sdk` |
-| [783](https://github.com/Kuestenlogik/Bowire/issues/783) | Bowire | [roadmap-release-field publish is failing](#issue-kuestenlogik-bowire-783) | ⬜ Backlog |  |
 
 ## Details
 
@@ -541,6 +542,14 @@ The settings hook this SDK already has now reaches somewhere, and the other half
 
 The plugin surface declares a duplex capability that no dispatcher routes. `the BowirePlugin trait's open_channel` is part of the public API — a plugin author implements it, ships it, and nothing ever calls it, because the dispatcher has no `openChannel` case at all. [[more]](https://github.com/Kuestenlogik/Bowire.Sdk.Rust/issues/5)
 
+### Templates v1.1.17 — No warning suppressions *(due 2026-11-14)*
+
+#### <a id="issue-kuestenlogik-bowire-templates-24"></a>🟡 In progress · [Kuestenlogik/Bowire.Templates#24](https://github.com/Kuestenlogik/Bowire.Templates/issues/24) Warning suppressions: NU5128 on the template pack, CS1591 in the plugin template
+
+> `area:plugin-sdk`
+
+Two warning suppressions in this repo, reviewed under the rule that warnings are fixed at the cause and a suppression stays only where no fix exists, narrowly and with a reason: [[more]](https://github.com/Kuestenlogik/Bowire.Templates/issues/24)
+
 ### VS Code v1.1 — Marketplace publish via Entra ID *(due 2026-11-30)*
 
 #### <a id="issue-kuestenlogik-bowire-779"></a>⬜ Backlog · [#779](https://github.com/Kuestenlogik/Bowire/issues/779) Revoke the old VSCE_PAT in Azure DevOps
@@ -552,18 +561,6 @@ The plugin surface declares a duplex capability that no dispatcher routes. `the 
 > `area:cli`
 
 > **Hard deadline: 2026-12-01.** Azure DevOps stops supporting Personal Access Tokens scoped to *all accessible organizations* on that date. That scope is what `vsce publish` has traditionally required. [[more]](https://github.com/Kuestenlogik/Bowire/issues/613)
-
-### Backlog (not yet scheduled)
-
-#### <a id="issue-kuestenlogik-bowire-templates-24"></a>🟡 In progress · [Kuestenlogik/Bowire.Templates#24](https://github.com/Kuestenlogik/Bowire.Templates/issues/24) Warning suppressions: NU5128 on the template pack, CS1591 in the plugin template
-
-> `area:plugin-sdk`
-
-Two warning suppressions in this repo, reviewed under the rule that warnings are fixed at the cause and a suppression stays only where no fix exists, narrowly and with a reason: [[more]](https://github.com/Kuestenlogik/Bowire.Templates/issues/24)
-
-#### <a id="issue-kuestenlogik-bowire-783"></a>⬜ Backlog · [#783](https://github.com/Kuestenlogik/Bowire/issues/783) roadmap-release-field publish is failing
-
-<!-- publish-failure:roadmap-release-field --> The **roadmap-release-field** publish failed. - Run: https://github.com/Kuestenlogik/Bowire/actions/runs/38728477658 - Workflow: `Roadmap field guard` - Commit: ab6803c16ef4714f8344c14b77f336e984e6858f [[more]](https://github.com/Kuestenlogik/Bowire/issues/783)
 
 ---
 
