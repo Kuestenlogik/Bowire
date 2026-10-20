@@ -518,4 +518,40 @@ public sealed class FileEntityStoreTests : IDisposable
 
         Assert.Equal(ExpectedProdOnly, ids);
     }
+
+    [Fact]
+    public async Task Collections_save_keeps_container_whose_id_ends_in_req()
+    {
+        // #838 — a collection id ending in ".req" makes the container
+        // "<id>.json" match the stale-request pattern "*.req.json"; the
+        // wipe must not take the container it just wrote with it.
+        var sut = new FileEntityStore(_root);
+        var ct = TestContext.Current.CancellationToken;
+
+        await sut.SaveAsync("collections", "x.req",
+            """{"id":"x.req","name":"Kept","requests":[{"id":"req_a"}]}""", ct);
+
+        var loaded = await sut.LoadAsync("collections", "x.req", ct);
+        Assert.NotNull(loaded);
+        using var doc = JsonDocument.Parse(loaded!);
+        Assert.Equal("Kept", doc.RootElement.GetProperty("name").GetString());
+        Assert.True(File.Exists(Path.Combine(_root, "collections", "x.req", "req_a.req.json")));
+    }
+
+    [Fact]
+    public async Task Collections_save_request_cannot_overwrite_container()
+    {
+        // #838 — in collection "x.req", a request with id "x" fans out to
+        // "x.req.json", which is the container's own path.
+        var sut = new FileEntityStore(_root);
+        var ct = TestContext.Current.CancellationToken;
+
+        await sut.SaveAsync("collections", "x.req",
+            """{"id":"x.req","name":"Kept","requests":[{"id":"x"}]}""", ct);
+
+        var loaded = await sut.LoadAsync("collections", "x.req", ct);
+        Assert.NotNull(loaded);
+        using var doc = JsonDocument.Parse(loaded!);
+        Assert.Equal("Kept", doc.RootElement.GetProperty("name").GetString());
+    }
 }

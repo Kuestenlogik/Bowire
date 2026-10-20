@@ -300,16 +300,20 @@ public sealed class FileEntityStore : IBowireEntityStore
         // can read collection metadata + the request order without
         // walking the subdir. Trailing newline matches the bundle store.
         var containerPath = SafePath.Combine(collectionDir, collectionId + ".json");
-        await File.WriteAllTextAsync(containerPath, canonicalPretty + Environment.NewLine, ct)
-            .ConfigureAwait(false);
 
         // Wipe any stale .req.json files first — a delete-then-rewrite
         // pass keeps the on-disk view in sync when requests are removed
-        // from the collection.
+        // from the collection. #838: a collection id ending in ".req"
+        // gives the container itself a .req.json name, so the wipe runs
+        // before the container is written and leaves its path alone.
         foreach (var stale in Directory.EnumerateFiles(collectionDir, "*.req.json", SearchOption.TopDirectoryOnly))
         {
+            if (string.Equals(stale, containerPath, StringComparison.OrdinalIgnoreCase)) continue;
             File.Delete(stale);
         }
+
+        await File.WriteAllTextAsync(containerPath, canonicalPretty + Environment.NewLine, ct)
+            .ConfigureAwait(false);
 
         if (doc.RootElement.ValueKind == JsonValueKind.Object
             && doc.RootElement.TryGetProperty("requests", out var requests)
@@ -332,6 +336,10 @@ public sealed class FileEntityStore : IBowireEntityStore
                 try
                 {
                     var reqPath = SafePath.Combine(collectionDir, reqIdStr + ".req.json");
+                    // #838 — request "x" in collection "x.req" would land
+                    // on the container; the container already carries the
+                    // request, so the fan-out file is skipped.
+                    if (string.Equals(reqPath, containerPath, StringComparison.OrdinalIgnoreCase)) continue;
                     var reqJson = JsonSerializer.Serialize(req, IndentedJsonOpts);
                     await File.WriteAllTextAsync(reqPath, reqJson + Environment.NewLine, ct)
                         .ConfigureAwait(false);
