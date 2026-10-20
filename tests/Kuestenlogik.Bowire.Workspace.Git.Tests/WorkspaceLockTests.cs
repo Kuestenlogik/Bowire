@@ -1,6 +1,7 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Text.Json;
 using Kuestenlogik.Bowire.Workspace.Git;
 
 namespace Kuestenlogik.Bowire.Workspace.Git.Tests;
@@ -97,10 +98,12 @@ public sealed class WorkspaceLockTests : IDisposable
     public async Task AcquireAsync_StaleLock_From_Dead_Pid_Is_Recovered()
     {
         // Hand-craft a lock file that names a pid we know to be dead
-        // — int.MaxValue is past the OS pid space on every platform.
+        // — int.MaxValue is past the OS pid space on every platform. The
+        // host is this machine: only here can the pid be checked (#839).
         var lockPath = Path.Combine(_root, WorkspaceLock.FileName);
+        var host = JsonSerializer.Serialize(Environment.MachineName);
         await File.WriteAllTextAsync(lockPath,
-            """{"pid":2147483647,"writer":"ghost","host":"phantom","startedAtUtc":"2020-01-01T00:00:00Z"}""",
+            $$"""{"pid":2147483647,"writer":"ghost","host":{{host}},"startedAtUtc":"2020-01-01T00:00:00Z"}""",
             TestContext.Current.CancellationToken);
 
         // Acquire should take it over via the stale-recover path
@@ -111,5 +114,50 @@ public sealed class WorkspaceLockTests : IDisposable
         Assert.NotNull(snap);
         Assert.Equal("recovery", snap!.Value.Writer);
         Assert.Equal(Environment.ProcessId, snap.Value.Pid);
+    }
+
+    [Fact]
+    public async Task AcquireAsync_Lock_From_Another_Host_Is_Not_Taken_Over()
+    {
+        // A pid only means something on the machine that wrote it. A lock
+        // from another host (workspace on a shared drive) can't be proven
+        // dead from here, so it must hold — deleting it would let two
+        // writers corrupt the layout the lock exists to protect.
+        var lockPath = Path.Combine(_root, WorkspaceLock.FileName);
+        await File.WriteAllTextAsync(lockPath,
+            """{"pid":2147483647,"writer":"workbench","host":"some-other-machine","startedAtUtc":"2026-01-01T00:00:00Z"}""",
+            TestContext.Current.CancellationToken);
+
+        var thrown = await Assert.ThrowsAsync<LockHeldException>(() =>
+            WorkspaceLock.AcquireAsync(_root, "cli", TestContext.Current.CancellationToken));
+        Assert.Equal("some-other-machine", thrown.Holder?.Host);
+        Assert.True(File.Exists(lockPath));
+    }
+
+    [Fact]
+    public async Task AcquireAsync_Empty_Lock_File_Left_Behind_Is_Recovered()
+    {
+        // A holder that died between creating the file and writing its
+        // metadata leaves an empty lock that nobody has open. Without
+        // recovery every later save fails until someone deletes it by hand.
+        var lockPath = Path.Combine(_root, WorkspaceLock.FileName);
+        await File.WriteAllBytesAsync(lockPath, [], TestContext.Current.CancellationToken);
+
+        await using var recovered = await WorkspaceLock.AcquireAsync(_root, "recovery",
+            TestContext.Current.CancellationToken);
+        Assert.Equal("recovery", WorkspaceLock.Inspect(_root)?.Writer);
+    }
+
+    [Fact]
+    public async Task AcquireAsync_Empty_Lock_File_Still_Open_By_Its_Holder_Is_Not_Taken_Over()
+    {
+        // The same empty file is also what a live holder looks like in the
+        // instant between CreateNew and its metadata write. While the
+        // holder's handle is open, the lock stays held.
+        var lockPath = Path.Combine(_root, WorkspaceLock.FileName);
+        await using var holder = new FileStream(lockPath, FileMode.CreateNew, FileAccess.Write, FileShare.Read);
+
+        await Assert.ThrowsAsync<LockHeldException>(() =>
+            WorkspaceLock.AcquireAsync(_root, "cli", TestContext.Current.CancellationToken));
     }
 }

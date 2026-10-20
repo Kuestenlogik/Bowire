@@ -25,7 +25,10 @@ namespace Kuestenlogik.Bowire.Workspace.Git;
 /// <para>
 /// Stale-lock recovery: if an existing lock's pid no longer maps to a
 /// live process (the holder crashed) the acquirer takes over —
-/// safety-net for "I rebooted in the middle of a save". Within the
+/// safety-net for "I rebooted in the middle of a save". Only a lock
+/// written on this host is judged by its pid; another host's lock holds.
+/// A lock file without readable metadata is stale once no process has it
+/// open. Within the
 /// same process, two writers serialize on the OS file-handle: the
 /// second hits <see cref="IOException"/> immediately because
 /// <see cref="FileMode.CreateNew"/> refuses to clobber.
@@ -175,7 +178,21 @@ public sealed class WorkspaceLock : IAsyncDisposable, IDisposable
     private static bool IsHolderStale(string path, out WorkspaceLockInfo? info)
     {
         info = TryReadInfo(path);
-        if (info is null) return false;
+        if (info is null)
+        {
+            // #839 — empty or half-written metadata: either a holder in
+            // the instant between CreateNew and its write, or one that
+            // died there. The holder keeps its handle open for the whole
+            // life of the lock, so the file itself tells them apart.
+            return IsUnheld(path);
+        }
+        if (!string.Equals(info.Value.Host, Environment.MachineName, StringComparison.OrdinalIgnoreCase))
+        {
+            // #839 — a pid only means something on the host that wrote
+            // it. A lock from another machine (workspace on a shared
+            // drive) can't be proven dead from here, so it holds.
+            return false;
+        }
         try
         {
             using var _ = Process.GetProcessById(info.Value.Pid);
@@ -191,6 +208,23 @@ public sealed class WorkspaceLock : IAsyncDisposable, IDisposable
             // Process exited between GetProcessById's lookup + handle.
             return true;
         }
+    }
+
+    /// <summary>
+    /// True when no process has the lock file open: an exclusive open
+    /// conflicts with the holder's write handle (a share violation on
+    /// Windows, an advisory-lock conflict on Unix), so it only succeeds
+    /// once the holder is gone.
+    /// </summary>
+    private static bool IsUnheld(string path)
+    {
+        try
+        {
+            using var probe = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.None);
+            return true;
+        }
+        catch (IOException) { return false; }
+        catch (UnauthorizedAccessException) { return false; }
     }
 
     private static WorkspaceLockInfo? TryReadInfo(string path)
