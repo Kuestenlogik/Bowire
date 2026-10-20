@@ -1,6 +1,7 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 
@@ -104,12 +105,15 @@ internal sealed class SseSubscriber : IAsyncDisposable
                     var evt = new SseEventPayload(eventId, eventType, data, retry);
                     yield return JsonSerializer.Serialize(evt, s_jsonOptions);
 
-                    eventType = null;
                     eventId = null;
                     retry = null;
-                    dataLines.Clear();
                 }
 
+                // The spec resets the data and event-type buffers at EVERY
+                // blank line, so the type of a block without data cannot
+                // label the next event (#863).
+                eventType = null;
+                dataLines.Clear();
                 continue;
             }
 
@@ -117,21 +121,31 @@ internal sealed class SseSubscriber : IAsyncDisposable
             if (line.StartsWith(':'))
                 continue;
 
-            if (line.StartsWith("data:", StringComparison.Ordinal))
+            // #863 — field and value as the spec splits them: at the first
+            // colon, or the whole line is the field name with an empty value
+            // (a bare "data" line is an empty data line, not noise). Exactly
+            // one leading space is dropped from the value; the rest of its
+            // whitespace is content.
+            var colon = line.IndexOf(':', StringComparison.Ordinal);
+            var field = colon < 0 ? line : line[..colon];
+            var value = colon < 0 ? "" : line[(colon + 1)..];
+            if (value.StartsWith(' ')) value = value[1..];
+
+            switch (field)
             {
-                dataLines.Add(line.Length > 5 ? line[5..].TrimStart() : "");
-            }
-            else if (line.StartsWith("event:", StringComparison.Ordinal))
-            {
-                eventType = line[6..].TrimStart();
-            }
-            else if (line.StartsWith("id:", StringComparison.Ordinal))
-            {
-                eventId = line[3..].TrimStart();
-            }
-            else if (line.StartsWith("retry:", StringComparison.Ordinal) && int.TryParse(line[6..].TrimStart(), out var retryMs))
-            {
-                retry = retryMs;
+                case "data":
+                    dataLines.Add(value);
+                    break;
+                case "event":
+                    eventType = value;
+                    break;
+                case "id" when !value.Contains('\0', StringComparison.Ordinal):
+                    eventId = value;
+                    break;
+                // ASCII digits only, per the spec — no sign, no whitespace.
+                case "retry" when int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var retryMs):
+                    retry = retryMs;
+                    break;
             }
         }
     }

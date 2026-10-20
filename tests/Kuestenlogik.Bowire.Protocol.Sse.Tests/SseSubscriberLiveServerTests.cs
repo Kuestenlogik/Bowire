@@ -53,6 +53,11 @@ public sealed class SseSubscriberLiveServerTests : IAsyncDisposable
         // must surface this as an error envelope instead of parsing the body.
         _app.MapGet("/notstream", WriteHtml);
         _app.MapGet("/events/headers", WriteHeaderNames);
+        // #863 — value whitespace, a bare field name, and an event
+        // type that must not outlive the block it was set in.
+        _app.MapGet("/events/spaced", (HttpContext ctx) => WriteRaw(ctx, "data:  indented\nevent:\ttabbed\n\n"));
+        _app.MapGet("/events/bare", (HttpContext ctx) => WriteRaw(ctx, "data\n\n"));
+        _app.MapGet("/events/stale-type", (HttpContext ctx) => WriteRaw(ctx, "event: stale\n\ndata: fresh\n\n"));
 
         _app.Start();
 
@@ -105,6 +110,60 @@ public sealed class SseSubscriberLiveServerTests : IAsyncDisposable
         var names = string.Join(",", ctx.Request.Headers.Keys);
         await ctx.Response.WriteAsync("data: " + names + "\n\n", ctx.RequestAborted);
         await ctx.Response.Body.FlushAsync(ctx.RequestAborted);
+    }
+
+    private static async Task WriteRaw(HttpContext ctx, string body)
+    {
+        ctx.Response.ContentType = "text/event-stream";
+        await ctx.Response.WriteAsync(body, ctx.RequestAborted);
+        await ctx.Response.Body.FlushAsync(ctx.RequestAborted);
+    }
+
+    private async Task<List<JsonElement>> ReadAllEventsAsync(string path)
+    {
+        // The handlers write their block and return, which ends the
+        // response, so the subscription ends with the stream.
+        var protocol = new BowireSseProtocol();
+        var events = new List<JsonElement>();
+        await foreach (var json in protocol.SubscribeAsync(_baseUrl + path, headers: null, TestContext.Current.CancellationToken))
+        {
+            using var doc = JsonDocument.Parse(json);
+            events.Add(doc.RootElement.Clone());
+        }
+        return events;
+    }
+
+    [Fact]
+    public async Task SubscribeAsync_Strips_Exactly_One_Space_From_A_Value()
+    {
+        // The spec removes ONE leading U+0020 after the colon; the rest is
+        // the value. TrimStart ate all leading whitespace, tabs included.
+        var evt = Assert.Single(await ReadAllEventsAsync("/events/spaced"));
+
+        Assert.Equal(" indented", evt.GetProperty("Data").GetString());
+        Assert.Equal("\ttabbed", evt.GetProperty("Event").GetString());
+    }
+
+    [Fact]
+    public async Task SubscribeAsync_Treats_A_Bare_Field_Name_As_An_Empty_Value()
+    {
+        // A line without a colon is a field name with an empty value, so a
+        // bare "data" line dispatches an event with empty data. It was
+        // dropped, and with it the whole event.
+        var evt = Assert.Single(await ReadAllEventsAsync("/events/bare"));
+
+        Assert.Equal("", evt.GetProperty("Data").GetString());
+    }
+
+    [Fact]
+    public async Task SubscribeAsync_Resets_The_Event_Type_At_A_Blank_Line_Without_Data()
+    {
+        // A blank line ends the block whether or not it carried data; the
+        // event type set in a data-less block must not label the next event.
+        var evt = Assert.Single(await ReadAllEventsAsync("/events/stale-type"));
+
+        Assert.Equal("fresh", evt.GetProperty("Data").GetString());
+        Assert.Equal(JsonValueKind.Null, evt.GetProperty("Event").ValueKind);
     }
 
     private static async Task WriteHtml(HttpContext ctx)
