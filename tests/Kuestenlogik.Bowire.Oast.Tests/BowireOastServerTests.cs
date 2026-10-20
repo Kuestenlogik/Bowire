@@ -292,6 +292,26 @@ public sealed class BowireOastServerTests
         Assert.Equal(0, store.SessionCount);
     }
 
+    [Theory]
+    [InlineData("/register", "not json")]
+    [InlineData("/register", "")]
+    [InlineData("/register", "[1,2]")]
+    [InlineData("/deregister", "not json")]
+    [InlineData("/deregister", "")]
+    public async Task A_body_that_is_not_the_expected_json_is_a_bad_request(string path, string body)
+    {
+        // The API is reachable from the internet; a malformed body is the
+        // caller's mistake and must come back as 400, not as a server fault.
+        var store = new OastInteractionStore();
+        var (app, _, raw) = await StartAsync(store);
+        await using var __ = app;
+
+        using var content = new StringContent(body, System.Text.Encoding.UTF8, "application/json");
+        using var resp = await raw.PostAsync(new Uri("http://oast.example.com" + path), content, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
+    }
+
     [Fact]
     public void Store_evicts_idle_sessions()
     {

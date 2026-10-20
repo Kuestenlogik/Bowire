@@ -54,7 +54,7 @@ public static class BowireOastEndpoints
         {
             if (!IsAuthorised(ctx, token)) return Results.Unauthorized();
 
-            var body = await JsonSerializer.DeserializeAsync<RegisterRequest>(ctx.Request.Body, s_json).ConfigureAwait(false);
+            var body = await ReadBodyAsync<RegisterRequest>(ctx).ConfigureAwait(false);
             if (body is null
                 || string.IsNullOrWhiteSpace(body.CorrelationID)
                 || string.IsNullOrWhiteSpace(body.SecretKey)
@@ -123,7 +123,7 @@ public static class BowireOastEndpoints
 
         endpoints.MapPost("/deregister", async (HttpContext ctx) =>
         {
-            var body = await JsonSerializer.DeserializeAsync<DeregisterRequest>(ctx.Request.Body, s_json).ConfigureAwait(false);
+            var body = await ReadBodyAsync<DeregisterRequest>(ctx).ConfigureAwait(false);
             if (body is null || string.IsNullOrWhiteSpace(body.CorrelationID) || string.IsNullOrWhiteSpace(body.SecretKey))
             {
                 return Results.BadRequest(new { error = "CorrelationID and SecretKey are required." });
@@ -193,6 +193,27 @@ public static class BowireOastEndpoints
             if (read > 0) sb.Append('\n').Append(Encoding.UTF8.GetString(buffer, 0, read));
         }
         return sb.ToString();
+    }
+
+    /// <summary>
+    /// The request body as <typeparamref name="T"/>, or null when it is not
+    /// JSON of that shape.
+    /// </summary>
+    /// <remarks>
+    /// #833 — the API faces the internet; a body that is not JSON is the
+    /// caller's mistake. Letting <see cref="JsonException"/> escape turned it
+    /// into a 500. Null lands on the handlers' existing 400.
+    /// </remarks>
+    private static async Task<T?> ReadBodyAsync<T>(HttpContext ctx) where T : class
+    {
+        try
+        {
+            return await JsonSerializer.DeserializeAsync<T>(ctx.Request.Body, s_json, ctx.RequestAborted).ConfigureAwait(false);
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
     }
 
     private static bool IsAuthorised(HttpContext ctx, string? token)
