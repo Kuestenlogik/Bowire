@@ -107,6 +107,34 @@ public sealed class NucleiMatcherTranslatorTests
         Assert.Equal("should-not-appear", p.Not!.BodyContains);
     }
 
+    [Theory]
+    [InlineData("word")]
+    [InlineData("regex")]
+    public void Negative_matcher_with_an_empty_value_under_or_does_not_fire(string type)
+    {
+        // An empty word or pattern matches every response, so under the
+        // default `condition: or` the matcher is always true and its negation
+        // never fires in Nuclei. Dropping the empty value before negating
+        // turned that into "fires whenever 'marker' is absent".
+        var matcher = new NucleiMatcher { Type = type, Negative = true, Part = "body" };
+        var values = type == "word" ? matcher.Words : matcher.Regex;
+        values.Add("");
+        values.Add("marker");
+
+        Assert.Null(NucleiMatcherTranslator.Translate(WithMatchers("or", matcher)));
+    }
+
+    [Fact]
+    public void Negative_matcher_with_an_empty_word_under_and_still_translates()
+    {
+        // Under `condition: and` the empty word is a no-op conjunct, so
+        // dropping it changes nothing and the negation stays exact.
+        var req = WithMatchers("or",
+            new NucleiMatcher { Type = "word", Condition = "and", Words = { "", "marker" }, Negative = true, Part = "body" });
+        var p = NucleiMatcherTranslator.Translate(req);
+        Assert.Equal("marker", p!.Not!.BodyContains);
+    }
+
     [Fact]
     public void MatchersCondition_and_composes_AllOf_at_top()
     {

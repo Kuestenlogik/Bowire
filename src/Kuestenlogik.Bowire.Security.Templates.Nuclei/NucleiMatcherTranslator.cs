@@ -133,6 +133,23 @@ public static class NucleiMatcherTranslator
         // template whose real condition lives in a step we cannot run.
         if (matcher.Internal) return null;
 
+        // #830 — an empty word or pattern matches every response, so under
+        // `condition: or` the matcher is always true and its negation never
+        // fires. TranslateWord/TranslateRegex drop the empty entry, which
+        // narrows the positive predicate — and narrowing under Not widens it
+        // into "fires whenever the other values are absent". Refuse instead.
+        // Under `and` the empty entry is a no-op conjunct and dropping it is exact.
+        if (matcher.Negative && !string.Equals(matcher.Condition, "and", StringComparison.OrdinalIgnoreCase))
+        {
+            IReadOnlyList<string> values = matcher.Type switch
+            {
+                "word" => matcher.Words,
+                "regex" => matcher.Regex,
+                _ => [],
+            };
+            if (values.Any(string.IsNullOrEmpty)) return null;
+        }
+
         var predicate = matcher.Type switch
         {
             // On the DNS surface a `status` matcher reads the RCODE that
