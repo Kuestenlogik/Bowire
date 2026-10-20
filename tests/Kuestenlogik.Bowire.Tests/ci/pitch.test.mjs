@@ -63,6 +63,10 @@ const OLD_LINE_ALLOWED = new Set([
     'tests/Kuestenlogik.Bowire.Tests/ci/pitch.test.mjs',
 ]);
 
+// Release notes are a dated record of what changed, so they may name the old line: the 2.9.1
+// notes say the product keeps calling itself a multi-protocol API workbench inside a host.
+const OLD_LINE_ALLOWED_DIRS = ['docs/release-notes/'];
+
 describe('the one-line pitch', () => {
     it('is written down once, verbatim, in the brand guide', () => {
         assert.ok(read('docs/brand-guide.md').includes(`**${PITCH}**`));
@@ -76,7 +80,8 @@ describe('the one-line pitch', () => {
 
     it('has no leftover of the old line outside the product itself', () => {
         const hits = execFileSync('git', ['grep', '-l', '-i', 'multi-protocol API workbench'], { cwd: root, encoding: 'utf8' })
-            .split('\n').filter(Boolean).filter(file => !OLD_LINE_ALLOWED.has(file));
+            .split('\n').filter(Boolean)
+            .filter(file => !OLD_LINE_ALLOWED.has(file) && !OLD_LINE_ALLOWED_DIRS.some(dir => file.startsWith(dir)));
         assert.deepEqual(hits, []);
     });
 });
