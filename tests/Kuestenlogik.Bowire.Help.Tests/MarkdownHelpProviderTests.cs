@@ -353,6 +353,32 @@ public sealed class MarkdownHelpProviderTests
     }
 
     [Fact]
+    public void Search_RepeatedQueryTerm_CountsOnce()
+    {
+        var sut = BuildWith(new()
+        {
+            ["bowire-help-docs/a.md"] = "# Topic\nThe recording subsystem.",
+        });
+
+        var once = Assert.Single(sut.Search("recording"));
+        var twice = Assert.Single(sut.Search("recording recording Recording"));
+        Assert.Equal(once.Score, twice.Score);
+    }
+
+    [Fact]
+    public void Search_TitleBonus_NeedsWholeWord()
+    {
+        // 'co' is a substring of the title word 'Configuration' but no
+        // word of the topic — it must not match at all.
+        var sut = BuildWith(new()
+        {
+            ["bowire-help-docs/config.md"] = "# Configuration\nSettings live here.",
+        });
+
+        Assert.Empty(sut.Search("co"));
+    }
+
+    [Fact]
     public void Search_RepeatedTitleWord_IndexesTopicOnce()
     {
         // A word repeated in the title lists the topic once in the index,

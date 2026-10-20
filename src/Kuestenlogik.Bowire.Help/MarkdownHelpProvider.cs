@@ -91,7 +91,8 @@ public sealed class MarkdownHelpProvider : IBowireHelpProvider
     public IReadOnlyList<HelpSearchHit> Search(string query, int limit = 20)
     {
         if (string.IsNullOrWhiteSpace(query)) return [];
-        var terms = Tokenise(query).ToList();
+        // Distinct terms: a repeated word must not count twice (#823).
+        var terms = Tokenise(query).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
         if (terms.Count == 0) return [];
 
         // Score = number of distinct query terms that the topic
@@ -110,8 +111,10 @@ public sealed class MarkdownHelpProvider : IBowireHelpProvider
         }
         foreach (var (id, topic) in _topics)
         {
-            // Title-word bonus.
-            foreach (var _ in terms.Where(t => topic.Title.Contains(t, StringComparison.OrdinalIgnoreCase)))
+            // Title-word bonus, for whole title words only — a substring
+            // test let 'co' match "Configuration" (#823).
+            var titleWords = Tokenise(topic.Title).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            foreach (var _ in terms.Where(titleWords.Contains))
             {
                 scores.TryGetValue(id, out var s);
                 scores[id] = s + 1;
