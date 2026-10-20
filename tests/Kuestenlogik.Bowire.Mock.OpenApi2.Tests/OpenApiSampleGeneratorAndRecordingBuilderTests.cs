@@ -19,13 +19,94 @@ namespace Kuestenlogik.Bowire.Mock.OpenApi2.Tests;
 public sealed class OpenApiSampleGeneratorTests
 {
     [Fact]
-    public void Generate_Null_Schema_Yields_String_Sample()
+    public void Generate_Null_Schema_Yields_Json_Null()
     {
-        // The depth-cap branch and "null schema" branch share a path —
-        // both emit a quoted "sample" string.
+        // A missing schema says nothing about the shape, so the sample is
+        // JSON null rather than an invented string (#861).
         var json = OpenApiSampleGenerator.Generate(null);
 
-        Assert.Equal("\"sample\"", json);
+        Assert.Equal("null", json);
+    }
+
+    [Fact]
+    public void Generate_Self_Referencing_Schema_Ends_In_A_Stub_Object_At_The_Depth_Cap()
+    {
+        // Node { name, child: Node } — every level of the sample must stay an
+        // object; the cap ends the chain with an empty object, not a string
+        // where the schema requires an object (#861).
+        var json = OpenApiSampleGenerator.Generate(GetPropertySchema("""
+            {
+              "openapi": "3.0.0",
+              "info": { "title": "T", "version": "1" },
+              "paths": { "/x": { "get": { "operationId": "g", "responses": { "200": { "description": "ok" } } } } },
+              "components": {
+                "schemas": {
+                  "Node": {
+                    "type": "object",
+                    "properties": {
+                      "name": { "type": "string" },
+                      "child": { "$ref": "#/components/schemas/Node" }
+                    }
+                  },
+                  "Sample": { "type": "object", "properties": { "v": { "$ref": "#/components/schemas/Node" } } }
+                }
+              }
+            }
+            """, "Sample", "v"));
+
+        using var doc = JsonDocument.Parse(json);
+        var node = doc.RootElement;
+        var levels = 0;
+        while (node.TryGetProperty("child", out var child))
+        {
+            Assert.Equal(JsonValueKind.Object, child.ValueKind);
+            node = child;
+            levels++;
+        }
+        Assert.True(levels > 0);
+        Assert.Equal(JsonValueKind.Object, node.ValueKind);
+        Assert.Empty(node.EnumerateObject());
+    }
+
+    [Fact]
+    public void Generate_Self_Referencing_Array_Keeps_Every_Level_Schema_Shaped()
+    {
+        // Tree { children: Tree[] } — every level stays an object holding an
+        // array; the cap ends the chain with an empty object or array, never
+        // a string (#861).
+        var json = OpenApiSampleGenerator.Generate(GetPropertySchema("""
+            {
+              "openapi": "3.0.0",
+              "info": { "title": "T", "version": "1" },
+              "paths": { "/x": { "get": { "operationId": "g", "responses": { "200": { "description": "ok" } } } } },
+              "components": {
+                "schemas": {
+                  "Tree": {
+                    "type": "object",
+                    "properties": {
+                      "children": { "type": "array", "items": { "$ref": "#/components/schemas/Tree" } }
+                    }
+                  },
+                  "Sample": { "type": "object", "properties": { "v": { "$ref": "#/components/schemas/Tree" } } }
+                }
+              }
+            }
+            """, "Sample", "v"));
+
+        using var doc = JsonDocument.Parse(json);
+        var node = doc.RootElement;
+        while (true)
+        {
+            Assert.Equal(JsonValueKind.Object, node.ValueKind);
+            if (!node.TryGetProperty("children", out var children))
+            {
+                Assert.Empty(node.EnumerateObject());
+                break;
+            }
+            Assert.Equal(JsonValueKind.Array, children.ValueKind);
+            if (children.GetArrayLength() == 0) break;
+            node = children[0];
+        }
     }
 
     [Theory]

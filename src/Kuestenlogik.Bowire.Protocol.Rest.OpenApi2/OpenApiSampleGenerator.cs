@@ -29,7 +29,8 @@ namespace Kuestenlogik.Bowire.Protocol.Rest.OpenApi2;
 /// <para>
 /// Any <c>example</c> or <c>default</c> baked into the schema wins over
 /// the generator's guess. Recursion depth is capped (cyclic <c>$ref</c>
-/// trees hit the cap and get a stub object).
+/// trees hit the cap and get a stub object, or an empty array where the
+/// schema asks for an array).
 /// </para>
 /// </remarks>
 public static class OpenApiSampleGenerator
@@ -49,8 +50,10 @@ public static class OpenApiSampleGenerator
 
     private static JsonNode? BuildNode(IOpenApiSchema? schema, int depth)
     {
-        if (schema is null || depth >= MaxDepth)
-            return JsonValue.Create("sample");
+        // A missing schema says nothing about the shape: JSON null, as the
+        // contract on Generate states, not an invented string (#861).
+        if (schema is null)
+            return null;
 
         // A declared example wins over the type-driven guess (#559). Precedence:
         // the singular `example`, then the OpenAPI 3.1 / JSON Schema 2020-12
@@ -80,15 +83,20 @@ public static class OpenApiSampleGenerator
         if (schema.Type is null && schema.AllOf is { Count: > 0 } allOf && !IsObjectShaped(schema))
         {
             var member = allOf.FirstOrDefault(m => m is not null);
-            if (member is not null) return BuildNode(member, depth + 1);
+            if (member is not null && depth < MaxDepth) return BuildNode(member, depth + 1);
         }
 
         var type = schema.Type ?? (IsObjectShaped(schema) ? JsonSchemaType.Object : JsonSchemaType.String);
         var nonNull = type & ~JsonSchemaType.Null;
 
+        // The cap sits where the generator recurses — objects and arrays —
+        // and ends the chain with an empty container of the declared shape.
+        // Answering "sample" there put a string where the schema requires an
+        // object, so a self-referencing schema produced an invalid body (#861).
         if ((nonNull & JsonSchemaType.Array) != 0)
         {
             var arr = new JsonArray();
+            if (depth >= MaxDepth) return arr;
             var itemNode = BuildNode(schema.Items, depth + 1) ?? JsonValue.Create("sample");
             // Three items — one item feels accidental, three feels
             // "yes, this really is an array". Cap below any explicit
@@ -105,7 +113,7 @@ public static class OpenApiSampleGenerator
 
         if ((nonNull & JsonSchemaType.Object) != 0)
         {
-            return BuildObject(schema, depth);
+            return depth >= MaxDepth ? new JsonObject() : BuildObject(schema, depth);
         }
 
         if ((nonNull & JsonSchemaType.Integer) != 0)
