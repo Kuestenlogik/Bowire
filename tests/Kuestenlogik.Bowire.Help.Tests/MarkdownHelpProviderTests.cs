@@ -353,6 +353,22 @@ public sealed class MarkdownHelpProviderTests
     }
 
     [Fact]
+    public void Search_RepeatedTitleWord_IndexesTopicOnce()
+    {
+        // A word repeated in the title lists the topic once in the index,
+        // so the topic scores like any other title match.
+        var sut = BuildWith(new()
+        {
+            ["bowire-help-docs/repeat.md"] = "# Recording recording\nbody",
+            ["bowire-help-docs/single.md"] = "# Recording guide\nbody",
+        });
+
+        var hits = sut.Search("recording");
+        Assert.Equal(2, hits.Count);
+        Assert.Equal(hits[0].Score, hits[1].Score);
+    }
+
+    [Fact]
     public void Search_LimitClampsResults()
     {
         var sut = BuildWith(new()

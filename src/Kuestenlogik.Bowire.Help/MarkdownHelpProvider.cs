@@ -66,11 +66,10 @@ public sealed class MarkdownHelpProvider : IBowireHelpProvider
             var topic = BuildTopic(name, frontmatter, body);
             topics[topic.Id] = topic;
 
-            foreach (var word in Tokenise(topic.Title))
-            {
-                index.AddOrUpdate(word, _ => [topic.Id], (_, list) => { list.Add(topic.Id); return list; });
-            }
-            foreach (var word in Tokenise(StripMarkdown(body)))
+            // Title and body words share one add-if-absent path: a word
+            // repeated in the title used to list the topic twice, and
+            // Search counted that term twice for it (#825).
+            foreach (var word in Tokenise(topic.Title).Concat(Tokenise(StripMarkdown(body))))
             {
                 index.AddOrUpdate(word, _ => [topic.Id], (_, list) =>
                 {
