@@ -1,6 +1,7 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Reflection;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Kuestenlogik.Bowire.Models;
@@ -58,7 +59,8 @@ internal static class WebSocketEndpointDiscovery
                             //   1. [WebSocketGroup] as endpoint metadata (inline WithMetadata)
                             //   2. [WebSocketGroup] on the declaring type of the delegate
                             //   3. null → falls back to the generic "WebSocket" service later
-                            var group = ep.Metadata.GetMetadata<WebSocketGroupAttribute>()?.Name;
+                            var group = ep.Metadata.GetMetadata<WebSocketGroupAttribute>()?.Name
+                                ?? GroupFromDeclaringType(ep.Metadata.GetMetadata<MethodInfo>() ?? ep.RequestDelegate?.Method);
 
                             endpoints.Add(new WebSocketEndpointInfo(
                                 path,
@@ -145,6 +147,28 @@ internal static class WebSocketEndpointDiscovery
             });
         }
         return services;
+    }
+
+    /// <summary>
+    /// <see cref="WebSocketGroupAttribute"/> on the class that declares the
+    /// handler (#853). ASP.NET copies only method-level attributes into the
+    /// endpoint metadata, so the class has to be asked directly. The handler
+    /// is the <see cref="MethodInfo"/> the delegate factory puts into the
+    /// metadata, or — for a handler bound as a plain
+    /// <see cref="Microsoft.AspNetCore.Http.RequestDelegate"/>, the usual
+    /// <c>async (HttpContext ctx) =&gt; …</c> WebSocket shape — the
+    /// endpoint's request delegate itself. Enclosing types are walked
+    /// too: a lambda handler lives in a compiler-generated closure class
+    /// nested inside the class that maps it.
+    /// </summary>
+    private static string? GroupFromDeclaringType(MethodInfo? handler)
+    {
+        for (var type = handler?.DeclaringType; type is not null; type = type.DeclaringType)
+        {
+            if (type.GetCustomAttribute<WebSocketGroupAttribute>() is { } attr)
+                return attr.Name;
+        }
+        return null;
     }
 
     /// <summary>

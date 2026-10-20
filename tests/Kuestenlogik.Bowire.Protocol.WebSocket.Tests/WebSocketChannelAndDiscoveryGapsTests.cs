@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Reflection;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Routing.Patterns;
@@ -216,6 +217,28 @@ public sealed class WebSocketChannelAndDiscoveryGapsTests
     }
 
     [Fact]
+    public async Task Discovery_Routed_Endpoints_Inherit_Group_From_Declaring_Type()
+    {
+        // [WebSocketGroup] on the class that declares the handlers groups
+        // every endpoint defined inside it — a method-group handler, a
+        // lambda (whose compiler-generated closure type is nested in that
+        // class), each bound as a plain RequestDelegate, and a handler with
+        // bound parameters that goes through the delegate factory. ASP.NET
+        // copies only method-level attributes into the endpoint metadata,
+        // so discovery has to look at the type itself.
+        var builder = WebApplication.CreateSlimBuilder();
+        await using var app = builder.Build();
+        GroupedChatEndpoints.Map(app);
+        var sp = BuildServiceProviderWith(((IEndpointRouteBuilder)app).DataSources.Single());
+
+        var services = InvokeDiscover([], sp);
+
+        var svc = Assert.Single(services);
+        Assert.Equal("Chat", svc.Name);
+        Assert.Equal(["/ws/notify", "/ws/receive", "/ws/send"], svc.Methods.Select(m => m.Name).Order(StringComparer.Ordinal));
+    }
+
+    [Fact]
     public void Discovery_Already_Registered_Path_Does_Not_Get_Re_Added_From_Routing()
     {
         // If the same path is already in the registered list, the
@@ -370,4 +393,24 @@ public sealed class WebSocketChannelAndDiscoveryGapsTests
             public void Dispose() { }
         }
     }
+}
+
+/// <summary>
+/// Class-level <see cref="WebSocketGroupAttribute"/> as the attribute's
+/// own docs show it: every endpoint mapped from inside inherits "Chat".
+/// </summary>
+[WebSocketGroup("Chat")]
+internal static class GroupedChatEndpoints
+{
+    public static void Map(IEndpointRouteBuilder app)
+    {
+        app.MapGet("/ws/send", Send)
+            .WithMetadata(new WebSocketEndpointAttribute("Send"));
+        app.MapGet("/ws/receive", (HttpContext _) => Task.CompletedTask)
+            .WithMetadata(new WebSocketEndpointAttribute("Receive"));
+        app.MapGet("/ws/notify", (HttpContext _, CancellationToken _) => Task.CompletedTask)
+            .WithMetadata(new WebSocketEndpointAttribute("Notify"));
+    }
+
+    private static Task Send(HttpContext _) => Task.CompletedTask;
 }
