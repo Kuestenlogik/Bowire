@@ -38,7 +38,7 @@
          known-good version. -->
     <PackageVersion Include="Kuestenlogik.Bowire.Protocol.TacticalApi" Version="1.0.4" />
     <PackageVersion Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.13" />
-    <PackageVersion Include="Microsoft.Identity.Web" Version="4.16.0" />
+    <PackageVersion Include="Microsoft.Identity.Web" Version="4.16.1" />
     <!-- Transitive overrides against live advisories. Microsoft.Identity.Web
          4.16 pulls System.Security.Cryptography.Pkcs and .Xml 10.0.10, and
          NuGet.Protocol 7.9 pulls Pkcs 8.0.1 - all inside GHSA-846f-f764-76mx /
