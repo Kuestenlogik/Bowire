@@ -27,17 +27,17 @@ public static class BowireWebSocketServiceCollectionExtensions
     /// </code>
     ///
     /// <para>
-    /// Safe to call multiple times — repeated calls re-resolve the
-    /// singleton and re-invoke any <paramref name="configure"/> action
-    /// against the same instance. Endpoints discovered from MVC routes
+    /// Safe to call multiple times — repeated calls reuse the registry
+    /// the first call registered and invoke their <paramref name="configure"/>
+    /// action against that same instance. Endpoints discovered from MVC routes
     /// via <see cref="WebSocketEndpointAttribute"/> are merged on top
     /// of whatever this registry holds at <c>DiscoverAsync</c> time.
     /// </para>
     /// </summary>
     /// <param name="services">The service collection to extend.</param>
     /// <param name="configure">
-    /// Optional seeding action invoked once when the registry is first
-    /// resolved. Use it to register WebSocket endpoints declaratively
+    /// Optional seeding action, invoked right away against the shared
+    /// registry. Use it to register WebSocket endpoints declaratively
     /// at host startup instead of imperatively after the container is
     /// built.
     /// </param>
@@ -47,13 +47,19 @@ public static class BowireWebSocketServiceCollectionExtensions
     {
         ArgumentNullException.ThrowIfNull(services);
 
-        services.AddSingleton<IWebSocketEndpointRegistry>(_ =>
+        // One registry per collection, seeded by every call (#850). A
+        // singleton factory per call left DI resolving only the last one,
+        // so the endpoints of earlier calls vanished.
+        var registry = services
+            .FirstOrDefault(d => d.ServiceType == typeof(IWebSocketEndpointRegistry))?
+            .ImplementationInstance as WebSocketEndpointRegistry;
+        if (registry is null)
         {
-            var registry = new WebSocketEndpointRegistry();
-            configure?.Invoke(registry);
-            return registry;
-        });
+            registry = new WebSocketEndpointRegistry();
+            services.AddSingleton<IWebSocketEndpointRegistry>(registry);
+        }
 
+        configure?.Invoke(registry);
         return services;
     }
 }

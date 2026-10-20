@@ -83,4 +83,20 @@ public sealed class WebSocketProtocolTests
         Assert.Equal("Chat", method.Summary);
         Assert.Equal("Group chat", method.Description);
     }
+
+    [Fact]
+    public void AddBowireWebSocketEndpoints_CalledTwice_KeepsBothRegistrations()
+    {
+        // The doc promises the extension is safe to call more than once;
+        // a second call must add to the registry, not replace it.
+        var sc = new ServiceCollection();
+        sc.AddBowireWebSocketEndpoints(r => r.Add(new WebSocketEndpointInfo("/ws/chat", "Chat", null)));
+        sc.AddBowireWebSocketEndpoints(r => r.Add(new WebSocketEndpointInfo("/ws/notify", "Notify", null)));
+        using var sp = sc.BuildServiceProvider();
+
+        var registry = sp.GetRequiredService<IWebSocketEndpointRegistry>();
+
+        Assert.Equal(["/ws/chat", "/ws/notify"], registry.Snapshot().Select(e => e.Path));
+        Assert.Single(sp.GetServices<IWebSocketEndpointRegistry>());
+    }
 }
