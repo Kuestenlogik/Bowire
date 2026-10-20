@@ -271,9 +271,13 @@ public sealed class BowireSocketIoProtocol : IBowireProtocol, Kuestenlogik.Bowir
         try
         {
             using var doc = JsonDocument.Parse(payload);
-            var eventName = doc.RootElement.TryGetProperty("event", out var evProp)
-                ? evProp.GetString() ?? "message" : "message";
-            var eventData = doc.RootElement.TryGetProperty("data", out var dataProp)
+            // Only an object has fields, and only a string names an event
+            // (#854) — anything else takes the defaults instead of throwing.
+            var root = doc.RootElement;
+            if (root.ValueKind != JsonValueKind.Object) return ("message", payload);
+            var eventName = root.TryGetProperty("event", out var evProp) && evProp.ValueKind == JsonValueKind.String
+                ? evProp.GetString()! : "message";
+            var eventData = root.TryGetProperty("data", out var dataProp)
                 ? dataProp.ToString() : payload;
             return (eventName, eventData);
         }
@@ -295,7 +299,10 @@ public sealed class BowireSocketIoProtocol : IBowireProtocol, Kuestenlogik.Bowir
         try
         {
             using var doc = JsonDocument.Parse(jsonMessages[0]);
-            if (!doc.RootElement.TryGetProperty("event", out var evProp)) return null;
+            // Same shape guard as ParseEmitPayload (#854).
+            if (doc.RootElement.ValueKind != JsonValueKind.Object
+                || !doc.RootElement.TryGetProperty("event", out var evProp)
+                || evProp.ValueKind != JsonValueKind.String) return null;
             var value = evProp.GetString();
             return string.IsNullOrEmpty(value) ? null : value;
         }

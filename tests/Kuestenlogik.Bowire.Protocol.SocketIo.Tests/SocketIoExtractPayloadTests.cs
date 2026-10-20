@@ -173,7 +173,43 @@ public sealed class SocketIoExtractPayloadTests
         Assert.Equal("not-json", data);
     }
 
+    [Theory]
+    [InlineData("[1,2]")]
+    [InlineData("42")]
+    [InlineData("\"text\"")]
+    public void ParseEmitPayload_Non_Object_Json_Is_Emitted_As_Data_Of_Default_Event(string raw)
+    {
+        // Valid JSON that is not an object has no `event` or `data` field —
+        // the documented fallback applies instead of an exception.
+        var (ev, data) = InvokeParseEmit(raw);
+
+        Assert.Equal("message", ev);
+        Assert.Equal(raw, data);
+    }
+
+    [Theory]
+    [InlineData("{\"event\":5,\"data\":\"x\"}")]
+    [InlineData("{\"event\":{\"name\":\"ping\"},\"data\":\"x\"}")]
+    public void ParseEmitPayload_Non_String_Event_Falls_Back_To_Default(string raw)
+    {
+        var (ev, data) = InvokeParseEmit(raw);
+
+        Assert.Equal("message", ev);
+        Assert.Equal("x", data);
+    }
+
     // ---- ExtractEventFilter — InvokeStreamAsync's filter parser ----
+
+    [Theory]
+    [InlineData("[1,2]")]
+    [InlineData("42")]
+    [InlineData("{\"event\":5}")]
+    [InlineData("{\"event\":[\"a\"]}")]
+    public void ExtractEventFilter_Returns_Null_For_Non_Object_Or_Non_String_Event(string raw)
+    {
+        // No usable event name means "no filter", same as malformed JSON.
+        Assert.Null(InvokeExtractFilter([raw]));
+    }
 
     [Fact]
     public void ExtractEventFilter_Returns_Null_For_Empty_List()
