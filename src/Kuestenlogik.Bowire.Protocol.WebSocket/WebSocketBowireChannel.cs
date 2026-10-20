@@ -345,19 +345,24 @@ internal sealed class WebSocketBowireChannel : IBowireChannel
         try
         {
             using var doc = JsonDocument.Parse(jsonMessage);
+            // Only a string `type` makes an envelope (#852): {"type":1,...}
+            // is an ordinary application message (the SignalR JSON protocol
+            // numbers its types), and a malformed envelope is sent as-is
+            // rather than failing the send.
             if (doc.RootElement.ValueKind == JsonValueKind.Object &&
-                doc.RootElement.TryGetProperty("type", out var typeProp))
+                doc.RootElement.TryGetProperty("type", out var typeProp) &&
+                typeProp.ValueKind == JsonValueKind.String)
             {
                 var t = typeProp.GetString();
-                if (t == "binary" && doc.RootElement.TryGetProperty("base64", out var b64) && b64.ValueKind == JsonValueKind.String)
+                if (t == "binary" && doc.RootElement.TryGetProperty("base64", out var b64) && b64.ValueKind == JsonValueKind.String
+                    && TryDecodeBase64(b64.GetString()!, out var bytes))
                 {
-                    var bytes = Convert.FromBase64String(b64.GetString() ?? "");
                     return new OutgoingFrame(IsBinary: true, Text: null, Bytes: bytes);
                 }
 
-                if (t == "text" && doc.RootElement.TryGetProperty("text", out var textProp))
+                if (t == "text" && doc.RootElement.TryGetProperty("text", out var textProp) && textProp.ValueKind == JsonValueKind.String)
                 {
-                    return new OutgoingFrame(IsBinary: false, Text: textProp.GetString() ?? "", Bytes: null);
+                    return new OutgoingFrame(IsBinary: false, Text: textProp.GetString()!, Bytes: null);
                 }
 
                 // Fall-through to "data" key — convenience for the basic form
@@ -373,6 +378,18 @@ internal sealed class WebSocketBowireChannel : IBowireChannel
         }
 
         return new OutgoingFrame(IsBinary: false, Text: jsonMessage, Bytes: null);
+    }
+
+    private static bool TryDecodeBase64(string base64, out byte[] bytes)
+    {
+        var buffer = new byte[base64.Length * 3 / 4];
+        if (Convert.TryFromBase64String(base64, buffer, out var written))
+        {
+            bytes = buffer[..written];
+            return true;
+        }
+        bytes = [];
+        return false;
     }
 
     private readonly record struct OutgoingFrame(bool IsBinary, string? Text, byte[]? Bytes);

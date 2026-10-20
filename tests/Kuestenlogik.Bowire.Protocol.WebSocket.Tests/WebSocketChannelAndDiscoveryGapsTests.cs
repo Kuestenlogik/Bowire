@@ -102,6 +102,22 @@ public sealed class WebSocketChannelAndDiscoveryGapsTests
         Assert.Equal(raw, f.Text);
     }
 
+    [Theory]
+    [InlineData("""{"type":1,"target":"Send","arguments":[]}""")]
+    [InlineData("""{"type":null}""")]
+    [InlineData("""{"type":"text","text":5}""")]
+    [InlineData("""{"type":"binary","base64":"not base64!"}""")]
+    public void ParseOutgoingFrame_NotAnEnvelope_SentAsRawText(string raw)
+    {
+        // A non-string `type` is an ordinary application message (the
+        // SignalR JSON protocol uses numeric types), and a malformed
+        // envelope is not one we can unpack — both go out verbatim
+        // instead of failing the send.
+        var f = ParseOutgoingFrame(raw);
+        Assert.False(f.IsBinary);
+        Assert.Equal(raw, f.Text);
+    }
+
     [Fact]
     public void ParseOutgoingFrame_BinaryEnvelope_DecodesBase64()
     {

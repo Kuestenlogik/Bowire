@@ -599,6 +599,21 @@ public sealed class MqttBowireChannelParseOutgoingFrameTests
         Assert.Equal(raw, text);
     }
 
+    [Theory]
+    [InlineData("{\"type\":1,\"temp\":21.5}")]
+    [InlineData("{\"type\":\"text\",\"text\":5}")]
+    [InlineData("{\"type\":\"binary\",\"base64\":\"not base64!\"}")]
+    public void Payload_That_Is_Not_An_Envelope_Is_Published_Verbatim(string raw)
+    {
+        // A device payload with a numeric `type` is ordinary JSON, and a
+        // malformed envelope is not one we can unpack — both are published
+        // as they are instead of failing the send.
+        var (isBinary, text, _) = InvokeParseOutgoingFrame(raw);
+
+        Assert.False(isBinary);
+        Assert.Equal(raw, text);
+    }
+
     private static (bool IsBinary, string? Text, byte[]? Bytes) InvokeParseOutgoingFrame(string jsonMessage)
     {
         var asm = typeof(BowireMqttProtocol).Assembly;

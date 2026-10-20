@@ -198,18 +198,22 @@ internal sealed class MqttBowireChannel : IBowireChannel
         try
         {
             using var doc = JsonDocument.Parse(jsonMessage);
+            // Only a string `type` makes an envelope (#852): a device payload
+            // like {"type":1,...} is ordinary JSON, and a malformed envelope
+            // is published as-is rather than failing the send.
             if (doc.RootElement.ValueKind == JsonValueKind.Object &&
-                doc.RootElement.TryGetProperty("type", out var typeProp))
+                doc.RootElement.TryGetProperty("type", out var typeProp) &&
+                typeProp.ValueKind == JsonValueKind.String)
             {
                 var t = typeProp.GetString();
-                if (t == "binary" && doc.RootElement.TryGetProperty("base64", out var b64) && b64.ValueKind == JsonValueKind.String)
+                if (t == "binary" && doc.RootElement.TryGetProperty("base64", out var b64) && b64.ValueKind == JsonValueKind.String
+                    && TryDecodeBase64(b64.GetString()!, out var bytes))
                 {
-                    var bytes = Convert.FromBase64String(b64.GetString() ?? "");
                     return (true, null, bytes);
                 }
 
-                if (t == "text" && doc.RootElement.TryGetProperty("text", out var textProp))
-                    return (false, textProp.GetString() ?? "", null);
+                if (t == "text" && doc.RootElement.TryGetProperty("text", out var textProp) && textProp.ValueKind == JsonValueKind.String)
+                    return (false, textProp.GetString()!, null);
 
                 // Convenience: some callers send { "data": "..." }
                 if (doc.RootElement.TryGetProperty("data", out var dataProp) && dataProp.ValueKind == JsonValueKind.String)
@@ -222,6 +226,18 @@ internal sealed class MqttBowireChannel : IBowireChannel
         }
 
         return (false, jsonMessage, null);
+    }
+
+    private static bool TryDecodeBase64(string base64, out byte[] bytes)
+    {
+        var buffer = new byte[base64.Length * 3 / 4];
+        if (Convert.TryFromBase64String(base64, buffer, out var written))
+        {
+            bytes = buffer[..written];
+            return true;
+        }
+        bytes = [];
+        return false;
     }
 
     private static byte[] SequenceToArray(ReadOnlySequence<byte> seq)
