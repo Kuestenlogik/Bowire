@@ -53,6 +53,9 @@ public sealed class FileEntityStore : IBowireEntityStore
             "flows",
         };
 
+    /// <summary>File-name suffix of an environment's gitignored secrets overlay.</summary>
+    private const string SecretsOverlaySuffix = ".secrets.json";
+
     private static readonly JsonSerializerOptions IndentedJsonOpts = new()
     {
         WriteIndented = true,
@@ -116,8 +119,16 @@ public sealed class FileEntityStore : IBowireEntityStore
         }
         else
         {
+            var isEnvironments = string.Equals(entityKind, "environments", StringComparison.Ordinal);
             foreach (var file in Directory.EnumerateFiles(dir, "*.json", SearchOption.TopDirectoryOnly))
             {
+                // #837 — <id>.secrets.json is the gitignored overlay that
+                // LoadAsync merges into <id>, not an environment of its
+                // own; listing it would offer the raw secrets as one.
+                if (isEnvironments && file.EndsWith(SecretsOverlaySuffix, StringComparison.Ordinal))
+                {
+                    continue;
+                }
                 ids.Add(Path.GetFileNameWithoutExtension(file));
             }
         }
@@ -149,7 +160,7 @@ public sealed class FileEntityStore : IBowireEntityStore
         // overlay — only environments carry the convention today.
         if (string.Equals(entityKind, "environments", StringComparison.Ordinal))
         {
-            var secretsPath = Path.Combine(Path.GetDirectoryName(path)!, id + ".secrets.json");
+            var secretsPath = Path.Combine(Path.GetDirectoryName(path)!, id + SecretsOverlaySuffix);
             if (File.Exists(secretsPath))
             {
                 var overlayJson = await File.ReadAllTextAsync(secretsPath, ct).ConfigureAwait(false);

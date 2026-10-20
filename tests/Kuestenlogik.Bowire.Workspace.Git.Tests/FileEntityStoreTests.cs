@@ -25,6 +25,7 @@ public sealed class FileEntityStoreTests : IDisposable
     // promotes that analyzer to an error.
     private static readonly string[] ExpectedSortedAlphaMangoZebra = ["alpha", "mango", "zebra"];
     private static readonly string[] ExpectedCollectionsAB = ["col_a", "col_b"];
+    private static readonly string[] ExpectedProdOnly = ["prod"];
 
     private readonly string _root;
 
@@ -497,5 +498,24 @@ public sealed class FileEntityStoreTests : IDisposable
         var loaded = await sut.LoadAsync("environments", "broken", ct);
         using var doc = JsonDocument.Parse(loaded!);
         Assert.Equal("y", doc.RootElement.GetProperty("variables").GetProperty("X").GetString());
+    }
+
+    [Fact]
+    public async Task ListAsync_Environments_Does_Not_List_Secrets_Overlay_As_Its_Own_Environment()
+    {
+        // #837 — prod.secrets.json is the gitignored overlay of prod.json,
+        // not an environment of its own; listing it would hand the raw
+        // secrets to the environment picker as "prod.secrets".
+        var sut = new FileEntityStore(_root);
+        var ct = TestContext.Current.CancellationToken;
+
+        await sut.SaveAsync("environments", "prod",
+            """{"id":"prod","variables":{"HOST":"api.example.com"}}""", ct);
+        await File.WriteAllTextAsync(Path.Combine(_root, "environments", "prod.secrets.json"),
+            """{"variables":{"API_KEY":"sk-real"}}""", ct);
+
+        var ids = await sut.ListAsync("environments", ct);
+
+        Assert.Equal(ExpectedProdOnly, ids);
     }
 }
