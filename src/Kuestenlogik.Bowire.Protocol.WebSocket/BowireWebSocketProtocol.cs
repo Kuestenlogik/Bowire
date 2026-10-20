@@ -280,7 +280,11 @@ public sealed class BowireWebSocketProtocol : IBowireProtocol, Kuestenlogik.Bowi
             if (baseUri.PathAndQuery == method || method == "/")
                 return baseUri;
 
-            return new Uri(baseUri, method);
+            // The method path is relative to the base path (#851): an app
+            // behind a reverse proxy or in a sub-path serves /ws/chat below
+            // /app. new Uri(base, "/ws/chat") would replace the base path.
+            var basePath = baseUri.GetLeftPart(UriPartial.Path).TrimEnd('/');
+            return new Uri(basePath + "/" + method.TrimStart('/'), UriKind.Absolute);
         }
         catch
         {

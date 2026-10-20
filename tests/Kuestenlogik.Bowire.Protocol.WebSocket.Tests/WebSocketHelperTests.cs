@@ -308,6 +308,21 @@ public sealed class WebSocketHelperTests
         Assert.Equal("ws://example.com/anything", uri!.ToString());
     }
 
+    [Theory]
+    [InlineData("http://h/app", "/ws/chat", "ws://h/app/ws/chat")]
+    [InlineData("https://h/app/", "/ws/chat", "wss://h/app/ws/chat")]
+    [InlineData("ws://h/app", "ws/chat", "ws://h/app/ws/chat")]
+    public void ResolveUri_Keeps_The_Base_Path(string serverUrl, string method, string expected)
+    {
+        // An app behind a reverse proxy or in a sub-path serves its
+        // WebSocket routes below the base path; the method path is
+        // relative to it, not to the host root.
+        var uri = InvokeResolveUri(serverUrl, method);
+
+        Assert.NotNull(uri);
+        Assert.Equal(expected, uri!.ToString());
+    }
+
     [Fact]
     public void ResolveUri_Malformed_Base_Returns_Null()
     {
