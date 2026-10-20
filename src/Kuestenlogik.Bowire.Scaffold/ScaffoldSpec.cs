@@ -45,7 +45,9 @@ public sealed record ScaffoldSpec(
     public (ScaffoldSpec? Spec, IReadOnlyList<string> Errors) Normalize()
     {
         var errors = new List<string>();
-        var entity = Pascal(Entity ?? string.Empty);
+        // #835 — singular, as the contract says: `users` kept as Users made the
+        // default service the plural of a plural, Userses.
+        var entity = ScaffoldNames.Singular(Pascal(Entity ?? string.Empty));
         if (!s_identifier.IsMatch(entity)) errors.Add($"entity '{Entity}' is not a usable name (letters, digits, underscore; a letter first)");
 
         var protocol = ScaffoldNames.Lower((Protocol ?? string.Empty).Trim());
@@ -162,10 +164,17 @@ internal static class ScaffoldNames
     public static string? NormalizeType(string? type) =>
         string.IsNullOrWhiteSpace(type) ? "string" : s_typeAliases.GetValueOrDefault(type.Trim());
 
+    // Nouns that are the same in singular and plural. Matched on the end of
+    // the word, so a PascalCase compound like TvSeries counts too.
+    private static readonly string[] s_invariant = ["news", "series", "species"];
+
+    private static bool IsInvariant(string word) =>
+        s_invariant.Any(w => word.EndsWith(w, StringComparison.OrdinalIgnoreCase));
+
     /// <summary>English plural, good enough for entity names.</summary>
     public static string Plural(string word)
     {
-        if (word.Length == 0) return word;
+        if (word.Length == 0 || IsInvariant(word)) return word;
         if (word.EndsWith('y') && word.Length > 1 && !"aeiou".Contains(char.ToLowerInvariant(word[^2]), StringComparison.Ordinal))
             return word[..^1] + "ies";
         if (word.EndsWith('s') || word.EndsWith('x') || word.EndsWith('z')
@@ -174,9 +183,17 @@ internal static class ScaffoldNames
         return word + "s";
     }
 
-    /// <summary>English singular for the parser: <c>users</c> -> <c>user</c>.</summary>
+    /// <summary>English singular for entity names: <c>users</c> -> <c>user</c>.</summary>
     public static string Singular(string word)
     {
+        // #835 — Normalize now runs every entity through here, so singular
+        // nouns that end in s must survive it: Status, Analysis, News.
+        if (IsInvariant(word)
+            || word.EndsWith("us", StringComparison.OrdinalIgnoreCase)
+            || word.EndsWith("is", StringComparison.OrdinalIgnoreCase))
+        {
+            return word;
+        }
         if (word.EndsWith("ies", StringComparison.OrdinalIgnoreCase) && word.Length > 3) return word[..^3] + "y";
         if (word.EndsWith("sses", StringComparison.OrdinalIgnoreCase) || word.EndsWith("xes", StringComparison.OrdinalIgnoreCase)
             || word.EndsWith("ches", StringComparison.OrdinalIgnoreCase) || word.EndsWith("shes", StringComparison.OrdinalIgnoreCase))

@@ -90,9 +90,9 @@ public sealed class ScaffoldTests
         var (spec, errors) = new ScaffoldSpec("purchase orders", "REST",
             [new("Id", "uuid"), new("first name", "text", true), new("created_at", "timestamp")]).Normalize();
         Assert.Empty(errors);
-        Assert.Equal("PurchaseOrders", spec!.Entity);
+        Assert.Equal("PurchaseOrder", spec!.Entity);
         Assert.Equal("rest", spec.Protocol);
-        Assert.Equal("PurchaseOrderses", spec.Service);
+        Assert.Equal("PurchaseOrders", spec.Service);
         Assert.Equal([("firstName", "string"), ("createdAt", "datetime")], spec.Fields.Select(f => (f.Name, f.Type)));
         Assert.Equal("http://localhost:5000", spec.BaseUrl);
     }
@@ -108,6 +108,21 @@ public sealed class ScaffoldTests
         var (spec, errors) = new ScaffoldSpec(entity, protocol, [new(field, type)]).Normalize();
         Assert.Null(spec);
         Assert.Contains(errors, e => e.Contains(expected, StringComparison.Ordinal));
+    }
+
+    [Theory]
+    [InlineData("users", "User", "Users")]
+    [InlineData("User", "User", "Users")]
+    [InlineData("categories", "Category", "Categories")]
+    [InlineData("addresses", "Address", "Addresses")]
+    [InlineData("status", "Status", "Statuses")]
+    [InlineData("news", "News", "NewsService")]
+    public void A_plural_entity_is_made_singular_before_the_service_is_pluralized(string entity, string expectedEntity, string expectedService)
+    {
+        var (spec, errors) = new ScaffoldSpec(entity, "rest", [new("title", "string")]).Normalize();
+        Assert.Empty(errors);
+        Assert.Equal(expectedEntity, spec!.Entity);
+        Assert.Equal(expectedService, spec.Service);
     }
 
     [Fact]
