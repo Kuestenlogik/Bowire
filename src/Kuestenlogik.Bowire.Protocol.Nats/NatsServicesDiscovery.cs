@@ -42,15 +42,41 @@ internal static class NatsServicesDiscovery
         // for `duration`. The well-known reply payload is a JSON
         // object with at minimum { name, id, version }.
         var replyInbox = $"_INBOX.bowire.{Guid.NewGuid():N}"[..32];
-        using var pingCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        pingCts.CancelAfter(duration);
 
-        var collectTask = Task.Run(async () =>
+        // Subscribe first and wait until the server has the subscription
+        // (#857): NATS drops a reply that arrives before its inbox is
+        // subscribed, and a responder on the same server answers the PING
+        // at once. SubscribeCoreAsync returns only once the SUB is in place.
+        INatsSub<byte[]> sub;
+        try
+        {
+            sub = await conn.SubscribeCoreAsync<byte[]>(replyInbox, cancellationToken: ct).ConfigureAwait(false);
+        }
+        catch
+        {
+            // No connection / no permissions — bail with empty result.
+            return [];
+        }
+
+        await using (sub.ConfigureAwait(false))
         {
             try
             {
-                await foreach (var reply in conn.SubscribeAsync<byte[]>(
-                    replyInbox, cancellationToken: pingCts.Token).ConfigureAwait(false))
+                await conn.PublishAsync<byte[]>(
+                    "$SRV.PING", Array.Empty<byte>(),
+                    replyTo: replyInbox, cancellationToken: ct).ConfigureAwait(false);
+            }
+            catch
+            {
+                // No connection / no permissions — bail with empty result.
+                return [];
+            }
+
+            using var pingCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            pingCts.CancelAfter(duration);
+            try
+            {
+                await foreach (var reply in sub.Msgs.ReadAllAsync(pingCts.Token).ConfigureAwait(false))
                 {
                     if (reply.Data is null || reply.Data.Length == 0) continue;
                     try
@@ -76,23 +102,7 @@ internal static class NatsServicesDiscovery
             {
                 // Expected when the scan window elapses.
             }
-        }, ct);
-
-        try
-        {
-            await conn.PublishAsync<byte[]>(
-                "$SRV.PING", Array.Empty<byte>(),
-                replyTo: replyInbox, cancellationToken: ct).ConfigureAwait(false);
         }
-        catch
-        {
-            // No connection / no permissions — bail with empty result.
-            await pingCts.CancelAsync().ConfigureAwait(false);
-            return [];
-        }
-
-        try { await collectTask.ConfigureAwait(false); }
-        catch { /* swallow */ }
 
         if (pings.Count == 0) return [];
 
