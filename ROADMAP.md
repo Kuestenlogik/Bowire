@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.9.1 — Dependency security fixes *(due 2026-10-20)*
 
-**9/9 done**
+**10/10 done**
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -25,6 +25,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [797](https://github.com/Kuestenlogik/Bowire/issues/797) | Bowire | [SDK pin 10.0.402 with rollForward latestFeature](#issue-kuestenlogik-bowire-797) | ✅ Done |  |
 | [798](https://github.com/Kuestenlogik/Bowire/issues/798) | Bowire | [Microsoft.OpenApi.YamlReader advisory GHSA-7pxr-59rr-hqj2 stops the restore](#issue-kuestenlogik-bowire-798) | ✅ Done |  |
 | [808](https://github.com/Kuestenlogik/Bowire/issues/808) | Bowire | [Auth.Oidc package still brings System.Security.Cryptography.Xml 10.0.10 to its consumers](#issue-kuestenlogik-bowire-808) | ✅ Done | `area:security` |
+| [813](https://github.com/Kuestenlogik/Bowire/issues/813) | Bowire | [Patch release 2.9.1: dependency security fixes](#issue-kuestenlogik-bowire-813) | ✅ Done | `area:security` |
 
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
 
@@ -37,7 +38,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**0/15 done** · 15 backlog
+**0/18 done** · 18 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -56,6 +57,9 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [801](https://github.com/Kuestenlogik/Bowire/issues/801) | Bowire | [MCP Tasks, client side: discover, call and follow tasks of task-capable MCP servers](#issue-kuestenlogik-bowire-801) | ⬜ Backlog |  |
 | [802](https://github.com/Kuestenlogik/Bowire/issues/802) | Bowire | [MCP Tasks, server side: run long Bowire MCP tools (bowire.test.run first) as durable tasks](#issue-kuestenlogik-bowire-802) | ⬜ Backlog |  |
 | [803](https://github.com/Kuestenlogik/Bowire/issues/803) | Bowire | [MCP Tasks in testing and mocking: assert on task lifecycles, record and replay them](#issue-kuestenlogik-bowire-803) | ⬜ Backlog |  |
+| [810](https://github.com/Kuestenlogik/Bowire/issues/810) | Bowire | [MCP Apps, host side: render and debug MCP Apps of the servers Bowire talks to](#issue-kuestenlogik-bowire-810) | ⬜ Backlog |  |
+| [811](https://github.com/Kuestenlogik/Bowire/issues/811) | Bowire | [MCP Apps, server side: Bowire's MCP tools answer with apps (test run first)](#issue-kuestenlogik-bowire-811) | ⬜ Backlog |  |
+| [812](https://github.com/Kuestenlogik/Bowire/issues/812) | Bowire | [MCP Apps in testing and security: assert on apps, record their traffic, scan their CSP](#issue-kuestenlogik-bowire-812) | ⬜ Backlog |  |
 
 ### v2.12 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
 
@@ -228,6 +232,12 @@ A new high-severity advisory, [GHSA-7pxr-59rr-hqj2](https://github.com/advisorie
 
 The `Kuestenlogik.Bowire.Auth.Oidc` package still brings `System.Security.Cryptography.Xml` 10.0.10 ([GHSA-r955-8q5j-3h83](https://github.com/advisories/GHSA-r955-8q5j-3h83), high) into a consumer that does not reference the ASP.NET Core shared framework itself. [[more]](https://github.com/Kuestenlogik/Bowire/issues/808)
 
+#### <a id="issue-kuestenlogik-bowire-813"></a>✅ Done · [#813](https://github.com/Kuestenlogik/Bowire/issues/813) Patch release 2.9.1: dependency security fixes
+
+> `area:security`
+
+The published 2.9.0 packages pull dependencies with known advisories into every project that references them. Measured by restoring each published 2.9.0 package on its own in a plain `Microsoft.NET.Sdk` project and running `dotnet list package --vulnerable --include-transitive`: [[more]](https://github.com/Kuestenlogik/Bowire/issues/813)
+
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
 
 #### <a id="issue-kuestenlogik-bowire-639"></a>⬜ Backlog · [#639](https://github.com/Kuestenlogik/Bowire/issues/639) SCIM: live Okta and Entra ID provisioning round-trips
@@ -323,6 +333,18 @@ Bowire's own MCP server (`bowire mcp serve`, the workbench tools for agents) ans
 #### <a id="issue-kuestenlogik-bowire-803"></a>⬜ Backlog · [#803](https://github.com/Kuestenlogik/Bowire/issues/803) MCP Tasks in testing and mocking: assert on task lifecycles, record and replay them
 
 Once Bowire can call task-capable MCP servers, the next question from anyone building one is: does my server's task lifecycle actually work? Polling, `input_required`, cancellation, TTL expiry and the final result are exactly the parts that break, and no tool tests them. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/803)
+
+#### <a id="issue-kuestenlogik-bowire-810"></a>⬜ Backlog · [#810](https://github.com/Kuestenlogik/Bowire/issues/810) MCP Apps, host side: render and debug MCP Apps of the servers Bowire talks to
+
+MCP Apps (`io.modelcontextprotocol/ui`, [overview](https://modelcontextprotocol.io/extensions/apps/overview), [spec 2026-01-26](https://github.com/modelcontextprotocol/ext-apps/blob/main/specification/2026-01-26/apps.mdx)) let an MCP tool come with an interactive UI. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/810)
+
+#### <a id="issue-kuestenlogik-bowire-811"></a>⬜ Backlog · [#811](https://github.com/Kuestenlogik/Bowire/issues/811) MCP Apps, server side: Bowire's MCP tools answer with apps (test run first)
+
+Bowire's own MCP server (`bowire mcp serve`) answers agents with JSON. Some of what it returns reads far better as UI: a test run with its steps, a security-scan report, the list of services `bowire.discover` found. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/811)
+
+#### <a id="issue-kuestenlogik-bowire-812"></a>⬜ Backlog · [#812](https://github.com/Kuestenlogik/Bowire/issues/812) MCP Apps in testing and security: assert on apps, record their traffic, scan their CSP
+
+Once Bowire hosts MCP Apps (#810), the people building them need what Bowire offers for every other protocol: does the UI resource load, does the app behave, and is it safe? An app is third-party HTML running next to a model with tool access, so its CSP and permissions are a security surface that no … [[more]](https://github.com/Kuestenlogik/Bowire/issues/812)
 
 ### v2.12 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
 
