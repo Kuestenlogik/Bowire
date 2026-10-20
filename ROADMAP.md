@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
 
-**3/33 done** · 30 backlog
+**3/35 done** · 32 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -46,6 +46,8 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [847](https://github.com/Kuestenlogik/Bowire/issues/847) | Bowire | [SignalR client-streaming and duplex channels send messages as positional arguments instead of a stream](#issue-kuestenlogik-bowire-847) | ⬜ Backlog |  |
 | [848](https://github.com/Kuestenlogik/Bowire/issues/848) | Bowire | [Keyring CLI timeout never applies: output is read to the end before the wait](#issue-kuestenlogik-bowire-848) | ⬜ Backlog |  |
 | [849](https://github.com/Kuestenlogik/Bowire/issues/849) | Bowire | [Kubernetes catalogue finds nothing in a kubeconfig written by kubectl or kind](#issue-kuestenlogik-bowire-849) | ⬜ Backlog |  |
+| [850](https://github.com/Kuestenlogik/Bowire/issues/850) | Bowire | [Calling AddBowireWebSocketEndpoints twice drops the endpoints of the first call](#issue-kuestenlogik-bowire-850) | ⬜ Backlog |  |
+| [851](https://github.com/Kuestenlogik/Bowire/issues/851) | Bowire | [WebSocket channel URL loses the base path of the server URL](#issue-kuestenlogik-bowire-851) | ⬜ Backlog |  |
 | [816](https://github.com/Kuestenlogik/Bowire/issues/816) | Bowire | [SCIM trace records status 200 for every request](#issue-kuestenlogik-bowire-816) | ✅ Done |  |
 | [817](https://github.com/Kuestenlogik/Bowire/issues/817) | Bowire | [OIDC provider cannot run as an installed plugin](#issue-kuestenlogik-bowire-817) | ✅ Done |  |
 | [818](https://github.com/Kuestenlogik/Bowire/issues/818) | Bowire | [--auth-oidc-* flags are documented but never read](#issue-kuestenlogik-bowire-818) | ✅ Done |  |
@@ -325,6 +327,14 @@ A client-streaming or duplex SignalR call opened as a channel never reaches the 
 #### <a id="issue-kuestenlogik-bowire-849"></a>⬜ Backlog · [#849](https://github.com/Kuestenlogik/Bowire/issues/849) Kubernetes catalogue finds nothing in a kubeconfig written by kubectl or kind
 
 `KubernetesCatalogueProvider.TryParseKubeconfig` (`src/Kuestenlogik.Bowire.Catalogue.Kubernetes/KubernetesCatalogueProvider.cs`, L341–L438) only opens a record on a `- name:` line. kubectl and kind write clusters and contexts the other way round: [[more]](https://github.com/Kuestenlogik/Bowire/issues/849)
+
+#### <a id="issue-kuestenlogik-bowire-850"></a>⬜ Backlog · [#850](https://github.com/Kuestenlogik/Bowire/issues/850) Calling AddBowireWebSocketEndpoints twice drops the endpoints of the first call
+
+`AddBowireWebSocketEndpoints` documents itself as "safe to call multiple times", but a second call drops the endpoints of the first. [[more]](https://github.com/Kuestenlogik/Bowire/issues/850)
+
+#### <a id="issue-kuestenlogik-bowire-851"></a>⬜ Backlog · [#851](https://github.com/Kuestenlogik/Bowire/issues/851) WebSocket channel URL loses the base path of the server URL
+
+A WebSocket channel against a server URL with a base path connects to the host root instead. [[more]](https://github.com/Kuestenlogik/Bowire/issues/851)
 
 #### <a id="issue-kuestenlogik-bowire-816"></a>✅ Done · [#816](https://github.com/Kuestenlogik/Bowire/issues/816) SCIM trace records status 200 for every request
 
