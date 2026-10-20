@@ -105,6 +105,13 @@ public sealed partial class ProbeSchedule
                 }
                 start = new TimeOnly(sh, sm);
                 end = new TimeOnly(eh, em);
+                if (start == end)
+                {
+                    // #840 — an end before the start crosses midnight; an
+                    // end equal to it is a window that is never open.
+                    error = $"Invalid time window '{part}': start and end are the same.";
+                    return false;
+                }
                 continue;
             }
 
@@ -194,6 +201,10 @@ public sealed partial class ProbeSchedule
 /// <summary>
 /// A UTC time-of-day window plus a weekday set. A probe only fires inside the
 /// window; outside it, the next run is deferred to the next in-window instant.
+/// An <see cref="End"/> before <see cref="Start"/> crosses midnight (#840):
+/// <c>22:00-06:00</c> closes on the following day, and the day set names the
+/// day the window opens, so <c>22:00-06:00, Fri</c> runs Friday night into
+/// Saturday morning.
 /// </summary>
 public sealed class ProbeWindow
 {
@@ -208,39 +219,36 @@ public sealed class ProbeWindow
     public TimeOnly End { get; }
     public IReadOnlySet<DayOfWeek> Days { get; }
 
-    /// <summary>True when <paramref name="instant"/> (in UTC) falls on an allowed day inside [Start, End).</summary>
+    /// <summary>True when <paramref name="instant"/> (in UTC) falls inside a window opened on an allowed day.</summary>
     public bool Contains(DateTimeOffset instant)
     {
         var utc = instant.ToUniversalTime();
-        if (!Days.Contains(utc.DayOfWeek)) return false;
-        var t = TimeOnly.FromDateTime(utc.DateTime);
-        return t >= Start && t < End;
+        return NextWithin(utc) == utc;
     }
 
     /// <summary>
     /// The earliest in-window instant at or after <paramref name="from"/>.
-    /// Scans up to a week ahead; returns <paramref name="from"/> unchanged if no
+    /// Scans from yesterday's window (one crossing midnight may still be open)
+    /// up to a week ahead; returns <paramref name="from"/> unchanged if no
     /// allowed day exists (defensive — a window always has ≥ 1 day).
     /// </summary>
     public DateTimeOffset NextWithin(DateTimeOffset from)
     {
         var utc = from.ToUniversalTime();
-        for (var i = 0; i < 8; i++)
+        var today = new DateTimeOffset(utc.Year, utc.Month, utc.Day, 0, 0, 0, TimeSpan.Zero);
+        var length = End.ToTimeSpan() - Start.ToTimeSpan();
+        if (length <= TimeSpan.Zero) length += TimeSpan.FromDays(1);
+
+        // Windows are visited in opening order, so the first one that
+        // hasn't closed yet is the answer: inside it, run now; before it,
+        // run when it opens.
+        for (var i = -1; i < 8; i++)
         {
-            var day = utc.AddDays(i);
+            var day = today.AddDays(i);
             if (!Days.Contains(day.DayOfWeek)) continue;
-            var startAt = new DateTimeOffset(day.Year, day.Month, day.Day, Start.Hour, Start.Minute, 0, TimeSpan.Zero);
-            var endAt = new DateTimeOffset(day.Year, day.Month, day.Day, End.Hour, End.Minute, 0, TimeSpan.Zero);
-            if (i == 0)
-            {
-                if (utc >= startAt && utc < endAt) return utc; // already inside today's window
-                if (utc < startAt) return startAt;             // before today's window opens
-                // utc >= endAt → today's window has closed; fall through to a later day
-            }
-            else
-            {
-                return startAt; // first future allowed day, at window open
-            }
+            var startAt = day + Start.ToTimeSpan();
+            var endAt = startAt + length;
+            if (utc < endAt) return utc >= startAt ? utc : startAt;
         }
         return from;
     }

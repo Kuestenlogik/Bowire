@@ -119,6 +119,59 @@ public sealed class ProbeScheduleTests
         Assert.Equal(midday, s.NextRunAt(null, midday));
     }
 
+    // ------------------- #840 windows that cross midnight -------------------
+
+    [Fact]
+    public void Window_crossing_midnight_runs_now_before_midnight()
+    {
+        // "22:00-06:00" means the night shift: Monday 23:00 is inside it.
+        var s = Parse("every 5m, 22:00-06:00 UTC");
+        var mondayLate = new DateTimeOffset(2026, 7, 13, 23, 0, 0, TimeSpan.Zero);
+        Assert.True(s.Window!.Contains(mondayLate));
+        Assert.Equal(mondayLate, s.NextRunAt(null, mondayLate));
+    }
+
+    [Fact]
+    public void Window_crossing_midnight_runs_now_after_midnight()
+    {
+        var s = Parse("every 5m, 22:00-06:00 UTC");
+        var tuesdayEarly = new DateTimeOffset(2026, 7, 14, 3, 0, 0, TimeSpan.Zero);
+        Assert.True(s.Window!.Contains(tuesdayEarly));
+        Assert.Equal(tuesdayEarly, s.NextRunAt(null, tuesdayEarly));
+        // Next tick stays on the interval while the window is open.
+        Assert.Equal(tuesdayEarly.AddMinutes(5), s.NextRunAt(tuesdayEarly, tuesdayEarly));
+    }
+
+    [Fact]
+    public void Window_crossing_midnight_defers_daytime_run_to_window_open()
+    {
+        var s = Parse("every 5m, 22:00-06:00 UTC");
+        var midday = new DateTimeOffset(2026, 7, 13, 12, 0, 0, TimeSpan.Zero);
+        Assert.False(s.Window!.Contains(midday));
+        Assert.Equal(new DateTimeOffset(2026, 7, 13, 22, 0, 0, TimeSpan.Zero), s.NextRunAt(null, midday));
+    }
+
+    [Fact]
+    public void Window_crossing_midnight_belongs_to_the_day_it_opens()
+    {
+        // "Fri" names the night that starts Friday 22:00 and runs into
+        // Saturday 06:00 — Saturday 03:00 is inside, Saturday 22:00 is not.
+        var s = Parse("every 5m, 22:00-06:00 UTC, Fri");
+        var saturdayEarly = new DateTimeOffset(2026, 7, 18, 3, 0, 0, TimeSpan.Zero);
+        var saturdayLate = new DateTimeOffset(2026, 7, 18, 22, 30, 0, TimeSpan.Zero);
+        Assert.True(s.Window!.Contains(saturdayEarly));
+        Assert.False(s.Window.Contains(saturdayLate));
+        Assert.Equal(saturdayEarly, s.NextRunAt(null, saturdayEarly));
+        Assert.Equal(new DateTimeOffset(2026, 7, 24, 22, 0, 0, TimeSpan.Zero), s.NextRunAt(null, saturdayLate));
+    }
+
+    [Fact]
+    public void Rejects_empty_window()
+    {
+        Assert.False(ProbeSchedule.TryParse("every 5m, 09:00-09:00 UTC", out _, out var err));
+        Assert.False(string.IsNullOrEmpty(err));
+    }
+
     private static ProbeSchedule Parse(string spec)
     {
         Assert.True(ProbeSchedule.TryParse(spec, out var s, out _));

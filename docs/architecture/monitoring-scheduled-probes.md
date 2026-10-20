@@ -76,7 +76,9 @@ Rationale:
   for "how many ticks did we miss while the process was down."
 
 Schedule spec, v1: interval (`every 60s`, `every 5m`) and a bounded
-cron-lite window (`every 5m, 09:00–17:00 UTC, Mon–Fri`). Full cron
+cron-lite window (`every 5m, 09:00–17:00 UTC, Mon–Fri`). A window whose
+end is before its start crosses midnight (`22:00–06:00`) and belongs to
+the day it opens; start equal to end is rejected. Full cron
 expressions are a follow-up; the parser returns "unsupported schedule —
 probe not scheduled" (visible, non-silent) for anything it can't model,
 rather than silently approximating.
