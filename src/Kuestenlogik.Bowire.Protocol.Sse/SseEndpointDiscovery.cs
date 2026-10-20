@@ -144,6 +144,10 @@ internal static class SseEndpointDiscovery
         if (sseAttr is not null)
         {
             var path = (endpoint as RouteEndpoint)?.RoutePattern.RawText ?? "";
+            // No route, nothing to subscribe to — and SseEndpointInfo
+            // rejects the empty path, which failed the whole discovery (#864).
+            if (string.IsNullOrEmpty(path)) return;
+
             var name = sseAttr.Description ?? path;
             results.Add(new SseEndpointInfo(path, name, sseAttr.Description, sseAttr.EventType));
             return;

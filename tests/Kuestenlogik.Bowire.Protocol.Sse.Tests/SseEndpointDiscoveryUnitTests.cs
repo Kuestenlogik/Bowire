@@ -4,6 +4,10 @@
 using Kuestenlogik.Bowire.Protocol.Sse;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing;
+using Microsoft.AspNetCore.Routing.Patterns;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace Kuestenlogik.Bowire.Protocol.Sse.Tests;
@@ -75,6 +79,33 @@ public sealed class SseEndpointDiscoveryUnitTests : IDisposable
             [new SseEndpointInfo("/events/manual", "Manual")], app.Services, app.Urls.First());
 
         Assert.Contains(Assert.Single(services).Methods, m => m.Name == "Manual");
+    }
+
+    [Fact]
+    public void A_Marked_Endpoint_Without_A_Route_Is_Skipped_Not_Fatal()
+    {
+        // #864 — an [SseEndpoint] endpoint that is not a RouteEndpoint
+        // has no path. SseEndpointInfo rejects an empty path, so the
+        // ArgumentException failed the whole discovery, routed endpoints
+        // included.
+        var unrouted = new Endpoint(
+            _ => Task.CompletedTask,
+            new EndpointMetadataCollection(new SseEndpointAttribute { Description = "No route" }),
+            "unrouted");
+        var routed = new RouteEndpoint(
+            _ => Task.CompletedTask,
+            RoutePatternFactory.Parse("/events/routed"),
+            order: 0,
+            new EndpointMetadataCollection(new SseEndpointAttribute { Description = "Routed" }),
+            displayName: "routed");
+        using var provider = new ServiceCollection()
+            .AddSingleton<EndpointDataSource>(new DefaultEndpointDataSource(unrouted, routed))
+            .BuildServiceProvider();
+
+        var discovered = SseEndpointDiscovery.Discover([], provider, serverUrl: null);
+
+        var method = Assert.Single(Assert.Single(discovered).Methods);
+        Assert.Equal("SSE/events/routed", method.FullName);
     }
 
     [Fact]
