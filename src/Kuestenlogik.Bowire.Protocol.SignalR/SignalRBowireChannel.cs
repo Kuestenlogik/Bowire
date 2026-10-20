@@ -66,10 +66,12 @@ internal sealed class SignalRBowireChannel : IBowireChannel
         {
             try
             {
-                if (IsServerStreaming)
+                if (IsClientStreaming)
+                    await RunClientStreamAsync();
+                else if (IsServerStreaming)
                     await RunServerStreamingAsync();
                 else
-                    await RunClientStreamingAsync();
+                    await RunUnaryAsync();
             }
             catch (OperationCanceledException)
             {
@@ -308,9 +310,9 @@ internal sealed class SignalRBowireChannel : IBowireChannel
     }
 
     /// <summary>
-    /// For client-streaming: collect all outgoing messages, invoke as a batch.
+    /// For unary: collect all outgoing messages, invoke with them as the arguments.
     /// </summary>
-    private async Task RunClientStreamingAsync()
+    private async Task RunUnaryAsync()
     {
         var token = _cts.Token;
         var args = new List<object?>();
@@ -336,4 +338,68 @@ internal sealed class SignalRBowireChannel : IBowireChannel
         await _responses.Writer.WriteAsync(json, token);
     }
 
+    /// <summary>
+    /// For client-streaming and duplex: the hub method takes the client
+    /// stream as ONE parameter (<c>IAsyncEnumerable&lt;T&gt;</c> /
+    /// <c>ChannelReader&lt;T&gt;</c>), so the call carries a
+    /// <see cref="ChannelReader{T}"/> and every message sent becomes an item
+    /// on it as it is written; closing the channel completes the stream.
+    /// Passing the messages as positional arguments, after the close, made
+    /// the hub reject every such call (#847).
+    /// </summary>
+    private async Task RunClientStreamAsync()
+    {
+        var token = _cts.Token;
+        var upstream = Channel.CreateUnbounded<object?>(new UnboundedChannelOptions
+        {
+            SingleReader = true,
+            SingleWriter = true
+        });
+        // Not awaited: it ends when the channel closes or is disposed, which
+        // can be after the hub has already answered (or refused) the call.
+        _ = ForwardOutgoingAsync(upstream.Writer, token);
+
+        if (IsServerStreaming)
+        {
+            await foreach (var item in _connection.StreamAsyncCore<object?>(
+                _methodName, [upstream.Reader], token))
+            {
+                await _responses.Writer.WriteAsync(JsonSerializer.Serialize(item, IndentedJson), token);
+            }
+            return;
+        }
+
+        var result = await _connection.InvokeCoreAsync<object?>(
+            _methodName, [upstream.Reader], token);
+        await _responses.Writer.WriteAsync(
+            result is not null ? JsonSerializer.Serialize(result, IndentedJson) : "null", token);
+    }
+
+    private async Task ForwardOutgoingAsync(ChannelWriter<object?> upstream, CancellationToken token)
+    {
+        try
+        {
+            await foreach (var msg in _outgoing.Reader.ReadAllAsync(token))
+                await upstream.WriteAsync(ToArgument(msg), token);
+            upstream.TryComplete();
+        }
+        catch (Exception ex)
+        {
+            // Cancelled on dispose, or the connection went away: end the
+            // stream with the cause so the hub side does not wait forever.
+            upstream.TryComplete(ex);
+        }
+    }
+
+    private static object? ToArgument(string msg)
+    {
+        try
+        {
+            return JsonSerializer.Deserialize<object>(msg);
+        }
+        catch (JsonException)
+        {
+            return msg;
+        }
+    }
 }
