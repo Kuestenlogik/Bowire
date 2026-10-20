@@ -10,9 +10,18 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ## Overview
 
+### v2.9.1 — Dependency security fixes *(due 2026-10-20)*
+
+**2/2 done**
+
+| # | Project | Title | Status | Tags |
+|---|---|---|---|---|
+| [780](https://github.com/Kuestenlogik/Bowire/issues/780) | Bowire | [Dependency hygiene: SDK 10.0.402, no package with a known advisory](#issue-kuestenlogik-bowire-780) | ✅ Done | `area:multi` |
+| [798](https://github.com/Kuestenlogik/Bowire/issues/798) | Bowire | [Microsoft.OpenApi.YamlReader advisory GHSA-7pxr-59rr-hqj2 stops the restore](#issue-kuestenlogik-bowire-798) | ✅ Done |  |
+
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
 
-**6/8 done** · 2 backlog
+**5/7 done** · 2 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -22,7 +31,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [668](https://github.com/Kuestenlogik/Bowire/issues/668) | Bowire | [Sharpen the one-line pitch, and carry the same sentence everywhere](#issue-kuestenlogik-bowire-668) | ✅ Done | `area:site` |
 | [777](https://github.com/Kuestenlogik/Bowire/issues/777) | Bowire | [English only: translate German comments, docs and issues, and guard against new German](#issue-kuestenlogik-bowire-777) | ✅ Done | `area:multi` |
 | [778](https://github.com/Kuestenlogik/Bowire/issues/778) | Bowire | [Issue language report instead of guarding the generated ROADMAP.md](#issue-kuestenlogik-bowire-778) | ✅ Done | `area:multi` |
-| [780](https://github.com/Kuestenlogik/Bowire/issues/780) | Bowire | [Dependency hygiene: SDK 10.0.402, no package with a known advisory](#issue-kuestenlogik-bowire-780) | ✅ Done | `area:multi` |
 | [781](https://github.com/Kuestenlogik/Bowire/issues/781) | Bowire | [Build: no blanket warning suppressions — NuGet audit fails on known advisories](#issue-kuestenlogik-bowire-781) | ✅ Done |  |
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
@@ -165,6 +173,18 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ## Details
 
+### v2.9.1 — Dependency security fixes *(due 2026-10-20)*
+
+#### <a id="issue-kuestenlogik-bowire-780"></a>✅ Done · [#780](https://github.com/Kuestenlogik/Bowire/issues/780) Dependency hygiene: SDK 10.0.402, no package with a known advisory
+
+> `area:multi`
+
+`dotnet list Kuestenlogik.Bowire.slnx package --vulnerable --include-transitive` reports four packages with high advisories. The restore stays green only because `Directory.Build.props` suppresses NU1902/NU1903: [[more]](https://github.com/Kuestenlogik/Bowire/issues/780)
+
+#### <a id="issue-kuestenlogik-bowire-798"></a>✅ Done · [#798](https://github.com/Kuestenlogik/Bowire/issues/798) Microsoft.OpenApi.YamlReader advisory GHSA-7pxr-59rr-hqj2 stops the restore
+
+A new high-severity advisory, [GHSA-7pxr-59rr-hqj2](https://github.com/advisories/GHSA-7pxr-59rr-hqj2) (Microsoft.OpenApi.YamlReader: denial of service via YAML alias expansion), covers `Microsoft.OpenApi.YamlReader` >= 3.0.0 < 3.10.0 and >= 2.0.0-preview.11 < 2.12.0. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/798)
+
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
 
 #### <a id="issue-kuestenlogik-bowire-639"></a>⬜ Backlog · [#639](https://github.com/Kuestenlogik/Bowire/issues/639) SCIM: live Okta and Entra ID provisioning round-trips
@@ -202,12 +222,6 @@ Everything in this repository is English: code, comments, identifiers, configura
 > `area:multi`
 
 Follow-up to #777. [[more]](https://github.com/Kuestenlogik/Bowire/issues/778)
-
-#### <a id="issue-kuestenlogik-bowire-780"></a>✅ Done · [#780](https://github.com/Kuestenlogik/Bowire/issues/780) Dependency hygiene: SDK 10.0.402, no package with a known advisory
-
-> `area:multi`
-
-`dotnet list Kuestenlogik.Bowire.slnx package --vulnerable --include-transitive` reports four packages with high advisories. The restore stays green only because `Directory.Build.props` suppresses NU1902/NU1903: [[more]](https://github.com/Kuestenlogik/Bowire/issues/780)
 
 #### <a id="issue-kuestenlogik-bowire-781"></a>✅ Done · [#781](https://github.com/Kuestenlogik/Bowire/issues/781) Build: no blanket warning suppressions — NuGet audit fails on known advisories
 
