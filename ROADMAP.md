@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
 
-**3/50 done** · 47 backlog
+**3/51 done** · 48 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -63,6 +63,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [864](https://github.com/Kuestenlogik/Bowire/issues/864) | Bowire | [SSE discovery fails on an [SseEndpoint] endpoint without a route](#issue-kuestenlogik-bowire-864) | ⬜ Backlog |  |
 | [865](https://github.com/Kuestenlogik/Bowire/issues/865) | Bowire | [JSON-RPC discovery fails on an OpenRPC document with non-string name or summary](#issue-kuestenlogik-bowire-865) | ⬜ Backlog |  |
 | [866](https://github.com/Kuestenlogik/Bowire/issues/866) | Bowire | [JSON-RPC client accepts a reply whose id does not match the request](#issue-kuestenlogik-bowire-866) | ⬜ Backlog |  |
+| [867](https://github.com/Kuestenlogik/Bowire/issues/867) | Bowire | [OData addresses a digit-only string key without quotes](#issue-kuestenlogik-bowire-867) | ⬜ Backlog |  |
 | [816](https://github.com/Kuestenlogik/Bowire/issues/816) | Bowire | [SCIM trace records status 200 for every request](#issue-kuestenlogik-bowire-816) | ✅ Done |  |
 | [817](https://github.com/Kuestenlogik/Bowire/issues/817) | Bowire | [OIDC provider cannot run as an installed plugin](#issue-kuestenlogik-bowire-817) | ✅ Done |  |
 | [818](https://github.com/Kuestenlogik/Bowire/issues/818) | Bowire | [--auth-oidc-* flags are documented but never read](#issue-kuestenlogik-bowire-818) | ✅ Done |  |
@@ -410,6 +411,10 @@ JSON-RPC discovery fails with an exception when an OpenRPC document has a non-st
 #### <a id="issue-kuestenlogik-bowire-866"></a>⬜ Backlog · [#866](https://github.com/Kuestenlogik/Bowire/issues/866) JSON-RPC client accepts a reply whose id does not match the request
 
 The JSON-RPC client accepts a reply without checking that it answers the request it sent. [[more]](https://github.com/Kuestenlogik/Bowire/issues/866)
+
+#### <a id="issue-kuestenlogik-bowire-867"></a>⬜ Backlog · [#867](https://github.com/Kuestenlogik/Bowire/issues/867) OData addresses a digit-only string key without quotes
+
+An OData entity set with an `Edm.String` key is addressed with an unquoted key when the key value is all digits. [[more]](https://github.com/Kuestenlogik/Bowire/issues/867)
 
 #### <a id="issue-kuestenlogik-bowire-816"></a>✅ Done · [#816](https://github.com/Kuestenlogik/Bowire/issues/816) SCIM trace records status 200 for every request
 
