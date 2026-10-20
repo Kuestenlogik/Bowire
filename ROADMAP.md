@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
 
-**3/25 done** · 22 backlog
+**3/27 done** · 24 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -38,6 +38,8 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [839](https://github.com/Kuestenlogik/Bowire/issues/839) | Bowire | [Workspace lock: another host's lock is taken over as stale, and an empty lock file never recovers](#issue-kuestenlogik-bowire-839) | ⬜ Backlog |  |
 | [840](https://github.com/Kuestenlogik/Bowire/issues/840) | Bowire | [Monitoring window that crosses midnight (22:00-06:00) runs once a day instead of every interval](#issue-kuestenlogik-bowire-840) | ⬜ Backlog |  |
 | [841](https://github.com/Kuestenlogik/Bowire/issues/841) | Bowire | [Contract results of different consumer/provider pairs overwrite each other when their names sanitise alike](#issue-kuestenlogik-bowire-841) | ⬜ Backlog |  |
+| [842](https://github.com/Kuestenlogik/Bowire/issues/842) | Bowire | [AddBowireTelemetry wires the OTel pipeline again on each call, exporting every metric and span twice](#issue-kuestenlogik-bowire-842) | ⬜ Backlog |  |
+| [843](https://github.com/Kuestenlogik/Bowire/issues/843) | Bowire | [Pulsar ignores its namespaces and subscribeFromLatest settings](#issue-kuestenlogik-bowire-843) | ⬜ Backlog |  |
 | [816](https://github.com/Kuestenlogik/Bowire/issues/816) | Bowire | [SCIM trace records status 200 for every request](#issue-kuestenlogik-bowire-816) | ✅ Done |  |
 | [817](https://github.com/Kuestenlogik/Bowire/issues/817) | Bowire | [OIDC provider cannot run as an installed plugin](#issue-kuestenlogik-bowire-817) | ✅ Done |  |
 | [818](https://github.com/Kuestenlogik/Bowire/issues/818) | Bowire | [--auth-oidc-* flags are documented but never read](#issue-kuestenlogik-bowire-818) | ✅ Done |  |
@@ -285,6 +287,14 @@ SignalR discovery fails for any hub that uses an enum whose underlying type is n
 #### <a id="issue-kuestenlogik-bowire-841"></a>⬜ Backlog · [#841](https://github.com/Kuestenlogik/Bowire/issues/841) Contract results of different consumer/provider pairs overwrite each other when their names sanitise alike
 
 `ContractResultStore.FileNameFor` builds the result file name as `Sanitise(consumer) + "__" + Sanitise(provider) + ".json"`, where `Sanitise` replaces path-hostile characters and spaces with `_` (`src/Kuestenlogik.Bowire.Contracts/ContractResultStore.cs:92-101`). The mapping is not one-to-one. [[more]](https://github.com/Kuestenlogik/Bowire/issues/841)
+
+#### <a id="issue-kuestenlogik-bowire-842"></a>⬜ Backlog · [#842](https://github.com/Kuestenlogik/Bowire/issues/842) AddBowireTelemetry wires the OTel pipeline again on each call, exporting every metric and span twice
+
+`AddBowireTelemetry` documents that calling it again is a no-op, but only the options registration uses `TryAdd` (`src/Kuestenlogik.Bowire.Telemetry/BowireTelemetryServiceCollectionExtensions.cs:54-101`). With `Bowire:Telemetry:Enabled=true`, each call runs `AddOpenTelemetry().WithMetrics(...).WithTracing(...)` again. [[more]](https://github.com/Kuestenlogik/Bowire/issues/842)
+
+#### <a id="issue-kuestenlogik-bowire-843"></a>⬜ Backlog · [#843](https://github.com/Kuestenlogik/Bowire/issues/843) Pulsar ignores its namespaces and subscribeFromLatest settings
+
+The Pulsar plugin declares the settings `namespaces` and `subscribeFromLatest`, but `BowirePulsarProtocol.GetSetting` returns the declared default and never the user's value (`src/Kuestenlogik.Bowire.Protocol.Pulsar/BowirePulsarProtocol.cs:285-289`). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/843)
 
 #### <a id="issue-kuestenlogik-bowire-816"></a>✅ Done · [#816](https://github.com/Kuestenlogik/Bowire/issues/816) SCIM trace records status 200 for every request
 
