@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
 
-**3/23 done** · 20 backlog
+**3/25 done** · 22 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -36,6 +36,8 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [837](https://github.com/Kuestenlogik/Bowire/issues/837) | Bowire | [Workspace environments list the secrets overlay prod.secrets.json as an environment of its own](#issue-kuestenlogik-bowire-837) | ⬜ Backlog |  |
 | [838](https://github.com/Kuestenlogik/Bowire/issues/838) | Bowire | [Saving a collection whose id ends in .req deletes its own container file](#issue-kuestenlogik-bowire-838) | ⬜ Backlog |  |
 | [839](https://github.com/Kuestenlogik/Bowire/issues/839) | Bowire | [Workspace lock: another host's lock is taken over as stale, and an empty lock file never recovers](#issue-kuestenlogik-bowire-839) | ⬜ Backlog |  |
+| [840](https://github.com/Kuestenlogik/Bowire/issues/840) | Bowire | [Monitoring window that crosses midnight (22:00-06:00) runs once a day instead of every interval](#issue-kuestenlogik-bowire-840) | ⬜ Backlog |  |
+| [841](https://github.com/Kuestenlogik/Bowire/issues/841) | Bowire | [Contract results of different consumer/provider pairs overwrite each other when their names sanitise alike](#issue-kuestenlogik-bowire-841) | ⬜ Backlog |  |
 | [816](https://github.com/Kuestenlogik/Bowire/issues/816) | Bowire | [SCIM trace records status 200 for every request](#issue-kuestenlogik-bowire-816) | ✅ Done |  |
 | [817](https://github.com/Kuestenlogik/Bowire/issues/817) | Bowire | [OIDC provider cannot run as an installed plugin](#issue-kuestenlogik-bowire-817) | ✅ Done |  |
 | [818](https://github.com/Kuestenlogik/Bowire/issues/818) | Bowire | [--auth-oidc-* flags are documented but never read](#issue-kuestenlogik-bowire-818) | ✅ Done |  |
@@ -275,6 +277,14 @@ SignalR discovery fails for any hub that uses an enum whose underlying type is n
 #### <a id="issue-kuestenlogik-bowire-839"></a>⬜ Backlog · [#839](https://github.com/Kuestenlogik/Bowire/issues/839) Workspace lock: another host's lock is taken over as stale, and an empty lock file never recovers
 
 `WorkspaceLock.IsHolderStale` decides whether an existing `.bowire.lock` may be taken over (`src/Kuestenlogik.Bowire.Workspace.Git/WorkspaceLock.cs:175-194`). Two cases go wrong: [[more]](https://github.com/Kuestenlogik/Bowire/issues/839)
+
+#### <a id="issue-kuestenlogik-bowire-840"></a>⬜ Backlog · [#840](https://github.com/Kuestenlogik/Bowire/issues/840) Monitoring window that crosses midnight (22:00-06:00) runs once a day instead of every interval
+
+`ProbeWindow.Contains` checks `t >= Start && t < End`, and `ProbeWindow.NextWithin` builds the window's open and close on the same calendar day (`src/Kuestenlogik.Bowire.Monitoring/ProbeSchedule.cs:212-246`). A window that crosses midnight is never modelled. [[more]](https://github.com/Kuestenlogik/Bowire/issues/840)
+
+#### <a id="issue-kuestenlogik-bowire-841"></a>⬜ Backlog · [#841](https://github.com/Kuestenlogik/Bowire/issues/841) Contract results of different consumer/provider pairs overwrite each other when their names sanitise alike
+
+`ContractResultStore.FileNameFor` builds the result file name as `Sanitise(consumer) + "__" + Sanitise(provider) + ".json"`, where `Sanitise` replaces path-hostile characters and spaces with `_` (`src/Kuestenlogik.Bowire.Contracts/ContractResultStore.cs:92-101`). The mapping is not one-to-one. [[more]](https://github.com/Kuestenlogik/Bowire/issues/841)
 
 #### <a id="issue-kuestenlogik-bowire-816"></a>✅ Done · [#816](https://github.com/Kuestenlogik/Bowire/issues/816) SCIM trace records status 200 for every request
 
