@@ -9,6 +9,7 @@ using DotPulsar.Abstractions;
 using DotPulsar.Extensions;
 using Kuestenlogik.Bowire.Models;
 using Kuestenlogik.Bowire.Net;
+using Kuestenlogik.Bowire.Plugins;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -76,10 +77,21 @@ public sealed class BowirePulsarProtocol : IBowireProtocol, Kuestenlogik.Bowire.
         },
     ];
 
+    /// <summary>
+    /// The workspace's values for <see cref="Settings"/>, resolved in
+    /// <see cref="Initialize"/>; null when the host registered none (the
+    /// CLI's case), and the declared defaults apply.
+    /// </summary>
+    private IBowirePluginSettings? _settings;
+
     public void Initialize(IServiceProvider? serviceProvider)
     {
         var config = serviceProvider?.GetService<IConfiguration>();
         _http = BowireHttpClientFactory.Create(config, Id, TimeSpan.FromSeconds(15));
+        // #843 — without this, GetSetting only ever saw the declared
+        // defaults and the user's namespaces / subscribeFromLatest were
+        // stored but read by nothing.
+        _settings = serviceProvider?.GetService<IBowirePluginSettings>();
     }
 
     /// <summary>
@@ -284,6 +296,8 @@ public sealed class BowirePulsarProtocol : IBowireProtocol, Kuestenlogik.Bowire.
 
     private string GetSetting(string key, string fallback)
     {
+        var value = _settings?.GetValue(Id, key);
+        if (!string.IsNullOrWhiteSpace(value)) return value;
         var s = Settings.FirstOrDefault(x => x.Key == key);
         return s?.DefaultValue?.ToString() ?? fallback;
     }

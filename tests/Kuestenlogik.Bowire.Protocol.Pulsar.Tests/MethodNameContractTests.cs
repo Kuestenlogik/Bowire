@@ -1,6 +1,7 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
+using Kuestenlogik.Bowire.Plugins;
 using Kuestenlogik.Bowire.Protocol.Pulsar;
 using Xunit;
 
@@ -23,5 +24,31 @@ public sealed class MethodNameContractTests
     {
         using var p = new BowirePulsarProtocol();
         Assert.Equal(expected, p.ResolveMethodName(service, sent));
+    }
+
+    [Fact]
+    public void Short_Topic_Is_Completed_In_The_Users_Configured_Namespace()
+    {
+        // #843 — the workspace's "namespaces" setting, not the declared
+        // default, decides where a short topic name lives.
+        using var p = new BowirePulsarProtocol();
+        p.Initialize(new SettingsOnlyServiceProvider(new FixedPluginSettings(new()
+        {
+            ["namespaces"] = "acme/prod, acme/staging",
+        })));
+
+        Assert.Equal("pulsar/topic/persistent://acme/prod/orders/produce", p.ResolveMethodName("orders", "produce"));
+    }
+
+    private sealed class SettingsOnlyServiceProvider(IBowirePluginSettings settings) : IServiceProvider
+    {
+        public object? GetService(Type serviceType)
+            => serviceType == typeof(IBowirePluginSettings) ? settings : null;
+    }
+
+    private sealed class FixedPluginSettings(Dictionary<string, string> values) : IBowirePluginSettings
+    {
+        public string? GetValue(string pluginId, string key)
+            => pluginId == "pulsar" && values.TryGetValue(key, out var v) ? v : null;
     }
 }
