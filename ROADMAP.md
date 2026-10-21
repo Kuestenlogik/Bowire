@@ -12,20 +12,12 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
 
-**3/51 done** · 48 backlog
+**11/51 done** · 40 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [639](https://github.com/Kuestenlogik/Bowire/issues/639) | Bowire | [SCIM: live Okta and Entra ID provisioning round-trips](#issue-kuestenlogik-bowire-639) | ⬜ Backlog | `area:workbench` |
 | [670](https://github.com/Kuestenlogik/Bowire/issues/670) | Bowire | [Get listed where developers and models actually look](#issue-kuestenlogik-bowire-670) | ⬜ Backlog | `area:site` |
-| [822](https://github.com/Kuestenlogik/Bowire/issues/822) | Bowire | [Help markdown renderer hangs on an empty heading or a fence like ```c++](#issue-kuestenlogik-bowire-822) | ⬜ Backlog |  |
-| [823](https://github.com/Kuestenlogik/Bowire/issues/823) | Bowire | [Help search counts repeated query terms and gives the title bonus for substrings](#issue-kuestenlogik-bowire-823) | ⬜ Backlog |  |
-| [824](https://github.com/Kuestenlogik/Bowire/issues/824) | Bowire | [Help search does not index fenced code blocks](#issue-kuestenlogik-bowire-824) | ⬜ Backlog |  |
-| [825](https://github.com/Kuestenlogik/Bowire/issues/825) | Bowire | [Help index lists a topic twice when its title repeats a word](#issue-kuestenlogik-bowire-825) | ⬜ Backlog |  |
-| [826](https://github.com/Kuestenlogik/Bowire/issues/826) | Bowire | [SignalR discovery overflows the stack on a self-referencing DTO](#issue-kuestenlogik-bowire-826) | ⬜ Backlog |  |
-| [827](https://github.com/Kuestenlogik/Bowire/issues/827) | Bowire | [SignalR discovery fails on an enum whose underlying type is not int](#issue-kuestenlogik-bowire-827) | ⬜ Backlog |  |
-| [828](https://github.com/Kuestenlogik/Bowire/issues/828) | Bowire | [OpenAPI 3 discovery of a YAML document silently finds nothing](#issue-kuestenlogik-bowire-828) | ⬜ Backlog |  |
-| [829](https://github.com/Kuestenlogik/Bowire/issues/829) | Bowire | [Nuclei reader drops tags written as one comma-separated value, and a scalar reference](#issue-kuestenlogik-bowire-829) | ⬜ Backlog |  |
 | [830](https://github.com/Kuestenlogik/Bowire/issues/830) | Bowire | [Nuclei negative matcher with an empty word or pattern fires where Nuclei never would](#issue-kuestenlogik-bowire-830) | ⬜ Backlog |  |
 | [831](https://github.com/Kuestenlogik/Bowire/issues/831) | Bowire | [Nuclei resolver throws OverflowException on a RandStr/RandInt length that does not fit an int](#issue-kuestenlogik-bowire-831) | ⬜ Backlog |  |
 | [832](https://github.com/Kuestenlogik/Bowire/issues/832) | Bowire | [bowire oast serve exits 0 and prints "Stopped." when the DNS port cannot be bound](#issue-kuestenlogik-bowire-832) | ⬜ Backlog |  |
@@ -64,9 +56,17 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [865](https://github.com/Kuestenlogik/Bowire/issues/865) | Bowire | [JSON-RPC discovery fails on an OpenRPC document with non-string name or summary](#issue-kuestenlogik-bowire-865) | ⬜ Backlog |  |
 | [866](https://github.com/Kuestenlogik/Bowire/issues/866) | Bowire | [JSON-RPC client accepts a reply whose id does not match the request](#issue-kuestenlogik-bowire-866) | ⬜ Backlog |  |
 | [867](https://github.com/Kuestenlogik/Bowire/issues/867) | Bowire | [OData addresses a digit-only string key without quotes](#issue-kuestenlogik-bowire-867) | ⬜ Backlog |  |
+| [829](https://github.com/Kuestenlogik/Bowire/issues/829) | Bowire | [Nuclei reader drops tags written as one comma-separated value, and a scalar reference](#issue-kuestenlogik-bowire-829) | ✅ Done |  |
 | [816](https://github.com/Kuestenlogik/Bowire/issues/816) | Bowire | [SCIM trace records status 200 for every request](#issue-kuestenlogik-bowire-816) | ✅ Done |  |
 | [817](https://github.com/Kuestenlogik/Bowire/issues/817) | Bowire | [OIDC provider cannot run as an installed plugin](#issue-kuestenlogik-bowire-817) | ✅ Done |  |
 | [818](https://github.com/Kuestenlogik/Bowire/issues/818) | Bowire | [--auth-oidc-* flags are documented but never read](#issue-kuestenlogik-bowire-818) | ✅ Done |  |
+| [822](https://github.com/Kuestenlogik/Bowire/issues/822) | Bowire | [Help markdown renderer hangs on an empty heading or a fence like ```c++](#issue-kuestenlogik-bowire-822) | ✅ Done |  |
+| [823](https://github.com/Kuestenlogik/Bowire/issues/823) | Bowire | [Help search counts repeated query terms and gives the title bonus for substrings](#issue-kuestenlogik-bowire-823) | ✅ Done |  |
+| [824](https://github.com/Kuestenlogik/Bowire/issues/824) | Bowire | [Help search does not index fenced code blocks](#issue-kuestenlogik-bowire-824) | ✅ Done |  |
+| [825](https://github.com/Kuestenlogik/Bowire/issues/825) | Bowire | [Help index lists a topic twice when its title repeats a word](#issue-kuestenlogik-bowire-825) | ✅ Done |  |
+| [826](https://github.com/Kuestenlogik/Bowire/issues/826) | Bowire | [SignalR discovery overflows the stack on a self-referencing DTO](#issue-kuestenlogik-bowire-826) | ✅ Done |  |
+| [827](https://github.com/Kuestenlogik/Bowire/issues/827) | Bowire | [SignalR discovery fails on an enum whose underlying type is not int](#issue-kuestenlogik-bowire-827) | ✅ Done |  |
+| [828](https://github.com/Kuestenlogik/Bowire/issues/828) | Bowire | [OpenAPI 3 discovery of a YAML document silently finds nothing](#issue-kuestenlogik-bowire-828) | ✅ Done |  |
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
@@ -232,38 +232,6 @@ Split from #96 so the SCIM surface can ship on its own merits. [[more]](https://
 
 Six credible competitors turned up during the competitive survey **via openalternative.co**. Bowire was not there. That is the whole diagnosis: when a developer — or a language model — asks for "open source Postman alternative", the answer is assembled from these directories, not from bowire.io. [[more]](https://github.com/Kuestenlogik/Bowire/issues/670)
 
-#### <a id="issue-kuestenlogik-bowire-822"></a>⬜ Backlog · [#822](https://github.com/Kuestenlogik/Bowire/issues/822) Help markdown renderer hangs on an empty heading or a fence like ```c++
-
-`helpRenderMarkdown` in `src/Kuestenlogik.Bowire.Help/wwwroot/js/help.js` (~L203–L285) never returns for a line that no block branch claims but that the paragraph collector's stop pattern matches: [[more]](https://github.com/Kuestenlogik/Bowire/issues/822)
-
-#### <a id="issue-kuestenlogik-bowire-823"></a>⬜ Backlog · [#823](https://github.com/Kuestenlogik/Bowire/issues/823) Help search counts repeated query terms and gives the title bonus for substrings
-
-`MarkdownHelpProvider.Search` (`src/Kuestenlogik.Bowire.Help/MarkdownHelpProvider.cs`, L95–L120) scores wrongly in two ways: [[more]](https://github.com/Kuestenlogik/Bowire/issues/823)
-
-#### <a id="issue-kuestenlogik-bowire-824"></a>⬜ Backlog · [#824](https://github.com/Kuestenlogik/Bowire/issues/824) Help search does not index fenced code blocks
-
-`MarkdownHelpProvider.Walk` (`src/Kuestenlogik.Bowire.Help/MarkdownHelpProvider.cs`, L276–L304) builds the search index text. The doc comment says code blocks become their raw text, but the descendants loop only picks up `LiteralInline` and `CodeInline`. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/824)
-
-#### <a id="issue-kuestenlogik-bowire-825"></a>⬜ Backlog · [#825](https://github.com/Kuestenlogik/Bowire/issues/825) Help index lists a topic twice when its title repeats a word
-
-The `MarkdownHelpProvider` constructor (`src/Kuestenlogik.Bowire.Help/MarkdownHelpProvider.cs`, L69–L72) adds the topic id to the index once per title token, without the duplicate check the body loop has. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/825)
-
-#### <a id="issue-kuestenlogik-bowire-826"></a>⬜ Backlog · [#826](https://github.com/Kuestenlogik/Bowire/issues/826) SignalR discovery overflows the stack on a self-referencing DTO
-
-A hub method whose parameter or return type refers to itself, directly or through another type, overflows the stack during SignalR discovery. [[more]](https://github.com/Kuestenlogik/Bowire/issues/826)
-
-#### <a id="issue-kuestenlogik-bowire-827"></a>⬜ Backlog · [#827](https://github.com/Kuestenlogik/Bowire/issues/827) SignalR discovery fails on an enum whose underlying type is not int
-
-SignalR discovery fails for any hub that uses an enum whose underlying type is not `int`. [[more]](https://github.com/Kuestenlogik/Bowire/issues/827)
-
-#### <a id="issue-kuestenlogik-bowire-828"></a>⬜ Backlog · [#828](https://github.com/Kuestenlogik/Bowire/issues/828) OpenAPI 3 discovery of a YAML document silently finds nothing
-
-`OpenApiDiscovery.FetchAndParseAsync` and `OpenApiDiscovery.ParseRawAsync` in `src/Kuestenlogik.Bowire.Protocol.Rest.OpenApi3/OpenApiDiscovery.cs` (L54, L91) call `OpenApiDocument.LoadAsync(stream, format: null, settings: null, ct)`. Microsoft.OpenApi registers only the JSON reader by default, so a … [[more]](https://github.com/Kuestenlogik/Bowire/issues/828)
-
-#### <a id="issue-kuestenlogik-bowire-829"></a>⬜ Backlog · [#829](https://github.com/Kuestenlogik/Bowire/issues/829) Nuclei reader drops tags written as one comma-separated value, and a scalar reference
-
-`NucleiTemplateReader.CollectStringList` (src/Kuestenlogik.Bowire.Security.Templates.Nuclei/NucleiTemplateReader.cs:350) only reads YAML sequences. Nuclei's `info.tags` is a string slice that also accepts one comma-separated scalar, and most of the public template corpus writes it that way: [[more]](https://github.com/Kuestenlogik/Bowire/issues/829)
-
 #### <a id="issue-kuestenlogik-bowire-830"></a>⬜ Backlog · [#830](https://github.com/Kuestenlogik/Bowire/issues/830) Nuclei negative matcher with an empty word or pattern fires where Nuclei never would
 
 `NucleiMatcherTranslator.TranslateWord` / `TranslateRegex` (src/Kuestenlogik.Bowire.Security.Templates.Nuclei/NucleiMatcherTranslator.cs) drop empty words and empty patterns before building the predicate. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/830)
@@ -416,6 +384,10 @@ The JSON-RPC client accepts a reply without checking that it answers the request
 
 An OData entity set with an `Edm.String` key is addressed with an unquoted key when the key value is all digits. [[more]](https://github.com/Kuestenlogik/Bowire/issues/867)
 
+#### <a id="issue-kuestenlogik-bowire-829"></a>✅ Done · [#829](https://github.com/Kuestenlogik/Bowire/issues/829) Nuclei reader drops tags written as one comma-separated value, and a scalar reference
+
+`NucleiTemplateReader.CollectStringList` (src/Kuestenlogik.Bowire.Security.Templates.Nuclei/NucleiTemplateReader.cs:350) only reads YAML sequences. Nuclei's `info.tags` is a string slice that also accepts one comma-separated scalar, and most of the public template corpus writes it that way: [[more]](https://github.com/Kuestenlogik/Bowire/issues/829)
+
 #### <a id="issue-kuestenlogik-bowire-816"></a>✅ Done · [#816](https://github.com/Kuestenlogik/Bowire/issues/816) SCIM trace records status 200 for every request
 
 `ScimTraceFilter` (src/Kuestenlogik.Bowire.Scim/ScimTraceFilter.cs) records `http.Response.StatusCode` in the `finally` after `await next(context)`. In an endpoint filter, `next` returns the handler's `IResult` — it has not been executed yet, so the response status is still the default 200. [[more]](https://github.com/Kuestenlogik/Bowire/issues/816)
@@ -427,6 +399,34 @@ An OData entity set with an `Edm.String` key is addressed with an unquoted key w
 #### <a id="issue-kuestenlogik-bowire-818"></a>✅ Done · [#818](https://github.com/Kuestenlogik/Bowire/issues/818) --auth-oidc-* flags are documented but never read
 
 The `--auth-provider` help text (src/Kuestenlogik.Bowire.Tool/Cli/BowireCli.cs) and `docs/setup/multi-user.md` name provider-namespaced flags — `--auth-oidc-authority`, `--auth-oidc-client-id`, `--auth-oidc-required-claim` — "forwarded as Bowire:Auth:Oidc:*". … [[more]](https://github.com/Kuestenlogik/Bowire/issues/818)
+
+#### <a id="issue-kuestenlogik-bowire-822"></a>✅ Done · [#822](https://github.com/Kuestenlogik/Bowire/issues/822) Help markdown renderer hangs on an empty heading or a fence like ```c++
+
+`helpRenderMarkdown` in `src/Kuestenlogik.Bowire.Help/wwwroot/js/help.js` (~L203–L285) never returns for a line that no block branch claims but that the paragraph collector's stop pattern matches: [[more]](https://github.com/Kuestenlogik/Bowire/issues/822)
+
+#### <a id="issue-kuestenlogik-bowire-823"></a>✅ Done · [#823](https://github.com/Kuestenlogik/Bowire/issues/823) Help search counts repeated query terms and gives the title bonus for substrings
+
+`MarkdownHelpProvider.Search` (`src/Kuestenlogik.Bowire.Help/MarkdownHelpProvider.cs`, L95–L120) scores wrongly in two ways: [[more]](https://github.com/Kuestenlogik/Bowire/issues/823)
+
+#### <a id="issue-kuestenlogik-bowire-824"></a>✅ Done · [#824](https://github.com/Kuestenlogik/Bowire/issues/824) Help search does not index fenced code blocks
+
+`MarkdownHelpProvider.Walk` (`src/Kuestenlogik.Bowire.Help/MarkdownHelpProvider.cs`, L276–L304) builds the search index text. The doc comment says code blocks become their raw text, but the descendants loop only picks up `LiteralInline` and `CodeInline`. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/824)
+
+#### <a id="issue-kuestenlogik-bowire-825"></a>✅ Done · [#825](https://github.com/Kuestenlogik/Bowire/issues/825) Help index lists a topic twice when its title repeats a word
+
+The `MarkdownHelpProvider` constructor (`src/Kuestenlogik.Bowire.Help/MarkdownHelpProvider.cs`, L69–L72) adds the topic id to the index once per title token, without the duplicate check the body loop has. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/825)
+
+#### <a id="issue-kuestenlogik-bowire-826"></a>✅ Done · [#826](https://github.com/Kuestenlogik/Bowire/issues/826) SignalR discovery overflows the stack on a self-referencing DTO
+
+A hub method whose parameter or return type refers to itself, directly or through another type, overflows the stack during SignalR discovery. [[more]](https://github.com/Kuestenlogik/Bowire/issues/826)
+
+#### <a id="issue-kuestenlogik-bowire-827"></a>✅ Done · [#827](https://github.com/Kuestenlogik/Bowire/issues/827) SignalR discovery fails on an enum whose underlying type is not int
+
+SignalR discovery fails for any hub that uses an enum whose underlying type is not `int`. [[more]](https://github.com/Kuestenlogik/Bowire/issues/827)
+
+#### <a id="issue-kuestenlogik-bowire-828"></a>✅ Done · [#828](https://github.com/Kuestenlogik/Bowire/issues/828) OpenAPI 3 discovery of a YAML document silently finds nothing
+
+`OpenApiDiscovery.FetchAndParseAsync` and `OpenApiDiscovery.ParseRawAsync` in `src/Kuestenlogik.Bowire.Protocol.Rest.OpenApi3/OpenApiDiscovery.cs` (L54, L91) call `OpenApiDocument.LoadAsync(stream, format: null, settings: null, ct)`. Microsoft.OpenApi registers only the JSON reader by default, so a … [[more]](https://github.com/Kuestenlogik/Bowire/issues/828)
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
@@ -824,4 +824,4 @@ Two warning suppressions in this repo, reviewed under the rule that warnings are
 
 ---
 
-*Generated 2026-10-20 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
+*Generated 2026-10-21 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
