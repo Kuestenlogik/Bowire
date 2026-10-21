@@ -645,7 +645,15 @@ internal sealed class GrpcInvoker : IDisposable
 
             if (field is null) continue;
 
-            if (field.IsRepeated && prop.Value.ValueKind == JsonValueKind.Array)
+            // A map is a JSON object here and repeated key/value entries on
+            // the wire; as a plain field its object was read as one entry
+            // message (#895).
+            if (field.IsMap)
+            {
+                if (prop.Value.ValueKind == JsonValueKind.Object)
+                    WriteMapField(cos, field, prop.Value);
+            }
+            else if (field.IsRepeated && prop.Value.ValueKind == JsonValueKind.Array)
             {
                 foreach (var item in prop.Value.EnumerateArray())
                     WriteField(cos, field, item);
@@ -654,6 +662,28 @@ internal sealed class GrpcInvoker : IDisposable
             {
                 WriteField(cos, field, prop.Value);
             }
+        }
+    }
+
+    private static void WriteMapField(CodedOutputStream cos, FieldDescriptor field, JsonElement map)
+    {
+        var keyField = field.MessageType.FindFieldByNumber(1);
+        var valueField = field.MessageType.FindFieldByNumber(2);
+        foreach (var entry in map.EnumerateObject())
+        {
+            using var ms = new MemoryStream();
+            using (var entryCos = new CodedOutputStream(ms, leaveOpen: true))
+            {
+                // The key arrives as the property name; WriteField reads
+                // integers from strings, bools need their JSON literal.
+                var key = keyField.FieldType == FieldType.Bool
+                    ? JsonSerializer.SerializeToElement(entry.Name == "true")
+                    : JsonSerializer.SerializeToElement(entry.Name);
+                WriteField(entryCos, keyField, key);
+                WriteField(entryCos, valueField, entry.Value);
+            }
+            cos.WriteTag(field.FieldNumber, WireFormat.WireType.LengthDelimited);
+            cos.WriteBytes(ByteString.CopyFrom(ms.ToArray()));
         }
     }
 
@@ -791,6 +821,7 @@ internal sealed class GrpcInvoker : IDisposable
     {
         var result = new Dictionary<string, object?>();
         var repeatedFields = new Dictionary<string, List<object?>>();
+        var mapFields = new Dictionary<string, Dictionary<string, object?>>();
 
         while (!cis.IsAtEnd)
         {
@@ -809,7 +840,19 @@ internal sealed class GrpcInvoker : IDisposable
 
             var jsonName = field.JsonName;
 
-            if (field.IsRepeated)
+            // A map entry becomes a property of one JSON object, as proto3
+            // JSON writes maps, not an element of a {key, value} list (#895).
+            if (field.IsMap)
+            {
+                if (!mapFields.TryGetValue(jsonName, out var map))
+                {
+                    map = [];
+                    mapFields[jsonName] = map;
+                }
+                var (key, value) = ReadMapEntry(cis, field);
+                map[key] = value;
+            }
+            else if (field.IsRepeated)
             {
                 if (!repeatedFields.TryGetValue(jsonName, out var list))
                 {
@@ -832,9 +875,52 @@ internal sealed class GrpcInvoker : IDisposable
 
         foreach (var (key, list) in repeatedFields)
             result[key] = list;
+        foreach (var (key, map) in mapFields)
+            result[key] = map;
 
         return result;
     }
+
+    private static (string Key, object? Value) ReadMapEntry(CodedInputStream cis, FieldDescriptor field)
+    {
+        var keyField = field.MessageType.FindFieldByNumber(1);
+        var valueField = field.MessageType.FindFieldByNumber(2);
+        // A writer may leave a default key or value out of the entry.
+        var key = DefaultValue(keyField);
+        var value = DefaultValue(valueField);
+
+        var bytes = cis.ReadBytes().ToByteArray();
+        using var entry = new CodedInputStream(bytes);
+        while (!entry.IsAtEnd)
+        {
+            var tag = entry.ReadTag();
+            if (tag == 0) break;
+            var wireType = WireFormat.GetTagWireType(tag);
+            switch (WireFormat.GetTagFieldNumber(tag))
+            {
+                case 1: key = ReadFieldValue(entry, keyField, wireType); break;
+                case 2: value = ReadFieldValue(entry, valueField, wireType); break;
+                default: entry.SkipLastField(); break;
+            }
+        }
+
+        var keyText = key switch
+        {
+            bool b => b ? "true" : "false",
+            IFormattable f => f.ToString(null, CultureInfo.InvariantCulture),
+            _ => key as string ?? "",
+        };
+        return (keyText, value);
+    }
+
+    private static object? DefaultValue(FieldDescriptor field) => field.FieldType switch
+    {
+        FieldType.String or FieldType.Bytes => "",
+        FieldType.Bool => false,
+        FieldType.Enum => (object?)field.EnumType.FindValueByNumber(0)?.Name ?? 0,
+        FieldType.Message => new Dictionary<string, object?>(),
+        _ => 0,
+    };
 
     private static bool IsPackable(FieldDescriptor field)
         => field.FieldType is not (FieldType.String or FieldType.Bytes or FieldType.Message or FieldType.Group);

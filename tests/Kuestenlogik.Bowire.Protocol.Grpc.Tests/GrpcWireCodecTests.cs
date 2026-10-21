@@ -140,4 +140,33 @@ public sealed class GrpcWireCodecTests
 
         Assert.Equal(new WireWide { I32 = -5, U32 = 7 }, actual);
     }
+
+    // ---- map fields (#895) -----------------------------------------
+
+    private static WireMaps SampleMaps() => new()
+    {
+        Counts = { ["a"] = 1, ["b"] = 2 },
+        // Key 0 and an empty value are the defaults a writer may leave out
+        // of the entry.
+        Inners = { [5] = new WireInner { Name = "x" }, [0] = new WireInner() },
+        Flags = { [true] = "yes", [false] = "no" },
+        Colors = { ["c"] = WireColor.Green },
+    };
+
+    [Fact]
+    public void Decode_reads_map_fields_as_JSON_objects()
+    {
+        var expected = SampleMaps();
+
+        Assert.Equal(expected, Decode<WireMaps>(expected));
+    }
+
+    [Fact]
+    public void Encode_writes_map_fields_from_JSON_objects()
+    {
+        var expected = SampleMaps();
+        var json = JsonFormatter.Default.Format(expected);
+
+        Assert.Equal(expected, Encode(json, WireMaps.Parser));
+    }
 }
