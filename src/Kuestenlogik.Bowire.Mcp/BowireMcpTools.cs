@@ -1236,11 +1236,27 @@ public sealed class BowireMcpTools
             // env entry "https://api.example/v1" also covers
             // ".../v1/users" without double-listing.
             if (!string.IsNullOrEmpty(allowed) &&
-                url.StartsWith(allowed, StringComparison.OrdinalIgnoreCase))
+                url.StartsWith(allowed, StringComparison.OrdinalIgnoreCase) &&
+                EndsAtBoundary(allowed, url))
                 return true;
         }
         return false;
     }
+
+    /// <summary>
+    /// Whether the allowlisted <paramref name="allowed"/> prefix of
+    /// <paramref name="url"/> ends where a URL component ends.
+    /// </summary>
+    /// <remarks>
+    /// #877 — a bare text prefix let "https://api.example.com" cover
+    /// "https://api.example.com.evil.io/" and "…com@evil.io/", and
+    /// "http://localhost:5000" cover port 50001: other hosts and ports
+    /// entirely. The prefix only covers what lies below it — a path, a
+    /// query or a fragment — so the character after it must start one,
+    /// unless the entry itself already ends in a slash.
+    /// </remarks>
+    private static bool EndsAtBoundary(string allowed, string url)
+        => allowed.EndsWith('/') || url[allowed.Length] is '/' or '?' or '#';
 
     private static string AllowlistDeniedMessage(string url) =>
         $"URL \"{url}\" is not on the allowlist. Allowed URLs come from ~/.bowire/environments.json or BowireMcpOptions.AllowedServerUrls. Pass --allow-arbitrary-urls to the CLI (or set BowireMcpOptions.AllowArbitraryUrls = true) to drop this check; only do that in sandboxed contexts.";

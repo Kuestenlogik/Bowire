@@ -210,6 +210,44 @@ public class BowireMcpToolsTests : IAsyncDisposable
         Assert.DoesNotContain("not on the allowlist", result, StringComparison.Ordinal);
     }
 
+    [Theory]
+    [InlineData("https://api.example.com", "https://api.example.com.evil.io/")]
+    [InlineData("https://api.example.com", "https://api.example.com@evil.io/")]
+    [InlineData("http://localhost:5000", "http://localhost:50001")]
+    [InlineData("https://api.example.com/v1", "https://api.example.com/v10/users")]
+    public async Task Discover_Allowlist_Prefix_Does_Not_Cover_A_Different_Host_Or_Port(
+        string allowed, string url)
+    {
+        var registry = new BowireProtocolRegistry();
+        registry.Register(new StubProtocol("stub", "Stub"));
+        var options = new BowireMcpOptions { LoadAllowlistFromEnvironments = false };
+        options.AllowedServerUrls.Add(allowed);
+        var tools = BuildTools(registry: registry, options: options);
+
+        var result = await tools.Discover(url, ct: TestContext.Current.CancellationToken);
+
+        Assert.Contains("not on the allowlist", result, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("https://api.example.com", "https://api.example.com/users")]
+    [InlineData("https://api.example.com", "https://api.example.com?x=1")]
+    [InlineData("https://api.example.com/", "https://api.example.com/users")]
+    [InlineData("http://localhost:5000", "http://localhost:5000/")]
+    public async Task Discover_Allowlist_Prefix_Covers_Paths_Below_The_Entry(
+        string allowed, string url)
+    {
+        var registry = new BowireProtocolRegistry();
+        registry.Register(new StubProtocol("stub", "Stub"));
+        var options = new BowireMcpOptions { LoadAllowlistFromEnvironments = false };
+        options.AllowedServerUrls.Add(allowed);
+        var tools = BuildTools(registry: registry, options: options);
+
+        var result = await tools.Discover(url, ct: TestContext.Current.CancellationToken);
+
+        Assert.DoesNotContain("not on the allowlist", result, StringComparison.Ordinal);
+    }
+
     [Fact]
     public async Task Invoke_Url_Not_On_Allowlist_Is_Denied()
     {
