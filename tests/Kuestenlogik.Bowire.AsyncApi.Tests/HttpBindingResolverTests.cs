@@ -247,4 +247,44 @@ public sealed class HttpBindingResolverTests : IAsyncLifetime
         Assert.Equal("503", result.Metadata["http.status"]);
     }
 
+    [Theory]
+    // A server host the document got wrong: not a valid URI.
+    [InlineData("http://bad host", "POST")]
+    // A binding method that is not an HTTP token.
+    [InlineData("http://127.0.0.1:1", "GET /x")]
+    public async Task InvokeAsync_ReportsARequestThatCannotBeBuiltAsAnErrorResult(string serverUrl, string method)
+    {
+        var resolver = new HttpBindingResolver();
+        var context = new AsyncApiChannelContext(
+            ServerUrl: serverUrl,
+            ChannelAddress: "/orders",
+            OperationAction: "send",
+            BindingFields: new Dictionary<string, string> { ["method"] = method });
+
+        var result = await resolver.InvokeAsync(
+            context,
+            jsonMessages: ["{}"],
+            metadata: null,
+            ct: TestContext.Current.CancellationToken);
+
+        Assert.Equal("Error", result.Status);
+        Assert.False(string.IsNullOrEmpty(result.Metadata["error"]));
+    }
+
+    [Fact]
+    public async Task InvokeAsync_LetsTheCallersCancellationThrough()
+    {
+        var resolver = new HttpBindingResolver();
+        var context = new AsyncApiChannelContext(
+            ServerUrl: $"http://127.0.0.1:{_port}",
+            ChannelAddress: "/orders",
+            OperationAction: "send",
+            BindingFields: new Dictionary<string, string>());
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        await cts.CancelAsync();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => resolver.InvokeAsync(
+            context, jsonMessages: ["{}"], metadata: null, ct: cts.Token));
+    }
+
 }

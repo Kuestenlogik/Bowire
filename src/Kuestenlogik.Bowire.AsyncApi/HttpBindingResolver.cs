@@ -51,13 +51,16 @@ internal sealed class HttpBindingResolver : IAsyncApiBindingResolver
     {
         // Resolve verb: doc binding wins, caller metadata can override,
         // fall back to action-derived default (send → POST, receive → GET).
-        var verb = ResolveHttpMethod(channel, metadata);
+        var verbName = ResolveHttpMethodName(channel, metadata);
         var url = JoinServerAndChannel(channel.ServerUrl, channel.ChannelAddress);
         var body = jsonMessages.FirstOrDefault();
 
         var sw = System.Diagnostics.Stopwatch.StartNew();
         try
         {
+            // Built inside the try (#918): a method that is not an HTTP
+            // token throws FormatException.
+            var verb = new HttpMethod(verbName);
             using var http = new HttpClient();
             using var request = new HttpRequestMessage(verb, url);
 
@@ -90,7 +93,12 @@ internal sealed class HttpBindingResolver : IAsyncApiBindingResolver
                     ["http.status"] = ((int)response.StatusCode).ToString(System.Globalization.CultureInfo.InvariantCulture)
                 });
         }
-        catch (HttpRequestException ex)
+        // Not only HttpRequestException (#918): an invalid server URI
+        // (UriFormatException), an invalid method (FormatException) and
+        // an HttpClient timeout (TaskCanceledException without the
+        // caller cancelling) are failures of this call too and belong
+        // in the result. Only the caller's own cancellation propagates.
+        catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
         {
             sw.Stop();
             return new InvokeResult(
@@ -100,7 +108,7 @@ internal sealed class HttpBindingResolver : IAsyncApiBindingResolver
                 Metadata: new Dictionary<string, string>
                 {
                     ["error"] = ex.Message,
-                    ["http.method"] = verb.Method,
+                    ["http.method"] = verbName,
                     ["http.url"] = url
                 });
         }
@@ -113,7 +121,7 @@ internal sealed class HttpBindingResolver : IAsyncApiBindingResolver
     /// (<c>request</c>/<c>response</c>) is informational here; the
     /// <c>method</c> field carries the actual verb.
     /// </summary>
-    private static HttpMethod ResolveHttpMethod(
+    private static string ResolveHttpMethodName(
         AsyncApiChannelContext channel, Dictionary<string, string>? metadata)
     {
         string? verbName = null;
@@ -128,13 +136,13 @@ internal sealed class HttpBindingResolver : IAsyncApiBindingResolver
 
         if (!string.IsNullOrWhiteSpace(verbName))
         {
-            return new HttpMethod(verbName.ToUpperInvariant());
+            return verbName.ToUpperInvariant();
         }
 
         // No verb declared → default by AsyncAPI action.
         return string.Equals(channel.OperationAction, "receive", StringComparison.OrdinalIgnoreCase)
-            ? HttpMethod.Get
-            : HttpMethod.Post;
+            ? HttpMethod.Get.Method
+            : HttpMethod.Post.Method;
     }
 
     /// <summary>
