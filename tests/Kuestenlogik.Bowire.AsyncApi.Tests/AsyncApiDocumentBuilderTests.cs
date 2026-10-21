@@ -218,6 +218,40 @@ public sealed class AsyncApiDocumentBuilderTests
     }
 
     [Fact]
+    public void Build_payload_schema_requires_only_required_fields_and_types_repeated_fields_as_arrays()
+    {
+        // Labels as the protocol plugins write them: gRPC reflection and
+        // GraphQL say "optional" / "required" / "repeated", MCP sets
+        // Required, the MQTT / NATS plugins say "LABEL_OPTIONAL".
+        var input = new BowireMessageInfo("Order", "shop.Order",
+        [
+            new BowireFieldInfo("note", 1, "string", "optional", false, false, null, null),
+            new BowireFieldInfo("id", 2, "string", "required", false, false, null, null),
+            new BowireFieldInfo("tags", 3, "string", "repeated", false, true, null, null),
+            new BowireFieldInfo("qty", 4, "int32", "optional", false, false, null, null) { Required = true },
+            new BowireFieldInfo("labels", 5, "string", "optional", true, false, null, null),
+        ]);
+        var svc = new BowireServiceInfo("shop", "nats", new List<BowireMethodInfo>
+        {
+            new("orders", "nats/orders/publish", false, false, input, input, "Unary"),
+        });
+
+        var json = AsyncApiDocumentBuilder.Build("nats://b:4222", new[] { svc },
+            options: new AsyncApiExportOptions { Format = AsyncApiExportFormat.Json });
+
+        using var doc = System.Text.Json.JsonDocument.Parse(json);
+        var payload = doc.RootElement.GetProperty("components").GetProperty("messages")
+            .GetProperty("shop_Order").GetProperty("payload");
+        Assert.Equal(["id", "qty"],
+            payload.GetProperty("required").EnumerateArray().Select(e => e.GetString()).ToList());
+        var props = payload.GetProperty("properties");
+        Assert.Equal("array", props.GetProperty("tags").GetProperty("type").GetString());
+        Assert.Equal("string", props.GetProperty("tags").GetProperty("items").GetProperty("type").GetString());
+        Assert.Equal("object", props.GetProperty("labels").GetProperty("type").GetString());
+        Assert.Equal("integer", props.GetProperty("qty").GetProperty("type").GetString());
+    }
+
+    [Fact]
     public void Build_json_format_emits_valid_json()
     {
         var svc = MakeMqttService("mqtt://b:1883", "sensors/temp");

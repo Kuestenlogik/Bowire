@@ -369,13 +369,20 @@ public static class AsyncApiDocumentBuilder
         {
             foreach (var field in info.Fields.Where(f => !string.IsNullOrEmpty(f.Name)))
             {
-                props[field.Name] = MapFieldType(field.Type);
-                // Proto's "LABEL_OPTIONAL" treats fields as
-                // omissible, but every non-optional label is
-                // required on the wire; mirror that into JSON
-                // Schema's `required` block.
-                if (!string.Equals(field.Label, "LABEL_OPTIONAL", StringComparison.Ordinal))
-                    required.Add(field.Name);
+                // A repeated field is an array of its element type and a
+                // map is an object (#915) — the element type alone told
+                // a validating client that `tags: ["a"]` was invalid.
+                props[field.Name] = field.IsRepeated
+                    ? new Dictionary<string, object?> { ["type"] = "array", ["items"] = MapFieldType(field.Type) }
+                    : field.IsMap
+                        ? new Dictionary<string, object?> { ["type"] = "object" }
+                        : MapFieldType(field.Type);
+                // Required only when the source says so (#915). The
+                // plugins spell it differently — Required, "required",
+                // "LABEL_REQUIRED" — and every other label ("optional",
+                // proto3's default, "LABEL_OPTIONAL", "repeated") is
+                // omissible on the wire.
+                if (IsRequired(field)) required.Add(field.Name);
             }
         }
         var schema = new Dictionary<string, object?>(StringComparer.Ordinal)
@@ -386,6 +393,12 @@ public static class AsyncApiDocumentBuilder
         if (required.Count > 0) schema["required"] = required;
         return schema;
     }
+
+    private static bool IsRequired(BowireFieldInfo field)
+        => !field.IsRepeated && !field.IsMap
+            && (field.Required
+                || string.Equals(field.Label, "required", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(field.Label, "LABEL_REQUIRED", StringComparison.OrdinalIgnoreCase));
 
     /// <summary>
     /// Map Bowire / proto type names to JSON Schema type tags.
