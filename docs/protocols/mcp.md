@@ -33,7 +33,7 @@ After the handshake (`initialize` + `notifications/initialized`), Bowire calls `
 | **Tools** | one per discovered tool | `tools/call` with the tool arguments — server-streaming: what the server reports while the tool runs, then the result |
 | **Resources** | one per resource (method name = URI) | `resources/read` |
 | **Prompts** | one per prompt | `prompts/get` with the prompt arguments |
-| **Tasks** | `get`, `follow`, `update`, `cancel` — only on a server that runs tasks | `tasks/get`, `tasks/update`, `tasks/cancel` by `taskId`; see [Tasks](#tasks-long-running-tool-calls) |
+| **Tasks** | `get`, `follow`, `update`, `cancel` — only on a server that runs tasks | `tasks/get`, `tasks/update`, `tasks/cancel` by `taskId`; see [Tasks](#tasks--long-running-tool-calls) |
 
 Tool input schemas (`inputSchema`, JSON Schema with `type: "object"`) are mapped to the standard form-based UI: strings become text inputs, numbers become number fields, booleans become checkboxes, arrays become repeated fields, and nested objects become message fields. Required fields are marked with an asterisk.
 
@@ -107,7 +107,7 @@ A unary invoke of a tool (`bowire call`, REST) follows the task itself and answe
 [`samples/Kuestenlogik.Bowire.Sample.Mcp`](https://github.com/Kuestenlogik/Bowire/tree/main/samples/Kuestenlogik.Bowire.Sample.Mcp) is a combined sample — one project that both serves MCP over the official C# SDK's streamable-HTTP transport (message endpoint `http://localhost:5190/mcp`) **and** mounts the embedded workbench at `/bowire`. It exposes two tools:
 
 - **Tools** — `echo` (echoes the input text) and `add` (adds two integers)
-- **Task tools** — `generate_report` (works for a few seconds, then answers) and `confirm_shipment` (asks for a confirmation through an input request first). The sample runs only these two as [tasks](#tasks-long-running-tool-calls); every other tool stays synchronous.
+- **Task tools** — `generate_report` (works for a few seconds, then answers) and `confirm_shipment` (asks for a confirmation through an input request first). The sample runs only these two as [tasks](#tasks--long-running-tool-calls); every other tool stays synchronous.
 
 Because it plays both roles at once, you can reach it either way:
 
