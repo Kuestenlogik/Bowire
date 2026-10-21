@@ -142,6 +142,26 @@ public sealed class AsyncApiYamlPreNormaliserTests
         Assert.Contains("        Kafka: should-stay", output, StringComparison.Ordinal);
     }
 
+    [Theory]
+    [InlineData("properties:\n  version:\n    type: string\n")]
+    [InlineData("properties:\r\n  version:\r\n    type: string\r\n")]
+    public void Leaves_a_key_whose_value_is_on_the_next_line_alone(string input)
+    {
+        // A `version:` key that opens a nested mapping (a schema property
+        // named `version`) has no scalar on its own line. The value
+        // pattern must not reach across the line break and fold the
+        // child line into a quoted scalar.
+        Assert.Equal(input, Normalise(input));
+    }
+
+    [Fact]
+    public void Quotes_a_crlf_terminated_version_without_touching_the_line_break()
+    {
+        var input = "info:\r\n  version: 1.2.3\r\n  title: X\r\n";
+        var output = Normalise(input);
+        Assert.Equal("info:\r\n  version: '1.2.3'\r\n  title: X\r\n", output);
+    }
+
     [Fact]
     public void Binding_key_normalisation_is_idempotent()
     {

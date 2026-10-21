@@ -36,18 +36,25 @@ internal static class AsyncApiYamlPreNormaliser
     //     `#` of a comment, and not whitespace itself)
     //   - we capture the raw value up to end-of-line / first `#` comment
     //
-    // The `(?>\s*)` atomic group on the post-colon whitespace is the load-
-    // bearing piece: a plain `\s*` would let the engine backtrack across
-    // the space and let a `'` value start with the leading whitespace
-    // (turning `asyncapi: '3.0.0'` into a match whose captured value is
-    // ` '3.0.0'`, which we'd then re-quote into `' '3.0.0''` — broken).
-    // Atomic = no backtracking once the spaces are consumed.
+    // The `(?>[ \t]*)` atomic group on the post-colon whitespace is the
+    // load-bearing piece: a non-atomic group would let the engine
+    // backtrack across the space and let a `'` value start with the
+    // leading whitespace (turning `asyncapi: '3.0.0'` into a match whose
+    // captured value is ` '3.0.0'`, which we'd then re-quote into
+    // `' '3.0.0''` — broken). Atomic = no backtracking once the spaces
+    // are consumed.
+    //
+    // Indent and the whitespace around the colon are spaces and tabs
+    // only, never `\s` (#909): `\s` also matches line breaks, so a
+    // `version:` key opening a nested mapping (a schema property named
+    // `version`) had its first child line folded into the value —
+    // `version:\n    type: string` became `version: 'type: string'`.
     //
     // Quote the value with single quotes — single quotes are the YAML form
     // that doesn't process escape sequences, so we preserve the literal
     // value even if it contained backslashes.
     private static readonly Regex EnumTypedKeyPattern = new(
-        @"^(?<indent>\s*)(?<key>asyncapi|version)\s*:(?>\s*)(?<value>[^'""\|\>#\r\n\s][^#\r\n]*?)(?<trail>\s*(?:#.*)?)$",
+        @"^(?<indent>[ \t]*)(?<key>asyncapi|version)[ \t]*:(?>[ \t]*)(?<value>[^'""\|\>#\r\n\s][^#\r\n]*?)(?<trail>\s*(?:#.*)?)$",
         RegexOptions.Multiline | RegexOptions.Compiled);
 
     // Canonical AsyncAPI binding-key names per asyncapi/bindings repo.
