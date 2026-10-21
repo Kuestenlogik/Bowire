@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
 
-**49/56 done** · 7 backlog
+**49/60 done** · 11 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -23,6 +23,10 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [870](https://github.com/Kuestenlogik/Bowire/issues/870) | Bowire | [Keyring references: URL services and escaped slashes](#issue-kuestenlogik-bowire-870) | ⬜ Backlog |  |
 | [871](https://github.com/Kuestenlogik/Bowire/issues/871) | Bowire | [SCIM: a user PATCH refused with 409 for a taken userName keeps the new name in memory](#issue-kuestenlogik-bowire-871) | ⬜ Backlog |  |
 | [872](https://github.com/Kuestenlogik/Bowire/issues/872) | Bowire | [SCIM: a user provisioned inactive is never purged after DELETE](#issue-kuestenlogik-bowire-872) | ⬜ Backlog |  |
+| [873](https://github.com/Kuestenlogik/Bowire/issues/873) | Bowire | [SCIM: PurgeAfter=00:00:00 never purges, though documented as deleting without waiting](#issue-kuestenlogik-bowire-873) | ⬜ Backlog |  |
+| [874](https://github.com/Kuestenlogik/Bowire/issues/874) | Bowire | [SCIM: group PATCH accepts a displayName another group already has](#issue-kuestenlogik-bowire-874) | ⬜ Backlog |  |
+| [875](https://github.com/Kuestenlogik/Bowire/issues/875) | Bowire | [SCIM: a PATCH that fails on a later operation keeps the earlier operations](#issue-kuestenlogik-bowire-875) | ⬜ Backlog |  |
+| [876](https://github.com/Kuestenlogik/Bowire/issues/876) | Bowire | [SCIM: the provisioning trace throws on a PATCH body that is not a JSON object](#issue-kuestenlogik-bowire-876) | ⬜ Backlog |  |
 | [816](https://github.com/Kuestenlogik/Bowire/issues/816) | Bowire | [SCIM trace records status 200 for every request](#issue-kuestenlogik-bowire-816) | ✅ Done |  |
 | [817](https://github.com/Kuestenlogik/Bowire/issues/817) | Bowire | [OIDC provider cannot run as an installed plugin](#issue-kuestenlogik-bowire-817) | ✅ Done |  |
 | [818](https://github.com/Kuestenlogik/Bowire/issues/818) | Bowire | [--auth-oidc-* flags are documented but never read](#issue-kuestenlogik-bowire-818) | ✅ Done |  |
@@ -256,6 +260,22 @@ When a followed MCP task (#801) fails and its JSON-RPC `error.code` is not a num
 #### <a id="issue-kuestenlogik-bowire-872"></a>⬜ Backlog · [#872](https://github.com/Kuestenlogik/Bowire/issues/872) SCIM: a user provisioned inactive is never purged after DELETE
 
 `BowireScimStore.DeleteUser` (`src/Kuestenlogik.Bowire.Scim/BowireScimStore.cs:390`) starts the purge window through `ApplyActivation`, which only acts on an active → inactive transition. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/872)
+
+#### <a id="issue-kuestenlogik-bowire-873"></a>⬜ Backlog · [#873](https://github.com/Kuestenlogik/Bowire/issues/873) SCIM: PurgeAfter=00:00:00 never purges, though documented as deleting without waiting
+
+`docs/setup/scim.md` and the XML docs on `BowireScimOptions.PurgeAfter` say `00:00:00` deletes deprovisioned identities without waiting. `AddBowireScim` (`src/Kuestenlogik.Bowire.Scim/BowireScimExtensions.cs:52`) registers the purge service only when `PurgeAfter > TimeSpan.Zero`. [[more]](https://github.com/Kuestenlogik/Bowire/issues/873)
+
+#### <a id="issue-kuestenlogik-bowire-874"></a>⬜ Backlog · [#874](https://github.com/Kuestenlogik/Bowire/issues/874) SCIM: group PATCH accepts a displayName another group already has
+
+`displayName` is advertised as unique (`/Schemas`), and `CreateGroup` and `ReplaceGroup` refuse a duplicate with `409 uniqueness`. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/874)
+
+#### <a id="issue-kuestenlogik-bowire-875"></a>⬜ Backlog · [#875](https://github.com/Kuestenlogik/Bowire/issues/875) SCIM: a PATCH that fails on a later operation keeps the earlier operations
+
+`ScimPatch.Apply` (`src/Kuestenlogik.Bowire.Scim/ScimPatch.cs:74` and `:96`) applies the operations one by one to the live resource that `BowireScimStore.UpdateUser` / `UpdateGroup` hand it. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/875)
+
+#### <a id="issue-kuestenlogik-bowire-876"></a>⬜ Backlog · [#876](https://github.com/Kuestenlogik/Bowire/issues/876) SCIM: the provisioning trace throws on a PATCH body that is not a JSON object
+
+`ScimProvisioningTrace.DetectPatchDialect` (`src/Kuestenlogik.Bowire.Scim/ScimProvisioningTrace.cs:170`) calls `TryGetProperty` on the root element without checking that it is an object. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/876)
 
 #### <a id="issue-kuestenlogik-bowire-816"></a>✅ Done · [#816](https://github.com/Kuestenlogik/Bowire/issues/816) SCIM trace records status 200 for every request
 
