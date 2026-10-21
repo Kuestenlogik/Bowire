@@ -229,6 +229,48 @@ public sealed class OpenApiDocumentBuilderTests
     }
 
     [Fact]
+    public void Build_with_recording_matches_concrete_paths_to_templated_operations()
+    {
+        // HAR imports, interceptor captures and mock miss-captures record the
+        // concrete request path, not the operation's template. The more
+        // literal operation wins, as in OpenAPI's own path matching.
+        var svc = MakeService("Users", "1.0.0",
+            ("getUser", "GET", "/users/{id}"),
+            ("getMe",   "GET", "/users/me"),
+            ("list",    "GET", "/users"),
+            ("delete",  "DELETE", "/users/{id}"));
+        var recording = new BowireRecording
+        {
+            Id = "rec-2",
+            Name = "Captured traffic",
+            Steps =
+            {
+                new BowireRecordingStep { HttpVerb = "GET", HttpPath = "/users/42" },
+                new BowireRecordingStep { HttpVerb = "GET", HttpPath = "/users/7?expand=roles" },
+                new BowireRecordingStep { HttpVerb = "GET", HttpPath = "/users/me" },
+                new BowireRecordingStep { HttpVerb = "GET", HttpPath = "/users" },
+                new BowireRecordingStep { HttpVerb = "GET", HttpPath = "/users/42/posts" },
+            }
+        };
+
+        var json = OpenApiDocumentBuilder.Build("http://h", new[] { svc }, recording,
+            new OpenApiExportOptions { Format = OpenApiExportFormat.Json });
+        using var doc = System.Text.Json.JsonDocument.Parse(json);
+        var paths = doc.RootElement.GetProperty("paths");
+
+        static (bool Recorded, int Steps) Coverage(System.Text.Json.JsonElement op)
+        {
+            var c = op.GetProperty("x-bowire-coverage");
+            return (c.GetProperty("recorded").GetBoolean(), c.GetProperty("stepCount").GetInt32());
+        }
+
+        Assert.Equal((true, 2), Coverage(paths.GetProperty("/users/{id}").GetProperty("get")));
+        Assert.Equal((true, 1), Coverage(paths.GetProperty("/users/me").GetProperty("get")));
+        Assert.Equal((true, 1), Coverage(paths.GetProperty("/users").GetProperty("get")));
+        Assert.Equal((false, 0), Coverage(paths.GetProperty("/users/{id}").GetProperty("delete")));
+    }
+
+    [Fact]
     public void Build_without_recording_omits_coverage()
     {
         var svc = MakeService("Things", "1.0.0", ("list", "GET", "/things"));

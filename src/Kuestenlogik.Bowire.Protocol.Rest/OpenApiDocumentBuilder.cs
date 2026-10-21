@@ -69,7 +69,7 @@ public static class OpenApiDocumentBuilder
         ArgumentNullException.ThrowIfNull(services);
         options ??= new OpenApiExportOptions();
 
-        var coverage = BuildCoverageIndex(recording);
+        var coverage = BuildCoverageIndex(recording, services);
         var doc = BuildDocumentModel(serverUrl, services, options, coverage);
         return options.Format == OpenApiExportFormat.Json
             ? SerializeJson(doc)
@@ -445,20 +445,93 @@ public static class OpenApiDocumentBuilder
     internal static string CoverageKey(string verb, string path)
         => verb.ToUpperInvariant() + " " + path;
 
-    private static Dictionary<string, CoverageEntry> BuildCoverageIndex(BowireRecording? recording)
+    /// <summary>
+    /// Count the recording's steps per operation. #903 - a step's path is
+    /// the operation's template only for the workbench's own captures; HAR
+    /// imports, interceptor captures and mock miss-captures record the
+    /// concrete request path, query included. Each step is therefore matched
+    /// to an operation the way OpenAPI matches paths: the exact path first,
+    /// otherwise the matching template with the most literal segments.
+    /// </summary>
+    private static Dictionary<string, CoverageEntry> BuildCoverageIndex(
+        BowireRecording? recording, IReadOnlyList<BowireServiceInfo> services)
     {
         var dict = new Dictionary<string, CoverageEntry>(StringComparer.OrdinalIgnoreCase);
         if (recording?.Steps is null) return dict;
+        var operationPaths = services
+            .SelectMany(s => s.Methods)
+            .Where(m => !string.IsNullOrWhiteSpace(m.HttpPath))
+            .Select(m => (Verb: m.HttpMethod ?? "GET", Path: m.HttpPath!))
+            .ToList();
         foreach (var step in recording.Steps)
         {
             if (step.HttpPath is null || step.HttpVerb is null) continue;
-            var key = CoverageKey(step.HttpVerb, step.HttpPath);
+            var path = MatchOperationPath(step.HttpVerb, step.HttpPath, operationPaths) ?? step.HttpPath;
+            var key = CoverageKey(step.HttpVerb, path);
             if (dict.TryGetValue(key, out var entry))
                 dict[key] = entry with { StepCount = entry.StepCount + 1 };
             else
                 dict[key] = new CoverageEntry(Recorded: true, StepCount: 1);
         }
         return dict;
+    }
+
+    /// <summary>
+    /// The path template of the operation a recorded <paramref name="verb"/>
+    /// + <paramref name="recordedPath"/> belongs to, or null when none
+    /// matches. A <c>{name}</c> placeholder matches one non-empty segment.
+    /// </summary>
+    internal static string? MatchOperationPath(
+        string verb, string recordedPath, IReadOnlyList<(string Verb, string Path)> operations)
+    {
+        var cut = recordedPath.IndexOfAny(['?', '#']);
+        var path = cut >= 0 ? recordedPath[..cut] : recordedPath;
+
+        string? best = null;
+        var bestLiterals = -1;
+        foreach (var (opVerb, opPath) in operations)
+        {
+            if (!string.Equals(opVerb, verb, StringComparison.OrdinalIgnoreCase)) continue;
+            if (string.Equals(opPath, path, StringComparison.Ordinal)) return opPath;
+
+            var literals = MatchTemplate(opPath, path);
+            if (literals > bestLiterals)
+            {
+                best = opPath;
+                bestLiterals = literals;
+            }
+        }
+        return best;
+    }
+
+    /// <summary>
+    /// Number of literal segments when <paramref name="template"/> matches
+    /// <paramref name="path"/> segment by segment, -1 when it does not.
+    /// </summary>
+    private static int MatchTemplate(string template, string path)
+    {
+        var templateSegments = template.Split('/');
+        var pathSegments = path.Split('/');
+        if (templateSegments.Length != pathSegments.Length) return -1;
+
+        var literals = 0;
+        for (var i = 0; i < templateSegments.Length; i++)
+        {
+            var t = templateSegments[i];
+            var p = pathSegments[i];
+            if (!t.Contains('{', StringComparison.Ordinal))
+            {
+                if (!string.Equals(t, p, StringComparison.Ordinal)) return -1;
+                literals++;
+                continue;
+            }
+            // A placeholder, alone or inside a segment (`{id}.json`): each
+            // {name} stands for at least one character other than '/'.
+            var pattern = "^" + System.Text.RegularExpressions.Regex.Replace(
+                System.Text.RegularExpressions.Regex.Escape(t), @"\\\{[^}]*}", ".+") + "$";
+            if (p.Length == 0 || !System.Text.RegularExpressions.Regex.IsMatch(p, pattern)) return -1;
+        }
+        return literals;
     }
 
     private static string PickDocTitle(IReadOnlyList<BowireServiceInfo> services, string serverUrl)
