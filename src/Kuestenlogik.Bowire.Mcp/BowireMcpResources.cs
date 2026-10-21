@@ -318,7 +318,10 @@ public sealed class BowireMcpResources
                     return TextResource(uri, rec.GetRawText());
                 }
             }
-            return TextResource(uri, $"{{ \"error\": \"no {collectionKey} entry with id={id}\" }}");
+            // #884 — serialized, not interpolated: the id comes from the URI,
+            // and a quote or backslash in it broke the JSON body.
+            return TextResource(uri, JsonSerializer.Serialize(
+                new { error = $"no {collectionKey} entry with id={id}" }, JsonOpts));
         }
         catch (Exception ex)
         {

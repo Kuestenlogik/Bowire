@@ -143,6 +143,19 @@ public sealed class BowireMcpResourcesTests : IDisposable
         Assert.Equal(2, recordings[0].GetProperty("stepCount").GetInt32());
     }
 
+    [Theory]
+    [InlineData("a\"b")]
+    [InlineData("a\\b")]
+    public void Recording_UnknownId_ErrorBody_IsValidJson_ForAnyId(string id)
+    {
+        WriteFile("recordings.json", """{ "recordings": [{"id":"r1"}] }""");
+
+        var resource = BowireMcpResources.Recording(id);
+        using var doc = JsonDocument.Parse(resource.Text!);
+
+        Assert.Contains(id, doc.RootElement.GetProperty("error").GetString(), StringComparison.Ordinal);
+    }
+
     [Fact]
     public void Recording_An_Entry_With_A_NonString_Id_Does_Not_Hide_The_Others()
     {
