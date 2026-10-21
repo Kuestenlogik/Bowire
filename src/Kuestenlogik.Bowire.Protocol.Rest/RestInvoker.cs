@@ -779,9 +779,12 @@ internal static class RestInvoker
 
     private static bool CanHaveBody(HttpMethod method)
     {
+        // #900 - DELETE may carry a body: bulk deletes put the ids there and
+        // OpenAPI 3.1 allows a requestBody on it. A body is only attached
+        // when the operation has body fields with values, so an ordinary
+        // DELETE still goes out without one.
         return method != HttpMethod.Get
             && method != HttpMethod.Head
-            && method != HttpMethod.Delete
             && method != HttpMethod.Options
             && method != HttpMethod.Trace;
     }
