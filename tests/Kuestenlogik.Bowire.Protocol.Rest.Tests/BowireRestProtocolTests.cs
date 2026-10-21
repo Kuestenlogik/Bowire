@@ -672,6 +672,19 @@ public sealed class RestInvokerTests
     }
 
     [Fact]
+    public void HttpStatusToBowireStatus_Maps_3xx_To_OK()
+    {
+        // A 3xx only reaches the invoker when HttpClient did not follow it:
+        // 304 Not Modified to a conditional request, 300, a redirect with no
+        // Location or one that would downgrade https to http. The server
+        // answered as designed; the exact code travels in `http_status`.
+        Assert.Equal("OK", InvokeStatusMap(300));
+        Assert.Equal("OK", InvokeStatusMap(301));
+        Assert.Equal("OK", InvokeStatusMap(304));
+        Assert.Equal("OK", InvokeStatusMap(399));
+    }
+
+    [Fact]
     public void HttpStatusToBowireStatus_Maps_4xx_To_Specific_Names()
     {
         Assert.Equal("InvalidArgument", InvokeStatusMap(400));

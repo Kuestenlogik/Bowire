@@ -885,9 +885,15 @@ internal static class RestInvoker
     /// already understand. 2xx → OK, 3xx → OK (redirect handled by HttpClient
     /// follow), 4xx → InvalidArgument/NotFound/etc., 5xx → Unavailable/Internal.
     /// </summary>
+    /// <remarks>
+    /// #906 - a 3xx only arrives here when HttpClient did not follow it: a
+    /// 304 to a conditional request, a 300, a redirect without Location or
+    /// one that would downgrade https to http. The server answered as
+    /// designed, so it is not an error; the exact code is in <c>http_status</c>.
+    /// </remarks>
     private static string HttpStatusToBowireStatus(int code)
     {
-        if (code is >= 200 and < 300) return "OK";
+        if (code is >= 200 and < 400) return "OK";
         if (code == 400) return "InvalidArgument";
         if (code == 401) return "Unauthenticated";
         if (code == 403) return "PermissionDenied";
