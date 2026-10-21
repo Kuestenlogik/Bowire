@@ -250,6 +250,21 @@ public static class BowireMcpAdapterServiceCollectionExtensions
         RequestContext<ListToolsRequestParams> ctx, CancellationToken ct)
     {
         var (registry, serverUrl) = ResolveRegistryAndUrl(ctx);
+        return new ListToolsResult { Tools = await ListAdapterToolsAsync(registry, serverUrl, ct).ConfigureAwait(false) };
+    }
+
+    private static async ValueTask<CallToolResult> HandleCallToolAsync(
+        RequestContext<CallToolRequestParams> ctx, CancellationToken ct)
+    {
+        var (registry, serverUrl) = ResolveRegistryAndUrl(ctx);
+        return await CallAdapterToolAsync(
+            registry, serverUrl, ctx.Params?.Name ?? string.Empty, ctx.Params?.Arguments, ct).ConfigureAwait(false);
+    }
+
+    /// <summary>The tools the adapter offers for the upstream at <paramref name="serverUrl"/>.</summary>
+    internal static async Task<List<Tool>> ListAdapterToolsAsync(
+        BowireProtocolRegistry registry, string serverUrl, CancellationToken ct)
+    {
         var tools = new List<Tool>();
 
         foreach (var protocol in registry.Protocols)
@@ -264,10 +279,7 @@ public static class BowireMcpAdapterServiceCollectionExtensions
             {
                 foreach (var method in service.Methods)
                 {
-                    // Only unary methods become tools. Streaming methods
-                    // need the channel surface, which doesn't translate
-                    // to a single MCP tool-call.
-                    if (!string.Equals(method.MethodType, "Unary", StringComparison.Ordinal)) continue;
+                    if (!IsAdapterTool(method)) continue;
 
                     var toolName = $"{service.Name.Replace('.', '_')}_{method.Name}";
                     var description = $"{method.MethodType} {protocol.Name} method: {service.Name}/{method.Name}";
@@ -285,16 +297,17 @@ public static class BowireMcpAdapterServiceCollectionExtensions
             }
         }
 
-        return new ListToolsResult { Tools = tools };
+        return tools;
     }
 
-    private static async ValueTask<CallToolResult> HandleCallToolAsync(
-        RequestContext<CallToolRequestParams> ctx, CancellationToken ct)
+    /// <summary>
+    /// Run the adapter tool <paramref name="toolName"/> against the upstream
+    /// at <paramref name="serverUrl"/>.
+    /// </summary>
+    internal static async Task<CallToolResult> CallAdapterToolAsync(
+        BowireProtocolRegistry registry, string serverUrl, string toolName,
+        IDictionary<string, JsonElement>? arguments, CancellationToken ct)
     {
-        var (registry, serverUrl) = ResolveRegistryAndUrl(ctx);
-        var toolName = ctx.Params?.Name ?? string.Empty;
-        var arguments = ctx.Params?.Arguments;
-
         foreach (var protocol in registry.Protocols)
         {
             if (string.Equals(protocol.Id, "mcp", StringComparison.OrdinalIgnoreCase)) continue;
@@ -307,6 +320,10 @@ public static class BowireMcpAdapterServiceCollectionExtensions
             {
                 foreach (var method in service.Methods)
                 {
+                    // #892 — the same filter tools/list applies: a streaming
+                    // method was never offered, and calling it by its would-be
+                    // name ran it as a unary invoke.
+                    if (!IsAdapterTool(method)) continue;
                     var candidateName = $"{service.Name.Replace('.', '_')}_{method.Name}";
                     if (!string.Equals(candidateName, toolName, StringComparison.Ordinal)) continue;
 
@@ -348,6 +365,14 @@ public static class BowireMcpAdapterServiceCollectionExtensions
         // SDK assigns the appropriate error code (-32603 internal).
         throw new McpException($"Tool not found: {toolName}");
     }
+
+    /// <summary>
+    /// Whether <paramref name="method"/> is offered as a tool. Only unary
+    /// methods are: streaming methods need the channel surface, which
+    /// doesn't translate to a single MCP tool-call.
+    /// </summary>
+    private static bool IsAdapterTool(Models.BowireMethodInfo method)
+        => string.Equals(method.MethodType, "Unary", StringComparison.Ordinal);
 
     private static async ValueTask<ListResourcesResult> HandleListResourcesAsync(
         RequestContext<ListResourcesRequestParams> ctx, CancellationToken ct)
