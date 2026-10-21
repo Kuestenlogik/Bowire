@@ -12,22 +12,12 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
 
-**85/108 done** · 23 backlog
+**95/108 done** · 13 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [639](https://github.com/Kuestenlogik/Bowire/issues/639) | Bowire | [SCIM: live Okta and Entra ID provisioning round-trips](#issue-kuestenlogik-bowire-639) | ⬜ Backlog | `area:workbench` |
 | [670](https://github.com/Kuestenlogik/Bowire/issues/670) | Bowire | [Get listed where developers and models actually look](#issue-kuestenlogik-bowire-670) | ⬜ Backlog | `area:site` |
-| [904](https://github.com/Kuestenlogik/Bowire/issues/904) | Bowire | [REST discovery by URL fails on duplicate operation keys (#514 fixed only the upload and embedded paths)](#issue-kuestenlogik-bowire-904) | ⬜ Backlog |  |
-| [905](https://github.com/Kuestenlogik/Bowire/issues/905) | Bowire | [AWS SigV4 signing does not sort repeated query parameters by value, so AWS answers 403](#issue-kuestenlogik-bowire-905) | ⬜ Backlog |  |
-| [906](https://github.com/Kuestenlogik/Bowire/issues/906) | Bowire | [REST: a 3xx response is reported as status Unknown (shown as an error) instead of OK](#issue-kuestenlogik-bowire-906) | ⬜ Backlog |  |
-| [907](https://github.com/Kuestenlogik/Bowire/issues/907) | Bowire | [REST discovery serves the earlier probe result for any later URL on the same origin, ignoring a spec URL entered explicitly](#issue-kuestenlogik-bowire-907) | ⬜ Backlog |  |
-| [908](https://github.com/Kuestenlogik/Bowire/issues/908) | Bowire | [MCP adapter ignores BowireMcpAdapterOptions.RequestTimeout and BearerToken](#issue-kuestenlogik-bowire-908) | ⬜ Backlog |  |
-| [909](https://github.com/Kuestenlogik/Bowire/issues/909) | Bowire | [AsyncAPI YAML pre-normaliser folds a nested version: mapping into a quoted string](#issue-kuestenlogik-bowire-909) | ⬜ Backlog |  |
-| [910](https://github.com/Kuestenlogik/Bowire/issues/910) | Bowire | [AsyncAPI bindings stripper deletes schema properties, examples and channels named bindings](#issue-kuestenlogik-bowire-910) | ⬜ Backlog |  |
-| [911](https://github.com/Kuestenlogik/Bowire/issues/911) | Bowire | [AsyncAPI export registers a shared message type once per reference instead of once](#issue-kuestenlogik-bowire-911) | ⬜ Backlog |  |
-| [912](https://github.com/Kuestenlogik/Bowire/issues/912) | Bowire | [GraphQL discovery overflows the stack on a self-referencing input type](#issue-kuestenlogik-bowire-912) | ⬜ Backlog |  |
-| [913](https://github.com/Kuestenlogik/Bowire/issues/913) | Bowire | [AsyncAPI export creates one channel per method instead of one per address](#issue-kuestenlogik-bowire-913) | ⬜ Backlog |  |
 | [914](https://github.com/Kuestenlogik/Bowire/issues/914) | Bowire | [GraphQL list arguments get a variable type with the wrong nullability](#issue-kuestenlogik-bowire-914) | ⬜ Backlog |  |
 | [915](https://github.com/Kuestenlogik/Bowire/issues/915) | Bowire | [AsyncAPI export marks optional fields required and types repeated fields as scalars](#issue-kuestenlogik-bowire-915) | ⬜ Backlog |  |
 | [916](https://github.com/Kuestenlogik/Bowire/issues/916) | Bowire | [GraphQL root fields that return a scalar or enum get a selection set](#issue-kuestenlogik-bowire-916) | ⬜ Backlog |  |
@@ -124,6 +114,16 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [901](https://github.com/Kuestenlogik/Bowire/issues/901) | Bowire | [REST and AsyncAPI mocks serve every YAML scalar as a JSON string (required: true becomes "true")](#issue-kuestenlogik-bowire-901) | ✅ Done |  |
 | [902](https://github.com/Kuestenlogik/Bowire/issues/902) | Bowire | [OpenAPI export writes repeated and nested-object fields as {type: string}](#issue-kuestenlogik-bowire-902) | ✅ Done |  |
 | [903](https://github.com/Kuestenlogik/Bowire/issues/903) | Bowire | [OpenAPI export coverage never matches a recorded concrete path to its templated operation](#issue-kuestenlogik-bowire-903) | ✅ Done |  |
+| [904](https://github.com/Kuestenlogik/Bowire/issues/904) | Bowire | [REST discovery by URL fails on duplicate operation keys (#514 fixed only the upload and embedded paths)](#issue-kuestenlogik-bowire-904) | ✅ Done |  |
+| [905](https://github.com/Kuestenlogik/Bowire/issues/905) | Bowire | [AWS SigV4 signing does not sort repeated query parameters by value, so AWS answers 403](#issue-kuestenlogik-bowire-905) | ✅ Done |  |
+| [906](https://github.com/Kuestenlogik/Bowire/issues/906) | Bowire | [REST: a 3xx response is reported as status Unknown (shown as an error) instead of OK](#issue-kuestenlogik-bowire-906) | ✅ Done |  |
+| [907](https://github.com/Kuestenlogik/Bowire/issues/907) | Bowire | [REST discovery serves the earlier probe result for any later URL on the same origin, ignoring a spec URL entered explicitly](#issue-kuestenlogik-bowire-907) | ✅ Done |  |
+| [908](https://github.com/Kuestenlogik/Bowire/issues/908) | Bowire | [MCP adapter ignores BowireMcpAdapterOptions.RequestTimeout and BearerToken](#issue-kuestenlogik-bowire-908) | ✅ Done |  |
+| [909](https://github.com/Kuestenlogik/Bowire/issues/909) | Bowire | [AsyncAPI YAML pre-normaliser folds a nested version: mapping into a quoted string](#issue-kuestenlogik-bowire-909) | ✅ Done |  |
+| [910](https://github.com/Kuestenlogik/Bowire/issues/910) | Bowire | [AsyncAPI bindings stripper deletes schema properties, examples and channels named bindings](#issue-kuestenlogik-bowire-910) | ✅ Done |  |
+| [911](https://github.com/Kuestenlogik/Bowire/issues/911) | Bowire | [AsyncAPI export registers a shared message type once per reference instead of once](#issue-kuestenlogik-bowire-911) | ✅ Done |  |
+| [912](https://github.com/Kuestenlogik/Bowire/issues/912) | Bowire | [GraphQL discovery overflows the stack on a self-referencing input type](#issue-kuestenlogik-bowire-912) | ✅ Done |  |
+| [913](https://github.com/Kuestenlogik/Bowire/issues/913) | Bowire | [AsyncAPI export creates one channel per method instead of one per address](#issue-kuestenlogik-bowire-913) | ✅ Done |  |
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
@@ -288,46 +288,6 @@ Split from #96 so the SCIM surface can ship on its own merits. [[more]](https://
 > `area:site`
 
 Six credible competitors turned up during the competitive survey **via openalternative.co**. Bowire was not there. That is the whole diagnosis: when a developer — or a language model — asks for "open source Postman alternative", the answer is assembled from these directories, not from bowire.io. [[more]](https://github.com/Kuestenlogik/Bowire/issues/670)
-
-#### <a id="issue-kuestenlogik-bowire-904"></a>⬜ Backlog · [#904](https://github.com/Kuestenlogik/Bowire/issues/904) REST discovery by URL fails on duplicate operation keys (#514 fixed only the upload and embedded paths)
-
-`BowireRestProtocol.CommitDiscovery` (`src/Kuestenlogik.Bowire.Protocol.Rest/BowireRestProtocol.cs:383-385`) builds the `{service}::{method}` invoke index with a raw `ToDictionary`. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/904)
-
-#### <a id="issue-kuestenlogik-bowire-905"></a>⬜ Backlog · [#905](https://github.com/Kuestenlogik/Bowire/issues/905) AWS SigV4 signing does not sort repeated query parameters by value, so AWS answers 403
-
-`AwsSigV4Signer.BuildCanonicalQueryString` (`src/Kuestenlogik.Bowire.Protocol.Rest/AwsSigV4Signer.cs:154`) sorts the query parameters by name only, with `List.Sort`, which is not stable. SigV4 requires parameters with the same name to be sorted by value. [[more]](https://github.com/Kuestenlogik/Bowire/issues/905)
-
-#### <a id="issue-kuestenlogik-bowire-906"></a>⬜ Backlog · [#906](https://github.com/Kuestenlogik/Bowire/issues/906) REST: a 3xx response is reported as status Unknown (shown as an error) instead of OK
-
-`RestInvoker.HttpStatusToBowireStatus` (`src/Kuestenlogik.Bowire.Protocol.Rest/RestInvoker.cs:882-897`) has no branch for 3xx, so every 3xx response falls through to `"Unknown"`. The workbench colours `Unknown` as an error (`grpcStatusClass` in `wwwroot/js/helpers.js`), and the method's own doc comment says "3xx → OK". [[more]](https://github.com/Kuestenlogik/Bowire/issues/906)
-
-#### <a id="issue-kuestenlogik-bowire-907"></a>⬜ Backlog · [#907](https://github.com/Kuestenlogik/Bowire/issues/907) REST discovery serves the earlier probe result for any later URL on the same origin, ignoring a spec URL entered explicitly
-
-When the well-known-path sweep resolves an origin, `BowireRestProtocol` remembers the winning document per **origin** (`_probeResolved[origin] = probedUrl`, `src/Kuestenlogik.Bowire.Protocol.Rest/BowireRestProtocol.cs:282`). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/907)
-
-#### <a id="issue-kuestenlogik-bowire-908"></a>⬜ Backlog · [#908](https://github.com/Kuestenlogik/Bowire/issues/908) MCP adapter ignores BowireMcpAdapterOptions.RequestTimeout and BearerToken
-
-`BowireMcpAdapterOptions` documents two settings that nothing reads (`src/Kuestenlogik.Bowire.Protocol.Mcp/BowireMcpAdapterOptions.cs:50`, `:66`): [[more]](https://github.com/Kuestenlogik/Bowire/issues/908)
-
-#### <a id="issue-kuestenlogik-bowire-909"></a>⬜ Backlog · [#909](https://github.com/Kuestenlogik/Bowire/issues/909) AsyncAPI YAML pre-normaliser folds a nested version: mapping into a quoted string
-
-The YAML pre-normaliser quotes the values of `asyncapi:` and `version:` keys so the SDK reader does not enum-deserialise them (`src/Kuestenlogik.Bowire.AsyncApi/AsyncApiYamlPreNormaliser.cs:50`). The whitespace around the colon is matched with `\s*`, which also matches line breaks. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/909)
-
-#### <a id="issue-kuestenlogik-bowire-910"></a>⬜ Backlog · [#910](https://github.com/Kuestenlogik/Bowire/issues/910) AsyncAPI bindings stripper deletes schema properties, examples and channels named bindings
-
-Before the SDK reader sees a document, `AsyncApiBindingsStripper` removes binding objects from it (they crash the reader, asyncapi/net-sdk#76). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/910)
-
-#### <a id="issue-kuestenlogik-bowire-911"></a>⬜ Backlog · [#911](https://github.com/Kuestenlogik/Bowire/issues/911) AsyncAPI export registers a shared message type once per reference instead of once
-
-`AsyncApiDocumentBuilder.RegisterMessage` (`src/Kuestenlogik.Bowire.AsyncApi/AsyncApiDocumentBuilder.cs:338`) calls `MakeUniqueId` before it checks `messages.ContainsKey`. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/911)
-
-#### <a id="issue-kuestenlogik-bowire-912"></a>⬜ Backlog · [#912](https://github.com/Kuestenlogik/Bowire/issues/912) GraphQL discovery overflows the stack on a self-referencing input type
-
-Discovering a GraphQL schema with a self-referencing input type, such as `input Filter { and: [Filter!] }`, overflows the stack and kills the process. [[more]](https://github.com/Kuestenlogik/Bowire/issues/912)
-
-#### <a id="issue-kuestenlogik-bowire-913"></a>⬜ Backlog · [#913](https://github.com/Kuestenlogik/Bowire/issues/913) AsyncAPI export creates one channel per method instead of one per address
-
-`AsyncApiDocumentBuilder` documents one channel per address ("deduplicated by address"), but `BuildDocumentModel` creates a new channel for every method (`src/Kuestenlogik.Bowire.AsyncApi/AsyncApiDocumentBuilder.cs:140`, `MakeUniqueId(seenChannelIds, ToSafeId(address))`). [[more]](https://github.com/Kuestenlogik/Bowire/issues/913)
 
 #### <a id="issue-kuestenlogik-bowire-914"></a>⬜ Backlog · [#914](https://github.com/Kuestenlogik/Bowire/issues/914) GraphQL list arguments get a variable type with the wrong nullability
 
@@ -712,6 +672,46 @@ The REST and AsyncAPI mock-host extensions serve a YAML source schema as JSON un
 #### <a id="issue-kuestenlogik-bowire-903"></a>✅ Done · [#903](https://github.com/Kuestenlogik/Bowire/issues/903) OpenAPI export coverage never matches a recorded concrete path to its templated operation
 
 The `x-bowire-coverage` annotation in `OpenApiDocumentBuilder` is a dictionary keyed by `"<VERB> <recorded path>"` and looked up with `"<VERB> <operation template>"` (`src/Kuestenlogik.Bowire.Protocol.Rest/OpenApiDocumentBuilder.cs:162-163`, `BuildCoverageIndex` at `:387`). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/903)
+
+#### <a id="issue-kuestenlogik-bowire-904"></a>✅ Done · [#904](https://github.com/Kuestenlogik/Bowire/issues/904) REST discovery by URL fails on duplicate operation keys (#514 fixed only the upload and embedded paths)
+
+`BowireRestProtocol.CommitDiscovery` (`src/Kuestenlogik.Bowire.Protocol.Rest/BowireRestProtocol.cs:383-385`) builds the `{service}::{method}` invoke index with a raw `ToDictionary`. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/904)
+
+#### <a id="issue-kuestenlogik-bowire-905"></a>✅ Done · [#905](https://github.com/Kuestenlogik/Bowire/issues/905) AWS SigV4 signing does not sort repeated query parameters by value, so AWS answers 403
+
+`AwsSigV4Signer.BuildCanonicalQueryString` (`src/Kuestenlogik.Bowire.Protocol.Rest/AwsSigV4Signer.cs:154`) sorts the query parameters by name only, with `List.Sort`, which is not stable. SigV4 requires parameters with the same name to be sorted by value. [[more]](https://github.com/Kuestenlogik/Bowire/issues/905)
+
+#### <a id="issue-kuestenlogik-bowire-906"></a>✅ Done · [#906](https://github.com/Kuestenlogik/Bowire/issues/906) REST: a 3xx response is reported as status Unknown (shown as an error) instead of OK
+
+`RestInvoker.HttpStatusToBowireStatus` (`src/Kuestenlogik.Bowire.Protocol.Rest/RestInvoker.cs:882-897`) has no branch for 3xx, so every 3xx response falls through to `"Unknown"`. The workbench colours `Unknown` as an error (`grpcStatusClass` in `wwwroot/js/helpers.js`), and the method's own doc comment says "3xx → OK". [[more]](https://github.com/Kuestenlogik/Bowire/issues/906)
+
+#### <a id="issue-kuestenlogik-bowire-907"></a>✅ Done · [#907](https://github.com/Kuestenlogik/Bowire/issues/907) REST discovery serves the earlier probe result for any later URL on the same origin, ignoring a spec URL entered explicitly
+
+When the well-known-path sweep resolves an origin, `BowireRestProtocol` remembers the winning document per **origin** (`_probeResolved[origin] = probedUrl`, `src/Kuestenlogik.Bowire.Protocol.Rest/BowireRestProtocol.cs:282`). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/907)
+
+#### <a id="issue-kuestenlogik-bowire-908"></a>✅ Done · [#908](https://github.com/Kuestenlogik/Bowire/issues/908) MCP adapter ignores BowireMcpAdapterOptions.RequestTimeout and BearerToken
+
+`BowireMcpAdapterOptions` documents two settings that nothing reads (`src/Kuestenlogik.Bowire.Protocol.Mcp/BowireMcpAdapterOptions.cs:50`, `:66`): [[more]](https://github.com/Kuestenlogik/Bowire/issues/908)
+
+#### <a id="issue-kuestenlogik-bowire-909"></a>✅ Done · [#909](https://github.com/Kuestenlogik/Bowire/issues/909) AsyncAPI YAML pre-normaliser folds a nested version: mapping into a quoted string
+
+The YAML pre-normaliser quotes the values of `asyncapi:` and `version:` keys so the SDK reader does not enum-deserialise them (`src/Kuestenlogik.Bowire.AsyncApi/AsyncApiYamlPreNormaliser.cs:50`). The whitespace around the colon is matched with `\s*`, which also matches line breaks. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/909)
+
+#### <a id="issue-kuestenlogik-bowire-910"></a>✅ Done · [#910](https://github.com/Kuestenlogik/Bowire/issues/910) AsyncAPI bindings stripper deletes schema properties, examples and channels named bindings
+
+Before the SDK reader sees a document, `AsyncApiBindingsStripper` removes binding objects from it (they crash the reader, asyncapi/net-sdk#76). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/910)
+
+#### <a id="issue-kuestenlogik-bowire-911"></a>✅ Done · [#911](https://github.com/Kuestenlogik/Bowire/issues/911) AsyncAPI export registers a shared message type once per reference instead of once
+
+`AsyncApiDocumentBuilder.RegisterMessage` (`src/Kuestenlogik.Bowire.AsyncApi/AsyncApiDocumentBuilder.cs:338`) calls `MakeUniqueId` before it checks `messages.ContainsKey`. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/911)
+
+#### <a id="issue-kuestenlogik-bowire-912"></a>✅ Done · [#912](https://github.com/Kuestenlogik/Bowire/issues/912) GraphQL discovery overflows the stack on a self-referencing input type
+
+Discovering a GraphQL schema with a self-referencing input type, such as `input Filter { and: [Filter!] }`, overflows the stack and kills the process. [[more]](https://github.com/Kuestenlogik/Bowire/issues/912)
+
+#### <a id="issue-kuestenlogik-bowire-913"></a>✅ Done · [#913](https://github.com/Kuestenlogik/Bowire/issues/913) AsyncAPI export creates one channel per method instead of one per address
+
+`AsyncApiDocumentBuilder` documents one channel per address ("deduplicated by address"), but `BuildDocumentModel` creates a new channel for every method (`src/Kuestenlogik.Bowire.AsyncApi/AsyncApiDocumentBuilder.cs:140`, `MakeUniqueId(seenChannelIds, ToSafeId(address))`). [[more]](https://github.com/Kuestenlogik/Bowire/issues/913)
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
