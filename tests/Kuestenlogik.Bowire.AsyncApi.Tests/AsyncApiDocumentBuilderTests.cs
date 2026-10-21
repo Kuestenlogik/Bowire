@@ -12,7 +12,7 @@ namespace Kuestenlogik.Bowire.AsyncApi.Tests;
 /// for each supported protocol and pins:
 /// <list type="bullet">
 ///   <item>Top-level doc shape (asyncapi version, info, servers).</item>
-///   <item>Channel + operation emission (one channel per method,
+///   <item>Channel + operation emission (one channel per address,
 ///     send/receive action picked correctly).</item>
 ///   <item>Bindings block carries the right binding key per protocol.</item>
 ///   <item>Synthesised message payloads round-trip from BowireFieldInfo
@@ -320,14 +320,57 @@ public sealed class AsyncApiDocumentBuilderTests
     public void Build_deduplicates_methods_with_the_same_name()
     {
         // Two services contributing a method with the same topic name.
-        // Channel id and operation id should be uniquified rather than
-        // colliding silently.
+        // They share the topic's one channel; the operation ids are
+        // uniquified rather than colliding silently.
         var svc1 = MakeMqttService("mqtt://b:1883", "topic");
         var svc2 = MakeMqttService("mqtt://b:1883", "topic");
-        var yaml = AsyncApiDocumentBuilder.Build("mqtt://b:1883", new[] { svc1, svc2 });
+        var json = AsyncApiDocumentBuilder.Build("mqtt://b:1883", new[] { svc1, svc2 },
+            options: new AsyncApiExportOptions { Format = AsyncApiExportFormat.Json });
 
-        // The disambiguator suffix '_2' appears for the second copy.
-        Assert.Contains("topic_2", yaml);
+        using var doc = System.Text.Json.JsonDocument.Parse(json);
+        Assert.Equal("topic", Assert.Single(doc.RootElement.GetProperty("channels").EnumerateObject()).Name);
+        Assert.Equal(["topic_send", "topic_receive", "topic_send_2", "topic_receive_2"],
+            doc.RootElement.GetProperty("operations").EnumerateObject().Select(p => p.Name).ToList());
+    }
+
+    [Fact]
+    public void Build_emits_one_channel_per_address_shared_by_its_send_and_receive_operations()
+    {
+        var json = AsyncApiDocumentBuilder.Build("mqtt://b:1883",
+            new[] { MakeMqttService("mqtt://b:1883", "sensors/temperature") },
+            options: new AsyncApiExportOptions { Format = AsyncApiExportFormat.Json });
+
+        using var doc = System.Text.Json.JsonDocument.Parse(json);
+        var channels = doc.RootElement.GetProperty("channels").EnumerateObject().ToList();
+        var channel = Assert.Single(channels);
+        Assert.Equal("sensors_temperature", channel.Name);
+        Assert.Equal("sensors/temperature", channel.Value.GetProperty("address").GetString());
+        // The channel lists the payloads of both directions.
+        Assert.Equal(["mqtt_PublishRequest", "mqtt_Message"],
+            channel.Value.GetProperty("messages").EnumerateObject().Select(p => p.Name).ToList());
+
+        var refs = doc.RootElement.GetProperty("operations").EnumerateObject()
+            .Select(op => op.Value.GetProperty("channel").GetProperty("$ref").GetString())
+            .ToList();
+        Assert.Equal(["#/channels/sensors_temperature", "#/channels/sensors_temperature"], refs);
+    }
+
+    [Fact]
+    public void Build_keeps_distinct_addresses_whose_safe_ids_collide_apart()
+    {
+        var svc = new BowireServiceInfo("s", "mqtt", new List<BowireMethodInfo>
+        {
+            SimpleMethod("a/b", "mqtt/a/b/publish", serverStreaming: false),
+            SimpleMethod("a.b", "mqtt/a.b/publish", serverStreaming: false),
+        });
+        var json = AsyncApiDocumentBuilder.Build("mqtt://b:1883", new[] { svc },
+            options: new AsyncApiExportOptions { Format = AsyncApiExportFormat.Json });
+
+        using var doc = System.Text.Json.JsonDocument.Parse(json);
+        var channels = doc.RootElement.GetProperty("channels").EnumerateObject()
+            .Select(c => (c.Name, c.Value.GetProperty("address").GetString()))
+            .ToList();
+        Assert.Equal([("a_b", "a/b"), ("a_b_2", "a.b")], channels);
     }
 
     [Fact]

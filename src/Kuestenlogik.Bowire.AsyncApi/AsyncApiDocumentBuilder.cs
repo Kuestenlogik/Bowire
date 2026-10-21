@@ -127,6 +127,8 @@ public static class AsyncApiDocumentBuilder
         var messages = new Dictionary<string, object?>(StringComparer.Ordinal);
 
         var seenChannelIds = new HashSet<string>(StringComparer.Ordinal);
+        var channelsByAddress = new Dictionary<string,
+            (string Id, Dictionary<string, object?> Entry, Dictionary<string, object?> Messages)>(StringComparer.Ordinal);
         var seenOperationIds = new HashSet<string>(StringComparer.Ordinal);
         var seenMessageIds = new HashSet<string>(StringComparer.Ordinal);
         var messageIdsByType = new Dictionary<string, string>(StringComparer.Ordinal);
@@ -138,7 +140,6 @@ public static class AsyncApiDocumentBuilder
                 var address = method.Name;
                 if (string.IsNullOrWhiteSpace(address)) continue;
 
-                var channelId = MakeUniqueId(seenChannelIds, ToSafeId(address));
                 var action = ClassifyAction(method);
 
                 // Message — both input and output may carry payload
@@ -148,25 +149,31 @@ public static class AsyncApiDocumentBuilder
                 var msgInfo = action == "send" ? method.InputType : method.OutputType;
                 var messageRefId = msgInfo is null ? null : RegisterMessage(messages, seenMessageIds, messageIdsByType, msgInfo);
 
-                var channelEntry = new Dictionary<string, object?>(StringComparer.Ordinal)
+                // One channel per address (#913): the publish and the
+                // subscribe method of a topic share it, and it lists the
+                // messages of both directions. MakeUniqueId only
+                // separates distinct addresses whose safe ids collide.
+                if (!channelsByAddress.TryGetValue(address, out var channel))
                 {
-                    ["address"] = address,
-                };
+                    channel = (MakeUniqueId(seenChannelIds, ToSafeId(address)),
+                        new Dictionary<string, object?>(StringComparer.Ordinal) { ["address"] = address },
+                        new Dictionary<string, object?>(StringComparer.Ordinal));
+                    channelsByAddress[address] = channel;
+                    channels[channel.Id] = channel.Entry;
+                }
+                var (channelId, channelEntry, channelMessages) = channel;
                 if (messageRefId is not null)
                 {
-                    channelEntry["messages"] = new Dictionary<string, object?>
+                    channelMessages[messageRefId] = new Dictionary<string, object?>
                     {
-                        [messageRefId] = new Dictionary<string, object?>
-                        {
-                            ["$ref"] = "#/components/messages/" + messageRefId
-                        }
+                        ["$ref"] = "#/components/messages/" + messageRefId
                     };
+                    channelEntry.TryAdd("messages", channelMessages);
                 }
                 var bindings = BuildChannelBindings(protocol, scheme, method);
-                if (bindings is not null) channelEntry["bindings"] = bindings;
+                if (bindings is not null) channelEntry.TryAdd("bindings", bindings);
                 if (!string.IsNullOrEmpty(method.Description))
-                    channelEntry["description"] = method.Description;
-                channels[channelId] = channelEntry;
+                    channelEntry.TryAdd("description", method.Description);
 
                 var opId = MakeUniqueId(seenOperationIds, $"{channelId}_{action}");
                 var operationEntry = new Dictionary<string, object?>(StringComparer.Ordinal)
