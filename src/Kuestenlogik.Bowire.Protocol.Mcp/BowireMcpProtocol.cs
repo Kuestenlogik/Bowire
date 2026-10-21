@@ -660,7 +660,7 @@ public sealed class BowireMcpProtocol : IBowireProtocol, Kuestenlogik.Bowire.Net
             FullName: "Tools/" + tool.Name,
             ClientStreaming: false,
             ServerStreaming: true,
-            InputType: MapToolInputSchema(tool),
+            InputType: MapToolInputSchema(tool.Name, tool.JsonSchema),
             OutputType: new BowireMessageInfo("ToolResult", "mcp.ToolResult", []),
             MethodType: "ServerStreaming")
         {
@@ -867,16 +867,15 @@ public sealed class BowireMcpProtocol : IBowireProtocol, Kuestenlogik.Bowire.Net
 
     // ----- schema mapping -----------------------------------------------
 
-    private static BowireMessageInfo MapToolInputSchema(McpClientTool tool)
+    internal static BowireMessageInfo MapToolInputSchema(string toolName, JsonElement schema)
     {
         // McpClientTool.JsonSchema is the same JSON-Schema-object MCP
         // ships in tools/list responses. Walk top-level properties +
         // required[] into BowireFieldInfos so Bowire's form UI can render
         // it the same way it does gRPC inputs.
         var fields = new List<BowireFieldInfo>();
-        var schema = tool.JsonSchema;
         if (schema.ValueKind != JsonValueKind.Object)
-            return new BowireMessageInfo(tool.Name + "Input", tool.Name + "Input", fields);
+            return new BowireMessageInfo(toolName + "Input", toolName + "Input", fields);
 
         var required = new HashSet<string>(StringComparer.Ordinal);
         if (schema.TryGetProperty("required", out var req) && req.ValueKind == JsonValueKind.Array)
@@ -893,19 +892,21 @@ public sealed class BowireMcpProtocol : IBowireProtocol, Kuestenlogik.Bowire.Net
             var i = 1;
             foreach (var prop in props.EnumerateObject())
             {
-                var type = prop.Value.TryGetProperty("type", out var t) ? t.GetString() ?? "string" : "string";
-                var description = prop.Value.TryGetProperty("description", out var d) ? d.GetString() : null;
+                var type = SchemaType(prop.Value);
+                var description = prop.Value.ValueKind == JsonValueKind.Object
+                    && prop.Value.TryGetProperty("description", out var d)
+                    && d.ValueKind == JsonValueKind.String
+                        ? d.GetString()
+                        : null;
                 var isRequired = required.Contains(prop.Name);
                 // #665 — an array is a repeated field OF its item type; the
                 // element type is what the form renders one entry of.
                 var isRepeated = type == "array";
                 if (isRepeated
                     && prop.Value.TryGetProperty("items", out var items)
-                    && items.ValueKind == JsonValueKind.Object
-                    && items.TryGetProperty("type", out var it)
-                    && it.ValueKind == JsonValueKind.String)
+                    && items.ValueKind == JsonValueKind.Object)
                 {
-                    type = it.GetString() ?? "string";
+                    type = SchemaType(items);
                 }
 
                 fields.Add(new BowireFieldInfo(
@@ -925,7 +926,35 @@ public sealed class BowireMcpProtocol : IBowireProtocol, Kuestenlogik.Bowire.Net
             }
         }
 
-        return new BowireMessageInfo(tool.Name + "Input", tool.Name + "Input", fields);
+        return new BowireMessageInfo(toolName + "Input", toolName + "Input", fields);
+    }
+
+    /// <summary>
+    /// The JSON Schema <c>type</c> of <paramref name="schema"/> as one name.
+    /// </summary>
+    /// <remarks>
+    /// #896 — <c>type</c> may be an array, and <c>["string","null"]</c> is how
+    /// a nullable field is written; reading it with <c>GetString</c> threw
+    /// and failed discovery of the whole server. An array resolves to its
+    /// first non-<c>null</c> member — nullability is what <c>required</c>
+    /// already expresses for the form — and anything unusable to
+    /// <c>string</c>, the form's plain text input.
+    /// </remarks>
+    private static string SchemaType(JsonElement schema)
+    {
+        if (schema.ValueKind != JsonValueKind.Object || !schema.TryGetProperty("type", out var type))
+            return "string";
+        if (type.ValueKind == JsonValueKind.String)
+            return type.GetString() ?? "string";
+        if (type.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var member in type.EnumerateArray())
+            {
+                if (member.ValueKind == JsonValueKind.String && member.GetString() is { } name && name != "null")
+                    return name;
+            }
+        }
+        return "string";
     }
 
     private static BowireMessageInfo BuildPromptInput(McpClientPrompt prompt)
