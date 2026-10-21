@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
 
-**49/94 done** · 45 backlog
+**49/95 done** · 46 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -61,6 +61,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [908](https://github.com/Kuestenlogik/Bowire/issues/908) | Bowire | [MCP adapter ignores BowireMcpAdapterOptions.RequestTimeout and BearerToken](#issue-kuestenlogik-bowire-908) | ⬜ Backlog |  |
 | [909](https://github.com/Kuestenlogik/Bowire/issues/909) | Bowire | [AsyncAPI YAML pre-normaliser folds a nested version: mapping into a quoted string](#issue-kuestenlogik-bowire-909) | ⬜ Backlog |  |
 | [910](https://github.com/Kuestenlogik/Bowire/issues/910) | Bowire | [AsyncAPI bindings stripper deletes schema properties, examples and channels named bindings](#issue-kuestenlogik-bowire-910) | ⬜ Backlog |  |
+| [911](https://github.com/Kuestenlogik/Bowire/issues/911) | Bowire | [AsyncAPI export registers a shared message type once per reference instead of once](#issue-kuestenlogik-bowire-911) | ⬜ Backlog |  |
 | [816](https://github.com/Kuestenlogik/Bowire/issues/816) | Bowire | [SCIM trace records status 200 for every request](#issue-kuestenlogik-bowire-816) | ✅ Done |  |
 | [817](https://github.com/Kuestenlogik/Bowire/issues/817) | Bowire | [OIDC provider cannot run as an installed plugin](#issue-kuestenlogik-bowire-817) | ✅ Done |  |
 | [818](https://github.com/Kuestenlogik/Bowire/issues/818) | Bowire | [--auth-oidc-* flags are documented but never read](#issue-kuestenlogik-bowire-818) | ✅ Done |  |
@@ -446,6 +447,10 @@ The YAML pre-normaliser quotes the values of `asyncapi:` and `version:` keys so 
 #### <a id="issue-kuestenlogik-bowire-910"></a>⬜ Backlog · [#910](https://github.com/Kuestenlogik/Bowire/issues/910) AsyncAPI bindings stripper deletes schema properties, examples and channels named bindings
 
 Before the SDK reader sees a document, `AsyncApiBindingsStripper` removes binding objects from it (they crash the reader, asyncapi/net-sdk#76). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/910)
+
+#### <a id="issue-kuestenlogik-bowire-911"></a>⬜ Backlog · [#911](https://github.com/Kuestenlogik/Bowire/issues/911) AsyncAPI export registers a shared message type once per reference instead of once
+
+`AsyncApiDocumentBuilder.RegisterMessage` (`src/Kuestenlogik.Bowire.AsyncApi/AsyncApiDocumentBuilder.cs:338`) calls `MakeUniqueId` before it checks `messages.ContainsKey`. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/911)
 
 #### <a id="issue-kuestenlogik-bowire-816"></a>✅ Done · [#816](https://github.com/Kuestenlogik/Bowire/issues/816) SCIM trace records status 200 for every request
 
