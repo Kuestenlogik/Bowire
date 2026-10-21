@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
 
-**49/86 done** · 37 backlog
+**49/91 done** · 42 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -53,6 +53,11 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [900](https://github.com/Kuestenlogik/Bowire/issues/900) | Bowire | [REST: the request body of a DELETE operation is silently dropped](#issue-kuestenlogik-bowire-900) | ⬜ Backlog |  |
 | [901](https://github.com/Kuestenlogik/Bowire/issues/901) | Bowire | [REST and AsyncAPI mocks serve every YAML scalar as a JSON string (required: true becomes "true")](#issue-kuestenlogik-bowire-901) | ⬜ Backlog |  |
 | [902](https://github.com/Kuestenlogik/Bowire/issues/902) | Bowire | [OpenAPI export writes repeated and nested-object fields as {type: string}](#issue-kuestenlogik-bowire-902) | ⬜ Backlog |  |
+| [903](https://github.com/Kuestenlogik/Bowire/issues/903) | Bowire | [OpenAPI export coverage never matches a recorded concrete path to its templated operation](#issue-kuestenlogik-bowire-903) | ⬜ Backlog |  |
+| [904](https://github.com/Kuestenlogik/Bowire/issues/904) | Bowire | [REST discovery by URL fails on duplicate operation keys (#514 fixed only the upload and embedded paths)](#issue-kuestenlogik-bowire-904) | ⬜ Backlog |  |
+| [905](https://github.com/Kuestenlogik/Bowire/issues/905) | Bowire | [AWS SigV4 signing does not sort repeated query parameters by value, so AWS answers 403](#issue-kuestenlogik-bowire-905) | ⬜ Backlog |  |
+| [906](https://github.com/Kuestenlogik/Bowire/issues/906) | Bowire | [REST: a 3xx response is reported as status Unknown (shown as an error) instead of OK](#issue-kuestenlogik-bowire-906) | ⬜ Backlog |  |
+| [907](https://github.com/Kuestenlogik/Bowire/issues/907) | Bowire | [REST discovery serves the earlier probe result for any later URL on the same origin, ignoring a spec URL entered explicitly](#issue-kuestenlogik-bowire-907) | ⬜ Backlog |  |
 | [816](https://github.com/Kuestenlogik/Bowire/issues/816) | Bowire | [SCIM trace records status 200 for every request](#issue-kuestenlogik-bowire-816) | ✅ Done |  |
 | [817](https://github.com/Kuestenlogik/Bowire/issues/817) | Bowire | [OIDC provider cannot run as an installed plugin](#issue-kuestenlogik-bowire-817) | ✅ Done |  |
 | [818](https://github.com/Kuestenlogik/Bowire/issues/818) | Bowire | [--auth-oidc-* flags are documented but never read](#issue-kuestenlogik-bowire-818) | ✅ Done |  |
@@ -406,6 +411,26 @@ The REST and AsyncAPI mock-host extensions serve a YAML source schema as JSON un
 #### <a id="issue-kuestenlogik-bowire-902"></a>⬜ Backlog · [#902](https://github.com/Kuestenlogik/Bowire/issues/902) OpenAPI export writes repeated and nested-object fields as {type: string}
 
 `OpenApiDocumentBuilder` maps every field through `MapFieldType(field.Type)` (`src/Kuestenlogik.Bowire.Protocol.Rest/OpenApiDocumentBuilder.cs:235` and `:307`), which looks only at the scalar type name. `IsRepeated` and `MessageType` are ignored, and the type name `message` falls through to the default. [[more]](https://github.com/Kuestenlogik/Bowire/issues/902)
+
+#### <a id="issue-kuestenlogik-bowire-903"></a>⬜ Backlog · [#903](https://github.com/Kuestenlogik/Bowire/issues/903) OpenAPI export coverage never matches a recorded concrete path to its templated operation
+
+The `x-bowire-coverage` annotation in `OpenApiDocumentBuilder` is a dictionary keyed by `"<VERB> <recorded path>"` and looked up with `"<VERB> <operation template>"` (`src/Kuestenlogik.Bowire.Protocol.Rest/OpenApiDocumentBuilder.cs:162-163`, `BuildCoverageIndex` at `:387`). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/903)
+
+#### <a id="issue-kuestenlogik-bowire-904"></a>⬜ Backlog · [#904](https://github.com/Kuestenlogik/Bowire/issues/904) REST discovery by URL fails on duplicate operation keys (#514 fixed only the upload and embedded paths)
+
+`BowireRestProtocol.CommitDiscovery` (`src/Kuestenlogik.Bowire.Protocol.Rest/BowireRestProtocol.cs:383-385`) builds the `{service}::{method}` invoke index with a raw `ToDictionary`. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/904)
+
+#### <a id="issue-kuestenlogik-bowire-905"></a>⬜ Backlog · [#905](https://github.com/Kuestenlogik/Bowire/issues/905) AWS SigV4 signing does not sort repeated query parameters by value, so AWS answers 403
+
+`AwsSigV4Signer.BuildCanonicalQueryString` (`src/Kuestenlogik.Bowire.Protocol.Rest/AwsSigV4Signer.cs:154`) sorts the query parameters by name only, with `List.Sort`, which is not stable. SigV4 requires parameters with the same name to be sorted by value. [[more]](https://github.com/Kuestenlogik/Bowire/issues/905)
+
+#### <a id="issue-kuestenlogik-bowire-906"></a>⬜ Backlog · [#906](https://github.com/Kuestenlogik/Bowire/issues/906) REST: a 3xx response is reported as status Unknown (shown as an error) instead of OK
+
+`RestInvoker.HttpStatusToBowireStatus` (`src/Kuestenlogik.Bowire.Protocol.Rest/RestInvoker.cs:882-897`) has no branch for 3xx, so every 3xx response falls through to `"Unknown"`. The workbench colours `Unknown` as an error (`grpcStatusClass` in `wwwroot/js/helpers.js`), and the method's own doc comment says "3xx → OK". [[more]](https://github.com/Kuestenlogik/Bowire/issues/906)
+
+#### <a id="issue-kuestenlogik-bowire-907"></a>⬜ Backlog · [#907](https://github.com/Kuestenlogik/Bowire/issues/907) REST discovery serves the earlier probe result for any later URL on the same origin, ignoring a spec URL entered explicitly
+
+When the well-known-path sweep resolves an origin, `BowireRestProtocol` remembers the winning document per **origin** (`_probeResolved[origin] = probedUrl`, `src/Kuestenlogik.Bowire.Protocol.Rest/BowireRestProtocol.cs:282`). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/907)
 
 #### <a id="issue-kuestenlogik-bowire-816"></a>✅ Done · [#816](https://github.com/Kuestenlogik/Bowire/issues/816) SCIM trace records status 200 for every request
 
