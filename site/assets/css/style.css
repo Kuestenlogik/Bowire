@@ -4146,25 +4146,17 @@ button.comparison-bestfor-card.active .comparison-bestfor-name {
         margin-top: -4px;
         left: 0;
         right: 0;
-        /* Background must match .site-header.scrolled so there's no
-           alpha-step at the seam between bar and open menu. The bar
-           uses 0.88; we use the same here. backdrop-filter is also
-           identical, so the two layers read as one continuous panel. */
-        background: rgba(15, 15, 23, 0.88);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
+        /* #929 - opaque, from the theme token. A translucent panel with a
+           backdrop-filter does not work here: the drawer sits inside
+           .site-header, which has a backdrop-filter of its own, so this
+           one only blurs the header's backdrop and the page text showed
+           through sharp. var(--bg) also follows light, dark and auto. */
+        background: var(--bg);
         flex-direction: column;
         padding: 16px 24px;
         gap: 16px;
         border-bottom: 1px solid var(--border);
     }
-    /* Light-mode counterpart — same alpha as .site-header.scrolled
-       in light mode (defined further up in the file) so the seam
-       stays clean in both themes. */
-    :root[data-theme="light"] .header-nav {
-        background: rgba(250, 250, 255, 0.85);
-    }
-
     .header-nav.open {
         display: flex;
     }
@@ -4215,19 +4207,14 @@ button.comparison-bestfor-card.active .comparison-bestfor-name {
        gap even though geometrically the dropdown overlaps the bottom
        2 px of the header. Match the header's chrome to the dropdown
        whenever the menu is open so the seam closes cleanly. */
-    .site-header:has(.header-nav.open) {
-        background: rgba(15, 15, 23, 0.88);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
+    /* #929 - the bar takes the drawer's opaque background while the menu
+       is open, so the two read as one panel. */
+    .site-header:has(.header-nav.open),
+    :root[data-theme] .site-header:has(.header-nav.open) {
+        background: var(--bg);
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
         border-bottom-color: transparent;
-    }
-    :root[data-theme="light"] .site-header:has(.header-nav.open) {
-        background: rgba(250, 250, 255, 0.85);
-    }
-    @media (prefers-color-scheme: light) {
-        :root[data-theme="auto"] .site-header:has(.header-nav.open) {
-            background: rgba(250, 250, 255, 0.85);
-        }
     }
 
     /* Belt-and-suspenders against horizontal overflow on phones —
