@@ -1208,6 +1208,22 @@ public sealed class BowireMcpTools
                 }, JsonOpts);
                 return true;
             }
+            // #878 — a token confirms the one action its plan described.
+            // Without this a token parked for one tool (or one recording,
+            // one environment) executed whatever call presented it, so the
+            // human approved one plan and the agent ran another. The token
+            // is consumed either way: a mismatch is not a retry.
+            if (!string.Equals(entry.Kind, kind, StringComparison.Ordinal)
+                || !string.Equals(entry.Plan, plan, StringComparison.Ordinal))
+            {
+                pendingResponse = JsonSerializer.Serialize(new
+                {
+                    error = $"Confirmation token \"{confirmationToken}\" was issued for another action ({entry.Kind}: {entry.Plan}) and does not confirm this one.",
+                    kind,
+                    plan
+                }, JsonOpts);
+                return true;
+            }
             return false;
         }
 

@@ -249,6 +249,65 @@ public class BowireMcpToolsTests : IAsyncDisposable
     }
 
     [Fact]
+    public void ConfirmationToken_Issued_For_Another_Tool_Is_Refused()
+    {
+        var options = new BowireMcpOptions
+        {
+            LoadAllowlistFromEnvironments = false,
+            RequireConfirmationForMutations = true,
+        };
+        var tools = BuildTools(options: options);
+
+        using var pending = JsonDocument.Parse(tools.RecordStart(workspaceId: "ws", name: "n"));
+        var token = pending.RootElement.GetProperty("confirmationToken").GetString();
+
+        using var doc = JsonDocument.Parse(tools.RecordReplay(
+            workspaceId: "ws", recordingId: "rec-1", confirmationToken: token));
+
+        Assert.False(doc.RootElement.TryGetProperty("replaying", out _));
+        Assert.True(doc.RootElement.TryGetProperty("error", out _));
+    }
+
+    [Fact]
+    public void ConfirmationToken_Issued_For_Another_Plan_Is_Refused()
+    {
+        var options = new BowireMcpOptions
+        {
+            LoadAllowlistFromEnvironments = false,
+            RequireConfirmationForMutations = true,
+        };
+        var tools = BuildTools(options: options);
+
+        using var pending = JsonDocument.Parse(tools.RecordReplay(workspaceId: "ws", recordingId: "rec-a"));
+        var token = pending.RootElement.GetProperty("confirmationToken").GetString();
+
+        using var doc = JsonDocument.Parse(tools.RecordReplay(
+            workspaceId: "ws", recordingId: "rec-b", confirmationToken: token));
+
+        Assert.False(doc.RootElement.TryGetProperty("replaying", out _));
+        Assert.True(doc.RootElement.TryGetProperty("error", out _));
+    }
+
+    [Fact]
+    public void ConfirmationToken_Redeemed_For_Its_Own_Call_Executes()
+    {
+        var options = new BowireMcpOptions
+        {
+            LoadAllowlistFromEnvironments = false,
+            RequireConfirmationForMutations = true,
+        };
+        var tools = BuildTools(options: options);
+
+        using var pending = JsonDocument.Parse(tools.RecordReplay(workspaceId: "ws", recordingId: "rec-a"));
+        var token = pending.RootElement.GetProperty("confirmationToken").GetString();
+
+        using var doc = JsonDocument.Parse(tools.RecordReplay(
+            workspaceId: "ws", recordingId: "rec-a", confirmationToken: token));
+
+        Assert.True(doc.RootElement.GetProperty("replaying").GetBoolean());
+    }
+
+    [Fact]
     public async Task Invoke_Url_Not_On_Allowlist_Is_Denied()
     {
         var tools = BuildTools();
