@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
 
-**49/71 done** · 22 backlog
+**49/74 done** · 25 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -38,6 +38,9 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [885](https://github.com/Kuestenlogik/Bowire/issues/885) | Bowire | [One entry with a non-string id breaks every MCP resource lookup by id](#issue-kuestenlogik-bowire-885) | ⬜ Backlog |  |
 | [886](https://github.com/Kuestenlogik/Bowire/issues/886) | Bowire | [MCP endpoint registry docs say nested prefixes throw; only the same path twice does](#issue-kuestenlogik-bowire-886) | ⬜ Backlog |  |
 | [887](https://github.com/Kuestenlogik/Bowire/issues/887) | Bowire | [bowire://recordings is always empty: it ignores the {recordings:[…]} layout the store writes](#issue-kuestenlogik-bowire-887) | ⬜ Backlog |  |
+| [888](https://github.com/Kuestenlogik/Bowire/issues/888) | Bowire | [MQTT mock publishes the recorded subscription envelope instead of the original message](#issue-kuestenlogik-bowire-888) | ⬜ Backlog |  |
+| [889](https://github.com/Kuestenlogik/Bowire/issues/889) | Bowire | [gRPC responses decode packed repeated scalars wrongly](#issue-kuestenlogik-bowire-889) | ⬜ Backlog |  |
+| [890](https://github.com/Kuestenlogik/Bowire/issues/890) | Bowire | [gRPC sint32/sint64 values are not zigzag-encoded in requests, responses and mock samples](#issue-kuestenlogik-bowire-890) | ⬜ Backlog |  |
 | [816](https://github.com/Kuestenlogik/Bowire/issues/816) | Bowire | [SCIM trace records status 200 for every request](#issue-kuestenlogik-bowire-816) | ✅ Done |  |
 | [817](https://github.com/Kuestenlogik/Bowire/issues/817) | Bowire | [OIDC provider cannot run as an installed plugin](#issue-kuestenlogik-bowire-817) | ✅ Done |  |
 | [818](https://github.com/Kuestenlogik/Bowire/issues/818) | Bowire | [--auth-oidc-* flags are documented but never read](#issue-kuestenlogik-bowire-818) | ✅ Done |  |
@@ -331,6 +334,18 @@ The documentation of the MCP endpoint registry says overlapping prefixes throw a
 #### <a id="issue-kuestenlogik-bowire-887"></a>⬜ Backlog · [#887](https://github.com/Kuestenlogik/Bowire/issues/887) bowire://recordings is always empty: it ignores the {recordings:[…]} layout the store writes
 
 The `bowire://recordings` resource (`BowireMcpResources.RecordingsIndex`, `src/Kuestenlogik.Bowire.Mcp/BowireMcpResources.cs:64`) only summarises a `recordings.json` whose root is a bare array. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/887)
+
+#### <a id="issue-kuestenlogik-bowire-888"></a>⬜ Backlog · [#888](https://github.com/Kuestenlogik/Bowire/issues/888) MQTT mock publishes the recorded subscription envelope instead of the original message
+
+A workbench recording of an MQTT subscription stores each frame as the plugin yielded it: the envelope `{"topic":…,"qos":…,"retain":…,"payload":…,"bytes":…}` as a JSON string (the channel path adds `"type":"text"`). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/888)
+
+#### <a id="issue-kuestenlogik-bowire-889"></a>⬜ Backlog · [#889](https://github.com/Kuestenlogik/Bowire/issues/889) gRPC responses decode packed repeated scalars wrongly
+
+`GrpcInvoker.ReadMessage` (`src/Kuestenlogik.Bowire.Protocol.Grpc/GrpcInvoker.cs:761`) hands every field to `ReadFieldValue` without looking at the wire type. proto3 packs repeated scalars by default: a `repeated int32 ids = 1` holding `[1, -2, 300]` arrives as one length-delimited record. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/889)
+
+#### <a id="issue-kuestenlogik-bowire-890"></a>⬜ Backlog · [#890](https://github.com/Kuestenlogik/Bowire/issues/890) gRPC sint32/sint64 values are not zigzag-encoded in requests, responses and mock samples
+
+`sint32` / `sint64` are zigzag-encoded on the wire, but Bowire treats them as plain varints in three places: [[more]](https://github.com/Kuestenlogik/Bowire/issues/890)
 
 #### <a id="issue-kuestenlogik-bowire-816"></a>✅ Done · [#816](https://github.com/Kuestenlogik/Bowire/issues/816) SCIM trace records status 200 for every request
 
