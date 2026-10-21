@@ -109,4 +109,35 @@ public sealed class GrpcWireCodecTests
             Many = { 1, 2 },
         }, actual);
     }
+
+    // ---- integers given as JSON strings (#894) --------------------------
+
+    [Fact]
+    public void Encode_reads_64_bit_integers_from_their_canonical_JSON_strings()
+    {
+        // proto3 JSON writes every 64-bit integer as a string; this is
+        // Google.Protobuf's own rendering of the message.
+        var expected = new WireWide
+        {
+            I64 = long.MinValue,
+            U64 = ulong.MaxValue,
+            Si64 = -9_007_199_254_740_993,
+            F64 = ulong.MaxValue - 1,
+            Sf64 = long.MaxValue,
+            I32 = -5,
+            U32 = 7,
+        };
+        var json = JsonFormatter.Default.Format(expected);
+
+        Assert.Equal(expected, Encode(json, WireWide.Parser));
+    }
+
+    [Fact]
+    public void Encode_reads_32_bit_integers_from_JSON_strings()
+    {
+        // A proto3 JSON parser accepts the string form for every integer type.
+        var actual = Encode("""{"i32":"-5","u32":"7"}""", WireWide.Parser);
+
+        Assert.Equal(new WireWide { I32 = -5, U32 = 7 }, actual);
+    }
 }

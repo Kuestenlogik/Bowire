@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Diagnostics;
+using System.Globalization;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
@@ -667,47 +669,47 @@ internal sealed class GrpcInvoker : IDisposable
                 break;
             case FieldType.Int32:
                 cos.WriteTag(tag);
-                cos.WriteInt32(value.TryGetInt32(out var i32) ? i32 : 0);
+                cos.WriteInt32(JsonInteger<int>(value));
                 break;
             case FieldType.Int64:
                 cos.WriteTag(tag);
-                cos.WriteInt64(value.TryGetInt64(out var i64) ? i64 : 0);
+                cos.WriteInt64(JsonInteger<long>(value));
                 break;
             // sint* are zigzag-encoded on the wire; a plain varint reaches
             // the server as a different number (#890).
             case FieldType.SInt32:
                 cos.WriteTag(tag);
-                cos.WriteSInt32(value.TryGetInt32(out var si32) ? si32 : 0);
+                cos.WriteSInt32(JsonInteger<int>(value));
                 break;
             case FieldType.SInt64:
                 cos.WriteTag(tag);
-                cos.WriteSInt64(value.TryGetInt64(out var si64) ? si64 : 0);
+                cos.WriteSInt64(JsonInteger<long>(value));
                 break;
             case FieldType.UInt32:
                 cos.WriteTag(tag);
-                cos.WriteUInt32(value.TryGetUInt32(out var u32) ? u32 : 0);
+                cos.WriteUInt32(JsonInteger<uint>(value));
                 break;
             case FieldType.UInt64:
                 cos.WriteTag(tag);
-                cos.WriteUInt64(value.TryGetUInt64(out var u64) ? u64 : 0);
+                cos.WriteUInt64(JsonInteger<ulong>(value));
                 break;
             // Fixed-width integers had no case and were dropped from the
             // request without a word (#891).
             case FieldType.Fixed32:
                 cos.WriteTag(tag);
-                cos.WriteFixed32(value.TryGetUInt32(out var f32) ? f32 : 0);
+                cos.WriteFixed32(JsonInteger<uint>(value));
                 break;
             case FieldType.Fixed64:
                 cos.WriteTag(tag);
-                cos.WriteFixed64(value.TryGetUInt64(out var f64) ? f64 : 0);
+                cos.WriteFixed64(JsonInteger<ulong>(value));
                 break;
             case FieldType.SFixed32:
                 cos.WriteTag(tag);
-                cos.WriteSFixed32(value.TryGetInt32(out var sf32) ? sf32 : 0);
+                cos.WriteSFixed32(JsonInteger<int>(value));
                 break;
             case FieldType.SFixed64:
                 cos.WriteTag(tag);
-                cos.WriteSFixed64(value.TryGetInt64(out var sf64) ? sf64 : 0);
+                cos.WriteSFixed64(JsonInteger<long>(value));
                 break;
             case FieldType.Double:
                 cos.WriteTag(tag);
@@ -753,6 +755,25 @@ internal sealed class GrpcInvoker : IDisposable
         FieldType.String or FieldType.Bytes or FieldType.Message => WireFormat.WireType.LengthDelimited,
         _ => WireFormat.WireType.Varint
     };
+
+    /// <summary>
+    /// An integer field's value from a JSON number or a JSON string. proto3
+    /// JSON writes 64-bit integers as strings and accepts the string form for
+    /// every integer type; JsonElement.TryGetInt64 throws on a string (#894).
+    /// A value that is neither, or out of range, gives zero as before.
+    /// </summary>
+    private static T JsonInteger<T>(JsonElement value) where T : IBinaryInteger<T>
+    {
+        var text = value.ValueKind switch
+        {
+            JsonValueKind.Number => value.GetRawText(),
+            JsonValueKind.String => value.GetString(),
+            _ => null,
+        };
+        return T.TryParse(text, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var parsed)
+            ? parsed
+            : T.Zero;
+    }
 
     /// <summary>
     /// Decode protobuf wire format to JSON using field descriptors.
