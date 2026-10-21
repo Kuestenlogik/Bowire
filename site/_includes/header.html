@@ -15,9 +15,27 @@
       <a href="{{ '/features.html' | relative_url }}"{% if page.url contains '/features' %} class="active"{% endif %}>Features</a>
       <a href="{{ '/solutions.html' | relative_url }}"{% if page.url contains '/solutions' or page.url contains '/security' %} class="active"{% endif %}>Solutions</a>
       <a href="{{ '/downloads.html' | relative_url }}"{% if page.url contains '/downloads' %} class="active"{% endif %}>Downloads</a>
-      <a href="{{ '/docs/' | relative_url }}"{% if page.url contains '/docs' %} class="active"{% endif %}>Documentation</a>
-      <a href="{{ '/bootcamp/' | relative_url }}"{% if page.url contains '/bootcamp' %} class="active"{% endif %}>Bootcamp</a>
-      <a href="{{ '/community.html' | relative_url }}"{% if page.url contains '/community' %} class="active"{% endif %}>Community</a>
+      {%- comment -%}
+        #927 - Resources groups what is read rather than run: the docs, the bootcamp,
+        the blog and the community. One entry instead of four keeps the bar
+        narrow. The blog appears once a post is published, as in the footer.
+      {%- endcomment -%}
+      {%- assign in_resources = false -%}
+      {%- if page.url contains '/docs' or page.url contains '/bootcamp' or page.url contains '/blog' or page.url contains '/community' -%}{%- assign in_resources = true -%}{%- endif %}
+      <div class="nav-group">
+        <button type="button" class="nav-group-toggle{% if in_resources %} active{% endif %}" aria-expanded="false" aria-controls="nav-resources">
+          Resources
+          <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+        <div class="nav-group-menu" id="nav-resources">
+          <a href="{{ '/docs/' | relative_url }}"{% if page.url contains '/docs' %} class="active"{% endif %}>Documentation</a>
+          <a href="{{ '/bootcamp/' | relative_url }}"{% if page.url contains '/bootcamp' %} class="active"{% endif %}>Bootcamp</a>
+          {%- if site.posts.size > 0 %}
+          <a href="{{ '/blog/' | relative_url }}"{% if page.url contains '/blog' %} class="active"{% endif %}>Blog</a>
+          {%- endif %}
+          <a href="{{ '/community.html' | relative_url }}"{% if page.url contains '/community' %} class="active"{% endif %}>Community</a>
+        </div>
+      </div>
     </nav>
     <div class="header-actions">
       <button type="button" class="bowire-search-trigger" aria-label="Search" title="Search (press /)">

@@ -16,6 +16,28 @@ if (toggle && nav) {
     );
 }
 
+// #927 - Header nav: the Resources dropdown. Click (or Enter/Space) toggles it;
+// a click elsewhere, Escape or following a link closes it. On a pointer
+// that hovers, CSS opens it on hover as well; in the burger drawer and in
+// the overflow panel it renders expanded, so this only matters inline.
+document.querySelectorAll('.nav-group').forEach(group => {
+    const button = group.querySelector('.nav-group-toggle');
+    if (!button) return;
+    const setOpen = open => {
+        group.classList.toggle('open', open);
+        button.setAttribute('aria-expanded', open ? 'true' : 'false');
+    };
+    button.addEventListener('click', e => {
+        e.stopPropagation();
+        setOpen(!group.classList.contains('open'));
+    });
+    group.querySelectorAll('a').forEach(link => link.addEventListener('click', () => setOpen(false)));
+    document.addEventListener('click', e => { if (!group.contains(e.target)) setOpen(false); });
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape' && group.classList.contains('open')) { setOpen(false); button.focus(); }
+    });
+});
+
 // ====================================================================
 // Header nav — progressive overflow into a "…" dropdown
 //
