@@ -39,8 +39,9 @@ namespace Kuestenlogik.Bowire.Protocol.Mcp;
 /// Dual-mount coexistence (#287): when paired with
 /// <c>Kuestenlogik.Bowire.Mcp.MapBowireMcp</c>, both endpoints share
 /// the same SDK streamable-HTTP transport and route by URL through
-/// <see cref="BowireMcpDualHandlerDispatcher"/>. Overlapping prefixes
-/// throw at startup so a typo doesn't silently shadow one endpoint
+/// <see cref="BowireMcpDualHandlerDispatcher"/>. Nested prefixes are
+/// fine (the longest one takes the request); the same path twice
+/// throws at startup so a typo doesn't silently shadow one endpoint
 /// with the other.
 /// </para>
 /// </remarks>
@@ -72,7 +73,7 @@ public static class McpAdapterEndpoints
         // Legacy mount discipline: when the caller passes "", the SDK
         // mounts at "/mcp". The registry should track that so the
         // manifest reflects what the operator actually sees, and so
-        // overlap detection works for hosts that mix the legacy root
+        // duplicate detection works for hosts that mix the legacy root
         // mount with the new default. The new default is
         // "/bowire/mcp/adapter" itself — already an absolute path.
         // We register the prefix the *caller* passed (canonical form)

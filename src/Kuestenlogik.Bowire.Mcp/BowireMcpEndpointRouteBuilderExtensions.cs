@@ -23,8 +23,8 @@ namespace Kuestenlogik.Bowire.Mcp;
 /// adapter-mode endpoint. Both extensions push their mount path into
 /// the same <see cref="BowireMcpEndpointRegistry"/> singleton so they
 /// can coexist on a single host: each mount is served at a distinct
-/// route prefix, overlapping prefixes throw
-/// <see cref="InvalidOperationException"/> at startup, and the
+/// route prefix (nested prefixes are fine, the same path twice throws
+/// <see cref="InvalidOperationException"/> at startup), and the
 /// dispatcher (<see cref="BowireMcpDualHandlerDispatcher"/>) routes
 /// per-request to the right handler based on
 /// <see cref="HttpContext.Request"/> path.
@@ -55,11 +55,12 @@ public static class BowireMcpEndpointRouteBuilderExtensions
     /// <summary>
     /// Mount the full Bowire MCP server at <paramref name="prefix"/>.
     /// Defaults to <c>/bowire/mcp</c>; pass a different prefix when
-    /// you need to co-exist with another mount at that path, but
-    /// be aware that <c>MapBowireMcpAdapter</c> (from
+    /// you need to co-exist with another mount at that path.
+    /// <c>MapBowireMcpAdapter</c> (from
     /// <c>Kuestenlogik.Bowire.Protocol.Mcp</c>) defaults to
-    /// <c>/bowire/mcp/adapter</c> — overlapping the two throws at
-    /// startup.
+    /// <c>/bowire/mcp/adapter</c>, nested below this one, which is fine —
+    /// requests go to the longest prefix they fall under. Mounting the
+    /// two at the same path throws at startup.
     /// </summary>
     /// <param name="endpoints">The endpoint route builder.</param>
     /// <param name="prefix">

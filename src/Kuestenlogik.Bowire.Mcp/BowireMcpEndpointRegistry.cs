@@ -7,9 +7,9 @@ namespace Kuestenlogik.Bowire.Mcp;
 
 /// <summary>
 /// Tracks the MCP endpoints (full-server + adapter) mounted on an
-/// ASP.NET host so the manifest endpoint can enumerate them and so
-/// overlapping route prefixes are caught at startup rather than
-/// silently shadowing each other.
+/// ASP.NET host so the manifest endpoint can enumerate them, so two
+/// endpoints at the same path are caught at startup, and so each request
+/// reaches the endpoint whose prefix it falls under.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -24,13 +24,15 @@ namespace Kuestenlogik.Bowire.Mcp;
 ///         adapter (mode <see cref="BowireMcpEndpointMode.Adapter"/>).</item>
 /// </list>
 /// <para>
-/// Both endpoints can coexist on the same host because their default
-/// prefixes (<c>/bowire/mcp</c> vs <c>/bowire/mcp/adapter</c>) don't
-/// overlap. When an operator overrides one prefix to overlap the other
-/// (same path, or one prefix-of the other), <see cref="Register"/>
-/// throws <see cref="InvalidOperationException"/> at startup with a
-/// message that names both offending routes — failing loud instead of
-/// having one endpoint silently swallow the other's traffic.
+/// Both endpoints can coexist on the same host. Their default prefixes
+/// nest — <c>/bowire/mcp/adapter</c> lies below <c>/bowire/mcp</c> — and
+/// that is fine: <see cref="ResolveMode"/> routes a request by the
+/// longest registered prefix it falls under, so the deeper mount keeps
+/// its own traffic. Only an operator who mounts both at the same path
+/// makes them indistinguishable; <see cref="Register"/> throws
+/// <see cref="InvalidOperationException"/> at startup for that, naming the
+/// route, rather than having one endpoint silently swallow the other's
+/// traffic (#886).
 /// </para>
 /// <para>
 /// The dispatcher (<see cref="BowireMcpDualHandlerDispatcher"/>)
@@ -61,9 +63,10 @@ public sealed class BowireMcpEndpointRegistry
     /// Register a mounted MCP endpoint. Normalises the prefix to a
     /// canonical "/segment[/segment...]" form (no trailing slash;
     /// empty becomes "/"). Throws
-    /// <see cref="InvalidOperationException"/> when the new prefix
-    /// overlaps with an already-registered one (exact match, or one
-    /// is a path-prefix of the other and would shadow traffic).
+    /// <see cref="InvalidOperationException"/> when an endpoint is
+    /// already registered at the same path. A prefix nested in another
+    /// one is accepted: requests go to the longest prefix they fall
+    /// under (<see cref="ResolveMode"/>).
     /// </summary>
     public void Register(string prefix, BowireMcpEndpointMode mode)
     {
@@ -94,8 +97,8 @@ public sealed class BowireMcpEndpointRegistry
         if (string.IsNullOrEmpty(requestPath)) return null;
 
         // Longest-match wins: when both "/a" and "/a/b" are registered
-        // (impossible after overlap check, but defensive), the deeper
-        // path is the one ASP.NET routes to.
+        // (the default dual mount is exactly that), the deeper path is
+        // the one ASP.NET routes to.
         BowireMcpEndpointMode? best = null;
         int bestLen = -1;
         foreach (var entry in _entries)
@@ -141,8 +144,7 @@ public sealed class BowireMcpEndpointRegistry
     {
         if (prefix == "/") return true; // root-mounted endpoint covers everything
         if (!requestPath.StartsWith(prefix, StringComparison.Ordinal)) return false;
-        // Same boundary guard as IsPathPrefixOf so "/mcp" doesn't match
-        // a request for "/mcpx".
+        // Segment boundary, so "/mcp" doesn't match a request for "/mcpx".
         return requestPath.Length == prefix.Length
             || requestPath[prefix.Length] == '/';
     }
