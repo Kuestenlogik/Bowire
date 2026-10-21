@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
 
-**107/109 done** · 2 backlog
+**108/110 done** · 2 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -125,6 +125,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [923](https://github.com/Kuestenlogik/Bowire/issues/923) | Bowire | [Shared GraphQL WebSocket subscribes before connection_ack and reuses a dead socket](#issue-kuestenlogik-bowire-923) | ✅ Done |  |
 | [924](https://github.com/Kuestenlogik/Bowire/issues/924) | Bowire | [Workbench GraphQL query: selection set on scalar fields, variables typed String instead of the schema's type](#issue-kuestenlogik-bowire-924) | ✅ Done |  |
 | [926](https://github.com/Kuestenlogik/Bowire/issues/926) | Bowire | [Blog on bowire.io: articles with a canonical home and a feed for cross-posting](#issue-kuestenlogik-bowire-926) | ✅ Done |  |
+| [927](https://github.com/Kuestenlogik/Bowire/issues/927) | Bowire | [Site navigation: group Documentation, Bootcamp, Blog and Community under Resources](#issue-kuestenlogik-bowire-927) | ✅ Done |  |
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
@@ -723,6 +724,10 @@ The workbench builds its own default GraphQL operation for the query pane (`buil
 #### <a id="issue-kuestenlogik-bowire-926"></a>✅ Done · [#926](https://github.com/Kuestenlogik/Bowire/issues/926) Blog on bowire.io: articles with a canonical home and a feed for cross-posting
 
 Directories and link roundups need something to point at. A bare product link rarely makes it into Morning Dew, The Morning Brew, r/dotnet or Hacker News; an article that solves a real problem does — and articles are what search engines and language models cite when someone asks the question they answer. [[more]](https://github.com/Kuestenlogik/Bowire/issues/926)
+
+#### <a id="issue-kuestenlogik-bowire-927"></a>✅ Done · [#927](https://github.com/Kuestenlogik/Bowire/issues/927) Site navigation: group Documentation, Bootcamp, Blog and Community under Resources
+
+The top navigation is flat — Quickstart, Features, Solutions, Downloads, Documentation, Bootcamp, Community — and already wide. A Blog entry (#926) would make it wider still, and the bar starts spilling into the overflow menu sooner. [[more]](https://github.com/Kuestenlogik/Bowire/issues/927)
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
