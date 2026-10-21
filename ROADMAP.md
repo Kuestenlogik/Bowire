@@ -12,13 +12,14 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
 
-**49/52 done** · 3 backlog
+**49/53 done** · 4 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [639](https://github.com/Kuestenlogik/Bowire/issues/639) | Bowire | [SCIM: live Okta and Entra ID provisioning round-trips](#issue-kuestenlogik-bowire-639) | ⬜ Backlog | `area:workbench` |
 | [670](https://github.com/Kuestenlogik/Bowire/issues/670) | Bowire | [Get listed where developers and models actually look](#issue-kuestenlogik-bowire-670) | ⬜ Backlog | `area:site` |
 | [868](https://github.com/Kuestenlogik/Bowire/issues/868) | Bowire | [MCP task follow throws on a very large TTL or poll interval](#issue-kuestenlogik-bowire-868) | ⬜ Backlog |  |
+| [869](https://github.com/Kuestenlogik/Bowire/issues/869) | Bowire | [MCP task follow throws when a failed task's error code is a string](#issue-kuestenlogik-bowire-869) | ⬜ Backlog |  |
 | [816](https://github.com/Kuestenlogik/Bowire/issues/816) | Bowire | [SCIM trace records status 200 for every request](#issue-kuestenlogik-bowire-816) | ✅ Done |  |
 | [817](https://github.com/Kuestenlogik/Bowire/issues/817) | Bowire | [OIDC provider cannot run as an installed plugin](#issue-kuestenlogik-bowire-817) | ✅ Done |  |
 | [818](https://github.com/Kuestenlogik/Bowire/issues/818) | Bowire | [--auth-oidc-* flags are documented but never read](#issue-kuestenlogik-bowire-818) | ✅ Done |  |
@@ -236,6 +237,10 @@ Six credible competitors turned up during the competitive survey **via openalter
 #### <a id="issue-kuestenlogik-bowire-868"></a>⬜ Backlog · [#868](https://github.com/Kuestenlogik/Bowire/issues/868) MCP task follow throws on a very large TTL or poll interval
 
 Following an MCP task (#801) throws when the server names a very large TTL or poll interval — values the server picks, not Bowire: [[more]](https://github.com/Kuestenlogik/Bowire/issues/868)
+
+#### <a id="issue-kuestenlogik-bowire-869"></a>⬜ Backlog · [#869](https://github.com/Kuestenlogik/Bowire/issues/869) MCP task follow throws when a failed task's error code is a string
+
+When a followed MCP task (#801) fails and its JSON-RPC `error.code` is not a number — e.g. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/869)
 
 #### <a id="issue-kuestenlogik-bowire-816"></a>✅ Done · [#816](https://github.com/Kuestenlogik/Bowire/issues/816) SCIM trace records status 200 for every request
 
