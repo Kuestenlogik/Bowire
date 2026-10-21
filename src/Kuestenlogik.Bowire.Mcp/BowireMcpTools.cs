@@ -335,6 +335,11 @@ public sealed class BowireMcpTools
     {
         if (!IsUrlAllowed(url)) return AllowlistDeniedMessage(url);
 
+        // #883 — the window is only clamped from above, and CancelAfter
+        // throws for anything below -1 and reads -1 as "never", which
+        // would lift the MaxSubscribeMs cap altogether.
+        if (durationMs < 0) return "durationMs must not be negative.";
+
         var plugin = ResolveProtocol(protocol);
         if (plugin is null) return "No protocol plugin matched.";
 

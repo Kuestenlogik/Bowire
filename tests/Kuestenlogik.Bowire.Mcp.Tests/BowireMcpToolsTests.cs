@@ -491,6 +491,32 @@ public class BowireMcpToolsTests : IAsyncDisposable
         Assert.Equal(250, doc.RootElement.GetProperty("durationMs").GetInt32());
     }
 
+    [Theory]
+    [InlineData(-1)]
+    [InlineData(-5)]
+    public async Task Subscribe_Negative_DurationMs_Is_Refused(int durationMs)
+    {
+        var registry = new BowireProtocolRegistry();
+        registry.Register(new StubProtocol("stub", "Stub") { StreamFrames = ["a"] });
+
+        var options = new BowireMcpOptions
+        {
+            LoadAllowlistFromEnvironments = false,
+            AllowArbitraryUrls = true,
+        };
+        var tools = BuildTools(registry: registry, options: options);
+
+        var result = await tools.Subscribe(
+            "http://localhost:5000",
+            "StubService",
+            "Stream",
+            durationMs: durationMs,
+            ct: TestContext.Current.CancellationToken);
+
+        Assert.Contains("durationMs", result, StringComparison.Ordinal);
+        Assert.DoesNotContain("frameCount", result, StringComparison.Ordinal);
+    }
+
     [Fact]
     public void RecordStart_Opens_Session_When_Confirm_True()
     {
