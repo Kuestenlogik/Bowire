@@ -80,6 +80,44 @@ internal static class GraphQLDocumentInfo
     /// </para>
     /// </remarks>
     public static IReadOnlyList<string> OperationKinds(string? query)
+        => OperationsWithKinds(query).Select(op => op.Kind).ToList();
+
+    /// <summary>
+    /// The kind of the operation a request runs, or <c>null</c> when the
+    /// document declares nothing readable (#919).
+    /// </summary>
+    /// <param name="query">The document as typed.</param>
+    /// <param name="operationName">The <c>operationName</c> going on the wire.</param>
+    /// <remarks>
+    /// <para>
+    /// The operation <paramref name="operationName"/> selects, not the
+    /// first one in the document: <c>query A {…} mutation B {…}</c> with
+    /// <c>operationName: "B"</c> runs the mutation.
+    /// </para>
+    /// <para>
+    /// When the name selects nothing — none given with several operations,
+    /// or one the document does not declare — the server decides what
+    /// happens, so the answer is the most consequential kind present. The
+    /// caller is a safety guard, and a guard has to assume the worst of
+    /// what it cannot see.
+    /// </para>
+    /// </remarks>
+    public static string? OperationKind(string? query, string? operationName)
+    {
+        var operations = OperationsWithKinds(query);
+        if (operations.Count == 0) return null;
+        if (operations.Count == 1 && string.IsNullOrEmpty(operationName)) return operations[0].Kind;
+
+        foreach (var (name, kind) in operations)
+        {
+            if (!string.IsNullOrEmpty(operationName) && string.Equals(name, operationName, StringComparison.Ordinal))
+                return kind;
+        }
+
+        return operations.Select(op => op.Kind).FirstOrDefault(kind => kind != "query") ?? "query";
+    }
+
+    private static List<(string? Name, string Kind)> OperationsWithKinds(string? query)
     {
         if (string.IsNullOrWhiteSpace(query)) return [];
 
@@ -93,18 +131,18 @@ internal static class GraphQLDocumentInfo
             return [];
         }
 
-        var kinds = new List<string>();
+        var operations = new List<(string? Name, string Kind)>();
         foreach (var definition in document.Definitions)
         {
             if (definition is not GraphQLOperationDefinition op) continue;
-            kinds.Add(op.Operation switch
+            operations.Add((op.Name?.StringValue, op.Operation switch
             {
                 OperationType.Mutation => "mutation",
                 OperationType.Subscription => "subscription",
                 _ => "query",
-            });
+            }));
         }
-        return kinds;
+        return operations;
     }
 
     /// <summary>

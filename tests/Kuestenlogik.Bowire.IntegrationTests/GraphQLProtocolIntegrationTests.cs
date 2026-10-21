@@ -246,6 +246,57 @@ public sealed class GraphQLProtocolIntegrationTests
         Assert.Empty(verbs);
     }
 
+    [Theory]
+    // #919 - the guard has to look at the operation that will run, which is
+    // the one operationName selects, not the first one in the document.
+    [InlineData("""{"query":"query A { ping } mutation B { echo }","operationName":"B"}""")]
+    // No name and several operations: which one runs is the server's call,
+    // so a document that holds a mutation anywhere stays off GET.
+    [InlineData("""{"query":"query A { ping } mutation B { echo }"}""")]
+    public async Task A_Mutation_Selected_By_Operation_Name_Is_Refused_Over_Get(string body)
+    {
+        var verbs = new List<string>();
+        await using var host = await PluginTestHost.StartAsync(app => MapVerbRecorder(app, verbs));
+        using var protocol = new BowireGraphQLProtocol();
+
+        var result = await protocol.InvokeAsync(
+            host.BaseUrl + "/graphql", service: "Query", method: "ping",
+            jsonMessages: [body],
+            showInternalServices: false,
+            metadata: new Dictionary<string, string>
+            {
+                [BowireGraphQLProtocol.HttpMethodMetadataKey] = "get",
+            },
+            ct: TestContext.Current.CancellationToken);
+
+        Assert.Contains("queries only", result.Status, StringComparison.Ordinal);
+        Assert.Contains("mutation", result.Status, StringComparison.Ordinal);
+        Assert.Empty(verbs);
+    }
+
+    [Fact]
+    public async Task A_Query_Selected_From_A_Document_With_A_Mutation_Still_Goes_Over_Get()
+    {
+        // The other half: naming the query is a clear statement of what
+        // runs, and the mutation beside it never does.
+        var verbs = new List<string>();
+        await using var host = await PluginTestHost.StartAsync(app => MapVerbRecorder(app, verbs));
+        using var protocol = new BowireGraphQLProtocol();
+
+        var result = await protocol.InvokeAsync(
+            host.BaseUrl + "/graphql", service: "Query", method: "ping",
+            jsonMessages: ["""{"query":"mutation B { echo } query A { ping }","operationName":"A"}"""],
+            showInternalServices: false,
+            metadata: new Dictionary<string, string>
+            {
+                [BowireGraphQLProtocol.HttpMethodMetadataKey] = "get",
+            },
+            ct: TestContext.Current.CancellationToken);
+
+        Assert.Equal("OK", result.Status);
+        Assert.Equal(["GET"], verbs);
+    }
+
     [Fact]
     public async Task The_Instruction_Itself_Is_Not_Sent_As_A_Header()
     {

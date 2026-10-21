@@ -234,13 +234,14 @@ public sealed class BowireGraphQLProtocol : IBowireProtocol, Kuestenlogik.Bowire
             // cache. Refusing here is better than letting a proxy decide to
             // run somebody's mutation twice.
             var (useGet, sendHeaders) = ExtractHttpMethod(metadata);
-            if (useGet && OperationKindOf(operation, operationKind) != "query")
+            var runKind = OperationKindOf(operation, operationName, operationKind);
+            if (useGet && runKind != "query")
             {
                 return new InvokeResult(
                     null,
                     (long)(DateTime.UtcNow - startedAt).TotalMilliseconds,
                     $"{HttpMethodMetadataKey}=get applies to queries only — this is a "
-                    + OperationKindOf(operation, operationKind)
+                    + runKind
                     + ". GraphQL over GET is defined for queries because intermediaries may "
                     + "retry, prefetch or cache a GET.",
                     new Dictionary<string, string>());
@@ -1257,13 +1258,12 @@ public sealed class BowireGraphQLProtocol : IBowireProtocol, Kuestenlogik.Bowire
     /// somebody can paste a mutation into a tab the rail thinks is a query.
     /// Falls back to the caller's expectation when the document declares
     /// nothing readable, which leaves the existing behaviour in place.
+    /// #919 - the operation that counts is the one <paramref name="operationName"/>
+    /// selects; reading the first one let <c>query A {…} mutation B {…}</c>
+    /// with <c>operationName: "B"</c> through as a query.
     /// </remarks>
-    private static string OperationKindOf(string document, string fallback)
-    {
-        foreach (var definition in GraphQLDocumentInfo.OperationKinds(document))
-            return definition;
-        return fallback;
-    }
+    private static string OperationKindOf(string document, string? operationName, string fallback)
+        => GraphQLDocumentInfo.OperationKind(document, operationName) ?? fallback;
 
     /// <summary>
     /// The URL for a query sent over <c>GET</c> (#713).
