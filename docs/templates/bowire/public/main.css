@@ -278,6 +278,63 @@ body.bowire-docs .bowire-docs-header.scrolled {
     .bowire-docs-nav-group:hover .bowire-docs-nav-group-menu { display: block; }
 }
 
+/* #930 - the phone menu. Below 768 px the nav leaves the header row and
+   becomes a drawer under it, opened by the burger — the marketing site's
+   pattern. The drawer is opaque (a translucent panel inside a header that
+   has its own backdrop-filter cannot blur the page), and the Resources
+   group dissolves into the list so every entry reads alike. */
+.bowire-docs-menu-toggle {
+    display: none;
+    width: 32px;
+    height: 32px;
+    padding: 4px;
+    background: transparent;
+    border: none;
+    color: var(--bs-secondary-color);
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.15s;
+}
+.bowire-docs-menu-toggle:hover { color: var(--bowire-accent); }
+.bowire-docs-menu-toggle:focus-visible { outline: 2px solid var(--bowire-accent); outline-offset: 2px; border-radius: 4px; }
+@media (max-width: 768px) {
+    .bowire-docs-header-inner {
+        grid-template-columns: 1fr auto;
+        gap: 8px;
+    }
+    .bowire-docs-header-actions { gap: 6px; }
+    .bowire-docs-menu-toggle { display: inline-flex; }
+    .bowire-docs-nav {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        margin-top: 0;
+        flex-direction: column;
+        align-items: center;
+        gap: 16px;
+        padding: 16px 24px;
+        background: var(--bs-body-bg);
+        border-bottom: 1px solid var(--bs-border-color);
+    }
+    .bowire-docs-nav.open { display: flex; }
+    body.bowire-docs .bowire-docs-header:has(.bowire-docs-nav.open) {
+        background: var(--bs-body-bg) !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        border-bottom-color: transparent !important;
+    }
+    .bowire-docs-nav-group,
+    .bowire-docs-nav-group-menu { display: contents; }
+    .bowire-docs-nav-group-toggle { display: none; }
+    .bowire-docs-nav-group-menu a,
+    .bowire-docs-nav-group-menu a:first-child,
+    .bowire-docs-nav-group-menu a:last-child { margin: 0; padding: 0; min-width: 0; }
+    .bowire-docs-nav-group-menu a:hover { background: none; }
+}
+
 .bowire-docs-header-actions {
     display: flex;
     align-items: center;
