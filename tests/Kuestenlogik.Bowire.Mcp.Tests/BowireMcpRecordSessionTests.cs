@@ -262,6 +262,33 @@ public sealed class BowireMcpRecordSessionTests : IAsyncDisposable
     }
 
     [Fact]
+    public void RecordStop_Keeps_The_Session_When_Recordings_Json_Is_Not_The_Store_Layout()
+    {
+        var path = Path.Combine(_tempHome, ".bowire", "recordings.json");
+        File.WriteAllText(path, """[{"id":"r-old","steps":[]}]""");
+        var (tools, session, _) = BuildTools();
+        _ = tools.RecordStart(workspaceId: "ws", name: "alpha", confirm: true);
+        session.AppendStep(new Kuestenlogik.Bowire.Mocking.BowireRecordingStep { Id = "s1", Service = "Foo", Method = "Bar" });
+
+        using var doc = JsonDocument.Parse(tools.RecordStop(confirm: true));
+
+        // The file is not the {"recordings":[…]} store, so it is neither
+        // appended to nor overwritten — and the captured steps are not
+        // dropped either: the session stays open until the file is fixed.
+        Assert.False(doc.RootElement.GetProperty("stopped").GetBoolean());
+        Assert.Contains("recordings.json", doc.RootElement.GetProperty("error").GetString(), StringComparison.Ordinal);
+        Assert.NotNull(session.Active);
+        Assert.Equal(1, session.Active!.StepCount);
+        Assert.Equal("""[{"id":"r-old","steps":[]}]""", File.ReadAllText(path));
+
+        File.WriteAllText(path, """{"recordings":[]}""");
+        using var retry = JsonDocument.Parse(tools.RecordStop(confirm: true));
+        Assert.True(retry.RootElement.GetProperty("stopped").GetBoolean());
+        using var disk = JsonDocument.Parse(File.ReadAllText(path));
+        Assert.Equal("alpha", disk.RootElement.GetProperty("recordings")[0].GetProperty("name").GetString());
+    }
+
+    [Fact]
     public void RecordReplay_Confirmation_Gate_Returns_Pending_Token()
     {
         var (tools, _, _) = BuildTools(requireConfirmation: true);

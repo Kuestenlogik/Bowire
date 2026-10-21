@@ -981,7 +981,7 @@ public sealed class BowireMcpTools
     }
 
     [McpServerTool(Name = "bowire.record.stop")]
-    [Description("Stop the active server-side recording (#285) and flush the buffer into ~/.bowire/recordings.json. Returns { stopped, recordingId, stepCount }. Idempotent — returns { stopped: false, reason: \"no-active-session\" } when no session is open. Two-step by default; pass confirm=true to skip the confirmation gate.")]
+    [Description("Stop the active server-side recording (#285) and flush the buffer into ~/.bowire/recordings.json. Returns { stopped, recordingId, stepCount }. When that file is not a {\"recordings\":[…]} store the call is refused and the session stays open. Idempotent — returns { stopped: false, reason: \"no-active-session\" } when no session is open. Two-step by default; pass confirm=true to skip the confirmation gate.")]
     public string RecordStop(
         [Description("Skip the pending-confirmation step.")] bool confirm = false,
         [Description("Confirmation token returned by a prior pending call.")] string? confirmationToken = null)
@@ -989,6 +989,22 @@ public sealed class BowireMcpTools
         var plan = "Stop the active server-side recording and persist it to ~/.bowire/recordings.json.";
         if (TryConfirmOrPark("bowire.record.stop", plan, confirm, confirmationToken, out var pendingResponse))
             return pendingResponse!;
+
+        // #882 — Stop closes the session before the flush runs, so a store
+        // the flush cannot append to would cost the captured steps. Check it
+        // first and leave the session open until the file is fixed.
+        if (_recordingSession.Active is not null)
+        {
+            try { _ = LoadRecordingsStore(BowireConfigPath("recordings.json")); }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidDataException)
+            {
+                return JsonSerializer.Serialize(new
+                {
+                    stopped = false,
+                    error = $"{ex.Message} The session stays open; fix or move the file and stop again.",
+                }, JsonOpts);
+            }
+        }
 
         try
         {
@@ -1133,25 +1149,13 @@ public sealed class BowireMcpTools
             var dir = Path.GetDirectoryName(path);
             if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir)) Directory.CreateDirectory(dir);
 
-            JsonNode? root = null;
-            if (File.Exists(path))
-            {
-                try { root = JsonNode.Parse(File.ReadAllText(path)); }
-                catch (JsonException) { root = null; }
-            }
-            root ??= new JsonObject { ["recordings"] = new JsonArray() };
-            if (root["recordings"] is not JsonArray arr)
-            {
-                arr = new JsonArray();
-                root["recordings"] = arr;
-            }
-
+            var root = LoadRecordingsStore(path);
             var serialized = JsonSerializer.Serialize(recording, JsonOpts);
-            arr.Add(JsonNode.Parse(serialized));
+            ((JsonArray)root["recordings"]!).Add(JsonNode.Parse(serialized));
 
             File.WriteAllText(path, root.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException or InvalidDataException)
         {
             if (_logger.IsEnabled(LogLevel.Debug))
             {
@@ -1159,6 +1163,33 @@ public sealed class BowireMcpTools
             }
         }
         return recording;
+    }
+
+    /// <summary>
+    /// The <c>recordings.json</c> store at <paramref name="path"/>, or an
+    /// empty <c>{ "recordings": [] }</c> when there is none yet.
+    /// </summary>
+    /// <exception cref="InvalidDataException">
+    /// The file is not a <c>{ "recordings": [ … ] }</c> document — a bare
+    /// array, another shape, or not JSON at all (#882). Writing to it would
+    /// either fail or replace what it holds, so it is left alone.
+    /// </exception>
+    private static JsonObject LoadRecordingsStore(string path)
+    {
+        if (!File.Exists(path)) return new JsonObject { ["recordings"] = new JsonArray() };
+
+        JsonNode? root;
+        try { root = JsonNode.Parse(File.ReadAllText(path)); }
+        catch (JsonException ex)
+        {
+            throw new InvalidDataException($"{path} is not valid JSON.", ex);
+        }
+        if (root is not JsonObject store)
+            throw new InvalidDataException($"{path} is not a {{\"recordings\":[…]}} document.");
+        store["recordings"] ??= new JsonArray();
+        if (store["recordings"] is not JsonArray)
+            throw new InvalidDataException($"{path} has a \"recordings\" member that is not an array.");
+        return store;
     }
 
     [McpServerTool(Name = "bowire.allowlist.show")]
