@@ -388,6 +388,28 @@ public sealed class BowireScimStoreTests : IDisposable
         Assert.Contains("ada@example.com", log[1], StringComparison.Ordinal);
     }
 
+    // ---- refused and failed updates ----
+
+    [Fact]
+    public void A_Rename_Refused_As_A_Conflict_Leaves_The_User_As_It_Was()
+    {
+        // #871 — the 409 told the connector nothing changed. Keeping the new
+        // name in memory anyway made two people share a login name, and the
+        // next write of that record put it on disk.
+        var store = Store();
+        var ada = store.CreateUser(Ada());
+        var bob = store.CreateUser(new ScimUser { UserName = "bob@example.com" });
+
+        Assert.Throws<ScimConflictException>(() =>
+            store.UpdateUser(bob.Resource.Id, u => u.UserName = "ada@example.com"));
+        store.BindSubject(bob.Resource.Id, "bob-subject");
+
+        Assert.Equal("bob@example.com", store.GetUser(bob.Resource.Id)!.Resource.UserName);
+        Assert.Equal(ada.Resource.Id, store.FindByUserName("ada@example.com")!.Resource.Id);
+        Assert.Equal(bob.Resource.Id, store.FindByUserName("bob@example.com")!.Resource.Id);
+        Assert.Equal("bob@example.com", Store().GetUser(bob.Resource.Id)!.Resource.UserName);
+    }
+
     private sealed class FixedClock(DateTimeOffset now) : TimeProvider
     {
         public DateTimeOffset Now { get; set; } = now;

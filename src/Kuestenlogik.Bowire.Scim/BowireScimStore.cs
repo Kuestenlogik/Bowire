@@ -344,19 +344,26 @@ public sealed class BowireScimStore
             // Captured before the change, because the change is what may
             // rename the user out from under the index.
             var previousName = existing.Resource.UserName;
-            change(existing.Resource);
 
-            if (UserNameTaken(existing.Resource.UserName, exceptId: id))
+            // #871 — the change runs on a copy, which replaces the live
+            // resource only once the update is accepted. Run on the live
+            // record, a rename refused with 409 stayed in memory: two people
+            // shared a login name, and the record's next write put it on disk.
+            var changed = Copy(existing.Resource);
+            change(changed);
+
+            if (UserNameTaken(changed.UserName, exceptId: id))
             {
                 throw new ScimConflictException(
-                    $"A user with userName '{existing.Resource.UserName}' already exists.");
+                    $"A user with userName '{changed.UserName}' already exists.");
             }
 
             var now = _clock.GetUtcNow();
-            existing.Resource.Id = id;
-            existing.Resource.Meta.LastModified = now;
-            existing.Resource.Meta.Version = Etag(now);
+            changed.Id = id;
+            changed.Meta.LastModified = now;
+            changed.Meta.Version = Etag(now);
 
+            existing.Resource = changed;
             IndexUserName(existing, previousName);
             ApplyActivation(existing, wasActive, existing.Resource.Active, now);
             Persist(existing);
@@ -759,6 +766,14 @@ public sealed class BowireScimStore
         if (schemas.Any(s => string.Equals(s, required, StringComparison.OrdinalIgnoreCase))) return;
         schemas.Insert(0, required);
     }
+
+    /// <summary>
+    /// A deep copy, made through the same serialisation the record is
+    /// persisted with — so nothing the file would keep is lost, including
+    /// the attributes held only in the extension bag.
+    /// </summary>
+    private static T Copy<T>(T resource) where T : class
+        => JsonSerializer.Deserialize<T>(JsonSerializer.SerializeToUtf8Bytes(resource, s_json), s_json)!;
 
     private static string Etag(DateTimeOffset at)
         => "W/\"" + at.ToUnixTimeMilliseconds().ToString(System.Globalization.CultureInfo.InvariantCulture) + "\"";
