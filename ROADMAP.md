@@ -12,21 +12,12 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
 
-**76/108 done** · 32 backlog
+**85/108 done** · 23 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [639](https://github.com/Kuestenlogik/Bowire/issues/639) | Bowire | [SCIM: live Okta and Entra ID provisioning round-trips](#issue-kuestenlogik-bowire-639) | ⬜ Backlog | `area:workbench` |
 | [670](https://github.com/Kuestenlogik/Bowire/issues/670) | Bowire | [Get listed where developers and models actually look](#issue-kuestenlogik-bowire-670) | ⬜ Backlog | `area:site` |
-| [895](https://github.com/Kuestenlogik/Bowire/issues/895) | Bowire | [gRPC map fields are encoded and decoded wrongly](#issue-kuestenlogik-bowire-895) | ⬜ Backlog |  |
-| [896](https://github.com/Kuestenlogik/Bowire/issues/896) | Bowire | [MCP discovery fails when a tool's input schema gives type as an array like ["string","null"]](#issue-kuestenlogik-bowire-896) | ⬜ Backlog |  |
-| [897](https://github.com/Kuestenlogik/Bowire/issues/897) | Bowire | [Connect requests drop the base URL's path prefix](#issue-kuestenlogik-bowire-897) | ⬜ Backlog |  |
-| [898](https://github.com/Kuestenlogik/Bowire/issues/898) | Bowire | [Connect bidi call hangs when the server ends the stream before reading the request](#issue-kuestenlogik-bowire-898) | ⬜ Backlog |  |
-| [899](https://github.com/Kuestenlogik/Bowire/issues/899) | Bowire | [REST ad-hoc requests send Bowire's internal metadata markers, including the mTLS private key, to the target as headers](#issue-kuestenlogik-bowire-899) | ⬜ Backlog |  |
-| [900](https://github.com/Kuestenlogik/Bowire/issues/900) | Bowire | [REST: the request body of a DELETE operation is silently dropped](#issue-kuestenlogik-bowire-900) | ⬜ Backlog |  |
-| [901](https://github.com/Kuestenlogik/Bowire/issues/901) | Bowire | [REST and AsyncAPI mocks serve every YAML scalar as a JSON string (required: true becomes "true")](#issue-kuestenlogik-bowire-901) | ⬜ Backlog |  |
-| [902](https://github.com/Kuestenlogik/Bowire/issues/902) | Bowire | [OpenAPI export writes repeated and nested-object fields as {type: string}](#issue-kuestenlogik-bowire-902) | ⬜ Backlog |  |
-| [903](https://github.com/Kuestenlogik/Bowire/issues/903) | Bowire | [OpenAPI export coverage never matches a recorded concrete path to its templated operation](#issue-kuestenlogik-bowire-903) | ⬜ Backlog |  |
 | [904](https://github.com/Kuestenlogik/Bowire/issues/904) | Bowire | [REST discovery by URL fails on duplicate operation keys (#514 fixed only the upload and embedded paths)](#issue-kuestenlogik-bowire-904) | ⬜ Backlog |  |
 | [905](https://github.com/Kuestenlogik/Bowire/issues/905) | Bowire | [AWS SigV4 signing does not sort repeated query parameters by value, so AWS answers 403](#issue-kuestenlogik-bowire-905) | ⬜ Backlog |  |
 | [906](https://github.com/Kuestenlogik/Bowire/issues/906) | Bowire | [REST: a 3xx response is reported as status Unknown (shown as an error) instead of OK](#issue-kuestenlogik-bowire-906) | ⬜ Backlog |  |
@@ -48,8 +39,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [922](https://github.com/Kuestenlogik/Bowire/issues/922) | Bowire | [GraphQL SSE subscriptions never end on a complete event without data, and drop error events](#issue-kuestenlogik-bowire-922) | ⬜ Backlog |  |
 | [923](https://github.com/Kuestenlogik/Bowire/issues/923) | Bowire | [Shared GraphQL WebSocket subscribes before connection_ack and reuses a dead socket](#issue-kuestenlogik-bowire-923) | ⬜ Backlog |  |
 | [924](https://github.com/Kuestenlogik/Bowire/issues/924) | Bowire | [Workbench GraphQL query: selection set on scalar fields, variables typed String instead of the schema's type](#issue-kuestenlogik-bowire-924) | ⬜ Backlog |  |
-| [871](https://github.com/Kuestenlogik/Bowire/issues/871) | Bowire | [SCIM: a user PATCH refused with 409 for a taken userName keeps the new name in memory](#issue-kuestenlogik-bowire-871) | ✅ Done |  |
-| [894](https://github.com/Kuestenlogik/Bowire/issues/894) | Bowire | [gRPC requests fail on integers given as JSON strings, the canonical proto3 form for int64](#issue-kuestenlogik-bowire-894) | ✅ Done |  |
 | [816](https://github.com/Kuestenlogik/Bowire/issues/816) | Bowire | [SCIM trace records status 200 for every request](#issue-kuestenlogik-bowire-816) | ✅ Done |  |
 | [817](https://github.com/Kuestenlogik/Bowire/issues/817) | Bowire | [OIDC provider cannot run as an installed plugin](#issue-kuestenlogik-bowire-817) | ✅ Done |  |
 | [818](https://github.com/Kuestenlogik/Bowire/issues/818) | Bowire | [--auth-oidc-* flags are documented but never read](#issue-kuestenlogik-bowire-818) | ✅ Done |  |
@@ -102,6 +91,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [868](https://github.com/Kuestenlogik/Bowire/issues/868) | Bowire | [MCP task follow throws on a very large TTL or poll interval](#issue-kuestenlogik-bowire-868) | ✅ Done |  |
 | [869](https://github.com/Kuestenlogik/Bowire/issues/869) | Bowire | [MCP task follow throws when a failed task's error code is a string](#issue-kuestenlogik-bowire-869) | ✅ Done |  |
 | [870](https://github.com/Kuestenlogik/Bowire/issues/870) | Bowire | [Keyring references: URL services and escaped slashes](#issue-kuestenlogik-bowire-870) | ✅ Done |  |
+| [871](https://github.com/Kuestenlogik/Bowire/issues/871) | Bowire | [SCIM: a user PATCH refused with 409 for a taken userName keeps the new name in memory](#issue-kuestenlogik-bowire-871) | ✅ Done |  |
 | [872](https://github.com/Kuestenlogik/Bowire/issues/872) | Bowire | [SCIM: a user provisioned inactive is never purged after DELETE](#issue-kuestenlogik-bowire-872) | ✅ Done |  |
 | [873](https://github.com/Kuestenlogik/Bowire/issues/873) | Bowire | [SCIM: PurgeAfter=00:00:00 never purges, though documented as deleting without waiting](#issue-kuestenlogik-bowire-873) | ✅ Done |  |
 | [874](https://github.com/Kuestenlogik/Bowire/issues/874) | Bowire | [SCIM: group PATCH accepts a displayName another group already has](#issue-kuestenlogik-bowire-874) | ✅ Done |  |
@@ -124,6 +114,16 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [891](https://github.com/Kuestenlogik/Bowire/issues/891) | Bowire | [gRPC fixed32/fixed64/sfixed32/sfixed64 fields show as null in responses and are dropped from requests](#issue-kuestenlogik-bowire-891) | ✅ Done |  |
 | [892](https://github.com/Kuestenlogik/Bowire/issues/892) | Bowire | [MCP adapter tools/call runs streaming methods that tools/list never offered](#issue-kuestenlogik-bowire-892) | ✅ Done |  |
 | [893](https://github.com/Kuestenlogik/Bowire/issues/893) | Bowire | [MQTT channel unwraps device payloads that look like an envelope ({"type":…,"data":…})](#issue-kuestenlogik-bowire-893) | ✅ Done |  |
+| [894](https://github.com/Kuestenlogik/Bowire/issues/894) | Bowire | [gRPC requests fail on integers given as JSON strings, the canonical proto3 form for int64](#issue-kuestenlogik-bowire-894) | ✅ Done |  |
+| [895](https://github.com/Kuestenlogik/Bowire/issues/895) | Bowire | [gRPC map fields are encoded and decoded wrongly](#issue-kuestenlogik-bowire-895) | ✅ Done |  |
+| [896](https://github.com/Kuestenlogik/Bowire/issues/896) | Bowire | [MCP discovery fails when a tool's input schema gives type as an array like ["string","null"]](#issue-kuestenlogik-bowire-896) | ✅ Done |  |
+| [897](https://github.com/Kuestenlogik/Bowire/issues/897) | Bowire | [Connect requests drop the base URL's path prefix](#issue-kuestenlogik-bowire-897) | ✅ Done |  |
+| [898](https://github.com/Kuestenlogik/Bowire/issues/898) | Bowire | [Connect bidi call hangs when the server ends the stream before reading the request](#issue-kuestenlogik-bowire-898) | ✅ Done |  |
+| [899](https://github.com/Kuestenlogik/Bowire/issues/899) | Bowire | [REST ad-hoc requests send Bowire's internal metadata markers, including the mTLS private key, to the target as headers](#issue-kuestenlogik-bowire-899) | ✅ Done |  |
+| [900](https://github.com/Kuestenlogik/Bowire/issues/900) | Bowire | [REST: the request body of a DELETE operation is silently dropped](#issue-kuestenlogik-bowire-900) | ✅ Done |  |
+| [901](https://github.com/Kuestenlogik/Bowire/issues/901) | Bowire | [REST and AsyncAPI mocks serve every YAML scalar as a JSON string (required: true becomes "true")](#issue-kuestenlogik-bowire-901) | ✅ Done |  |
+| [902](https://github.com/Kuestenlogik/Bowire/issues/902) | Bowire | [OpenAPI export writes repeated and nested-object fields as {type: string}](#issue-kuestenlogik-bowire-902) | ✅ Done |  |
+| [903](https://github.com/Kuestenlogik/Bowire/issues/903) | Bowire | [OpenAPI export coverage never matches a recorded concrete path to its templated operation](#issue-kuestenlogik-bowire-903) | ✅ Done |  |
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
@@ -289,42 +289,6 @@ Split from #96 so the SCIM surface can ship on its own merits. [[more]](https://
 
 Six credible competitors turned up during the competitive survey **via openalternative.co**. Bowire was not there. That is the whole diagnosis: when a developer — or a language model — asks for "open source Postman alternative", the answer is assembled from these directories, not from bowire.io. [[more]](https://github.com/Kuestenlogik/Bowire/issues/670)
 
-#### <a id="issue-kuestenlogik-bowire-895"></a>⬜ Backlog · [#895](https://github.com/Kuestenlogik/Bowire/issues/895) gRPC map fields are encoded and decoded wrongly
-
-A protobuf `map<K, V>` field is a repeated `MapEntry { K key = 1; V value = 2; }` on the wire and a JSON object in proto3 JSON. The descriptor-driven codec in `src/Kuestenlogik.Bowire.Protocol.Grpc/GrpcInvoker.cs` handles neither side: [[more]](https://github.com/Kuestenlogik/Bowire/issues/895)
-
-#### <a id="issue-kuestenlogik-bowire-896"></a>⬜ Backlog · [#896](https://github.com/Kuestenlogik/Bowire/issues/896) MCP discovery fails when a tool's input schema gives type as an array like ["string","null"]
-
-`BowireMcpProtocol.MapToolInputSchema` (`src/Kuestenlogik.Bowire.Protocol.Mcp/BowireMcpProtocol.cs:896`) reads each property's `type` with `GetString()`. JSON Schema allows `type` to be an array, and `["string","null"]` is the usual way to write a nullable field; schema generators emit it routinely. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/896)
-
-#### <a id="issue-kuestenlogik-bowire-897"></a>⬜ Backlog · [#897](https://github.com/Kuestenlogik/Bowire/issues/897) Connect requests drop the base URL's path prefix
-
-`ConnectInvoker` builds every request URL as `new Uri(_baseUri, "<service>/<method>")` (`src/Kuestenlogik.Bowire.Protocol.Grpc/ConnectInvoker.cs:114`, and the same in the server-streaming `:264`, client-streaming `:339` and bidi `:455` paths). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/897)
-
-#### <a id="issue-kuestenlogik-bowire-898"></a>⬜ Backlog · [#898](https://github.com/Kuestenlogik/Bowire/issues/898) Connect bidi call hangs when the server ends the stream before reading the request
-
-`ConnectInvoker.InvokeBidiStreamAsync` (`src/Kuestenlogik.Bowire.Protocol.Grpc/ConnectInvoker.cs:480`) feeds the request frames into a `Pipe` from a producer task and, in its `finally` (`:535`), awaits that producer. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/898)
-
-#### <a id="issue-kuestenlogik-bowire-899"></a>⬜ Backlog · [#899](https://github.com/Kuestenlogik/Bowire/issues/899) REST ad-hoc requests send Bowire's internal metadata markers, including the mTLS private key, to the target as headers
-
-The schema-free REST path (`RestInvoker.InvokeAdHocAsync`, `src/Kuestenlogik.Bowire.Protocol.Rest/RestInvoker.cs:207-229`) copies every metadata entry onto the outgoing request as an HTTP header. It skips the SigV4 marker and the `X-Bowire-Body-Binary*` markers by name, but never calls `BowireMetadataKeys.IsInternal`. [[more]](https://github.com/Kuestenlogik/Bowire/issues/899)
-
-#### <a id="issue-kuestenlogik-bowire-900"></a>⬜ Backlog · [#900](https://github.com/Kuestenlogik/Bowire/issues/900) REST: the request body of a DELETE operation is silently dropped
-
-`RestInvoker.CanHaveBody` (`src/Kuestenlogik.Bowire.Protocol.Rest/RestInvoker.cs:777-784`) treats DELETE like GET: no body. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/900)
-
-#### <a id="issue-kuestenlogik-bowire-901"></a>⬜ Backlog · [#901](https://github.com/Kuestenlogik/Bowire/issues/901) REST and AsyncAPI mocks serve every YAML scalar as a JSON string (required: true becomes "true")
-
-The REST and AsyncAPI mock-host extensions serve a YAML source schema as JSON under `/openapi.json`, `/swagger.json` and `/asyncapi.json`. The YAML-to-JSON conversion returns `scalar.Value` for every scalar, so every value becomes a JSON string: [[more]](https://github.com/Kuestenlogik/Bowire/issues/901)
-
-#### <a id="issue-kuestenlogik-bowire-902"></a>⬜ Backlog · [#902](https://github.com/Kuestenlogik/Bowire/issues/902) OpenAPI export writes repeated and nested-object fields as {type: string}
-
-`OpenApiDocumentBuilder` maps every field through `MapFieldType(field.Type)` (`src/Kuestenlogik.Bowire.Protocol.Rest/OpenApiDocumentBuilder.cs:235` and `:307`), which looks only at the scalar type name. `IsRepeated` and `MessageType` are ignored, and the type name `message` falls through to the default. [[more]](https://github.com/Kuestenlogik/Bowire/issues/902)
-
-#### <a id="issue-kuestenlogik-bowire-903"></a>⬜ Backlog · [#903](https://github.com/Kuestenlogik/Bowire/issues/903) OpenAPI export coverage never matches a recorded concrete path to its templated operation
-
-The `x-bowire-coverage` annotation in `OpenApiDocumentBuilder` is a dictionary keyed by `"<VERB> <recorded path>"` and looked up with `"<VERB> <operation template>"` (`src/Kuestenlogik.Bowire.Protocol.Rest/OpenApiDocumentBuilder.cs:162-163`, `BuildCoverageIndex` at `:387`). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/903)
-
 #### <a id="issue-kuestenlogik-bowire-904"></a>⬜ Backlog · [#904](https://github.com/Kuestenlogik/Bowire/issues/904) REST discovery by URL fails on duplicate operation keys (#514 fixed only the upload and embedded paths)
 
 `BowireRestProtocol.CommitDiscovery` (`src/Kuestenlogik.Bowire.Protocol.Rest/BowireRestProtocol.cs:383-385`) builds the `{service}::{method}` invoke index with a raw `ToDictionary`. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/904)
@@ -408,14 +372,6 @@ Two defects in the shared graphql-transport-ws socket (`X-Bowire-GraphQL-Multipl
 #### <a id="issue-kuestenlogik-bowire-924"></a>⬜ Backlog · [#924](https://github.com/Kuestenlogik/Bowire/issues/924) Workbench GraphQL query: selection set on scalar fields, variables typed String instead of the schema's type
 
 The workbench builds its own default GraphQL operation for the query pane (`buildGraphQLDefaultQuery` in `src/Kuestenlogik.Bowire/wwwroot/js/protocols.js`). It mirrors the server-side `GraphQLQueryBuilder`, but has not followed two of its fixes, so the operation the workbench sends is refused by the server: [[more]](https://github.com/Kuestenlogik/Bowire/issues/924)
-
-#### <a id="issue-kuestenlogik-bowire-871"></a>✅ Done · [#871](https://github.com/Kuestenlogik/Bowire/issues/871) SCIM: a user PATCH refused with 409 for a taken userName keeps the new name in memory
-
-`BowireScimStore.UpdateUser` (`src/Kuestenlogik.Bowire.Scim/BowireScimStore.cs:347`) runs the change on the live record and only then checks whether the new `userName` belongs to somebody else. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/871)
-
-#### <a id="issue-kuestenlogik-bowire-894"></a>✅ Done · [#894](https://github.com/Kuestenlogik/Bowire/issues/894) gRPC requests fail on integers given as JSON strings, the canonical proto3 form for int64
-
-proto3 JSON writes every 64-bit integer (`int64`, `uint64`, `sint64`, `fixed64`, `sfixed64`) as a JSON string, and a parser must accept the string form for 32-bit integers too. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/894)
 
 #### <a id="issue-kuestenlogik-bowire-816"></a>✅ Done · [#816](https://github.com/Kuestenlogik/Bowire/issues/816) SCIM trace records status 200 for every request
 
@@ -625,6 +581,10 @@ When a followed MCP task (#801) fails and its JSON-RPC `error.code` is not a num
 
 `KeyringReference.TryParse` splits the text after `keyring.` on the first `/`. That is right for plain references (`github.com/deploy-bot`, `vault/team/bot`), but a URL-shaped service breaks: `{{keyring.https://api.example.com/v1/deploy-bot}}` parses to service `https:` and account `/api.example.com … [[more]](https://github.com/Kuestenlogik/Bowire/issues/870)
 
+#### <a id="issue-kuestenlogik-bowire-871"></a>✅ Done · [#871](https://github.com/Kuestenlogik/Bowire/issues/871) SCIM: a user PATCH refused with 409 for a taken userName keeps the new name in memory
+
+`BowireScimStore.UpdateUser` (`src/Kuestenlogik.Bowire.Scim/BowireScimStore.cs:347`) runs the change on the live record and only then checks whether the new `userName` belongs to somebody else. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/871)
+
 #### <a id="issue-kuestenlogik-bowire-872"></a>✅ Done · [#872](https://github.com/Kuestenlogik/Bowire/issues/872) SCIM: a user provisioned inactive is never purged after DELETE
 
 `BowireScimStore.DeleteUser` (`src/Kuestenlogik.Bowire.Scim/BowireScimStore.cs:390`) starts the purge window through `ApplyActivation`, which only acts on an active → inactive transition. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/872)
@@ -712,6 +672,46 @@ The MCP adapter's `tools/list` offers only unary methods (`src/Kuestenlogik.Bowi
 #### <a id="issue-kuestenlogik-bowire-893"></a>✅ Done · [#893](https://github.com/Kuestenlogik/Bowire/issues/893) MQTT channel unwraps device payloads that look like an envelope ({"type":…,"data":…})
 
 `MqttBowireChannel.ParseOutgoingFrame` unwraps any JSON object with a string `type`: `{"type":"reading","data":"21.5"}` is published as `21.5` (the `data` convenience shortcut), `{"type":"text","text":"hi","ts":1}` as `hi`, and `{"type":"binary","base64":"QUJD","seq":2}` as the bytes `ABC`. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/893)
+
+#### <a id="issue-kuestenlogik-bowire-894"></a>✅ Done · [#894](https://github.com/Kuestenlogik/Bowire/issues/894) gRPC requests fail on integers given as JSON strings, the canonical proto3 form for int64
+
+proto3 JSON writes every 64-bit integer (`int64`, `uint64`, `sint64`, `fixed64`, `sfixed64`) as a JSON string, and a parser must accept the string form for 32-bit integers too. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/894)
+
+#### <a id="issue-kuestenlogik-bowire-895"></a>✅ Done · [#895](https://github.com/Kuestenlogik/Bowire/issues/895) gRPC map fields are encoded and decoded wrongly
+
+A protobuf `map<K, V>` field is a repeated `MapEntry { K key = 1; V value = 2; }` on the wire and a JSON object in proto3 JSON. The descriptor-driven codec in `src/Kuestenlogik.Bowire.Protocol.Grpc/GrpcInvoker.cs` handles neither side: [[more]](https://github.com/Kuestenlogik/Bowire/issues/895)
+
+#### <a id="issue-kuestenlogik-bowire-896"></a>✅ Done · [#896](https://github.com/Kuestenlogik/Bowire/issues/896) MCP discovery fails when a tool's input schema gives type as an array like ["string","null"]
+
+`BowireMcpProtocol.MapToolInputSchema` (`src/Kuestenlogik.Bowire.Protocol.Mcp/BowireMcpProtocol.cs:896`) reads each property's `type` with `GetString()`. JSON Schema allows `type` to be an array, and `["string","null"]` is the usual way to write a nullable field; schema generators emit it routinely. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/896)
+
+#### <a id="issue-kuestenlogik-bowire-897"></a>✅ Done · [#897](https://github.com/Kuestenlogik/Bowire/issues/897) Connect requests drop the base URL's path prefix
+
+`ConnectInvoker` builds every request URL as `new Uri(_baseUri, "<service>/<method>")` (`src/Kuestenlogik.Bowire.Protocol.Grpc/ConnectInvoker.cs:114`, and the same in the server-streaming `:264`, client-streaming `:339` and bidi `:455` paths). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/897)
+
+#### <a id="issue-kuestenlogik-bowire-898"></a>✅ Done · [#898](https://github.com/Kuestenlogik/Bowire/issues/898) Connect bidi call hangs when the server ends the stream before reading the request
+
+`ConnectInvoker.InvokeBidiStreamAsync` (`src/Kuestenlogik.Bowire.Protocol.Grpc/ConnectInvoker.cs:480`) feeds the request frames into a `Pipe` from a producer task and, in its `finally` (`:535`), awaits that producer. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/898)
+
+#### <a id="issue-kuestenlogik-bowire-899"></a>✅ Done · [#899](https://github.com/Kuestenlogik/Bowire/issues/899) REST ad-hoc requests send Bowire's internal metadata markers, including the mTLS private key, to the target as headers
+
+The schema-free REST path (`RestInvoker.InvokeAdHocAsync`, `src/Kuestenlogik.Bowire.Protocol.Rest/RestInvoker.cs:207-229`) copies every metadata entry onto the outgoing request as an HTTP header. It skips the SigV4 marker and the `X-Bowire-Body-Binary*` markers by name, but never calls `BowireMetadataKeys.IsInternal`. [[more]](https://github.com/Kuestenlogik/Bowire/issues/899)
+
+#### <a id="issue-kuestenlogik-bowire-900"></a>✅ Done · [#900](https://github.com/Kuestenlogik/Bowire/issues/900) REST: the request body of a DELETE operation is silently dropped
+
+`RestInvoker.CanHaveBody` (`src/Kuestenlogik.Bowire.Protocol.Rest/RestInvoker.cs:777-784`) treats DELETE like GET: no body. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/900)
+
+#### <a id="issue-kuestenlogik-bowire-901"></a>✅ Done · [#901](https://github.com/Kuestenlogik/Bowire/issues/901) REST and AsyncAPI mocks serve every YAML scalar as a JSON string (required: true becomes "true")
+
+The REST and AsyncAPI mock-host extensions serve a YAML source schema as JSON under `/openapi.json`, `/swagger.json` and `/asyncapi.json`. The YAML-to-JSON conversion returns `scalar.Value` for every scalar, so every value becomes a JSON string: [[more]](https://github.com/Kuestenlogik/Bowire/issues/901)
+
+#### <a id="issue-kuestenlogik-bowire-902"></a>✅ Done · [#902](https://github.com/Kuestenlogik/Bowire/issues/902) OpenAPI export writes repeated and nested-object fields as {type: string}
+
+`OpenApiDocumentBuilder` maps every field through `MapFieldType(field.Type)` (`src/Kuestenlogik.Bowire.Protocol.Rest/OpenApiDocumentBuilder.cs:235` and `:307`), which looks only at the scalar type name. `IsRepeated` and `MessageType` are ignored, and the type name `message` falls through to the default. [[more]](https://github.com/Kuestenlogik/Bowire/issues/902)
+
+#### <a id="issue-kuestenlogik-bowire-903"></a>✅ Done · [#903](https://github.com/Kuestenlogik/Bowire/issues/903) OpenAPI export coverage never matches a recorded concrete path to its templated operation
+
+The `x-bowire-coverage` annotation in `OpenApiDocumentBuilder` is a dictionary keyed by `"<VERB> <recorded path>"` and looked up with `"<VERB> <operation template>"` (`src/Kuestenlogik.Bowire.Protocol.Rest/OpenApiDocumentBuilder.cs:162-163`, `BuildCoverageIndex` at `:387`). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/903)
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
