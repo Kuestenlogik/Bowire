@@ -236,6 +236,52 @@ public sealed class MqttBowireChannelIntegrationTests : IAsyncDisposable
         Assert.Equal("unpacked", Encoding.UTF8.GetString(bytes));
     }
 
+    [Theory]
+    [InlineData("""{"type":"reading","data":"21.5"}""")]
+    [InlineData("""{"type":"text","text":"hi","ts":1}""")]
+    [InlineData("""{"type":"binary","base64":"QUJD","seq":2}""")]
+    public async Task SendAsync_DevicePayloadShapedLikeAnEnvelope_IsPublishedVerbatim(string payload)
+    {
+        // #893 — only Bowire's own {type,text} / {type,base64} frames are
+        // unwrapped; a device message that merely shares a key or two is the
+        // message, byte for byte.
+        var ct = TestContext.Current.CancellationToken;
+        var port = await StartBrokerAsync(ct);
+
+        var protocol = new BowireMqttProtocol();
+        var factory = new MqttClientFactory();
+        using var witness = factory.CreateMqttClient();
+        var received = new TaskCompletionSource<byte[]>(TaskCreationOptions.RunContinuationsAsynchronously);
+        witness.ApplicationMessageReceivedAsync += args =>
+        {
+            received.TrySetResult(System.Buffers.BuffersExtensions.ToArray(args.ApplicationMessage.Payload));
+            return Task.CompletedTask;
+        };
+        await witness.ConnectAsync(
+            factory.CreateClientOptionsBuilder()
+                .WithTcpServer("127.0.0.1", port)
+                .WithClientId("mqtt-device-witness-" + Guid.NewGuid().ToString("N"))
+                .Build(),
+            ct);
+        await witness.SubscribeAsync(
+            factory.CreateSubscribeOptionsBuilder().WithTopicFilter("send/device").Build(),
+            ct);
+
+        await using var channel = await protocol.OpenChannelAsync(
+            serverUrl: $"mqtt://127.0.0.1:{port}",
+            service: "send",
+            method: "send/device",
+            showInternalServices: false,
+            metadata: null,
+            ct);
+
+        Assert.NotNull(channel);
+        Assert.True(await channel!.SendAsync(payload, ct));
+
+        var bytes = await received.Task.WaitAsync(TimeSpan.FromSeconds(5), ct);
+        Assert.Equal(payload, Encoding.UTF8.GetString(bytes));
+    }
+
     [Fact]
     public async Task SendAsync_BinaryFrame_DecodesBase64Payload()
     {

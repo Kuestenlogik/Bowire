@@ -603,14 +603,18 @@ public sealed class MqttBowireChannelParseOutgoingFrameTests
         Assert.Null(bytes);
     }
 
-    [Fact]
-    public void Convenience_Data_Property_Is_Treated_As_Text()
+    [Theory]
+    [InlineData("{\"type\":\"unknown\",\"data\":\"shortcut\"}")]
+    [InlineData("{\"type\":\"text\",\"data\":\"21.5\"}")]
+    [InlineData("{\"type\":\"text\",\"text\":\"hi\",\"ts\":1}")]
+    [InlineData("{\"type\":\"binary\",\"base64\":\"QUJD\",\"seq\":2}")]
+    public void Device_Payload_Shaped_Like_An_Envelope_Is_Published_Verbatim(string raw)
     {
-        var (isBinary, text, bytes) = InvokeParseOutgoingFrame(
-            "{\"type\":\"unknown\",\"data\":\"shortcut\"}");
+        // #893 — only Bowire's own frames, key for key, are unwrapped.
+        var (isBinary, text, bytes) = InvokeParseOutgoingFrame(raw);
 
         Assert.False(isBinary);
-        Assert.Equal("shortcut", text);
+        Assert.Equal(raw, text);
         Assert.Null(bytes);
     }
 

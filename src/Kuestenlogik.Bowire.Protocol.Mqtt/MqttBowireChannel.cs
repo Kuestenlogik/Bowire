@@ -108,9 +108,9 @@ internal sealed class MqttBowireChannel : IBowireChannel
     {
         if (IsClosed || !_client.IsConnected) return false;
 
-        // The JS channelSend path wraps sends as { type: "text", text: "..." }
-        // or { type: "binary", base64: "..." }. Unpack those; otherwise treat
-        // the string as a raw payload.
+        // Bowire's typed frames { type: "text", text: "..." } and
+        // { type: "binary", base64: "..." } are unpacked; any other string,
+        // JSON or not, is the payload itself (#893).
         var (isBinary, text, bytes) = ParseOutgoingFrame(jsonMessage);
 
         var payload = isBinary && bytes is not null
@@ -198,26 +198,28 @@ internal sealed class MqttBowireChannel : IBowireChannel
         try
         {
             using var doc = JsonDocument.Parse(jsonMessage);
-            // Only a string `type` makes an envelope (#852): a device payload
-            // like {"type":1,...} is ordinary JSON, and a malformed envelope
-            // is published as-is rather than failing the send.
-            if (doc.RootElement.ValueKind == JsonValueKind.Object &&
-                doc.RootElement.TryGetProperty("type", out var typeProp) &&
+            // Only Bowire's own frames are envelopes, and only exactly:
+            // {"type":"text","text":"…"} or {"type":"binary","base64":"…"}
+            // and no other key (#893). MQTT devices send objects with a
+            // `type` and a `data` / `text` all the time; a numeric type
+            // (#852), an extra key or a malformed envelope is the message
+            // itself and goes out verbatim. The former `data` shortcut is
+            // gone: no Bowire sender produced it for MQTT.
+            var root = doc.RootElement;
+            if (root.ValueKind == JsonValueKind.Object &&
+                CountProperties(root) == 2 &&
+                root.TryGetProperty("type", out var typeProp) &&
                 typeProp.ValueKind == JsonValueKind.String)
             {
                 var t = typeProp.GetString();
-                if (t == "binary" && doc.RootElement.TryGetProperty("base64", out var b64) && b64.ValueKind == JsonValueKind.String
+                if (t == "binary" && root.TryGetProperty("base64", out var b64) && b64.ValueKind == JsonValueKind.String
                     && TryDecodeBase64(b64.GetString()!, out var bytes))
                 {
                     return (true, null, bytes);
                 }
 
-                if (t == "text" && doc.RootElement.TryGetProperty("text", out var textProp) && textProp.ValueKind == JsonValueKind.String)
+                if (t == "text" && root.TryGetProperty("text", out var textProp) && textProp.ValueKind == JsonValueKind.String)
                     return (false, textProp.GetString()!, null);
-
-                // Convenience: some callers send { "data": "..." }
-                if (doc.RootElement.TryGetProperty("data", out var dataProp) && dataProp.ValueKind == JsonValueKind.String)
-                    return (false, dataProp.GetString() ?? "", null);
             }
         }
         catch (JsonException)
@@ -226,6 +228,13 @@ internal sealed class MqttBowireChannel : IBowireChannel
         }
 
         return (false, jsonMessage, null);
+    }
+
+    private static int CountProperties(JsonElement obj)
+    {
+        var count = 0;
+        foreach (var _ in obj.EnumerateObject()) count++;
+        return count;
     }
 
     private static bool TryDecodeBase64(string base64, out byte[] bytes)

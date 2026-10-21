@@ -324,17 +324,15 @@ public sealed class MqttHelperTests
     }
 
     [Fact]
-    public void ParseOutgoingFrame_Data_Shorthand_Requires_Type_Field()
+    public void ParseOutgoingFrame_Type_And_Data_Is_A_Device_Payload()
     {
-        // The `data` shorthand sits inside the `type`-gated block, so an
-        // unrecognised `type` plus a `data` string still routes through the
-        // shorthand. Without the `type` field the helper drops out of the
-        // block entirely and treats the input as a raw payload.
-        var (isBinary, text, bytes) = InvokeParseOutgoingFrame(
-            "{\"type\":\"unknown\",\"data\":\"plain message\"}");
+        // #893 — there is no `data` shorthand: {"type":…,"data":…} is a
+        // common device message and is published as it is.
+        var raw = "{\"type\":\"unknown\",\"data\":\"plain message\"}";
+        var (isBinary, text, bytes) = InvokeParseOutgoingFrame(raw);
 
         Assert.False(isBinary);
-        Assert.Equal("plain message", text);
+        Assert.Equal(raw, text);
         Assert.Null(bytes);
     }
 
