@@ -554,4 +554,51 @@ public sealed class GraphQLSchemaMapperEdgeCasesTests
         Assert.Equal("message", input.Type);
         Assert.Null(input.MessageType);
     }
+
+    [Fact]
+    public void Map_SelfReferencingInputObject_StopsAtTheDepthCap()
+    {
+        // #912 - `input Filter { and: [Filter!] }` is the ordinary shape of a
+        // filter DSL. The depth cap was never passed on, so the walk
+        // recursed until the stack overflowed and took the process with it.
+        var schema = Parse("""
+            {
+              "__schema": {
+                "queryType": { "name": "Query" },
+                "mutationType": null,
+                "subscriptionType": null,
+                "types": [
+                  { "kind": "OBJECT", "name": "Query",
+                    "fields": [ {
+                      "name": "search",
+                      "args": [ { "name": "filter", "type": { "kind": "INPUT_OBJECT", "name": "Filter" } } ],
+                      "type": { "kind": "SCALAR", "name": "String" }
+                    } ],
+                    "inputFields": null, "enumValues": null },
+                  { "kind": "INPUT_OBJECT", "name": "Filter", "fields": null,
+                    "inputFields": [
+                      { "name": "name", "type": { "kind": "SCALAR", "name": "String" } },
+                      { "name": "and", "type": { "kind": "LIST", "ofType": { "kind": "NON_NULL", "ofType": { "kind": "INPUT_OBJECT", "name": "Filter" } } } }
+                    ],
+                    "enumValues": null }
+                ]
+              }
+            }
+            """);
+
+        var services = new GraphQLSchemaMapper().Map(schema, "http://localhost/graphql");
+        var filter = services.Single().Methods.Single().InputType.Fields.Single();
+
+        // Walk the `and` chain: it has to end, a few levels down.
+        var levels = 0;
+        var current = filter.MessageType;
+        while (current is not null && current.Fields.Count > 0)
+        {
+            levels++;
+            current = current.Fields.Single(f => f.Name == "and").MessageType;
+        }
+        Assert.InRange(levels, 1, 10);
+        Assert.NotNull(current);
+        Assert.True(current!.Truncated);
+    }
 }

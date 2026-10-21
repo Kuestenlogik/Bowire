@@ -166,7 +166,7 @@ internal sealed class GraphQLSchemaMapper
     /// for anything that has to write the type back out (#713).
     /// </remarks>
     private (string Type, bool IsRepeated, bool Required, BowireMessageInfo? Nested, List<BowireEnumValue>? Enums, string? SchemaName)
-        ResolveType(JsonElement typeRef, string contextName)
+        ResolveType(JsonElement typeRef, string contextName, int depth = 0)
     {
         var required = false;
         var isRepeated = false;
@@ -206,7 +206,10 @@ internal sealed class GraphQLSchemaMapper
                 return ("string", isRepeated, required, null, enumValues, namedName);
 
             case "INPUT_OBJECT":
-                var nested = ResolveInputObject(namedName, contextName);
+                // #912 - the depth travels with the walk. Starting it at zero on
+                // every hop let `input Filter { and: [Filter!] }` recurse
+                // until the stack overflowed and took the process with it.
+                var nested = ResolveInputObject(namedName, contextName, depth);
                 return ("message", isRepeated, required, nested, null, namedName);
 
             case "OBJECT":
@@ -390,8 +393,12 @@ internal sealed class GraphQLSchemaMapper
 
     private BowireMessageInfo? ResolveInputObject(string? inputName, string contextName, int depth = 0)
     {
-        if (inputName is null || depth > 4) return null;
+        if (inputName is null) return null;
         if (!_typesByName.TryGetValue(inputName, out var inputType)) return null;
+
+        // Past the cap the shape is named but not expanded, and says so
+        // (#694), so a form can tell "not shown here" from "no fields".
+        if (depth > 4) return new BowireMessageInfo(inputName, inputName, []) { Truncated = true };
 
         if (!inputType.TryGetProperty("inputFields", out var fields) || fields.ValueKind != JsonValueKind.Array)
             return new BowireMessageInfo(inputName, inputName, []);
@@ -404,7 +411,7 @@ internal sealed class GraphQLSchemaMapper
             var fdesc = f.TryGetProperty("description", out var fd) ? fd.GetString() : null;
 
             var (typeName, isRepeated, required, nested, enums, schemaType) = f.TryGetProperty("type", out var ft)
-                ? ResolveType(ft, fname)
+                ? ResolveType(ft, fname, depth + 1)
                 : ("string", false, false, null, null, null);
 
             mapped.Add(new BowireFieldInfo(
