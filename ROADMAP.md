@@ -12,13 +12,12 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
 
-**108/111 done** · 3 backlog
+**109/111 done** · 2 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [639](https://github.com/Kuestenlogik/Bowire/issues/639) | Bowire | [SCIM: live Okta and Entra ID provisioning round-trips](#issue-kuestenlogik-bowire-639) | ⬜ Backlog | `area:workbench` |
 | [670](https://github.com/Kuestenlogik/Bowire/issues/670) | Bowire | [Get listed where developers and models actually look](#issue-kuestenlogik-bowire-670) | ⬜ Backlog | `area:site` |
-| [928](https://github.com/Kuestenlogik/Bowire/issues/928) | Bowire | [Blog posts: images wider than the text column overflow the page](#issue-kuestenlogik-bowire-928) | ⬜ Backlog |  |
 | [816](https://github.com/Kuestenlogik/Bowire/issues/816) | Bowire | [SCIM trace records status 200 for every request](#issue-kuestenlogik-bowire-816) | ✅ Done |  |
 | [817](https://github.com/Kuestenlogik/Bowire/issues/817) | Bowire | [OIDC provider cannot run as an installed plugin](#issue-kuestenlogik-bowire-817) | ✅ Done |  |
 | [818](https://github.com/Kuestenlogik/Bowire/issues/818) | Bowire | [--auth-oidc-* flags are documented but never read](#issue-kuestenlogik-bowire-818) | ✅ Done |  |
@@ -127,6 +126,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [924](https://github.com/Kuestenlogik/Bowire/issues/924) | Bowire | [Workbench GraphQL query: selection set on scalar fields, variables typed String instead of the schema's type](#issue-kuestenlogik-bowire-924) | ✅ Done |  |
 | [926](https://github.com/Kuestenlogik/Bowire/issues/926) | Bowire | [Blog on bowire.io: articles with a canonical home and a feed for cross-posting](#issue-kuestenlogik-bowire-926) | ✅ Done |  |
 | [927](https://github.com/Kuestenlogik/Bowire/issues/927) | Bowire | [Site navigation: group Documentation, Bootcamp, Blog and Community under Resources](#issue-kuestenlogik-bowire-927) | ✅ Done |  |
+| [928](https://github.com/Kuestenlogik/Bowire/issues/928) | Bowire | [Blog posts: images wider than the text column overflow the page](#issue-kuestenlogik-bowire-928) | ✅ Done |  |
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
@@ -297,10 +297,6 @@ Split from #96 so the SCIM surface can ship on its own merits. [[more]](https://
 > `area:site`
 
 Six credible competitors turned up during the competitive survey **via openalternative.co**. Bowire was not there. That is the whole diagnosis: when a developer — or a language model — asks for "open source Postman alternative", the answer is assembled from these directories, not from bowire.io. [[more]](https://github.com/Kuestenlogik/Bowire/issues/670)
-
-#### <a id="issue-kuestenlogik-bowire-928"></a>⬜ Backlog · [#928](https://github.com/Kuestenlogik/Bowire/issues/928) Blog posts: images wider than the text column overflow the page
-
-The blog post layout (#926) gives images no width limit. A screenshot wider than the 720px text column — every workbench screenshot is 1200–1440px — overflows it, and the page gets a horizontal scrollbar (at 1280px: document 1729px wide). [[more]](https://github.com/Kuestenlogik/Bowire/issues/928)
 
 #### <a id="issue-kuestenlogik-bowire-816"></a>✅ Done · [#816](https://github.com/Kuestenlogik/Bowire/issues/816) SCIM trace records status 200 for every request
 
@@ -733,6 +729,10 @@ Directories and link roundups need something to point at. A bare product link ra
 #### <a id="issue-kuestenlogik-bowire-927"></a>✅ Done · [#927](https://github.com/Kuestenlogik/Bowire/issues/927) Site navigation: group Documentation, Bootcamp, Blog and Community under Resources
 
 The top navigation is flat — Quickstart, Features, Solutions, Downloads, Documentation, Bootcamp, Community — and already wide. A Blog entry (#926) would make it wider still, and the bar starts spilling into the overflow menu sooner. [[more]](https://github.com/Kuestenlogik/Bowire/issues/927)
+
+#### <a id="issue-kuestenlogik-bowire-928"></a>✅ Done · [#928](https://github.com/Kuestenlogik/Bowire/issues/928) Blog posts: images wider than the text column overflow the page
+
+The blog post layout (#926) gives images no width limit. A screenshot wider than the 720px text column — every workbench screenshot is 1200–1440px — overflows it, and the page gets a horizontal scrollbar (at 1280px: document 1729px wide). [[more]](https://github.com/Kuestenlogik/Bowire/issues/928)
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
