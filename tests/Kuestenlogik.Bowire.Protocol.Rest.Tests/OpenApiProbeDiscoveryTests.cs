@@ -306,6 +306,30 @@ public sealed class OpenApiProbeDiscoveryTests : IDisposable
     }
 
     [Fact]
+    public async Task A_Document_With_Duplicate_Operation_Keys_Still_Discovers()
+    {
+        // #514 made the upload and embedded paths tolerate one operation
+        // listed twice (one handler on several routes, an operation under
+        // several tags); discovery by URL must do the same.
+        const string origin = "http://probe-test-13.invalid";
+        var duplicated = StubResult("Default");
+        var svc = duplicated.Services[0];
+        svc.Methods.Add(svc.Methods[0] with { FullName = "GET /again", HttpPath = "/again" });
+        var adapter = new ProgrammableAdapter
+        {
+            Responses = { [origin + "/api"] = duplicated }
+        };
+        BowireOpenApiAdapterRegistry.Register(adapter);
+
+        using var protocol = new BowireRestProtocol();
+        var services = await protocol.DiscoverAsync(
+            origin + "/api", showInternalServices: false,
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(2, Assert.Single(services).Methods.Count);
+    }
+
+    [Fact]
     public async Task Https_Origin_Probes_Only_Https_Urls()
     {
         // Probe sweep must inherit the supplied URL's scheme so an HTTPS-only

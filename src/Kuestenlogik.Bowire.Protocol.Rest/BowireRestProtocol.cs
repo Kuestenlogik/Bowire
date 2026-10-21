@@ -379,12 +379,10 @@ public sealed class BowireRestProtocol
             svc.OriginUrl = docUrl;
         }
 
-        // Build a lookup index so InvokeAsync can find a method by (service, method)
-        var index = services
-            .SelectMany(svc => svc.Methods.Select(m => (key: svc.Name + "::" + m.Name, m)))
-            .ToDictionary(pair => pair.key, pair => pair.m, StringComparer.Ordinal);
-
-        _cache[docUrl] = new RestSchemaCache(services, index, apiBaseUrl);
+        // Build a lookup index so InvokeAsync can find a method by (service,
+        // method). #904 - the same duplicate-tolerant index as the upload and
+        // embedded paths (#514); a raw ToDictionary threw on one duplicate.
+        _cache[docUrl] = new RestSchemaCache(services, BuildMethodIndex(services), apiBaseUrl);
 
         return services;
     }
