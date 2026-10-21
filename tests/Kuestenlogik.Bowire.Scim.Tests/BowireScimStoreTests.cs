@@ -272,6 +272,36 @@ public sealed class BowireScimStoreTests : IDisposable
     }
 
     [Fact]
+    public void A_User_Provisioned_Inactive_Is_Purged_Once_Deleted()
+    {
+        // #872 — connectors may create a user inactive and delete it without
+        // ever activating it. The DELETE still starts the purge window;
+        // without that the record was kept for good.
+        var store = Store();
+        var record = store.CreateUser(new ScimUser { UserName = "ada@example.com", Active = false });
+
+        store.DeleteUser(record.Resource.Id);
+        _clock.Now = _clock.Now.AddDays(31);
+
+        Assert.Equal(1, store.Purge(TimeSpan.FromDays(30)));
+        Assert.Null(store.GetUser(record.Resource.Id));
+    }
+
+    [Fact]
+    public void Deleting_An_Already_Deactivated_User_Keeps_Its_Window()
+    {
+        var store = Store();
+        var record = store.CreateUser(Ada());
+        store.UpdateUser(record.Resource.Id, u => u.Active = false);
+        _clock.Now = _clock.Now.AddDays(20);
+
+        store.DeleteUser(record.Resource.Id);
+        _clock.Now = _clock.Now.AddDays(11);
+
+        Assert.Equal(1, store.Purge(TimeSpan.FromDays(30)));
+    }
+
+    [Fact]
     public void An_Active_Identity_Is_Never_Purged()
     {
         var store = Store();

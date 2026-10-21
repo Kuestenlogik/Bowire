@@ -395,7 +395,11 @@ public sealed class BowireScimStore
             existing.Resource.Meta.LastModified = now;
             existing.Resource.Meta.Version = Etag(now);
 
-            ApplyActivation(existing, wasActive, active: false, now);
+            // #872 — a DELETE starts the purge window whenever it has not
+            // started yet, not only on an active → inactive transition. A user
+            // provisioned inactive and never activated was otherwise kept for
+            // good. One deactivated earlier keeps the window it already has.
+            ApplyActivation(existing, wasActive || existing.DeactivatedUtc is null, active: false, now);
             Persist(existing);
             Log("delete", id, existing.Resource.UserName, active: false);
             return true;
