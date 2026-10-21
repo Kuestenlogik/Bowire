@@ -331,6 +331,45 @@ public sealed class AsyncApiDocumentBuilderTests
     }
 
     [Fact]
+    public void Build_registers_a_message_type_shared_by_several_topics_once()
+    {
+        // Every topic of the MQTT service publishes mqtt.PublishRequest
+        // and receives mqtt.Message — two component messages, not one
+        // copy per topic.
+        var json = AsyncApiDocumentBuilder.Build("mqtt://b:1883",
+            new[]
+            {
+                MakeMqttService("mqtt://b:1883", "sensors/temperature"),
+                MakeMqttService("mqtt://b:1883", "sensors/humidity"),
+            },
+            options: new AsyncApiExportOptions { Format = AsyncApiExportFormat.Json });
+
+        using var doc = System.Text.Json.JsonDocument.Parse(json);
+        var messages = doc.RootElement.GetProperty("components").GetProperty("messages")
+            .EnumerateObject().Select(p => p.Name).ToList();
+        Assert.Equal(["mqtt_PublishRequest", "mqtt_Message"], messages);
+    }
+
+    [Fact]
+    public void Build_keeps_distinct_message_types_whose_safe_ids_collide_apart()
+    {
+        var a = new BowireMessageInfo("A", "ns.A", []);
+        var b = new BowireMessageInfo("A", "ns_A", []);
+        var svc = new BowireServiceInfo("s", "mqtt", new List<BowireMethodInfo>
+        {
+            new("t1", "mqtt/t1/publish", false, false, a, a, "Unary"),
+            new("t2", "mqtt/t2/publish", false, false, b, b, "Unary"),
+        });
+        var json = AsyncApiDocumentBuilder.Build("mqtt://b:1883", new[] { svc },
+            options: new AsyncApiExportOptions { Format = AsyncApiExportFormat.Json });
+
+        using var doc = System.Text.Json.JsonDocument.Parse(json);
+        var messages = doc.RootElement.GetProperty("components").GetProperty("messages")
+            .EnumerateObject().Select(p => p.Name).ToList();
+        Assert.Equal(["ns_A", "ns_A_2"], messages);
+    }
+
+    [Fact]
     public void Build_rejects_empty_serverUrl()
         => Assert.Throws<ArgumentException>(() =>
             AsyncApiDocumentBuilder.Build("", Array.Empty<BowireServiceInfo>()));

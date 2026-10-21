@@ -129,6 +129,7 @@ public static class AsyncApiDocumentBuilder
         var seenChannelIds = new HashSet<string>(StringComparer.Ordinal);
         var seenOperationIds = new HashSet<string>(StringComparer.Ordinal);
         var seenMessageIds = new HashSet<string>(StringComparer.Ordinal);
+        var messageIdsByType = new Dictionary<string, string>(StringComparer.Ordinal);
 
         foreach (var svc in services)
         {
@@ -145,7 +146,7 @@ public static class AsyncApiDocumentBuilder
                 // receive the output. Always pick the side that's
                 // actually the wire payload.
                 var msgInfo = action == "send" ? method.InputType : method.OutputType;
-                var messageRefId = msgInfo is null ? null : RegisterMessage(messages, seenMessageIds, msgInfo);
+                var messageRefId = msgInfo is null ? null : RegisterMessage(messages, seenMessageIds, messageIdsByType, msgInfo);
 
                 var channelEntry = new Dictionary<string, object?>(StringComparer.Ordinal)
                 {
@@ -333,10 +334,17 @@ public static class AsyncApiDocumentBuilder
     private static string RegisterMessage(
         Dictionary<string, object?> messages,
         HashSet<string> seen,
+        Dictionary<string, string> idsByType,
         BowireMessageInfo info)
     {
-        var id = MakeUniqueId(seen, ToSafeId(string.IsNullOrEmpty(info.FullName) ? info.Name : info.FullName));
-        if (messages.ContainsKey(id)) return id;
+        // A type referenced by several methods is one component message
+        // (#911). The lookup is by type name, before MakeUniqueId — which
+        // always hands out a fresh id — so only a distinct type whose
+        // safe id collides gets the `_2` suffix.
+        var typeName = string.IsNullOrEmpty(info.FullName) ? info.Name : info.FullName;
+        if (idsByType.TryGetValue(typeName, out var known)) return known;
+        var id = MakeUniqueId(seen, ToSafeId(typeName));
+        idsByType[typeName] = id;
         var entry = new Dictionary<string, object?>(StringComparer.Ordinal)
         {
             ["name"] = info.Name,
