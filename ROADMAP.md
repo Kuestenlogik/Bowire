@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
 
-**49/106 done** · 57 backlog
+**49/107 done** · 58 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -73,6 +73,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [920](https://github.com/Kuestenlogik/Bowire/issues/920) | Bowire | [GraphQL mock answers 500 to a JSON body of the wrong shape](#issue-kuestenlogik-bowire-920) | ⬜ Backlog |  |
 | [921](https://github.com/Kuestenlogik/Bowire/issues/921) | Bowire | [GraphQL mock answers "sample" for union-typed fields instead of null](#issue-kuestenlogik-bowire-921) | ⬜ Backlog |  |
 | [922](https://github.com/Kuestenlogik/Bowire/issues/922) | Bowire | [GraphQL SSE subscriptions never end on a complete event without data, and drop error events](#issue-kuestenlogik-bowire-922) | ⬜ Backlog |  |
+| [923](https://github.com/Kuestenlogik/Bowire/issues/923) | Bowire | [Shared GraphQL WebSocket subscribes before connection_ack and reuses a dead socket](#issue-kuestenlogik-bowire-923) | ⬜ Backlog |  |
 | [816](https://github.com/Kuestenlogik/Bowire/issues/816) | Bowire | [SCIM trace records status 200 for every request](#issue-kuestenlogik-bowire-816) | ✅ Done |  |
 | [817](https://github.com/Kuestenlogik/Bowire/issues/817) | Bowire | [OIDC provider cannot run as an installed plugin](#issue-kuestenlogik-bowire-817) | ✅ Done |  |
 | [818](https://github.com/Kuestenlogik/Bowire/issues/818) | Bowire | [--auth-oidc-* flags are documented but never read](#issue-kuestenlogik-bowire-818) | ✅ Done |  |
@@ -506,6 +507,10 @@ In the GraphQL schema-only mock, a field whose type is a union is answered with 
 #### <a id="issue-kuestenlogik-bowire-922"></a>⬜ Backlog · [#922](https://github.com/Kuestenlogik/Bowire/issues/922) GraphQL SSE subscriptions never end on a complete event without data, and drop error events
 
 Two defects in the graphql-sse subscription transport, `BowireGraphQLProtocol.StreamViaSseAsync` (src/Kuestenlogik.Bowire.Protocol.GraphQL/BowireGraphQLProtocol.cs:608–626): [[more]](https://github.com/Kuestenlogik/Bowire/issues/922)
+
+#### <a id="issue-kuestenlogik-bowire-923"></a>⬜ Backlog · [#923](https://github.com/Kuestenlogik/Bowire/issues/923) Shared GraphQL WebSocket subscribes before connection_ack and reuses a dead socket
+
+Two defects in the shared graphql-transport-ws socket (`X-Bowire-GraphQL-Multiplex: on`, #713), `src/Kuestenlogik.Bowire.Protocol.GraphQL/GraphQLSocketPool.cs`: [[more]](https://github.com/Kuestenlogik/Bowire/issues/923)
 
 #### <a id="issue-kuestenlogik-bowire-816"></a>✅ Done · [#816](https://github.com/Kuestenlogik/Bowire/issues/816) SCIM trace records status 200 for every request
 
