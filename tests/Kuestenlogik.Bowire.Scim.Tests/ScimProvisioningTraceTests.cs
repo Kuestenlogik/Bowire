@@ -161,6 +161,10 @@ public sealed class ScimProvisioningTraceTests : IDisposable
     [InlineData("not json at all")]
     [InlineData("{}")]
     [InlineData("""{"Operations":"not an array"}""")]
+    [InlineData("[]")]
+    [InlineData("""[{"op":"replace"}]""")]
+    [InlineData("\"Operations\"")]
+    [InlineData("42")]
     public void ReportsNoDialectRatherThanGuessing(string body)
     {
         Assert.Null(ScimProvisioningTrace.DetectPatchDialect(body));

@@ -167,6 +167,12 @@ public sealed class ScimProvisioningTrace
         try
         {
             using var doc = JsonDocument.Parse(body);
+
+            // #876 — valid JSON that is not an object (an array, a string, a
+            // number) is not a PATCH document either. TryGetProperty throws on
+            // it, and that escaped the trace filter as a 500 with no line.
+            if (doc.RootElement.ValueKind != JsonValueKind.Object) return null;
+
             if (!doc.RootElement.TryGetProperty("Operations", out var ops)
                 && !doc.RootElement.TryGetProperty("operations", out ops))
             {

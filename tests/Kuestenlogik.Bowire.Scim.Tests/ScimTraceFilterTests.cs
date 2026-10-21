@@ -87,4 +87,19 @@ public sealed class ScimTraceFilterTests : IAsyncLifetime
 
         Assert.Equal([401, 201, 404, 200], Lines().Select(l => l.GetProperty("status").GetInt32()));
     }
+
+    [Fact]
+    public async Task A_Patch_Body_That_Is_Not_An_Object_Is_Still_A_400_And_A_Line()
+    {
+        // #876 — the dialect detector threw on a JSON array, which turned a
+        // malformed PATCH into a 500 and left no line, on the one surface
+        // whose job is to show what a connector sent.
+        var ct = TestContext.Current.CancellationToken;
+        using var body = new StringContent("[]", Encoding.UTF8, BowireScimEndpoints.ContentType);
+
+        using var response = await _client.PatchAsync(new Uri("/scim/v2/Users/nobody", UriKind.Relative), body, ct);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal(400, Assert.Single(Lines()).GetProperty("status").GetInt32());
+    }
 }
