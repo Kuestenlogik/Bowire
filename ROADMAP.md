@@ -12,14 +12,12 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
 
-**109/113 done** · 4 backlog
+**111/113 done** · 2 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [639](https://github.com/Kuestenlogik/Bowire/issues/639) | Bowire | [SCIM: live Okta and Entra ID provisioning round-trips](#issue-kuestenlogik-bowire-639) | ⬜ Backlog | `area:workbench` |
 | [670](https://github.com/Kuestenlogik/Bowire/issues/670) | Bowire | [Get listed where developers and models actually look](#issue-kuestenlogik-bowire-670) | ⬜ Backlog | `area:site` |
-| [929](https://github.com/Kuestenlogik/Bowire/issues/929) | Bowire | [Site: the phone menu is see-through — page text shows behind the entries](#issue-kuestenlogik-bowire-929) | ⬜ Backlog |  |
-| [930](https://github.com/Kuestenlogik/Bowire/issues/930) | Bowire | [Docs, API reference and Bootcamp: no phone menu — the nav runs off screen and hides search and theme](#issue-kuestenlogik-bowire-930) | ⬜ Backlog |  |
 | [816](https://github.com/Kuestenlogik/Bowire/issues/816) | Bowire | [SCIM trace records status 200 for every request](#issue-kuestenlogik-bowire-816) | ✅ Done |  |
 | [817](https://github.com/Kuestenlogik/Bowire/issues/817) | Bowire | [OIDC provider cannot run as an installed plugin](#issue-kuestenlogik-bowire-817) | ✅ Done |  |
 | [818](https://github.com/Kuestenlogik/Bowire/issues/818) | Bowire | [--auth-oidc-* flags are documented but never read](#issue-kuestenlogik-bowire-818) | ✅ Done |  |
@@ -129,6 +127,8 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [926](https://github.com/Kuestenlogik/Bowire/issues/926) | Bowire | [Blog on bowire.io: articles with a canonical home and a feed for cross-posting](#issue-kuestenlogik-bowire-926) | ✅ Done |  |
 | [927](https://github.com/Kuestenlogik/Bowire/issues/927) | Bowire | [Site navigation: group Documentation, Bootcamp, Blog and Community under Resources](#issue-kuestenlogik-bowire-927) | ✅ Done |  |
 | [928](https://github.com/Kuestenlogik/Bowire/issues/928) | Bowire | [Blog posts: images wider than the text column overflow the page](#issue-kuestenlogik-bowire-928) | ✅ Done |  |
+| [929](https://github.com/Kuestenlogik/Bowire/issues/929) | Bowire | [Site: the phone menu is see-through — page text shows behind the entries](#issue-kuestenlogik-bowire-929) | ✅ Done |  |
+| [930](https://github.com/Kuestenlogik/Bowire/issues/930) | Bowire | [Docs, API reference and Bootcamp: no phone menu — the nav runs off screen and hides search and theme](#issue-kuestenlogik-bowire-930) | ✅ Done |  |
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
@@ -299,14 +299,6 @@ Split from #96 so the SCIM surface can ship on its own merits. [[more]](https://
 > `area:site`
 
 Six credible competitors turned up during the competitive survey **via openalternative.co**. Bowire was not there. That is the whole diagnosis: when a developer — or a language model — asks for "open source Postman alternative", the answer is assembled from these directories, not from bowire.io. [[more]](https://github.com/Kuestenlogik/Bowire/issues/670)
-
-#### <a id="issue-kuestenlogik-bowire-929"></a>⬜ Backlog · [#929](https://github.com/Kuestenlogik/Bowire/issues/929) Site: the phone menu is see-through — page text shows behind the entries
-
-On a phone, the open burger menu of bowire.io lets the page underneath show through: headings and body text are readable behind the menu entries, most visibly in the light theme. [[more]](https://github.com/Kuestenlogik/Bowire/issues/929)
-
-#### <a id="issue-kuestenlogik-bowire-930"></a>⬜ Backlog · [#930](https://github.com/Kuestenlogik/Bowire/issues/930) Docs, API reference and Bootcamp: no phone menu — the nav runs off screen and hides search and theme
-
-On a phone, the header of the docs, the API reference and the Bootcamp has no burger menu. The navigation keeps its desktop row and runs off the right edge ("Quickstart Features Solutio…" at 390px), and the actions behind it — search, home, theme toggle, GitHub — are not reachable at all. [[more]](https://github.com/Kuestenlogik/Bowire/issues/930)
 
 #### <a id="issue-kuestenlogik-bowire-816"></a>✅ Done · [#816](https://github.com/Kuestenlogik/Bowire/issues/816) SCIM trace records status 200 for every request
 
@@ -743,6 +735,14 @@ The top navigation is flat — Quickstart, Features, Solutions, Downloads, Docum
 #### <a id="issue-kuestenlogik-bowire-928"></a>✅ Done · [#928](https://github.com/Kuestenlogik/Bowire/issues/928) Blog posts: images wider than the text column overflow the page
 
 The blog post layout (#926) gives images no width limit. A screenshot wider than the 720px text column — every workbench screenshot is 1200–1440px — overflows it, and the page gets a horizontal scrollbar (at 1280px: document 1729px wide). [[more]](https://github.com/Kuestenlogik/Bowire/issues/928)
+
+#### <a id="issue-kuestenlogik-bowire-929"></a>✅ Done · [#929](https://github.com/Kuestenlogik/Bowire/issues/929) Site: the phone menu is see-through — page text shows behind the entries
+
+On a phone, the open burger menu of bowire.io lets the page underneath show through: headings and body text are readable behind the menu entries, most visibly in the light theme. [[more]](https://github.com/Kuestenlogik/Bowire/issues/929)
+
+#### <a id="issue-kuestenlogik-bowire-930"></a>✅ Done · [#930](https://github.com/Kuestenlogik/Bowire/issues/930) Docs, API reference and Bootcamp: no phone menu — the nav runs off screen and hides search and theme
+
+On a phone, the header of the docs, the API reference and the Bootcamp has no burger menu. The navigation keeps its desktop row and runs off the right edge ("Quickstart Features Solutio…" at 390px), and the actions behind it — search, home, theme toggle, GitHub — are not reachable at all. [[more]](https://github.com/Kuestenlogik/Bowire/issues/930)
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
