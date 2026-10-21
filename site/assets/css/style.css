@@ -9845,6 +9845,15 @@ select.ai-picker-input {
     padding: 4px 0 4px 16px;
     color: var(--text-secondary);
 }
+.post-body img {
+    /* #928 - screenshots are wider than the column; they scale down, never out. */
+    display: block;
+    max-width: 100%;
+    height: auto;
+    margin: 8px 0 24px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+}
 .post-body table { width: 100%; border-collapse: collapse; margin: 0 0 24px; font-size: 0.9375rem; display: block; overflow-x: auto; }
 .post-body th, .post-body td { border-bottom: 1px solid var(--border); padding: 8px 10px; text-align: left; }
 .post-footer {
