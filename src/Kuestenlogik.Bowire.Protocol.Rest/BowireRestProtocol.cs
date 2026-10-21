@@ -35,10 +35,13 @@ public sealed class BowireRestProtocol
     // Key: serverUrl. Value: discovered services + lookup index.
     private readonly ConcurrentDictionary<string, RestSchemaCache> _cache = new(StringComparer.Ordinal);
 
-    // Cache resolved OpenAPI doc URLs per origin, so the next DiscoverInternal
-    // pass against the same origin hits the right URL on the first try
-    // instead of replaying the 8-probe sweep. Key: origin (scheme://host:port).
-    // Value: the well-known doc URL that won the probe.
+    // Cache resolved OpenAPI doc URLs per entered URL, so the next
+    // DiscoverInternal pass against the same URL hits the right document on
+    // the first try instead of replaying the 8-probe sweep. Key: the URL the
+    // operator entered. Value: the well-known doc URL that won the probe.
+    // #907 - keyed by URL, not origin: per origin, a spec URL entered later
+    // for the same host was answered with the earlier sweep's document and
+    // never fetched.
     private readonly ConcurrentDictionary<string, string> _probeResolved = new(StringComparer.Ordinal);
 
     // Captured during Initialize() in embedded mode so DiscoverAsync can read
@@ -230,12 +233,9 @@ public sealed class BowireRestProtocol
                 + "Kuestenlogik.Bowire.Protocol.Rest.OpenApi3`"));
         }
 
-        // Fast path: the operator already supplied a well-known path on a
-        // previous call against this origin — fetch from the resolved URL
-        // directly so we don't re-run the probe sweep.
-        if (TryGetOrigin(docUrl, out var fastOrigin)
-            && _probeResolved.TryGetValue(fastOrigin, out var cachedUrl)
-            && !string.Equals(cachedUrl, docUrl, StringComparison.Ordinal))
+        // Fast path: a previous call with this same URL needed the probe
+        // sweep — fetch from the resolved URL directly so we don't re-run it.
+        if (_probeResolved.TryGetValue(docUrl, out var cachedUrl))
         {
             var (fromCache, _) = await TryDiscoverAtAsync(adapter, cachedUrl, ct).ConfigureAwait(false);
             // CommitDiscovery uses cachedUrl as the cache key + base for
@@ -256,7 +256,7 @@ public sealed class BowireRestProtocol
                 return (result, ResolvedVia(cachedUrl));
             }
             // Cached URL stopped responding — fall through to the regular path.
-            _probeResolved.TryRemove(fastOrigin, out _);
+            _probeResolved.TryRemove(docUrl, out _);
         }
 
         var discovered = await adapter.FetchAndDiscoverAsync(docUrl, _http, ct).ConfigureAwait(false);
@@ -279,7 +279,7 @@ public sealed class BowireRestProtocol
                     adapter, origin, details, ct).ConfigureAwait(false);
                 if (probedResult is not null)
                 {
-                    _probeResolved[origin] = probedUrl;
+                    _probeResolved[docUrl] = probedUrl;
                     RestProbeLog.Info(
                         $"REST discovery resolved {origin} via well-known path {probedUrl}");
                     var probed = CommitDiscovery(probedUrl, probedResult);

@@ -306,6 +306,37 @@ public sealed class OpenApiProbeDiscoveryTests : IDisposable
     }
 
     [Fact]
+    public async Task A_Spec_Url_Entered_After_A_Probe_Is_Fetched_Not_Replaced_By_The_Probe_Result()
+    {
+        // Pass 1 resolves the bare origin through the sweep. Pass 2 names a
+        // different document on the same origin explicitly; that document is
+        // what the operator asked for, not the one the sweep found earlier.
+        const string origin = "http://probe-test-12.invalid";
+        var adapter = new ProgrammableAdapter
+        {
+            Responses =
+            {
+                [origin] = null,
+                [origin + "/openapi.json"] = StubResult("found-by-probe"),
+                [origin + "/v2/spec"] = StubResult("typed-explicitly"),
+            }
+        };
+        BowireOpenApiAdapterRegistry.Register(adapter);
+
+        using var protocol = new BowireRestProtocol();
+        await protocol.DiscoverAsync(
+            origin, showInternalServices: false,
+            TestContext.Current.CancellationToken);
+
+        var second = await protocol.DiscoverAsync(
+            origin + "/v2/spec", showInternalServices: false,
+            TestContext.Current.CancellationToken);
+
+        var svc = Assert.Single(second);
+        Assert.Equal("typed-explicitly", svc.Name);
+    }
+
+    [Fact]
     public async Task A_Document_With_Duplicate_Operation_Keys_Still_Discovers()
     {
         // #514 made the upload and embedded paths tolerate one operation
