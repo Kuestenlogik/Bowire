@@ -256,6 +256,27 @@ public sealed class RestAdHocInvokeTests
         Assert.False(handler.Request!.Headers.Contains(header), $"{header} must not be sent");
     }
 
+    [Theory]
+    [InlineData("__bowireMtls__")]
+    [InlineData("__bowireHttpAuth__")]
+    [InlineData("__bowireCookieEnv__")]
+    [InlineData("__bowireAwsSigV4__")]
+    [InlineData("__bowireSomethingNew__")]
+    public async Task Bowire_Internal_Markers_Never_Reach_The_Wire(string marker)
+    {
+        // The mTLS marker carries the client's private key; the others carry
+        // credentials or plugin configuration. None of them is a header the
+        // target asked for, including markers this invoker does not know.
+        var (_, handler) = await Invoke(metadata: new Dictionary<string, string>
+        {
+            [marker] = """{"secret":"do-not-send"}""",
+            ["X-Ok"] = "yes",
+        });
+
+        Assert.False(handler.Request!.Headers.Contains(marker), $"{marker} must not be sent");
+        Assert.Equal("yes", handler.Request.Headers.GetValues("X-Ok").Single());
+    }
+
     [Fact]
     public async Task Content_Type_Is_Left_To_The_Content_Not_The_Header_Set()
     {

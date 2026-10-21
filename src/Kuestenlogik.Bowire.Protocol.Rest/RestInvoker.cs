@@ -199,7 +199,7 @@ internal static class RestInvoker
         // Custom headers. Reserved Content-Type / Content-Length stay out
         // of the request-headers collection — they belong on the content
         // and HttpClient sets them automatically. Filter the
-        // Bowire-internal sigv4 marker as well so it never reaches the
+        // Bowire-internal markers as well so they never reach the
         // wire, matching the schema-driven InvokeAsync path. The #290
         // X-Bowire-Body-Binary* markers are also internal — they're how
         // the JSON envelope smuggled the bytes through, not actual
@@ -209,7 +209,10 @@ internal static class RestInvoker
             foreach (var kv in metadata)
             {
                 if (string.IsNullOrWhiteSpace(kv.Key)) continue;
-                if (kv.Key == AwsSigV4MarkerKey) continue;
+                // #899 - every __bowire* marker is plugin configuration, some
+                // of it secret (the mTLS marker holds a private key), including
+                // markers this path does not itself understand.
+                if (BowireMetadataKeys.IsInternal(kv.Key)) continue;
                 if (string.Equals(kv.Key, BodyBinaryKey, StringComparison.Ordinal)) continue;
                 if (string.Equals(kv.Key, BodyBinaryContentTypeKey, StringComparison.Ordinal)) continue;
                 if (string.Equals(kv.Key, BodyBinaryNameKey, StringComparison.Ordinal)) continue;
