@@ -234,15 +234,30 @@ public sealed class BowireMcpRecordSessionTests : IAsyncDisposable
         _ = tools.RecordStart(workspaceId: "ws", confirm: true);
         var originalRecordingId = session.Active!.RecordingId;
 
-        // Even though replay was called with a different recordingId, the
-        // session is already active so we flip its mode instead.
-        var json = tools.RecordReplay(workspaceId: "ws", recordingId: "rec_other", confirm: true);
+        var json = tools.RecordReplay(workspaceId: "ws", recordingId: originalRecordingId, confirm: true);
         using var doc = JsonDocument.Parse(json);
 
         Assert.True(doc.RootElement.GetProperty("replaying").GetBoolean());
+        Assert.Equal(originalRecordingId, doc.RootElement.GetProperty("recordingId").GetString());
         Assert.Equal(BowireRecordingMode.Replay, session.Active!.Mode);
-        // RecordingId remains the original session's id — switch-to-replay
-        // doesn't rebind.
+    }
+
+    [Fact]
+    public void RecordReplay_Of_Another_Recording_While_A_Session_Is_Active_Is_Refused()
+    {
+        var (tools, session, _) = BuildTools();
+        _ = tools.RecordStart(workspaceId: "ws", confirm: true);
+        var originalRecordingId = session.Active!.RecordingId;
+
+        var json = tools.RecordReplay(workspaceId: "ws", recordingId: "rec_other", confirm: true);
+        using var doc = JsonDocument.Parse(json);
+
+        // The active session belongs to another recording: replaying it
+        // while answering "replaying rec_other" would report a success
+        // that never happened.
+        Assert.False(doc.RootElement.GetProperty("replaying").GetBoolean());
+        Assert.Contains("rec_other", doc.RootElement.GetProperty("error").GetString(), StringComparison.Ordinal);
+        Assert.Equal(BowireRecordingMode.Capture, session.Active!.Mode);
         Assert.Equal(originalRecordingId, session.Active.RecordingId);
     }
 

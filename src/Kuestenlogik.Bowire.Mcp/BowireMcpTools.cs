@@ -1026,7 +1026,7 @@ public sealed class BowireMcpTools
     }
 
     [McpServerTool(Name = "bowire.record.replay")]
-    [Description("Switch the active server-side recording session into replay mode for the given recording id (#285). When no session is open, opens a fresh one bound to the supplied recording id so the workbench can drive replay. Returns the resulting session state. Two-step by default; pass confirm=true to skip the confirmation gate.")]
+    [Description("Switch the active server-side recording session into replay mode for the given recording id (#285); a session that belongs to another recording is left alone and the call is refused. When no session is open, opens a fresh one bound to the supplied recording id so the workbench can drive replay. Returns the resulting session state. Two-step by default; pass confirm=true to skip the confirmation gate.")]
     public string RecordReplay(
         [Description("Workspace id the replay is scoped under.")] string? workspaceId = null,
         [Description("Recording id to replay (from bowire.record.list).")] string? recordingId = null,
@@ -1049,7 +1049,8 @@ public sealed class BowireMcpTools
         try
         {
             BowireRecordingSessionState state;
-            if (_recordingSession.Active is null)
+            var active = _recordingSession.Active;
+            if (active is null)
             {
                 state = _recordingSession.Start(
                     workspaceId: workspaceId ?? string.Empty,
@@ -1057,9 +1058,20 @@ public sealed class BowireMcpTools
                     name: $"Replay of {recordingId}",
                     recordingId: recordingId);
             }
-            else
+            else if (string.Equals(active.RecordingId, recordingId, StringComparison.Ordinal))
             {
                 state = _recordingSession.SwitchToReplay();
+            }
+            else
+            {
+                // #879 — switching the active session would replay its
+                // recording, not the one asked for, while answering
+                // "replaying" as if it were.
+                return JsonSerializer.Serialize(new
+                {
+                    replaying = false,
+                    error = $"A session for recording \"{active.RecordingId}\" is active; stop it with bowire.record.stop before replaying \"{recordingId}\".",
+                }, JsonOpts);
             }
             return JsonSerializer.Serialize(new
             {
