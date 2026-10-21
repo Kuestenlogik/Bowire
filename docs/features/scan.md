@@ -46,6 +46,16 @@ bowire scan --target https://api.example.com \
 | `--no-builtins` | off | Skip the always-on passive checks. |
 | `--allow-self-signed-certs` | off | Trust self-signed TLS on the target — useful for staging. |
 
+## Configuration
+
+Settings without a flag come from `appsettings.json` or `BOWIRE_`-prefixed environment variables (`__` for `:`).
+
+| Key | Default | Notes |
+|---|---|---|
+| `Bowire:Security:Nuclei:MaxRandomLength` | `1048576` | The most random characters one Nuclei template may generate through `{{RandStr_N}}` / `{{RandInt_N}}`, summed over its distinct placeholders. A template is untrusted input and `{{RandStr_2000000000}}` would otherwise allocate gigabytes. A template that needs more is skipped and named in the scan output instead of being probed with the literal placeholder. Env var: `BOWIRE_Bowire__Security__Nuclei__MaxRandomLength`. |
+
+An embedded host that runs the scan through `ScanCommand.RunAsync` sets the same limit on `ScanOptions.NucleiOptions` (or passes a `NucleiOptions` to `NucleiVariableContext.FromTarget` when it converts templates itself).
+
 ## Built-in passive checks
 
 Three checks fire on every run regardless of template flags:

@@ -296,7 +296,7 @@ internal static class BowireCli
         var disabledCli = PreparseRepeatableArg(originalArgs, "--disable-cli-command");
         foreach (var cmd in BowireCliCommandRegistry.Discover(disabledCli).Commands)
         {
-            root.Add(cmd.Build());
+            root.Add(cmd.Build(cfg));
         }
 
         return root;

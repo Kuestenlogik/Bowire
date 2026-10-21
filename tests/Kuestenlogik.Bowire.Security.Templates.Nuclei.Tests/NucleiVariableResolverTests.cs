@@ -135,6 +135,55 @@ public sealed class NucleiVariableResolverTests
         // is a placeholder we cannot honour, not a reason to abort the run.
         var ctx = NucleiVariableContext.FromTarget("https://x", seed: 42);
         Assert.Equal(input, NucleiVariableResolver.Resolve(input, ctx));
+        Assert.Equal([input[2..^2]], ctx.UnresolvedRandomPlaceholders);
+    }
+
+    [Theory]
+    [InlineData("{{RandStr_1048577}}")]
+    [InlineData("{{RandInt_1048577}}")]
+    [InlineData("{{RandStr_2000000000}}")]
+    public void Random_placeholder_over_the_default_limit_passes_through(string input)
+    {
+        // #881 — a length that fits an int can still be a 4 GB string; the
+        // default limit (1 MiB of random characters per template) refuses it
+        // the same way an overflowing length is refused, and records it so the
+        // scan can say why the template did not run.
+        var ctx = NucleiVariableContext.FromTarget("https://x", seed: 42);
+        Assert.Equal(NucleiOptions.DefaultMaxRandomLength, ctx.MaxRandomLength);
+        Assert.Equal(input, NucleiVariableResolver.Resolve(input, ctx));
+        Assert.Equal([input[2..^2]], ctx.UnresolvedRandomPlaceholders);
+    }
+
+    [Fact]
+    public void Random_placeholder_at_the_configured_limit_resolves()
+    {
+        var ctx = NucleiVariableContext.FromTarget("https://x", seed: 42,
+            options: new NucleiOptions { MaxRandomLength = 16 });
+        Assert.Equal(16, NucleiVariableResolver.Resolve("{{RandStr_16}}", ctx).Length);
+        Assert.Empty(ctx.UnresolvedRandomPlaceholders);
+    }
+
+    [Fact]
+    public void Random_placeholders_share_one_budget_per_template()
+    {
+        // The limit bounds the template, not each placeholder: otherwise many
+        // distinct {{RandStr_N}} just under the limit add up without bound.
+        // A memoised repeat costs nothing.
+        var ctx = NucleiVariableContext.FromTarget("https://x", seed: 42,
+            options: new NucleiOptions { MaxRandomLength = 16 });
+        var output = NucleiVariableResolver.Resolve("{{RandStr_10}}{{RandStr_10}}-{{RandInt_7}}-{{RandInt_6}}", ctx);
+
+        var parts = output.Split('-');
+        Assert.Equal(20, parts[0].Length);
+        Assert.Equal("{{RandInt_7}}", parts[1]);
+        Assert.Matches("^[1-9][0-9]{5}$", parts[2]);
+        Assert.Equal(["RandInt_7"], ctx.UnresolvedRandomPlaceholders);
+    }
+
+    [Fact]
+    public void Negative_limit_is_rejected()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => new NucleiOptions { MaxRandomLength = -1 });
     }
 
     [Fact]

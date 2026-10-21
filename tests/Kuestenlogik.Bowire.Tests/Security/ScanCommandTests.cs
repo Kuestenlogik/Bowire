@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
 namespace Kuestenlogik.Bowire.Tests.Security;
@@ -815,6 +816,72 @@ public sealed class ScanCommandTests
             Assert.Contains("Loaded 3 nuclei template(s)", stdout, StringComparison.Ordinal);
         }
         finally { Directory.Delete(nucleiDir, recursive: true); }
+    }
+
+    [Fact]
+    public async Task RunAsync_NucleiCorpus_RandomPlaceholderOverTheLimit_IsSkippedAndReported()
+    {
+        // #881 — a {{RandStr_N}} beyond the configured limit stays
+        // unresolved; sending the literal placeholder would prove nothing, so
+        // the template is skipped and the scan says why.
+        var ct = TestContext.Current.CancellationToken;
+        await using var upstream = await StartUpstreamAsync(ct);
+
+        var nucleiDir = SafePath.Combine(Path.GetTempPath(), $"bowire-nuclei-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(nucleiDir);
+        try
+        {
+            await File.WriteAllTextAsync(SafePath.Combine(nucleiDir, "big-random.yaml"), """
+                id: nuclei-big-random
+                info:
+                  name: Big random probe
+                  severity: low
+                http:
+                  - method: GET
+                    path:
+                      - '{{BaseURL}}/{{RandStr_17}}'
+                    matchers:
+                      - type: status
+                        status:
+                          - 200
+                """, ct);
+
+            var (code, stdout, _) = Capture((@out, err) => ScanCommand.RunAsync(new ScanOptions
+            {
+                Target = upstream.Urls.First(),
+                Nuclei = nucleiDir,
+                NucleiOptions = new Kuestenlogik.Bowire.Security.Templates.Nuclei.NucleiOptions { MaxRandomLength = 16 },
+                RunBuiltins = false,
+                TimeoutSeconds = 10,
+                VulnDbCacheRoot = NoTemplateCache,
+            }, ct, @out, err));
+
+            Assert.DoesNotContain("Loaded 1 nuclei template(s)", stdout, StringComparison.Ordinal);
+            Assert.Contains("1 nuclei template(s) skipped", stdout, StringComparison.Ordinal);
+            Assert.Contains("MaxRandomLength", stdout, StringComparison.Ordinal);
+            Assert.Contains("big-random.yaml", stdout, StringComparison.Ordinal);
+            Assert.DoesNotContain("not translated", stdout, StringComparison.Ordinal);
+            _ = code;
+        }
+        finally { Directory.Delete(nucleiDir, recursive: true); }
+    }
+
+    [Fact]
+    public void NucleiOptions_AreBoundFromConfiguration()
+    {
+        // #881 — `bowire scan` reads the limit from appsettings / BOWIRE_
+        // env vars through the configuration the CLI hands to Build.
+        var config = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Bowire:Security:Nuclei:MaxRandomLength"] = "4096",
+            })
+            .Build();
+
+        Assert.Equal(4096, Kuestenlogik.Bowire.Security.Scanner.Cli.ScanCliCommand.NucleiOptionsFrom(config).MaxRandomLength);
+        Assert.Equal(
+            Kuestenlogik.Bowire.Security.Templates.Nuclei.NucleiOptions.DefaultMaxRandomLength,
+            Kuestenlogik.Bowire.Security.Scanner.Cli.ScanCliCommand.NucleiOptionsFrom(null).MaxRandomLength);
     }
 
     // ---------------- named suites (#184): protocol / all ----------------

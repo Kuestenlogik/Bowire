@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.CommandLine;
+using Microsoft.Extensions.Configuration;
 
 namespace Kuestenlogik.Bowire.Cli;
 
@@ -36,4 +37,13 @@ public interface IBowireCliCommand
     /// restart.
     /// </summary>
     Command Build();
+
+    /// <summary>
+    /// Build the command with the CLI's configuration (appsettings,
+    /// <c>BOWIRE_</c> environment variables, mapped flags) so a contributed
+    /// command can read its settings the same way the built-in commands do
+    /// (#881). The CLI calls this overload; the default ignores the
+    /// configuration and calls <see cref="Build()"/>.
+    /// </summary>
+    Command Build(IConfiguration? configuration) => Build();
 }

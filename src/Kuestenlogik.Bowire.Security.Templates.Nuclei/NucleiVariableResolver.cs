@@ -21,7 +21,9 @@ namespace Kuestenlogik.Bowire.Security.Templates.Nuclei;
 ///   <item><c>{{Port}}</c> — port if specified, else default (80/443) by scheme.</item>
 ///   <item><c>{{Path}}</c> — base-URL path component (rarely used standalone).</item>
 ///   <item><c>{{RandStr}}</c> — random alphanumeric string, default length 8.</item>
-///   <item><c>{{RandStr_N}}</c> — random alphanumeric string of length N (e.g. <c>{{RandStr_16}}</c>).</item>
+///   <item><c>{{RandStr_N}}</c> — random alphanumeric string of length N (e.g. <c>{{RandStr_16}}</c>).
+///     The random characters one template may generate are capped by
+///     <see cref="NucleiOptions.MaxRandomLength"/> (#881).</item>
 ///   <item><c>{{RandInt}}</c> / <c>{{RandInt_N}}</c> — random integer with N digits (default 6).</item>
 /// </list>
 ///
@@ -113,7 +115,7 @@ public static class NucleiVariableResolver
         {
             return TryLength(randStrMatch, 8, out var length)
                 ? context.RandomString(name, length)
-                : null;
+                : context.Refuse(name);
         }
 
         var randIntMatch = RandIntPattern.Match(name);
@@ -121,7 +123,7 @@ public static class NucleiVariableResolver
         {
             return TryLength(randIntMatch, 6, out var digits)
                 ? context.RandomInteger(name, digits)
-                : null;
+                : context.Refuse(name);
         }
 
         return null;
@@ -194,6 +196,24 @@ public sealed class NucleiVariableContext
 {
     private readonly Random _random;
     private readonly Dictionary<string, string> _cache = new(StringComparer.Ordinal);
+    private readonly List<string> _unresolvedRandom = [];
+    private long _randomLengthUsed;
+
+    /// <summary>
+    /// Budget of random characters this context generates for
+    /// <c>{{RandStr_N}}</c> / <c>{{RandInt_N}}</c> (#881); see
+    /// <see cref="NucleiOptions.MaxRandomLength"/>.
+    /// </summary>
+    public int MaxRandomLength { get; init; } = NucleiOptions.DefaultMaxRandomLength;
+
+    /// <summary>
+    /// Random placeholders (name without braces) left unresolved because
+    /// their length does not fit an int (#831) or exceeds
+    /// <see cref="MaxRandomLength"/> (#881). A probe carrying one would send
+    /// the literal placeholder, so the scanner skips the template and says
+    /// why.
+    /// </summary>
+    public IReadOnlyList<string> UnresolvedRandomPlaceholders => _unresolvedRandom;
 
     /// <summary>
     /// Allocates an out-of-band callback host for <c>{{interactsh-url}}</c>
@@ -254,7 +274,8 @@ public sealed class NucleiVariableContext
     /// CI dashboards stable.
     /// </summary>
     public static NucleiVariableContext FromTarget(
-        string target, int? seed = null, Func<string>? interactshUrlFactory = null)
+        string target, int? seed = null, Func<string>? interactshUrlFactory = null,
+        NucleiOptions? options = null)
     {
         if (string.IsNullOrWhiteSpace(target))
             throw new ArgumentException("Target must be a non-empty URL.", nameof(target));
@@ -275,6 +296,7 @@ public sealed class NucleiVariableContext
         return new NucleiVariableContext(baseUrl, hostname, uri.Host, port, basePath, random)
         {
             InteractshUrlFactory = interactshUrlFactory,
+            MaxRandomLength = (options ?? new NucleiOptions()).MaxRandomLength,
         };
     }
 
@@ -285,20 +307,41 @@ public sealed class NucleiVariableContext
     /// resolves to the same value (matches Nuclei's per-template
     /// memoisation contract).
     /// </summary>
-    internal string RandomString(string placeholderName, int length)
+    internal string? RandomString(string placeholderName, int length)
     {
         if (_cache.TryGetValue(placeholderName, out var existing)) return existing;
+        if (!TryReserve(length)) return Refuse(placeholderName);
         var value = NucleiVariableResolver.RandomAlphanumeric(_random, length);
         _cache[placeholderName] = value;
         return value;
     }
 
-    internal string RandomInteger(string placeholderName, int digits)
+    internal string? RandomInteger(string placeholderName, int digits)
     {
         if (_cache.TryGetValue(placeholderName, out var existing)) return existing;
+        if (!TryReserve(digits)) return Refuse(placeholderName);
         var value = NucleiVariableResolver.RandomDigits(_random, digits);
         _cache[placeholderName] = value;
         return value;
+    }
+
+    /// <summary>
+    /// Charge <paramref name="length"/> random characters against the
+    /// template's budget, or refuse without charging when it does not fit.
+    /// </summary>
+    private bool TryReserve(int length)
+    {
+        if (length > 0 && _randomLengthUsed + length > MaxRandomLength) return false;
+        _randomLengthUsed += Math.Max(length, 0);
+        return true;
+    }
+
+    /// <summary>Record an unresolvable random placeholder; always null so it passes through.</summary>
+    internal string? Refuse(string placeholderName)
+    {
+        if (!_unresolvedRandom.Contains(placeholderName, StringComparer.Ordinal))
+            _unresolvedRandom.Add(placeholderName);
+        return null;
     }
 
     private static bool IsDefaultPort(Uri uri)

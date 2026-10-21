@@ -3,6 +3,8 @@
 
 using System.CommandLine;
 using Kuestenlogik.Bowire.Cli;
+using Kuestenlogik.Bowire.Security.Templates.Nuclei;
+using Microsoft.Extensions.Configuration;
 
 namespace Kuestenlogik.Bowire.Security.Scanner.Cli;
 
@@ -21,8 +23,18 @@ public sealed class ScanCliCommand : IBowireCliCommand
 {
     public string Id => "scan";
 
-    public Command Build()
+    public Command Build() => Build(configuration: null);
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// Reads the scan's configuration-only settings — today the Nuclei
+    /// limits under <c>Bowire:Security:Nuclei</c> (#881) — from the CLI's
+    /// configuration (appsettings, <c>BOWIRE_</c> env vars).
+    /// </remarks>
+    public Command Build(IConfiguration? configuration)
     {
+        var nucleiOptions = NucleiOptionsFrom(configuration);
+
         var scan = new Command("scan",
             "Run vulnerability templates against a target URL. The Tier-1 anchor of the security-testing lane (see docs/architecture/security-testing.md).");
 
@@ -111,6 +123,7 @@ public sealed class ScanCliCommand : IBowireCliCommand
                 Templates = pr.GetValue(templatesOpt),
                 Template = pr.GetValue(templateOpt),
                 Nuclei = pr.GetValue(nucleiOpt),
+                NucleiOptions = nucleiOptions,
                 CveDbPath = pr.GetValue(cveDbOpt),
                 OastServer = pr.GetValue(oastServerOpt),
                 OastToken = pr.GetValue(oastTokenOpt),
@@ -151,6 +164,18 @@ public sealed class ScanCliCommand : IBowireCliCommand
         scan.Add(BuildMutate());
         scan.Add(BuildReport());
         return scan;
+    }
+
+    /// <summary>
+    /// Bind <see cref="NucleiOptions"/> from
+    /// <see cref="NucleiOptions.SectionName"/>; the defaults without a
+    /// configuration or the section.
+    /// </summary>
+    internal static NucleiOptions NucleiOptionsFrom(IConfiguration? configuration)
+    {
+        var options = new NucleiOptions();
+        configuration?.GetSection(NucleiOptions.SectionName).Bind(options);
+        return options;
     }
 
     // `bowire scan mutate --type <kind>` (#175) — exercise the schema-aware

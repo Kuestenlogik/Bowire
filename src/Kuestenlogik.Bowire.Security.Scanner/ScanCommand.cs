@@ -162,6 +162,7 @@ public static class ScanCommand
             var nucleiCount = 0;
             var nucleiUntranslated = new List<string>();
             var needsOast = new List<string>();
+            var randomOverLimit = new List<string>();
             foreach (var path in Directory.EnumerateFiles(options.Nuclei, "*.yaml", SearchOption.AllDirectories)
                 .Concat(Directory.EnumerateFiles(options.Nuclei, "*.yml", SearchOption.AllDirectories)))
             {
@@ -173,12 +174,24 @@ public static class ScanCommand
                     // callback unattributable to the probe that caused it.
                     var nucleiContext = NucleiTemplates.NucleiVariableContext.FromTarget(
                         options.Target,
-                        interactshUrlFactory: oastClient is null ? null : () => oastClient.Allocate().CallbackHost);
+                        interactshUrlFactory: oastClient is null ? null : () => oastClient.Allocate().CallbackHost,
+                        options: options.NucleiOptions);
 
                     var template = NucleiTemplates.NucleiTemplateReader.ReadFile(path);
+                    var recordings = NucleiTemplates.NucleiTemplateConverter.ToBowireRecordings(template, nucleiContext);
+
+                    // #881 — a {{RandStr_N}} / {{RandInt_N}} the resolver
+                    // refused (length over the configured budget, or not an
+                    // int) is still in the probe as a literal. Sending it would
+                    // prove nothing and read as "clean", so skip and say why.
+                    if (nucleiContext.UnresolvedRandomPlaceholders.Count > 0)
+                    {
+                        randomOverLimit.Add(Path.GetFileName(path));
+                        continue;
+                    }
+
                     var loadedFromFile = 0;
-                    foreach (var rec in NucleiTemplates.NucleiTemplateConverter.ToBowireRecordings(template, nucleiContext)
-                        .Where(r => r.VulnerableWhen is not null && r.Steps.Count > 0))
+                    foreach (var rec in recordings.Where(r => r.VulnerableWhen is not null && r.Steps.Count > 0))
                     {
                         // With no interaction server the placeholder survives
                         // into the probe. Running it would send a literal
@@ -219,6 +232,11 @@ public static class ScanCommand
             {
                 await stdout.WriteLineAsync(string.Create(CultureInfo.InvariantCulture,
                     $"  {needsOast.Count} nuclei template(s) skipped — they prove a blind finding via an out-of-band callback and need an interaction server. Pass --oast-server <url> to run them: {string.Join(", ", needsOast.Take(5))}{(needsOast.Count > 5 ? $", +{needsOast.Count - 5} more" : "")}")).ConfigureAwait(false);
+            }
+            if (randomOverLimit.Count > 0)
+            {
+                await stdout.WriteLineAsync(string.Create(CultureInfo.InvariantCulture,
+                    $"  {randomOverLimit.Count} nuclei template(s) skipped — a {{{{RandStr_N}}}} / {{{{RandInt_N}}}} placeholder exceeds the limit of {options.NucleiOptions.MaxRandomLength} random characters per template ({NucleiTemplates.NucleiOptions.SectionName}:MaxRandomLength): {string.Join(", ", randomOverLimit.Take(5))}{(randomOverLimit.Count > 5 ? $", +{randomOverLimit.Count - 5} more" : "")}")).ConfigureAwait(false);
             }
             if (nucleiUntranslated.Count > 0)
             {
@@ -1458,6 +1476,14 @@ public sealed class ScanOptions
     /// placeholders resolved against <see cref="Target"/>.
     /// </summary>
     public string? Nuclei { get; init; }
+
+    /// <summary>
+    /// Limits for resolving <see cref="Nuclei"/> templates — chiefly
+    /// <see cref="NucleiTemplates.NucleiOptions.MaxRandomLength"/> (#881).
+    /// <c>bowire scan</c> binds it from
+    /// <c>Bowire:Security:Nuclei</c>; an embedded host sets it here.
+    /// </summary>
+    public NucleiTemplates.NucleiOptions NucleiOptions { get; init; } = new();
 
     /// <summary>
     /// #187: path to a CVE / VulnDb JSON file used by the banner CVE-lookup
