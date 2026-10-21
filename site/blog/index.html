@@ -1,0 +1,28 @@
+---
+layout: page
+title: Blog — Bowire
+description: Articles from the Bowire team — on API workbenches, gRPC, MCP, mocking and the protocols .NET services speak.
+---
+{%- comment -%}
+#926 — the article index. Published posts only (drafts in _drafts/ are not built), newest
+first. Before the first post this page renders an honest empty state; the footer links here
+only once a post exists.
+{%- endcomment -%}
+
+<section class="about-hero">
+  <h1>Blog</h1>
+  <p class="about-hero-tagline">Articles on API workbenches, gRPC, MCP, mocking and the protocols .NET services speak. <a href="{{ '/feed.xml' | relative_url }}">Subscribe via feed</a>.</p>
+</section>
+
+<section class="post-list">
+  {%- if site.posts.size == 0 %}
+  <p class="post-list-empty">The first article is on its way.</p>
+  {%- endif %}
+  {%- for post in site.posts %}
+  <article class="post-list-item">
+    <h2><a href="{{ post.url | relative_url }}">{{ post.title }}</a></h2>
+    <p class="post-meta"><time datetime="{{ post.date | date_to_xmlschema }}">{{ post.date | date: '%-d %B %Y' }}</time></p>
+    <p>{{ post.description | default: post.excerpt | strip_html | truncate: 220 }}</p>
+  </article>
+  {%- endfor %}
+</section>

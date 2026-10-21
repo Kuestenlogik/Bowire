@@ -22,6 +22,10 @@
           <a href="{{ '/alternatives/' | relative_url }}">Alternatives</a>
           <a href="{{ '/downloads.html' | relative_url }}">Downloads</a>
           <a href="{{ '/changelog.html' | relative_url }}">Changelog</a>
+          {%- comment -%} #926 — only once there is something to read. {%- endcomment -%}
+          {%- if site.posts.size > 0 %}
+          <a href="{{ '/blog/' | relative_url }}">Blog</a>
+          {%- endif %}
           <a href="{{ '/docs/' | relative_url }}">Documentation</a>
           <a href="{{ '/about.html' | relative_url }}">About</a>
         </div>

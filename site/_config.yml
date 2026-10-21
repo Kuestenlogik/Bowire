@@ -15,6 +15,13 @@ theme: null
 plugins:
   - jekyll-seo-tag
   - jekyll-sitemap
+  # #926 — the blog's Atom feed (/feed.xml): readers subscribe, and dev.to
+  # imports new posts from it as drafts with the canonical link set.
+  - jekyll-feed
+
+# #926 — articles live at /blog/<slug>/ with bowire.io as their canonical home.
+feed:
+  path: feed.xml
 
 # --- Search Console / sitemap hygiene --------------------------------
 # jekyll-sitemap lists every output .html by default. The Google
@@ -24,6 +31,12 @@ plugins:
 # (Per-page noindex/sitemap opt-outs, e.g. search.html, live in each
 # page's own front matter.)
 defaults:
+  - scope:
+      type: posts
+    values:
+      layout: post
+      permalink: /blog/:slug/
+      author: Thomas Stegemann
   - scope:
       path: "google844ded396fe38a5e.html"
     values:

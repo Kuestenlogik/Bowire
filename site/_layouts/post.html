@@ -1,0 +1,32 @@
+---
+layout: page
+---
+{%- comment -%}
+#926 — one article. The canonical URL is bowire.io's (jekyll-seo-tag emits it from the
+page's own URL), so a cross-post on dev.to, Medium or Hashnode can point back here with
+its canonical link. Reading time is words / 220, rounded up.
+{%- endcomment -%}
+{%- assign words = content | strip_html | number_of_words -%}
+{%- assign minutes = words | divided_by: 220 | plus: 1 -%}
+
+<article class="post">
+  <header class="post-header">
+    <p class="post-eyebrow"><a href="{{ '/blog/' | relative_url }}">Blog</a></p>
+    <h1>{{ page.title }}</h1>
+    {%- if page.lede %}<p class="post-lede">{{ page.lede }}</p>{% endif %}
+    <p class="post-meta">
+      <time datetime="{{ page.date | date_to_xmlschema }}">{{ page.date | date: '%-d %B %Y' }}</time>
+      {%- if page.author %} &middot; {{ page.author }}{% endif %}
+      &middot; {{ minutes }} min read
+    </p>
+  </header>
+
+  <div class="post-body">
+    {{ content }}
+  </div>
+
+  <footer class="post-footer">
+    <p><strong>Bowire</strong> &mdash; the API workbench that embeds in your own service. Open source, Apache-2.0.</p>
+    <p><a href="{{ '/quickstart.html' | relative_url }}">Quickstart</a> &middot; <a href="https://github.com/Kuestenlogik/Bowire" target="_blank" rel="noopener">GitHub</a> &middot; <a href="{{ '/feed.xml' | relative_url }}">Feed</a></p>
+  </footer>
+</article>
