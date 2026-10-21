@@ -222,4 +222,36 @@ public class GraphQLQueryBuilderTests
 
         Assert.Contains(expected, operation, StringComparison.Ordinal);
     }
+
+    [Theory]
+    [InlineData("""{ "kind": "SCALAR", "name": "String" }""")]
+    [InlineData("""{ "kind": "NON_NULL", "ofType": { "kind": "SCALAR", "name": "String" } }""")]
+    [InlineData("""{ "kind": "LIST", "ofType": { "kind": "ENUM", "name": "Status" } }""")]
+    public void Build_RootFieldReturningALeaf_HasNoSelectionSet(string returnType)
+    {
+        // #916 - a selection set on a scalar or an enum is a validation
+        // error: `hello { __typename }` is refused before anything runs.
+        var schema = System.Text.Json.JsonDocument.Parse($$"""
+            {
+              "__schema": {
+                "queryType": { "name": "Query" },
+                "mutationType": null,
+                "subscriptionType": null,
+                "types": [
+                  { "kind": "OBJECT", "name": "Query",
+                    "fields": [ { "name": "hello", "args": [], "type": {{returnType}} } ],
+                    "inputFields": null, "enumValues": null },
+                  { "kind": "ENUM", "name": "Status", "fields": null, "inputFields": null,
+                    "enumValues": [ { "name": "OPEN" } ] }
+                ]
+              }
+            }
+            """).RootElement;
+
+        var method = new GraphQLSchemaMapper().Map(schema, "http://localhost/graphql").Single().Methods.Single();
+        var (operation, _) = GraphQLQueryBuilder.Build("query", method, "{}");
+
+        Assert.Equal("query hello {\n  hello\n}", operation);
+        Assert.Null(GraphQLDocumentInfo.SyntaxError(operation));
+    }
 }

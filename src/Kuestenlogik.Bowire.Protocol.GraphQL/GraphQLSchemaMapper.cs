@@ -20,6 +20,18 @@ internal sealed class GraphQLSchemaMapper
 {
     private readonly Dictionary<string, JsonElement> _typesByName = new(StringComparer.Ordinal);
 
+    /// <summary>
+    /// <see cref="BowireMessageInfo.FullName"/> of the output shape for a
+    /// field that returns a scalar or an enum (#916).
+    /// </summary>
+    /// <remarks>
+    /// A leaf takes no selection set, and one written anyway is a
+    /// validation error. An empty output shape alone cannot say so: an
+    /// object type nothing is known about has no fields either, and that
+    /// one does need its <c>{ __typename }</c>.
+    /// </remarks>
+    internal const string LeafOutputFullName = "graphql.Leaf";
+
     public List<BowireServiceInfo> Map(JsonElement schemaResult, string serverUrl)
     {
         if (!schemaResult.TryGetProperty("__schema", out var schema))
@@ -106,8 +118,10 @@ internal sealed class GraphQLSchemaMapper
         BowireMessageInfo outputType;
         if (field.TryGetProperty("type", out var fieldType))
         {
-            outputType = ResolveOutputType(fieldType, name, depth: 0, new HashSet<string>(StringComparer.Ordinal))
-                ?? new BowireMessageInfo("GraphQLResponse", "graphql.GraphQLResponse", []);
+            outputType = LeafName(fieldType) is { } leaf
+                ? new BowireMessageInfo(leaf, LeafOutputFullName, [])
+                : ResolveOutputType(fieldType, name, depth: 0, new HashSet<string>(StringComparer.Ordinal))
+                    ?? new BowireMessageInfo("GraphQLResponse", "graphql.GraphQLResponse", []);
         }
         else
         {
@@ -127,6 +141,27 @@ internal sealed class GraphQLSchemaMapper
             Description = description,
             Deprecated = deprecated
         };
+    }
+
+    /// <summary>
+    /// The named type behind <paramref name="typeRef"/> when it is a scalar
+    /// or an enum, otherwise <c>null</c> (#916).
+    /// </summary>
+    private static string? LeafName(JsonElement typeRef)
+    {
+        var current = typeRef;
+        while (current.ValueKind == JsonValueKind.Object
+            && current.TryGetProperty("kind", out var k)
+            && k.GetString() is "NON_NULL" or "LIST"
+            && current.TryGetProperty("ofType", out var inner))
+        {
+            current = inner;
+        }
+
+        if (current.ValueKind != JsonValueKind.Object) return null;
+        var kind = current.TryGetProperty("kind", out var nk) ? nk.GetString() : null;
+        if (kind is not ("SCALAR" or "ENUM")) return null;
+        return current.TryGetProperty("name", out var n) ? n.GetString() ?? kind : kind;
     }
 
     private BowireFieldInfo MapArgument(JsonElement arg, int number)

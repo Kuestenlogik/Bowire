@@ -77,6 +77,11 @@ internal static class GraphQLQueryBuilder
             sb.Append(')');
         }
 
+        // #916 - a field that returns a scalar or an enum takes no selection
+        // set at all; writing one is a validation error.
+        if (method.OutputType?.FullName == GraphQLSchemaMapper.LeafOutputFullName)
+            return (sb.Append("\n}").ToString(), variables);
+
         // #710 - the selection set comes from the discovered output type.
         // __typename stays the fallback for a type nothing is known about,
         // because an empty selection set is a syntax error.
