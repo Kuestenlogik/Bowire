@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
 
-**49/98 done** · 49 backlog
+**49/99 done** · 50 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -65,6 +65,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [912](https://github.com/Kuestenlogik/Bowire/issues/912) | Bowire | [GraphQL discovery overflows the stack on a self-referencing input type](#issue-kuestenlogik-bowire-912) | ⬜ Backlog |  |
 | [913](https://github.com/Kuestenlogik/Bowire/issues/913) | Bowire | [AsyncAPI export creates one channel per method instead of one per address](#issue-kuestenlogik-bowire-913) | ⬜ Backlog |  |
 | [914](https://github.com/Kuestenlogik/Bowire/issues/914) | Bowire | [GraphQL list arguments get a variable type with the wrong nullability](#issue-kuestenlogik-bowire-914) | ⬜ Backlog |  |
+| [915](https://github.com/Kuestenlogik/Bowire/issues/915) | Bowire | [AsyncAPI export marks optional fields required and types repeated fields as scalars](#issue-kuestenlogik-bowire-915) | ⬜ Backlog |  |
 | [816](https://github.com/Kuestenlogik/Bowire/issues/816) | Bowire | [SCIM trace records status 200 for every request](#issue-kuestenlogik-bowire-816) | ✅ Done |  |
 | [817](https://github.com/Kuestenlogik/Bowire/issues/817) | Bowire | [OIDC provider cannot run as an installed plugin](#issue-kuestenlogik-bowire-817) | ✅ Done |  |
 | [818](https://github.com/Kuestenlogik/Bowire/issues/818) | Bowire | [--auth-oidc-* flags are documented but never read](#issue-kuestenlogik-bowire-818) | ✅ Done |  |
@@ -466,6 +467,10 @@ Discovering a GraphQL schema with a self-referencing input type, such as `input 
 #### <a id="issue-kuestenlogik-bowire-914"></a>⬜ Backlog · [#914](https://github.com/Kuestenlogik/Bowire/issues/914) GraphQL list arguments get a variable type with the wrong nullability
 
 A generated GraphQL operation declares the wrong variable type for list arguments whose list and element nullability differ: [[more]](https://github.com/Kuestenlogik/Bowire/issues/914)
+
+#### <a id="issue-kuestenlogik-bowire-915"></a>⬜ Backlog · [#915](https://github.com/Kuestenlogik/Bowire/issues/915) AsyncAPI export marks optional fields required and types repeated fields as scalars
+
+`AsyncApiDocumentBuilder.BuildPayloadSchema` (`src/Kuestenlogik.Bowire.AsyncApi/AsyncApiDocumentBuilder.cs:357-363`) marks every field as required unless its label is exactly `LABEL_OPTIONAL`, and maps each field with `MapFieldType(field.Type)` without looking at `IsRepeated` or `IsMap`. [[more]](https://github.com/Kuestenlogik/Bowire/issues/915)
 
 #### <a id="issue-kuestenlogik-bowire-816"></a>✅ Done · [#816](https://github.com/Kuestenlogik/Bowire/issues/816) SCIM trace records status 200 for every request
 
