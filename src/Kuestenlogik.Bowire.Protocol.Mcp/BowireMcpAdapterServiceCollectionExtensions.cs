@@ -249,21 +249,21 @@ public static class BowireMcpAdapterServiceCollectionExtensions
     private static async ValueTask<ListToolsResult> HandleListToolsAsync(
         RequestContext<ListToolsRequestParams> ctx, CancellationToken ct)
     {
-        var (registry, serverUrl) = ResolveRegistryAndUrl(ctx);
-        return new ListToolsResult { Tools = await ListAdapterToolsAsync(registry, serverUrl, ct).ConfigureAwait(false) };
+        var (registry, upstream) = ResolveRegistryAndUpstream(ctx);
+        return new ListToolsResult { Tools = await ListAdapterToolsAsync(registry, upstream, ct).ConfigureAwait(false) };
     }
 
     private static async ValueTask<CallToolResult> HandleCallToolAsync(
         RequestContext<CallToolRequestParams> ctx, CancellationToken ct)
     {
-        var (registry, serverUrl) = ResolveRegistryAndUrl(ctx);
+        var (registry, upstream) = ResolveRegistryAndUpstream(ctx);
         return await CallAdapterToolAsync(
-            registry, serverUrl, ctx.Params?.Name ?? string.Empty, ctx.Params?.Arguments, ct).ConfigureAwait(false);
+            registry, upstream, ctx.Params?.Name ?? string.Empty, ctx.Params?.Arguments, ct).ConfigureAwait(false);
     }
 
-    /// <summary>The tools the adapter offers for the upstream at <paramref name="serverUrl"/>.</summary>
+    /// <summary>The tools the adapter offers for the <paramref name="upstream"/>.</summary>
     internal static async Task<List<Tool>> ListAdapterToolsAsync(
-        BowireProtocolRegistry registry, string serverUrl, CancellationToken ct)
+        BowireProtocolRegistry registry, BowireMcpAdapterOptions upstream, CancellationToken ct)
     {
         var tools = new List<Tool>();
 
@@ -272,7 +272,7 @@ public static class BowireMcpAdapterServiceCollectionExtensions
             if (string.Equals(protocol.Id, "mcp", StringComparison.OrdinalIgnoreCase)) continue;
 
             List<Models.BowireServiceInfo> services;
-            try { services = await protocol.DiscoverAsync(serverUrl, showInternalServices: false, ct).ConfigureAwait(false); }
+            try { services = await DiscoverUpstreamAsync(protocol, upstream, ct).ConfigureAwait(false); }
             catch { continue; }
 
             foreach (var service in services)
@@ -301,19 +301,20 @@ public static class BowireMcpAdapterServiceCollectionExtensions
     }
 
     /// <summary>
-    /// Run the adapter tool <paramref name="toolName"/> against the upstream
-    /// at <paramref name="serverUrl"/>.
+    /// Run the adapter tool <paramref name="toolName"/> against the
+    /// <paramref name="upstream"/>.
     /// </summary>
     internal static async Task<CallToolResult> CallAdapterToolAsync(
-        BowireProtocolRegistry registry, string serverUrl, string toolName,
+        BowireProtocolRegistry registry, BowireMcpAdapterOptions upstream, string toolName,
         IDictionary<string, JsonElement>? arguments, CancellationToken ct)
     {
+        var serverUrl = upstream.UpstreamServerUrl;
         foreach (var protocol in registry.Protocols)
         {
             if (string.Equals(protocol.Id, "mcp", StringComparison.OrdinalIgnoreCase)) continue;
 
             List<Models.BowireServiceInfo> services;
-            try { services = await protocol.DiscoverAsync(serverUrl, showInternalServices: false, ct).ConfigureAwait(false); }
+            try { services = await DiscoverUpstreamAsync(protocol, upstream, ct).ConfigureAwait(false); }
             catch { continue; }
 
             foreach (var service in services)
@@ -332,10 +333,11 @@ public static class BowireMcpAdapterServiceCollectionExtensions
                         var jsonBody = arguments is null
                             ? "{}"
                             : JsonSerializer.Serialize(arguments);
+                        using var timeout = UpstreamTimeout(upstream, ct);
                         var result = await protocol.InvokeAsync(
                             serverUrl, service.Name, method.Name,
                             [jsonBody], showInternalServices: false,
-                            metadata: null, ct: ct).ConfigureAwait(false);
+                            metadata: UpstreamMetadata(upstream), ct: timeout.Token).ConfigureAwait(false);
 
                         return new CallToolResult
                         {
@@ -374,17 +376,48 @@ public static class BowireMcpAdapterServiceCollectionExtensions
     private static bool IsAdapterTool(Models.BowireMethodInfo method)
         => string.Equals(method.MethodType, "Unary", StringComparison.Ordinal);
 
+    // #908 — RequestTimeout and BearerToken were documented and never read:
+    // a hung upstream held the MCP request open, and an upstream behind
+    // authentication refused every adapter call. Every upstream discovery
+    // and invoke goes through these two.
+
+    private static async Task<List<Models.BowireServiceInfo>> DiscoverUpstreamAsync(
+        IBowireProtocol protocol, BowireMcpAdapterOptions upstream, CancellationToken ct)
+    {
+        using var timeout = UpstreamTimeout(upstream, ct);
+        return await protocol.DiscoverAsync(
+            upstream.UpstreamServerUrl, showInternalServices: false,
+            UpstreamMetadata(upstream), timeout.Token).ConfigureAwait(false);
+    }
+
+    /// <summary>The request's token, cancelled after <see cref="BowireMcpAdapterOptions.RequestTimeout"/> at the latest.</summary>
+    private static CancellationTokenSource UpstreamTimeout(BowireMcpAdapterOptions upstream, CancellationToken ct)
+    {
+        var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        timeout.CancelAfter(upstream.RequestTimeout);
+        return timeout;
+    }
+
+    /// <summary>The call metadata that carries <see cref="BowireMcpAdapterOptions.BearerToken"/>, if one is set.</summary>
+    private static Dictionary<string, string>? UpstreamMetadata(BowireMcpAdapterOptions upstream)
+        => string.IsNullOrEmpty(upstream.BearerToken)
+            ? null
+            : new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                ["Authorization"] = "Bearer " + upstream.BearerToken,
+            };
+
     private static async ValueTask<ListResourcesResult> HandleListResourcesAsync(
         RequestContext<ListResourcesRequestParams> ctx, CancellationToken ct)
     {
-        var (registry, serverUrl) = ResolveRegistryAndUrl(ctx);
+        var (registry, upstream) = ResolveRegistryAndUpstream(ctx);
         var resources = new List<Resource>();
 
         foreach (var protocol in registry.Protocols)
         {
             if (string.Equals(protocol.Id, "mcp", StringComparison.OrdinalIgnoreCase)) continue;
             List<Models.BowireServiceInfo> services;
-            try { services = await protocol.DiscoverAsync(serverUrl, showInternalServices: false, ct).ConfigureAwait(false); }
+            try { services = await DiscoverUpstreamAsync(protocol, upstream, ct).ConfigureAwait(false); }
             catch { continue; }
 
             foreach (var service in services)
@@ -406,7 +439,7 @@ public static class BowireMcpAdapterServiceCollectionExtensions
     private static async ValueTask<ReadResourceResult> HandleReadResourceAsync(
         RequestContext<ReadResourceRequestParams> ctx, CancellationToken ct)
     {
-        var (registry, serverUrl) = ResolveRegistryAndUrl(ctx);
+        var (registry, upstream) = ResolveRegistryAndUpstream(ctx);
         var uri = ctx.Params?.Uri ?? string.Empty;
 
         const string scheme = "bowire-service://";
@@ -428,7 +461,7 @@ public static class BowireMcpAdapterServiceCollectionExtensions
             throw new McpException($"Unknown plugin id: {pluginId}");
 
         List<Models.BowireServiceInfo> services;
-        try { services = await protocol.DiscoverAsync(serverUrl, showInternalServices: false, ct).ConfigureAwait(false); }
+        try { services = await DiscoverUpstreamAsync(protocol, upstream, ct).ConfigureAwait(false); }
         catch (Exception ex)
         {
             throw new McpException($"Discovery failed for {pluginId}: {ex.Message}", ex);
@@ -580,7 +613,7 @@ public static class BowireMcpAdapterServiceCollectionExtensions
 
     private static readonly JsonSerializerOptions s_jsonOpts = new() { WriteIndented = false };
 
-    private static (BowireProtocolRegistry Registry, string ServerUrl) ResolveRegistryAndUrl<T>(
+    private static (BowireProtocolRegistry Registry, BowireMcpAdapterOptions Upstream) ResolveRegistryAndUpstream<T>(
         RequestContext<T> ctx)
     {
         // The registry is cached on BowireApiEndpoints' static seam so we
@@ -593,11 +626,16 @@ public static class BowireMcpAdapterServiceCollectionExtensions
         // Prefer the new IOptions<BowireMcpAdapterOptions> path; fall
         // back to the legacy keyed-singleton seam so historical call
         // sites + integration tests resolve unchanged.
-        var url = ctx.Services?.GetService<IOptions<BowireMcpAdapterOptions>>()
-            ?.Value.UpstreamServerUrl;
+        var options = ctx.Services?.GetService<IOptions<BowireMcpAdapterOptions>>()?.Value;
+        var url = options?.UpstreamServerUrl;
         if (string.IsNullOrEmpty(url))
             url = ctx.Services?.GetKeyedService<string>(ServerUrlServiceKey);
-        return (registry, url ?? "http://localhost");
+        return (registry, new BowireMcpAdapterOptions
+        {
+            UpstreamServerUrl = url ?? "http://localhost",
+            RequestTimeout = options?.RequestTimeout ?? new BowireMcpAdapterOptions().RequestTimeout,
+            BearerToken = options?.BearerToken,
+        });
     }
 
     private static JsonObject BuildInputSchema(Models.BowireMethodInfo method)

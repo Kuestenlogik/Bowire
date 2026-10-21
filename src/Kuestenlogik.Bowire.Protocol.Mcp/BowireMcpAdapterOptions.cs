@@ -51,7 +51,9 @@ public sealed class BowireMcpAdapterOptions
 
     /// <summary>
     /// Optional bearer token the adapter forwards to the upstream
-    /// host on every discovery / invoke call. Set when the upstream
+    /// host on every discovery / invoke call, as the
+    /// <c>Authorization: Bearer &lt;token&gt;</c> call metadata the
+    /// protocol plugin sends as a header. Set when the upstream
     /// requires authentication (Bowire auth gate, gateway token,
     /// service-to-service JWT). Leave <see langword="null"/> for
     /// open dev workbenches.
