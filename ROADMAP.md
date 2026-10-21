@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
 
-**49/80 done** · 31 backlog
+**49/82 done** · 33 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -47,6 +47,8 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [894](https://github.com/Kuestenlogik/Bowire/issues/894) | Bowire | [gRPC requests fail on integers given as JSON strings, the canonical proto3 form for int64](#issue-kuestenlogik-bowire-894) | ⬜ Backlog |  |
 | [895](https://github.com/Kuestenlogik/Bowire/issues/895) | Bowire | [gRPC map fields are encoded and decoded wrongly](#issue-kuestenlogik-bowire-895) | ⬜ Backlog |  |
 | [896](https://github.com/Kuestenlogik/Bowire/issues/896) | Bowire | [MCP discovery fails when a tool's input schema gives type as an array like ["string","null"]](#issue-kuestenlogik-bowire-896) | ⬜ Backlog |  |
+| [897](https://github.com/Kuestenlogik/Bowire/issues/897) | Bowire | [Connect requests drop the base URL's path prefix](#issue-kuestenlogik-bowire-897) | ⬜ Backlog |  |
+| [898](https://github.com/Kuestenlogik/Bowire/issues/898) | Bowire | [Connect bidi call hangs when the server ends the stream before reading the request](#issue-kuestenlogik-bowire-898) | ⬜ Backlog |  |
 | [816](https://github.com/Kuestenlogik/Bowire/issues/816) | Bowire | [SCIM trace records status 200 for every request](#issue-kuestenlogik-bowire-816) | ✅ Done |  |
 | [817](https://github.com/Kuestenlogik/Bowire/issues/817) | Bowire | [OIDC provider cannot run as an installed plugin](#issue-kuestenlogik-bowire-817) | ✅ Done |  |
 | [818](https://github.com/Kuestenlogik/Bowire/issues/818) | Bowire | [--auth-oidc-* flags are documented but never read](#issue-kuestenlogik-bowire-818) | ✅ Done |  |
@@ -376,6 +378,14 @@ A protobuf `map<K, V>` field is a repeated `MapEntry { K key = 1; V value = 2; }
 #### <a id="issue-kuestenlogik-bowire-896"></a>⬜ Backlog · [#896](https://github.com/Kuestenlogik/Bowire/issues/896) MCP discovery fails when a tool's input schema gives type as an array like ["string","null"]
 
 `BowireMcpProtocol.MapToolInputSchema` (`src/Kuestenlogik.Bowire.Protocol.Mcp/BowireMcpProtocol.cs:896`) reads each property's `type` with `GetString()`. JSON Schema allows `type` to be an array, and `["string","null"]` is the usual way to write a nullable field; schema generators emit it routinely. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/896)
+
+#### <a id="issue-kuestenlogik-bowire-897"></a>⬜ Backlog · [#897](https://github.com/Kuestenlogik/Bowire/issues/897) Connect requests drop the base URL's path prefix
+
+`ConnectInvoker` builds every request URL as `new Uri(_baseUri, "<service>/<method>")` (`src/Kuestenlogik.Bowire.Protocol.Grpc/ConnectInvoker.cs:114`, and the same in the server-streaming `:264`, client-streaming `:339` and bidi `:455` paths). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/897)
+
+#### <a id="issue-kuestenlogik-bowire-898"></a>⬜ Backlog · [#898](https://github.com/Kuestenlogik/Bowire/issues/898) Connect bidi call hangs when the server ends the stream before reading the request
+
+`ConnectInvoker.InvokeBidiStreamAsync` (`src/Kuestenlogik.Bowire.Protocol.Grpc/ConnectInvoker.cs:480`) feeds the request frames into a `Pipe` from a producer task and, in its `finally` (`:535`), awaits that producer. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/898)
 
 #### <a id="issue-kuestenlogik-bowire-816"></a>✅ Done · [#816](https://github.com/Kuestenlogik/Bowire/issues/816) SCIM trace records status 200 for every request
 
