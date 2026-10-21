@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
 
-**49/54 done** · 5 backlog
+**49/56 done** · 7 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -21,6 +21,8 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [868](https://github.com/Kuestenlogik/Bowire/issues/868) | Bowire | [MCP task follow throws on a very large TTL or poll interval](#issue-kuestenlogik-bowire-868) | ⬜ Backlog |  |
 | [869](https://github.com/Kuestenlogik/Bowire/issues/869) | Bowire | [MCP task follow throws when a failed task's error code is a string](#issue-kuestenlogik-bowire-869) | ⬜ Backlog |  |
 | [870](https://github.com/Kuestenlogik/Bowire/issues/870) | Bowire | [Keyring references: URL services and escaped slashes](#issue-kuestenlogik-bowire-870) | ⬜ Backlog |  |
+| [871](https://github.com/Kuestenlogik/Bowire/issues/871) | Bowire | [SCIM: a user PATCH refused with 409 for a taken userName keeps the new name in memory](#issue-kuestenlogik-bowire-871) | ⬜ Backlog |  |
+| [872](https://github.com/Kuestenlogik/Bowire/issues/872) | Bowire | [SCIM: a user provisioned inactive is never purged after DELETE](#issue-kuestenlogik-bowire-872) | ⬜ Backlog |  |
 | [816](https://github.com/Kuestenlogik/Bowire/issues/816) | Bowire | [SCIM trace records status 200 for every request](#issue-kuestenlogik-bowire-816) | ✅ Done |  |
 | [817](https://github.com/Kuestenlogik/Bowire/issues/817) | Bowire | [OIDC provider cannot run as an installed plugin](#issue-kuestenlogik-bowire-817) | ✅ Done |  |
 | [818](https://github.com/Kuestenlogik/Bowire/issues/818) | Bowire | [--auth-oidc-* flags are documented but never read](#issue-kuestenlogik-bowire-818) | ✅ Done |  |
@@ -246,6 +248,14 @@ When a followed MCP task (#801) fails and its JSON-RPC `error.code` is not a num
 #### <a id="issue-kuestenlogik-bowire-870"></a>⬜ Backlog · [#870](https://github.com/Kuestenlogik/Bowire/issues/870) Keyring references: URL services and escaped slashes
 
 `KeyringReference.TryParse` splits the text after `keyring.` on the first `/`. That is right for plain references (`github.com/deploy-bot`, `vault/team/bot`), but a URL-shaped service breaks: `{{keyring.https://api.example.com/v1/deploy-bot}}` parses to service `https:` and account `/api.example.com … [[more]](https://github.com/Kuestenlogik/Bowire/issues/870)
+
+#### <a id="issue-kuestenlogik-bowire-871"></a>⬜ Backlog · [#871](https://github.com/Kuestenlogik/Bowire/issues/871) SCIM: a user PATCH refused with 409 for a taken userName keeps the new name in memory
+
+`BowireScimStore.UpdateUser` (`src/Kuestenlogik.Bowire.Scim/BowireScimStore.cs:347`) runs the change on the live record and only then checks whether the new `userName` belongs to somebody else. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/871)
+
+#### <a id="issue-kuestenlogik-bowire-872"></a>⬜ Backlog · [#872](https://github.com/Kuestenlogik/Bowire/issues/872) SCIM: a user provisioned inactive is never purged after DELETE
+
+`BowireScimStore.DeleteUser` (`src/Kuestenlogik.Bowire.Scim/BowireScimStore.cs:390`) starts the purge window through `ApplyActivation`, which only acts on an active → inactive transition. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/872)
 
 #### <a id="issue-kuestenlogik-bowire-816"></a>✅ Done · [#816](https://github.com/Kuestenlogik/Bowire/issues/816) SCIM trace records status 200 for every request
 
