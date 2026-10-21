@@ -340,9 +340,22 @@
           <a href="{{_rel}}../features.html">Features</a>
           <a href="{{_rel}}../solutions.html">Solutions</a>
           <a href="{{_rel}}../downloads.html">Downloads</a>
-          <a href="{{_rel}}index.html" class="is-active">Documentation</a>
-          <a href="{{_rel}}../bootcamp/">Bootcamp</a>
-          <a href="{{_rel}}../community.html">Community</a>
+          {{!--- #927 - Documentation, Bootcamp, Blog and Community sit under
+                Resources, as on the marketing site. Blog stays hidden until
+                bowire.io's feed has an entry (docfx cannot see Jekyll's
+                posts); the script at the end of the page reveals it. ---}}
+          <div class="bowire-docs-nav-group">
+            <button type="button" class="bowire-docs-nav-group-toggle is-active" aria-expanded="false" aria-controls="bowire-docs-nav-resources">
+              Resources
+              <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+            <div class="bowire-docs-nav-group-menu" id="bowire-docs-nav-resources">
+              <a href="{{_rel}}index.html" class="is-active">Documentation</a>
+              <a href="{{_rel}}../bootcamp/">Bootcamp</a>
+              <a href="{{_rel}}../blog/" data-blog-link hidden>Blog</a>
+              <a href="{{_rel}}../community.html">Community</a>
+            </div>
+          </div>
         </nav>
         <div class="bowire-docs-header-actions">
           {{!--- Pagefind search trigger — opens the overlay defined at
@@ -1278,6 +1291,36 @@
           document.addEventListener('DOMContentLoaded', initSearch);
         } else {
           initSearch();
+        }
+      })();
+    </script>
+
+    {{!--- #927 - the Resources dropdown: click toggles, Escape and a click
+          elsewhere close, hover opens it via CSS. The Blog entry appears
+          once the site's feed lists a post. --------------------------}}
+    <script>
+      (function () {
+        var group = document.querySelector('.bowire-docs-nav-group');
+        if (!group) return;
+        var button = group.querySelector('.bowire-docs-nav-group-toggle');
+        function setOpen(open) {
+          group.classList.toggle('open', open);
+          button.setAttribute('aria-expanded', open ? 'true' : 'false');
+        }
+        button.addEventListener('click', function (e) {
+          e.stopPropagation();
+          setOpen(!group.classList.contains('open'));
+        });
+        document.addEventListener('click', function (e) { if (!group.contains(e.target)) setOpen(false); });
+        document.addEventListener('keydown', function (e) {
+          if (e.key === 'Escape' && group.classList.contains('open')) { setOpen(false); button.focus(); }
+        });
+        var blog = group.querySelector('[data-blog-link]');
+        if (blog && window.fetch) {
+          fetch(new URL('../feed.xml', new URL(blog.getAttribute('href'), location.href)))
+            .then(function (r) { return r.ok ? r.text() : ''; })
+            .then(function (xml) { if (xml.indexOf('<entry') >= 0) blog.hidden = false; })
+            .catch(function () { /* no feed, no blog link */ });
         }
       })();
     </script>
