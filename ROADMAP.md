@@ -12,20 +12,12 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
 
-**95/108 done** · 13 backlog
+**103/108 done** · 5 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [639](https://github.com/Kuestenlogik/Bowire/issues/639) | Bowire | [SCIM: live Okta and Entra ID provisioning round-trips](#issue-kuestenlogik-bowire-639) | ⬜ Backlog | `area:workbench` |
 | [670](https://github.com/Kuestenlogik/Bowire/issues/670) | Bowire | [Get listed where developers and models actually look](#issue-kuestenlogik-bowire-670) | ⬜ Backlog | `area:site` |
-| [914](https://github.com/Kuestenlogik/Bowire/issues/914) | Bowire | [GraphQL list arguments get a variable type with the wrong nullability](#issue-kuestenlogik-bowire-914) | ⬜ Backlog |  |
-| [915](https://github.com/Kuestenlogik/Bowire/issues/915) | Bowire | [AsyncAPI export marks optional fields required and types repeated fields as scalars](#issue-kuestenlogik-bowire-915) | ⬜ Backlog |  |
-| [916](https://github.com/Kuestenlogik/Bowire/issues/916) | Bowire | [GraphQL root fields that return a scalar or enum get a selection set](#issue-kuestenlogik-bowire-916) | ⬜ Backlog |  |
-| [917](https://github.com/Kuestenlogik/Bowire/issues/917) | Bowire | [AsyncAPI invocation keeps using a stale V2 document after the URL is rediscovered as V3](#issue-kuestenlogik-bowire-917) | ⬜ Backlog |  |
-| [918](https://github.com/Kuestenlogik/Bowire/issues/918) | Bowire | [AsyncAPI HTTP binding throws on a bad server URL, an invalid method or a timeout instead of returning an error](#issue-kuestenlogik-bowire-918) | ⬜ Backlog |  |
-| [919](https://github.com/Kuestenlogik/Bowire/issues/919) | Bowire | [GraphQL GET guard checks the first operation, not the one operationName selects, so a mutation can go out over GET](#issue-kuestenlogik-bowire-919) | ⬜ Backlog |  |
-| [920](https://github.com/Kuestenlogik/Bowire/issues/920) | Bowire | [GraphQL mock answers 500 to a JSON body of the wrong shape](#issue-kuestenlogik-bowire-920) | ⬜ Backlog |  |
-| [921](https://github.com/Kuestenlogik/Bowire/issues/921) | Bowire | [GraphQL mock answers "sample" for union-typed fields instead of null](#issue-kuestenlogik-bowire-921) | ⬜ Backlog |  |
 | [922](https://github.com/Kuestenlogik/Bowire/issues/922) | Bowire | [GraphQL SSE subscriptions never end on a complete event without data, and drop error events](#issue-kuestenlogik-bowire-922) | ⬜ Backlog |  |
 | [923](https://github.com/Kuestenlogik/Bowire/issues/923) | Bowire | [Shared GraphQL WebSocket subscribes before connection_ack and reuses a dead socket](#issue-kuestenlogik-bowire-923) | ⬜ Backlog |  |
 | [924](https://github.com/Kuestenlogik/Bowire/issues/924) | Bowire | [Workbench GraphQL query: selection set on scalar fields, variables typed String instead of the schema's type](#issue-kuestenlogik-bowire-924) | ⬜ Backlog |  |
@@ -124,6 +116,14 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [911](https://github.com/Kuestenlogik/Bowire/issues/911) | Bowire | [AsyncAPI export registers a shared message type once per reference instead of once](#issue-kuestenlogik-bowire-911) | ✅ Done |  |
 | [912](https://github.com/Kuestenlogik/Bowire/issues/912) | Bowire | [GraphQL discovery overflows the stack on a self-referencing input type](#issue-kuestenlogik-bowire-912) | ✅ Done |  |
 | [913](https://github.com/Kuestenlogik/Bowire/issues/913) | Bowire | [AsyncAPI export creates one channel per method instead of one per address](#issue-kuestenlogik-bowire-913) | ✅ Done |  |
+| [914](https://github.com/Kuestenlogik/Bowire/issues/914) | Bowire | [GraphQL list arguments get a variable type with the wrong nullability](#issue-kuestenlogik-bowire-914) | ✅ Done |  |
+| [915](https://github.com/Kuestenlogik/Bowire/issues/915) | Bowire | [AsyncAPI export marks optional fields required and types repeated fields as scalars](#issue-kuestenlogik-bowire-915) | ✅ Done |  |
+| [916](https://github.com/Kuestenlogik/Bowire/issues/916) | Bowire | [GraphQL root fields that return a scalar or enum get a selection set](#issue-kuestenlogik-bowire-916) | ✅ Done |  |
+| [917](https://github.com/Kuestenlogik/Bowire/issues/917) | Bowire | [AsyncAPI invocation keeps using a stale V2 document after the URL is rediscovered as V3](#issue-kuestenlogik-bowire-917) | ✅ Done |  |
+| [918](https://github.com/Kuestenlogik/Bowire/issues/918) | Bowire | [AsyncAPI HTTP binding throws on a bad server URL, an invalid method or a timeout instead of returning an error](#issue-kuestenlogik-bowire-918) | ✅ Done |  |
+| [919](https://github.com/Kuestenlogik/Bowire/issues/919) | Bowire | [GraphQL GET guard checks the first operation, not the one operationName selects, so a mutation can go out over GET](#issue-kuestenlogik-bowire-919) | ✅ Done |  |
+| [920](https://github.com/Kuestenlogik/Bowire/issues/920) | Bowire | [GraphQL mock answers 500 to a JSON body of the wrong shape](#issue-kuestenlogik-bowire-920) | ✅ Done |  |
+| [921](https://github.com/Kuestenlogik/Bowire/issues/921) | Bowire | [GraphQL mock answers "sample" for union-typed fields instead of null](#issue-kuestenlogik-bowire-921) | ✅ Done |  |
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
@@ -288,38 +288,6 @@ Split from #96 so the SCIM surface can ship on its own merits. [[more]](https://
 > `area:site`
 
 Six credible competitors turned up during the competitive survey **via openalternative.co**. Bowire was not there. That is the whole diagnosis: when a developer — or a language model — asks for "open source Postman alternative", the answer is assembled from these directories, not from bowire.io. [[more]](https://github.com/Kuestenlogik/Bowire/issues/670)
-
-#### <a id="issue-kuestenlogik-bowire-914"></a>⬜ Backlog · [#914](https://github.com/Kuestenlogik/Bowire/issues/914) GraphQL list arguments get a variable type with the wrong nullability
-
-A generated GraphQL operation declares the wrong variable type for list arguments whose list and element nullability differ: [[more]](https://github.com/Kuestenlogik/Bowire/issues/914)
-
-#### <a id="issue-kuestenlogik-bowire-915"></a>⬜ Backlog · [#915](https://github.com/Kuestenlogik/Bowire/issues/915) AsyncAPI export marks optional fields required and types repeated fields as scalars
-
-`AsyncApiDocumentBuilder.BuildPayloadSchema` (`src/Kuestenlogik.Bowire.AsyncApi/AsyncApiDocumentBuilder.cs:357-363`) marks every field as required unless its label is exactly `LABEL_OPTIONAL`, and maps each field with `MapFieldType(field.Type)` without looking at `IsRepeated` or `IsMap`. [[more]](https://github.com/Kuestenlogik/Bowire/issues/915)
-
-#### <a id="issue-kuestenlogik-bowire-916"></a>⬜ Backlog · [#916](https://github.com/Kuestenlogik/Bowire/issues/916) GraphQL root fields that return a scalar or enum get a selection set
-
-For a discovered root field that returns a scalar or an enum, such as `type Query { hello: String }`, the generated operation is [[more]](https://github.com/Kuestenlogik/Bowire/issues/916)
-
-#### <a id="issue-kuestenlogik-bowire-917"></a>⬜ Backlog · [#917](https://github.com/Kuestenlogik/Bowire/issues/917) AsyncAPI invocation keeps using a stale V2 document after the URL is rediscovered as V3
-
-`BowireAsyncApiProtocol.DiscoverAsync` caches the parsed document per URL in `_documents` (V3) or `_v2Documents` (V2), but never clears the other cache. `ResolveInvocation` checks the V2 cache first (`src/Kuestenlogik.Bowire.AsyncApi/BowireAsyncApiProtocol.cs:556`). [[more]](https://github.com/Kuestenlogik/Bowire/issues/917)
-
-#### <a id="issue-kuestenlogik-bowire-918"></a>⬜ Backlog · [#918](https://github.com/Kuestenlogik/Bowire/issues/918) AsyncAPI HTTP binding throws on a bad server URL, an invalid method or a timeout instead of returning an error
-
-`HttpBindingResolver.InvokeAsync` (`src/Kuestenlogik.Bowire.AsyncApi/HttpBindingResolver.cs:54` and `:93`) turns only `HttpRequestException` into an error result. Everything else escapes the resolver and `BowireAsyncApiProtocol.InvokeAsync` as an exception: [[more]](https://github.com/Kuestenlogik/Bowire/issues/918)
-
-#### <a id="issue-kuestenlogik-bowire-919"></a>⬜ Backlog · [#919](https://github.com/Kuestenlogik/Bowire/issues/919) GraphQL GET guard checks the first operation, not the one operationName selects, so a mutation can go out over GET
-
-With `X-Bowire-GraphQL-Http-Method: get`, the guard that keeps mutations off GET checks only the **first** operation in the document, not the operation that `operationName` selects. [[more]](https://github.com/Kuestenlogik/Bowire/issues/919)
-
-#### <a id="issue-kuestenlogik-bowire-920"></a>⬜ Backlog · [#920](https://github.com/Kuestenlogik/Bowire/issues/920) GraphQL mock answers 500 to a JSON body of the wrong shape
-
-The GraphQL schema-only mock answers HTTP 500 to a request body that is valid JSON but has the wrong shape: [[more]](https://github.com/Kuestenlogik/Bowire/issues/920)
-
-#### <a id="issue-kuestenlogik-bowire-921"></a>⬜ Backlog · [#921](https://github.com/Kuestenlogik/Bowire/issues/921) GraphQL mock answers "sample" for union-typed fields instead of null
-
-In the GraphQL schema-only mock, a field whose type is a union is answered with the string `"sample"`: [[more]](https://github.com/Kuestenlogik/Bowire/issues/921)
 
 #### <a id="issue-kuestenlogik-bowire-922"></a>⬜ Backlog · [#922](https://github.com/Kuestenlogik/Bowire/issues/922) GraphQL SSE subscriptions never end on a complete event without data, and drop error events
 
@@ -712,6 +680,38 @@ Discovering a GraphQL schema with a self-referencing input type, such as `input 
 #### <a id="issue-kuestenlogik-bowire-913"></a>✅ Done · [#913](https://github.com/Kuestenlogik/Bowire/issues/913) AsyncAPI export creates one channel per method instead of one per address
 
 `AsyncApiDocumentBuilder` documents one channel per address ("deduplicated by address"), but `BuildDocumentModel` creates a new channel for every method (`src/Kuestenlogik.Bowire.AsyncApi/AsyncApiDocumentBuilder.cs:140`, `MakeUniqueId(seenChannelIds, ToSafeId(address))`). [[more]](https://github.com/Kuestenlogik/Bowire/issues/913)
+
+#### <a id="issue-kuestenlogik-bowire-914"></a>✅ Done · [#914](https://github.com/Kuestenlogik/Bowire/issues/914) GraphQL list arguments get a variable type with the wrong nullability
+
+A generated GraphQL operation declares the wrong variable type for list arguments whose list and element nullability differ: [[more]](https://github.com/Kuestenlogik/Bowire/issues/914)
+
+#### <a id="issue-kuestenlogik-bowire-915"></a>✅ Done · [#915](https://github.com/Kuestenlogik/Bowire/issues/915) AsyncAPI export marks optional fields required and types repeated fields as scalars
+
+`AsyncApiDocumentBuilder.BuildPayloadSchema` (`src/Kuestenlogik.Bowire.AsyncApi/AsyncApiDocumentBuilder.cs:357-363`) marks every field as required unless its label is exactly `LABEL_OPTIONAL`, and maps each field with `MapFieldType(field.Type)` without looking at `IsRepeated` or `IsMap`. [[more]](https://github.com/Kuestenlogik/Bowire/issues/915)
+
+#### <a id="issue-kuestenlogik-bowire-916"></a>✅ Done · [#916](https://github.com/Kuestenlogik/Bowire/issues/916) GraphQL root fields that return a scalar or enum get a selection set
+
+For a discovered root field that returns a scalar or an enum, such as `type Query { hello: String }`, the generated operation is [[more]](https://github.com/Kuestenlogik/Bowire/issues/916)
+
+#### <a id="issue-kuestenlogik-bowire-917"></a>✅ Done · [#917](https://github.com/Kuestenlogik/Bowire/issues/917) AsyncAPI invocation keeps using a stale V2 document after the URL is rediscovered as V3
+
+`BowireAsyncApiProtocol.DiscoverAsync` caches the parsed document per URL in `_documents` (V3) or `_v2Documents` (V2), but never clears the other cache. `ResolveInvocation` checks the V2 cache first (`src/Kuestenlogik.Bowire.AsyncApi/BowireAsyncApiProtocol.cs:556`). [[more]](https://github.com/Kuestenlogik/Bowire/issues/917)
+
+#### <a id="issue-kuestenlogik-bowire-918"></a>✅ Done · [#918](https://github.com/Kuestenlogik/Bowire/issues/918) AsyncAPI HTTP binding throws on a bad server URL, an invalid method or a timeout instead of returning an error
+
+`HttpBindingResolver.InvokeAsync` (`src/Kuestenlogik.Bowire.AsyncApi/HttpBindingResolver.cs:54` and `:93`) turns only `HttpRequestException` into an error result. Everything else escapes the resolver and `BowireAsyncApiProtocol.InvokeAsync` as an exception: [[more]](https://github.com/Kuestenlogik/Bowire/issues/918)
+
+#### <a id="issue-kuestenlogik-bowire-919"></a>✅ Done · [#919](https://github.com/Kuestenlogik/Bowire/issues/919) GraphQL GET guard checks the first operation, not the one operationName selects, so a mutation can go out over GET
+
+With `X-Bowire-GraphQL-Http-Method: get`, the guard that keeps mutations off GET checks only the **first** operation in the document, not the operation that `operationName` selects. [[more]](https://github.com/Kuestenlogik/Bowire/issues/919)
+
+#### <a id="issue-kuestenlogik-bowire-920"></a>✅ Done · [#920](https://github.com/Kuestenlogik/Bowire/issues/920) GraphQL mock answers 500 to a JSON body of the wrong shape
+
+The GraphQL schema-only mock answers HTTP 500 to a request body that is valid JSON but has the wrong shape: [[more]](https://github.com/Kuestenlogik/Bowire/issues/920)
+
+#### <a id="issue-kuestenlogik-bowire-921"></a>✅ Done · [#921](https://github.com/Kuestenlogik/Bowire/issues/921) GraphQL mock answers "sample" for union-typed fields instead of null
+
+In the GraphQL schema-only mock, a field whose type is a union is answered with the string `"sample"`: [[more]](https://github.com/Kuestenlogik/Bowire/issues/921)
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
