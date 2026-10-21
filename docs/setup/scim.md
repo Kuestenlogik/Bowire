@@ -68,7 +68,7 @@ Deactivating (`PATCH … active: false`) or deleting (`DELETE`) does three thing
 
 Reactivating puts the slot back exactly where they left it. That is what makes "deactivate" reversible rather than a polite word for delete.
 
-After `Bowire:Scim:PurgeAfter` — 30 days by default — a daily sweep deletes the record and the archived slot for good. Set it to `00:00:00` to delete immediately, if your retention policy says so.
+After `Bowire:Scim:PurgeAfter` — 30 days by default — a daily sweep deletes the record and the archived slot for good. Set it to `00:00:00` to delete at the next sweep — at start-up, then daily — if your retention policy says so.
 
 Every one of these decisions is appended to `scim/events.jsonl` under the storage root: what happened, to whom, and when. The record files only ever show the current answer, and "who removed this person" gets asked months later.
 
@@ -171,7 +171,7 @@ success is not evidence that anything happened.
 | 7 | Try to sign in | Refused at the door, slot archived and still present |
 | 8 | Reactivate | Slot restored with the work still in it |
 | 9 | Unassign the user | `DELETE`, `delete` in the events, slot archived |
-| 10 | Let the purge window elapse (or set `PurgeAfter` to zero) | `purge` in the events, slot gone |
+| 10 | Let the purge window elapse (or set `PurgeAfter` to zero and restart the host) | `purge` in the events, slot gone |
 
 Two things to watch for that no fixture can produce:
 

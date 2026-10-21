@@ -40,7 +40,8 @@ public sealed class BowireScimOptions
 
     /// <summary>
     /// How long a deprovisioned identity's state is kept before it is deleted.
-    /// 30 days by default; <see cref="TimeSpan.Zero"/> deletes immediately.
+    /// 30 days by default; <see cref="TimeSpan.Zero"/> deletes at the next
+    /// sweep, which runs at start-up and then daily.
     /// </summary>
     /// <remarks>
     /// The window exists because deprovisioning is routinely undone — someone

@@ -102,14 +102,14 @@ public sealed class BowireScimExtensionsTests : IDisposable
 
     [Theory]
     [InlineData("true", "01:00:00", true)]
-    [InlineData("true", "00:00:00", false)]
+    [InlineData("true", "00:00:00", true)]
     [InlineData("false", "01:00:00", false)]
     public void The_Purge_Service_Runs_Only_When_It_Has_Something_To_Do(
         string enabled, string purgeAfter, bool expected)
     {
-        // Disabled, or with no retention window, there is nothing to purge
-        // — and a hosted service that wakes up to do nothing is a thing to
-        // explain later.
+        // Disabled, there is nothing to purge — and a hosted service that
+        // wakes up to do nothing is a thing to explain later. A zero window
+        // is not "never" but "without waiting" (#873).
         var services = new ServiceCollection();
 
         services.AddBowireScim(Config(

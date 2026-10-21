@@ -49,7 +49,10 @@ public static class BowireScimExtensions
                 sp.GetRequiredService<BowireScimStore>(),
                 sp.GetRequiredService<BowireScimOptions>())));
 
-        if (options.Enabled && options.PurgeAfter > TimeSpan.Zero)
+        // #873 — whenever provisioning is on, a zero window included. Zero is
+        // documented as "delete without waiting"; registering the sweep only
+        // for a positive window made it mean "never".
+        if (options.Enabled)
         {
             services.AddHostedService<BowireScimPurgeService>();
         }
