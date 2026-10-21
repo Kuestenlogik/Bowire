@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
 
-**49/95 done** · 46 backlog
+**49/96 done** · 47 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -62,6 +62,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [909](https://github.com/Kuestenlogik/Bowire/issues/909) | Bowire | [AsyncAPI YAML pre-normaliser folds a nested version: mapping into a quoted string](#issue-kuestenlogik-bowire-909) | ⬜ Backlog |  |
 | [910](https://github.com/Kuestenlogik/Bowire/issues/910) | Bowire | [AsyncAPI bindings stripper deletes schema properties, examples and channels named bindings](#issue-kuestenlogik-bowire-910) | ⬜ Backlog |  |
 | [911](https://github.com/Kuestenlogik/Bowire/issues/911) | Bowire | [AsyncAPI export registers a shared message type once per reference instead of once](#issue-kuestenlogik-bowire-911) | ⬜ Backlog |  |
+| [912](https://github.com/Kuestenlogik/Bowire/issues/912) | Bowire | [GraphQL discovery overflows the stack on a self-referencing input type](#issue-kuestenlogik-bowire-912) | ⬜ Backlog |  |
 | [816](https://github.com/Kuestenlogik/Bowire/issues/816) | Bowire | [SCIM trace records status 200 for every request](#issue-kuestenlogik-bowire-816) | ✅ Done |  |
 | [817](https://github.com/Kuestenlogik/Bowire/issues/817) | Bowire | [OIDC provider cannot run as an installed plugin](#issue-kuestenlogik-bowire-817) | ✅ Done |  |
 | [818](https://github.com/Kuestenlogik/Bowire/issues/818) | Bowire | [--auth-oidc-* flags are documented but never read](#issue-kuestenlogik-bowire-818) | ✅ Done |  |
@@ -451,6 +452,10 @@ Before the SDK reader sees a document, `AsyncApiBindingsStripper` removes bindin
 #### <a id="issue-kuestenlogik-bowire-911"></a>⬜ Backlog · [#911](https://github.com/Kuestenlogik/Bowire/issues/911) AsyncAPI export registers a shared message type once per reference instead of once
 
 `AsyncApiDocumentBuilder.RegisterMessage` (`src/Kuestenlogik.Bowire.AsyncApi/AsyncApiDocumentBuilder.cs:338`) calls `MakeUniqueId` before it checks `messages.ContainsKey`. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/911)
+
+#### <a id="issue-kuestenlogik-bowire-912"></a>⬜ Backlog · [#912](https://github.com/Kuestenlogik/Bowire/issues/912) GraphQL discovery overflows the stack on a self-referencing input type
+
+Discovering a GraphQL schema with a self-referencing input type, such as `input Filter { and: [Filter!] }`, overflows the stack and kills the process. [[more]](https://github.com/Kuestenlogik/Bowire/issues/912)
 
 #### <a id="issue-kuestenlogik-bowire-816"></a>✅ Done · [#816](https://github.com/Kuestenlogik/Bowire/issues/816) SCIM trace records status 200 for every request
 
