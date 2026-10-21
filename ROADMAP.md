@@ -221,7 +221,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [68](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/68) | Protocol.Dis | [Show datum IDs with their SISO name (Variable Record Types)](#issue-kuestenlogik-bowire-protocol-dis-68) | ⬜ Backlog |  |
-| [69](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/69) | Protocol.Dis | [DIS-Sandbox: Objekte anderer Instanzen empfangen und schreibgeschützt anzeigen](#issue-kuestenlogik-bowire-protocol-dis-69) | ⬜ Backlog |  |
+| [69](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/69) | Protocol.Dis | [DIS sandbox: receive objects of other instances and show them read-only](#issue-kuestenlogik-bowire-protocol-dis-69) | ⬜ Backlog |  |
 | [67](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/67) | Protocol.Dis | [DIS sandbox: place and move objects on a map, state as key-value pairs](#issue-kuestenlogik-bowire-protocol-dis-67) | ✅ Done |  |
 | [70](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/70) | Protocol.Dis | [Pin the .NET SDK to 10.0.402 and check for packages with known advisories](#issue-kuestenlogik-bowire-protocol-dis-70) | ✅ Done | `area:plugin-sdk` |
 
@@ -1064,7 +1064,7 @@ Every packable project generates its XML documentation file, but `Directory.Buil
 
 Variable and Fixed Datum Records show only the bare datum ID (`30000`) in Bowire and the value as raw bytes. What the ID means you have to look up in SISO-REF-010. [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/68)
 
-#### <a id="issue-kuestenlogik-bowire-protocol-dis-69"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Dis#69](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/69) DIS-Sandbox: Objekte anderer Instanzen empfangen und schreibgeschützt anzeigen
+#### <a id="issue-kuestenlogik-bowire-protocol-dis-69"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Dis#69](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/69) DIS sandbox: receive objects of other instances and show them read-only
 
 Die DIS-Sandbox (#67) sendet nur. Laufen zwei Instanzen nebeneinander, zeigt keine von beiden, was die andere sendet. Was zwischen den beiden auf dem Netz passiert, sieht nur Bowire. … [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/69)
 
