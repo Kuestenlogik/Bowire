@@ -120,10 +120,19 @@ public static class ProtobufSampleEncoder
             case FieldType.Int64:
             case FieldType.UInt32:
             case FieldType.UInt64:
-            case FieldType.SInt32:
-            case FieldType.SInt64:
                 output.WriteTag(field.FieldNumber, WireFormat.WireType.Varint);
                 output.WriteInt64(1);
+                break;
+
+            // sint* are zigzag-encoded: a plain varint 1 decodes as -1 (#890).
+            case FieldType.SInt32:
+                output.WriteTag(field.FieldNumber, WireFormat.WireType.Varint);
+                output.WriteSInt32(1);
+                break;
+
+            case FieldType.SInt64:
+                output.WriteTag(field.FieldNumber, WireFormat.WireType.Varint);
+                output.WriteSInt64(1);
                 break;
 
             case FieldType.Bool:

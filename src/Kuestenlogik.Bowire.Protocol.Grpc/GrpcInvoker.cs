@@ -665,13 +665,23 @@ internal sealed class GrpcInvoker : IDisposable
                 cos.WriteTag(tag);
                 cos.WriteString(value.GetString() ?? "");
                 break;
-            case FieldType.Int32 or FieldType.SInt32:
+            case FieldType.Int32:
                 cos.WriteTag(tag);
                 cos.WriteInt32(value.TryGetInt32(out var i32) ? i32 : 0);
                 break;
-            case FieldType.Int64 or FieldType.SInt64:
+            case FieldType.Int64:
                 cos.WriteTag(tag);
                 cos.WriteInt64(value.TryGetInt64(out var i64) ? i64 : 0);
+                break;
+            // sint* are zigzag-encoded on the wire; a plain varint reaches
+            // the server as a different number (#890).
+            case FieldType.SInt32:
+                cos.WriteTag(tag);
+                cos.WriteSInt32(value.TryGetInt32(out var si32) ? si32 : 0);
+                break;
+            case FieldType.SInt64:
+                cos.WriteTag(tag);
+                cos.WriteSInt64(value.TryGetInt64(out var si64) ? si64 : 0);
                 break;
             case FieldType.UInt32:
                 cos.WriteTag(tag);
@@ -804,8 +814,11 @@ internal sealed class GrpcInvoker : IDisposable
         return field.FieldType switch
         {
             FieldType.String => cis.ReadString(),
-            FieldType.Int32 or FieldType.SInt32 => cis.ReadInt32(),
-            FieldType.Int64 or FieldType.SInt64 => cis.ReadInt64(),
+            FieldType.Int32 => cis.ReadInt32(),
+            FieldType.Int64 => cis.ReadInt64(),
+            // Zigzag-decoded, the counterpart of WriteField (#890).
+            FieldType.SInt32 => cis.ReadSInt32(),
+            FieldType.SInt64 => cis.ReadSInt64(),
             FieldType.UInt32 => cis.ReadUInt32(),
             FieldType.UInt64 => cis.ReadUInt64(),
             FieldType.Double => cis.ReadDouble(),

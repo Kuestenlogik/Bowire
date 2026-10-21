@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using Google.Protobuf;
+using Kuestenlogik.Bowire.Protocol.Grpc.Mock;
 using Kuestenlogik.Bowire.Protocol.Grpc.Tests.Proto;
 
 namespace Kuestenlogik.Bowire.Protocol.Grpc.Tests;
@@ -46,4 +47,33 @@ public sealed class GrpcWireCodecTests
 
         Assert.Equal(expected, Decode<WirePacked>(expected));
     }
+
+    // ---- sint32 / sint64 zigzag (#890) ------------------------------
+
+    [Fact]
+    public void Decode_reads_sint_fields_zigzag_encoded()
+    {
+        var expected = new WireZigZag { Si32 = -1, Si64 = -2, Many = { -3, 4 } };
+
+        Assert.Equal(expected, Decode<WireZigZag>(expected));
+    }
+
+    [Fact]
+    public void Encode_writes_sint_fields_zigzag_encoded()
+    {
+        var actual = Encode("""{"si32":-1,"si64":-2,"many":[-3,4]}""", WireZigZag.Parser);
+
+        Assert.Equal(new WireZigZag { Si32 = -1, Si64 = -2, Many = { -3, 4 } }, actual);
+    }
+
+    [Fact]
+    public void Sample_encoder_writes_sint_fields_zigzag_encoded()
+    {
+        var sample = WireZigZag.Parser.ParseFrom(ProtobufSampleEncoder.Encode(WireZigZag.Descriptor));
+
+        Assert.Equal(1, sample.Si32);
+        Assert.Equal(1L, sample.Si64);
+        Assert.All(sample.Many, v => Assert.Equal(1, v));
+    }
+
 }
