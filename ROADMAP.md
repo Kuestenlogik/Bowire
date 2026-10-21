@@ -12,22 +12,12 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
 
-**66/108 done** · 42 backlog
+**76/108 done** · 32 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [639](https://github.com/Kuestenlogik/Bowire/issues/639) | Bowire | [SCIM: live Okta and Entra ID provisioning round-trips](#issue-kuestenlogik-bowire-639) | ⬜ Backlog | `area:workbench` |
 | [670](https://github.com/Kuestenlogik/Bowire/issues/670) | Bowire | [Get listed where developers and models actually look](#issue-kuestenlogik-bowire-670) | ⬜ Backlog | `area:site` |
-| [885](https://github.com/Kuestenlogik/Bowire/issues/885) | Bowire | [One entry with a non-string id breaks every MCP resource lookup by id](#issue-kuestenlogik-bowire-885) | ⬜ Backlog |  |
-| [886](https://github.com/Kuestenlogik/Bowire/issues/886) | Bowire | [MCP endpoint registry docs say nested prefixes throw; only the same path twice does](#issue-kuestenlogik-bowire-886) | ⬜ Backlog |  |
-| [887](https://github.com/Kuestenlogik/Bowire/issues/887) | Bowire | [bowire://recordings is always empty: it ignores the {recordings:[…]} layout the store writes](#issue-kuestenlogik-bowire-887) | ⬜ Backlog |  |
-| [888](https://github.com/Kuestenlogik/Bowire/issues/888) | Bowire | [MQTT mock publishes the recorded subscription envelope instead of the original message](#issue-kuestenlogik-bowire-888) | ⬜ Backlog |  |
-| [889](https://github.com/Kuestenlogik/Bowire/issues/889) | Bowire | [gRPC responses decode packed repeated scalars wrongly](#issue-kuestenlogik-bowire-889) | ⬜ Backlog |  |
-| [890](https://github.com/Kuestenlogik/Bowire/issues/890) | Bowire | [gRPC sint32/sint64 values are not zigzag-encoded in requests, responses and mock samples](#issue-kuestenlogik-bowire-890) | ⬜ Backlog |  |
-| [891](https://github.com/Kuestenlogik/Bowire/issues/891) | Bowire | [gRPC fixed32/fixed64/sfixed32/sfixed64 fields show as null in responses and are dropped from requests](#issue-kuestenlogik-bowire-891) | ⬜ Backlog |  |
-| [892](https://github.com/Kuestenlogik/Bowire/issues/892) | Bowire | [MCP adapter tools/call runs streaming methods that tools/list never offered](#issue-kuestenlogik-bowire-892) | ⬜ Backlog |  |
-| [893](https://github.com/Kuestenlogik/Bowire/issues/893) | Bowire | [MQTT channel unwraps device payloads that look like an envelope ({"type":…,"data":…})](#issue-kuestenlogik-bowire-893) | ⬜ Backlog |  |
-| [894](https://github.com/Kuestenlogik/Bowire/issues/894) | Bowire | [gRPC requests fail on integers given as JSON strings, the canonical proto3 form for int64](#issue-kuestenlogik-bowire-894) | ⬜ Backlog |  |
 | [895](https://github.com/Kuestenlogik/Bowire/issues/895) | Bowire | [gRPC map fields are encoded and decoded wrongly](#issue-kuestenlogik-bowire-895) | ⬜ Backlog |  |
 | [896](https://github.com/Kuestenlogik/Bowire/issues/896) | Bowire | [MCP discovery fails when a tool's input schema gives type as an array like ["string","null"]](#issue-kuestenlogik-bowire-896) | ⬜ Backlog |  |
 | [897](https://github.com/Kuestenlogik/Bowire/issues/897) | Bowire | [Connect requests drop the base URL's path prefix](#issue-kuestenlogik-bowire-897) | ⬜ Backlog |  |
@@ -59,7 +49,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [923](https://github.com/Kuestenlogik/Bowire/issues/923) | Bowire | [Shared GraphQL WebSocket subscribes before connection_ack and reuses a dead socket](#issue-kuestenlogik-bowire-923) | ⬜ Backlog |  |
 | [924](https://github.com/Kuestenlogik/Bowire/issues/924) | Bowire | [Workbench GraphQL query: selection set on scalar fields, variables typed String instead of the schema's type](#issue-kuestenlogik-bowire-924) | ⬜ Backlog |  |
 | [871](https://github.com/Kuestenlogik/Bowire/issues/871) | Bowire | [SCIM: a user PATCH refused with 409 for a taken userName keeps the new name in memory](#issue-kuestenlogik-bowire-871) | ✅ Done |  |
-| [884](https://github.com/Kuestenlogik/Bowire/issues/884) | Bowire | [MCP resource not-found body is invalid JSON for an id with a quote or backslash](#issue-kuestenlogik-bowire-884) | ✅ Done |  |
+| [894](https://github.com/Kuestenlogik/Bowire/issues/894) | Bowire | [gRPC requests fail on integers given as JSON strings, the canonical proto3 form for int64](#issue-kuestenlogik-bowire-894) | ✅ Done |  |
 | [816](https://github.com/Kuestenlogik/Bowire/issues/816) | Bowire | [SCIM trace records status 200 for every request](#issue-kuestenlogik-bowire-816) | ✅ Done |  |
 | [817](https://github.com/Kuestenlogik/Bowire/issues/817) | Bowire | [OIDC provider cannot run as an installed plugin](#issue-kuestenlogik-bowire-817) | ✅ Done |  |
 | [818](https://github.com/Kuestenlogik/Bowire/issues/818) | Bowire | [--auth-oidc-* flags are documented but never read](#issue-kuestenlogik-bowire-818) | ✅ Done |  |
@@ -124,6 +114,16 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [881](https://github.com/Kuestenlogik/Bowire/issues/881) | Bowire | [Nuclei RandStr/RandInt length has no upper bound: a template can exhaust memory](#issue-kuestenlogik-bowire-881) | ✅ Done |  |
 | [882](https://github.com/Kuestenlogik/Bowire/issues/882) | Bowire | [bowire.record.stop loses the recording when recordings.json is not the {recordings:[…]} store](#issue-kuestenlogik-bowire-882) | ✅ Done |  |
 | [883](https://github.com/Kuestenlogik/Bowire/issues/883) | Bowire | [bowire.subscribe throws on a negative durationMs, and -1 removes the time limit](#issue-kuestenlogik-bowire-883) | ✅ Done |  |
+| [884](https://github.com/Kuestenlogik/Bowire/issues/884) | Bowire | [MCP resource not-found body is invalid JSON for an id with a quote or backslash](#issue-kuestenlogik-bowire-884) | ✅ Done |  |
+| [885](https://github.com/Kuestenlogik/Bowire/issues/885) | Bowire | [One entry with a non-string id breaks every MCP resource lookup by id](#issue-kuestenlogik-bowire-885) | ✅ Done |  |
+| [886](https://github.com/Kuestenlogik/Bowire/issues/886) | Bowire | [MCP endpoint registry docs say nested prefixes throw; only the same path twice does](#issue-kuestenlogik-bowire-886) | ✅ Done |  |
+| [887](https://github.com/Kuestenlogik/Bowire/issues/887) | Bowire | [bowire://recordings is always empty: it ignores the {recordings:[…]} layout the store writes](#issue-kuestenlogik-bowire-887) | ✅ Done |  |
+| [888](https://github.com/Kuestenlogik/Bowire/issues/888) | Bowire | [MQTT mock publishes the recorded subscription envelope instead of the original message](#issue-kuestenlogik-bowire-888) | ✅ Done |  |
+| [889](https://github.com/Kuestenlogik/Bowire/issues/889) | Bowire | [gRPC responses decode packed repeated scalars wrongly](#issue-kuestenlogik-bowire-889) | ✅ Done |  |
+| [890](https://github.com/Kuestenlogik/Bowire/issues/890) | Bowire | [gRPC sint32/sint64 values are not zigzag-encoded in requests, responses and mock samples](#issue-kuestenlogik-bowire-890) | ✅ Done |  |
+| [891](https://github.com/Kuestenlogik/Bowire/issues/891) | Bowire | [gRPC fixed32/fixed64/sfixed32/sfixed64 fields show as null in responses and are dropped from requests](#issue-kuestenlogik-bowire-891) | ✅ Done |  |
+| [892](https://github.com/Kuestenlogik/Bowire/issues/892) | Bowire | [MCP adapter tools/call runs streaming methods that tools/list never offered](#issue-kuestenlogik-bowire-892) | ✅ Done |  |
+| [893](https://github.com/Kuestenlogik/Bowire/issues/893) | Bowire | [MQTT channel unwraps device payloads that look like an envelope ({"type":…,"data":…})](#issue-kuestenlogik-bowire-893) | ✅ Done |  |
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
@@ -289,46 +289,6 @@ Split from #96 so the SCIM surface can ship on its own merits. [[more]](https://
 
 Six credible competitors turned up during the competitive survey **via openalternative.co**. Bowire was not there. That is the whole diagnosis: when a developer — or a language model — asks for "open source Postman alternative", the answer is assembled from these directories, not from bowire.io. [[more]](https://github.com/Kuestenlogik/Bowire/issues/670)
 
-#### <a id="issue-kuestenlogik-bowire-885"></a>⬜ Backlog · [#885](https://github.com/Kuestenlogik/Bowire/issues/885) One entry with a non-string id breaks every MCP resource lookup by id
-
-`BowireMcpResources.ReadOneById` (`src/Kuestenlogik.Bowire.Mcp/BowireMcpResources.cs:311`) compares ids with `i.GetString() == id`. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/885)
-
-#### <a id="issue-kuestenlogik-bowire-886"></a>⬜ Backlog · [#886](https://github.com/Kuestenlogik/Bowire/issues/886) MCP endpoint registry docs say nested prefixes throw; only the same path twice does
-
-The documentation of the MCP endpoint registry says overlapping prefixes throw at startup — "same path, or one prefix-of the other" — and that the default prefixes "don't overlap": [[more]](https://github.com/Kuestenlogik/Bowire/issues/886)
-
-#### <a id="issue-kuestenlogik-bowire-887"></a>⬜ Backlog · [#887](https://github.com/Kuestenlogik/Bowire/issues/887) bowire://recordings is always empty: it ignores the {recordings:[…]} layout the store writes
-
-The `bowire://recordings` resource (`BowireMcpResources.RecordingsIndex`, `src/Kuestenlogik.Bowire.Mcp/BowireMcpResources.cs:64`) only summarises a `recordings.json` whose root is a bare array. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/887)
-
-#### <a id="issue-kuestenlogik-bowire-888"></a>⬜ Backlog · [#888](https://github.com/Kuestenlogik/Bowire/issues/888) MQTT mock publishes the recorded subscription envelope instead of the original message
-
-`fixed32`, `fixed64`, `sfixed32` and `sfixed64` have no case in either direction of the descriptor-driven codec in `src/Kuestenlogik.Bowire.Protocol.Grpc/GrpcInvoker.cs`: [[more]](https://github.com/Kuestenlogik/Bowire/issues/888)
-
-#### <a id="issue-kuestenlogik-bowire-889"></a>⬜ Backlog · [#889](https://github.com/Kuestenlogik/Bowire/issues/889) gRPC responses decode packed repeated scalars wrongly
-
-`GrpcInvoker.ReadMessage` (`src/Kuestenlogik.Bowire.Protocol.Grpc/GrpcInvoker.cs:761`) hands every field to `ReadFieldValue` without looking at the wire type. proto3 packs repeated scalars by default: a `repeated int32 ids = 1` holding `[1, -2, 300]` arrives as one length-delimited record. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/889)
-
-#### <a id="issue-kuestenlogik-bowire-890"></a>⬜ Backlog · [#890](https://github.com/Kuestenlogik/Bowire/issues/890) gRPC sint32/sint64 values are not zigzag-encoded in requests, responses and mock samples
-
-`sint32` / `sint64` are zigzag-encoded on the wire, but Bowire treats them as plain varints in three places: [[more]](https://github.com/Kuestenlogik/Bowire/issues/890)
-
-#### <a id="issue-kuestenlogik-bowire-891"></a>⬜ Backlog · [#891](https://github.com/Kuestenlogik/Bowire/issues/891) gRPC fixed32/fixed64/sfixed32/sfixed64 fields show as null in responses and are dropped from requests
-
-`fixed32`, `fixed64`, `sfixed32` and `sfixed64` have no case in either direction of the descriptor-driven codec in `src/Kuestenlogik.Bowire.Protocol.Grpc/GrpcInvoker.cs`: [[more]](https://github.com/Kuestenlogik/Bowire/issues/891)
-
-#### <a id="issue-kuestenlogik-bowire-892"></a>⬜ Backlog · [#892](https://github.com/Kuestenlogik/Bowire/issues/892) MCP adapter tools/call runs streaming methods that tools/list never offered
-
-The MCP adapter's `tools/list` offers only unary methods (`src/Kuestenlogik.Bowire.Protocol.Mcp/BowireMcpAdapterServiceCollectionExtensions.cs:270`), because a streaming method needs the channel surface and does not fit one tool call. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/892)
-
-#### <a id="issue-kuestenlogik-bowire-893"></a>⬜ Backlog · [#893](https://github.com/Kuestenlogik/Bowire/issues/893) MQTT channel unwraps device payloads that look like an envelope ({"type":…,"data":…})
-
-`MqttBowireChannel.ParseOutgoingFrame` unwraps any JSON object with a string `type`: `{"type":"reading","data":"21.5"}` is published as `21.5` (the `data` convenience shortcut), `{"type":"text","text":"hi","ts":1}` as `hi`, and `{"type":"binary","base64":"QUJD","seq":2}` as the bytes `ABC`. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/893)
-
-#### <a id="issue-kuestenlogik-bowire-894"></a>⬜ Backlog · [#894](https://github.com/Kuestenlogik/Bowire/issues/894) gRPC requests fail on integers given as JSON strings, the canonical proto3 form for int64
-
-proto3 JSON writes every 64-bit integer (`int64`, `uint64`, `sint64`, `fixed64`, `sfixed64`) as a JSON string, and a parser must accept the string form for 32-bit integers too. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/894)
-
 #### <a id="issue-kuestenlogik-bowire-895"></a>⬜ Backlog · [#895](https://github.com/Kuestenlogik/Bowire/issues/895) gRPC map fields are encoded and decoded wrongly
 
 A protobuf `map<K, V>` field is a repeated `MapEntry { K key = 1; V value = 2; }` on the wire and a JSON object in proto3 JSON. The descriptor-driven codec in `src/Kuestenlogik.Bowire.Protocol.Grpc/GrpcInvoker.cs` handles neither side: [[more]](https://github.com/Kuestenlogik/Bowire/issues/895)
@@ -453,9 +413,9 @@ The workbench builds its own default GraphQL operation for the query pane (`buil
 
 `BowireScimStore.UpdateUser` (`src/Kuestenlogik.Bowire.Scim/BowireScimStore.cs:347`) runs the change on the live record and only then checks whether the new `userName` belongs to somebody else. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/871)
 
-#### <a id="issue-kuestenlogik-bowire-884"></a>✅ Done · [#884](https://github.com/Kuestenlogik/Bowire/issues/884) MCP resource not-found body is invalid JSON for an id with a quote or backslash
+#### <a id="issue-kuestenlogik-bowire-894"></a>✅ Done · [#894](https://github.com/Kuestenlogik/Bowire/issues/894) gRPC requests fail on integers given as JSON strings, the canonical proto3 form for int64
 
-`BowireMcpResources.ReadOneById` (`src/Kuestenlogik.Bowire.Mcp/BowireMcpResources.cs:316`) builds its "not found" body by string interpolation: `{ "error": "no recordings entry with id={id}" }`. The id comes from the resource URI and is not escaped. [[more]](https://github.com/Kuestenlogik/Bowire/issues/884)
+proto3 JSON writes every 64-bit integer (`int64`, `uint64`, `sint64`, `fixed64`, `sfixed64`) as a JSON string, and a parser must accept the string form for 32-bit integers too. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/894)
 
 #### <a id="issue-kuestenlogik-bowire-816"></a>✅ Done · [#816](https://github.com/Kuestenlogik/Bowire/issues/816) SCIM trace records status 200 for every request
 
@@ -712,6 +672,46 @@ The two-step confirmation gate of the MCP mutator tools (`BowireMcpTools.TryConf
 #### <a id="issue-kuestenlogik-bowire-883"></a>✅ Done · [#883](https://github.com/Kuestenlogik/Bowire/issues/883) bowire.subscribe throws on a negative durationMs, and -1 removes the time limit
 
 `bowire.subscribe` clamps `durationMs` only from above (`Math.Min(durationMs, MaxSubscribeMs)`, `src/Kuestenlogik.Bowire.Mcp/BowireMcpTools.cs:341`) and passes it to `CancellationTokenSource.CancelAfter` (`:345`). [[more]](https://github.com/Kuestenlogik/Bowire/issues/883)
+
+#### <a id="issue-kuestenlogik-bowire-884"></a>✅ Done · [#884](https://github.com/Kuestenlogik/Bowire/issues/884) MCP resource not-found body is invalid JSON for an id with a quote or backslash
+
+`BowireMcpResources.ReadOneById` (`src/Kuestenlogik.Bowire.Mcp/BowireMcpResources.cs:316`) builds its "not found" body by string interpolation: `{ "error": "no recordings entry with id={id}" }`. The id comes from the resource URI and is not escaped. [[more]](https://github.com/Kuestenlogik/Bowire/issues/884)
+
+#### <a id="issue-kuestenlogik-bowire-885"></a>✅ Done · [#885](https://github.com/Kuestenlogik/Bowire/issues/885) One entry with a non-string id breaks every MCP resource lookup by id
+
+`BowireMcpResources.ReadOneById` (`src/Kuestenlogik.Bowire.Mcp/BowireMcpResources.cs:311`) compares ids with `i.GetString() == id`. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/885)
+
+#### <a id="issue-kuestenlogik-bowire-886"></a>✅ Done · [#886](https://github.com/Kuestenlogik/Bowire/issues/886) MCP endpoint registry docs say nested prefixes throw; only the same path twice does
+
+The documentation of the MCP endpoint registry says overlapping prefixes throw at startup — "same path, or one prefix-of the other" — and that the default prefixes "don't overlap": [[more]](https://github.com/Kuestenlogik/Bowire/issues/886)
+
+#### <a id="issue-kuestenlogik-bowire-887"></a>✅ Done · [#887](https://github.com/Kuestenlogik/Bowire/issues/887) bowire://recordings is always empty: it ignores the {recordings:[…]} layout the store writes
+
+The `bowire://recordings` resource (`BowireMcpResources.RecordingsIndex`, `src/Kuestenlogik.Bowire.Mcp/BowireMcpResources.cs:64`) only summarises a `recordings.json` whose root is a bare array. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/887)
+
+#### <a id="issue-kuestenlogik-bowire-888"></a>✅ Done · [#888](https://github.com/Kuestenlogik/Bowire/issues/888) MQTT mock publishes the recorded subscription envelope instead of the original message
+
+`fixed32`, `fixed64`, `sfixed32` and `sfixed64` have no case in either direction of the descriptor-driven codec in `src/Kuestenlogik.Bowire.Protocol.Grpc/GrpcInvoker.cs`: [[more]](https://github.com/Kuestenlogik/Bowire/issues/888)
+
+#### <a id="issue-kuestenlogik-bowire-889"></a>✅ Done · [#889](https://github.com/Kuestenlogik/Bowire/issues/889) gRPC responses decode packed repeated scalars wrongly
+
+`GrpcInvoker.ReadMessage` (`src/Kuestenlogik.Bowire.Protocol.Grpc/GrpcInvoker.cs:761`) hands every field to `ReadFieldValue` without looking at the wire type. proto3 packs repeated scalars by default: a `repeated int32 ids = 1` holding `[1, -2, 300]` arrives as one length-delimited record. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/889)
+
+#### <a id="issue-kuestenlogik-bowire-890"></a>✅ Done · [#890](https://github.com/Kuestenlogik/Bowire/issues/890) gRPC sint32/sint64 values are not zigzag-encoded in requests, responses and mock samples
+
+`sint32` / `sint64` are zigzag-encoded on the wire, but Bowire treats them as plain varints in three places: [[more]](https://github.com/Kuestenlogik/Bowire/issues/890)
+
+#### <a id="issue-kuestenlogik-bowire-891"></a>✅ Done · [#891](https://github.com/Kuestenlogik/Bowire/issues/891) gRPC fixed32/fixed64/sfixed32/sfixed64 fields show as null in responses and are dropped from requests
+
+`fixed32`, `fixed64`, `sfixed32` and `sfixed64` have no case in either direction of the descriptor-driven codec in `src/Kuestenlogik.Bowire.Protocol.Grpc/GrpcInvoker.cs`: [[more]](https://github.com/Kuestenlogik/Bowire/issues/891)
+
+#### <a id="issue-kuestenlogik-bowire-892"></a>✅ Done · [#892](https://github.com/Kuestenlogik/Bowire/issues/892) MCP adapter tools/call runs streaming methods that tools/list never offered
+
+The MCP adapter's `tools/list` offers only unary methods (`src/Kuestenlogik.Bowire.Protocol.Mcp/BowireMcpAdapterServiceCollectionExtensions.cs:270`), because a streaming method needs the channel surface and does not fit one tool call. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/892)
+
+#### <a id="issue-kuestenlogik-bowire-893"></a>✅ Done · [#893](https://github.com/Kuestenlogik/Bowire/issues/893) MQTT channel unwraps device payloads that look like an envelope ({"type":…,"data":…})
+
+`MqttBowireChannel.ParseOutgoingFrame` unwraps any JSON object with a string `type`: `{"type":"reading","data":"21.5"}` is published as `21.5` (the `data` convenience shortcut), `{"type":"text","text":"hi","ts":1}` as `hi`, and `{"type":"binary","base64":"QUJD","seq":2}` as the bytes `ABC`. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/893)
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
