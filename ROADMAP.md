@@ -338,7 +338,7 @@ The `bowire://recordings` resource (`BowireMcpResources.RecordingsIndex`, `src/K
 
 #### <a id="issue-kuestenlogik-bowire-888"></a>⬜ Backlog · [#888](https://github.com/Kuestenlogik/Bowire/issues/888) MQTT mock publishes the recorded subscription envelope instead of the original message
 
-A workbench recording of an MQTT subscription stores each frame as the plugin yielded it: the envelope `{"topic":…,"qos":…,"retain":…,"payload":…,"bytes":…}` as a JSON string (the channel path adds `"type":"text"`). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/888)
+`fixed32`, `fixed64`, `sfixed32` and `sfixed64` have no case in either direction of the descriptor-driven codec in `src/Kuestenlogik.Bowire.Protocol.Grpc/GrpcInvoker.cs`: [[more]](https://github.com/Kuestenlogik/Bowire/issues/888)
 
 #### <a id="issue-kuestenlogik-bowire-889"></a>⬜ Backlog · [#889](https://github.com/Kuestenlogik/Bowire/issues/889) gRPC responses decode packed repeated scalars wrongly
 
