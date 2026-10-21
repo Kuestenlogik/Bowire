@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
 
-**49/75 done** · 26 backlog
+**49/76 done** · 27 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -42,6 +42,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [889](https://github.com/Kuestenlogik/Bowire/issues/889) | Bowire | [gRPC responses decode packed repeated scalars wrongly](#issue-kuestenlogik-bowire-889) | ⬜ Backlog |  |
 | [890](https://github.com/Kuestenlogik/Bowire/issues/890) | Bowire | [gRPC sint32/sint64 values are not zigzag-encoded in requests, responses and mock samples](#issue-kuestenlogik-bowire-890) | ⬜ Backlog |  |
 | [891](https://github.com/Kuestenlogik/Bowire/issues/891) | Bowire | [gRPC fixed32/fixed64/sfixed32/sfixed64 fields show as null in responses and are dropped from requests](#issue-kuestenlogik-bowire-891) | ⬜ Backlog |  |
+| [892](https://github.com/Kuestenlogik/Bowire/issues/892) | Bowire | [MCP adapter tools/call runs streaming methods that tools/list never offered](#issue-kuestenlogik-bowire-892) | ⬜ Backlog |  |
 | [816](https://github.com/Kuestenlogik/Bowire/issues/816) | Bowire | [SCIM trace records status 200 for every request](#issue-kuestenlogik-bowire-816) | ✅ Done |  |
 | [817](https://github.com/Kuestenlogik/Bowire/issues/817) | Bowire | [OIDC provider cannot run as an installed plugin](#issue-kuestenlogik-bowire-817) | ✅ Done |  |
 | [818](https://github.com/Kuestenlogik/Bowire/issues/818) | Bowire | [--auth-oidc-* flags are documented but never read](#issue-kuestenlogik-bowire-818) | ✅ Done |  |
@@ -351,6 +352,10 @@ The `bowire://recordings` resource (`BowireMcpResources.RecordingsIndex`, `src/K
 #### <a id="issue-kuestenlogik-bowire-891"></a>⬜ Backlog · [#891](https://github.com/Kuestenlogik/Bowire/issues/891) gRPC fixed32/fixed64/sfixed32/sfixed64 fields show as null in responses and are dropped from requests
 
 `fixed32`, `fixed64`, `sfixed32` and `sfixed64` have no case in either direction of the descriptor-driven codec in `src/Kuestenlogik.Bowire.Protocol.Grpc/GrpcInvoker.cs`: [[more]](https://github.com/Kuestenlogik/Bowire/issues/891)
+
+#### <a id="issue-kuestenlogik-bowire-892"></a>⬜ Backlog · [#892](https://github.com/Kuestenlogik/Bowire/issues/892) MCP adapter tools/call runs streaming methods that tools/list never offered
+
+The MCP adapter's `tools/list` offers only unary methods (`src/Kuestenlogik.Bowire.Protocol.Mcp/BowireMcpAdapterServiceCollectionExtensions.cs:270`), because a streaming method needs the channel surface and does not fit one tool call. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/892)
 
 #### <a id="issue-kuestenlogik-bowire-816"></a>✅ Done · [#816](https://github.com/Kuestenlogik/Bowire/issues/816) SCIM trace records status 200 for every request
 
