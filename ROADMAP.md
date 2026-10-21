@@ -12,20 +12,12 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
 
-**41/51 done** · 10 backlog
+**49/51 done** · 2 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [639](https://github.com/Kuestenlogik/Bowire/issues/639) | Bowire | [SCIM: live Okta and Entra ID provisioning round-trips](#issue-kuestenlogik-bowire-639) | ⬜ Backlog | `area:workbench` |
 | [670](https://github.com/Kuestenlogik/Bowire/issues/670) | Bowire | [Get listed where developers and models actually look](#issue-kuestenlogik-bowire-670) | ⬜ Backlog | `area:site` |
-| [860](https://github.com/Kuestenlogik/Bowire/issues/860) | Bowire | [CLI startup crashes on a command type without a parameterless constructor or with open generics](#issue-kuestenlogik-bowire-860) | ⬜ Backlog |  |
-| [861](https://github.com/Kuestenlogik/Bowire/issues/861) | Bowire | [OpenAPI sample generator answers "sample" for a missing schema and at the recursion cap, against its contract](#issue-kuestenlogik-bowire-861) | ⬜ Backlog |  |
-| [862](https://github.com/Kuestenlogik/Bowire/issues/862) | Bowire | [SSE endpoints registered statically show up under external source URLs](#issue-kuestenlogik-bowire-862) | ⬜ Backlog |  |
-| [863](https://github.com/Kuestenlogik/Bowire/issues/863) | Bowire | [SSE parser trims all leading whitespace, drops bare field names and keeps a stale event type](#issue-kuestenlogik-bowire-863) | ⬜ Backlog |  |
-| [864](https://github.com/Kuestenlogik/Bowire/issues/864) | Bowire | [SSE discovery fails on an [SseEndpoint] endpoint without a route](#issue-kuestenlogik-bowire-864) | ⬜ Backlog |  |
-| [865](https://github.com/Kuestenlogik/Bowire/issues/865) | Bowire | [JSON-RPC discovery fails on an OpenRPC document with non-string name or summary](#issue-kuestenlogik-bowire-865) | ⬜ Backlog |  |
-| [866](https://github.com/Kuestenlogik/Bowire/issues/866) | Bowire | [JSON-RPC client accepts a reply whose id does not match the request](#issue-kuestenlogik-bowire-866) | ⬜ Backlog |  |
-| [867](https://github.com/Kuestenlogik/Bowire/issues/867) | Bowire | [OData addresses a digit-only string key without quotes](#issue-kuestenlogik-bowire-867) | ⬜ Backlog |  |
 | [816](https://github.com/Kuestenlogik/Bowire/issues/816) | Bowire | [SCIM trace records status 200 for every request](#issue-kuestenlogik-bowire-816) | ✅ Done |  |
 | [817](https://github.com/Kuestenlogik/Bowire/issues/817) | Bowire | [OIDC provider cannot run as an installed plugin](#issue-kuestenlogik-bowire-817) | ✅ Done |  |
 | [818](https://github.com/Kuestenlogik/Bowire/issues/818) | Bowire | [--auth-oidc-* flags are documented but never read](#issue-kuestenlogik-bowire-818) | ✅ Done |  |
@@ -67,6 +59,14 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [857](https://github.com/Kuestenlogik/Bowire/issues/857) | Bowire | [NATS service discovery publishes $SRV.PING before its reply subscription exists](#issue-kuestenlogik-bowire-857) | ✅ Done |  |
 | [858](https://github.com/Kuestenlogik/Bowire/issues/858) | Bowire | [Mock replays a recorded MQTT subscription on the topic group instead of the topic](#issue-kuestenlogik-bowire-858) | ✅ Done |  |
 | [859](https://github.com/Kuestenlogik/Bowire/issues/859) | Bowire | [OpenAPI sample generator answers "sample" for objects without type and for allOf compositions](#issue-kuestenlogik-bowire-859) | ✅ Done |  |
+| [860](https://github.com/Kuestenlogik/Bowire/issues/860) | Bowire | [CLI startup crashes on a command type without a parameterless constructor or with open generics](#issue-kuestenlogik-bowire-860) | ✅ Done |  |
+| [861](https://github.com/Kuestenlogik/Bowire/issues/861) | Bowire | [OpenAPI sample generator answers "sample" for a missing schema and at the recursion cap, against its contract](#issue-kuestenlogik-bowire-861) | ✅ Done |  |
+| [862](https://github.com/Kuestenlogik/Bowire/issues/862) | Bowire | [SSE endpoints registered statically show up under external source URLs](#issue-kuestenlogik-bowire-862) | ✅ Done |  |
+| [863](https://github.com/Kuestenlogik/Bowire/issues/863) | Bowire | [SSE parser trims all leading whitespace, drops bare field names and keeps a stale event type](#issue-kuestenlogik-bowire-863) | ✅ Done |  |
+| [864](https://github.com/Kuestenlogik/Bowire/issues/864) | Bowire | [SSE discovery fails on an [SseEndpoint] endpoint without a route](#issue-kuestenlogik-bowire-864) | ✅ Done |  |
+| [865](https://github.com/Kuestenlogik/Bowire/issues/865) | Bowire | [JSON-RPC discovery fails on an OpenRPC document with non-string name or summary](#issue-kuestenlogik-bowire-865) | ✅ Done |  |
+| [866](https://github.com/Kuestenlogik/Bowire/issues/866) | Bowire | [JSON-RPC client accepts a reply whose id does not match the request](#issue-kuestenlogik-bowire-866) | ✅ Done |  |
+| [867](https://github.com/Kuestenlogik/Bowire/issues/867) | Bowire | [OData addresses a digit-only string key without quotes](#issue-kuestenlogik-bowire-867) | ✅ Done |  |
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
@@ -232,38 +232,6 @@ Split from #96 so the SCIM surface can ship on its own merits. [[more]](https://
 
 Six credible competitors turned up during the competitive survey **via openalternative.co**. Bowire was not there. That is the whole diagnosis: when a developer — or a language model — asks for "open source Postman alternative", the answer is assembled from these directories, not from bowire.io. [[more]](https://github.com/Kuestenlogik/Bowire/issues/670)
 
-#### <a id="issue-kuestenlogik-bowire-860"></a>⬜ Backlog · [#860](https://github.com/Kuestenlogik/Bowire/issues/860) CLI startup crashes on a command type without a parameterless constructor or with open generics
-
-`BowireCliCommandRegistry.Discover` (`src/Kuestenlogik.Bowire.Cli/BowireCliCommandRegistry.cs`, L48–L53) calls `Activator.CreateInstance` on every concrete `IBowireCliCommand` type in every scanned assembly. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/860)
-
-#### <a id="issue-kuestenlogik-bowire-861"></a>⬜ Backlog · [#861](https://github.com/Kuestenlogik/Bowire/issues/861) OpenAPI sample generator answers "sample" for a missing schema and at the recursion cap, against its contract
-
-`OpenApiSampleGenerator` (both `src/Kuestenlogik.Bowire.Protocol.Rest.OpenApi3/OpenApiSampleGenerator.cs` and the OpenApi2 copy) answers the string `"sample"` both for a missing schema and at the recursion cap (L52-53: `if (schema is null || depth >= MaxDepth) return JsonValue.Create("sample")`). It … [[more]](https://github.com/Kuestenlogik/Bowire/issues/861)
-
-#### <a id="issue-kuestenlogik-bowire-862"></a>⬜ Backlog · [#862](https://github.com/Kuestenlogik/Bowire/issues/862) SSE endpoints registered statically show up under external source URLs
-
-SSE endpoints registered with `BowireSseProtocol.RegisterEndpoint` appear under every source URL the operator adds, including servers that are not this host. [[more]](https://github.com/Kuestenlogik/Bowire/issues/862)
-
-#### <a id="issue-kuestenlogik-bowire-863"></a>⬜ Backlog · [#863](https://github.com/Kuestenlogik/Bowire/issues/863) SSE parser trims all leading whitespace, drops bare field names and keeps a stale event type
-
-The `text/event-stream` parser in `SseSubscriber.SubscribeAsync` (`src/Kuestenlogik.Bowire.Protocol.Sse/SseSubscriber.cs:98-135`) does not follow the HTML event-stream interpretation rules in three places: [[more]](https://github.com/Kuestenlogik/Bowire/issues/863)
-
-#### <a id="issue-kuestenlogik-bowire-864"></a>⬜ Backlog · [#864](https://github.com/Kuestenlogik/Bowire/issues/864) SSE discovery fails on an [SseEndpoint] endpoint without a route
-
-SSE discovery fails completely when the host has an `[SseEndpoint]`-marked endpoint that is not a route endpoint. [[more]](https://github.com/Kuestenlogik/Bowire/issues/864)
-
-#### <a id="issue-kuestenlogik-bowire-865"></a>⬜ Backlog · [#865](https://github.com/Kuestenlogik/Bowire/issues/865) JSON-RPC discovery fails on an OpenRPC document with non-string name or summary
-
-JSON-RPC discovery fails with an exception when an OpenRPC document has a non-string `name`, `summary` or `description`. [[more]](https://github.com/Kuestenlogik/Bowire/issues/865)
-
-#### <a id="issue-kuestenlogik-bowire-866"></a>⬜ Backlog · [#866](https://github.com/Kuestenlogik/Bowire/issues/866) JSON-RPC client accepts a reply whose id does not match the request
-
-The JSON-RPC client accepts a reply without checking that it answers the request it sent. [[more]](https://github.com/Kuestenlogik/Bowire/issues/866)
-
-#### <a id="issue-kuestenlogik-bowire-867"></a>⬜ Backlog · [#867](https://github.com/Kuestenlogik/Bowire/issues/867) OData addresses a digit-only string key without quotes
-
-An OData entity set with an `Edm.String` key is addressed with an unquoted key when the key value is all digits. [[more]](https://github.com/Kuestenlogik/Bowire/issues/867)
-
 #### <a id="issue-kuestenlogik-bowire-816"></a>✅ Done · [#816](https://github.com/Kuestenlogik/Bowire/issues/816) SCIM trace records status 200 for every request
 
 `ScimTraceFilter` (src/Kuestenlogik.Bowire.Scim/ScimTraceFilter.cs) records `http.Response.StatusCode` in the `finally` after `await next(context)`. In an endpoint filter, `next` returns the handler's `IResult` — it has not been executed yet, so the response status is still the default 200. [[more]](https://github.com/Kuestenlogik/Bowire/issues/816)
@@ -427,6 +395,38 @@ NATS service discovery can miss the services it looks for: it publishes `$SRV.PI
 #### <a id="issue-kuestenlogik-bowire-859"></a>✅ Done · [#859](https://github.com/Kuestenlogik/Bowire/issues/859) OpenAPI sample generator answers "sample" for objects without type and for allOf compositions
 
 `OpenApiSampleGenerator.BuildNode` (both `src/Kuestenlogik.Bowire.Protocol.Rest.OpenApi3/OpenApiSampleGenerator.cs` and the OpenApi2 copy, L75) reads a missing `type` as `string` (`schema.Type ?? JsonSchemaType.String`) and never looks at `allOf`. [[more]](https://github.com/Kuestenlogik/Bowire/issues/859)
+
+#### <a id="issue-kuestenlogik-bowire-860"></a>✅ Done · [#860](https://github.com/Kuestenlogik/Bowire/issues/860) CLI startup crashes on a command type without a parameterless constructor or with open generics
+
+`BowireCliCommandRegistry.Discover` (`src/Kuestenlogik.Bowire.Cli/BowireCliCommandRegistry.cs`, L48–L53) calls `Activator.CreateInstance` on every concrete `IBowireCliCommand` type in every scanned assembly. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/860)
+
+#### <a id="issue-kuestenlogik-bowire-861"></a>✅ Done · [#861](https://github.com/Kuestenlogik/Bowire/issues/861) OpenAPI sample generator answers "sample" for a missing schema and at the recursion cap, against its contract
+
+`OpenApiSampleGenerator` (both `src/Kuestenlogik.Bowire.Protocol.Rest.OpenApi3/OpenApiSampleGenerator.cs` and the OpenApi2 copy) answers the string `"sample"` both for a missing schema and at the recursion cap (L52-53: `if (schema is null || depth >= MaxDepth) return JsonValue.Create("sample")`). It … [[more]](https://github.com/Kuestenlogik/Bowire/issues/861)
+
+#### <a id="issue-kuestenlogik-bowire-862"></a>✅ Done · [#862](https://github.com/Kuestenlogik/Bowire/issues/862) SSE endpoints registered statically show up under external source URLs
+
+SSE endpoints registered with `BowireSseProtocol.RegisterEndpoint` appear under every source URL the operator adds, including servers that are not this host. [[more]](https://github.com/Kuestenlogik/Bowire/issues/862)
+
+#### <a id="issue-kuestenlogik-bowire-863"></a>✅ Done · [#863](https://github.com/Kuestenlogik/Bowire/issues/863) SSE parser trims all leading whitespace, drops bare field names and keeps a stale event type
+
+The `text/event-stream` parser in `SseSubscriber.SubscribeAsync` (`src/Kuestenlogik.Bowire.Protocol.Sse/SseSubscriber.cs:98-135`) does not follow the HTML event-stream interpretation rules in three places: [[more]](https://github.com/Kuestenlogik/Bowire/issues/863)
+
+#### <a id="issue-kuestenlogik-bowire-864"></a>✅ Done · [#864](https://github.com/Kuestenlogik/Bowire/issues/864) SSE discovery fails on an [SseEndpoint] endpoint without a route
+
+SSE discovery fails completely when the host has an `[SseEndpoint]`-marked endpoint that is not a route endpoint. [[more]](https://github.com/Kuestenlogik/Bowire/issues/864)
+
+#### <a id="issue-kuestenlogik-bowire-865"></a>✅ Done · [#865](https://github.com/Kuestenlogik/Bowire/issues/865) JSON-RPC discovery fails on an OpenRPC document with non-string name or summary
+
+JSON-RPC discovery fails with an exception when an OpenRPC document has a non-string `name`, `summary` or `description`. [[more]](https://github.com/Kuestenlogik/Bowire/issues/865)
+
+#### <a id="issue-kuestenlogik-bowire-866"></a>✅ Done · [#866](https://github.com/Kuestenlogik/Bowire/issues/866) JSON-RPC client accepts a reply whose id does not match the request
+
+The JSON-RPC client accepts a reply without checking that it answers the request it sent. [[more]](https://github.com/Kuestenlogik/Bowire/issues/866)
+
+#### <a id="issue-kuestenlogik-bowire-867"></a>✅ Done · [#867](https://github.com/Kuestenlogik/Bowire/issues/867) OData addresses a digit-only string key without quotes
+
+An OData entity set with an `Edm.String` key is addressed with an unquoted key when the key value is all digits. [[more]](https://github.com/Kuestenlogik/Bowire/issues/867)
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
