@@ -15,6 +15,7 @@ namespace Kuestenlogik.Bowire.Mock.Tests;
 /// </summary>
 public sealed class MqttEmissionTests : IDisposable
 {
+    private static readonly JsonSerializerOptions s_indented = new() { WriteIndented = true };
     private readonly string _tempDir;
 
     public MqttEmissionTests()
@@ -626,6 +627,111 @@ public sealed class MqttEmissionTests : IDisposable
 
         Assert.Contains(("sensors/temperature", """{"temp":21.5}"""), received);
         Assert.Contains(("harbor/crane/1/status", """{"state":"idle"}"""), received);
+
+        await subscriber.DisconnectAsync(cancellationToken: TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task Recorded_Subscription_Envelopes_Replay_The_Original_Messages()
+    {
+        // #888 — a workbench recording stores each subscription frame as the
+        // plugin yielded it: the envelope {topic, qos, retain, payload, bytes}
+        // as a JSON string, with the payload in its display form (JSON
+        // indented, text as is, binary as a hex dump). The mock must publish
+        // the message the broker delivered, on the topic it was delivered on
+        // (the subscription itself was a wildcard), not the envelope.
+        static string Envelope(string topic, string payload, int bytes) => JsonSerializer.Serialize(new
+        {
+            topic,
+            qos = 1,
+            retain = false,
+            payload,
+            bytes,
+        });
+        var channelEnvelope = JsonSerializer.Serialize(new
+        {
+            type = "text",
+            topic = "sensors/door",
+            payload = "open",
+            qos = 0,
+            retain = false,
+            bytes = 4,
+        }, s_indented);
+
+        var recording = new
+        {
+            id = "rec_mqtt_envelope",
+            name = "mqtt envelope replay",
+            recordingFormatVersion = 2,
+            steps = new object[]
+            {
+                new
+                {
+                    id = "step_wildcard",
+                    capturedAt = 1_000L,
+                    protocol = "mqtt",
+                    service = "sensors",
+                    method = "sensors/#",
+                    methodType = "ServerStreaming",
+                    status = "OK",
+                    durationMs = 10L,
+                    receivedMessages = new object[]
+                    {
+                        new { index = 0, timestampMs = 0L, data = Envelope("sensors/temperature", "{\n  \"temp\": 21.5,\n  \"unit\": \"\\u00B0C\"\n}", 28) },
+                        new { index = 1, timestampMs = 1L, data = Envelope("sensors/status", "online", 6) },
+                        new { index = 2, timestampMs = 2L, data = Envelope("sensors/raw", "[binary: 3 bytes]\r\n00 FF 10", 3) },
+                        new { index = 3, timestampMs = 3L, data = channelEnvelope },
+                    }
+                }
+            }
+        };
+
+        var path = Path.Combine(_tempDir, "mqtt-envelope.json");
+        await File.WriteAllTextAsync(path, JsonSerializer.Serialize(recording), TestContext.Current.CancellationToken);
+
+        await using var server = await MockServer.StartAsync(
+            new MockServerOptions
+            {
+                RecordingPath = path,
+                Port = 0,
+                TransportPorts = new Dictionary<string,int>(StringComparer.OrdinalIgnoreCase) { ["mqtt"] = 0 },
+                TransportHosts = new IBowireMockTransportHost[] { new MqttMockTransportHost() },
+                Watch = false,
+                ReplaySpeed = 0
+            },
+            TestContext.Current.CancellationToken);
+
+        var factory = new MqttClientFactory();
+        using var subscriber = factory.CreateMqttClient();
+        var received = new List<(string Topic, byte[] Payload)>();
+        var done = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        subscriber.ApplicationMessageReceivedAsync += args =>
+        {
+            lock (received)
+            {
+                received.Add((args.ApplicationMessage.Topic, System.Buffers.BuffersExtensions.ToArray(args.ApplicationMessage.Payload)));
+                if (received.Count >= 4) done.TrySetResult();
+            }
+            return Task.CompletedTask;
+        };
+
+        await subscriber.ConnectAsync(
+            factory.CreateClientOptionsBuilder()
+                .WithTcpServer("127.0.0.1", server.TransportPorts["mqtt"])
+                .WithClientId("bowire-mqtt-envelope")
+                .Build(),
+            TestContext.Current.CancellationToken);
+        await subscriber.SubscribeAsync(
+            factory.CreateSubscribeOptionsBuilder().WithTopicFilter("#").Build(),
+            TestContext.Current.CancellationToken);
+
+        await done.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
+
+        var byTopic = received.ToDictionary(r => r.Topic, r => r.Payload);
+        Assert.Equal("""{"temp":21.5,"unit":"°C"}""", Encoding.UTF8.GetString(byTopic["sensors/temperature"]));
+        Assert.Equal("online", Encoding.UTF8.GetString(byTopic["sensors/status"]));
+        Assert.Equal(new byte[] { 0x00, 0xFF, 0x10 }, byTopic["sensors/raw"]);
+        Assert.Equal("open", Encoding.UTF8.GetString(byTopic["sensors/door"]));
 
         await subscriber.DisconnectAsync(cancellationToken: TestContext.Current.CancellationToken);
     }

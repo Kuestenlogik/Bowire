@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Text;
+using System.Text.Json;
 using Kuestenlogik.Bowire.Mocking;
 using Microsoft.Extensions.Logging;
 using MQTTnet;
@@ -102,7 +103,8 @@ public sealed class MqttProactiveEmitter : IAsyncDisposable
         string Topic,
         string Payload,
         IDictionary<string, string>? Metadata,
-        string StepId);
+        string StepId,
+        byte[]? Binary = null);
 
     private List<Emission> BuildSchedule()
     {
@@ -141,8 +143,21 @@ public sealed class MqttProactiveEmitter : IAsyncDisposable
                 {
                     var payload = FramePayload(frame);
                     if (payload is null) continue;
+                    var offset = stepOffset + (frame.TimestampMs ?? 0);
+                    if (!TryReadRecordedEnvelope(payload, out var envelope))
+                    {
+                        emissions.Add(new Emission(offset, topic, payload, step.Metadata, step.Id));
+                        continue;
+                    }
+                    if (envelope.Text is null && envelope.Binary is null)
+                    {
+                        _logger.LogWarning(
+                            "Skipping a frame of MQTT step '{StepId}' — its binary payload was recorded truncated and cannot be replayed.",
+                            LogSanitizer.Strip(step.Id));
+                        continue;
+                    }
                     emissions.Add(new Emission(
-                        stepOffset + (frame.TimestampMs ?? 0), topic, payload, step.Metadata, step.Id));
+                        offset, envelope.Topic, envelope.Text ?? "", step.Metadata, step.Id, envelope.Binary));
                 }
             }
         }
@@ -165,11 +180,128 @@ public sealed class MqttProactiveEmitter : IAsyncDisposable
         return isLabel && !string.IsNullOrEmpty(step.Service) ? step.Service : method;
     }
 
+    /// <summary>The message a recorded subscription envelope stands for (#888).</summary>
+    internal sealed record RecordedMessage(string Topic, string? Text, byte[]? Binary);
+
+    private static readonly HashSet<string> s_envelopeKeys =
+        new(StringComparer.Ordinal) { "type", "topic", "payload", "qos", "retain", "bytes" };
+
+    private static readonly JsonWriterOptions s_compactJson = new()
+    {
+        // The display form escaped non-ASCII (\u00B0); a device sends it raw.
+        // This is an MQTT payload, not HTML, so nothing needs the escaping.
+        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+    };
+
+    /// <summary>
+    /// Read a frame the workbench recorded from a subscription (#888): the
+    /// plugin's own envelope <c>{topic, qos, retain, payload, bytes}</c>
+    /// (the channel adds <c>type</c>), whose <c>payload</c> is the display
+    /// form — JSON indented, text as is, binary as a hex dump. Recognised
+    /// narrowly (string <c>topic</c> and <c>payload</c>, numeric
+    /// <c>bytes</c>, no other keys) so a device message of any other shape
+    /// is published as recorded. A binary payload whose dump was truncated
+    /// yields neither <see cref="RecordedMessage.Text"/> nor
+    /// <see cref="RecordedMessage.Binary"/>.
+    /// </summary>
+    internal static bool TryReadRecordedEnvelope(string frame, out RecordedMessage message)
+    {
+        message = null!;
+        JsonDocument doc;
+        try { doc = JsonDocument.Parse(frame); }
+        catch (JsonException) { return false; }
+        using (doc)
+        {
+            var root = doc.RootElement;
+            if (root.ValueKind != JsonValueKind.Object) return false;
+            foreach (var property in root.EnumerateObject())
+            {
+                if (!s_envelopeKeys.Contains(property.Name)) return false;
+            }
+            if (!root.TryGetProperty("topic", out var topicEl) || topicEl.ValueKind != JsonValueKind.String
+                || string.IsNullOrEmpty(topicEl.GetString())
+                || !root.TryGetProperty("payload", out var payloadEl) || payloadEl.ValueKind != JsonValueKind.String
+                || !root.TryGetProperty("bytes", out var bytesEl) || !bytesEl.TryGetInt32(out var byteCount))
+            {
+                return false;
+            }
+
+            var topic = topicEl.GetString()!;
+            var payload = payloadEl.GetString()!;
+            if (TryParseHexDump(payload, byteCount, out var binary))
+            {
+                message = new RecordedMessage(topic, null, binary);
+            }
+            else if (CompactJson(payload) is { } json)
+            {
+                message = new RecordedMessage(topic, json, null);
+            }
+            else if (Encoding.UTF8.GetByteCount(payload) == byteCount)
+            {
+                message = new RecordedMessage(topic, payload, null);
+            }
+            else
+            {
+                // Neither a complete dump nor text of the recorded size: the
+                // plugin cut the dump at 256 bytes.
+                message = new RecordedMessage(topic, null, null);
+            }
+            return true;
+        }
+    }
+
+    /// <summary>
+    /// The bytes behind <c>MqttPayloadHelper</c>'s hex dump
+    /// (<c>[binary: N bytes]</c> then space-separated hex), when it holds all
+    /// <paramref name="byteCount"/> of them.
+    /// </summary>
+    private static bool TryParseHexDump(string payload, int byteCount, out byte[] bytes)
+    {
+        bytes = [];
+        var header = string.Create(System.Globalization.CultureInfo.InvariantCulture, $"[binary: {byteCount} bytes]");
+        if (!payload.StartsWith(header, StringComparison.Ordinal)) return false;
+        var tokens = payload[header.Length..].Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
+        if (tokens.Length != byteCount) return false;
+        var result = new byte[byteCount];
+        for (var i = 0; i < tokens.Length; i++)
+        {
+            if (tokens[i].Length != 2 || !byte.TryParse(tokens[i], System.Globalization.NumberStyles.AllowHexSpecifier,
+                    System.Globalization.CultureInfo.InvariantCulture, out result[i]))
+            {
+                return false;
+            }
+        }
+        bytes = result;
+        return true;
+    }
+
+    /// <summary>The display form's JSON written compactly, or null when it is not JSON.</summary>
+    private static string? CompactJson(string payload)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(payload);
+            using var buffer = new MemoryStream();
+            using (var writer = new Utf8JsonWriter(buffer, s_compactJson))
+            {
+                doc.RootElement.WriteTo(writer);
+            }
+            return Encoding.UTF8.GetString(buffer.ToArray());
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+
     private static string? FramePayload(BowireRecordingFrame frame) => frame.Data switch
     {
         null => frame.Body,
         string s => s,
-        System.Text.Json.JsonElement el => el.GetRawText(),
+        // A recording loaded from disk holds a string frame as a JSON string
+        // element; its raw text would publish the quotes and escapes (#888).
+        JsonElement { ValueKind: JsonValueKind.String } el => el.GetString(),
+        JsonElement el => el.GetRawText(),
         _ => System.Text.Json.JsonSerializer.Serialize(frame.Data),
     };
 
@@ -319,7 +451,9 @@ public sealed class MqttProactiveEmitter : IAsyncDisposable
             // the broker's native routing; no mock-side match needed.
             topic = Kuestenlogik.Bowire.Mock.Replay.ResponseBodySubstitutor.Substitute(topic);
 
-            var payloadBytes = Encoding.UTF8.GetBytes(
+            // A recorded binary message (#888) goes out byte for byte; the
+            // substitution is a text operation.
+            var payloadBytes = emission.Binary ?? Encoding.UTF8.GetBytes(
                 Kuestenlogik.Bowire.Mock.Replay.ResponseBodySubstitutor.Substitute(emission.Payload));
 
             var qos = MqttQualityOfServiceLevel.AtLeastOnce;
