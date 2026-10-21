@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
 
-**49/99 done** · 50 backlog
+**49/100 done** · 51 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -66,6 +66,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [913](https://github.com/Kuestenlogik/Bowire/issues/913) | Bowire | [AsyncAPI export creates one channel per method instead of one per address](#issue-kuestenlogik-bowire-913) | ⬜ Backlog |  |
 | [914](https://github.com/Kuestenlogik/Bowire/issues/914) | Bowire | [GraphQL list arguments get a variable type with the wrong nullability](#issue-kuestenlogik-bowire-914) | ⬜ Backlog |  |
 | [915](https://github.com/Kuestenlogik/Bowire/issues/915) | Bowire | [AsyncAPI export marks optional fields required and types repeated fields as scalars](#issue-kuestenlogik-bowire-915) | ⬜ Backlog |  |
+| [916](https://github.com/Kuestenlogik/Bowire/issues/916) | Bowire | [GraphQL root fields that return a scalar or enum get a selection set](#issue-kuestenlogik-bowire-916) | ⬜ Backlog |  |
 | [816](https://github.com/Kuestenlogik/Bowire/issues/816) | Bowire | [SCIM trace records status 200 for every request](#issue-kuestenlogik-bowire-816) | ✅ Done |  |
 | [817](https://github.com/Kuestenlogik/Bowire/issues/817) | Bowire | [OIDC provider cannot run as an installed plugin](#issue-kuestenlogik-bowire-817) | ✅ Done |  |
 | [818](https://github.com/Kuestenlogik/Bowire/issues/818) | Bowire | [--auth-oidc-* flags are documented but never read](#issue-kuestenlogik-bowire-818) | ✅ Done |  |
@@ -471,6 +472,10 @@ A generated GraphQL operation declares the wrong variable type for list argument
 #### <a id="issue-kuestenlogik-bowire-915"></a>⬜ Backlog · [#915](https://github.com/Kuestenlogik/Bowire/issues/915) AsyncAPI export marks optional fields required and types repeated fields as scalars
 
 `AsyncApiDocumentBuilder.BuildPayloadSchema` (`src/Kuestenlogik.Bowire.AsyncApi/AsyncApiDocumentBuilder.cs:357-363`) marks every field as required unless its label is exactly `LABEL_OPTIONAL`, and maps each field with `MapFieldType(field.Type)` without looking at `IsRepeated` or `IsMap`. [[more]](https://github.com/Kuestenlogik/Bowire/issues/915)
+
+#### <a id="issue-kuestenlogik-bowire-916"></a>⬜ Backlog · [#916](https://github.com/Kuestenlogik/Bowire/issues/916) GraphQL root fields that return a scalar or enum get a selection set
+
+For a discovered root field that returns a scalar or an enum, such as `type Query { hello: String }`, the generated operation is [[more]](https://github.com/Kuestenlogik/Bowire/issues/916)
 
 #### <a id="issue-kuestenlogik-bowire-816"></a>✅ Done · [#816](https://github.com/Kuestenlogik/Bowire/issues/816) SCIM trace records status 200 for every request
 
