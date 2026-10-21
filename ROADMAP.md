@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
 
-**49/93 done** · 44 backlog
+**49/94 done** · 45 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -60,6 +60,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [907](https://github.com/Kuestenlogik/Bowire/issues/907) | Bowire | [REST discovery serves the earlier probe result for any later URL on the same origin, ignoring a spec URL entered explicitly](#issue-kuestenlogik-bowire-907) | ⬜ Backlog |  |
 | [908](https://github.com/Kuestenlogik/Bowire/issues/908) | Bowire | [MCP adapter ignores BowireMcpAdapterOptions.RequestTimeout and BearerToken](#issue-kuestenlogik-bowire-908) | ⬜ Backlog |  |
 | [909](https://github.com/Kuestenlogik/Bowire/issues/909) | Bowire | [AsyncAPI YAML pre-normaliser folds a nested version: mapping into a quoted string](#issue-kuestenlogik-bowire-909) | ⬜ Backlog |  |
+| [910](https://github.com/Kuestenlogik/Bowire/issues/910) | Bowire | [AsyncAPI bindings stripper deletes schema properties, examples and channels named bindings](#issue-kuestenlogik-bowire-910) | ⬜ Backlog |  |
 | [816](https://github.com/Kuestenlogik/Bowire/issues/816) | Bowire | [SCIM trace records status 200 for every request](#issue-kuestenlogik-bowire-816) | ✅ Done |  |
 | [817](https://github.com/Kuestenlogik/Bowire/issues/817) | Bowire | [OIDC provider cannot run as an installed plugin](#issue-kuestenlogik-bowire-817) | ✅ Done |  |
 | [818](https://github.com/Kuestenlogik/Bowire/issues/818) | Bowire | [--auth-oidc-* flags are documented but never read](#issue-kuestenlogik-bowire-818) | ✅ Done |  |
@@ -441,6 +442,10 @@ When the well-known-path sweep resolves an origin, `BowireRestProtocol` remember
 #### <a id="issue-kuestenlogik-bowire-909"></a>⬜ Backlog · [#909](https://github.com/Kuestenlogik/Bowire/issues/909) AsyncAPI YAML pre-normaliser folds a nested version: mapping into a quoted string
 
 The YAML pre-normaliser quotes the values of `asyncapi:` and `version:` keys so the SDK reader does not enum-deserialise them (`src/Kuestenlogik.Bowire.AsyncApi/AsyncApiYamlPreNormaliser.cs:50`). The whitespace around the colon is matched with `\s*`, which also matches line breaks. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/909)
+
+#### <a id="issue-kuestenlogik-bowire-910"></a>⬜ Backlog · [#910](https://github.com/Kuestenlogik/Bowire/issues/910) AsyncAPI bindings stripper deletes schema properties, examples and channels named bindings
+
+Before the SDK reader sees a document, `AsyncApiBindingsStripper` removes binding objects from it (they crash the reader, asyncapi/net-sdk#76). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/910)
 
 #### <a id="issue-kuestenlogik-bowire-816"></a>✅ Done · [#816](https://github.com/Kuestenlogik/Bowire/issues/816) SCIM trace records status 200 for every request
 
