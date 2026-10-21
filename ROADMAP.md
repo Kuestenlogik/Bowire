@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
 
-**49/60 done** · 11 backlog
+**49/64 done** · 15 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -27,6 +27,10 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [874](https://github.com/Kuestenlogik/Bowire/issues/874) | Bowire | [SCIM: group PATCH accepts a displayName another group already has](#issue-kuestenlogik-bowire-874) | ⬜ Backlog |  |
 | [875](https://github.com/Kuestenlogik/Bowire/issues/875) | Bowire | [SCIM: a PATCH that fails on a later operation keeps the earlier operations](#issue-kuestenlogik-bowire-875) | ⬜ Backlog |  |
 | [876](https://github.com/Kuestenlogik/Bowire/issues/876) | Bowire | [SCIM: the provisioning trace throws on a PATCH body that is not a JSON object](#issue-kuestenlogik-bowire-876) | ⬜ Backlog |  |
+| [877](https://github.com/Kuestenlogik/Bowire/issues/877) | Bowire | [MCP URL allowlist matches a bare text prefix, so an entry also covers other hosts and ports](#issue-kuestenlogik-bowire-877) | ⬜ Backlog |  |
+| [878](https://github.com/Kuestenlogik/Bowire/issues/878) | Bowire | [MCP confirmation token is not bound to its tool or plan, so it confirms any other mutation](#issue-kuestenlogik-bowire-878) | ⬜ Backlog |  |
+| [879](https://github.com/Kuestenlogik/Bowire/issues/879) | Bowire | [bowire.record.replay ignores recordingId while a session is active and still reports success](#issue-kuestenlogik-bowire-879) | ⬜ Backlog |  |
+| [880](https://github.com/Kuestenlogik/Bowire/issues/880) | Bowire | [MCP typed-URL store erases its history when typed-urls.json cannot be read](#issue-kuestenlogik-bowire-880) | ⬜ Backlog |  |
 | [816](https://github.com/Kuestenlogik/Bowire/issues/816) | Bowire | [SCIM trace records status 200 for every request](#issue-kuestenlogik-bowire-816) | ✅ Done |  |
 | [817](https://github.com/Kuestenlogik/Bowire/issues/817) | Bowire | [OIDC provider cannot run as an installed plugin](#issue-kuestenlogik-bowire-817) | ✅ Done |  |
 | [818](https://github.com/Kuestenlogik/Bowire/issues/818) | Bowire | [--auth-oidc-* flags are documented but never read](#issue-kuestenlogik-bowire-818) | ✅ Done |  |
@@ -276,6 +280,22 @@ When a followed MCP task (#801) fails and its JSON-RPC `error.code` is not a num
 #### <a id="issue-kuestenlogik-bowire-876"></a>⬜ Backlog · [#876](https://github.com/Kuestenlogik/Bowire/issues/876) SCIM: the provisioning trace throws on a PATCH body that is not a JSON object
 
 `ScimProvisioningTrace.DetectPatchDialect` (`src/Kuestenlogik.Bowire.Scim/ScimProvisioningTrace.cs:170`) calls `TryGetProperty` on the root element without checking that it is an object. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/876)
+
+#### <a id="issue-kuestenlogik-bowire-877"></a>⬜ Backlog · [#877](https://github.com/Kuestenlogik/Bowire/issues/877) MCP URL allowlist matches a bare text prefix, so an entry also covers other hosts and ports
+
+The MCP server's URL allowlist (`BowireMcpTools.IsUrlAllowed`, `src/Kuestenlogik.Bowire.Mcp/BowireMcpTools.cs:1238`) accepts any URL that merely *starts with* an allowlisted entry as text. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/877)
+
+#### <a id="issue-kuestenlogik-bowire-878"></a>⬜ Backlog · [#878](https://github.com/Kuestenlogik/Bowire/issues/878) MCP confirmation token is not bound to its tool or plan, so it confirms any other mutation
+
+The two-step confirmation gate of the MCP mutator tools (`BowireMcpTools.TryConfirmOrPark`, `src/Kuestenlogik.Bowire.Mcp/BowireMcpTools.cs:1199-1211`) accepts any live confirmation token for any call. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/878)
+
+#### <a id="issue-kuestenlogik-bowire-879"></a>⬜ Backlog · [#879](https://github.com/Kuestenlogik/Bowire/issues/879) bowire.record.replay ignores recordingId while a session is active and still reports success
+
+`bowire.record.replay` with a `recordingId` while a recording session is already active (`BowireMcpTools.RecordReplay`, `src/Kuestenlogik.Bowire.Mcp/BowireMcpTools.cs:1055-1058`) ignores the requested id: it switches the *active* session into replay mode and answers `replaying: true`. [[more]](https://github.com/Kuestenlogik/Bowire/issues/879)
+
+#### <a id="issue-kuestenlogik-bowire-880"></a>⬜ Backlog · [#880](https://github.com/Kuestenlogik/Bowire/issues/880) MCP typed-URL store erases its history when typed-urls.json cannot be read
+
+`BowireMcpTypedUrlStore.Add` (`src/Kuestenlogik.Bowire.Mcp/BowireMcpTypedUrlStore.cs:92`) builds the new list from `LoadAll()`, which deliberately reads an unreadable `typed-urls.json` as "no history". `Add` then writes that empty list plus the new URL back, so every URL the file still held is erased. [[more]](https://github.com/Kuestenlogik/Bowire/issues/880)
 
 #### <a id="issue-kuestenlogik-bowire-816"></a>✅ Done · [#816](https://github.com/Kuestenlogik/Bowire/issues/816) SCIM trace records status 200 for every request
 
