@@ -12,15 +12,12 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
 
-**103/108 done** · 5 backlog
+**106/108 done** · 2 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [639](https://github.com/Kuestenlogik/Bowire/issues/639) | Bowire | [SCIM: live Okta and Entra ID provisioning round-trips](#issue-kuestenlogik-bowire-639) | ⬜ Backlog | `area:workbench` |
 | [670](https://github.com/Kuestenlogik/Bowire/issues/670) | Bowire | [Get listed where developers and models actually look](#issue-kuestenlogik-bowire-670) | ⬜ Backlog | `area:site` |
-| [922](https://github.com/Kuestenlogik/Bowire/issues/922) | Bowire | [GraphQL SSE subscriptions never end on a complete event without data, and drop error events](#issue-kuestenlogik-bowire-922) | ⬜ Backlog |  |
-| [923](https://github.com/Kuestenlogik/Bowire/issues/923) | Bowire | [Shared GraphQL WebSocket subscribes before connection_ack and reuses a dead socket](#issue-kuestenlogik-bowire-923) | ⬜ Backlog |  |
-| [924](https://github.com/Kuestenlogik/Bowire/issues/924) | Bowire | [Workbench GraphQL query: selection set on scalar fields, variables typed String instead of the schema's type](#issue-kuestenlogik-bowire-924) | ⬜ Backlog |  |
 | [816](https://github.com/Kuestenlogik/Bowire/issues/816) | Bowire | [SCIM trace records status 200 for every request](#issue-kuestenlogik-bowire-816) | ✅ Done |  |
 | [817](https://github.com/Kuestenlogik/Bowire/issues/817) | Bowire | [OIDC provider cannot run as an installed plugin](#issue-kuestenlogik-bowire-817) | ✅ Done |  |
 | [818](https://github.com/Kuestenlogik/Bowire/issues/818) | Bowire | [--auth-oidc-* flags are documented but never read](#issue-kuestenlogik-bowire-818) | ✅ Done |  |
@@ -124,6 +121,9 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [919](https://github.com/Kuestenlogik/Bowire/issues/919) | Bowire | [GraphQL GET guard checks the first operation, not the one operationName selects, so a mutation can go out over GET](#issue-kuestenlogik-bowire-919) | ✅ Done |  |
 | [920](https://github.com/Kuestenlogik/Bowire/issues/920) | Bowire | [GraphQL mock answers 500 to a JSON body of the wrong shape](#issue-kuestenlogik-bowire-920) | ✅ Done |  |
 | [921](https://github.com/Kuestenlogik/Bowire/issues/921) | Bowire | [GraphQL mock answers "sample" for union-typed fields instead of null](#issue-kuestenlogik-bowire-921) | ✅ Done |  |
+| [922](https://github.com/Kuestenlogik/Bowire/issues/922) | Bowire | [GraphQL SSE subscriptions never end on a complete event without data, and drop error events](#issue-kuestenlogik-bowire-922) | ✅ Done |  |
+| [923](https://github.com/Kuestenlogik/Bowire/issues/923) | Bowire | [Shared GraphQL WebSocket subscribes before connection_ack and reuses a dead socket](#issue-kuestenlogik-bowire-923) | ✅ Done |  |
+| [924](https://github.com/Kuestenlogik/Bowire/issues/924) | Bowire | [Workbench GraphQL query: selection set on scalar fields, variables typed String instead of the schema's type](#issue-kuestenlogik-bowire-924) | ✅ Done |  |
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
@@ -288,18 +288,6 @@ Split from #96 so the SCIM surface can ship on its own merits. [[more]](https://
 > `area:site`
 
 Six credible competitors turned up during the competitive survey **via openalternative.co**. Bowire was not there. That is the whole diagnosis: when a developer — or a language model — asks for "open source Postman alternative", the answer is assembled from these directories, not from bowire.io. [[more]](https://github.com/Kuestenlogik/Bowire/issues/670)
-
-#### <a id="issue-kuestenlogik-bowire-922"></a>⬜ Backlog · [#922](https://github.com/Kuestenlogik/Bowire/issues/922) GraphQL SSE subscriptions never end on a complete event without data, and drop error events
-
-Two defects in the graphql-sse subscription transport, `BowireGraphQLProtocol.StreamViaSseAsync` (src/Kuestenlogik.Bowire.Protocol.GraphQL/BowireGraphQLProtocol.cs:608–626): [[more]](https://github.com/Kuestenlogik/Bowire/issues/922)
-
-#### <a id="issue-kuestenlogik-bowire-923"></a>⬜ Backlog · [#923](https://github.com/Kuestenlogik/Bowire/issues/923) Shared GraphQL WebSocket subscribes before connection_ack and reuses a dead socket
-
-Two defects in the shared graphql-transport-ws socket (`X-Bowire-GraphQL-Multiplex: on`, #713), `src/Kuestenlogik.Bowire.Protocol.GraphQL/GraphQLSocketPool.cs`: [[more]](https://github.com/Kuestenlogik/Bowire/issues/923)
-
-#### <a id="issue-kuestenlogik-bowire-924"></a>⬜ Backlog · [#924](https://github.com/Kuestenlogik/Bowire/issues/924) Workbench GraphQL query: selection set on scalar fields, variables typed String instead of the schema's type
-
-The workbench builds its own default GraphQL operation for the query pane (`buildGraphQLDefaultQuery` in `src/Kuestenlogik.Bowire/wwwroot/js/protocols.js`). It mirrors the server-side `GraphQLQueryBuilder`, but has not followed two of its fixes, so the operation the workbench sends is refused by the server: [[more]](https://github.com/Kuestenlogik/Bowire/issues/924)
 
 #### <a id="issue-kuestenlogik-bowire-816"></a>✅ Done · [#816](https://github.com/Kuestenlogik/Bowire/issues/816) SCIM trace records status 200 for every request
 
@@ -712,6 +700,18 @@ The GraphQL schema-only mock answers HTTP 500 to a request body that is valid JS
 #### <a id="issue-kuestenlogik-bowire-921"></a>✅ Done · [#921](https://github.com/Kuestenlogik/Bowire/issues/921) GraphQL mock answers "sample" for union-typed fields instead of null
 
 In the GraphQL schema-only mock, a field whose type is a union is answered with the string `"sample"`: [[more]](https://github.com/Kuestenlogik/Bowire/issues/921)
+
+#### <a id="issue-kuestenlogik-bowire-922"></a>✅ Done · [#922](https://github.com/Kuestenlogik/Bowire/issues/922) GraphQL SSE subscriptions never end on a complete event without data, and drop error events
+
+Two defects in the graphql-sse subscription transport, `BowireGraphQLProtocol.StreamViaSseAsync` (src/Kuestenlogik.Bowire.Protocol.GraphQL/BowireGraphQLProtocol.cs:608–626): [[more]](https://github.com/Kuestenlogik/Bowire/issues/922)
+
+#### <a id="issue-kuestenlogik-bowire-923"></a>✅ Done · [#923](https://github.com/Kuestenlogik/Bowire/issues/923) Shared GraphQL WebSocket subscribes before connection_ack and reuses a dead socket
+
+Two defects in the shared graphql-transport-ws socket (`X-Bowire-GraphQL-Multiplex: on`, #713), `src/Kuestenlogik.Bowire.Protocol.GraphQL/GraphQLSocketPool.cs`: [[more]](https://github.com/Kuestenlogik/Bowire/issues/923)
+
+#### <a id="issue-kuestenlogik-bowire-924"></a>✅ Done · [#924](https://github.com/Kuestenlogik/Bowire/issues/924) Workbench GraphQL query: selection set on scalar fields, variables typed String instead of the schema's type
+
+The workbench builds its own default GraphQL operation for the query pane (`buildGraphQLDefaultQuery` in `src/Kuestenlogik.Bowire/wwwroot/js/protocols.js`). It mirrors the server-side `GraphQLQueryBuilder`, but has not followed two of its fixes, so the operation the workbench sends is refused by the server: [[more]](https://github.com/Kuestenlogik/Bowire/issues/924)
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
