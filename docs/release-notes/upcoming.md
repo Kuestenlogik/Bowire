@@ -32,6 +32,10 @@ the migration path. -->
 
 A `{{keyring.*}}` reference that starts with a URL scheme (`https://…`) is now split on the last `/` after the host instead of the first `/`: `{{keyring.https://api.example.com/v1/deploy-bot}}` is service `https://api.example.com/v1`, account `deploy-bot`. Only URL-shaped references are affected; they parsed to service `https:` before and did not resolve. Plain references (`github.com/deploy-bot`) split on the first `/` as before. Where the default split is not the one you need, write a `/` that must not split as `%2F` (and a literal `%2F` as `%252F`): `{{keyring.https://api.example.com/v1/team%2Fbot}}` is account `team/bot`.
 
+### MCP tools read only the store layout of `recordings.json`, `collections.json` and `flows.json` (#882, #887)
+
+`bowire.record.list`, `bowire.record.stop` and the `bowire://recordings`, `/recordings/{id}`, `/collections/{id}` and `/flows/{id}` resources accepted a file holding a bare JSON array. No Bowire store writes that shape — they all write `{"recordings": […]}` (and `collections` / `flows` likewise) — and the mock's recording loader already refused it. The MCP readers now take exactly the layout the stores write; `bowire.record.stop` refuses to close a session onto a file of any other shape instead of overwriting it, so the captured steps are kept. A hand-written bare array: wrap it as `{"recordings": [ … ]}`.
+
 ## Acknowledgements
 
 <!-- Optional. Names of contributors who exercised rc / reported. -->
