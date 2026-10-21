@@ -410,6 +410,47 @@ public sealed class BowireScimStoreTests : IDisposable
         Assert.Equal("bob@example.com", Store().GetUser(bob.Resource.Id)!.Resource.UserName);
     }
 
+    private static ScimPatchRequest PatchOf(string json)
+        => System.Text.Json.JsonSerializer.Deserialize<ScimPatchRequest>(json)!;
+
+    [Fact]
+    public void A_User_Patch_That_Fails_Partway_Changes_Nothing()
+    {
+        // #875 — the connector got a 400 and will retry the whole document;
+        // the operations before the bad one must not have stuck meanwhile.
+        var store = Store();
+        var record = store.CreateUser(Ada());
+        var patch = PatchOf("""
+            { "Operations": [
+                { "op": "replace", "path": "displayName", "value": "Ada L." },
+                { "op": "replace", "path": "active", "value": "maybe" } ] }
+            """);
+
+        Assert.Throws<ScimPatchException>(() =>
+            store.UpdateUser(record.Resource.Id, u => ScimPatch.Apply(u, patch)));
+
+        var after = store.GetUser(record.Resource.Id)!.Resource;
+        Assert.Null(after.DisplayName);
+        Assert.True(after.Active);
+    }
+
+    [Fact]
+    public void A_Group_Patch_That_Fails_Partway_Changes_Nothing()
+    {
+        var store = Store();
+        var group = store.CreateGroup(new ScimGroup { DisplayName = "bowire-admins" });
+        var patch = PatchOf("""
+            { "Operations": [
+                { "op": "replace", "path": "displayName", "value": "bowire-owners" },
+                { "op": "replace", "path": "description", "value": "not stored" } ] }
+            """);
+
+        Assert.Throws<ScimPatchException>(() =>
+            store.UpdateGroup(group.Id, g => ScimPatch.Apply(g, patch)));
+
+        Assert.Equal("bowire-admins", store.GetGroup(group.Id)!.DisplayName);
+    }
+
     private sealed class FixedClock(DateTimeOffset now) : TimeProvider
     {
         public DateTimeOffset Now { get; set; } = now;

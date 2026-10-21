@@ -329,7 +329,8 @@ public sealed class BowireScimStore
     }
 
     /// <summary>
-    /// Record the outcome of a partial update the caller has already applied.
+    /// Apply a partial update, all or nothing: when <paramref name="change"/>
+    /// throws or the result is refused, the user is left as it was (#875).
     /// </summary>
     public ScimUserRecord? UpdateUser(string id, Action<ScimUser> change)
     {
@@ -538,7 +539,7 @@ public sealed class BowireScimStore
         }
     }
 
-    /// <summary>Apply a change to a group in place.</summary>
+    /// <summary>Apply a change to a group, all or nothing.</summary>
     public ScimGroup? UpdateGroup(string id, Action<ScimGroup> change)
     {
         ArgumentNullException.ThrowIfNull(change);
@@ -548,15 +549,21 @@ public sealed class BowireScimStore
         {
             if (!_groups.TryGetValue(id, out var existing)) return null;
 
-            change(existing);
-            var now = _clock.GetUtcNow();
-            existing.Id = id;
-            existing.Meta.LastModified = now;
-            existing.Meta.Version = Etag(now);
+            // #875 — on a copy, like UpdateUser: a PATCH is all or nothing
+            // (RFC 7644 §3.5.2), and an operation that throws must not leave
+            // the ones before it applied.
+            var changed = Copy(existing);
+            change(changed);
 
-            PersistGroup(existing);
-            Log("update-group", id, existing.DisplayName, active: true);
-            return existing;
+            var now = _clock.GetUtcNow();
+            changed.Id = id;
+            changed.Meta.LastModified = now;
+            changed.Meta.Version = Etag(now);
+
+            _groups[id] = changed;
+            PersistGroup(changed);
+            Log("update-group", id, changed.DisplayName, active: true);
+            return changed;
         }
     }
 
