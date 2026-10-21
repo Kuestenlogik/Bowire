@@ -278,6 +278,45 @@ public sealed class McpTaskTests
         Assert.Equal(-32603, Data(frames[^1]).GetProperty("code").GetInt32());
     }
 
+    [Fact]
+    public async Task A_Poll_Interval_Longer_Than_A_Timer_Can_Wait_Does_Not_Sleep_Through_The_TTL()
+    {
+        // The server names the interval; ~49.7 days is the most Task.Delay
+        // takes, and TimeSpan.FromMilliseconds overflows long before long.MaxValue.
+        await using var server = await FakeTaskServer.StartAsync(FakeTaskServer.Shape.Extension, Ct, ttlMs: 150, pollIntervalMs: long.MaxValue / 2);
+        var frames = await Stream(new BowireMcpProtocol(), server.Url, "Tools", "job");
+
+        Assert.Equal("error", Kind(frames[^1]));
+        Assert.Contains("past its TTL", Data(frames[^1]).GetProperty("message").GetString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_TTL_Too_Large_To_Add_To_The_Creation_Time_Is_Unlimited()
+    {
+        var state = new Kuestenlogik.Bowire.Protocol.Mcp.Tasks.McpTaskState(
+            "2026-07-28", "t", "working", null, DateTimeOffset.UtcNow, DateTimeOffset.UtcNow, long.MaxValue, 1000);
+        Assert.Null(state.ExpiresAt);
+    }
+
+    [Fact]
+    public async Task A_Failed_Task_Whose_Error_Code_Is_A_String_Still_Ends_In_Its_Message()
+    {
+        await using var server = await FakeTaskServer.StartAsync(FakeTaskServer.Shape.Extension, Ct);
+        var frames = await Stream(new BowireMcpProtocol(), server.Url, "Tools", "job", onFrame: frame =>
+        {
+            if (Kind(frame) == "task" && Status(frame) == "working")
+            {
+                server.Transition(Data(frame).GetProperty("taskId").GetString()!, "failed",
+                    error: new JsonObject { ["code"] = "E_BACKEND", ["message"] = "backend down" });
+            }
+            return Task.CompletedTask;
+        });
+
+        Assert.Equal("error", Kind(frames[^1]));
+        Assert.Equal("backend down", Data(frames[^1]).GetProperty("message").GetString());
+        Assert.Equal("E_BACKEND", Data(frames[^1]).GetProperty("error").GetProperty("code").GetString());
+    }
+
     // ---- 2025-11-25 core shape ----
 
     [Fact]

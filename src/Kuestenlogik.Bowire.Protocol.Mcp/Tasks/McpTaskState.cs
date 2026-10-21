@@ -46,7 +46,16 @@ internal sealed record McpTaskState(
     /// lets a client treat this as a backstop: a task still not terminal
     /// past it may be considered gone.
     /// </summary>
-    public DateTimeOffset? ExpiresAt => CreatedAt is { } created && TtlMs is { } ttl ? created.AddMilliseconds(ttl) : null;
+    /// <remarks>
+    /// #868 — a TTL too large to add to the creation time is, for every purpose a
+    /// client has, unlimited — the server picked the number, and
+    /// <see cref="DateTimeOffset.AddMilliseconds"/> would throw on it.
+    /// </remarks>
+    public DateTimeOffset? ExpiresAt =>
+        CreatedAt is { } created && TtlMs is { } ttl && ttl >= 0
+        && ttl <= (DateTimeOffset.MaxValue - created).TotalMilliseconds
+            ? created.AddMilliseconds(ttl)
+            : null;
 
     /// <summary>
     /// Whether <paramref name="other"/> says something this observation did

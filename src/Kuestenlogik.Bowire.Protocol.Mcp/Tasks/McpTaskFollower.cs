@@ -139,9 +139,17 @@ internal static class McpTaskFollower
         // Subscribed: nothing to poll for — wait for the push, for the
         // stream to end, or for the TTL backstop. Otherwise the server's
         // interval decides when to ask again.
+        // #868 — never past the TTL backstop either way, so a long poll interval
+        // cannot sleep through it. Every wait is capped at what Task.Delay
+        // accepts (about 49.7 days): the server names the numbers, and the
+        // loop re-decides after each wait, so a capped one loses nothing.
+        var toExpiry = state.ExpiresAt is { } expires ? Max(expires - clock.GetUtcNow(), TimeSpan.Zero) : (TimeSpan?)null;
+        var poll = state.PollIntervalMs is { } ms && ms > 0
+            ? ms >= MaxWait.TotalMilliseconds ? MaxWait : TimeSpan.FromMilliseconds(ms)
+            : DefaultPollInterval;
         var until = pushed
-            ? state.ExpiresAt is { } expires ? Max(expires - clock.GetUtcNow(), TimeSpan.Zero) : Timeout.InfiniteTimeSpan
-            : state.PollIntervalMs is { } ms && ms > 0 ? TimeSpan.FromMilliseconds(ms) : DefaultPollInterval;
+            ? toExpiry is { } left ? Min(left, MaxWait) : Timeout.InfiniteTimeSpan
+            : toExpiry is { } remaining ? Min(poll, remaining) : poll;
         var timer = Task.Delay(until, clock, wait.Token);
 
         var first = pushed
@@ -179,7 +187,11 @@ internal static class McpTaskFollower
         }
     }
 
+    /// <summary>The longest wait <see cref="Task.Delay(TimeSpan)"/> accepts.</summary>
+    private static readonly TimeSpan MaxWait = TimeSpan.FromMilliseconds(uint.MaxValue - 1);
+
     private static TimeSpan Max(TimeSpan a, TimeSpan b) => a > b ? a : b;
+    private static TimeSpan Min(TimeSpan a, TimeSpan b) => a < b ? a : b;
 
     private static McpTaskEvent TaskFrame(McpTaskState state, string via) => new("task", state.ToFrameData(via), state);
 
@@ -191,7 +203,10 @@ internal static class McpTaskFollower
         if (error is { ValueKind: JsonValueKind.Object } e)
         {
             if (e.TryGetProperty("message", out var m) && m.ValueKind == JsonValueKind.String) message = m.GetString();
-            if (e.TryGetProperty("code", out var c) && c.TryGetInt32(out var n)) code = n;
+            // #869 — a JSON-RPC code is an integer, but this one came from a server
+            // that may not hold to that; a string code is shown in the
+            // `error` object below rather than crashing the follow.
+            if (e.TryGetProperty("code", out var c) && c.ValueKind == JsonValueKind.Number && c.TryGetInt32(out var n)) code = n;
         }
         return new McpTaskEvent("error", JsonSerializer.SerializeToElement(new
         {
