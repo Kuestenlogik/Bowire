@@ -12,13 +12,12 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
 
-**106/109 done** · 3 backlog
+**107/109 done** · 2 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [639](https://github.com/Kuestenlogik/Bowire/issues/639) | Bowire | [SCIM: live Okta and Entra ID provisioning round-trips](#issue-kuestenlogik-bowire-639) | ⬜ Backlog | `area:workbench` |
 | [670](https://github.com/Kuestenlogik/Bowire/issues/670) | Bowire | [Get listed where developers and models actually look](#issue-kuestenlogik-bowire-670) | ⬜ Backlog | `area:site` |
-| [926](https://github.com/Kuestenlogik/Bowire/issues/926) | Bowire | [Blog on bowire.io: articles with a canonical home and a feed for cross-posting](#issue-kuestenlogik-bowire-926) | ⬜ Backlog |  |
 | [816](https://github.com/Kuestenlogik/Bowire/issues/816) | Bowire | [SCIM trace records status 200 for every request](#issue-kuestenlogik-bowire-816) | ✅ Done |  |
 | [817](https://github.com/Kuestenlogik/Bowire/issues/817) | Bowire | [OIDC provider cannot run as an installed plugin](#issue-kuestenlogik-bowire-817) | ✅ Done |  |
 | [818](https://github.com/Kuestenlogik/Bowire/issues/818) | Bowire | [--auth-oidc-* flags are documented but never read](#issue-kuestenlogik-bowire-818) | ✅ Done |  |
@@ -125,6 +124,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [922](https://github.com/Kuestenlogik/Bowire/issues/922) | Bowire | [GraphQL SSE subscriptions never end on a complete event without data, and drop error events](#issue-kuestenlogik-bowire-922) | ✅ Done |  |
 | [923](https://github.com/Kuestenlogik/Bowire/issues/923) | Bowire | [Shared GraphQL WebSocket subscribes before connection_ack and reuses a dead socket](#issue-kuestenlogik-bowire-923) | ✅ Done |  |
 | [924](https://github.com/Kuestenlogik/Bowire/issues/924) | Bowire | [Workbench GraphQL query: selection set on scalar fields, variables typed String instead of the schema's type](#issue-kuestenlogik-bowire-924) | ✅ Done |  |
+| [926](https://github.com/Kuestenlogik/Bowire/issues/926) | Bowire | [Blog on bowire.io: articles with a canonical home and a feed for cross-posting](#issue-kuestenlogik-bowire-926) | ✅ Done |  |
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
@@ -295,10 +295,6 @@ Split from #96 so the SCIM surface can ship on its own merits. [[more]](https://
 > `area:site`
 
 Six credible competitors turned up during the competitive survey **via openalternative.co**. Bowire was not there. That is the whole diagnosis: when a developer — or a language model — asks for "open source Postman alternative", the answer is assembled from these directories, not from bowire.io. [[more]](https://github.com/Kuestenlogik/Bowire/issues/670)
-
-#### <a id="issue-kuestenlogik-bowire-926"></a>⬜ Backlog · [#926](https://github.com/Kuestenlogik/Bowire/issues/926) Blog on bowire.io: articles with a canonical home and a feed for cross-posting
-
-Directories and link roundups need something to point at. A bare product link rarely makes it into Morning Dew, The Morning Brew, r/dotnet or Hacker News; an article that solves a real problem does — and articles are what search engines and language models cite when someone asks the question they answer. [[more]](https://github.com/Kuestenlogik/Bowire/issues/926)
 
 #### <a id="issue-kuestenlogik-bowire-816"></a>✅ Done · [#816](https://github.com/Kuestenlogik/Bowire/issues/816) SCIM trace records status 200 for every request
 
@@ -723,6 +719,10 @@ Two defects in the shared graphql-transport-ws socket (`X-Bowire-GraphQL-Multipl
 #### <a id="issue-kuestenlogik-bowire-924"></a>✅ Done · [#924](https://github.com/Kuestenlogik/Bowire/issues/924) Workbench GraphQL query: selection set on scalar fields, variables typed String instead of the schema's type
 
 The workbench builds its own default GraphQL operation for the query pane (`buildGraphQLDefaultQuery` in `src/Kuestenlogik.Bowire/wwwroot/js/protocols.js`). It mirrors the server-side `GraphQLQueryBuilder`, but has not followed two of its fixes, so the operation the workbench sends is refused by the server: [[more]](https://github.com/Kuestenlogik/Bowire/issues/924)
+
+#### <a id="issue-kuestenlogik-bowire-926"></a>✅ Done · [#926](https://github.com/Kuestenlogik/Bowire/issues/926) Blog on bowire.io: articles with a canonical home and a feed for cross-posting
+
+Directories and link roundups need something to point at. A bare product link rarely makes it into Morning Dew, The Morning Brew, r/dotnet or Hacker News; an article that solves a real problem does — and articles are what search engines and language models cite when someone asks the question they answer. [[more]](https://github.com/Kuestenlogik/Bowire/issues/926)
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
