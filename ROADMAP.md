@@ -12,18 +12,12 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
 
-**35/51 done** · 16 backlog
+**41/51 done** · 10 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [639](https://github.com/Kuestenlogik/Bowire/issues/639) | Bowire | [SCIM: live Okta and Entra ID provisioning round-trips](#issue-kuestenlogik-bowire-639) | ⬜ Backlog | `area:workbench` |
 | [670](https://github.com/Kuestenlogik/Bowire/issues/670) | Bowire | [Get listed where developers and models actually look](#issue-kuestenlogik-bowire-670) | ⬜ Backlog | `area:site` |
-| [854](https://github.com/Kuestenlogik/Bowire/issues/854) | Bowire | [Socket.IO emit and listen fail on non-object JSON or a non-string event](#issue-kuestenlogik-bowire-854) | ⬜ Backlog |  |
-| [855](https://github.com/Kuestenlogik/Bowire/issues/855) | Bowire | [MQTT and NATS payload display cuts text that starts with a JSON value](#issue-kuestenlogik-bowire-855) | ⬜ Backlog |  |
-| [856](https://github.com/Kuestenlogik/Bowire/issues/856) | Bowire | [MQTT and NATS show invalid UTF-8 payloads as replacement characters instead of hex](#issue-kuestenlogik-bowire-856) | ⬜ Backlog |  |
-| [857](https://github.com/Kuestenlogik/Bowire/issues/857) | Bowire | [NATS service discovery publishes $SRV.PING before its reply subscription exists](#issue-kuestenlogik-bowire-857) | ⬜ Backlog |  |
-| [858](https://github.com/Kuestenlogik/Bowire/issues/858) | Bowire | [Mock replays a recorded MQTT subscription on the topic group instead of the topic](#issue-kuestenlogik-bowire-858) | ⬜ Backlog |  |
-| [859](https://github.com/Kuestenlogik/Bowire/issues/859) | Bowire | [OpenAPI sample generator answers "sample" for objects without type and for allOf compositions](#issue-kuestenlogik-bowire-859) | ⬜ Backlog |  |
 | [860](https://github.com/Kuestenlogik/Bowire/issues/860) | Bowire | [CLI startup crashes on a command type without a parameterless constructor or with open generics](#issue-kuestenlogik-bowire-860) | ⬜ Backlog |  |
 | [861](https://github.com/Kuestenlogik/Bowire/issues/861) | Bowire | [OpenAPI sample generator answers "sample" for a missing schema and at the recursion cap, against its contract](#issue-kuestenlogik-bowire-861) | ⬜ Backlog |  |
 | [862](https://github.com/Kuestenlogik/Bowire/issues/862) | Bowire | [SSE endpoints registered statically show up under external source URLs](#issue-kuestenlogik-bowire-862) | ⬜ Backlog |  |
@@ -67,6 +61,12 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [851](https://github.com/Kuestenlogik/Bowire/issues/851) | Bowire | [WebSocket channel URL loses the base path of the server URL](#issue-kuestenlogik-bowire-851) | ✅ Done |  |
 | [852](https://github.com/Kuestenlogik/Bowire/issues/852) | Bowire | [WebSocket and MQTT channel send fails on a non-string type or a malformed envelope](#issue-kuestenlogik-bowire-852) | ✅ Done |  |
 | [853](https://github.com/Kuestenlogik/Bowire/issues/853) | Bowire | [[WebSocketGroup] on the declaring class of Minimal API handlers is ignored](#issue-kuestenlogik-bowire-853) | ✅ Done |  |
+| [854](https://github.com/Kuestenlogik/Bowire/issues/854) | Bowire | [Socket.IO emit and listen fail on non-object JSON or a non-string event](#issue-kuestenlogik-bowire-854) | ✅ Done |  |
+| [855](https://github.com/Kuestenlogik/Bowire/issues/855) | Bowire | [MQTT and NATS payload display cuts text that starts with a JSON value](#issue-kuestenlogik-bowire-855) | ✅ Done |  |
+| [856](https://github.com/Kuestenlogik/Bowire/issues/856) | Bowire | [MQTT and NATS show invalid UTF-8 payloads as replacement characters instead of hex](#issue-kuestenlogik-bowire-856) | ✅ Done |  |
+| [857](https://github.com/Kuestenlogik/Bowire/issues/857) | Bowire | [NATS service discovery publishes $SRV.PING before its reply subscription exists](#issue-kuestenlogik-bowire-857) | ✅ Done |  |
+| [858](https://github.com/Kuestenlogik/Bowire/issues/858) | Bowire | [Mock replays a recorded MQTT subscription on the topic group instead of the topic](#issue-kuestenlogik-bowire-858) | ✅ Done |  |
+| [859](https://github.com/Kuestenlogik/Bowire/issues/859) | Bowire | [OpenAPI sample generator answers "sample" for objects without type and for allOf compositions](#issue-kuestenlogik-bowire-859) | ✅ Done |  |
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
@@ -231,30 +231,6 @@ Split from #96 so the SCIM surface can ship on its own merits. [[more]](https://
 > `area:site`
 
 Six credible competitors turned up during the competitive survey **via openalternative.co**. Bowire was not there. That is the whole diagnosis: when a developer — or a language model — asks for "open source Postman alternative", the answer is assembled from these directories, not from bowire.io. [[more]](https://github.com/Kuestenlogik/Bowire/issues/670)
-
-#### <a id="issue-kuestenlogik-bowire-854"></a>⬜ Backlog · [#854](https://github.com/Kuestenlogik/Bowire/issues/854) Socket.IO emit and listen fail on non-object JSON or a non-string event
-
-Socket.IO emit and listen fail on JSON that is not an object or has a non-string `event`, although both helpers promise a fallback. [[more]](https://github.com/Kuestenlogik/Bowire/issues/854)
-
-#### <a id="issue-kuestenlogik-bowire-855"></a>⬜ Backlog · [#855](https://github.com/Kuestenlogik/Bowire/issues/855) MQTT and NATS payload display cuts text that starts with a JSON value
-
-MQTT and NATS show a text payload that begins with a JSON value cut down to that value. [[more]](https://github.com/Kuestenlogik/Bowire/issues/855)
-
-#### <a id="issue-kuestenlogik-bowire-856"></a>⬜ Backlog · [#856](https://github.com/Kuestenlogik/Bowire/issues/856) MQTT and NATS show invalid UTF-8 payloads as replacement characters instead of hex
-
-Binary MQTT and NATS payloads that are not valid UTF-8 are shown as replacement characters instead of a hex dump. [[more]](https://github.com/Kuestenlogik/Bowire/issues/856)
-
-#### <a id="issue-kuestenlogik-bowire-857"></a>⬜ Backlog · [#857](https://github.com/Kuestenlogik/Bowire/issues/857) NATS service discovery publishes $SRV.PING before its reply subscription exists
-
-NATS service discovery can miss the services it looks for: it publishes `$SRV.PING` before its reply subscription is registered. [[more]](https://github.com/Kuestenlogik/Bowire/issues/857)
-
-#### <a id="issue-kuestenlogik-bowire-858"></a>⬜ Backlog · [#858](https://github.com/Kuestenlogik/Bowire/issues/858) Mock replays a recorded MQTT subscription on the topic group instead of the topic
-
-`bowire mock` replays a recorded MQTT subscription on the topic group instead of the topic. [[more]](https://github.com/Kuestenlogik/Bowire/issues/858)
-
-#### <a id="issue-kuestenlogik-bowire-859"></a>⬜ Backlog · [#859](https://github.com/Kuestenlogik/Bowire/issues/859) OpenAPI sample generator answers "sample" for objects without type and for allOf compositions
-
-`OpenApiSampleGenerator.BuildNode` (both `src/Kuestenlogik.Bowire.Protocol.Rest.OpenApi3/OpenApiSampleGenerator.cs` and the OpenApi2 copy, L75) reads a missing `type` as `string` (`schema.Type ?? JsonSchemaType.String`) and never looks at `allOf`. [[more]](https://github.com/Kuestenlogik/Bowire/issues/859)
 
 #### <a id="issue-kuestenlogik-bowire-860"></a>⬜ Backlog · [#860](https://github.com/Kuestenlogik/Bowire/issues/860) CLI startup crashes on a command type without a parameterless constructor or with open generics
 
@@ -427,6 +403,30 @@ Sending a message whose JSON has a non-string `type`, or a malformed send envelo
 #### <a id="issue-kuestenlogik-bowire-853"></a>✅ Done · [#853](https://github.com/Kuestenlogik/Bowire/issues/853) [WebSocketGroup] on the declaring class of Minimal API handlers is ignored
 
 `[WebSocketGroup]` on the class that declares Minimal API handlers is ignored, although the attribute's documentation shows exactly that usage ("every endpoint defined inside inherits the group"). [[more]](https://github.com/Kuestenlogik/Bowire/issues/853)
+
+#### <a id="issue-kuestenlogik-bowire-854"></a>✅ Done · [#854](https://github.com/Kuestenlogik/Bowire/issues/854) Socket.IO emit and listen fail on non-object JSON or a non-string event
+
+Socket.IO emit and listen fail on JSON that is not an object or has a non-string `event`, although both helpers promise a fallback. [[more]](https://github.com/Kuestenlogik/Bowire/issues/854)
+
+#### <a id="issue-kuestenlogik-bowire-855"></a>✅ Done · [#855](https://github.com/Kuestenlogik/Bowire/issues/855) MQTT and NATS payload display cuts text that starts with a JSON value
+
+MQTT and NATS show a text payload that begins with a JSON value cut down to that value. [[more]](https://github.com/Kuestenlogik/Bowire/issues/855)
+
+#### <a id="issue-kuestenlogik-bowire-856"></a>✅ Done · [#856](https://github.com/Kuestenlogik/Bowire/issues/856) MQTT and NATS show invalid UTF-8 payloads as replacement characters instead of hex
+
+Binary MQTT and NATS payloads that are not valid UTF-8 are shown as replacement characters instead of a hex dump. [[more]](https://github.com/Kuestenlogik/Bowire/issues/856)
+
+#### <a id="issue-kuestenlogik-bowire-857"></a>✅ Done · [#857](https://github.com/Kuestenlogik/Bowire/issues/857) NATS service discovery publishes $SRV.PING before its reply subscription exists
+
+NATS service discovery can miss the services it looks for: it publishes `$SRV.PING` before its reply subscription is registered. [[more]](https://github.com/Kuestenlogik/Bowire/issues/857)
+
+#### <a id="issue-kuestenlogik-bowire-858"></a>✅ Done · [#858](https://github.com/Kuestenlogik/Bowire/issues/858) Mock replays a recorded MQTT subscription on the topic group instead of the topic
+
+`bowire mock` replays a recorded MQTT subscription on the topic group instead of the topic. [[more]](https://github.com/Kuestenlogik/Bowire/issues/858)
+
+#### <a id="issue-kuestenlogik-bowire-859"></a>✅ Done · [#859](https://github.com/Kuestenlogik/Bowire/issues/859) OpenAPI sample generator answers "sample" for objects without type and for allOf compositions
+
+`OpenApiSampleGenerator.BuildNode` (both `src/Kuestenlogik.Bowire.Protocol.Rest.OpenApi3/OpenApiSampleGenerator.cs` and the OpenApi2 copy, L75) reads a missing `type` as `string` (`schema.Type ?? JsonSchemaType.String`) and never looks at `allOf`. [[more]](https://github.com/Kuestenlogik/Bowire/issues/859)
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
