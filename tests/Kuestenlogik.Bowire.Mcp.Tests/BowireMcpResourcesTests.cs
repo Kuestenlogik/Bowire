@@ -144,6 +144,19 @@ public sealed class BowireMcpResourcesTests : IDisposable
     }
 
     [Fact]
+    public void Recording_An_Entry_With_A_NonString_Id_Does_Not_Hide_The_Others()
+    {
+        WriteFile("recordings.json", """
+            { "recordings": [{"id":42,"steps":[]},{"id":null},{"id":"r2","steps":[]}] }
+            """);
+
+        var resource = BowireMcpResources.Recording("r2");
+        using var doc = JsonDocument.Parse(resource.Text!);
+
+        Assert.Equal("r2", doc.RootElement.GetProperty("id").GetString());
+    }
+
+    [Fact]
     public void CollectionsIndex_MissingFile_DoesNotThrow()
     {
         var resource = BowireMcpResources.CollectionsIndex();

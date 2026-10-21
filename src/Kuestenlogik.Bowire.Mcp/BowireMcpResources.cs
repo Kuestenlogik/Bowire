@@ -311,7 +311,9 @@ public sealed class BowireMcpResources
 
             foreach (var rec in array.Value.EnumerateArray())
             {
-                if (rec.TryGetProperty("id", out var i) && i.GetString() == id)
+                // #885 — StringOrNull, not GetString: GetString throws on a
+                // number, and one such entry failed the lookup of every id.
+                if (string.Equals(StringOrNull(rec, "id"), id, StringComparison.Ordinal))
                 {
                     return TextResource(uri, rec.GetRawText());
                 }
