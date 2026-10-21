@@ -454,20 +454,15 @@ public sealed class BowireMcpTools
         {
             using var stream = File.OpenRead(path);
             using var doc = JsonDocument.Parse(stream);
-            // On-disk shape is the wrapper { "recordings": [ ... ] } —
-            // pre-2026 builds of this tool wrongly expected a bare array
-            // and silently returned empty; fall back to that branch for
-            // the rare malformed file just in case.
+            // On-disk shape is the store's wrapper { "recordings": [ ... ] }
+            // and only that (#887): no store writes a bare array, so this
+            // reads exactly what bowire://recordings and the workbench read.
             JsonElement array;
             if (doc.RootElement.ValueKind == JsonValueKind.Object
                 && doc.RootElement.TryGetProperty("recordings", out var wrapped)
                 && wrapped.ValueKind == JsonValueKind.Array)
             {
                 array = wrapped;
-            }
-            else if (doc.RootElement.ValueKind == JsonValueKind.Array)
-            {
-                array = doc.RootElement;
             }
             else
             {

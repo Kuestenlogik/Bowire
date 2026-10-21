@@ -73,30 +73,23 @@ public sealed class BowireMcpResourcesTests : IDisposable
     }
 
     [Fact]
-    public void RecordingsIndex_BuildsSummary_FromArrayLayout()
+    public void RecordingsIndex_A_Bare_Array_Is_Not_The_Store_Layout()
     {
-        WriteFile("recordings.json", """
-            [
-              {"id":"r1","name":"login flow","protocol":"rest","createdAt":"2026-05-25T00:00:00Z","steps":[{},{},{}]},
-              {"id":"r2","name":"checkout","protocol":"grpc","createdAt":"2026-05-25T01:00:00Z","steps":[{}]}
-            ]
-            """);
+        // No store writes a bare array (#887); the index reads the
+        // {"recordings":[…]} layout only, the same as bowire.record.list.
+        WriteFile("recordings.json", """[{"id":"r1","steps":[{}]}]""");
 
         var resource = BowireMcpResources.RecordingsIndex();
         using var doc = JsonDocument.Parse(resource.Text!);
 
-        var recordings = doc.RootElement.GetProperty("recordings");
-        Assert.Equal(2, recordings.GetArrayLength());
-        Assert.Equal(3, recordings[0].GetProperty("stepCount").GetInt32());
-        Assert.Equal(1, recordings[1].GetProperty("stepCount").GetInt32());
-        Assert.Equal("rest", recordings[0].GetProperty("protocol").GetString());
+        Assert.Equal(0, doc.RootElement.GetProperty("recordings").GetArrayLength());
     }
 
     [Fact]
-    public void Recording_ReturnsMatchingItem_FromTopLevelArray()
+    public void Recording_ReturnsMatchingItem()
     {
         WriteFile("recordings.json", """
-            [{"id":"r1","name":"x","steps":[]},{"id":"r2","name":"y","steps":[]}]
+            { "recordings": [{"id":"r1","name":"x","steps":[]},{"id":"r2","name":"y","steps":[]}] }
             """);
 
         var resource = BowireMcpResources.Recording("r2");
@@ -109,7 +102,7 @@ public sealed class BowireMcpResourcesTests : IDisposable
     [Fact]
     public void Recording_UnknownId_ReturnsErrorObject()
     {
-        WriteFile("recordings.json", """[{"id":"r1"}]""");
+        WriteFile("recordings.json", """{ "recordings": [{"id":"r1"}] }""");
 
         var resource = BowireMcpResources.Recording("does-not-exist");
         using var doc = JsonDocument.Parse(resource.Text!);
@@ -119,16 +112,35 @@ public sealed class BowireMcpResourcesTests : IDisposable
     }
 
     [Fact]
-    public void Recording_FromObjectLayout_AlsoMatches()
+    public void Recording_A_Bare_Array_Is_Not_The_Store_Layout()
     {
+        WriteFile("recordings.json", """[{"id":"r1","steps":[]}]""");
+
+        var resource = BowireMcpResources.Recording("r1");
+
+        Assert.Equal("{}", resource.Text);
+    }
+
+    [Fact]
+    public void RecordingsIndex_BuildsSummary_FromStoreLayout()
+    {
+        // The layout the recording store and bowire.record.stop write,
+        // createdAt as Unix milliseconds included.
         WriteFile("recordings.json", """
-            { "recordings": [{"id":"r-obj","steps":[]}] }
+            { "recordings": [
+              {"id":"r1","name":"login flow","createdAt":1767225600000,"steps":[{},{}]},
+              {"id":"r2","name":"checkout","steps":[]}
+            ] }
             """);
 
-        var resource = BowireMcpResources.Recording("r-obj");
+        var resource = BowireMcpResources.RecordingsIndex();
         using var doc = JsonDocument.Parse(resource.Text!);
 
-        Assert.Equal("r-obj", doc.RootElement.GetProperty("id").GetString());
+        var recordings = doc.RootElement.GetProperty("recordings");
+        Assert.Equal(2, recordings.GetArrayLength());
+        Assert.Equal("r1", recordings[0].GetProperty("id").GetString());
+        Assert.Equal("1767225600000", recordings[0].GetProperty("createdAt").GetString());
+        Assert.Equal(2, recordings[0].GetProperty("stepCount").GetInt32());
     }
 
     [Fact]
@@ -164,7 +176,7 @@ public sealed class BowireMcpResourcesTests : IDisposable
     public void Flow_ReturnsMatchingEntry()
     {
         WriteFile("flows.json", """
-            [{"id":"f1","steps":[]},{"id":"f2","steps":[{}]}]
+            { "flows": [{"id":"f1","steps":[]},{"id":"f2","steps":[{}]}] }
             """);
 
         var resource = BowireMcpResources.Flow("f2");

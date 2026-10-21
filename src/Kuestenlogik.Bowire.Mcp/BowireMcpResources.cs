@@ -61,16 +61,21 @@ public sealed class BowireMcpResources
             using var stream = File.OpenRead(path);
             using var doc = JsonDocument.Parse(stream);
             var summary = new List<object>();
-            if (doc.RootElement.ValueKind == JsonValueKind.Array)
+            // #887 — the store writes { "recordings": [ … ] } with createdAt
+            // in Unix milliseconds; reading a bare array only, this index
+            // was empty for every real recordings.json.
+            if (StoreArray(doc.RootElement, "recordings") is { } recordings)
             {
-                foreach (var rec in doc.RootElement.EnumerateArray())
+                foreach (var rec in recordings.EnumerateArray())
                 {
                     summary.Add(new
                     {
-                        id = rec.TryGetProperty("id", out var i) ? i.GetString() : null,
-                        name = rec.TryGetProperty("name", out var n) ? n.GetString() : null,
-                        protocol = rec.TryGetProperty("protocol", out var p) ? p.GetString() : null,
-                        createdAt = rec.TryGetProperty("createdAt", out var c) ? c.GetString() : null,
+                        id = StringOrNull(rec, "id"),
+                        name = StringOrNull(rec, "name"),
+                        protocol = StringOrNull(rec, "protocol"),
+                        createdAt = rec.TryGetProperty("createdAt", out var c)
+                            ? (c.ValueKind == JsonValueKind.Number ? c.GetRawText() : StringOrNull(rec, "createdAt"))
+                            : null,
                         stepCount = rec.TryGetProperty("steps", out var s) && s.ValueKind == JsonValueKind.Array
                             ? s.GetArrayLength() : 0
                     });
@@ -299,11 +304,9 @@ public sealed class BowireMcpResources
         {
             using var stream = File.OpenRead(path);
             using var doc = JsonDocument.Parse(stream);
-            // Files are either a top-level array (older layout) or
-            // { collectionKey: [...] } (newer layout). Try both.
-            JsonElement? array = doc.RootElement.ValueKind == JsonValueKind.Array
-                ? doc.RootElement
-                : doc.RootElement.TryGetProperty(collectionKey, out var arr) ? arr : null;
+            // The stores write { collectionKey: [...] } and nothing else
+            // (#887); a bare array is not one of their files.
+            var array = StoreArray(doc.RootElement, collectionKey);
             if (array is null) return TextResource(uri, "{}");
 
             foreach (var rec in array.Value.EnumerateArray())
@@ -320,6 +323,25 @@ public sealed class BowireMcpResources
             return TextResource(uri, $"Failed to read: {ex.Message}");
         }
     }
+
+    /// <summary>
+    /// The <c>{ "<paramref name="collectionKey"/>": [ … ] }</c> array the
+    /// recording, collection and flow stores write, or <see langword="null"/>
+    /// when the document is not in that layout.
+    /// </summary>
+    private static JsonElement? StoreArray(JsonElement root, string collectionKey)
+        => root.ValueKind == JsonValueKind.Object
+            && root.TryGetProperty(collectionKey, out var array)
+            && array.ValueKind == JsonValueKind.Array
+                ? array
+                : null;
+
+    private static string? StringOrNull(JsonElement obj, string property)
+        => obj.ValueKind == JsonValueKind.Object
+            && obj.TryGetProperty(property, out var value)
+            && value.ValueKind == JsonValueKind.String
+                ? value.GetString()
+                : null;
 
     private static TextResourceContents TextResource(string uri, string text)
         => new()

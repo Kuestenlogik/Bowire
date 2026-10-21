@@ -157,14 +157,14 @@ public sealed class BowireMcpCoverageTests : IAsyncDisposable
     }
 
     [Fact]
-    public void RecordList_With_Existing_Array_Summarises_Each_Recording()
+    public void RecordList_With_Existing_Store_Summarises_Each_Recording()
     {
         WithSwappedConfigFile("recordings.json", /*lang=json,strict*/ """
-            [
+            { "recordings": [
               { "id": "r1", "name": "first",  "createdAt": "2026-01-01T00:00:00Z", "steps": [{}, {}, {}] },
               { "id": "r2", "name": "second", "createdAt": "2026-01-02T00:00:00Z" },
               { }
-            ]
+            ] }
             """, () =>
         {
             var json = BowireMcpTools.RecordList();
@@ -184,6 +184,20 @@ public sealed class BowireMcpCoverageTests : IAsyncDisposable
             // Fully-empty record yields nulls but keeps shape.
             Assert.Equal(JsonValueKind.Null, recs[2].GetProperty("id").ValueKind);
             Assert.Equal(0, recs[2].GetProperty("stepCount").GetInt32());
+        });
+    }
+
+    [Fact]
+    public void RecordList_A_Bare_Array_Is_Not_The_Store_Layout()
+    {
+        // No store writes a bare array (#887); record.list reads what
+        // bowire://recordings and the workbench read, and nothing else.
+        WithSwappedConfigFile("recordings.json", /*lang=json,strict*/ """[{ "id": "r1" }]""", () =>
+        {
+            var json = BowireMcpTools.RecordList();
+
+            using var doc = JsonDocument.Parse(json);
+            Assert.Equal(0, doc.RootElement.GetProperty("recordings").GetArrayLength());
         });
     }
 
