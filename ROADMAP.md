@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
 
-**49/64 done** · 15 backlog
+**49/71 done** · 22 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -31,6 +31,13 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [878](https://github.com/Kuestenlogik/Bowire/issues/878) | Bowire | [MCP confirmation token is not bound to its tool or plan, so it confirms any other mutation](#issue-kuestenlogik-bowire-878) | ⬜ Backlog |  |
 | [879](https://github.com/Kuestenlogik/Bowire/issues/879) | Bowire | [bowire.record.replay ignores recordingId while a session is active and still reports success](#issue-kuestenlogik-bowire-879) | ⬜ Backlog |  |
 | [880](https://github.com/Kuestenlogik/Bowire/issues/880) | Bowire | [MCP typed-URL store erases its history when typed-urls.json cannot be read](#issue-kuestenlogik-bowire-880) | ⬜ Backlog |  |
+| [881](https://github.com/Kuestenlogik/Bowire/issues/881) | Bowire | [Nuclei RandStr/RandInt length has no upper bound: a template can exhaust memory](#issue-kuestenlogik-bowire-881) | ⬜ Backlog |  |
+| [882](https://github.com/Kuestenlogik/Bowire/issues/882) | Bowire | [bowire.record.stop loses the recording when recordings.json is not the {recordings:[…]} store](#issue-kuestenlogik-bowire-882) | ⬜ Backlog |  |
+| [883](https://github.com/Kuestenlogik/Bowire/issues/883) | Bowire | [bowire.subscribe throws on a negative durationMs, and -1 removes the time limit](#issue-kuestenlogik-bowire-883) | ⬜ Backlog |  |
+| [884](https://github.com/Kuestenlogik/Bowire/issues/884) | Bowire | [MCP resource not-found body is invalid JSON for an id with a quote or backslash](#issue-kuestenlogik-bowire-884) | ⬜ Backlog |  |
+| [885](https://github.com/Kuestenlogik/Bowire/issues/885) | Bowire | [One entry with a non-string id breaks every MCP resource lookup by id](#issue-kuestenlogik-bowire-885) | ⬜ Backlog |  |
+| [886](https://github.com/Kuestenlogik/Bowire/issues/886) | Bowire | [MCP endpoint registry docs say nested prefixes throw; only the same path twice does](#issue-kuestenlogik-bowire-886) | ⬜ Backlog |  |
+| [887](https://github.com/Kuestenlogik/Bowire/issues/887) | Bowire | [bowire://recordings is always empty: it ignores the {recordings:[…]} layout the store writes](#issue-kuestenlogik-bowire-887) | ⬜ Backlog |  |
 | [816](https://github.com/Kuestenlogik/Bowire/issues/816) | Bowire | [SCIM trace records status 200 for every request](#issue-kuestenlogik-bowire-816) | ✅ Done |  |
 | [817](https://github.com/Kuestenlogik/Bowire/issues/817) | Bowire | [OIDC provider cannot run as an installed plugin](#issue-kuestenlogik-bowire-817) | ✅ Done |  |
 | [818](https://github.com/Kuestenlogik/Bowire/issues/818) | Bowire | [--auth-oidc-* flags are documented but never read](#issue-kuestenlogik-bowire-818) | ✅ Done |  |
@@ -296,6 +303,34 @@ The two-step confirmation gate of the MCP mutator tools (`BowireMcpTools.TryConf
 #### <a id="issue-kuestenlogik-bowire-880"></a>⬜ Backlog · [#880](https://github.com/Kuestenlogik/Bowire/issues/880) MCP typed-URL store erases its history when typed-urls.json cannot be read
 
 `BowireMcpTypedUrlStore.Add` (`src/Kuestenlogik.Bowire.Mcp/BowireMcpTypedUrlStore.cs:92`) builds the new list from `LoadAll()`, which deliberately reads an unreadable `typed-urls.json` as "no history". `Add` then writes that empty list plus the new URL back, so every URL the file still held is erased. [[more]](https://github.com/Kuestenlogik/Bowire/issues/880)
+
+#### <a id="issue-kuestenlogik-bowire-881"></a>⬜ Backlog · [#881](https://github.com/Kuestenlogik/Bowire/issues/881) Nuclei RandStr/RandInt length has no upper bound: a template can exhaust memory
+
+`NucleiVariableResolver` resolves `{{RandStr_N}}` / `{{RandInt_N}}` for any `N` that fits an int (#831 only stopped the overflow). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/881)
+
+#### <a id="issue-kuestenlogik-bowire-882"></a>⬜ Backlog · [#882](https://github.com/Kuestenlogik/Bowire/issues/882) bowire.record.stop loses the recording when recordings.json is not the {recordings:[…]} store
+
+`bowire.record.stop` closes the recording session first and then hands the recording to `PersistRecording` (`src/Kuestenlogik.Bowire.Mcp/BowireMcpTools.cs:995`, `:1131`). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/882)
+
+#### <a id="issue-kuestenlogik-bowire-883"></a>⬜ Backlog · [#883](https://github.com/Kuestenlogik/Bowire/issues/883) bowire.subscribe throws on a negative durationMs, and -1 removes the time limit
+
+`bowire.subscribe` clamps `durationMs` only from above (`Math.Min(durationMs, MaxSubscribeMs)`, `src/Kuestenlogik.Bowire.Mcp/BowireMcpTools.cs:341`) and passes it to `CancellationTokenSource.CancelAfter` (`:345`). [[more]](https://github.com/Kuestenlogik/Bowire/issues/883)
+
+#### <a id="issue-kuestenlogik-bowire-884"></a>⬜ Backlog · [#884](https://github.com/Kuestenlogik/Bowire/issues/884) MCP resource not-found body is invalid JSON for an id with a quote or backslash
+
+`BowireMcpResources.ReadOneById` (`src/Kuestenlogik.Bowire.Mcp/BowireMcpResources.cs:316`) builds its "not found" body by string interpolation: `{ "error": "no recordings entry with id={id}" }`. The id comes from the resource URI and is not escaped. [[more]](https://github.com/Kuestenlogik/Bowire/issues/884)
+
+#### <a id="issue-kuestenlogik-bowire-885"></a>⬜ Backlog · [#885](https://github.com/Kuestenlogik/Bowire/issues/885) One entry with a non-string id breaks every MCP resource lookup by id
+
+`BowireMcpResources.ReadOneById` (`src/Kuestenlogik.Bowire.Mcp/BowireMcpResources.cs:311`) compares ids with `i.GetString() == id`. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/885)
+
+#### <a id="issue-kuestenlogik-bowire-886"></a>⬜ Backlog · [#886](https://github.com/Kuestenlogik/Bowire/issues/886) MCP endpoint registry docs say nested prefixes throw; only the same path twice does
+
+The documentation of the MCP endpoint registry says overlapping prefixes throw at startup — "same path, or one prefix-of the other" — and that the default prefixes "don't overlap": [[more]](https://github.com/Kuestenlogik/Bowire/issues/886)
+
+#### <a id="issue-kuestenlogik-bowire-887"></a>⬜ Backlog · [#887](https://github.com/Kuestenlogik/Bowire/issues/887) bowire://recordings is always empty: it ignores the {recordings:[…]} layout the store writes
+
+The `bowire://recordings` resource (`BowireMcpResources.RecordingsIndex`, `src/Kuestenlogik.Bowire.Mcp/BowireMcpResources.cs:64`) only summarises a `recordings.json` whose root is a bare array. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/887)
 
 #### <a id="issue-kuestenlogik-bowire-816"></a>✅ Done · [#816](https://github.com/Kuestenlogik/Bowire/issues/816) SCIM trace records status 200 for every request
 
