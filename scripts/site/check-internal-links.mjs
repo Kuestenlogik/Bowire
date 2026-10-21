@@ -16,6 +16,8 @@
 //     `Bowire.Protocol.*` products of scripts/ci/release-plan.mjs.
 //   * /bootcamp/ — the Bowire.Bootcamp site, mounted into the combined build.
 //   * docs/api/Kuestenlogik.*.html — the API reference DocFX generates.
+//   * /feed.xml and /sitemap.xml — written by the jekyll-feed and
+//     jekyll-sitemap plugins during the Jekyll build (#926).
 // Links inside code (fenced blocks, inline code) are examples, not links.
 //
 // Run: `node scripts/site/check-internal-links.mjs` (CI: ci.yml, "Site link check")
@@ -32,8 +34,10 @@ import { slugFor } from '../docs/plugin-docs.mjs';
 // Pages the site build brings in from elsewhere (see the header).
 const FETCHED_PLUGIN_PAGES = new Set(Object.keys(PRODUCT_OF_REPO).map(slugFor).filter(Boolean).map(s => `docs/protocols/${s}.md`));
 const MOUNTED_SITE_PATHS = ['/bootcamp/'];
+const PLUGIN_GENERATED_FILES = new Set(['/feed.xml', '/sitemap.xml']);
 function arrivesWithBuild(target, resolvedRel) {
   if (MOUNTED_SITE_PATHS.some(m => target === m || target.startsWith(m))) return true;
+  if (PLUGIN_GENERATED_FILES.has(target)) return true;
   const md = resolvedRel.replace(/\.html$/, '.md');
   if (FETCHED_PLUGIN_PAGES.has(md)) return true;
   if (/^docs\/api\/Kuestenlogik\.[\w.]+\.html$/.test(resolvedRel)) return true;
