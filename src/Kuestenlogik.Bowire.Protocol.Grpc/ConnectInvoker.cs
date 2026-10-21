@@ -482,7 +482,10 @@ internal sealed class ConnectInvoker : IDisposable
         // Spin up the producer that feeds the pipe with our request
         // frames. Runs concurrently with the SendAsync below so the
         // first frame can land before the server replies, the second
-        // can land after the server's first reply frame, &c.
+        // can land after the server's first reply frame, &c. It has its
+        // own token so the response's end can stop it (see finally).
+        using var producerCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        var producerCt = producerCts.Token;
         var producer = Task.Run(async () =>
         {
             try
@@ -491,7 +494,7 @@ internal sealed class ConnectInvoker : IDisposable
                 {
                     var payload = JsonToProtobufBytes(json, inputType);
                     var frame = EncodeFrame(flags: 0x00, payload: payload);
-                    await pipe.Writer.WriteAsync(frame, ct).ConfigureAwait(false);
+                    await pipe.Writer.WriteAsync(frame, producerCt).ConfigureAwait(false);
                 }
                 await pipe.Writer.CompleteAsync().ConfigureAwait(false);
             }
@@ -499,7 +502,7 @@ internal sealed class ConnectInvoker : IDisposable
             {
                 await pipe.Writer.CompleteAsync(ex).ConfigureAwait(false);
             }
-        }, ct);
+        }, producerCt);
 
         try
         {
@@ -533,13 +536,14 @@ internal sealed class ConnectInvoker : IDisposable
         finally
         {
             // resp is disposed by the using-declaration above at try-block
-            // exit (normal, yield-break, or exception). The producer is
-            // normally already done by the time we get here (it completed
-            // alongside the response). Await it so any exception inside
-            // the producer surfaces — the pipe writer would otherwise
-            // swallow it silently.
+            // exit (normal, yield-break, or exception). The call is over, so
+            // stop the producer before awaiting it: a server may end the
+            // stream without reading the whole request, and once nothing
+            // drains the pipe the producer waits on backpressure forever,
+            // so this await never returned (#898).
+            await producerCts.CancelAsync().ConfigureAwait(false);
             try { await producer.ConfigureAwait(false); }
-            catch (OperationCanceledException) { /* expected on caller-cancel */ }
+            catch (OperationCanceledException) { /* cancelled before it started */ }
         }
     }
 
