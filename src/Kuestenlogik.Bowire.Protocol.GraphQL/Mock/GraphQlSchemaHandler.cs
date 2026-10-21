@@ -137,8 +137,16 @@ public sealed class GraphQlSchemaHandler
         string? query;
         try
         {
+            // #920 - the shape is checked, not assumed. A body that is JSON
+            // but not an object, or a query that is not a string, is the
+            // client's mistake and gets the missing-query answer below;
+            // reading it unchecked threw, and the client saw a 500.
             using var parsed = System.Text.Json.JsonDocument.Parse(body);
-            query = parsed.RootElement.TryGetProperty("query", out var q) ? q.GetString() : null;
+            query = parsed.RootElement.ValueKind == System.Text.Json.JsonValueKind.Object
+                && parsed.RootElement.TryGetProperty("query", out var q)
+                && q.ValueKind == System.Text.Json.JsonValueKind.String
+                    ? q.GetString()
+                    : null;
         }
         catch (System.Text.Json.JsonException)
         {

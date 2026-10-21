@@ -109,6 +109,27 @@ public sealed class GraphQlSchemaHandlerEdgeCasesTests : IDisposable
         Assert.Contains("missing a 'query' field", ReadResponseBody(ctx), StringComparison.Ordinal);
     }
 
+    [Theory]
+    // #920 - well-formed JSON of the wrong shape is a client mistake, and
+    // the answer is the same envelope a missing query gets. Each of these
+    // used to throw out of the handler and reach the client as a 500.
+    [InlineData("""{"query":123}""")]
+    [InlineData("""{"query":{"text":"{ ping }"}}""")]
+    [InlineData("""[]""")]
+    [InlineData("""[{"query":"{ ping }"}]""")]
+    [InlineData("\"{ ping }\"")]
+    public async Task TryHandleAsync_JsonOfTheWrongShape_RespondsWithErrorEnvelope(string body)
+    {
+        var handler = await LoadHandler("type Query { ping: String }");
+        var ctx = BuildContext("POST", "/graphql", body: body);
+
+        var handled = await handler.TryHandleAsync(ctx, TestContext.Current.CancellationToken);
+
+        Assert.True(handled);
+        Assert.Equal(200, ctx.Response.StatusCode);
+        Assert.Contains("missing a 'query' field", ReadResponseBody(ctx), StringComparison.Ordinal);
+    }
+
     [Fact]
     public async Task TryHandleAsync_QueryParseError_SurfacesEscapedMessage()
     {
