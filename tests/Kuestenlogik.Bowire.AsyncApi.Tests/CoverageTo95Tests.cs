@@ -112,12 +112,9 @@ public sealed class CoverageTo95Tests
         var json = AsyncApiMockHostingExtension.YamlToJson(yaml);
         using var doc = JsonDocument.Parse(json);
 
-        // Numbers in YAML come through as scalar strings; the JSON
-        // serializer round-trips them as strings unless the converter
-        // forces typing. What matters here is that the conversion ran
-        // without throwing — the catch path would have returned the
-        // raw YAML instead.
+        // Plain YAML numbers come through as JSON numbers (#901); the
+        // catch path would have returned the raw YAML instead.
         Assert.NotEqual(yaml, json);
-        Assert.Equal(JsonValueKind.Object, doc.RootElement.ValueKind);
+        Assert.Equal(1234567890123L, doc.RootElement.GetProperty("count").GetInt64());
     }
 }

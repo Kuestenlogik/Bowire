@@ -49,6 +49,45 @@ public sealed class RestMockHostingExtensionTests
     }
 
     [Fact]
+    public void YamlToJson_keeps_the_type_of_plain_scalars()
+    {
+        // YAML 1.2 core schema: a plain scalar is a bool, null, integer or
+        // float when it reads as one; a quoted scalar is always a string.
+        const string yaml = """
+            required: true
+            nullable: false
+            minimum: 1
+            maximum: 1.5
+            big: 12345678901234567890
+            hex: 0x1F
+            nothing: null
+            tilde: ~
+            empty:
+            quotedBool: 'true'
+            quotedNumber: "42"
+            tagged: !!str 7
+            version: 1.0.0
+            """;
+        var json = RestMockHostingExtension.YamlToJson(yaml);
+        using var doc = System.Text.Json.JsonDocument.Parse(json);
+        var root = doc.RootElement;
+
+        Assert.Equal(System.Text.Json.JsonValueKind.True, root.GetProperty("required").ValueKind);
+        Assert.Equal(System.Text.Json.JsonValueKind.False, root.GetProperty("nullable").ValueKind);
+        Assert.Equal(1, root.GetProperty("minimum").GetInt32());
+        Assert.Equal("1.5", root.GetProperty("maximum").GetRawText());
+        Assert.Equal("12345678901234567890", root.GetProperty("big").GetRawText());
+        Assert.Equal(31, root.GetProperty("hex").GetInt32());
+        Assert.Equal(System.Text.Json.JsonValueKind.Null, root.GetProperty("nothing").ValueKind);
+        Assert.Equal(System.Text.Json.JsonValueKind.Null, root.GetProperty("tilde").ValueKind);
+        Assert.Equal(System.Text.Json.JsonValueKind.Null, root.GetProperty("empty").ValueKind);
+        Assert.Equal("true", root.GetProperty("quotedBool").GetString());
+        Assert.Equal("42", root.GetProperty("quotedNumber").GetString());
+        Assert.Equal("7", root.GetProperty("tagged").GetString());
+        Assert.Equal("1.0.0", root.GetProperty("version").GetString());
+    }
+
+    [Fact]
     public void JsonToYaml_roundtrips_simple_doc()
     {
         const string json = "{\"openapi\":\"3.0.0\",\"info\":{\"title\":\"Test\",\"version\":\"1.0.0\"}}";

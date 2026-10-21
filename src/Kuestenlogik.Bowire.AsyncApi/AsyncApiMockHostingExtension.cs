@@ -135,7 +135,7 @@ public sealed class AsyncApiMockHostingExtension : IBowireMockHostingExtension
         switch (node)
         {
             case YamlDotNet.RepresentationModel.YamlScalarNode scalar:
-                return scalar.Value;
+                return ScalarToObject(scalar);
             case YamlDotNet.RepresentationModel.YamlMappingNode map:
                 var dict = new Dictionary<string, object?>(StringComparer.Ordinal);
                 foreach (var (k, v) in map.Children)
@@ -152,6 +152,65 @@ public sealed class AsyncApiMockHostingExtension : IBowireMockHostingExtension
                 return null;
         }
     }
+
+    /// <summary>
+    /// The JSON value of a YAML scalar under the YAML 1.2 core schema
+    /// (#901). Only a plain, untagged scalar is resolved; quoting or an
+    /// explicit tag (<c>'true'</c>, <c>!!str 7</c>) keeps it a string.
+    /// Numbers keep their literal where it is valid JSON, so <c>1.5</c> or a
+    /// 20-digit integer survives unchanged; <c>.inf</c> and <c>.nan</c> have
+    /// no JSON form and stay strings. Same resolution as the REST mock's
+    /// converter.
+    /// </summary>
+    private static object? ScalarToObject(YamlDotNet.RepresentationModel.YamlScalarNode scalar)
+    {
+        var text = scalar.Value ?? string.Empty;
+        if (scalar.Style != YamlDotNet.Core.ScalarStyle.Plain || !scalar.Tag.IsEmpty) return text;
+
+        switch (text)
+        {
+            case "" or "~" or "null" or "Null" or "NULL": return null;
+            case "true" or "True" or "TRUE": return true;
+            case "false" or "False" or "FALSE": return false;
+        }
+
+        if (CoreSchemaInt.IsMatch(text) || CoreSchemaFloat.IsMatch(text))
+        {
+            if (JsonNumber.IsMatch(text)) return JsonNumberLiteral(text);
+            if (double.TryParse(text, System.Globalization.NumberStyles.Float,
+                    System.Globalization.CultureInfo.InvariantCulture, out var d) && double.IsFinite(d))
+                return d;
+            return text;
+        }
+        if (CoreSchemaHex.IsMatch(text)
+            && ulong.TryParse(text.AsSpan(2), System.Globalization.NumberStyles.AllowHexSpecifier,
+                System.Globalization.CultureInfo.InvariantCulture, out var hex))
+            return hex;
+        if (CoreSchemaOctal.IsMatch(text) && text.Length <= 23)
+            return Convert.ToInt64(text[2..], 8);
+        return text;
+    }
+
+    /// <summary>The number literal itself, emitted verbatim by the JSON serializer.</summary>
+    private static System.Text.Json.JsonElement JsonNumberLiteral(string text)
+    {
+        using var doc = System.Text.Json.JsonDocument.Parse(text);
+        return doc.RootElement.Clone();
+    }
+
+    // YAML 1.2 core schema (https://yaml.org/spec/1.2.2/#1032-tag-resolution).
+    private static readonly System.Text.RegularExpressions.Regex CoreSchemaInt =
+        new(@"^[-+]?[0-9]+$", System.Text.RegularExpressions.RegexOptions.CultureInvariant);
+    private static readonly System.Text.RegularExpressions.Regex CoreSchemaFloat =
+        new(@"^[-+]?(\.[0-9]+|[0-9]+(\.[0-9]*)?)([eE][-+]?[0-9]+)?$",
+            System.Text.RegularExpressions.RegexOptions.CultureInvariant);
+    private static readonly System.Text.RegularExpressions.Regex CoreSchemaHex =
+        new(@"^0x[0-9a-fA-F]+$", System.Text.RegularExpressions.RegexOptions.CultureInvariant);
+    private static readonly System.Text.RegularExpressions.Regex CoreSchemaOctal =
+        new(@"^0o[0-7]+$", System.Text.RegularExpressions.RegexOptions.CultureInvariant);
+    private static readonly System.Text.RegularExpressions.Regex JsonNumber =
+        new(@"^-?(0|[1-9][0-9]*)(\.[0-9]+)?([eE][-+]?[0-9]+)?$",
+            System.Text.RegularExpressions.RegexOptions.CultureInvariant);
 
     private static object? JsonElementToObject(System.Text.Json.JsonElement el)
     {

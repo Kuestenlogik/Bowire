@@ -58,6 +58,37 @@ public sealed class AsyncApiMockHostingExtensionTests
     }
 
     [Fact]
+    public void YamlToJson_keeps_the_type_of_plain_scalars()
+    {
+        // YAML 1.2 core schema: a plain scalar is a bool, null, integer or
+        // float when it reads as one; a quoted scalar is always a string.
+        const string yaml = """
+            channels:
+              temperature:
+                bindings:
+                  mqtt:
+                    qos: 1
+                    retain: true
+                    expiry: 2.5
+                    lastWill: null
+                    clientId: '42'
+            info:
+              version: 1.0.0
+            """;
+        var json = AsyncApiMockHostingExtension.YamlToJson(yaml);
+        using var doc = System.Text.Json.JsonDocument.Parse(json);
+        var mqtt = doc.RootElement.GetProperty("channels").GetProperty("temperature")
+            .GetProperty("bindings").GetProperty("mqtt");
+
+        Assert.Equal(1, mqtt.GetProperty("qos").GetInt32());
+        Assert.Equal(System.Text.Json.JsonValueKind.True, mqtt.GetProperty("retain").ValueKind);
+        Assert.Equal("2.5", mqtt.GetProperty("expiry").GetRawText());
+        Assert.Equal(System.Text.Json.JsonValueKind.Null, mqtt.GetProperty("lastWill").ValueKind);
+        Assert.Equal("42", mqtt.GetProperty("clientId").GetString());
+        Assert.Equal("1.0.0", doc.RootElement.GetProperty("info").GetProperty("version").GetString());
+    }
+
+    [Fact]
     public void JsonToYaml_roundtrips_simple_asyncapi_doc()
     {
         const string json = """
