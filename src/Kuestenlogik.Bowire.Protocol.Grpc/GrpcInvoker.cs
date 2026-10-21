@@ -691,6 +691,24 @@ internal sealed class GrpcInvoker : IDisposable
                 cos.WriteTag(tag);
                 cos.WriteUInt64(value.TryGetUInt64(out var u64) ? u64 : 0);
                 break;
+            // Fixed-width integers had no case and were dropped from the
+            // request without a word (#891).
+            case FieldType.Fixed32:
+                cos.WriteTag(tag);
+                cos.WriteFixed32(value.TryGetUInt32(out var f32) ? f32 : 0);
+                break;
+            case FieldType.Fixed64:
+                cos.WriteTag(tag);
+                cos.WriteFixed64(value.TryGetUInt64(out var f64) ? f64 : 0);
+                break;
+            case FieldType.SFixed32:
+                cos.WriteTag(tag);
+                cos.WriteSFixed32(value.TryGetInt32(out var sf32) ? sf32 : 0);
+                break;
+            case FieldType.SFixed64:
+                cos.WriteTag(tag);
+                cos.WriteSFixed64(value.TryGetInt64(out var sf64) ? sf64 : 0);
+                break;
             case FieldType.Double:
                 cos.WriteTag(tag);
                 cos.WriteDouble(value.TryGetDouble(out var d) ? d : 0);
@@ -821,6 +839,11 @@ internal sealed class GrpcInvoker : IDisposable
             FieldType.SInt64 => cis.ReadSInt64(),
             FieldType.UInt32 => cis.ReadUInt32(),
             FieldType.UInt64 => cis.ReadUInt64(),
+            // Without these the value was skipped and shown as null (#891).
+            FieldType.Fixed32 => cis.ReadFixed32(),
+            FieldType.Fixed64 => cis.ReadFixed64(),
+            FieldType.SFixed32 => cis.ReadSFixed32(),
+            FieldType.SFixed64 => cis.ReadSFixed64(),
             FieldType.Double => cis.ReadDouble(),
             FieldType.Float => cis.ReadFloat(),
             FieldType.Bool => cis.ReadBool(),

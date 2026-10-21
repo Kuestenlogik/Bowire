@@ -76,4 +76,37 @@ public sealed class GrpcWireCodecTests
         Assert.All(sample.Many, v => Assert.Equal(1, v));
     }
 
+    // ---- fixed32 / fixed64 / sfixed32 / sfixed64 (#891) -------------
+
+    [Fact]
+    public void Decode_reads_fixed_and_sfixed_fields()
+    {
+        var expected = new WireFixed
+        {
+            F32 = uint.MaxValue,
+            F64 = 1UL << 50,
+            Sf32 = -7,
+            Sf64 = -(1L << 40),
+            Many = { 1, 2 },
+        };
+
+        Assert.Equal(expected, Decode<WireFixed>(expected));
+    }
+
+    [Fact]
+    public void Encode_writes_fixed_and_sfixed_fields()
+    {
+        var actual = Encode(
+            """{"f32":4294967295,"f64":1125899906842624,"sf32":-7,"sf64":-1099511627776,"many":[1,2]}""",
+            WireFixed.Parser);
+
+        Assert.Equal(new WireFixed
+        {
+            F32 = uint.MaxValue,
+            F64 = 1UL << 50,
+            Sf32 = -7,
+            Sf64 = -(1L << 40),
+            Many = { 1, 2 },
+        }, actual);
+    }
 }
