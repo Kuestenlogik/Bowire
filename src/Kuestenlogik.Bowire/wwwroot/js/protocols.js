@@ -78,8 +78,12 @@
         var line = op + ' ' + name;
         if (fields.length > 0) {
             line += '(' + fields.map(function (f) {
-                var gqlType;
-                switch (f.type) {
+                // #924 - the schema's own type name when discovery kept it,
+                // as GraphQLQueryBuilder does (#713): ID, enums and custom
+                // scalars all normalise to 'string', and `$id: String!`
+                // against an `ID!` argument is refused.
+                var gqlType = f.schemaType;
+                if (!gqlType) switch (f.type) {
                     case 'int32': case 'int64': case 'uint32': case 'uint64': gqlType = 'Int'; break;
                     case 'float': case 'double': gqlType = 'Float'; break;
                     case 'bool': gqlType = 'Boolean'; break;
@@ -94,6 +98,12 @@
         line += ' {\n  ' + name;
         if (fields.length > 0) {
             line += '(' + fields.map(function (f) { return f.name + ': $' + f.name; }).join(', ') + ')';
+        }
+
+        // #924 - a field returning a scalar or an enum takes no selection
+        // set; discovery marks it graphql.Leaf, as for the server builder.
+        if (selectedMethod.outputType && selectedMethod.outputType.fullName === 'graphql.Leaf') {
+            return line + '\n}';
         }
 
         // Use the visual selection-set picker if the method has a non-empty
