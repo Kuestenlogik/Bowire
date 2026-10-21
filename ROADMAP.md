@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
 
-**49/76 done** · 27 backlog
+**49/79 done** · 30 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -43,6 +43,9 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [890](https://github.com/Kuestenlogik/Bowire/issues/890) | Bowire | [gRPC sint32/sint64 values are not zigzag-encoded in requests, responses and mock samples](#issue-kuestenlogik-bowire-890) | ⬜ Backlog |  |
 | [891](https://github.com/Kuestenlogik/Bowire/issues/891) | Bowire | [gRPC fixed32/fixed64/sfixed32/sfixed64 fields show as null in responses and are dropped from requests](#issue-kuestenlogik-bowire-891) | ⬜ Backlog |  |
 | [892](https://github.com/Kuestenlogik/Bowire/issues/892) | Bowire | [MCP adapter tools/call runs streaming methods that tools/list never offered](#issue-kuestenlogik-bowire-892) | ⬜ Backlog |  |
+| [893](https://github.com/Kuestenlogik/Bowire/issues/893) | Bowire | [MQTT channel unwraps device payloads that look like an envelope ({"type":…,"data":…})](#issue-kuestenlogik-bowire-893) | ⬜ Backlog |  |
+| [894](https://github.com/Kuestenlogik/Bowire/issues/894) | Bowire | [gRPC requests fail on integers given as JSON strings, the canonical proto3 form for int64](#issue-kuestenlogik-bowire-894) | ⬜ Backlog |  |
+| [895](https://github.com/Kuestenlogik/Bowire/issues/895) | Bowire | [gRPC map fields are encoded and decoded wrongly](#issue-kuestenlogik-bowire-895) | ⬜ Backlog |  |
 | [816](https://github.com/Kuestenlogik/Bowire/issues/816) | Bowire | [SCIM trace records status 200 for every request](#issue-kuestenlogik-bowire-816) | ✅ Done |  |
 | [817](https://github.com/Kuestenlogik/Bowire/issues/817) | Bowire | [OIDC provider cannot run as an installed plugin](#issue-kuestenlogik-bowire-817) | ✅ Done |  |
 | [818](https://github.com/Kuestenlogik/Bowire/issues/818) | Bowire | [--auth-oidc-* flags are documented but never read](#issue-kuestenlogik-bowire-818) | ✅ Done |  |
@@ -356,6 +359,18 @@ The `bowire://recordings` resource (`BowireMcpResources.RecordingsIndex`, `src/K
 #### <a id="issue-kuestenlogik-bowire-892"></a>⬜ Backlog · [#892](https://github.com/Kuestenlogik/Bowire/issues/892) MCP adapter tools/call runs streaming methods that tools/list never offered
 
 The MCP adapter's `tools/list` offers only unary methods (`src/Kuestenlogik.Bowire.Protocol.Mcp/BowireMcpAdapterServiceCollectionExtensions.cs:270`), because a streaming method needs the channel surface and does not fit one tool call. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/892)
+
+#### <a id="issue-kuestenlogik-bowire-893"></a>⬜ Backlog · [#893](https://github.com/Kuestenlogik/Bowire/issues/893) MQTT channel unwraps device payloads that look like an envelope ({"type":…,"data":…})
+
+`MqttBowireChannel.ParseOutgoingFrame` unwraps any JSON object with a string `type`: `{"type":"reading","data":"21.5"}` is published as `21.5` (the `data` convenience shortcut), `{"type":"text","text":"hi","ts":1}` as `hi`, and `{"type":"binary","base64":"QUJD","seq":2}` as the bytes `ABC`. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/893)
+
+#### <a id="issue-kuestenlogik-bowire-894"></a>⬜ Backlog · [#894](https://github.com/Kuestenlogik/Bowire/issues/894) gRPC requests fail on integers given as JSON strings, the canonical proto3 form for int64
+
+proto3 JSON writes every 64-bit integer (`int64`, `uint64`, `sint64`, `fixed64`, `sfixed64`) as a JSON string, and a parser must accept the string form for 32-bit integers too. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/894)
+
+#### <a id="issue-kuestenlogik-bowire-895"></a>⬜ Backlog · [#895](https://github.com/Kuestenlogik/Bowire/issues/895) gRPC map fields are encoded and decoded wrongly
+
+A protobuf `map<K, V>` field is a repeated `MapEntry { K key = 1; V value = 2; }` on the wire and a JSON object in proto3 JSON. The descriptor-driven codec in `src/Kuestenlogik.Bowire.Protocol.Grpc/GrpcInvoker.cs` handles neither side: [[more]](https://github.com/Kuestenlogik/Bowire/issues/895)
 
 #### <a id="issue-kuestenlogik-bowire-816"></a>✅ Done · [#816](https://github.com/Kuestenlogik/Bowire/issues/816) SCIM trace records status 200 for every request
 
