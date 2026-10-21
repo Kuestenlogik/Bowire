@@ -12,22 +12,12 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
 
-**56/108 done** · 52 backlog
+**66/108 done** · 42 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [639](https://github.com/Kuestenlogik/Bowire/issues/639) | Bowire | [SCIM: live Okta and Entra ID provisioning round-trips](#issue-kuestenlogik-bowire-639) | ⬜ Backlog | `area:workbench` |
 | [670](https://github.com/Kuestenlogik/Bowire/issues/670) | Bowire | [Get listed where developers and models actually look](#issue-kuestenlogik-bowire-670) | ⬜ Backlog | `area:site` |
-| [875](https://github.com/Kuestenlogik/Bowire/issues/875) | Bowire | [SCIM: a PATCH that fails on a later operation keeps the earlier operations](#issue-kuestenlogik-bowire-875) | ⬜ Backlog |  |
-| [876](https://github.com/Kuestenlogik/Bowire/issues/876) | Bowire | [SCIM: the provisioning trace throws on a PATCH body that is not a JSON object](#issue-kuestenlogik-bowire-876) | ⬜ Backlog |  |
-| [877](https://github.com/Kuestenlogik/Bowire/issues/877) | Bowire | [MCP URL allowlist matches a bare text prefix, so an entry also covers other hosts and ports](#issue-kuestenlogik-bowire-877) | ⬜ Backlog |  |
-| [878](https://github.com/Kuestenlogik/Bowire/issues/878) | Bowire | [MCP confirmation token is not bound to its tool or plan, so it confirms any other mutation](#issue-kuestenlogik-bowire-878) | ⬜ Backlog |  |
-| [879](https://github.com/Kuestenlogik/Bowire/issues/879) | Bowire | [bowire.record.replay ignores recordingId while a session is active and still reports success](#issue-kuestenlogik-bowire-879) | ⬜ Backlog |  |
-| [880](https://github.com/Kuestenlogik/Bowire/issues/880) | Bowire | [MCP typed-URL store erases its history when typed-urls.json cannot be read](#issue-kuestenlogik-bowire-880) | ⬜ Backlog |  |
-| [881](https://github.com/Kuestenlogik/Bowire/issues/881) | Bowire | [Nuclei RandStr/RandInt length has no upper bound: a template can exhaust memory](#issue-kuestenlogik-bowire-881) | ⬜ Backlog |  |
-| [882](https://github.com/Kuestenlogik/Bowire/issues/882) | Bowire | [bowire.record.stop loses the recording when recordings.json is not the {recordings:[…]} store](#issue-kuestenlogik-bowire-882) | ⬜ Backlog |  |
-| [883](https://github.com/Kuestenlogik/Bowire/issues/883) | Bowire | [bowire.subscribe throws on a negative durationMs, and -1 removes the time limit](#issue-kuestenlogik-bowire-883) | ⬜ Backlog |  |
-| [884](https://github.com/Kuestenlogik/Bowire/issues/884) | Bowire | [MCP resource not-found body is invalid JSON for an id with a quote or backslash](#issue-kuestenlogik-bowire-884) | ⬜ Backlog |  |
 | [885](https://github.com/Kuestenlogik/Bowire/issues/885) | Bowire | [One entry with a non-string id breaks every MCP resource lookup by id](#issue-kuestenlogik-bowire-885) | ⬜ Backlog |  |
 | [886](https://github.com/Kuestenlogik/Bowire/issues/886) | Bowire | [MCP endpoint registry docs say nested prefixes throw; only the same path twice does](#issue-kuestenlogik-bowire-886) | ⬜ Backlog |  |
 | [887](https://github.com/Kuestenlogik/Bowire/issues/887) | Bowire | [bowire://recordings is always empty: it ignores the {recordings:[…]} layout the store writes](#issue-kuestenlogik-bowire-887) | ⬜ Backlog |  |
@@ -69,6 +59,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [923](https://github.com/Kuestenlogik/Bowire/issues/923) | Bowire | [Shared GraphQL WebSocket subscribes before connection_ack and reuses a dead socket](#issue-kuestenlogik-bowire-923) | ⬜ Backlog |  |
 | [924](https://github.com/Kuestenlogik/Bowire/issues/924) | Bowire | [Workbench GraphQL query: selection set on scalar fields, variables typed String instead of the schema's type](#issue-kuestenlogik-bowire-924) | ⬜ Backlog |  |
 | [871](https://github.com/Kuestenlogik/Bowire/issues/871) | Bowire | [SCIM: a user PATCH refused with 409 for a taken userName keeps the new name in memory](#issue-kuestenlogik-bowire-871) | ✅ Done |  |
+| [884](https://github.com/Kuestenlogik/Bowire/issues/884) | Bowire | [MCP resource not-found body is invalid JSON for an id with a quote or backslash](#issue-kuestenlogik-bowire-884) | ✅ Done |  |
 | [816](https://github.com/Kuestenlogik/Bowire/issues/816) | Bowire | [SCIM trace records status 200 for every request](#issue-kuestenlogik-bowire-816) | ✅ Done |  |
 | [817](https://github.com/Kuestenlogik/Bowire/issues/817) | Bowire | [OIDC provider cannot run as an installed plugin](#issue-kuestenlogik-bowire-817) | ✅ Done |  |
 | [818](https://github.com/Kuestenlogik/Bowire/issues/818) | Bowire | [--auth-oidc-* flags are documented but never read](#issue-kuestenlogik-bowire-818) | ✅ Done |  |
@@ -124,6 +115,15 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [872](https://github.com/Kuestenlogik/Bowire/issues/872) | Bowire | [SCIM: a user provisioned inactive is never purged after DELETE](#issue-kuestenlogik-bowire-872) | ✅ Done |  |
 | [873](https://github.com/Kuestenlogik/Bowire/issues/873) | Bowire | [SCIM: PurgeAfter=00:00:00 never purges, though documented as deleting without waiting](#issue-kuestenlogik-bowire-873) | ✅ Done |  |
 | [874](https://github.com/Kuestenlogik/Bowire/issues/874) | Bowire | [SCIM: group PATCH accepts a displayName another group already has](#issue-kuestenlogik-bowire-874) | ✅ Done |  |
+| [875](https://github.com/Kuestenlogik/Bowire/issues/875) | Bowire | [SCIM: a PATCH that fails on a later operation keeps the earlier operations](#issue-kuestenlogik-bowire-875) | ✅ Done |  |
+| [876](https://github.com/Kuestenlogik/Bowire/issues/876) | Bowire | [SCIM: the provisioning trace throws on a PATCH body that is not a JSON object](#issue-kuestenlogik-bowire-876) | ✅ Done |  |
+| [877](https://github.com/Kuestenlogik/Bowire/issues/877) | Bowire | [MCP URL allowlist matches a bare text prefix, so an entry also covers other hosts and ports](#issue-kuestenlogik-bowire-877) | ✅ Done |  |
+| [878](https://github.com/Kuestenlogik/Bowire/issues/878) | Bowire | [MCP confirmation token is not bound to its tool or plan, so it confirms any other mutation](#issue-kuestenlogik-bowire-878) | ✅ Done |  |
+| [879](https://github.com/Kuestenlogik/Bowire/issues/879) | Bowire | [bowire.record.replay ignores recordingId while a session is active and still reports success](#issue-kuestenlogik-bowire-879) | ✅ Done |  |
+| [880](https://github.com/Kuestenlogik/Bowire/issues/880) | Bowire | [MCP typed-URL store erases its history when typed-urls.json cannot be read](#issue-kuestenlogik-bowire-880) | ✅ Done |  |
+| [881](https://github.com/Kuestenlogik/Bowire/issues/881) | Bowire | [Nuclei RandStr/RandInt length has no upper bound: a template can exhaust memory](#issue-kuestenlogik-bowire-881) | ✅ Done |  |
+| [882](https://github.com/Kuestenlogik/Bowire/issues/882) | Bowire | [bowire.record.stop loses the recording when recordings.json is not the {recordings:[…]} store](#issue-kuestenlogik-bowire-882) | ✅ Done |  |
+| [883](https://github.com/Kuestenlogik/Bowire/issues/883) | Bowire | [bowire.subscribe throws on a negative durationMs, and -1 removes the time limit](#issue-kuestenlogik-bowire-883) | ✅ Done |  |
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
@@ -289,46 +289,6 @@ Split from #96 so the SCIM surface can ship on its own merits. [[more]](https://
 
 Six credible competitors turned up during the competitive survey **via openalternative.co**. Bowire was not there. That is the whole diagnosis: when a developer — or a language model — asks for "open source Postman alternative", the answer is assembled from these directories, not from bowire.io. [[more]](https://github.com/Kuestenlogik/Bowire/issues/670)
 
-#### <a id="issue-kuestenlogik-bowire-875"></a>⬜ Backlog · [#875](https://github.com/Kuestenlogik/Bowire/issues/875) SCIM: a PATCH that fails on a later operation keeps the earlier operations
-
-`ScimPatch.Apply` (`src/Kuestenlogik.Bowire.Scim/ScimPatch.cs:74` and `:96`) applies the operations one by one to the live resource that `BowireScimStore.UpdateUser` / `UpdateGroup` hand it. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/875)
-
-#### <a id="issue-kuestenlogik-bowire-876"></a>⬜ Backlog · [#876](https://github.com/Kuestenlogik/Bowire/issues/876) SCIM: the provisioning trace throws on a PATCH body that is not a JSON object
-
-`ScimProvisioningTrace.DetectPatchDialect` (`src/Kuestenlogik.Bowire.Scim/ScimProvisioningTrace.cs:170`) calls `TryGetProperty` on the root element without checking that it is an object. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/876)
-
-#### <a id="issue-kuestenlogik-bowire-877"></a>⬜ Backlog · [#877](https://github.com/Kuestenlogik/Bowire/issues/877) MCP URL allowlist matches a bare text prefix, so an entry also covers other hosts and ports
-
-The MCP server's URL allowlist (`BowireMcpTools.IsUrlAllowed`, `src/Kuestenlogik.Bowire.Mcp/BowireMcpTools.cs:1238`) accepts any URL that merely *starts with* an allowlisted entry as text. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/877)
-
-#### <a id="issue-kuestenlogik-bowire-878"></a>⬜ Backlog · [#878](https://github.com/Kuestenlogik/Bowire/issues/878) MCP confirmation token is not bound to its tool or plan, so it confirms any other mutation
-
-The two-step confirmation gate of the MCP mutator tools (`BowireMcpTools.TryConfirmOrPark`, `src/Kuestenlogik.Bowire.Mcp/BowireMcpTools.cs:1199-1211`) accepts any live confirmation token for any call. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/878)
-
-#### <a id="issue-kuestenlogik-bowire-879"></a>⬜ Backlog · [#879](https://github.com/Kuestenlogik/Bowire/issues/879) bowire.record.replay ignores recordingId while a session is active and still reports success
-
-`bowire.record.replay` with a `recordingId` while a recording session is already active (`BowireMcpTools.RecordReplay`, `src/Kuestenlogik.Bowire.Mcp/BowireMcpTools.cs:1055-1058`) ignores the requested id: it switches the *active* session into replay mode and answers `replaying: true`. [[more]](https://github.com/Kuestenlogik/Bowire/issues/879)
-
-#### <a id="issue-kuestenlogik-bowire-880"></a>⬜ Backlog · [#880](https://github.com/Kuestenlogik/Bowire/issues/880) MCP typed-URL store erases its history when typed-urls.json cannot be read
-
-`BowireMcpTypedUrlStore.Add` (`src/Kuestenlogik.Bowire.Mcp/BowireMcpTypedUrlStore.cs:92`) builds the new list from `LoadAll()`, which deliberately reads an unreadable `typed-urls.json` as "no history". `Add` then writes that empty list plus the new URL back, so every URL the file still held is erased. [[more]](https://github.com/Kuestenlogik/Bowire/issues/880)
-
-#### <a id="issue-kuestenlogik-bowire-881"></a>⬜ Backlog · [#881](https://github.com/Kuestenlogik/Bowire/issues/881) Nuclei RandStr/RandInt length has no upper bound: a template can exhaust memory
-
-`NucleiVariableResolver` resolves `{{RandStr_N}}` / `{{RandInt_N}}` for any `N` that fits an int (#831 only stopped the overflow). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/881)
-
-#### <a id="issue-kuestenlogik-bowire-882"></a>⬜ Backlog · [#882](https://github.com/Kuestenlogik/Bowire/issues/882) bowire.record.stop loses the recording when recordings.json is not the {recordings:[…]} store
-
-`bowire.record.stop` closes the recording session first and then hands the recording to `PersistRecording` (`src/Kuestenlogik.Bowire.Mcp/BowireMcpTools.cs:995`, `:1131`). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/882)
-
-#### <a id="issue-kuestenlogik-bowire-883"></a>⬜ Backlog · [#883](https://github.com/Kuestenlogik/Bowire/issues/883) bowire.subscribe throws on a negative durationMs, and -1 removes the time limit
-
-`bowire.subscribe` clamps `durationMs` only from above (`Math.Min(durationMs, MaxSubscribeMs)`, `src/Kuestenlogik.Bowire.Mcp/BowireMcpTools.cs:341`) and passes it to `CancellationTokenSource.CancelAfter` (`:345`). [[more]](https://github.com/Kuestenlogik/Bowire/issues/883)
-
-#### <a id="issue-kuestenlogik-bowire-884"></a>⬜ Backlog · [#884](https://github.com/Kuestenlogik/Bowire/issues/884) MCP resource not-found body is invalid JSON for an id with a quote or backslash
-
-`BowireMcpResources.ReadOneById` (`src/Kuestenlogik.Bowire.Mcp/BowireMcpResources.cs:316`) builds its "not found" body by string interpolation: `{ "error": "no recordings entry with id={id}" }`. The id comes from the resource URI and is not escaped. [[more]](https://github.com/Kuestenlogik/Bowire/issues/884)
-
 #### <a id="issue-kuestenlogik-bowire-885"></a>⬜ Backlog · [#885](https://github.com/Kuestenlogik/Bowire/issues/885) One entry with a non-string id breaks every MCP resource lookup by id
 
 `BowireMcpResources.ReadOneById` (`src/Kuestenlogik.Bowire.Mcp/BowireMcpResources.cs:311`) compares ids with `i.GetString() == id`. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/885)
@@ -492,6 +452,10 @@ The workbench builds its own default GraphQL operation for the query pane (`buil
 #### <a id="issue-kuestenlogik-bowire-871"></a>✅ Done · [#871](https://github.com/Kuestenlogik/Bowire/issues/871) SCIM: a user PATCH refused with 409 for a taken userName keeps the new name in memory
 
 `BowireScimStore.UpdateUser` (`src/Kuestenlogik.Bowire.Scim/BowireScimStore.cs:347`) runs the change on the live record and only then checks whether the new `userName` belongs to somebody else. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/871)
+
+#### <a id="issue-kuestenlogik-bowire-884"></a>✅ Done · [#884](https://github.com/Kuestenlogik/Bowire/issues/884) MCP resource not-found body is invalid JSON for an id with a quote or backslash
+
+`BowireMcpResources.ReadOneById` (`src/Kuestenlogik.Bowire.Mcp/BowireMcpResources.cs:316`) builds its "not found" body by string interpolation: `{ "error": "no recordings entry with id={id}" }`. The id comes from the resource URI and is not escaped. [[more]](https://github.com/Kuestenlogik/Bowire/issues/884)
 
 #### <a id="issue-kuestenlogik-bowire-816"></a>✅ Done · [#816](https://github.com/Kuestenlogik/Bowire/issues/816) SCIM trace records status 200 for every request
 
@@ -712,6 +676,42 @@ When a followed MCP task (#801) fails and its JSON-RPC `error.code` is not a num
 #### <a id="issue-kuestenlogik-bowire-874"></a>✅ Done · [#874](https://github.com/Kuestenlogik/Bowire/issues/874) SCIM: group PATCH accepts a displayName another group already has
 
 `displayName` is advertised as unique (`/Schemas`), and `CreateGroup` and `ReplaceGroup` refuse a duplicate with `409 uniqueness`. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/874)
+
+#### <a id="issue-kuestenlogik-bowire-875"></a>✅ Done · [#875](https://github.com/Kuestenlogik/Bowire/issues/875) SCIM: a PATCH that fails on a later operation keeps the earlier operations
+
+`ScimPatch.Apply` (`src/Kuestenlogik.Bowire.Scim/ScimPatch.cs:74` and `:96`) applies the operations one by one to the live resource that `BowireScimStore.UpdateUser` / `UpdateGroup` hand it. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/875)
+
+#### <a id="issue-kuestenlogik-bowire-876"></a>✅ Done · [#876](https://github.com/Kuestenlogik/Bowire/issues/876) SCIM: the provisioning trace throws on a PATCH body that is not a JSON object
+
+`ScimProvisioningTrace.DetectPatchDialect` (`src/Kuestenlogik.Bowire.Scim/ScimProvisioningTrace.cs:170`) calls `TryGetProperty` on the root element without checking that it is an object. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/876)
+
+#### <a id="issue-kuestenlogik-bowire-877"></a>✅ Done · [#877](https://github.com/Kuestenlogik/Bowire/issues/877) MCP URL allowlist matches a bare text prefix, so an entry also covers other hosts and ports
+
+The MCP server's URL allowlist (`BowireMcpTools.IsUrlAllowed`, `src/Kuestenlogik.Bowire.Mcp/BowireMcpTools.cs:1238`) accepts any URL that merely *starts with* an allowlisted entry as text. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/877)
+
+#### <a id="issue-kuestenlogik-bowire-878"></a>✅ Done · [#878](https://github.com/Kuestenlogik/Bowire/issues/878) MCP confirmation token is not bound to its tool or plan, so it confirms any other mutation
+
+The two-step confirmation gate of the MCP mutator tools (`BowireMcpTools.TryConfirmOrPark`, `src/Kuestenlogik.Bowire.Mcp/BowireMcpTools.cs:1199-1211`) accepts any live confirmation token for any call. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/878)
+
+#### <a id="issue-kuestenlogik-bowire-879"></a>✅ Done · [#879](https://github.com/Kuestenlogik/Bowire/issues/879) bowire.record.replay ignores recordingId while a session is active and still reports success
+
+`bowire.record.replay` with a `recordingId` while a recording session is already active (`BowireMcpTools.RecordReplay`, `src/Kuestenlogik.Bowire.Mcp/BowireMcpTools.cs:1055-1058`) ignores the requested id: it switches the *active* session into replay mode and answers `replaying: true`. [[more]](https://github.com/Kuestenlogik/Bowire/issues/879)
+
+#### <a id="issue-kuestenlogik-bowire-880"></a>✅ Done · [#880](https://github.com/Kuestenlogik/Bowire/issues/880) MCP typed-URL store erases its history when typed-urls.json cannot be read
+
+`BowireMcpTypedUrlStore.Add` (`src/Kuestenlogik.Bowire.Mcp/BowireMcpTypedUrlStore.cs:92`) builds the new list from `LoadAll()`, which deliberately reads an unreadable `typed-urls.json` as "no history". `Add` then writes that empty list plus the new URL back, so every URL the file still held is erased. [[more]](https://github.com/Kuestenlogik/Bowire/issues/880)
+
+#### <a id="issue-kuestenlogik-bowire-881"></a>✅ Done · [#881](https://github.com/Kuestenlogik/Bowire/issues/881) Nuclei RandStr/RandInt length has no upper bound: a template can exhaust memory
+
+`NucleiVariableResolver` resolves `{{RandStr_N}}` / `{{RandInt_N}}` for any `N` that fits an int (#831 only stopped the overflow). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/881)
+
+#### <a id="issue-kuestenlogik-bowire-882"></a>✅ Done · [#882](https://github.com/Kuestenlogik/Bowire/issues/882) bowire.record.stop loses the recording when recordings.json is not the {recordings:[…]} store
+
+`bowire.record.stop` closes the recording session first and then hands the recording to `PersistRecording` (`src/Kuestenlogik.Bowire.Mcp/BowireMcpTools.cs:995`, `:1131`). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/882)
+
+#### <a id="issue-kuestenlogik-bowire-883"></a>✅ Done · [#883](https://github.com/Kuestenlogik/Bowire/issues/883) bowire.subscribe throws on a negative durationMs, and -1 removes the time limit
+
+`bowire.subscribe` clamps `durationMs` only from above (`Math.Min(durationMs, MaxSubscribeMs)`, `src/Kuestenlogik.Bowire.Mcp/BowireMcpTools.cs:341`) and passes it to `CancellationTokenSource.CancelAfter` (`:345`). [[more]](https://github.com/Kuestenlogik/Bowire/issues/883)
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
