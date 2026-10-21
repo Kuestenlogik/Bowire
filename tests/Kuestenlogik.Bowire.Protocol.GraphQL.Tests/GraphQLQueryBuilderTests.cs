@@ -187,4 +187,39 @@ public class GraphQLQueryBuilderTests
 
         Assert.Contains("$blob: JSON", operation, StringComparison.Ordinal);
     }
+
+    [Theory]
+    // #914 - the variable has to be accepted wherever the argument sits. A
+    // nullable list declared non-null, or a non-null list declared
+    // nullable, is refused by the server before anything runs.
+    [InlineData("""{ "kind": "NON_NULL", "ofType": { "kind": "LIST", "ofType": { "kind": "SCALAR", "name": "ID" } } }""", "$ids: [ID!]!")]
+    [InlineData("""{ "kind": "NON_NULL", "ofType": { "kind": "LIST", "ofType": { "kind": "NON_NULL", "ofType": { "kind": "SCALAR", "name": "ID" } } } }""", "$ids: [ID!]!")]
+    [InlineData("""{ "kind": "LIST", "ofType": { "kind": "NON_NULL", "ofType": { "kind": "SCALAR", "name": "ID" } } }""", "$ids: [ID!])")]
+    [InlineData("""{ "kind": "LIST", "ofType": { "kind": "SCALAR", "name": "ID" } }""", "$ids: [ID!])")]
+    public void Build_ListArgument_Declares_The_Lists_Own_Nullability(string typeRef, string expected)
+    {
+        var schema = System.Text.Json.JsonDocument.Parse($$"""
+            {
+              "__schema": {
+                "queryType": { "name": "Query" },
+                "mutationType": null,
+                "subscriptionType": null,
+                "types": [
+                  { "kind": "OBJECT", "name": "Query",
+                    "fields": [ {
+                      "name": "byIds",
+                      "args": [ { "name": "ids", "type": {{typeRef}} } ],
+                      "type": { "kind": "SCALAR", "name": "String" }
+                    } ],
+                    "inputFields": null, "enumValues": null }
+                ]
+              }
+            }
+            """).RootElement;
+
+        var method = new GraphQLSchemaMapper().Map(schema, "http://localhost/graphql").Single().Methods.Single();
+        var (operation, _) = GraphQLQueryBuilder.Build("query", method, "{}");
+
+        Assert.Contains(expected, operation, StringComparison.Ordinal);
+    }
 }

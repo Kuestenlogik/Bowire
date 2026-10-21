@@ -174,19 +174,27 @@ internal sealed class GraphQLSchemaMapper
 
         // Walk the wrapping NON_NULL / LIST chain. The GraphQL TypeRef is a
         // recursive linked list: NON_NULL → LIST → NON_NULL → NAMED, etc.
+        //
+        // #914 - Required is the outermost NON_NULL: whether the argument
+        // itself must be given. It used to be the element's, which turned
+        // `[T]!` into the variable `[T!]` (a nullable variable for a
+        // non-null argument) and `[T!]` into `[T!]!` (an optional argument
+        // that could no longer be left out). Both are refused by the
+        // server. The element's own nullability has no slot in the model;
+        // the operation builder declares elements non-null, which is
+        // accepted for either kind of list.
         while (current.ValueKind == JsonValueKind.Object)
         {
             var kind = current.TryGetProperty("kind", out var k) ? k.GetString() : null;
             if (kind == "NON_NULL")
             {
-                required = true;
+                if (!isRepeated) required = true;
                 current = current.GetProperty("ofType");
                 continue;
             }
             if (kind == "LIST")
             {
                 isRepeated = true;
-                required = false; // reset — non_null applies to inner element
                 current = current.GetProperty("ofType");
                 continue;
             }
