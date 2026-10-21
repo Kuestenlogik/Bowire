@@ -451,6 +451,21 @@ public sealed class BowireScimStoreTests : IDisposable
         Assert.Equal("bowire-admins", store.GetGroup(group.Id)!.DisplayName);
     }
 
+    [Fact]
+    public void A_Group_Cannot_Be_Patched_Onto_Another_Groups_Name()
+    {
+        // #874 — displayName is advertised as unique; create and replace
+        // refuse a duplicate, and PATCH is the path connectors rename with.
+        var store = Store();
+        store.CreateGroup(new ScimGroup { DisplayName = "bowire-admins" });
+        var other = store.CreateGroup(new ScimGroup { DisplayName = "bowire-users" });
+
+        Assert.Throws<ScimConflictException>(() =>
+            store.UpdateGroup(other.Id, g => g.DisplayName = "Bowire-Admins"));
+
+        Assert.Equal("bowire-users", store.GetGroup(other.Id)!.DisplayName);
+    }
+
     private sealed class FixedClock(DateTimeOffset now) : TimeProvider
     {
         public DateTimeOffset Now { get; set; } = now;

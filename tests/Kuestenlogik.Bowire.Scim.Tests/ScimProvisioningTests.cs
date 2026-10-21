@@ -418,4 +418,20 @@ public sealed class ScimProvisioningTests : IAsyncLifetime
 
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
     }
+
+    [Fact]
+    public async Task Patching_A_Group_Onto_A_Taken_Name_Is_A_409_With_Uniqueness()
+    {
+        // #874 — the same answer a POST or PUT with a taken name gets.
+        await Post("/scim/v2/Groups", """{ "displayName": "bowire-admins" }""");
+        var other = (await Json(await Post("/scim/v2/Groups",
+            """{ "displayName": "bowire-users" }"""))).GetProperty("id").GetString();
+
+        var response = await Patch($"/scim/v2/Groups/{other}", """
+            { "Operations": [ { "op": "replace", "path": "displayName", "value": "bowire-admins" } ] }
+            """);
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        Assert.Equal("uniqueness", (await Json(response)).GetProperty("scimType").GetString());
+    }
 }

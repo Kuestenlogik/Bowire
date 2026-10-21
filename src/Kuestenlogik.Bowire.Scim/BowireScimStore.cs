@@ -540,6 +540,7 @@ public sealed class BowireScimStore
     }
 
     /// <summary>Apply a change to a group, all or nothing.</summary>
+    /// <exception cref="ScimConflictException">The new display name belongs to another group.</exception>
     public ScimGroup? UpdateGroup(string id, Action<ScimGroup> change)
     {
         ArgumentNullException.ThrowIfNull(change);
@@ -554,6 +555,16 @@ public sealed class BowireScimStore
             // the ones before it applied.
             var changed = Copy(existing);
             change(changed);
+
+            // #874 — the same uniqueness create and replace hold. PATCH is how
+            // connectors rename a group, and the admin group is matched by
+            // name, so a duplicate would split its membership across two.
+            if (!string.IsNullOrWhiteSpace(changed.DisplayName)
+                && _groups.Values.Any(g => g.Id != id && Same(g.DisplayName, changed.DisplayName)))
+            {
+                throw new ScimConflictException(
+                    $"A group named '{changed.DisplayName}' already exists.");
+            }
 
             var now = _clock.GetUtcNow();
             changed.Id = id;

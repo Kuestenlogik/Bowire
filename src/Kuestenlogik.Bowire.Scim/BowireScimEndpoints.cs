@@ -204,6 +204,10 @@ internal static class BowireScimEndpoints
             {
                 return Error(StatusCodes.Status400BadRequest, "invalidValue", ex.Message);
             }
+            catch (ScimConflictException ex)
+            {
+                return Conflict(ex.Message);
+            }
         });
 
         group.MapDelete("/Groups/{id}", (HttpContext http, string id) =>
