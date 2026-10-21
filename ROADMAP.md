@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
 
-**49/82 done** · 33 backlog
+**49/86 done** · 37 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -49,6 +49,10 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [896](https://github.com/Kuestenlogik/Bowire/issues/896) | Bowire | [MCP discovery fails when a tool's input schema gives type as an array like ["string","null"]](#issue-kuestenlogik-bowire-896) | ⬜ Backlog |  |
 | [897](https://github.com/Kuestenlogik/Bowire/issues/897) | Bowire | [Connect requests drop the base URL's path prefix](#issue-kuestenlogik-bowire-897) | ⬜ Backlog |  |
 | [898](https://github.com/Kuestenlogik/Bowire/issues/898) | Bowire | [Connect bidi call hangs when the server ends the stream before reading the request](#issue-kuestenlogik-bowire-898) | ⬜ Backlog |  |
+| [899](https://github.com/Kuestenlogik/Bowire/issues/899) | Bowire | [REST ad-hoc requests send Bowire's internal metadata markers, including the mTLS private key, to the target as headers](#issue-kuestenlogik-bowire-899) | ⬜ Backlog |  |
+| [900](https://github.com/Kuestenlogik/Bowire/issues/900) | Bowire | [REST: the request body of a DELETE operation is silently dropped](#issue-kuestenlogik-bowire-900) | ⬜ Backlog |  |
+| [901](https://github.com/Kuestenlogik/Bowire/issues/901) | Bowire | [REST and AsyncAPI mocks serve every YAML scalar as a JSON string (required: true becomes "true")](#issue-kuestenlogik-bowire-901) | ⬜ Backlog |  |
+| [902](https://github.com/Kuestenlogik/Bowire/issues/902) | Bowire | [OpenAPI export writes repeated and nested-object fields as {type: string}](#issue-kuestenlogik-bowire-902) | ⬜ Backlog |  |
 | [816](https://github.com/Kuestenlogik/Bowire/issues/816) | Bowire | [SCIM trace records status 200 for every request](#issue-kuestenlogik-bowire-816) | ✅ Done |  |
 | [817](https://github.com/Kuestenlogik/Bowire/issues/817) | Bowire | [OIDC provider cannot run as an installed plugin](#issue-kuestenlogik-bowire-817) | ✅ Done |  |
 | [818](https://github.com/Kuestenlogik/Bowire/issues/818) | Bowire | [--auth-oidc-* flags are documented but never read](#issue-kuestenlogik-bowire-818) | ✅ Done |  |
@@ -386,6 +390,22 @@ A protobuf `map<K, V>` field is a repeated `MapEntry { K key = 1; V value = 2; }
 #### <a id="issue-kuestenlogik-bowire-898"></a>⬜ Backlog · [#898](https://github.com/Kuestenlogik/Bowire/issues/898) Connect bidi call hangs when the server ends the stream before reading the request
 
 `ConnectInvoker.InvokeBidiStreamAsync` (`src/Kuestenlogik.Bowire.Protocol.Grpc/ConnectInvoker.cs:480`) feeds the request frames into a `Pipe` from a producer task and, in its `finally` (`:535`), awaits that producer. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/898)
+
+#### <a id="issue-kuestenlogik-bowire-899"></a>⬜ Backlog · [#899](https://github.com/Kuestenlogik/Bowire/issues/899) REST ad-hoc requests send Bowire's internal metadata markers, including the mTLS private key, to the target as headers
+
+The schema-free REST path (`RestInvoker.InvokeAdHocAsync`, `src/Kuestenlogik.Bowire.Protocol.Rest/RestInvoker.cs:207-229`) copies every metadata entry onto the outgoing request as an HTTP header. It skips the SigV4 marker and the `X-Bowire-Body-Binary*` markers by name, but never calls `BowireMetadataKeys.IsInternal`. [[more]](https://github.com/Kuestenlogik/Bowire/issues/899)
+
+#### <a id="issue-kuestenlogik-bowire-900"></a>⬜ Backlog · [#900](https://github.com/Kuestenlogik/Bowire/issues/900) REST: the request body of a DELETE operation is silently dropped
+
+`RestInvoker.CanHaveBody` (`src/Kuestenlogik.Bowire.Protocol.Rest/RestInvoker.cs:777-784`) treats DELETE like GET: no body. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/900)
+
+#### <a id="issue-kuestenlogik-bowire-901"></a>⬜ Backlog · [#901](https://github.com/Kuestenlogik/Bowire/issues/901) REST and AsyncAPI mocks serve every YAML scalar as a JSON string (required: true becomes "true")
+
+The REST and AsyncAPI mock-host extensions serve a YAML source schema as JSON under `/openapi.json`, `/swagger.json` and `/asyncapi.json`. The YAML-to-JSON conversion returns `scalar.Value` for every scalar, so every value becomes a JSON string: [[more]](https://github.com/Kuestenlogik/Bowire/issues/901)
+
+#### <a id="issue-kuestenlogik-bowire-902"></a>⬜ Backlog · [#902](https://github.com/Kuestenlogik/Bowire/issues/902) OpenAPI export writes repeated and nested-object fields as {type: string}
+
+`OpenApiDocumentBuilder` maps every field through `MapFieldType(field.Type)` (`src/Kuestenlogik.Bowire.Protocol.Rest/OpenApiDocumentBuilder.cs:235` and `:307`), which looks only at the scalar type name. `IsRepeated` and `MessageType` are ignored, and the type name `message` falls through to the default. [[more]](https://github.com/Kuestenlogik/Bowire/issues/902)
 
 #### <a id="issue-kuestenlogik-bowire-816"></a>✅ Done · [#816](https://github.com/Kuestenlogik/Bowire/issues/816) SCIM trace records status 200 for every request
 
