@@ -57,18 +57,7 @@ public static class BowireMcpTypedUrlStore
             if (!File.Exists(path)) return Array.Empty<string>();
             try
             {
-                using var stream = File.OpenRead(path);
-                using var doc = JsonDocument.Parse(stream);
-                if (doc.RootElement.ValueKind != JsonValueKind.Array)
-                    return Array.Empty<string>();
-
-                var list = new List<string>(doc.RootElement.GetArrayLength());
-                foreach (var item in doc.RootElement.EnumerateArray())
-                {
-                    if (item.ValueKind == JsonValueKind.String && item.GetString() is { } s && !string.IsNullOrWhiteSpace(s))
-                        list.Add(s);
-                }
-                return list;
+                return ReadUrls(path) ?? (IReadOnlyList<string>)Array.Empty<string>();
             }
             catch
             {
@@ -83,23 +72,64 @@ public static class BowireMcpTypedUrlStore
     /// new and got written, <c>false</c> when it was a duplicate or the
     /// input was invalid.
     /// </summary>
+    /// <exception cref="InvalidDataException">
+    /// The file exists but is not a JSON array; it is left untouched.
+    /// </exception>
     public static bool Add(string url)
     {
         if (string.IsNullOrWhiteSpace(url)) return false;
 
         lock (FileLock)
         {
-            var existing = new List<string>(LoadAll());
+            var path = FilePath;
+
+            // #880 — not LoadAll: it reads an unreadable file as "no
+            // history" (right for seeding), and writing that empty list back
+            // with one URL appended erased every URL a truncated or
+            // differently shaped file still held. A file Add cannot read is
+            // one it must not overwrite.
+            List<string> existing = [];
+            if (File.Exists(path))
+            {
+                existing = ReadUrls(path)
+                    ?? throw new InvalidDataException($"{path} is not a JSON array of URLs; leaving it as it is.");
+            }
             if (existing.Any(u => string.Equals(u, url, StringComparison.OrdinalIgnoreCase)))
                 return false;
             existing.Add(url);
 
-            var path = FilePath;
             var dir = Path.GetDirectoryName(path);
             if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
                 Directory.CreateDirectory(dir);
             File.WriteAllText(path, JsonSerializer.Serialize(existing, JsonOpts));
             return true;
+        }
+    }
+
+    /// <summary>
+    /// The non-blank string entries of the array at <paramref name="path"/>,
+    /// or <see langword="null"/> when the file is not a JSON array.
+    /// </summary>
+    private static List<string>? ReadUrls(string path)
+    {
+        try
+        {
+            using var stream = File.OpenRead(path);
+            using var doc = JsonDocument.Parse(stream);
+            if (doc.RootElement.ValueKind != JsonValueKind.Array)
+                return null;
+
+            var list = new List<string>(doc.RootElement.GetArrayLength());
+            foreach (var item in doc.RootElement.EnumerateArray())
+            {
+                if (item.ValueKind == JsonValueKind.String && item.GetString() is { } s && !string.IsNullOrWhiteSpace(s))
+                    list.Add(s);
+            }
+            return list;
+        }
+        catch (JsonException)
+        {
+            return null;
         }
     }
 }

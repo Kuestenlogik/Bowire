@@ -155,15 +155,32 @@ public sealed class McpTypedUrlStoreTests : IDisposable
         Assert.Contains("https://staging.example.com", all);
     }
 
-    [Fact]
-    public void Adding_On_Top_Of_A_Corrupt_File_Starts_A_Clean_History()
+    [Theory]
+    [InlineData("""["https://kept.example.com", "https://also-kept.exa""")]
+    [InlineData("""{"urls":["https://kept.example.com"]}""")]
+    public void Adding_On_Top_Of_A_File_That_Cannot_Be_Read_Leaves_It_Alone(string contents)
     {
-        // The read degrades to empty, so the write starts over rather than
-        // failing forever on a file nobody can repair by hand.
-        WriteRaw("[ this is not json");
+        // Reading degrades to "no history", but writing that empty history
+        // back plus one URL would erase every URL the file still holds — a
+        // truncated write is recoverable by hand, an overwrite is not.
+        WriteRaw(contents);
 
-        Assert.True(BowireMcpTypedUrlStore.Add("https://api.example.com"));
-        Assert.Equal(["https://api.example.com"], BowireMcpTypedUrlStore.LoadAll());
+        Assert.Throws<InvalidDataException>(() => BowireMcpTypedUrlStore.Add("https://api.example.com"));
+        Assert.Equal(contents, File.ReadAllText(BowireMcpTypedUrlStore.FilePath));
+    }
+
+    [Fact]
+    public void Permitting_A_Url_On_Top_Of_A_Corrupt_File_Still_Allows_It_For_The_Session()
+    {
+        WriteRaw("[ this is not json");
+        var options = new BowireMcpOptions { LoadAllowlistFromEnvironments = false };
+        var tools = NewTools(options);
+
+        using var doc = System.Text.Json.JsonDocument.Parse(tools.AllowlistPermit("https://api.example.com"));
+
+        Assert.False(doc.RootElement.GetProperty("addedToFile").GetBoolean());
+        Assert.True(doc.RootElement.GetProperty("addedToMemory").GetBoolean());
+        Assert.Equal("[ this is not json", File.ReadAllText(BowireMcpTypedUrlStore.FilePath));
     }
 
     [Fact]
