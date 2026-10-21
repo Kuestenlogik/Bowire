@@ -199,6 +199,10 @@ public sealed class BowireAsyncApiProtocol : IBowireProtocol, Kuestenlogik.Bowir
                 // serverUrl the discovery dispatcher passed in so
                 // multi-URL workbenches keep each document separate.
                 _documents[serverUrl] = v3;
+                // The URL may have been a V2 document before (#917);
+                // invocation checks the V2 cache first, so drop it.
+                _v2Documents.TryRemove(serverUrl, out _);
+                _v2BindingsByUrl.TryRemove(serverUrl, out _);
                 _bindingsByUrl[serverUrl] =
                     AsyncApiBindingsExtractor.ExtractV3OperationBindings(load.NormalisedYaml);
                 var v3Messages = AsyncApiBindingsExtractor.ExtractV3OperationMessages(load.NormalisedYaml);
@@ -211,6 +215,9 @@ public sealed class BowireAsyncApiProtocol : IBowireProtocol, Kuestenlogik.Bowir
                 // a separate cache because V2's lookup shape
                 // (channelKey + slot) differs from V3's (opKey).
                 _v2Documents[serverUrl] = v2;
+                // Same for a URL that was a V3 document before (#917).
+                _documents.TryRemove(serverUrl, out _);
+                _bindingsByUrl.TryRemove(serverUrl, out _);
                 _v2BindingsByUrl[serverUrl] =
                     AsyncApiBindingsExtractor.ExtractV2ChannelBindings(load.NormalisedYaml);
                 var v2Messages =

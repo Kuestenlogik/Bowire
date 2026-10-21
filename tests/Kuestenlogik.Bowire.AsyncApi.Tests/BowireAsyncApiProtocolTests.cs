@@ -146,6 +146,72 @@ public sealed class BowireAsyncApiProtocolTests
     }
 
     [Fact]
+    public async Task Invoke_uses_the_v3_document_after_the_same_url_is_rediscovered_as_v3()
+    {
+        // The file behind a URL moves from AsyncAPI 2 to 3 and is
+        // discovered again. Invocation must route through the V3
+        // document, not the V2 one cached by the first discovery.
+        var ct = TestContext.Current.CancellationToken;
+        var docPath = Path.Combine(Path.GetTempPath(), $"asyncapi-v2-to-v3-{Guid.NewGuid():N}.yaml");
+        try
+        {
+            File.Copy(SafePath.Combine("TestData", "v2-smart-home.asyncapi.yaml"), docPath);
+            var plugin = new BowireAsyncApiProtocol();
+            _ = await plugin.DiscoverAsync(docPath, false, ct).ConfigureAwait(true);
+
+            File.Copy(SafePath.Combine("TestData", "v3-multi-message.asyncapi.yaml"), docPath, overwrite: true);
+            _ = await plugin.DiscoverAsync(docPath, false, ct).ConfigureAwait(true);
+
+            var result = await plugin.InvokeAsync(
+                serverUrl: docPath,
+                service: "light",
+                method: "receiveAnyLightEvent::lightMeasured",
+                jsonMessages: ["{}"],
+                showInternalServices: false,
+                ct: ct)
+                .ConfigureAwait(true);
+            Assert.Equal("Error", result.Status);
+            // The V3 operation was found; only the resolver is missing.
+            Assert.Contains("No AsyncAPI binding resolver", result.Metadata["error"], StringComparison.Ordinal);
+        }
+        finally
+        {
+            File.Delete(docPath);
+        }
+    }
+
+    [Fact]
+    public async Task Invoke_uses_the_v2_document_after_the_same_url_is_rediscovered_as_v2()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var docPath = Path.Combine(Path.GetTempPath(), $"asyncapi-v3-to-v2-{Guid.NewGuid():N}.yaml");
+        try
+        {
+            File.Copy(SafePath.Combine("TestData", "v3-multi-message.asyncapi.yaml"), docPath);
+            var plugin = new BowireAsyncApiProtocol();
+            _ = await plugin.DiscoverAsync(docPath, false, ct).ConfigureAwait(true);
+
+            File.Copy(SafePath.Combine("TestData", "v2-smart-home.asyncapi.yaml"), docPath, overwrite: true);
+            _ = await plugin.DiscoverAsync(docPath, false, ct).ConfigureAwait(true);
+
+            var result = await plugin.InvokeAsync(
+                serverUrl: docPath,
+                service: "smarthome/light/{room}/action",
+                method: "sendTurnOnOff",
+                jsonMessages: ["{}"],
+                showInternalServices: false,
+                ct: ct)
+                .ConfigureAwait(true);
+            Assert.Equal("Error", result.Status);
+            Assert.Contains("No AsyncAPI binding resolver", result.Metadata["error"], StringComparison.Ordinal);
+        }
+        finally
+        {
+            File.Delete(docPath);
+        }
+    }
+
+    [Fact]
     public async Task Invoke_rejects_v2_method_that_no_channel_slot_matches()
     {
         var plugin = new BowireAsyncApiProtocol();
