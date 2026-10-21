@@ -234,6 +234,32 @@ public sealed class GraphQlSchemaHandlerEdgeCasesTests : IDisposable
     }
 
     [Fact]
+    public async Task TryHandleAsync_UnionFieldRendersNull()
+    {
+        // #921 - a union has no fields of its own and no way to pick a
+        // member without a resolver, so it answers null, as an interface
+        // does. It used to fall through to the scalar sample and answer
+        // the string "sample", which no client can read as an object.
+        var handler = await LoadHandler("""
+            type Query { result: SearchResult, results: [SearchResult] }
+            union SearchResult = Vessel | Berth
+            type Vessel { imo: String }
+            type Berth { name: String }
+            """);
+        var ctx = BuildContext("POST", "/graphql",
+            body: """{"query":"{ result { __typename } results { __typename } }"}""");
+
+        var handled = await handler.TryHandleAsync(ctx, TestContext.Current.CancellationToken);
+
+        Assert.True(handled);
+        using var doc = JsonDocument.Parse(ReadResponseBody(ctx));
+        var data = doc.RootElement.GetProperty("data");
+        Assert.Equal(JsonValueKind.Null, data.GetProperty("result").ValueKind);
+        Assert.All(data.GetProperty("results").EnumerateArray(),
+            item => Assert.Equal(JsonValueKind.Null, item.ValueKind));
+    }
+
+    [Fact]
     public async Task TryHandleAsync_CustomScalars_GetTypeAppropriateSamples()
     {
         // Each branch of ScalarSample — scalars not declared in the schema

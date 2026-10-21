@@ -93,11 +93,17 @@ public sealed class GraphQlSchemaHandler
                 case GraphQLInterfaceTypeDefinition iface:
                     // Track interface names so we know to skip-with-null,
                     // but don't index fields — can't pick a concrete type.
-                    types[iface.Name.StringValue] = new TypeInfo(iface.Name.StringValue, IsInterface: true, FrozenDictionary<string, FieldInfo>.Empty, EnumValues: null);
+                    types[iface.Name.StringValue] = new TypeInfo(iface.Name.StringValue, IsAbstract: true, FrozenDictionary<string, FieldInfo>.Empty, EnumValues: null);
+                    break;
+                case GraphQLUnionTypeDefinition union:
+                    // #921 - a union is abstract for the same reason. Left
+                    // out of the index, its fields fell through to the
+                    // scalar sample and answered the string "sample".
+                    types[union.Name.StringValue] = new TypeInfo(union.Name.StringValue, IsAbstract: true, FrozenDictionary<string, FieldInfo>.Empty, EnumValues: null);
                     break;
                 case GraphQLEnumTypeDefinition en:
                     var vals = en.Values?.Select(v => v.Name.StringValue).ToArray() ?? [];
-                    types[en.Name.StringValue] = new TypeInfo(en.Name.StringValue, IsInterface: false, FrozenDictionary<string, FieldInfo>.Empty, EnumValues: vals);
+                    types[en.Name.StringValue] = new TypeInfo(en.Name.StringValue, IsAbstract: false, FrozenDictionary<string, FieldInfo>.Empty, EnumValues: vals);
                     break;
                 case GraphQLSchemaDefinition schema:
                     // Schema may rename the query root.
@@ -303,7 +309,7 @@ public sealed class GraphQlSchemaHandler
         // enum, or an object type we have in our index.
         if (_types.TryGetValue(field.NamedType, out var typeInfo))
         {
-            if (typeInfo.IsInterface)
+            if (typeInfo.IsAbstract)
             {
                 // Can't pick a concrete implementor without runtime
                 // knowledge — return null so downstream clients see
@@ -367,7 +373,7 @@ public sealed class GraphQlSchemaHandler
                     f.Name.StringValue, namedType, isList, example, hasExample);
             }
         }
-        return new TypeInfo(obj.Name.StringValue, IsInterface: false, fields.ToFrozenDictionary(StringComparer.Ordinal), EnumValues: null);
+        return new TypeInfo(obj.Name.StringValue, IsAbstract: false, fields.ToFrozenDictionary(StringComparer.Ordinal), EnumValues: null);
     }
 
     // #559: read a `@example(value: ...)` directive off a field definition and
@@ -471,7 +477,7 @@ public sealed class GraphQlSchemaHandler
 
     private sealed record TypeInfo(
         string Name,
-        bool IsInterface,
+        bool IsAbstract,
         FrozenDictionary<string, FieldInfo> Fields,
         string[]? EnumValues);
 
