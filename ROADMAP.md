@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
 
-**49/53 done** · 4 backlog
+**49/54 done** · 5 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -20,6 +20,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [670](https://github.com/Kuestenlogik/Bowire/issues/670) | Bowire | [Get listed where developers and models actually look](#issue-kuestenlogik-bowire-670) | ⬜ Backlog | `area:site` |
 | [868](https://github.com/Kuestenlogik/Bowire/issues/868) | Bowire | [MCP task follow throws on a very large TTL or poll interval](#issue-kuestenlogik-bowire-868) | ⬜ Backlog |  |
 | [869](https://github.com/Kuestenlogik/Bowire/issues/869) | Bowire | [MCP task follow throws when a failed task's error code is a string](#issue-kuestenlogik-bowire-869) | ⬜ Backlog |  |
+| [870](https://github.com/Kuestenlogik/Bowire/issues/870) | Bowire | [Keyring references: URL services and escaped slashes](#issue-kuestenlogik-bowire-870) | ⬜ Backlog |  |
 | [816](https://github.com/Kuestenlogik/Bowire/issues/816) | Bowire | [SCIM trace records status 200 for every request](#issue-kuestenlogik-bowire-816) | ✅ Done |  |
 | [817](https://github.com/Kuestenlogik/Bowire/issues/817) | Bowire | [OIDC provider cannot run as an installed plugin](#issue-kuestenlogik-bowire-817) | ✅ Done |  |
 | [818](https://github.com/Kuestenlogik/Bowire/issues/818) | Bowire | [--auth-oidc-* flags are documented but never read](#issue-kuestenlogik-bowire-818) | ✅ Done |  |
@@ -241,6 +242,10 @@ Following an MCP task (#801) throws when the server names a very large TTL or po
 #### <a id="issue-kuestenlogik-bowire-869"></a>⬜ Backlog · [#869](https://github.com/Kuestenlogik/Bowire/issues/869) MCP task follow throws when a failed task's error code is a string
 
 When a followed MCP task (#801) fails and its JSON-RPC `error.code` is not a number — e.g. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/869)
+
+#### <a id="issue-kuestenlogik-bowire-870"></a>⬜ Backlog · [#870](https://github.com/Kuestenlogik/Bowire/issues/870) Keyring references: URL services and escaped slashes
+
+`KeyringReference.TryParse` splits the text after `keyring.` on the first `/`. That is right for plain references (`github.com/deploy-bot`, `vault/team/bot`), but a URL-shaped service breaks: `{{keyring.https://api.example.com/v1/deploy-bot}}` parses to service `https:` and account `/api.example.com … [[more]](https://github.com/Kuestenlogik/Bowire/issues/870)
 
 #### <a id="issue-kuestenlogik-bowire-816"></a>✅ Done · [#816](https://github.com/Kuestenlogik/Bowire/issues/816) SCIM trace records status 200 for every request
 
