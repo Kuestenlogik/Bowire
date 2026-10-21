@@ -25,13 +25,17 @@ public sealed class GrpcCoverageGapsTests
 
     // ---- ConnectInvoker.NormaliseBaseUrl (private static) ------------
 
+    // The base ends in a slash so "<service>/<method>" resolves beneath a
+    // path prefix rather than replacing its last segment (#897).
     [Theory]
-    [InlineData("grpc://localhost:50051", "http://localhost:50051")]
-    [InlineData("grpcs://api.example.com", "https://api.example.com")]
-    [InlineData("GRPC://localhost", "http://localhost")]
-    [InlineData("GRPCS://api", "https://api")]
-    [InlineData("http://localhost:8080", "http://localhost:8080")]
-    [InlineData("https://api.example.com", "https://api.example.com")]
+    [InlineData("grpc://localhost:50051", "http://localhost:50051/")]
+    [InlineData("grpcs://api.example.com", "https://api.example.com/")]
+    [InlineData("GRPC://localhost", "http://localhost/")]
+    [InlineData("GRPCS://api", "https://api/")]
+    [InlineData("http://localhost:8080", "http://localhost:8080/")]
+    [InlineData("https://api.example.com", "https://api.example.com/")]
+    [InlineData("http://h:8080/api", "http://h:8080/api/")]
+    [InlineData("grpcs://h/api/", "https://h/api/")]
     public void NormaliseBaseUrl_RewritesGrpcSchemes_To_Http(string input, string expected)
     {
         var mi = s_connectInvokerType.GetMethod(

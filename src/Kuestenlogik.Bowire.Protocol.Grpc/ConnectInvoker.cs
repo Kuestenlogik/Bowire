@@ -172,10 +172,16 @@ internal sealed class ConnectInvoker : IDisposable
         // Treat grpc:// + grpcs:// the same as http:// + https:// for
         // the Connect path — Connect runs on plain HTTP semantics.
         if (serverUrl.StartsWith("grpcs://", StringComparison.OrdinalIgnoreCase))
-            return "https://" + serverUrl["grpcs://".Length..];
-        if (serverUrl.StartsWith("grpc://", StringComparison.OrdinalIgnoreCase))
-            return "http://" + serverUrl["grpc://".Length..];
-        return serverUrl;
+            serverUrl = "https://" + serverUrl["grpcs://".Length..];
+        else if (serverUrl.StartsWith("grpc://", StringComparison.OrdinalIgnoreCase))
+            serverUrl = "http://" + serverUrl["grpc://".Length..];
+        // Every call resolves "<service>/<method>" against this base, and
+        // relative resolution replaces a last segment that has no trailing
+        // slash: http://h/api sent its calls to /<service>/<method> (#897).
+        var builder = new UriBuilder(serverUrl);
+        if (!builder.Path.EndsWith('/'))
+            builder.Path += "/";
+        return builder.Uri.AbsoluteUri;
     }
 
     private static byte[] JsonToProtobufBytes(string json, MessageDescriptor inputType)
