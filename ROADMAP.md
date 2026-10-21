@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
 
-**49/91 done** · 42 backlog
+**49/92 done** · 43 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -58,6 +58,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [905](https://github.com/Kuestenlogik/Bowire/issues/905) | Bowire | [AWS SigV4 signing does not sort repeated query parameters by value, so AWS answers 403](#issue-kuestenlogik-bowire-905) | ⬜ Backlog |  |
 | [906](https://github.com/Kuestenlogik/Bowire/issues/906) | Bowire | [REST: a 3xx response is reported as status Unknown (shown as an error) instead of OK](#issue-kuestenlogik-bowire-906) | ⬜ Backlog |  |
 | [907](https://github.com/Kuestenlogik/Bowire/issues/907) | Bowire | [REST discovery serves the earlier probe result for any later URL on the same origin, ignoring a spec URL entered explicitly](#issue-kuestenlogik-bowire-907) | ⬜ Backlog |  |
+| [908](https://github.com/Kuestenlogik/Bowire/issues/908) | Bowire | [MCP adapter ignores BowireMcpAdapterOptions.RequestTimeout and BearerToken](#issue-kuestenlogik-bowire-908) | ⬜ Backlog |  |
 | [816](https://github.com/Kuestenlogik/Bowire/issues/816) | Bowire | [SCIM trace records status 200 for every request](#issue-kuestenlogik-bowire-816) | ✅ Done |  |
 | [817](https://github.com/Kuestenlogik/Bowire/issues/817) | Bowire | [OIDC provider cannot run as an installed plugin](#issue-kuestenlogik-bowire-817) | ✅ Done |  |
 | [818](https://github.com/Kuestenlogik/Bowire/issues/818) | Bowire | [--auth-oidc-* flags are documented but never read](#issue-kuestenlogik-bowire-818) | ✅ Done |  |
@@ -431,6 +432,10 @@ The `x-bowire-coverage` annotation in `OpenApiDocumentBuilder` is a dictionary k
 #### <a id="issue-kuestenlogik-bowire-907"></a>⬜ Backlog · [#907](https://github.com/Kuestenlogik/Bowire/issues/907) REST discovery serves the earlier probe result for any later URL on the same origin, ignoring a spec URL entered explicitly
 
 When the well-known-path sweep resolves an origin, `BowireRestProtocol` remembers the winning document per **origin** (`_probeResolved[origin] = probedUrl`, `src/Kuestenlogik.Bowire.Protocol.Rest/BowireRestProtocol.cs:282`). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/907)
+
+#### <a id="issue-kuestenlogik-bowire-908"></a>⬜ Backlog · [#908](https://github.com/Kuestenlogik/Bowire/issues/908) MCP adapter ignores BowireMcpAdapterOptions.RequestTimeout and BearerToken
+
+`BowireMcpAdapterOptions` documents two settings that nothing reads (`src/Kuestenlogik.Bowire.Protocol.Mcp/BowireMcpAdapterOptions.cs:50`, `:66`): [[more]](https://github.com/Kuestenlogik/Bowire/issues/908)
 
 #### <a id="issue-kuestenlogik-bowire-816"></a>✅ Done · [#816](https://github.com/Kuestenlogik/Bowire/issues/816) SCIM trace records status 200 for every request
 
