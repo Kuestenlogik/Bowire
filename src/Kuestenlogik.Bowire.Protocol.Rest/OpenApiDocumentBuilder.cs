@@ -232,7 +232,7 @@ public static class OpenApiDocumentBuilder
         {
             ["name"] = field.Name,
             ["in"] = @in,
-            ["schema"] = MapFieldType(field.Type),
+            ["schema"] = FieldSchema(field, new HashSet<BowireMessageInfo>(ReferenceEqualityComparer.Instance)),
         };
         // Path params are always required per OpenAPI spec; others
         // follow the field's required flag.
@@ -298,13 +298,17 @@ public static class OpenApiDocumentBuilder
     // ---- schema synthesis -----------------------------------------
 
     private static Dictionary<string, object?> BuildObjectSchema(IEnumerable<BowireFieldInfo> fields)
+        => BuildObjectSchema(fields, new HashSet<BowireMessageInfo>(ReferenceEqualityComparer.Instance));
+
+    private static Dictionary<string, object?> BuildObjectSchema(
+        IEnumerable<BowireFieldInfo> fields, HashSet<BowireMessageInfo> expanding)
     {
         var props = new Dictionary<string, object?>(StringComparer.Ordinal);
         var required = new List<string>();
         foreach (var field in fields)
         {
             if (string.IsNullOrEmpty(field.Name)) continue;
-            props[field.Name] = MapFieldType(field.Type);
+            props[field.Name] = FieldSchema(field, expanding);
             if (field.Required) required.Add(field.Name);
         }
         var schema = new Dictionary<string, object?>(StringComparer.Ordinal)
@@ -314,6 +318,63 @@ public static class OpenApiDocumentBuilder
         if (props.Count > 0) schema["properties"] = props;
         if (required.Count > 0) schema["required"] = required;
         return schema;
+    }
+
+    /// <summary>
+    /// The schema of one whole field, not just its scalar type name (#902):
+    /// a repeated field is an array of its element, a message field an
+    /// object with the message's properties, a map an object whose values
+    /// follow the entry's <c>value</c> field. <paramref name="expanding"/>
+    /// holds the messages on the current path, so a self-referencing
+    /// message stops as a bare object instead of recursing forever.
+    /// </summary>
+    internal static Dictionary<string, object?> FieldSchema(
+        BowireFieldInfo field, HashSet<BowireMessageInfo> expanding)
+    {
+        if (field.IsMap)
+        {
+            // A map is never an array of maps; IsRepeated is set on proto
+            // map fields only because of their wire encoding.
+            var value = field.MessageType?.Fields.FirstOrDefault(f => f.Name == "value");
+            return new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["type"] = "object",
+                ["additionalProperties"] = value is null
+                    ? new Dictionary<string, object?>()
+                    : FieldSchema(value, expanding),
+            };
+        }
+
+        Dictionary<string, object?> element;
+        if (field.MessageType is { } message)
+        {
+            if (expanding.Add(message))
+            {
+                element = BuildObjectSchema(message.Fields, expanding);
+                expanding.Remove(message);
+            }
+            else
+            {
+                element = new Dictionary<string, object?> { ["type"] = "object" };
+            }
+        }
+        else if (string.Equals(field.Type, "message", StringComparison.OrdinalIgnoreCase))
+        {
+            // A message whose shape discovery did not expand.
+            element = new Dictionary<string, object?> { ["type"] = "object" };
+        }
+        else
+        {
+            element = MapFieldType(field.Type);
+        }
+
+        return field.IsRepeated
+            ? new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["type"] = "array",
+                ["items"] = element,
+            }
+            : element;
     }
 
     /// <summary>
