@@ -758,7 +758,6 @@ internal sealed class GrpcInvoker : IDisposable
                 continue;
             }
 
-            var value = ReadFieldValue(cis, field, wireType);
             var jsonName = field.JsonName;
 
             if (field.IsRepeated)
@@ -768,11 +767,17 @@ internal sealed class GrpcInvoker : IDisposable
                     list = [];
                     repeatedFields[jsonName] = list;
                 }
-                list.Add(value);
+                // proto3 packs repeated scalars by default: one length-delimited
+                // record holding the elements back to back (#889). Unpacked
+                // elements stay accepted, as the spec requires of a parser.
+                if (wireType == WireFormat.WireType.LengthDelimited && IsPackable(field))
+                    ReadPacked(cis, field, list);
+                else
+                    list.Add(ReadFieldValue(cis, field, wireType));
             }
             else
             {
-                result[jsonName] = value;
+                result[jsonName] = ReadFieldValue(cis, field, wireType);
             }
         }
 
@@ -780,6 +785,18 @@ internal sealed class GrpcInvoker : IDisposable
             result[key] = list;
 
         return result;
+    }
+
+    private static bool IsPackable(FieldDescriptor field)
+        => field.FieldType is not (FieldType.String or FieldType.Bytes or FieldType.Message or FieldType.Group);
+
+    private static void ReadPacked(CodedInputStream cis, FieldDescriptor field, List<object?> list)
+    {
+        var bytes = cis.ReadBytes().ToByteArray();
+        using var packed = new CodedInputStream(bytes);
+        var elementWireType = GetWireType(field);
+        while (!packed.IsAtEnd)
+            list.Add(ReadFieldValue(packed, field, elementWireType));
     }
 
     private static object? ReadFieldValue(CodedInputStream cis, FieldDescriptor field, WireFormat.WireType wireType)

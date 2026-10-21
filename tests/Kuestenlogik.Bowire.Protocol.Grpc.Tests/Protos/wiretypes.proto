@@ -1,0 +1,61 @@
+syntax = "proto3";
+option csharp_namespace = "Kuestenlogik.Bowire.Protocol.Grpc.Tests.Proto";
+package wiretest;
+
+// Messages whose generated C# classes are the ground truth for the
+// descriptor-driven JSON <-> protobuf codec in GrpcInvoker: the tests
+// encode and decode with Google.Protobuf and compare against what the
+// codec produces or reads for the same message.
+
+enum WireColor {
+  WIRE_COLOR_UNSPECIFIED = 0;
+  WIRE_COLOR_RED = 1;
+  WIRE_COLOR_GREEN = 2;
+}
+
+message WireInner {
+  string name = 1;
+}
+
+// proto3 packs repeated scalars by default.
+message WirePacked {
+  repeated int32 i32 = 1;
+  repeated int64 i64 = 2;
+  repeated uint64 u64 = 3;
+  repeated double d = 4;
+  repeated float f = 5;
+  repeated bool b = 6;
+  repeated WireColor colors = 7;
+  repeated string names = 8;
+}
+
+message WireZigZag {
+  sint32 si32 = 1;
+  sint64 si64 = 2;
+  repeated sint32 many = 3;
+}
+
+message WireFixed {
+  fixed32 f32 = 1;
+  fixed64 f64 = 2;
+  sfixed32 sf32 = 3;
+  sfixed64 sf64 = 4;
+  repeated fixed32 many = 5;
+}
+
+message WireWide {
+  int64 i64 = 1;
+  uint64 u64 = 2;
+  sint64 si64 = 3;
+  fixed64 f64 = 4;
+  sfixed64 sf64 = 5;
+  int32 i32 = 6;
+  uint32 u32 = 7;
+}
+
+message WireMaps {
+  map<string, int32> counts = 1;
+  map<int64, WireInner> inners = 2;
+  map<bool, string> flags = 3;
+  map<string, WireColor> colors = 4;
+}
