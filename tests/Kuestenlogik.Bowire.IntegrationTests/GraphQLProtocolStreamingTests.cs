@@ -664,6 +664,137 @@ public sealed class GraphQLProtocolStreamingTests
         Assert.Equal(BowireStreamErrorKinds.Transport, error!.Kind);
     }
 
+    [Fact]
+    public async Task A_Shared_Socket_Subscribes_Only_After_The_Connection_Is_Acknowledged()
+    {
+        // #923 - graphql-transport-ws forbids `subscribe` before
+        // `connection_ack`; a server closes the socket with 4401 when it
+        // arrives early. The server here pings before it acknowledges, so
+        // the first thing a waiting client can send is the pong.
+        string? firstAfterInit = null;
+        await using var host = await PluginTestHost.StartAsync(app =>
+        {
+            app.UseWebSockets();
+            app.Map("/graphql", async (HttpContext ctx) =>
+            {
+                if (!ctx.WebSockets.IsWebSocketRequest) { ctx.Response.StatusCode = 400; return; }
+                using var ws = await ctx.WebSockets.AcceptWebSocketAsync("graphql-transport-ws");
+                _ = await ReceiveJsonAsync(ws, ctx.RequestAborted); // connection_init
+                await SendJsonAsync(ws, "{\"type\":\"ping\"}", ctx.RequestAborted);
+
+                var first = await ReceiveJsonAsync(ws, ctx.RequestAborted);
+                firstAfterInit = first.GetProperty("type").GetString();
+                await SendJsonAsync(ws, "{\"type\":\"connection_ack\"}", ctx.RequestAborted);
+
+                var subscribe = firstAfterInit == "subscribe" ? first : await ReceiveJsonAsync(ws, ctx.RequestAborted);
+                var id = subscribe.GetProperty("id").GetString();
+                await SendJsonAsync(ws,
+                    "{\"type\":\"next\",\"id\":\"" + id + "\",\"payload\":{\"data\":{\"tick\":\"acked\"}}}",
+                    ctx.RequestAborted);
+                await SendJsonAsync(ws, "{\"type\":\"complete\",\"id\":\"" + id + "\"}", ctx.RequestAborted);
+                try { await Task.Delay(Timeout.Infinite, ctx.RequestAborted); }
+                catch (OperationCanceledException) { /* client done */ }
+            });
+        });
+        _ = new BowireWebSocketProtocol();
+
+        using var protocol = new BowireGraphQLProtocol();
+        var frames = new List<string>();
+        await foreach (var evt in protocol.InvokeStreamAsync(
+            host.BaseUrl + "/graphql", service: "Subscription", method: "tick",
+            jsonMessages: ["{}"], showInternalServices: false,
+            metadata: new Dictionary<string, string>
+            {
+                [BowireGraphQLProtocol.MultiplexMetadataKey] = "on",
+            },
+            ct: TestContext.Current.CancellationToken))
+        {
+            frames.Add(evt);
+        }
+
+        Assert.Equal("pong", firstAfterInit);
+        Assert.Contains("acked", Assert.Single(frames), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_New_Subscription_Does_Not_Join_A_Socket_That_Has_Died()
+    {
+        // #923 - the dead socket stayed in the pool for as long as one of
+        // its subscribers had not yet let go, and a subscription arriving
+        // in that window joined it: its subscribe went nowhere and its
+        // stream waited forever on a reader that had already stopped.
+        var sockets = 0;
+        await using var host = await PluginTestHost.StartAsync(app =>
+        {
+            app.UseWebSockets();
+            app.Map("/graphql", async (HttpContext ctx) =>
+            {
+                if (!ctx.WebSockets.IsWebSocketRequest) { ctx.Response.StatusCode = 400; return; }
+                var n = Interlocked.Increment(ref sockets);
+                using var ws = await ctx.WebSockets.AcceptWebSocketAsync("graphql-transport-ws");
+                _ = await ReceiveJsonAsync(ws, ctx.RequestAborted); // connection_init
+                await SendJsonAsync(ws, "{\"type\":\"connection_ack\"}", ctx.RequestAborted);
+                var id = (await ReceiveJsonAsync(ws, ctx.RequestAborted)).GetProperty("id").GetString();
+                await SendJsonAsync(ws,
+                    "{\"type\":\"next\",\"id\":\"" + id + "\",\"payload\":{\"data\":{\"tick\":\"socket-" + n + "\"}}}",
+                    ctx.RequestAborted);
+
+                if (n == 1)
+                {
+                    // The first socket dies with its subscription still open.
+                    try { await ws.CloseAsync(WebSocketCloseStatus.InternalServerError, "gone", ctx.RequestAborted); }
+                    catch { /* client may already be gone */ }
+                    return;
+                }
+
+                await SendJsonAsync(ws, "{\"type\":\"complete\",\"id\":\"" + id + "\"}", ctx.RequestAborted);
+                try { await Task.Delay(Timeout.Infinite, ctx.RequestAborted); }
+                catch (OperationCanceledException) { /* client done */ }
+            });
+        });
+        _ = new BowireWebSocketProtocol();
+
+        using var protocol = new BowireGraphQLProtocol();
+        var metadata = new Dictionary<string, string>
+        {
+            [BowireGraphQLProtocol.MultiplexMetadataKey] = "on",
+        };
+
+        // The first subscriber reads its data and then the frame that says
+        // the socket died, and stops there: still attached, not yet released.
+        var first = protocol.InvokeStreamAsync(
+            host.BaseUrl + "/graphql", service: "Subscription", method: "tick",
+            jsonMessages: ["{}"], showInternalServices: false,
+            metadata: metadata, ct: TestContext.Current.CancellationToken).GetAsyncEnumerator(TestContext.Current.CancellationToken);
+        try
+        {
+            Assert.True(await first.MoveNextAsync());
+            Assert.Contains("socket-1", first.Current, StringComparison.Ordinal);
+            Assert.True(await first.MoveNextAsync());
+            Assert.Equal(BowireStreamErrorKinds.Transport, BowireStreamErrorEnvelope.TryRead(first.Current)?.Kind);
+
+            // Only a guard that turns a hang into a failure.
+            using var hang = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+            hang.CancelAfter(TimeSpan.FromSeconds(30));
+
+            var frames = new List<string>();
+            await foreach (var evt in protocol.InvokeStreamAsync(
+                host.BaseUrl + "/graphql", service: "Subscription", method: "tick",
+                jsonMessages: ["{}"], showInternalServices: false,
+                metadata: metadata, ct: hang.Token))
+            {
+                frames.Add(evt);
+            }
+
+            Assert.Contains("socket-2", Assert.Single(frames), StringComparison.Ordinal);
+            Assert.Equal(2, sockets);
+        }
+        finally
+        {
+            await first.DisposeAsync();
+        }
+    }
+
     // ---- WebSocket (graphql-transport-ws) server fixtures ----
 
     private static void MapTransportWsSubscription(WebApplication app)
