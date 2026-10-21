@@ -27,11 +27,50 @@ public sealed class KeyringTests
 
     [Theory]
     [InlineData("github.com/deploy-bot", "github.com", "deploy-bot")]
+    [InlineData("vault/team/bot", "vault", "team/bot")]
     [InlineData("service-only", "service-only", null)]
+    [InlineData("stripe-key", "stripe-key", null)]
     [InlineData("  spaced/acct  ", "spaced", "acct")]
-    [InlineData("https://api.example.com/bot", "https:", "/api.example.com/bot")]
     [InlineData("svc/", "svc", null)]
-    public void TryParse_SplitsOnFirstSlash(string input, string service, string? account)
+    public void TryParse_PlainReference_SplitsOnFirstSlash(string input, string service, string? account)
+    {
+        AssertParses(input, service, account);
+    }
+
+    // A reference that starts with <scheme>:// names a URL service: it is
+    // split on the last slash after the host, so the service keeps its
+    // path and a host-only URL has no account (#870).
+    [Theory]
+    [InlineData("https://api.example.com/v1/deploy-bot", "https://api.example.com/v1", "deploy-bot")]
+    [InlineData("https://api.example.com/deploy-bot", "https://api.example.com", "deploy-bot")]
+    [InlineData("https://api.example.com", "https://api.example.com", null)]
+    [InlineData("https://api.example.com/", "https://api.example.com", null)]
+    [InlineData("https://api.example.com/v1/", "https://api.example.com/v1", null)]
+    [InlineData("HTTP://host:8080/a/b/c", "HTTP://host:8080/a/b", "c")]
+    [InlineData("vault+kv://store/path/acct", "vault+kv://store/path", "acct")]
+    public void TryParse_UrlReference_SplitsOnLastSlashAfterHost(string input, string service, string? account)
+    {
+        AssertParses(input, service, account);
+    }
+
+    // %2F (any case) is an escaped slash in either part and is decoded after
+    // the split; %25 is an escaped percent so a literal "%2F" is written
+    // "%252F". No other escape is decoded (#870).
+    [Theory]
+    [InlineData("https://api.example.com/v1/team%2Fbot", "https://api.example.com/v1", "team/bot")]
+    [InlineData("https://api.example.com/team%2fbot", "https://api.example.com", "team/bot")]
+    [InlineData("a%2Fb/acct", "a/b", "acct")]
+    [InlineData("svc/x%2Fy", "svc", "x/y")]
+    [InlineData("svc/lit%252F", "svc", "lit%2F")]
+    [InlineData("svc/100%25", "svc", "100%")]
+    [InlineData("svc/a%20b", "svc", "a%20b")]
+    [InlineData("svc/a%", "svc", "a%")]
+    public void TryParse_DecodesEscapedSlashAndPercentOnly(string input, string service, string? account)
+    {
+        AssertParses(input, service, account);
+    }
+
+    private static void AssertParses(string input, string service, string? account)
     {
         Assert.True(KeyringReference.TryParse(input, out var parsed));
         Assert.Equal(service, parsed.Service);
@@ -42,6 +81,7 @@ public sealed class KeyringTests
     [InlineData("")]
     [InlineData("   ")]
     [InlineData("/only-account")]
+    [InlineData("https:///no-host")]
     public void TryParse_RejectsEmptyOrServicelessRefs(string input)
     {
         Assert.False(KeyringReference.TryParse(input, out _));

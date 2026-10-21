@@ -91,7 +91,11 @@ To emit a literal `{{name}}` without substitution, double the braces: `{{{{name}
 
 ### OS keyring (`keyring.*`)
 
-`{{keyring.service/account}}` reads a secret straight from the operating system's credential store, so a real credential never has to live in a workspace file, an env-var table, or a shared collection. The reference is split on the first `/` into a service (mandatory) and an account (optional): `{{keyring.github.com/deploy-bot}}` looks up account `deploy-bot` under service `github.com`; `{{keyring.stripe-key}}` looks up the bare service `stripe-key`.
+`{{keyring.service/account}}` reads a secret straight from the operating system's credential store, so a real credential never has to live in a workspace file, an env-var table, or a shared collection. The reference names a service (mandatory) and an account (optional):
+
+- A **plain** reference is split on the first `/`: `{{keyring.github.com/deploy-bot}}` looks up account `deploy-bot` under service `github.com`; `{{keyring.vault/team/bot}}` looks up account `team/bot` under service `vault`; `{{keyring.stripe-key}}` looks up the bare service `stripe-key`.
+- A reference that starts with a **URL scheme** (`<scheme>://`) is split on the last `/` after the host, so the service keeps its path: `{{keyring.https://api.example.com/v1/deploy-bot}}` looks up account `deploy-bot` under service `https://api.example.com/v1`, and `{{keyring.https://api.example.com/deploy-bot}}` account `deploy-bot` under `https://api.example.com`. A host-only URL (`https://api.example.com` or `https://api.example.com/`) is a service without an account.
+- `%2F` (any case) writes a `/` that does not split, in either part: `{{keyring.https://api.example.com/v1/team%2Fbot}}` looks up account `team/bot` under `https://api.example.com/v1`. `%25` writes a `%`, so a literal `%2F` is `%252F`. No other escape is decoded.
 
 | Platform | Backend | Store a value with |
 |----------|---------|--------------------|
