@@ -12,20 +12,12 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
 
-**27/51 done** · 24 backlog
+**35/51 done** · 16 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [639](https://github.com/Kuestenlogik/Bowire/issues/639) | Bowire | [SCIM: live Okta and Entra ID provisioning round-trips](#issue-kuestenlogik-bowire-639) | ⬜ Backlog | `area:workbench` |
 | [670](https://github.com/Kuestenlogik/Bowire/issues/670) | Bowire | [Get listed where developers and models actually look](#issue-kuestenlogik-bowire-670) | ⬜ Backlog | `area:site` |
-| [846](https://github.com/Kuestenlogik/Bowire/issues/846) | Bowire | [SignalR binds body fields by JSON order instead of parameter name](#issue-kuestenlogik-bowire-846) | ⬜ Backlog |  |
-| [847](https://github.com/Kuestenlogik/Bowire/issues/847) | Bowire | [SignalR client-streaming and duplex channels send messages as positional arguments instead of a stream](#issue-kuestenlogik-bowire-847) | ⬜ Backlog |  |
-| [848](https://github.com/Kuestenlogik/Bowire/issues/848) | Bowire | [Keyring CLI timeout never applies: output is read to the end before the wait](#issue-kuestenlogik-bowire-848) | ⬜ Backlog |  |
-| [849](https://github.com/Kuestenlogik/Bowire/issues/849) | Bowire | [Kubernetes catalogue finds nothing in a kubeconfig written by kubectl or kind](#issue-kuestenlogik-bowire-849) | ⬜ Backlog |  |
-| [850](https://github.com/Kuestenlogik/Bowire/issues/850) | Bowire | [Calling AddBowireWebSocketEndpoints twice drops the endpoints of the first call](#issue-kuestenlogik-bowire-850) | ⬜ Backlog |  |
-| [851](https://github.com/Kuestenlogik/Bowire/issues/851) | Bowire | [WebSocket channel URL loses the base path of the server URL](#issue-kuestenlogik-bowire-851) | ⬜ Backlog |  |
-| [852](https://github.com/Kuestenlogik/Bowire/issues/852) | Bowire | [WebSocket and MQTT channel send fails on a non-string type or a malformed envelope](#issue-kuestenlogik-bowire-852) | ⬜ Backlog |  |
-| [853](https://github.com/Kuestenlogik/Bowire/issues/853) | Bowire | [[WebSocketGroup] on the declaring class of Minimal API handlers is ignored](#issue-kuestenlogik-bowire-853) | ⬜ Backlog |  |
 | [854](https://github.com/Kuestenlogik/Bowire/issues/854) | Bowire | [Socket.IO emit and listen fail on non-object JSON or a non-string event](#issue-kuestenlogik-bowire-854) | ⬜ Backlog |  |
 | [855](https://github.com/Kuestenlogik/Bowire/issues/855) | Bowire | [MQTT and NATS payload display cuts text that starts with a JSON value](#issue-kuestenlogik-bowire-855) | ⬜ Backlog |  |
 | [856](https://github.com/Kuestenlogik/Bowire/issues/856) | Bowire | [MQTT and NATS show invalid UTF-8 payloads as replacement characters instead of hex](#issue-kuestenlogik-bowire-856) | ⬜ Backlog |  |
@@ -40,7 +32,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [865](https://github.com/Kuestenlogik/Bowire/issues/865) | Bowire | [JSON-RPC discovery fails on an OpenRPC document with non-string name or summary](#issue-kuestenlogik-bowire-865) | ⬜ Backlog |  |
 | [866](https://github.com/Kuestenlogik/Bowire/issues/866) | Bowire | [JSON-RPC client accepts a reply whose id does not match the request](#issue-kuestenlogik-bowire-866) | ⬜ Backlog |  |
 | [867](https://github.com/Kuestenlogik/Bowire/issues/867) | Bowire | [OData addresses a digit-only string key without quotes](#issue-kuestenlogik-bowire-867) | ⬜ Backlog |  |
-| [845](https://github.com/Kuestenlogik/Bowire/issues/845) | Bowire | [OpenAPI discovery ignores body, response and error schemas keyed application/json; charset=utf-8](#issue-kuestenlogik-bowire-845) | ✅ Done |  |
 | [816](https://github.com/Kuestenlogik/Bowire/issues/816) | Bowire | [SCIM trace records status 200 for every request](#issue-kuestenlogik-bowire-816) | ✅ Done |  |
 | [817](https://github.com/Kuestenlogik/Bowire/issues/817) | Bowire | [OIDC provider cannot run as an installed plugin](#issue-kuestenlogik-bowire-817) | ✅ Done |  |
 | [818](https://github.com/Kuestenlogik/Bowire/issues/818) | Bowire | [--auth-oidc-* flags are documented but never read](#issue-kuestenlogik-bowire-818) | ✅ Done |  |
@@ -67,6 +58,15 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [842](https://github.com/Kuestenlogik/Bowire/issues/842) | Bowire | [AddBowireTelemetry wires the OTel pipeline again on each call, exporting every metric and span twice](#issue-kuestenlogik-bowire-842) | ✅ Done |  |
 | [843](https://github.com/Kuestenlogik/Bowire/issues/843) | Bowire | [Pulsar ignores its namespaces and subscribeFromLatest settings](#issue-kuestenlogik-bowire-843) | ✅ Done |  |
 | [844](https://github.com/Kuestenlogik/Bowire/issues/844) | Bowire | [OpenAPI discovery fails on a self-referencing schema: SchemaToField/SchemaToMessage recurse without a cycle guard](#issue-kuestenlogik-bowire-844) | ✅ Done |  |
+| [845](https://github.com/Kuestenlogik/Bowire/issues/845) | Bowire | [OpenAPI discovery ignores body, response and error schemas keyed application/json; charset=utf-8](#issue-kuestenlogik-bowire-845) | ✅ Done |  |
+| [846](https://github.com/Kuestenlogik/Bowire/issues/846) | Bowire | [SignalR binds body fields by JSON order instead of parameter name](#issue-kuestenlogik-bowire-846) | ✅ Done |  |
+| [847](https://github.com/Kuestenlogik/Bowire/issues/847) | Bowire | [SignalR client-streaming and duplex channels send messages as positional arguments instead of a stream](#issue-kuestenlogik-bowire-847) | ✅ Done |  |
+| [848](https://github.com/Kuestenlogik/Bowire/issues/848) | Bowire | [Keyring CLI timeout never applies: output is read to the end before the wait](#issue-kuestenlogik-bowire-848) | ✅ Done |  |
+| [849](https://github.com/Kuestenlogik/Bowire/issues/849) | Bowire | [Kubernetes catalogue finds nothing in a kubeconfig written by kubectl or kind](#issue-kuestenlogik-bowire-849) | ✅ Done |  |
+| [850](https://github.com/Kuestenlogik/Bowire/issues/850) | Bowire | [Calling AddBowireWebSocketEndpoints twice drops the endpoints of the first call](#issue-kuestenlogik-bowire-850) | ✅ Done |  |
+| [851](https://github.com/Kuestenlogik/Bowire/issues/851) | Bowire | [WebSocket channel URL loses the base path of the server URL](#issue-kuestenlogik-bowire-851) | ✅ Done |  |
+| [852](https://github.com/Kuestenlogik/Bowire/issues/852) | Bowire | [WebSocket and MQTT channel send fails on a non-string type or a malformed envelope](#issue-kuestenlogik-bowire-852) | ✅ Done |  |
+| [853](https://github.com/Kuestenlogik/Bowire/issues/853) | Bowire | [[WebSocketGroup] on the declaring class of Minimal API handlers is ignored](#issue-kuestenlogik-bowire-853) | ✅ Done |  |
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
@@ -232,38 +232,6 @@ Split from #96 so the SCIM surface can ship on its own merits. [[more]](https://
 
 Six credible competitors turned up during the competitive survey **via openalternative.co**. Bowire was not there. That is the whole diagnosis: when a developer — or a language model — asks for "open source Postman alternative", the answer is assembled from these directories, not from bowire.io. [[more]](https://github.com/Kuestenlogik/Bowire/issues/670)
 
-#### <a id="issue-kuestenlogik-bowire-846"></a>⬜ Backlog · [#846](https://github.com/Kuestenlogik/Bowire/issues/846) SignalR binds body fields by JSON order instead of parameter name
-
-A SignalR request body is one JSON object keyed by parameter name, but the plugin binds its fields by position in the JSON text, not by name. [[more]](https://github.com/Kuestenlogik/Bowire/issues/846)
-
-#### <a id="issue-kuestenlogik-bowire-847"></a>⬜ Backlog · [#847](https://github.com/Kuestenlogik/Bowire/issues/847) SignalR client-streaming and duplex channels send messages as positional arguments instead of a stream
-
-A client-streaming or duplex SignalR call opened as a channel never reaches the hub's stream parameter. Instead, every message sent is passed as a separate positional argument. [[more]](https://github.com/Kuestenlogik/Bowire/issues/847)
-
-#### <a id="issue-kuestenlogik-bowire-848"></a>⬜ Backlog · [#848](https://github.com/Kuestenlogik/Bowire/issues/848) Keyring CLI timeout never applies: output is read to the end before the wait
-
-`OsKeyringBackend.DefaultRunProcess` (`src/Kuestenlogik.Bowire.Keyring/OsKeyringBackend.cs`, L169–L192) shells out to `security` / `secret-tool` with a 5 s timeout, but reads stdout and stderr with blocking `ReadToEnd()` *before* `WaitForExit(CliTimeout)`. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/848)
-
-#### <a id="issue-kuestenlogik-bowire-849"></a>⬜ Backlog · [#849](https://github.com/Kuestenlogik/Bowire/issues/849) Kubernetes catalogue finds nothing in a kubeconfig written by kubectl or kind
-
-`KubernetesCatalogueProvider.TryParseKubeconfig` (`src/Kuestenlogik.Bowire.Catalogue.Kubernetes/KubernetesCatalogueProvider.cs`, L341–L438) only opens a record on a `- name:` line. kubectl and kind write clusters and contexts the other way round: [[more]](https://github.com/Kuestenlogik/Bowire/issues/849)
-
-#### <a id="issue-kuestenlogik-bowire-850"></a>⬜ Backlog · [#850](https://github.com/Kuestenlogik/Bowire/issues/850) Calling AddBowireWebSocketEndpoints twice drops the endpoints of the first call
-
-`AddBowireWebSocketEndpoints` documents itself as "safe to call multiple times", but a second call drops the endpoints of the first. [[more]](https://github.com/Kuestenlogik/Bowire/issues/850)
-
-#### <a id="issue-kuestenlogik-bowire-851"></a>⬜ Backlog · [#851](https://github.com/Kuestenlogik/Bowire/issues/851) WebSocket channel URL loses the base path of the server URL
-
-A WebSocket channel against a server URL with a base path connects to the host root instead. [[more]](https://github.com/Kuestenlogik/Bowire/issues/851)
-
-#### <a id="issue-kuestenlogik-bowire-852"></a>⬜ Backlog · [#852](https://github.com/Kuestenlogik/Bowire/issues/852) WebSocket and MQTT channel send fails on a non-string type or a malformed envelope
-
-Sending a message whose JSON has a non-string `type`, or a malformed send envelope, fails the whole send on a WebSocket or MQTT channel. [[more]](https://github.com/Kuestenlogik/Bowire/issues/852)
-
-#### <a id="issue-kuestenlogik-bowire-853"></a>⬜ Backlog · [#853](https://github.com/Kuestenlogik/Bowire/issues/853) [WebSocketGroup] on the declaring class of Minimal API handlers is ignored
-
-`[WebSocketGroup]` on the class that declares Minimal API handlers is ignored, although the attribute's documentation shows exactly that usage ("every endpoint defined inside inherits the group"). [[more]](https://github.com/Kuestenlogik/Bowire/issues/853)
-
 #### <a id="issue-kuestenlogik-bowire-854"></a>⬜ Backlog · [#854](https://github.com/Kuestenlogik/Bowire/issues/854) Socket.IO emit and listen fail on non-object JSON or a non-string event
 
 Socket.IO emit and listen fail on JSON that is not an object or has a non-string `event`, although both helpers promise a fallback. [[more]](https://github.com/Kuestenlogik/Bowire/issues/854)
@@ -319,10 +287,6 @@ The JSON-RPC client accepts a reply without checking that it answers the request
 #### <a id="issue-kuestenlogik-bowire-867"></a>⬜ Backlog · [#867](https://github.com/Kuestenlogik/Bowire/issues/867) OData addresses a digit-only string key without quotes
 
 An OData entity set with an `Edm.String` key is addressed with an unquoted key when the key value is all digits. [[more]](https://github.com/Kuestenlogik/Bowire/issues/867)
-
-#### <a id="issue-kuestenlogik-bowire-845"></a>✅ Done · [#845](https://github.com/Kuestenlogik/Bowire/issues/845) OpenAPI discovery ignores body, response and error schemas keyed application/json; charset=utf-8
-
-OpenAPI discovery picks the JSON media type of a request body, a 2xx response and an error response by comparing the content-type key verbatim with `application/json` (or by looking for `+json`): [[more]](https://github.com/Kuestenlogik/Bowire/issues/845)
 
 #### <a id="issue-kuestenlogik-bowire-816"></a>✅ Done · [#816](https://github.com/Kuestenlogik/Bowire/issues/816) SCIM trace records status 200 for every request
 
@@ -427,6 +391,42 @@ The Pulsar plugin declares the settings `namespaces` and `subscribeFromLatest`, 
 #### <a id="issue-kuestenlogik-bowire-844"></a>✅ Done · [#844](https://github.com/Kuestenlogik/Bowire/issues/844) OpenAPI discovery fails on a self-referencing schema: SchemaToField/SchemaToMessage recurse without a cycle guard
 
 `SchemaToField` and `SchemaToMessage` in `OpenApiDiscovery.cs` call each other for every object-typed property with no cycle guard and no depth limit (`src/Kuestenlogik.Bowire.Protocol.Rest.OpenApi3/OpenApiDiscovery.cs` L464, `src/Kuestenlogik.Bowire.Protocol.Rest.OpenApi2/OpenApiDiscovery.cs` L476). [[more]](https://github.com/Kuestenlogik/Bowire/issues/844)
+
+#### <a id="issue-kuestenlogik-bowire-845"></a>✅ Done · [#845](https://github.com/Kuestenlogik/Bowire/issues/845) OpenAPI discovery ignores body, response and error schemas keyed application/json; charset=utf-8
+
+OpenAPI discovery picks the JSON media type of a request body, a 2xx response and an error response by comparing the content-type key verbatim with `application/json` (or by looking for `+json`): [[more]](https://github.com/Kuestenlogik/Bowire/issues/845)
+
+#### <a id="issue-kuestenlogik-bowire-846"></a>✅ Done · [#846](https://github.com/Kuestenlogik/Bowire/issues/846) SignalR binds body fields by JSON order instead of parameter name
+
+A SignalR request body is one JSON object keyed by parameter name, but the plugin binds its fields by position in the JSON text, not by name. [[more]](https://github.com/Kuestenlogik/Bowire/issues/846)
+
+#### <a id="issue-kuestenlogik-bowire-847"></a>✅ Done · [#847](https://github.com/Kuestenlogik/Bowire/issues/847) SignalR client-streaming and duplex channels send messages as positional arguments instead of a stream
+
+A client-streaming or duplex SignalR call opened as a channel never reaches the hub's stream parameter. Instead, every message sent is passed as a separate positional argument. [[more]](https://github.com/Kuestenlogik/Bowire/issues/847)
+
+#### <a id="issue-kuestenlogik-bowire-848"></a>✅ Done · [#848](https://github.com/Kuestenlogik/Bowire/issues/848) Keyring CLI timeout never applies: output is read to the end before the wait
+
+`OsKeyringBackend.DefaultRunProcess` (`src/Kuestenlogik.Bowire.Keyring/OsKeyringBackend.cs`, L169–L192) shells out to `security` / `secret-tool` with a 5 s timeout, but reads stdout and stderr with blocking `ReadToEnd()` *before* `WaitForExit(CliTimeout)`. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/848)
+
+#### <a id="issue-kuestenlogik-bowire-849"></a>✅ Done · [#849](https://github.com/Kuestenlogik/Bowire/issues/849) Kubernetes catalogue finds nothing in a kubeconfig written by kubectl or kind
+
+`KubernetesCatalogueProvider.TryParseKubeconfig` (`src/Kuestenlogik.Bowire.Catalogue.Kubernetes/KubernetesCatalogueProvider.cs`, L341–L438) only opens a record on a `- name:` line. kubectl and kind write clusters and contexts the other way round: [[more]](https://github.com/Kuestenlogik/Bowire/issues/849)
+
+#### <a id="issue-kuestenlogik-bowire-850"></a>✅ Done · [#850](https://github.com/Kuestenlogik/Bowire/issues/850) Calling AddBowireWebSocketEndpoints twice drops the endpoints of the first call
+
+`AddBowireWebSocketEndpoints` documents itself as "safe to call multiple times", but a second call drops the endpoints of the first. [[more]](https://github.com/Kuestenlogik/Bowire/issues/850)
+
+#### <a id="issue-kuestenlogik-bowire-851"></a>✅ Done · [#851](https://github.com/Kuestenlogik/Bowire/issues/851) WebSocket channel URL loses the base path of the server URL
+
+A WebSocket channel against a server URL with a base path connects to the host root instead. [[more]](https://github.com/Kuestenlogik/Bowire/issues/851)
+
+#### <a id="issue-kuestenlogik-bowire-852"></a>✅ Done · [#852](https://github.com/Kuestenlogik/Bowire/issues/852) WebSocket and MQTT channel send fails on a non-string type or a malformed envelope
+
+Sending a message whose JSON has a non-string `type`, or a malformed send envelope, fails the whole send on a WebSocket or MQTT channel. [[more]](https://github.com/Kuestenlogik/Bowire/issues/852)
+
+#### <a id="issue-kuestenlogik-bowire-853"></a>✅ Done · [#853](https://github.com/Kuestenlogik/Bowire/issues/853) [WebSocketGroup] on the declaring class of Minimal API handlers is ignored
+
+`[WebSocketGroup]` on the class that declares Minimal API handlers is ignored, although the attribute's documentation shows exactly that usage ("every endpoint defined inside inherits the group"). [[more]](https://github.com/Kuestenlogik/Bowire/issues/853)
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
