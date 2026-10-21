@@ -131,13 +131,13 @@ internal static class AwsSigV4Signer
     }
 
     /// <summary>
-    /// Sort the query string parameters by name, URL-encode them, and join
+    /// Sort the query string parameters by name, then by value, and join
     /// them with '&amp;'. AWS Sig v4 requires the canonical query string to
     /// have parameters in code-point order; values stay verbatim if they are
     /// already URL-encoded (the canonical form expects each segment to be
     /// percent-encoded once).
     /// </summary>
-    private static string BuildCanonicalQueryString(string query)
+    internal static string BuildCanonicalQueryString(string query)
     {
         if (string.IsNullOrEmpty(query) || query == "?") return string.Empty;
         var q = query.StartsWith('?') ? query[1..] : query;
@@ -151,7 +151,14 @@ internal static class AwsSigV4Signer
             var v = idx >= 0 ? part[(idx + 1)..] : string.Empty;
             pairs.Add(new(k, v));
         }
-        pairs.Sort((a, b) => string.CompareOrdinal(a.Key, b.Key));
+        // #905 - parameters sharing a name are ordered by value; List.Sort is
+        // not stable, so a name-only comparison left `?a=2&a=1` in whatever
+        // order it fell and AWS computed a different signature.
+        pairs.Sort((a, b) =>
+        {
+            var byKey = string.CompareOrdinal(a.Key, b.Key);
+            return byKey != 0 ? byKey : string.CompareOrdinal(a.Value, b.Value);
+        });
 
         var sb = new StringBuilder();
         for (var i = 0; i < pairs.Count; i++)
