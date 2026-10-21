@@ -80,6 +80,89 @@ public sealed class GraphQLProtocolStreamingTests
     }
 
     [Fact]
+    public async Task InvokeStream_ForcedSse_CompleteWithoutData_EndsTheStream()
+    {
+        // #922 - `event: complete` carries no payload, and a server is free
+        // to send it without a data line. The stream has to end on the
+        // event, not on the server deciding to hang up: this server keeps
+        // the connection open until the client leaves.
+        await using var host = await PluginTestHost.StartAsync(app =>
+            MapSseThenHold(app, "event: next\ndata: {\"data\":{\"tick\":\"first\"}}\n\nevent: complete\n\n"));
+        using var protocol = new BowireGraphQLProtocol();
+
+        // Only a guard that turns a hang into a failure; the stream is
+        // expected to end on its own long before it fires.
+        using var hang = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        hang.CancelAfter(TimeSpan.FromSeconds(30));
+
+        var events = new List<string>();
+        await foreach (var evt in protocol.InvokeStreamAsync(
+            host.BaseUrl + "/graphql", service: "Subscription", method: "tick",
+            jsonMessages: ["{}"], showInternalServices: false,
+            metadata: new Dictionary<string, string>
+            {
+                [BowireGraphQLProtocol.SubscriptionTransportMetadataKey] = "sse"
+            },
+            ct: hang.Token))
+        {
+            events.Add(evt);
+        }
+
+        Assert.False(hang.IsCancellationRequested, "the stream did not end on `event: complete`");
+        var only = Assert.Single(events);
+        Assert.Contains("first", only, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task InvokeStream_ForcedSse_ErrorEvent_EndsWithAServerErrorFrame()
+    {
+        // #922 - an `event: error` frame is the server ending the
+        // subscription with a reason. It was dropped like any other event
+        // that is not `next`, so the caller saw neither the reason nor an
+        // end.
+        await using var host = await PluginTestHost.StartAsync(app =>
+            MapSseThenHold(app, "event: error\ndata: [{\"message\":\"boom\"}]\n\n"));
+        using var protocol = new BowireGraphQLProtocol();
+
+        using var hang = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        hang.CancelAfter(TimeSpan.FromSeconds(30));
+
+        var events = new List<string>();
+        await foreach (var evt in protocol.InvokeStreamAsync(
+            host.BaseUrl + "/graphql", service: "Subscription", method: "tick",
+            jsonMessages: ["{}"], showInternalServices: false,
+            metadata: new Dictionary<string, string>
+            {
+                [BowireGraphQLProtocol.SubscriptionTransportMetadataKey] = "sse"
+            },
+            ct: hang.Token))
+        {
+            events.Add(evt);
+        }
+
+        Assert.False(hang.IsCancellationRequested, "the stream did not end on `event: error`");
+        var only = Assert.Single(events);
+        var error = BowireStreamErrorEnvelope.TryRead(only);
+        Assert.NotNull(error);
+        Assert.Equal(BowireStreamErrorKinds.Server, error!.Kind);
+        Assert.Contains("boom", error.Message, StringComparison.Ordinal);
+    }
+
+    private static void MapSseThenHold(WebApplication app, string frames)
+    {
+        app.MapPost("/graphql", async (HttpContext ctx) =>
+        {
+            ctx.Response.ContentType = "text/event-stream";
+            await ctx.Response.WriteAsync(frames, ctx.RequestAborted);
+            await ctx.Response.Body.FlushAsync(ctx.RequestAborted);
+            // Held until the client goes away: the end of the stream has
+            // to come from the frames, not from the connection closing.
+            try { await Task.Delay(Timeout.Infinite, ctx.RequestAborted); }
+            catch (OperationCanceledException) { /* client done */ }
+        });
+    }
+
+    [Fact]
     public async Task InvokeStream_ForcedSse_NonSuccessStatus_EmitsErrorEnvelope()
     {
         await using var host = await PluginTestHost.StartAsync(app =>

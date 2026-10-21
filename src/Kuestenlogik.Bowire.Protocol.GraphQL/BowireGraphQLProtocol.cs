@@ -608,13 +608,23 @@ public sealed class BowireGraphQLProtocol : IBowireProtocol, Kuestenlogik.Bowire
 
                 if (line.Length == 0)
                 {
-                    if (dataLines.Count > 0)
+                    // #922 - the event ends the stream, whether or not it
+                    // carried a data line: `complete` has no payload to
+                    // send, and a server may leave the connection open
+                    // after it. An `error` is the server ending the
+                    // subscription with a reason, which the caller gets as
+                    // the #712 frame rather than silence.
+                    var data = string.Join("\n", dataLines);
+                    if (eventType == "complete") yield break;
+                    if (eventType == "error")
                     {
-                        var data = string.Join("\n", dataLines);
-                        if (eventType is null or "next")
-                            yield return data;
-                        if (eventType == "complete") yield break;
+                        yield return BowireStreamErrorEnvelope.Frame(
+                            BowireStreamErrorKinds.Server,
+                            data.Length > 0 ? data : "graphql-sse error");
+                        yield break;
                     }
+                    if (dataLines.Count > 0 && eventType is null or "next")
+                        yield return data;
                     eventType = null;
                     dataLines.Clear();
                     continue;
