@@ -189,7 +189,7 @@
          which is why every WithHttpTransport call site in this repo pins
          Stateless explicitly instead of inheriting it. On a stateless
          mount the SDK maps POST only; the standalone SSE GET is gone. -->
-    <PackageVersion Include="ModelContextProtocol" Version="2.2.0" />
+    <PackageVersion Include="ModelContextProtocol" Version="2.3.0" />
     <PackageVersion Include="ModelContextProtocol.AspNetCore" Version="2.2.0" />
     <!-- The official io.modelcontextprotocol/tasks extension (SEP-2663,
          schema 2026-07-28) for the same SDK version: tasks/get, update,
