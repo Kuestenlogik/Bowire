@@ -1,0 +1,65 @@
+type: collection.insomnia.rest/5.0
+name: Weather
+meta:
+  id: wrk_weather
+  created: 1759300000000
+  modified: 1759310000000
+collection:
+  - name: Forecasts
+    meta:
+      id: fld_forecasts
+      sortKey: -1
+    authentication:
+      type: apikey
+      key: X-Api-Key
+      value: "{{ _.weather_key }}"
+      addTo: header
+    children:
+      - url: "{{ _.base }}/forecast/{{ _.city }}"
+        name: Forecast for a city
+        meta:
+          id: req_forecast
+          sortKey: -2
+        method: GET
+        parameters:
+          - name: days
+            value: "3"
+        headers:
+          - name: Accept
+            value: application/json
+        scripts:
+          afterResponse: |-
+            insomnia.test("ok", () => insomnia.expect(insomnia.response.code).to.equal(200));
+      - url: "{{ _.base }}/graphql"
+        name: Current (GraphQL)
+        meta:
+          id: req_gql
+          sortKey: -1
+        method: POST
+        body:
+          mimeType: application/graphql
+          text: '{"query":"{ current(city: \"Kiel\") { temp } }"}'
+        authentication:
+          type: none
+  - url: wss://weather.example.com/live
+    name: Live feed
+    meta:
+      id: ws-req_live
+      sortKey: 0
+cookieJar:
+  name: Default Jar
+  meta:
+    id: jar_weather
+environments:
+  name: Base Environment
+  meta:
+    id: env_weather_base
+  data:
+    base: https://weather.example.com
+    city: Kiel
+  subEnvironments:
+    - name: Production
+      meta:
+        id: env_prod
+      data:
+        weather_key: "{{ _.prod_key }}"

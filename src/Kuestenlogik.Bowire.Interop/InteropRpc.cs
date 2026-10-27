@@ -18,6 +18,7 @@ public static class InteropRpc
     // a marker; .http is the fallback for plain text with request lines.
     private static readonly IInteropImporter[] s_importers =
     [
+        new InsomniaImporter(),
         new HttpFileImporter(),
     ];
 
@@ -44,7 +45,7 @@ public static class InteropRpc
         else
         {
             importer = s_importers.FirstOrDefault(i => i.CanRead(files))
-                ?? throw Invalid("Not a format Bowire imports: expected a .http file (with its http-client.env.json, if any).");
+                ?? throw Invalid("Not a format Bowire imports: expected an Insomnia export (v4 JSON/YAML or v5 YAML) or a .http file (with its http-client.env.json, if any).");
         }
 
         var report = new ReportBuilder();

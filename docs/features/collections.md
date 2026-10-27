@@ -45,7 +45,7 @@ When the standalone Collections rail is enabled, the Collection Manager opens as
 | **Run All** | Execute every item sequentially with the current environment |
 | **Export** | Download the collection as a `.bwc` JSON file |
 | **Import Postman** | Import a Postman Collection v2.1 JSON file |
-| **Import collection** | Import `.http` files (more formats follow; see below) |
+| **Import collection** | Import an Insomnia export or `.http` files (see below) |
 | **Export .http** | Download the collection as a `.http` file plus `http-client.env.json` |
 | **Delete** | Delete the entire collection (with confirmation) |
 
@@ -116,6 +116,17 @@ bowire export http orders.bww        # writes orders.http and http-client.env.js
 ```
 
 MCP clients call `bowire.import` and `bowire.export.http`. All of them, and the workbench, call the same Interop gRPC service (`bowire.interop.v1.Interop`), which is also reachable as JSON at `POST {base}/api/v1/interop/import` and `POST {base}/api/v1/interop/export-http`.
+
+## Insomnia import
+
+**Import collection** also reads Insomnia exports: the v4 export (*Export Data → Insomnia v4*, JSON or YAML) and the v5 collection file (`type: collection.insomnia.rest/5.0`, YAML). Bowire tells them apart by their content.
+
+- Each workspace becomes a collection. Folders are kept as a path in front of each item's name.
+- `{{ _.name }}` becomes `{{name}}`. Nested environment values (`{{ _.api.version }}`) become dotted names (`{{api.version}}`). `{% uuid %}` becomes `{{uuid}}`, and `{% now %}` becomes `{{timestamp}}`, `{{now}}` or `{{nowMs}}`. Every other tag (`{% response %}`, faker, prompts) stays as written and is named in the report.
+- Query parameters are appended to the URL. Form bodies are joined into a urlencoded body. A GraphQL request becomes a POST with its `{"query": …}` body.
+- Each sub-environment becomes a Bowire environment, with the base environment's values merged in. Folder variables are merged into every environment. Values from private environments are flagged as clear-text credentials.
+- Insomnia keeps auth per request, Bowire per environment. Bearer, Basic (without variables) and API key auth become headers, and a folder's auth reaches its requests. OAuth 2, AWS IAM, Digest and NTLM are named in the report, so you can set them on the Bowire environment.
+- Left out, each with the reason: gRPC and WebSocket requests (Bowire discovers those from the server), pre-request and after-response scripts, multipart and file bodies, disabled headers and parameters, cookie jars, API specs and unit tests.
 
 ## Response chaining between items
 

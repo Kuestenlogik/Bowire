@@ -695,7 +695,7 @@ internal static class BowireCli
         });
 
         var import = new Command("import",
-            "Import .http files as a Bowire workspace (#674); "
+            "Import an Insomnia export or .http files as a Bowire workspace (#674); "
             + "`import har` converts a HAR trace into a recording.");
         import.Add(har);
         InteropCommands.AttachImport(import);

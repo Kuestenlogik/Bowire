@@ -21,10 +21,10 @@ internal static class InteropCommands
     {
         var pathArg = new Argument<string?>("path")
         {
-            Description = "A .http file, or a directory of them with http-client.env.json.",
+            Description = "An Insomnia export (v4 JSON/YAML or v5 YAML), or a .http file or a directory of them with http-client.env.json.",
             Arity = ArgumentArity.ZeroOrOne,
         };
-        var formatOpt = new Option<string?>("--format") { Description = "Skip sniffing. Today: http." };
+        var formatOpt = new Option<string?>("--format") { Description = "Skip sniffing: insomnia or http." };
         var nameOpt = new Option<string?>("--name", "-n") { Description = "The collection name when the source has none." };
         var outOpt = new Option<string?>("--out", "-o")
         {
