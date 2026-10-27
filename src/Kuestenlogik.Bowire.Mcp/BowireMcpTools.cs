@@ -709,6 +709,68 @@ public sealed class BowireMcpTools
         }, JsonOpts);
     }
 
+    [McpServerTool(Name = "bowire.import")]
+    [Description("Import .http files (one file, or a directory of them with http-client.env.json) into Bowire collections and environments (#674). Returns { format, collections, environments, report } where report lists what was approximated or skipped and which credentials sit in clear text. With `outPath`, also writes a .bww workspace file the workbench or `bowire workspace import` reads.")]
+    public static async Task<string> Import(
+        [Description("Path to a .http file, or to a directory of them.")] string path,
+        [Description("Optional: skip sniffing. Today: http.")] string? format = null,
+        [Description("Optional collection name when the source has none.")] string? name = null,
+        [Description("Optional path for a .bww workspace file.")] string? outPath = null)
+    {
+        if (string.IsNullOrWhiteSpace(path)) return "bowire.import: path is required.";
+        var request = new Kuestenlogik.Bowire.Interop.V1.ImportCollectionRequest { Format = format ?? "", Name = name ?? "" };
+        Kuestenlogik.Bowire.Interop.V1.ImportCollectionResponse result;
+        try
+        {
+            request.Files.Add(await Kuestenlogik.Bowire.Interop.InteropSources.ReadAsync(path).ConfigureAwait(false));
+            result = Kuestenlogik.Bowire.Interop.InteropRpc.ImportCollection(request);
+        }
+        catch (FileNotFoundException)
+        {
+            return $"bowire.import: {path} does not exist.";
+        }
+        catch (Grpc.Core.RpcException ex)
+        {
+            return "bowire.import: " + ex.Status.Detail;
+        }
+
+        string? written = null;
+        if (!string.IsNullOrWhiteSpace(outPath))
+        {
+            var workspaceName = name ?? result.Collections.FirstOrDefault()?.Name ?? "Imported";
+            written = Path.GetFullPath(outPath);
+            await File.WriteAllTextAsync(written, Kuestenlogik.Bowire.Interop.BowireWorkspaceJson.ToWorkspaceFile(result, workspaceName)).ConfigureAwait(false);
+        }
+        var json = Google.Protobuf.JsonFormatter.Default.Format(result);
+        return written is null ? json : JsonSerializer.Serialize(new { outPath = written, result = JsonDocument.Parse(json).RootElement }, JsonOpts);
+    }
+
+    [McpServerTool(Name = "bowire.export.http")]
+    [Description("Write Bowire collections as a .http file the IDEs run (Rider, IntelliJ, Visual Studio 2022, VS Code REST Client) plus http-client.env.json (#673). Reads a .bww workspace file, a workspace's collections.json or an array of collections. Secrets are never written: {{secret.x}} references become names to fill into http-client.private.env.json. Returns { http, envJson, report }.")]
+    public static async Task<string> ExportHttp(
+        [Description("Path to a .bww workspace file, a collections.json, or an array of collections.")] string path,
+        [Description("Optional: jetbrains (default) or vscode.")] string? dialect = null)
+    {
+        if (string.IsNullOrWhiteSpace(path)) return "bowire.export.http: path is required.";
+        if (!File.Exists(path)) return $"bowire.export.http: {path} does not exist.";
+        try
+        {
+            var (collections, environments) = Kuestenlogik.Bowire.Interop.BowireWorkspaceJson.Read(await File.ReadAllTextAsync(path).ConfigureAwait(false));
+            var request = new Kuestenlogik.Bowire.Interop.V1.ExportHttpRequest { Dialect = dialect ?? "" };
+            request.Collections.Add(collections);
+            request.Environments.Add(environments);
+            return Google.Protobuf.JsonFormatter.Default.Format(Kuestenlogik.Bowire.Interop.InteropRpc.ExportHttp(request));
+        }
+        catch (Kuestenlogik.Bowire.Interop.InteropFormatException ex)
+        {
+            return "bowire.export.http: " + ex.Message;
+        }
+        catch (Grpc.Core.RpcException ex)
+        {
+            return "bowire.export.http: " + ex.Status.Detail;
+        }
+    }
+
     [McpServerTool(Name = "bowire.assert")]
     [Description("Append a test assertion onto a step inside an on-disk recording. Targets either ~/.bowire/recordings.json (when recordingId is set) or the supplied recordingPath. The assertion shape matches the Newman-style probe Bowire runs after replay: { path, op, expected }. Supported ops: eq, ne, gt, gte, lt, lte, contains, matches, exists, notexists, type. Use path=\"status\" to assert on the HTTP/gRPC status name; otherwise path is a JSONPath rooted at the response body. Returns the assertion id + the step it was attached to.")]
     public static async Task<string> Assert(

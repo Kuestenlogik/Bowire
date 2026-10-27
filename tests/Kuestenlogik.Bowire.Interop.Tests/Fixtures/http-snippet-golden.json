@@ -1,0 +1,145 @@
+{
+  "comment": "#673 - Copy as .http. Replayed by wwwroot-js/http-file-export.test.mjs; every expected block is parsed by HttpSnippetGoldenTests.cs.",
+  "scenarios": [
+    {
+      "scenario": "rest GET with a path parameter, resolved",
+      "vars": {
+        "orderId": "42"
+      },
+      "keepVars": false,
+      "ctx": {
+        "serverUrl": "https://api.example.com",
+        "method": "GetOrder",
+        "httpMethod": "GET",
+        "httpPath": "/orders/{id}",
+        "source": "rest",
+        "bodyJsonRaw": "{\"id\":\"{{orderId}}\"}",
+        "metadataRaw": {
+          "Accept": "application/json"
+        }
+      },
+      "verb": "GET",
+      "url": "https://api.example.com/orders/42",
+      "expected": "### GetOrder\n# @name GetOrder\nGET https://api.example.com/orders/42\nAccept: application/json\n"
+    },
+    {
+      "scenario": "rest GET with a path parameter, variables kept",
+      "vars": {
+        "orderId": "42"
+      },
+      "keepVars": true,
+      "ctx": {
+        "serverUrl": "https://api.example.com",
+        "method": "GetOrder",
+        "httpMethod": "GET",
+        "httpPath": "/orders/{id}",
+        "source": "rest",
+        "bodyJsonRaw": "{\"id\":\"{{orderId}}\"}",
+        "metadataRaw": {}
+      },
+      "verb": "GET",
+      "url": "https://api.example.com/orders/{{orderId}}",
+      "expected": "### GetOrder\n# @name GetOrder\nGET https://api.example.com/orders/{{orderId}}\n"
+    },
+    {
+      "scenario": "rest POST with a secret header and a system variable",
+      "vars": {
+        "tenant": "acme"
+      },
+      "keepVars": true,
+      "ctx": {
+        "serverUrl": "https://api.example.com",
+        "method": "CreateOrder",
+        "httpMethod": "POST",
+        "httpPath": "/orders",
+        "source": "rest",
+        "bodyJsonRaw": "{\n  \"sku\": \"A-1\",\n  \"qty\": 2,\n  \"ref\": \"{{uuid}}\"\n}",
+        "metadataRaw": {
+          "Authorization": "Bearer {{secret.api_token}}",
+          "X-Tenant": "{{tenant}}"
+        }
+      },
+      "verb": "POST",
+      "url": "https://api.example.com/orders",
+      "expected": "# Secrets are not exported. Define these in http-client.private.env.json: api_token\n### CreateOrder\n# @name CreateOrder\nPOST https://api.example.com/orders\nAuthorization: Bearer {{api_token}}\nX-Tenant: {{tenant}}\nContent-Type: application/json\n\n{\n  \"sku\": \"A-1\",\n  \"qty\": 2,\n  \"ref\": \"{{$uuid}}\"\n}\n"
+    },
+    {
+      "scenario": "rest POST resolved, the secret still a reference",
+      "vars": {
+        "tenant": "acme",
+        "secret.api_token": "xyz"
+      },
+      "keepVars": false,
+      "ctx": {
+        "serverUrl": "https://api.example.com",
+        "method": "CreateOrder",
+        "httpMethod": "POST",
+        "httpPath": "/orders",
+        "source": "rest",
+        "bodyJsonRaw": "{\"sku\":\"A-1\",\"at\":\"{{now}}\"}",
+        "metadataRaw": {
+          "Authorization": "Bearer {{secret.api_token}}",
+          "X-Tenant": "{{tenant}}"
+        }
+      },
+      "verb": "POST",
+      "url": "https://api.example.com/orders",
+      "expected": "# Secrets are not exported. Define these in http-client.private.env.json: api_token\n### CreateOrder\n# @name CreateOrder\nPOST https://api.example.com/orders\nAuthorization: Bearer {{api_token}}\nX-Tenant: acme\nContent-Type: application/json\n\n{\"sku\":\"A-1\",\"at\":\"{{$timestamp}}\"}\n"
+    },
+    {
+      "scenario": "graphql query",
+      "vars": {},
+      "keepVars": false,
+      "ctx": {
+        "serverUrl": "https://api.example.com/graphql",
+        "method": "me",
+        "source": "graphql",
+        "bodyJsonRaw": "{\"query\":\"{ me { id } }\"}",
+        "metadataRaw": {}
+      },
+      "verb": "POST",
+      "url": "https://api.example.com/graphql",
+      "expected": "### me\n# @name me\nPOST https://api.example.com/graphql\nContent-Type: application/json\n\n{\"query\":\"{ me { id } }\"}\n"
+    },
+    {
+      "scenario": "keyring header, response chaining and environment auth",
+      "vars": {},
+      "keepVars": true,
+      "ctx": {
+        "serverUrl": "https://api.example.com",
+        "method": "DeleteOrder",
+        "httpMethod": "DELETE",
+        "httpPath": "/orders/{id}",
+        "source": "rest",
+        "bodyJsonRaw": "{\"id\":\"{{response.id}}\"}",
+        "metadataRaw": {
+          "X-Api-Key": "{{keyring.orders/ci}}"
+        },
+        "authKind": "bearer"
+      },
+      "verb": "DELETE",
+      "url": "https://api.example.com/orders/{{response.id}}",
+      "expected": "# Auth (bearer) comes from the Bowire environment; add an Authorization header here.\n# Secrets are not exported. Define these in http-client.private.env.json: orders_ci\n# {{response.id}} has no .http counterpart without a response-handler script.\n### DeleteOrder\n# @name DeleteOrder\nDELETE https://api.example.com/orders/{{response.id}}\nX-Api-Key: {{orders_ci}}\n"
+    },
+    {
+      "scenario": "plain-text body with its own content type",
+      "vars": {},
+      "keepVars": false,
+      "ctx": {
+        "serverUrl": "https://api.example.com",
+        "method": "PutNote",
+        "httpMethod": "PUT",
+        "httpPath": "/notes/today",
+        "source": "rest",
+        "bodyJsonRaw": "remember the milk",
+        "metadataRaw": {
+          "Content-Type": "text/plain",
+          "__bowireTimeout": "30"
+        }
+      },
+      "verb": "PUT",
+      "url": "https://api.example.com/notes/today",
+      "expected": "### PutNote\n# @name PutNote\nPUT https://api.example.com/notes/today\nContent-Type: text/plain\n\nremember the milk\n"
+    }
+  ]
+}

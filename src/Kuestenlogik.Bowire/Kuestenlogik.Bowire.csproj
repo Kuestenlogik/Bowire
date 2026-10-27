@@ -283,6 +283,8 @@
          cliExportKeepVars) live in prologue.js precisely so no fragment
          can hit a temporal dead zone reading them. -->
     <BowireJsFragment Include="wwwroot\js\cli-export.js" />
+    <!-- #673 - "Copy as .http"; uses cliResolveVars, so after cli-export.js. -->
+    <BowireJsFragment Include="wwwroot\js\http-file-export.js" />
     <BowireJsFragment Include="wwwroot\js\perf-diff.js" />
     <BowireJsFragment Include="wwwroot\js\response-diff.js" />
     <BowireJsFragment Include="wwwroot\js\service-compare.js" />

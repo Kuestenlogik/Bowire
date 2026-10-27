@@ -45,6 +45,8 @@ When the standalone Collections rail is enabled, the Collection Manager opens as
 | **Run All** | Execute every item sequentially with the current environment |
 | **Export** | Download the collection as a `.bwc` JSON file |
 | **Import Postman** | Import a Postman Collection v2.1 JSON file |
+| **Import collection** | Import `.http` files (more formats follow; see below) |
+| **Export .http** | Download the collection as a `.http` file plus `http-client.env.json` |
 | **Delete** | Delete the entire collection (with confirmation) |
 
 Each item row shows its index, protocol badge, service/method, and a trash button to remove it.
@@ -88,6 +90,32 @@ Bowire:   ${baseUrl}/api/users/${userId}
 ```
 
 Define `baseUrl` and `userId` in a Bowire environment and the imported collection runs without further edits.
+
+## .http files: import and export
+
+Bowire reads and writes the `.http` format that Rider, IntelliJ, Visual Studio 2022 and VS Code's REST Client run.
+
+**Import.** Click **Import collection** in the toolbar (or right-click **Collections** in the Workspaces tree) and pick one or more `.http` / `.rest` files, together with `http-client.env.json` and `http-client.private.env.json` when you have them. Each file becomes a collection; each request becomes an item named after its `###` title.
+
+- `{{variables}}` stay as references. A file's own `@name = value` lines become an environment named `<file> (file variables)`.
+- Dynamic values map to Bowire's: `{{$uuid}}` / `{{$guid}}` → `{{uuid}}`, `{{$timestamp}}` → `{{now}}`, `{{$isoTimestamp}}` → `{{timestamp}}`, `{{$randomInt}}` → `{{random}}`.
+- `http-client.env.json` environments become Bowire environments, with `$shared` merged into each.
+- Response handlers (`> {% %}`), output redirects (`>>`), file bodies (`< file`) and WebSocket / gRPC requests are left out.
+
+The import ends with a report: what was left out and why, what changed shape on the way, and which credentials (an `Authorization` header, a private environment value) came across in clear text, so you can move them into secrets.
+
+**Export.** **Export .http** writes the collection as `<name>.http` and the workspace's environments as `http-client.env.json`. Discovered REST methods take their verb and path from the schema. Secrets are never written: `{{secret.x}}` and `{{keyring.svc/acct}}` become plain `{{x}}` / `{{svc_acct}}` names, listed at the top of the file, for you to define in `http-client.private.env.json`. Non-REST and streaming items are skipped and named in the report.
+
+**One request.** The Code tab offers **.http** next to curl and the CLI line. **Keep {{variables}}** leaves references in place for `http-client.env.json` to resolve; otherwise their current values are written. Secrets stay references either way.
+
+**CLI and MCP.** The same import and export run outside the workbench:
+
+```
+bowire import orders.http            # writes orders.bww next to the input
+bowire export http orders.bww        # writes orders.http and http-client.env.json
+```
+
+MCP clients call `bowire.import` and `bowire.export.http`. All of them, and the workbench, call the same Interop gRPC service (`bowire.interop.v1.Interop`), which is also reachable as JSON at `POST {base}/api/v1/interop/import` and `POST {base}/api/v1/interop/export-http`.
 
 ## Response chaining between items
 

@@ -694,8 +694,11 @@ internal static class BowireCli
                 pr.InvocationConfiguration.Output, pr.InvocationConfiguration.Error, redact).ConfigureAwait(false);
         });
 
-        var import = new Command("import", "Convert external trace formats into Bowire recordings.");
+        var import = new Command("import",
+            "Import .http files as a Bowire workspace (#674); "
+            + "`import har` converts a HAR trace into a recording.");
         import.Add(har);
+        InteropCommands.AttachImport(import);
         return import;
     }
 

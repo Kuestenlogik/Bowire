@@ -9950,6 +9950,37 @@ they're a way
     animation: bowire-confirm-slide 150ms ease-out;
 }
 
+/* #673 / #674 - the Interop import / export report. A wider
+   confirm dialog whose body scrolls: a large Insomnia export can
+   carry dozens of findings. */
+.bowire-interop-report {
+    max-width: 640px;
+}
+.bowire-interop-report-body {
+    max-height: 50vh;
+    overflow-y: auto;
+    margin: 12px 0;
+}
+.bowire-interop-report-heading {
+    font-weight: 600;
+    margin: 12px 0 4px;
+}
+.bowire-interop-report-hint {
+    color: var(--bowire-text-secondary);
+    font-size: 12px;
+    margin-bottom: 4px;
+}
+.bowire-interop-report-list {
+    margin: 0;
+    padding-left: 18px;
+    font-size: 12px;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+.bowire-interop-import-menu {
+    z-index: 1000;
+}
+
 /* Prompt-shape input. Sits between the message + the action row;
    carries the field that the operator's typing into. */
 .bowire-prompt-input {

@@ -12,8 +12,8 @@
     // getCodeExportLanguages' `|| CODE_EXPORT_LANGUAGES.rest` and be
     // offered a curl command that could never work against a broker.
     const CODE_EXPORT_LANGUAGES = {
-        rest:      [{ id: 'curl', label: 'curl' }, { id: 'fetch', label: 'JS fetch' }, { id: 'python', label: 'Python (requests)' }, { id: 'csharp-http', label: 'C# (HttpClient)' }, { id: 'bowire-cli', label: 'Bowire CLI' }],  // i18n-exempt: the name of the tool or library the snippet is generated for
-        graphql:   [{ id: 'curl', label: 'curl' }, { id: 'fetch', label: 'JS fetch' }, { id: 'python', label: 'Python (requests)' }, { id: 'bowire-cli', label: 'Bowire CLI' }],  // i18n-exempt: the name of the tool or library the snippet is generated for
+        rest:      [{ id: 'curl', label: 'curl' }, { id: 'fetch', label: 'JS fetch' }, { id: 'python', label: 'Python (requests)' }, { id: 'csharp-http', label: 'C# (HttpClient)' }, { id: 'http-file', label: '.http' }, { id: 'bowire-cli', label: 'Bowire CLI' }],  // i18n-exempt: the name of the tool or library the snippet is generated for
+        graphql:   [{ id: 'curl', label: 'curl' }, { id: 'fetch', label: 'JS fetch' }, { id: 'python', label: 'Python (requests)' }, { id: 'http-file', label: '.http' }, { id: 'bowire-cli', label: 'Bowire CLI' }],  // i18n-exempt: the name of the tool or library the snippet is generated for
         mcp:       [{ id: 'curl', label: 'curl' }, { id: 'python', label: 'Python (requests)' }, { id: 'fetch', label: 'JS fetch' }, { id: 'bowire-cli', label: 'Bowire CLI' }],  // i18n-exempt: the name of the tool or library the snippet is generated for
         sse:       [{ id: 'curl-sse', label: 'curl' }, { id: 'js-eventsource', label: 'JS EventSource' }, { id: 'bowire-cli', label: 'Bowire CLI' }],  // i18n-exempt: the name of the tool or library the snippet is generated for
         grpc:      [{ id: 'grpcurl', label: 'grpcurl' }, { id: 'csharp-grpc', label: 'C# (Grpc.Net.Client)' }, { id: 'bowire-cli', label: 'Bowire CLI' }],  // i18n-exempt: the name of the tool or library the snippet is generated for
@@ -371,6 +371,12 @@
         // generators OUTSIDE generateCodeSnippet's try/catch, and render()
         // has none of its own — a bare ReferenceError there blanks the
         // whole workbench.
+        // #673 — a .http block (http-file-export.js), guarded like the CLI one.
+        'http-file': function (ctx) {
+            return (typeof generateHttpFileSnippet === 'function')
+                ? generateHttpFileSnippet(ctx, { keepVars: (typeof cliExportKeepVars !== 'undefined') && !!cliExportKeepVars })
+                : '# .http export is unavailable in this build.';
+        },
         'bowire-cli': function (ctx) {
             return (typeof generateCliCommand === 'function')
                 ? generateCliCommand(ctx)

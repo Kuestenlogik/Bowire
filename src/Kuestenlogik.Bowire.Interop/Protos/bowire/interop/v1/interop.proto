@@ -1,0 +1,149 @@
+// Copyright 2026 Küstenlogik
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+package bowire.interop.v1;
+
+option csharp_namespace = "Kuestenlogik.Bowire.Interop.V1";
+
+import "google/api/annotations.proto";
+
+// Moving requests between Bowire and other API clients (#673, #674):
+// import Insomnia, Bruno and .http files into Bowire collections, and export
+// Bowire collections as .http files the IDEs run.
+//
+// The workbench calls these through their JSON transcoding (POST under the
+// Bowire base path); the CLI and the MCP tools call the same rpc handler in
+// process. Both rpcs are unary: a file in, a finished result out.
+service Interop {
+  // Read one export (Insomnia JSON/YAML, a Bruno collection, a .http file),
+  // sniffing its format, into Bowire collections and environments, with a
+  // report of what came across, what was approximated and what was skipped.
+  rpc ImportCollection(ImportCollectionRequest) returns (ImportCollectionResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/interop/import"
+      body: "*"
+    };
+  }
+
+  // Write Bowire collections as one .http file, and their environments as
+  // http-client.env.json, in the JetBrains dialect (also read by Visual
+  // Studio and, for the common core, by the VS Code REST Client).
+  rpc ExportHttp(ExportHttpRequest) returns (ExportHttpResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/interop/export-http"
+      body: "*"
+    };
+  }
+}
+
+// One file of the source. A Bruno collection is a directory of files; every
+// other source is a single file.
+message SourceFile {
+  // The path relative to the collection root (Bruno), or the file name.
+  string path = 1;
+  // The file's text. All supported formats are text.
+  string content = 2;
+}
+
+message ImportCollectionRequest {
+  repeated SourceFile files = 1;
+  // Optional: force a format instead of sniffing it
+  // ("insomnia", "bruno", "opencollection", "http").
+  string format = 2;
+  // Optional: the name for the collection when the source has none.
+  string name = 3;
+}
+
+message ImportCollectionResponse {
+  // The format that was read, e.g. "insomnia-v4", "insomnia-v5", "bruno",
+  // "opencollection", "http".
+  string format = 1;
+  repeated Collection collections = 2;
+  repeated Environment environments = 3;
+  ImportReport report = 4;
+}
+
+// A Bowire collection, in the shape the workbench stores.
+message Collection {
+  string name = 1;
+  repeated CollectionItem items = 2;
+}
+
+// One request of a collection. For REST, `service` is the URL and `method`
+// the HTTP verb, as the workbench stores ad-hoc REST requests.
+message CollectionItem {
+  string name = 1;
+  string protocol = 2;
+  string service = 3;
+  string method = 4;
+  string method_type = 5;
+  repeated string messages = 6;
+  map<string, string> metadata = 7;
+  string server_url = 8;
+  // Where the request sat in the source's folder tree, outermost first.
+  // Bowire collections are flat; the folders survive in the item name.
+  repeated string folders = 9;
+  // For a REST method that came from discovery, `service` and `method` name
+  // the operation; the caller that knows the schema fills in its verb and
+  // path here so an export can write the request. Ignored on import.
+  string http_method = 10;
+  string http_path = 11;
+}
+
+// A Bowire environment. Values keep their `{{var}}` references.
+message Environment {
+  string name = 1;
+  map<string, string> vars = 2;
+  // Auth in the workbench's environment-auth shape: `type` plus its fields
+  // (e.g. type=basic, username, password). Empty when the source had none.
+  map<string, string> auth = 3;
+}
+
+message ImportReport {
+  repeated ReportEntry entries = 1;
+  // Places where the source carries credentials in clear text (an
+  // Authorization header, a password field, a secret variable value), so the
+  // workbench can say so before the user keeps them.
+  repeated CredentialFinding credentials = 2;
+}
+
+message ReportEntry {
+  enum Kind {
+    KIND_UNSPECIFIED = 0;
+    // Came across as it was.
+    KIND_MAPPED = 1;
+    // Came across, but changed shape (e.g. form fields joined into a body).
+    KIND_APPROXIMATED = 2;
+    // Left out, with the reason.
+    KIND_SKIPPED = 3;
+  }
+  Kind kind = 1;
+  // What it is about: a request name, an environment, a file.
+  string subject = 2;
+  string detail = 3;
+}
+
+message CredentialFinding {
+  string subject = 1;
+  // The field or header, e.g. "Authorization header", "basic auth password".
+  string field = 2;
+}
+
+message ExportHttpRequest {
+  repeated Collection collections = 1;
+  repeated Environment environments = 2;
+  // "jetbrains" (default) or "vscode".
+  string dialect = 3;
+}
+
+message ExportHttpResponse {
+  // The .http file.
+  string http = 1;
+  // http-client.env.json (JetBrains / Visual Studio); empty without environments.
+  string env_json = 2;
+  // What could not be written as .http (non-HTTP protocols, streaming
+  // methods), with the reason.
+  ImportReport report = 3;
+}

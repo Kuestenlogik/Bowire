@@ -28,6 +28,8 @@
          workbench rail and `bowire contract matrix` render, so an agent
          gets the same view as the CLI and the UI. -->
     <ProjectReference Include="..\Kuestenlogik.Bowire.Contracts\Kuestenlogik.Bowire.Contracts.csproj" />
+    <!-- #673 / #674 - bowire.import and bowire.export.http call the Interop rpc handler. -->
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Interop\Kuestenlogik.Bowire.Interop.csproj" />
     <PackageReference Include="ModelContextProtocol" />
     <PackageReference Include="ModelContextProtocol.AspNetCore" />
   </ItemGroup>

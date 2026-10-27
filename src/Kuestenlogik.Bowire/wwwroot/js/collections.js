@@ -1515,6 +1515,13 @@
             el('span', { textContent: t('collections.import') })
         ));
 
+        // #673 / #674 — Insomnia, Bruno and .http in, .http out. Rendered
+        // by the Interop package's fragment when it is installed.
+        if (typeof bowireInteropToolbarButtons === 'function') {
+            var interopButtons = bowireInteropToolbarButtons(col);
+            for (var ib = 0; ib < interopButtons.length; ib++) toolbar.appendChild(interopButtons[ib]);
+        }
+
         toolbar.appendChild(el('button', {
             className: 'bowire-recording-action-btn bowire-recording-action-danger',
             title: t('collections.deleteTitle'),

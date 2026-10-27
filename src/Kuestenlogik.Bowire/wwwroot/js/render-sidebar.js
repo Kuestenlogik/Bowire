@@ -3324,7 +3324,11 @@
                             render();
                         }
                     }
-                ]);
+                ].concat(
+                    // #674 — import from Insomnia / Bruno / .http (Interop package).
+                    (typeof bowireInteropContextItems === 'function' && w.id === activeWorkspaceId)
+                        ? bowireInteropContextItems() : []
+                ));
             },
             children: leafChildren
         };

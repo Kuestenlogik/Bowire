@@ -7784,6 +7784,19 @@
                     })
                 );
             }
+            else if (codeExportLang === 'http-file') {
+                // #673 — the .http block shares the CLI's "keep variables"
+                // switch: kept refs resolve from http-client.env.json.
+                cliOptionPills = el('div', { className: 'bowire-code-lang-pills' },
+                    el('button', {
+                        id: pid('bowire-http-keepvars'),
+                        className: 'bowire-code-lang-pill' + (cliExportKeepVars ? ' active' : ''),
+                        textContent: t('main.cli.keepVars'),
+                        title: t('main.http.keepVarsTitle'),
+                        onClick: function () { cliExportKeepVars = !cliExportKeepVars; render(); }
+                    })
+                );
+            }
 
             var snippet = generateCodeSnippet(codeExportLang);
             var codeBox = el('pre', { className: 'bowire-code-snippet' });
@@ -7815,7 +7828,9 @@
                 textContent: t('main.cli.snippetNote')
                     + (codeExportLang === 'bowire-cli'
                         ? ' ' + t('main.cli.snippetNoteCli')
-                        : '')
+                        : codeExportLang === 'http-file'
+                            ? ' ' + t('main.http.snippetNote')
+                            : '')
             }));
         }
         pane.appendChild(codeContent);

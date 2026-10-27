@@ -116,6 +116,8 @@ internal static class ExportCommand
 
         export.Add(openapi);
         export.Add(asyncapi);
+        // #673 - collections as a .http file for the IDEs.
+        export.Add(InteropCommands.BuildExportHttp());
         return export;
     }
 
