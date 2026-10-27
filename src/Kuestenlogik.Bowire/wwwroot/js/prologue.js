@@ -5431,6 +5431,8 @@
     // of writes, and keeps navigator out of the fragment-sandbox tests.
     let cliExportShell = null;              // null | 'posix' | 'powershell'
     let cliExportKeepVars = false;          // emit --var pairs instead of baking values in
+    // #673 — .http keeps {{refs}} by default: http-client.env.json resolves them.
+    let httpExportKeepVars = true;
 
     // ---- Form Validation State ----
     // Per-field validation errors keyed by the same dotted formValues key

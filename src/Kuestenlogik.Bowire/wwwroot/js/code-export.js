@@ -374,7 +374,7 @@
         // #673 — a .http block (http-file-export.js), guarded like the CLI one.
         'http-file': function (ctx) {
             return (typeof generateHttpFileSnippet === 'function')
-                ? generateHttpFileSnippet(ctx, { keepVars: (typeof cliExportKeepVars !== 'undefined') && !!cliExportKeepVars })
+                ? generateHttpFileSnippet(ctx, { keepVars: (typeof httpExportKeepVars === 'undefined') || !!httpExportKeepVars })
                 : '# .http export is unavailable in this build.';
         },
         'bowire-cli': function (ctx) {

@@ -100,7 +100,8 @@
 
         lines.push('### ' + title);
         lines.push('# @name ' + httpFileRequestName(title));
-        lines.push(target.verb + ' ' + httpFileRefs(target.url, notes));
+        var url = keepVars ? target.url : httpFileResolve(target.url);
+        lines.push(target.verb + ' ' + httpFileRefs(url, notes));
 
         var raw = ctx.metadataRaw || {};
         var keys = Object.keys(raw).sort(function (a, b) { return a.toLowerCase() < b.toLowerCase() ? -1 : a.toLowerCase() > b.toLowerCase() ? 1 : 0; });

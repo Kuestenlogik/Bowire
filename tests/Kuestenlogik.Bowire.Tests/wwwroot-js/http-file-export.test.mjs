@@ -95,3 +95,20 @@ test('.http is offered for REST and GraphQL, and the generator map routes it', (
     });
     assert.ok(out.includes('GET https://x.test/ping'), out);
 });
+
+test('the Code tab keeps {{variables}} by default, and the pill turns it off', () => {
+    const ctx = {
+        serverUrl: '{{base}}', method: 'Ping', httpMethod: 'GET', httpPath: '/ping', source: 'rest', bodyJsonRaw: '{}', metadataRaw: {}
+    };
+    const byDefault = loadHttpExport({ vars: { base: 'https://x.test' } });
+    assert.ok(byDefault.CODE_EXPORT_GENERATORS['http-file'](ctx).includes('GET {{base}}/ping'));
+    const resolved = compileFragment(
+        '../../../src/Kuestenlogik.Bowire/wwwroot/js/http-file-export.js', ['state'],
+        SUPPORT_SRC + `
+        var _vars = state.vars, httpExportKeepVars = false, cliExportKeepVars = false, cliExportShell = null, uiMode = 'standalone';
+        function getMergedVars() { return _vars; }
+        function substituteVars(input) { return typeof input === 'string' ? input.split('{{base}}').join(_vars.base) : input; }
+        return { CODE_EXPORT_GENERATORS: CODE_EXPORT_GENERATORS };`
+    )({ state: { vars: { base: 'https://x.test' } } });
+    assert.ok(resolved.CODE_EXPORT_GENERATORS['http-file'](ctx).includes('GET https://x.test/ping'));
+});

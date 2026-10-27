@@ -7785,15 +7785,16 @@
                 );
             }
             else if (codeExportLang === 'http-file') {
-                // #673 — the .http block shares the CLI's "keep variables"
-                // switch: kept refs resolve from http-client.env.json.
+                // #673 — the CLI's "keep variables" pill, with its own
+                // state: on by default, kept refs resolve from
+                // http-client.env.json.
                 cliOptionPills = el('div', { className: 'bowire-code-lang-pills' },
                     el('button', {
                         id: pid('bowire-http-keepvars'),
-                        className: 'bowire-code-lang-pill' + (cliExportKeepVars ? ' active' : ''),
+                        className: 'bowire-code-lang-pill' + (httpExportKeepVars ? ' active' : ''),
                         textContent: t('main.cli.keepVars'),
                         title: t('main.http.keepVarsTitle'),
-                        onClick: function () { cliExportKeepVars = !cliExportKeepVars; render(); }
+                        onClick: function () { httpExportKeepVars = !httpExportKeepVars; render(); }
                     })
                 );
             }
