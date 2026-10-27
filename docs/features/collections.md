@@ -45,7 +45,7 @@ When the standalone Collections rail is enabled, the Collection Manager opens as
 | **Run All** | Execute every item sequentially with the current environment |
 | **Export** | Download the collection as a `.bwc` JSON file |
 | **Import Postman** | Import a Postman Collection v2.1 JSON file |
-| **Import collection** | Import an Insomnia export or `.http` files (see below) |
+| **Import collection** | Import an Insomnia export, a Bruno collection or `.http` files (see below) |
 | **Export .http** | Download the collection as a `.http` file plus `http-client.env.json` |
 | **Delete** | Delete the entire collection (with confirmation) |
 
@@ -127,6 +127,22 @@ MCP clients call `bowire.import` and `bowire.export.http`. All of them, and the 
 - Each sub-environment becomes a Bowire environment, with the base environment's values merged in. Folder variables are merged into every environment. Values from private environments are flagged as clear-text credentials.
 - Insomnia keeps auth per request, Bowire per environment. Bearer, Basic (without variables) and API key auth become headers, and a folder's auth reaches its requests. OAuth 2, AWS IAM, Digest and NTLM are named in the report, so you can set them on the Bowire environment.
 - Left out, each with the reason: gRPC and WebSocket requests (Bowire discovers those from the server), pre-request and after-response scripts, multipart and file bodies, disabled headers and parameters, cookie jars, API specs and unit tests.
+
+## Bruno import
+
+Bruno stores a collection as a folder. Pick **Import collection → Import folder…** and choose that folder (or run `bowire import <folder>`). Both of Bruno's file formats are read:
+
+- **Bru** (`.bru` files with `bruno.json`, the format before Bruno 3).
+- **OpenCollection YAML** (`opencollection.yml` with one YAML file per request, the default since Bruno 3.1). A bundled OpenCollection file, the whole collection in one `.yml`, is imported with **Import files…**.
+
+What comes across:
+
+- One collection named after the Bruno collection. Folders are kept as a path in front of each item's name (the folder's display name when `folder.bru` / `folder.yml` has one), in Bruno's `seq` order.
+- `{{variables}}` stay as they are. `{{$randomUUID}}`, `{{$timestamp}}`, `{{$isoTimestamp}}` and `{{$randomInt}}` become Bowire's system variables. `{{process.env.X}}` and other dynamic values stay as written and are reported.
+- Path parameters (`:id`) are filled in from `params:path`. Collection and folder headers reach every request below them.
+- Auth inherits as in Bruno: a request with `auth: inherit` takes its folder's or the collection's auth. Bearer, Basic (without variables) and API key become headers or a query parameter. AWS SigV4, Digest, NTLM, OAuth 1/2 and WSSE are reported for the Bowire environment.
+- Each environment becomes a Bowire environment; OpenCollection's `extends` is resolved. Secret variables have no value in the files: they come across empty and are named in the report, so you can fill them or move them into Bowire secrets. A `.env` file is never imported.
+- Left out, each with the reason: gRPC and WebSocket requests, scripts, tests, assertions, request and post-response variables, multipart and file bodies.
 
 ## Response chaining between items
 

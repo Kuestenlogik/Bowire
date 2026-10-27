@@ -1,0 +1,6 @@
+{
+  "version": "1",
+  "name": "Petstore",
+  "type": "collection",
+  "ignore": ["node_modules", ".git"]
+}

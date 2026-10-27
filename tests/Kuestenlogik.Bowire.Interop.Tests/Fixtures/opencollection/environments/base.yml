@@ -1,0 +1,8 @@
+name: Base
+variables:
+  - name: base
+    value: https://weather.example.com
+  - name: city
+    value:
+      type: string
+      data: Kiel

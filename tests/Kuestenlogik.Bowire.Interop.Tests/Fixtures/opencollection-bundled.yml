@@ -1,0 +1,51 @@
+opencollection: 1.0.0
+info:
+  name: Bundled
+config:
+  environments:
+    - name: Dev
+      variables:
+        - name: host
+          value: http://localhost:8080
+items:
+  - info:
+      name: Admin
+      type: folder
+    request:
+      auth:
+        type: bearer
+        token: "{{adminToken}}"
+    items:
+      - info:
+          name: List users
+          type: http
+        http:
+          method: GET
+          url: "{{host}}/users"
+          headers:
+            - name: Accept
+              value: application/json
+            - name: X-Debug
+              value: "1"
+              disabled: true
+      - info:
+          name: Live
+          type: websocket
+        websocket:
+          url: ws://localhost:8080/live
+  - info:
+      name: Ping
+      type: http
+    http:
+      method: POST
+      url: "{{host}}/ping"
+      body:
+        - title: small
+          selected: true
+          body:
+            type: json
+            data: '{"n":1}'
+        - title: large
+          body:
+            type: json
+            data: '{"n":1000}'

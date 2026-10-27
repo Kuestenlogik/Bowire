@@ -1,0 +1,12 @@
+info:
+  name: Current
+  type: graphql
+  seq: 2
+graphql:
+  method: POST
+  url: "{{base}}/graphql"
+  body:
+    query: "{ current { temp } }"
+    variables: '{"unit":"C"}'
+  auth:
+    type: none

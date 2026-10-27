@@ -1,0 +1,26 @@
+meta {
+  name: Login
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/login
+  body: formUrlEncoded
+  auth: apikey
+}
+
+auth:apikey {
+  key: api_key
+  value: {{apiKey}}
+  placement: queryparams
+}
+
+body:form-urlencoded {
+  user: alice
+  ~remember: true
+  note: '''
+    two
+    lines
+  '''
+}

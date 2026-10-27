@@ -1,0 +1,23 @@
+info:
+  name: Daily forecast
+  type: http
+  seq: 1
+http:
+  method: GET
+  url: "{{base}}/forecast/:city"
+  params:
+    - name: city
+      value: "{{city}}"
+      type: path
+    - name: days
+      value: "3"
+      type: query
+  auth: inherit
+runtime:
+  scripts:
+    - type: tests
+      code: test("ok", () => expect(res.status).to.equal(200));
+  assertions:
+    - expression: res.status
+      operator: eq
+      value: "200"

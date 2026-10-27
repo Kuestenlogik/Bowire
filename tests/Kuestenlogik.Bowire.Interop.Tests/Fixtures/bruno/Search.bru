@@ -1,0 +1,23 @@
+meta {
+  name: Search
+  type: graphql
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/graphql
+  body: graphql
+  auth: none
+}
+
+body:graphql {
+  query Find($q: String) {
+    pets(q: $q) { id }
+  }
+}
+
+body:graphql:vars {
+  {
+    "q": "rex"
+  }
+}

@@ -1,0 +1,15 @@
+headers {
+  X-Client: bowire-test
+}
+
+auth {
+  mode: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+vars:pre-request {
+  apiVersion: v1
+}

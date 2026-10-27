@@ -98,7 +98,7 @@ internal sealed class InsomniaImporter : IInteropImporter
                 foreach (var sub in subs)
                 {
                     workspace.Environments.Add((StructuredDocument.Text(sub["name"]) ?? "Environment",
-                        Merge(baseEnv["data"] as JsonObject, sub["data"] as JsonObject), StructuredDocument.IsTrue(sub["isPrivate"])));
+                        ImportHelpers.Merge(baseEnv["data"] as JsonObject, sub["data"] as JsonObject), StructuredDocument.IsTrue(sub["isPrivate"])));
                 }
             }
             foreach (var other in resources.Where(r => Type(r) is "cookie_jar" && StructuredDocument.Text(r["parentId"]) == id))
@@ -168,7 +168,7 @@ internal sealed class InsomniaImporter : IInteropImporter
             foreach (var sub in subs)
             {
                 workspace.Environments.Add((StructuredDocument.Text(sub["name"]) ?? "Environment",
-                    Merge(baseEnv["data"] as JsonObject, sub["data"] as JsonObject), StructuredDocument.IsTrue(sub["isPrivate"])));
+                    ImportHelpers.Merge(baseEnv["data"] as JsonObject, sub["data"] as JsonObject), StructuredDocument.IsTrue(sub["isPrivate"])));
             }
         }
         if (doc["cookieJar"] is JsonObject jar && (jar["cookies"] as JsonArray)?.Count > 0)
@@ -286,9 +286,9 @@ internal sealed class InsomniaImporter : IInteropImporter
                 report.Skipped(subject, $"disabled query parameter {pName}");
                 continue;
             }
-            query.Add(Uri.EscapeDataString(pName) + "=" + EscapeKeepingRefs(InsomniaTemplates.ToBowire(StructuredDocument.Text(p["value"]) ?? "", unmapped)));
+            query.Add(Uri.EscapeDataString(pName) + "=" + ImportHelpers.EscapeKeepingRefs(InsomniaTemplates.ToBowire(StructuredDocument.Text(p["value"]) ?? "", unmapped)));
         }
-        if (query.Count > 0) url += (url.Contains('?', StringComparison.Ordinal) ? "&" : "?") + string.Join("&", query);
+        url = ImportHelpers.AppendQuery(url, query);
 
         var item = new CollectionItem
         {
@@ -357,10 +357,10 @@ internal sealed class InsomniaImporter : IInteropImporter
                 {
                     if (StructuredDocument.IsTrue(p["disabled"])) continue;
                     pairs.Add(Uri.EscapeDataString(StructuredDocument.Text(p["name"]) ?? "") + "="
-                        + EscapeKeepingRefs(InsomniaTemplates.ToBowire(StructuredDocument.Text(p["value"]) ?? "", unmapped)));
+                        + ImportHelpers.EscapeKeepingRefs(InsomniaTemplates.ToBowire(StructuredDocument.Text(p["value"]) ?? "", unmapped)));
                 }
                 item.Messages.Add(string.Join("&", pairs));
-                SetContentType(item, mime);
+                ImportHelpers.SetContentType(item, mime);
                 report.Approximated(subject, "form fields were joined into a urlencoded body");
                 return true;
             }
@@ -371,12 +371,12 @@ internal sealed class InsomniaImporter : IInteropImporter
             case "application/graphql":
                 // Insomnia stores {"query": …, "variables": …} — exactly what a GraphQL endpoint takes over POST.
                 item.Messages.Add(InsomniaTemplates.ToBowire(text ?? "{}", unmapped));
-                SetContentType(item, "application/json");
+                ImportHelpers.SetContentType(item, "application/json");
                 report.Approximated(subject, "GraphQL request became a REST POST with its {\"query\": …} body; for schema-aware calls, add the endpoint as a GraphQL source");
                 return true;
             default:
                 item.Messages.Add(string.IsNullOrEmpty(text) ? "{}" : InsomniaTemplates.ToBowire(text, unmapped));
-                if (mime.Length > 0) SetContentType(item, mime);
+                if (mime.Length > 0) ImportHelpers.SetContentType(item, mime);
                 return false;
         }
     }
@@ -399,14 +399,13 @@ internal sealed class InsomniaImporter : IInteropImporter
             }
             case "basic":
             {
-                var user = Field("username");
-                var password = Field("password");
-                if (user.Contains("{{", StringComparison.Ordinal) || password.Contains("{{", StringComparison.Ordinal))
+                var header = ImportHelpers.BasicHeader(Field("username"), Field("password"));
+                if (header is null)
                 {
                     report.Approximated(subject, "Basic auth with variables cannot be encoded ahead of time; set Basic auth on the Bowire environment instead");
                     return;
                 }
-                item.Metadata.TryAdd("Authorization", "Basic " + Convert.ToBase64String(Encoding.UTF8.GetBytes(user + ":" + password)));
+                item.Metadata.TryAdd("Authorization", header);
                 break;
             }
             case "apikey":
@@ -416,7 +415,7 @@ internal sealed class InsomniaImporter : IInteropImporter
                 var addTo = StructuredDocument.Text(auth["addTo"]) ?? "header";
                 if (addTo == "queryParams")
                 {
-                    item.Service += (item.Service.Contains('?', StringComparison.Ordinal) ? "&" : "?") + Uri.EscapeDataString(key) + "=" + EscapeKeepingRefs(value);
+                    item.Service += (item.Service.Contains('?', StringComparison.Ordinal) ? "&" : "?") + Uri.EscapeDataString(key) + "=" + ImportHelpers.EscapeKeepingRefs(value);
                     item.ServerUrl = item.Service;
                     if (!ReportBuilder.IsReference(value)) report.Credential(subject, $"API key in query parameter {key}");
                 }
@@ -433,20 +432,10 @@ internal sealed class InsomniaImporter : IInteropImporter
                 break;
             }
             default:
-                report.Skipped(subject, $"{type} auth: configure it on the Bowire environment (Bowire has {BowireEquivalent(type)})");
+                report.Skipped(subject, $"{type} auth: configure it on the Bowire environment (Bowire has {ImportHelpers.BowireEquivalent(type)})");
                 break;
         }
     }
-
-    private static string BowireEquivalent(string insomniaType) => insomniaType switch
-    {
-        "oauth2" => "OAuth 2 client-credentials and authorization-code auth",
-        "iam" => "AWS SigV4 auth",
-        "digest" => "Digest auth",
-        "ntlm" => "NTLM auth",
-        "asap" or "hawk" or "netrc" => "no equivalent; send the header yourself",
-        _ => "its own auth types",
-    };
 
     private static bool HasAuth(JsonObject? auth) =>
         auth is not null && StructuredDocument.Text(auth["type"]) is { Length: > 0 } t && t != "inherit";
@@ -454,39 +443,6 @@ internal sealed class InsomniaImporter : IInteropImporter
     // An explicit "none" on a request stops inheritance; an empty object inherits.
     private static bool HasAuthOrNone(JsonObject auth) =>
         StructuredDocument.Text(auth["type"]) is { Length: > 0 } t && t != "inherit";
-
-    private static void SetContentType(CollectionItem item, string mime)
-    {
-        if (!item.Metadata.Keys.Any(k => k.Equals("Content-Type", StringComparison.OrdinalIgnoreCase)))
-            item.Metadata["Content-Type"] = mime;
-    }
-
-    // Escape a query value but leave {{refs}} readable for substitution.
-    private static string EscapeKeepingRefs(string value)
-    {
-        var sb = new StringBuilder();
-        var i = 0;
-        while (i < value.Length)
-        {
-            var open = value.IndexOf("{{", i, StringComparison.Ordinal);
-            var close = open < 0 ? -1 : value.IndexOf("}}", open, StringComparison.Ordinal);
-            if (open < 0 || close < 0)
-            {
-                sb.Append(Uri.EscapeDataString(value[i..]));
-                break;
-            }
-            sb.Append(Uri.EscapeDataString(value[i..open])).Append(value, open, close + 2 - open);
-            i = close + 2;
-        }
-        return sb.ToString();
-    }
-
-    private static JsonObject? Merge(JsonObject? baseData, JsonObject? own)
-    {
-        var merged = baseData?.DeepClone() as JsonObject ?? [];
-        foreach (var (key, value) in own ?? []) merged[key] = value?.DeepClone();
-        return merged;
-    }
 
     // Nested environment objects become dotted names: {"api": {"url": …}}
     // is {{ _.api.url }} in Insomnia and {{api.url}} in Bowire.

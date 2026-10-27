@@ -19,6 +19,8 @@ public static class InteropRpc
     private static readonly IInteropImporter[] s_importers =
     [
         new InsomniaImporter(),
+        new OpenCollectionImporter(),
+        new BrunoImporter(),
         new HttpFileImporter(),
     ];
 
@@ -45,7 +47,7 @@ public static class InteropRpc
         else
         {
             importer = s_importers.FirstOrDefault(i => i.CanRead(files))
-                ?? throw Invalid("Not a format Bowire imports: expected an Insomnia export (v4 JSON/YAML or v5 YAML) or a .http file (with its http-client.env.json, if any).");
+                ?? throw Invalid("Not a format Bowire imports: expected an Insomnia export (v4 JSON/YAML or v5 YAML), a Bruno collection (.bru files or OpenCollection YAML), or a .http file (with its http-client.env.json, if any).");
         }
 
         var report = new ReportBuilder();

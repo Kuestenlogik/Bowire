@@ -4,7 +4,7 @@
          import Insomnia, Bruno and .http, export .http. The first Bowire
          capability behind a gRPC service: the workbench reaches it through
          JSON transcoding, the CLI and MCP through the same rpc handler. -->
-    <Description>Bowire interop — import Insomnia exports and .http files into Bowire collections, and export collections as .http. A gRPC service with JSON transcoding.</Description>
+    <Description>Bowire interop — import Insomnia exports, Bruno collections and .http files into Bowire collections, and export collections as .http. A gRPC service with JSON transcoding.</Description>
     <PackageId>Kuestenlogik.Bowire.Interop</PackageId>
     <PackageTags>bowire;import;export;insomnia;bruno;http-file;grpc</PackageTags>
     <IsPackable>true</IsPackable>

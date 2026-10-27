@@ -1,0 +1,7 @@
+name: Production
+extends: Base
+variables:
+  - name: city
+    value: Hamburg
+  - secret: true
+    name: weatherKey

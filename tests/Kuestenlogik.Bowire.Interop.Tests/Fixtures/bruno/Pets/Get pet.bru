@@ -1,0 +1,28 @@
+meta {
+  name: Get pet
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/pets/:id?verbose=true
+  body: none
+  auth: inherit
+}
+
+params:query {
+  verbose: true
+  ~debug: 1
+}
+
+params:path {
+  id: 42
+}
+
+headers {
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 200
+}

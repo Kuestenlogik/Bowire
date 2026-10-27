@@ -710,10 +710,10 @@ public sealed class BowireMcpTools
     }
 
     [McpServerTool(Name = "bowire.import")]
-    [Description("Import an Insomnia export (v4 JSON/YAML or v5 YAML) or .http files (one file, or a directory of them with http-client.env.json) into Bowire collections and environments (#674). Returns { format, collections, environments, report } where report lists what was approximated or skipped and which credentials sit in clear text. With `outPath`, also writes a .bww workspace file the workbench or `bowire workspace import` reads.")]
+    [Description("Import an Insomnia export (v4 JSON/YAML or v5 YAML), a Bruno collection (a directory of .bru files or OpenCollection YAML, or a bundled OpenCollection file) or .http files (one file, or a directory of them with http-client.env.json) into Bowire collections and environments (#674). Returns { format, collections, environments, report } where report lists what was approximated or skipped and which credentials sit in clear text. With `outPath`, also writes a .bww workspace file the workbench or `bowire workspace import` reads.")]
     public static async Task<string> Import(
-        [Description("Path to an Insomnia export or a .http file, or to a directory of .http files.")] string path,
-        [Description("Optional: skip sniffing — insomnia or http.")] string? format = null,
+        [Description("Path to an export file, or to a collection directory (Bruno, or .http files).")] string path,
+        [Description("Optional: skip sniffing — insomnia, bruno, opencollection or http.")] string? format = null,
         [Description("Optional collection name when the source has none.")] string? name = null,
         [Description("Optional path for a .bww workspace file.")] string? outPath = null)
     {

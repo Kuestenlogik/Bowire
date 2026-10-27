@@ -52,7 +52,7 @@
             input.webkitdirectory = true;
         } else {
             input.multiple = true;
-            input.accept = '.http,.rest,.json,.yaml,.yml';
+            input.accept = '.http,.rest,.json,.yaml,.yml,.bru';
         }
         input.onchange = async function () {
             if (!input.files || input.files.length === 0) return;

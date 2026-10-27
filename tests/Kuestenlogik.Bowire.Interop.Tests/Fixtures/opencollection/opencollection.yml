@@ -1,0 +1,12 @@
+opencollection: 1.0.0
+info:
+  name: Weather OC
+request:
+  headers:
+    - name: X-Client
+      value: bowire-test
+  auth:
+    type: apikey
+    key: X-Api-Key
+    value: "{{weatherKey}}"
+    placement: header

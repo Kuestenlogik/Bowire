@@ -1,0 +1,8 @@
+info:
+  name: Forecasts
+  type: folder
+  seq: 1
+request:
+  headers:
+    - name: X-Folder
+      value: forecasts

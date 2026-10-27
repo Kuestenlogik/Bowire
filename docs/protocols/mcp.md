@@ -310,7 +310,7 @@ Both transports expose the same toolset. Top-level tools include:
 | `bowire.recordings.list` / `bowire.recording.get` | Browse captured recordings. |
 | `bowire.mock.start` / `bowire.mock.stop` / `bowire.mock.list` | Spin up an in-process mock server from a recording, stop it, list active handles. Mutators run behind a two-step confirmation gate (`--no-confirm` to disable). |
 | `bowire.har.import` | Convert a HAR 1.2 trace into a Bowire recording — optionally writes it to disk for use with `bowire.mock.start`. |
-| `bowire.import` | Import an Insomnia export or `.http` files into Bowire collections and environments, with a report of what was approximated, skipped or left as a clear-text credential — optionally writes a `.bww` workspace file. |
+| `bowire.import` | Import an Insomnia export, a Bruno collection or `.http` files into Bowire collections and environments, with a report of what was approximated, skipped or left as a clear-text credential — optionally writes a `.bww` workspace file. |
 | `bowire.export.http` | Write collections from a `.bww` or `collections.json` as a `.http` file plus `http-client.env.json` for Rider, IntelliJ, Visual Studio and VS Code. Secrets are never written. |
 | `bowire.assert` | Append a Newman-style assertion (`{ path, op, expected }`) onto a step inside a recording. Ops: `eq`, `ne`, `gt`, `gte`, `lt`, `lte`, `contains`, `matches`, `exists`, `notexists`, `type`. |
 | `bowire.allowlist.show` / `bowire.allowlist.permit` | Diagnose the active URL allowlist + extend it at runtime (the latter also persists to `~/.bowire/typed-urls.json`). |
