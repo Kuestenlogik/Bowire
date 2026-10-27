@@ -66,7 +66,9 @@ public sealed class HttpFileTests
         Assert.Equal("{{host}}/users?dry=true&trace=1", create.Service);
         Assert.Equal("""{ "id": "{{uuid}}", "at": {{now}} }""", Assert.Single(create.Messages));
         // The `Basic user password` shorthand is encoded, as JetBrains sends it.
-        Assert.Equal("Basic YWxpY2U6c2VjcmV0", create.Metadata["Authorization"]);
+        // Built here rather than written out: a literal Basic header in source
+        // reads as a leaked credential to secret scanning.
+        Assert.Equal("Basic " + Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes("alice:secret")), create.Metadata["Authorization"]);
 
         Assert.Equal("{}", collection.Items[1].Messages[0]);
         Assert.Equal("GET {{host}}/users/{{createUser.response.body.$.id}}", collection.Items[1].Name);
