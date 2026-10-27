@@ -132,12 +132,11 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**1/21 done** · 20 backlog
+**2/21 done** · 19 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [672](https://github.com/Kuestenlogik/Bowire/issues/672) | Bowire | [Server-side script engine so pre/post scripts run in bowire test, not only in the browser](#issue-kuestenlogik-bowire-672) | ⬜ Backlog | `area:cli` |
-| [673](https://github.com/Kuestenlogik/Bowire/issues/673) | Bowire | [Export requests as .http — Copy as .http, and bowire export http for a whole collection](#issue-kuestenlogik-bowire-673) | ⬜ Backlog | `area:workbench` |
 | [674](https://github.com/Kuestenlogik/Bowire/issues/674) | Bowire | [Import from Insomnia, Bruno and .http, with a migration guide per source](#issue-kuestenlogik-bowire-674) | ⬜ Backlog | `area:workbench` |
 | [675](https://github.com/Kuestenlogik/Bowire/issues/675) | Bowire | [Data-driven collection runs: one iteration per CSV/JSON row](#issue-kuestenlogik-bowire-675) | ⬜ Backlog | `area:cli` |
 | [676](https://github.com/Kuestenlogik/Bowire/issues/676) | Bowire | [JSONPath filter expressions in assertions, chaining and mock overrides](#issue-kuestenlogik-bowire-676) | ⬜ Backlog | `area:workbench` |
@@ -156,6 +155,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [819](https://github.com/Kuestenlogik/Bowire/issues/819) | Bowire | [MCP discovery reports a fault for a tools-only server](#issue-kuestenlogik-bowire-819) | ⬜ Backlog |  |
 | [820](https://github.com/Kuestenlogik/Bowire/issues/820) | Bowire | [MCP tasks: answer sampling requests, by hand or with the configured model](#issue-kuestenlogik-bowire-820) | ⬜ Backlog |  |
 | [821](https://github.com/Kuestenlogik/Bowire/issues/821) | Bowire | [MCP tasks: answer input requests of 2025-11-25 tasks](#issue-kuestenlogik-bowire-821) | ⬜ Backlog |  |
+| [673](https://github.com/Kuestenlogik/Bowire/issues/673) | Bowire | [Export requests as .http — Copy as .http, and bowire export http for a whole collection](#issue-kuestenlogik-bowire-673) | ✅ Done | `area:workbench` |
 | [801](https://github.com/Kuestenlogik/Bowire/issues/801) | Bowire | [MCP Tasks, client side: discover, call and follow tasks of task-capable MCP servers](#issue-kuestenlogik-bowire-801) | ✅ Done |  |
 
 ### v2.12 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
@@ -752,12 +752,6 @@ On a phone, the header of the docs, the API reference and the Bootcamp has no bu
 
 Pre- and post-request scripts exist — as `new Function('ctx', …)` **in the browser**: [[more]](https://github.com/Kuestenlogik/Bowire/issues/672)
 
-#### <a id="issue-kuestenlogik-bowire-673"></a>⬜ Backlog · [#673](https://github.com/Kuestenlogik/Bowire/issues/673) Export requests as .http — Copy as .http, and bowire export http for a whole collection
-
-> `area:workbench`
-
-For "I am testing my own REST endpoint while developing it", a `.http` file is **better** than Bowire. The file sits next to the code, it is in the repo, there is no second window and no second process. Visual Studio 2022, Rider and the VS Code REST Client all run them natively. Competing with that is a losing framing. [[more]](https://github.com/Kuestenlogik/Bowire/issues/673)
-
 #### <a id="issue-kuestenlogik-bowire-674"></a>⬜ Backlog · [#674](https://github.com/Kuestenlogik/Bowire/issues/674) Import from Insomnia, Bruno and .http, with a migration guide per source
 
 > `area:workbench`
@@ -845,6 +839,12 @@ An MCP server can ask its client to run a model completion for it — `sampling/
 #### <a id="issue-kuestenlogik-bowire-821"></a>⬜ Backlog · [#821](https://github.com/Kuestenlogik/Bowire/issues/821) MCP tasks: answer input requests of 2025-11-25 tasks
 
 Since #801 Bowire follows tasks of the 2025-11-25 core shape — create, poll, `tasks/result`, cancel — but cannot answer their input requests. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/821)
+
+#### <a id="issue-kuestenlogik-bowire-673"></a>✅ Done · [#673](https://github.com/Kuestenlogik/Bowire/issues/673) Export requests as .http — Copy as .http, and bowire export http for a whole collection
+
+> `area:workbench`
+
+For "I am testing my own REST endpoint while developing it", a `.http` file is **better** than Bowire. The file sits next to the code, it is in the repo, there is no second window and no second process. Visual Studio 2022, Rider and the VS Code REST Client all run them natively. Competing with that is a losing framing. [[more]](https://github.com/Kuestenlogik/Bowire/issues/673)
 
 #### <a id="issue-kuestenlogik-bowire-801"></a>✅ Done · [#801](https://github.com/Kuestenlogik/Bowire/issues/801) MCP Tasks, client side: discover, call and follow tasks of task-capable MCP servers
 
