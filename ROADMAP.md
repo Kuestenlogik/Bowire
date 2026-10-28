@@ -132,12 +132,11 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**2/23 done** · 21 backlog
+**3/23 done** · 20 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [672](https://github.com/Kuestenlogik/Bowire/issues/672) | Bowire | [Server-side script engine so pre/post scripts run in bowire test, not only in the browser](#issue-kuestenlogik-bowire-672) | ⬜ Backlog | `area:cli` |
-| [674](https://github.com/Kuestenlogik/Bowire/issues/674) | Bowire | [Import from Insomnia, Bruno and .http, with a migration guide per source](#issue-kuestenlogik-bowire-674) | ⬜ Backlog | `area:workbench` |
 | [675](https://github.com/Kuestenlogik/Bowire/issues/675) | Bowire | [Data-driven collection runs: one iteration per CSV/JSON row](#issue-kuestenlogik-bowire-675) | ⬜ Backlog | `area:cli` |
 | [676](https://github.com/Kuestenlogik/Bowire/issues/676) | Bowire | [JSONPath filter expressions in assertions, chaining and mock overrides](#issue-kuestenlogik-bowire-676) | ⬜ Backlog | `area:workbench` |
 | [677](https://github.com/Kuestenlogik/Bowire/issues/677) | Bowire | [Broader code export, and snippets for the protocols no snippet library covers](#issue-kuestenlogik-bowire-677) | ⬜ Backlog | `area:workbench` |
@@ -158,6 +157,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [939](https://github.com/Kuestenlogik/Bowire/issues/939) | Bowire | [Import Yaak exports](#issue-kuestenlogik-bowire-939) | ⬜ Backlog |  |
 | [940](https://github.com/Kuestenlogik/Bowire/issues/940) | Bowire | [Verify the collection importers against real Insomnia and Bruno exports](#issue-kuestenlogik-bowire-940) | ⬜ Backlog |  |
 | [673](https://github.com/Kuestenlogik/Bowire/issues/673) | Bowire | [Export requests as .http — Copy as .http, and bowire export http for a whole collection](#issue-kuestenlogik-bowire-673) | ✅ Done | `area:workbench` |
+| [674](https://github.com/Kuestenlogik/Bowire/issues/674) | Bowire | [Import from Insomnia, Bruno and .http, with a migration guide per source](#issue-kuestenlogik-bowire-674) | ✅ Done | `area:workbench` |
 | [801](https://github.com/Kuestenlogik/Bowire/issues/801) | Bowire | [MCP Tasks, client side: discover, call and follow tasks of task-capable MCP servers](#issue-kuestenlogik-bowire-801) | ✅ Done |  |
 
 ### v2.12 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
@@ -754,12 +754,6 @@ On a phone, the header of the docs, the API reference and the Bootcamp has no bu
 
 Pre- and post-request scripts exist — as `new Function('ctx', …)` **in the browser**: [[more]](https://github.com/Kuestenlogik/Bowire/issues/672)
 
-#### <a id="issue-kuestenlogik-bowire-674"></a>⬜ Backlog · [#674](https://github.com/Kuestenlogik/Bowire/issues/674) Import from Insomnia, Bruno and .http, with a migration guide per source
-
-> `area:workbench`
-
-Bowire reads Postman v2.1, HAR, OpenAPI, proto and SDL. It does **not** read Insomnia, Bruno (`.bru` or OpenCollection YAML), Yaak, or `.http`. [[more]](https://github.com/Kuestenlogik/Bowire/issues/674)
-
 #### <a id="issue-kuestenlogik-bowire-675"></a>⬜ Backlog · [#675](https://github.com/Kuestenlogik/Bowire/issues/675) Data-driven collection runs: one iteration per CSV/JSON row
 
 > `area:cli`
@@ -855,6 +849,12 @@ Follow-up of #674. The importers were tested with fixtures written from the form
 > `area:workbench`
 
 For "I am testing my own REST endpoint while developing it", a `.http` file is **better** than Bowire. The file sits next to the code, it is in the repo, there is no second window and no second process. Visual Studio 2022, Rider and the VS Code REST Client all run them natively. Competing with that is a losing framing. [[more]](https://github.com/Kuestenlogik/Bowire/issues/673)
+
+#### <a id="issue-kuestenlogik-bowire-674"></a>✅ Done · [#674](https://github.com/Kuestenlogik/Bowire/issues/674) Import from Insomnia, Bruno and .http, with a migration guide per source
+
+> `area:workbench`
+
+Bowire reads Postman v2.1, HAR, OpenAPI, proto and SDL. It does **not** read Insomnia, Bruno (`.bru` or OpenCollection YAML), Yaak, or `.http`. [[more]](https://github.com/Kuestenlogik/Bowire/issues/674)
 
 #### <a id="issue-kuestenlogik-bowire-801"></a>✅ Done · [#801](https://github.com/Kuestenlogik/Bowire/issues/801) MCP Tasks, client side: discover, call and follow tasks of task-capable MCP servers
 
