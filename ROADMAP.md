@@ -132,7 +132,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**2/21 done** · 19 backlog
+**2/23 done** · 21 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -155,6 +155,8 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [819](https://github.com/Kuestenlogik/Bowire/issues/819) | Bowire | [MCP discovery reports a fault for a tools-only server](#issue-kuestenlogik-bowire-819) | ⬜ Backlog |  |
 | [820](https://github.com/Kuestenlogik/Bowire/issues/820) | Bowire | [MCP tasks: answer sampling requests, by hand or with the configured model](#issue-kuestenlogik-bowire-820) | ⬜ Backlog |  |
 | [821](https://github.com/Kuestenlogik/Bowire/issues/821) | Bowire | [MCP tasks: answer input requests of 2025-11-25 tasks](#issue-kuestenlogik-bowire-821) | ⬜ Backlog |  |
+| [939](https://github.com/Kuestenlogik/Bowire/issues/939) | Bowire | [Import Yaak exports](#issue-kuestenlogik-bowire-939) | ⬜ Backlog |  |
+| [940](https://github.com/Kuestenlogik/Bowire/issues/940) | Bowire | [Verify the collection importers against real Insomnia and Bruno exports](#issue-kuestenlogik-bowire-940) | ⬜ Backlog |  |
 | [673](https://github.com/Kuestenlogik/Bowire/issues/673) | Bowire | [Export requests as .http — Copy as .http, and bowire export http for a whole collection](#issue-kuestenlogik-bowire-673) | ✅ Done | `area:workbench` |
 | [801](https://github.com/Kuestenlogik/Bowire/issues/801) | Bowire | [MCP Tasks, client side: discover, call and follow tasks of task-capable MCP servers](#issue-kuestenlogik-bowire-801) | ✅ Done |  |
 
@@ -840,6 +842,14 @@ An MCP server can ask its client to run a model completion for it — `sampling/
 
 Since #801 Bowire follows tasks of the 2025-11-25 core shape — create, poll, `tasks/result`, cancel — but cannot answer their input requests. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/821)
 
+#### <a id="issue-kuestenlogik-bowire-939"></a>⬜ Backlog · [#939](https://github.com/Kuestenlogik/Bowire/issues/939) Import Yaak exports
+
+Follow-up of #674, which shipped the Insomnia, Bruno and `.http` importers. Yaak was left out there because it did not fit the "only if small" bar. [[more]](https://github.com/Kuestenlogik/Bowire/issues/939)
+
+#### <a id="issue-kuestenlogik-bowire-940"></a>⬜ Backlog · [#940](https://github.com/Kuestenlogik/Bowire/issues/940) Verify the collection importers against real Insomnia and Bruno exports
+
+Follow-up of #674. The importers were tested with fixtures written from the formats' specifications and schemas (Insomnia v4/v5, Bru, OpenCollection v1.0.0), not with files exported from the apps. [[more]](https://github.com/Kuestenlogik/Bowire/issues/940)
+
 #### <a id="issue-kuestenlogik-bowire-673"></a>✅ Done · [#673](https://github.com/Kuestenlogik/Bowire/issues/673) Export requests as .http — Copy as .http, and bowire export http for a whole collection
 
 > `area:workbench`
@@ -1146,4 +1156,4 @@ Two warning suppressions in this repo, reviewed under the rule that warnings are
 
 ---
 
-*Generated 2026-10-27 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
+*Generated 2026-10-28 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
