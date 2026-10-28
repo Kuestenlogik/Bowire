@@ -42,7 +42,8 @@ When the standalone Collections rail is enabled, the Collection Manager opens as
 
 | Button | Description |
 |--------|-------------|
-| **Run All** | Execute every item sequentially with the current environment |
+| **Run All** | Execute every item sequentially with the current environment, once per row when a data file is attached |
+| **Data file…** | Attach a CSV or JSON data set for a data-driven run (see below) |
 | **Export** | Download the collection as a `.bwc` JSON file |
 | **Import Postman** | Import a Postman Collection v2.1 JSON file |
 | **Import collection** | Import an Insomnia export, a Bruno collection or `.http` files (see below) |
@@ -66,6 +67,14 @@ Item 3: PUT  UserService/UpdateName   body: { "id": ${response.id}, "name": "New
 ### Run results
 
 Each completed item shows a **PASS** (green) or **FAIL** (red) badge with the response duration. After all items finish, a summary line shows the pass/total count (e.g. "3 / 3 passed").
+
+### Data-driven runs
+
+**Data file…** attaches a CSV or JSON data set to the collection; **Run All** then runs every item once per row. A row's columns are variables that shadow the active environment, so `{{userId}}` in a body or URL takes the row's value. `{{iteration}}` and `{{iterationCount}}` are set as well; outside a data-driven run they read 1 and 1.
+
+The file is read by the DataSets service, the same one `bowire test --data` uses, so a file that does not parse is refused here with the same message, naming the line or item. The toolbar shows the attached file and its row count; the ✕ detaches it. **Stop at the first failing row** ends the run after the first row with a failing item.
+
+Under the items, one line per row shows PASS or FAIL, the row's source (`users.csv line 4`), and for a failing row which items failed with which status. The attached file is kept for the session only; it is not written into the workspace. See [test assertions](test-assertions.md#data-driven-runs) for the CSV and JSON rules.
 
 ### Streaming methods
 

@@ -26,6 +26,12 @@
     <Protobuf Include="Protos\bowire\datasets\v1\data_sets.proto" GrpcServices="Server" ProtoRoot="Protos" />
   </ItemGroup>
   <ItemGroup>
+    <!-- The workbench side: attach a data file to a collection run. Stitched
+         into the workbench bundle like every *.wwwroot.js.*.js resource. -->
+    <EmbeddedResource Include="wwwroot\js\datasets.js"
+                      LogicalName="Kuestenlogik.Bowire.DataSets.wwwroot.js.datasets.js" />
+  </ItemGroup>
+  <ItemGroup>
     <InternalsVisibleTo Include="Kuestenlogik.Bowire.DataSets.Tests" />
   </ItemGroup>
 </Project>

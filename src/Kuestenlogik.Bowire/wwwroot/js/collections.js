@@ -1269,48 +1269,115 @@
     // items (the last response's JSON feeds the next item's
     // substitution context).
 
+    // #675 — with a data set attached (the DataSets package's datasets.js,
+    // bowireCollectionDataSet), the items run once per row: the row's values
+    // shadow the environment through bowireRunIteration (history-env.js),
+    // and every iteration's outcome is kept for the per-row results table.
     async function runCollection(id) {
         var col = collectionsList.find(function (c) { return c.id === id; });
         if (!col || col.items.length === 0) return;
+
+        var dataSet = (typeof bowireCollectionDataSet === 'function') ? bowireCollectionDataSet(id) : null;
+        var rows = dataSet ? dataSet.rows : [null];
 
         collectionRunState = {
             collectionId: id,
             stepIndex: -1,
             status: 'running',
-            results: []
+            results: [],
+            iterations: dataSet ? [] : null,
+            iterationIndex: 0,
+            iterationCount: rows.length,
+            dataSetName: dataSet ? dataSet.fileName : null,
+            stoppedEarly: false
         };
         render();
 
-        for (var i = 0; i < col.items.length; i++) {
-            collectionRunState.stepIndex = i;
-            render();
+        try {
+            for (var r = 0; r < rows.length; r++) {
+                var row = rows[r];
+                bowireRunIteration = {
+                    iteration: row ? row.iteration : 1,
+                    count: rows.length,
+                    vars: row ? (row.values || {}) : {}
+                };
+                collectionRunState.iterationIndex = r + 1;
+                collectionRunState.results = [];
 
-            var item = col.items[i];
-            try {
-                var result = await runCollectionItem(item);
-                collectionRunState.results.push({
-                    itemId: item.id,
-                    pass: result.pass,
-                    status: result.status,
-                    durationMs: result.durationMs,
-                    response: result.response,
-                    error: result.error
-                });
-                // Capture response for chaining
-                if (result.response) captureResponse(result.response);
-            } catch (e) {
-                collectionRunState.results.push({
-                    itemId: item.id,
-                    pass: false,
-                    status: 'NetworkError',  // i18n-exempt: status label, carried on the console entry and the run summary
-                    error: e.message
-                });
+                for (var i = 0; i < col.items.length; i++) {
+                    collectionRunState.stepIndex = i;
+                    render();
+
+                    var item = col.items[i];
+                    try {
+                        var result = await runCollectionItem(item);
+                        collectionRunState.results.push({
+                            itemId: item.id,
+                            pass: result.pass,
+                            status: result.status,
+                            durationMs: result.durationMs,
+                            response: result.response,
+                            error: result.error
+                        });
+                        // Capture response for chaining
+                        if (result.response) captureResponse(result.response);
+                    } catch (e) {
+                        collectionRunState.results.push({
+                            itemId: item.id,
+                            pass: false,
+                            status: 'NetworkError',  // i18n-exempt: status label, carried on the console entry and the run summary
+                            error: e.message
+                        });
+                    }
+                    render();
+                }
+
+                if (dataSet) {
+                    var failed = collectionRunState.results.filter(function (x) { return !x.pass; });
+                    collectionRunState.iterations.push({
+                        iteration: row.iteration,
+                        source: dataSet.fileName + ' ' + (dataSet.format === 'json' ? t('collections.dataItem', { n: row.sourceLine }) : t('collections.dataLine', { n: row.sourceLine })),
+                        pass: failed.length === 0,
+                        failed: failed.map(function (x) {
+                            var it = col.items.find(function (c) { return c.id === x.itemId; });
+                            return { name: it ? (it.name || ((it.service || '') + ' / ' + (it.method || ''))) : x.itemId, status: x.status, error: x.error };
+                        })
+                    });
+                    if (failed.length > 0 && dataSet.failFast && r < rows.length - 1) {
+                        collectionRunState.stoppedEarly = true;
+                        break;
+                    }
+                }
             }
-            render();
+        } finally {
+            bowireRunIteration = null;
         }
 
         collectionRunState.status = 'done';
         render();
+    }
+
+    // One line per iteration: its row, pass / fail, and which items failed how.
+    function renderCollectionIterations(state) {
+        var box = el('div', { className: 'bowire-collection-iterations' });
+        var passedRows = state.iterations.filter(function (x) { return x.pass; }).length;
+        var summary = t('collections.rowsPassed', { passed: passedRows, total: state.iterations.length });
+        if (state.stoppedEarly) summary += ' · ' + t('collections.stoppedEarly', { n: state.iterations.length, count: state.iterationCount });
+        box.appendChild(el('div', { className: 'bowire-collection-iterations-summary', textContent: summary }));
+        var list = el('ol', { className: 'bowire-collection-iterations-list' });
+        for (var i = 0; i < state.iterations.length; i++) {
+            var it = state.iterations[i];
+            var row = el('li', { className: 'bowire-collection-iteration' + (it.pass ? ' pass' : ' fail') },
+                el('span', { className: 'bowire-recording-step-status' + (it.pass ? ' pass' : ' fail'), textContent: it.pass ? 'PASS' : 'FAIL' }),
+                el('span', { className: 'bowire-collection-iteration-label', textContent: t('collections.iterationLabel', { n: it.iteration, source: it.source }) }));
+            if (!it.pass) {
+                row.appendChild(el('span', { className: 'bowire-collection-iteration-failed',
+                    textContent: it.failed.map(function (f) { return f.name + ' (' + (f.status || '') + ')'; }).join(', ') }));
+            }
+            list.appendChild(row);
+        }
+        box.appendChild(list);
+        return box;
     }
 
     function runCollectionItem(item, opts) {
@@ -1433,8 +1500,17 @@
             onClick: function () { runCollection(col.id); }
         },
             el('span', { innerHTML: svgIcon('play') }),
-            el('span', { textContent: t(isRunning ? 'collections.running' : 'collections.runAll') })
+            el('span', { textContent: isRunning && collectionRunState.iterations
+                ? t('collections.runningRow', { n: collectionRunState.iterationIndex, count: collectionRunState.iterationCount })
+                : t(isRunning ? 'collections.running' : 'collections.runAll') })
         ));
+
+        // #675 — "Data file…" and the attached data set's chip, from the
+        // DataSets package when it is installed.
+        if (typeof bowireDataSetToolbarItems === 'function') {
+            var dataItems = bowireDataSetToolbarItems(col, isRunning);
+            for (var di = 0; di < dataItems.length; di++) toolbar.appendChild(dataItems[di]);
+        }
 
         // #132 minimal \u2014 fire N parallel sessions of this collection.
         // Each session runs the items sequentially in its own context.
@@ -1603,8 +1679,13 @@
             }
         }
 
+        // #675 — per-row results of a data-driven run, as the rows come in.
+        if (collectionRunState && collectionRunState.collectionId === col.id && collectionRunState.iterations) {
+            stepsPane.appendChild(renderCollectionIterations(collectionRunState));
+        }
+
         // Run results summary
-        if (collectionRunState && collectionRunState.collectionId === col.id
+        if (collectionRunState && collectionRunState.collectionId === col.id && !collectionRunState.iterations
             && collectionRunState.status === 'done' && collectionRunState.results.length > 0) {
             var passed = collectionRunState.results.filter(function (r) { return r.pass; }).length;
             var total = collectionRunState.results.length;

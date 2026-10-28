@@ -9950,6 +9950,61 @@ they're a way
     animation: bowire-confirm-slide 150ms ease-out;
 }
 
+/* #675 - a data-driven collection run: the attached data set's chip and
+   fail-fast switch in the toolbar, and one line per row under the items. */
+.bowire-dataset-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 4px 2px 8px;
+    border: 1px solid var(--bowire-border);
+    border-radius: var(--bowire-radius-sm);
+    font-size: 12px;
+}
+.bowire-dataset-chip-remove {
+    display: inline-flex;
+    width: 16px;
+    height: 16px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--bowire-text-secondary);
+    cursor: pointer;
+}
+.bowire-dataset-failfast {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+}
+.bowire-collection-iterations {
+    border-top: 1px solid var(--bowire-border);
+    margin-top: 8px;
+    padding-top: 8px;
+    font-size: 12px;
+}
+.bowire-collection-iterations-summary {
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+.bowire-collection-iterations-list {
+    margin: 0;
+    padding-left: 0;
+    list-style: none;
+    max-height: 40vh;
+    overflow-y: auto;
+}
+.bowire-collection-iteration {
+    display: flex;
+    gap: 8px;
+    align-items: baseline;
+    padding: 2px 0;
+}
+.bowire-collection-iteration-failed {
+    color: var(--bowire-text-secondary);
+    overflow-wrap: anywhere;
+}
+
 /* #673 / #674 - the Interop import / export report. A wider
    confirm dialog whose body scrolls: a large Insomnia export can
    carry dozens of findings. */

@@ -393,12 +393,18 @@
      * variables — the closer you are to the call site, the more
      * specific the override.
      */
+    // #675 — the data-driven collection run in progress: { iteration,
+    // count, vars }. Its row's values shadow the environment; null outside
+    // a run.
+    var bowireRunIteration = null;
+
     function getMergedVars() {
         var merged = Object.assign({}, getGlobalVars());
         var ws = (typeof activeWorkspace === 'function') ? activeWorkspace() : null;
         if (ws && ws.vars) Object.assign(merged, ws.vars);
         var env = getActiveEnv();
         if (env && env.vars) Object.assign(merged, env.vars);
+        if (bowireRunIteration && bowireRunIteration.vars) Object.assign(merged, bowireRunIteration.vars);
         return merged;
     }
 
@@ -428,6 +434,9 @@
     }
 
     function resolveSystemVar(key) {
+        // #675 — outside a data-driven run a request is iteration 1 of 1.
+        if (key === 'iteration') return String(bowireRunIteration ? bowireRunIteration.iteration : 1);
+        if (key === 'iterationCount') return String(bowireRunIteration ? bowireRunIteration.count : 1);
         if (key === 'now') return String(Math.floor(Date.now() / 1000));
         if (key === 'nowMs') return String(Date.now());
         if (key === 'timestamp') return new Date().toISOString();
