@@ -433,9 +433,13 @@ public static class BowireJsonPath
                     if (_pos < text.Length && text[_pos] == '*') { _pos++; segments.Add(new WildcardSegment()); }
                     else
                     {
-                        // `$.tags.0`: a numeric step indexes an array, as in the short form.
+                        // `$.tags.0` is not JSONPath: refused loudly rather than read as a
+                        // property "0" that silently matches nothing on an array.
+                        var start = _pos;
                         var name = ParseName();
-                        segments.Add(name.All(char.IsAsciiDigit) ? new NameOrIndexSegment(name) : new NameSegment(name));
+                        if (name.All(char.IsAsciiDigit))
+                            throw new JsonPathException($"Invalid JSONPath at position {start}: a number after '.' is not a name; write [{name}], or use the short form without '$'", start);
+                        segments.Add(new NameSegment(name));
                     }
                 }
                 else if (text[_pos] == '[')

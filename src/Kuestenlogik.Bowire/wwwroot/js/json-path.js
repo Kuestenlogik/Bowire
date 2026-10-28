@@ -264,9 +264,14 @@
                 this.pos++;
                 if (t.charAt(this.pos) === '*') { this.pos++; segments.push(_jpWildcard()); }
                 else {
-                    // `$.tags.0`: a numeric step indexes an array, as in the short form.
+                    // `$.tags.0` is not JSONPath: refused loudly rather than read as a
+                    // property "0" that silently matches nothing on an array.
+                    var start = this.pos;
                     var name = this.parseName();
-                    segments.push(/^[0-9]+$/.test(name) ? _jpNameOrIndex(name) : _jpName(name));
+                    if (/^[0-9]+$/.test(name)) {
+                        throw bowireJsonPathError("a number after '.' is not a name; write [" + name + "], or use the short form without '$'", start);
+                    }
+                    segments.push(_jpName(name));
                 }
             } else if (t.charAt(this.pos) === '[') {
                 segments.push(this.parseBracket());

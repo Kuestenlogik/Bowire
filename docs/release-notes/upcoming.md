@@ -49,6 +49,10 @@ Its browser and CLI implementations are held to one shared test fixture. A path 
 and is removed in this release. Add a section per breaking change, with
 the migration path. -->
 
+### A JSONPath step is `[0]`, not `.0` (#676)
+
+A path that starts with `$` is now JSONPath, and JSONPath has no `.0` step. Flow expectations used to accept `$.tags.0`. It is now refused with `Invalid JSONPath at position 7: a number after '.' is not a name; write [0], or use the short form without '$'`, rather than read as a property named `0` that matches nothing on an array. Write `$.tags[0]`, or the short form `tags.0`, which is unchanged.
+
 ### `exists` / `notexists` tell a JSON `null` from a missing field (#676)
 
 `exists` used to fail on a field whose value is `null`, and `notexists` passed on it. Both now ask whether the path selects anything: `{"deletedAt": null}` makes `deletedAt exists` pass and `deletedAt notexists` fail. Only a missing field is missing. This holds in the Tests tab, in `bowire test` and in flow expectations. To assert that a value is null, use `eq null`. To assert "absent or null", use two assertions, or `type null` where the field is always there.

@@ -119,12 +119,7 @@
       "value": "Kiel"
     },
     {
-      "path": "$.list.1",
-      "found": true,
-      "value": 20
-    },
-    {
-      "path": "$.codes.200",
+      "path": "$.codes['200']",
       "found": true,
       "value": "ok"
     },
@@ -334,6 +329,14 @@
     },
     {
       "path": "$.store[",
+      "error": 8
+    },
+    {
+      "path": "$.list.1",
+      "error": 7
+    },
+    {
+      "path": "$.codes.200",
       "error": 8
     },
     {

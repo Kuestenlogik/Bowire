@@ -39,7 +39,7 @@ The path syntax mirrors [Request Chaining](response-chaining.md):
 
 A path that starts with `$` is JSONPath (a subset of [RFC 9535](https://www.rfc-editor.org/rfc/rfc9535)):
 
-- `.name` or `['name']` for a field, and `[0]` or `[-1]` for an array element (a numeric step after a dot, `$.items.0`, indexes an array too).
+- `.name` or `['name']` for a field, and `[0]` or `[-1]` for an array element. A number after a dot (`$.items.0`) is refused: write `$.items[0]`, or the short form `items.0`.
 - `[*]` and `.*` for every child, `..name` for a field at any depth, and `[start:end:step]` and `[0,2]` for slices and unions.
 - Filters `[?(…)]` over an array's elements or an object's values. A filter compares with `==`, `!=`, `<`, `<=`, `>` and `>=`, combines with `&&`, `||`, `!` and parentheses, and refers to the current element as `@` and to the document as `$`.
 - `@.field` on its own tests that the field exists: `[?(@.discount)]`.

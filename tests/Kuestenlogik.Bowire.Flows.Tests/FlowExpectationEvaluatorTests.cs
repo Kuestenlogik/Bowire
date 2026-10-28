@@ -233,7 +233,7 @@ public class FlowExpectationEvaluatorTests
     public void BodyPath_Exists_OnArrayElement_Pass()
     {
         var r = FlowExpectationEvaluator.Evaluate(
-            new FlowExpectation { Kind = FlowExpectationKind.BodyPath, Operator = FlowExpectationOperator.Exists, Target = "$.tags.0" },
+            new FlowExpectation { Kind = FlowExpectationKind.BodyPath, Operator = FlowExpectationOperator.Exists, Target = "$.tags[0]" },
             Envelope());
         Assert.True(r.Passed);
     }
