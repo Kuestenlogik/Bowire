@@ -48,7 +48,7 @@ namespace Kuestenlogik.Bowire.Protocol.Mcp;
 /// are synthesised from Bowire's <c>BowireProtocolRegistry</c>.
 /// </para>
 /// </remarks>
-public sealed class BowireMcpProtocol : IBowireProtocol, Kuestenlogik.Bowire.Net.IBowireProxySupport, IBowireDiscoveryDiagnostics
+public sealed partial class BowireMcpProtocol : IBowireProtocol, Kuestenlogik.Bowire.Net.IBowireProxySupport, IBowireDiscoveryDiagnostics
 {
     /// <inheritdoc />
     public Kuestenlogik.Bowire.Net.BowireProxySupport ProxySupport => Kuestenlogik.Bowire.Net.BowireProxySupport.Full;
@@ -206,7 +206,7 @@ public sealed class BowireMcpProtocol : IBowireProtocol, Kuestenlogik.Bowire.Net
         // the capability in the first place. Both mean "no entries".
         if (ex is NotSupportedException)
             return null;
-        if (ex is McpProtocolException { ErrorCode: McpErrorCode.MethodNotFound })
+        if (IsMethodNotFound(ex))
             return null;
 
         // SDK 2.0 made Tool.inputSchema required at deserialization time,
@@ -218,6 +218,31 @@ public sealed class BowireMcpProtocol : IBowireProtocol, Kuestenlogik.Bowire.Net
 
         return $"{surface} failed: {ex.Message}";
     }
+
+    /// <summary>
+    /// Whether <paramref name="ex"/> is the server's JSON-RPC -32601 "method
+    /// not found", however the transport wraps it (#819). The SDK raises it as
+    /// <see cref="McpProtocolException"/> over most transports; over stateless
+    /// HTTP an SDK server answers with HTTP 404 and the error in the body,
+    /// which the client surfaces as an <see cref="HttpRequestException"/>
+    /// whose message carries that body.
+    /// </summary>
+    private static bool IsMethodNotFound(Exception ex)
+    {
+        for (var e = ex; e is not null; e = e.InnerException)
+        {
+            if (e is McpProtocolException { ErrorCode: McpErrorCode.MethodNotFound }) return true;
+            if (e is HttpRequestException { StatusCode: System.Net.HttpStatusCode.NotFound } http
+                && MethodNotFoundCode().IsMatch(http.Message))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    [System.Text.RegularExpressions.GeneratedRegex(@"""code""\s*:\s*-32601\b")]
+    private static partial System.Text.RegularExpressions.Regex MethodNotFoundCode();
 
     /// <summary>
     /// Walk the inner-exception chain for a <see cref="JsonException"/>:
@@ -634,6 +659,10 @@ public sealed class BowireMcpProtocol : IBowireProtocol, Kuestenlogik.Bowire.Net
         McpClient client, List<BowireServiceInfo> services, string serverUrl,
         List<string> failures, CancellationToken ct)
     {
+        // #819 — a server that announced its capabilities and left one out
+        // does not offer that surface; asking would only earn a -32601.
+        if (client.ServerCapabilities is { Tools: null }) return;
+
         IList<McpClientTool> tools;
         try { tools = await client.ListToolsAsync(cancellationToken: ct).ConfigureAwait(false); }
         catch (OperationCanceledException) { throw; }
@@ -698,6 +727,8 @@ public sealed class BowireMcpProtocol : IBowireProtocol, Kuestenlogik.Bowire.Net
         McpClient client, List<BowireServiceInfo> services, string serverUrl,
         List<string> failures, CancellationToken ct)
     {
+        if (client.ServerCapabilities is { Resources: null }) return;
+
         IList<McpClientResource> resources;
         try { resources = await client.ListResourcesAsync(cancellationToken: ct).ConfigureAwait(false); }
         catch (OperationCanceledException) { throw; }
@@ -733,6 +764,8 @@ public sealed class BowireMcpProtocol : IBowireProtocol, Kuestenlogik.Bowire.Net
         McpClient client, List<BowireServiceInfo> services, string serverUrl,
         List<string> failures, CancellationToken ct)
     {
+        if (client.ServerCapabilities is { Prompts: null }) return;
+
         IList<McpClientPrompt> prompts;
         try { prompts = await client.ListPromptsAsync(cancellationToken: ct).ConfigureAwait(false); }
         catch (OperationCanceledException) { throw; }

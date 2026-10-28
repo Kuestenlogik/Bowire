@@ -147,6 +147,43 @@ public sealed class McpDiscoveryWireTests
     }
 
     [Fact]
+    public async Task A_MethodNotFound_Sent_As_Http_404_Is_A_Missing_Surface_Not_A_Fault()
+    {
+        // #819 — the server advertises resources but answers resources/list
+        // with HTTP 404 carrying a JSON-RPC -32601, the way an SDK server over
+        // stateless HTTP answers a method it does not have.
+        using var server = new RawJsonRpcMcpServer(method => method switch
+        {
+            RequestMethods.ServerDiscover => DiscoverJson(tools: true, resources: true),
+            RequestMethods.ToolsList => """{"tools":[{"name":"ping","inputSchema":{"type":"object"}}]}""",
+            _ => null,
+        }, methodNotFoundAsHttp404: true);
+
+        var report = await new BowireMcpProtocol().DiscoverWithDiagnosticsAsync(server.Url, showInternalServices: false, Ct);
+
+        Assert.Equal("Tools", Assert.Single(report.Services).Name);
+        Assert.Null(report.Diagnostic);
+    }
+
+    [Fact]
+    public async Task An_Unadvertised_Surface_Is_Not_Asked_For()
+    {
+        // #819 — a server that announced its capabilities without resources
+        // or prompts is not sent resources/list or prompts/list at all.
+        using var server = new RawJsonRpcMcpServer(method => method switch
+        {
+            RequestMethods.ServerDiscover => DiscoverJson(tools: true),
+            RequestMethods.ToolsList => """{"tools":[{"name":"ping","inputSchema":{"type":"object"}}]}""",
+            _ => null,
+        });
+
+        await new BowireMcpProtocol().DiscoverAsync(server.Url, showInternalServices: false, Ct);
+
+        Assert.DoesNotContain(RequestMethods.ResourcesList, server.ReceivedMethods);
+        Assert.DoesNotContain(RequestMethods.PromptsList, server.ReceivedMethods);
+    }
+
+    [Fact]
     public async Task DiscoverAsync_Throws_Rather_Than_Handing_Back_A_Silently_Truncated_List()
     {
         // The lossy channel's half of the same case, and the one place where
@@ -339,6 +376,7 @@ internal sealed class RawJsonRpcMcpServer : IDisposable
 {
     private readonly HttpListener _listener;
     private readonly Func<string, string?> _dispatch;
+    private readonly bool _methodNotFoundAsHttp404;
     private readonly List<string> _received = [];
     private readonly System.Threading.Lock _gate = new();
     private volatile bool _stopped;
@@ -350,9 +388,15 @@ internal sealed class RawJsonRpcMcpServer : IDisposable
     /// used here for both the discover-probe fallback and the
     /// advertised-but-unimplemented list calls.
     /// </param>
-    public RawJsonRpcMcpServer(Func<string, string?> dispatch)
+    /// <param name="methodNotFoundAsHttp404">
+    /// #819 — send that -32601 with HTTP 404, as an SDK server over
+    /// stateless HTTP does, instead of 200. The discover probe keeps 200 so
+    /// the client still falls back to initialize.
+    /// </param>
+    public RawJsonRpcMcpServer(Func<string, string?> dispatch, bool methodNotFoundAsHttp404 = false)
     {
         _dispatch = dispatch;
+        _methodNotFoundAsHttp404 = methodNotFoundAsHttp404;
         (_listener, Url) = StartOnAFreePort();
         _ = Task.Run(AcceptLoopAsync);
         WaitUntilServing();
@@ -501,7 +545,7 @@ internal sealed class RawJsonRpcMcpServer : IDisposable
                 : head + id.GetRawText() + resultMid + result + "}";
 
             var bytes = Encoding.UTF8.GetBytes(envelope);
-            ctx.Response.StatusCode = 200;
+            ctx.Response.StatusCode = result is null && _methodNotFoundAsHttp404 && method != RequestMethods.ServerDiscover ? 404 : 200;
             ctx.Response.ContentType = "application/json";
             ctx.Response.ContentLength64 = bytes.Length;
             await ctx.Response.OutputStream.WriteAsync(bytes).ConfigureAwait(false);

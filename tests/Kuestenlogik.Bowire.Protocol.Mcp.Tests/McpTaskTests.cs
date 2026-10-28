@@ -49,12 +49,11 @@ public sealed class McpTaskTests
     }
 
     /// <summary>
-    /// The services, whatever the diagnostic says: this server has only
-    /// tools, and the resources/prompts probes it answers with 404 are not
-    /// what these tests are about.
+    /// The services, through plain discovery: this server has only tools, and
+    /// since #819 a tools-only server discovers without a fault.
     /// </summary>
     private static async Task<List<Kuestenlogik.Bowire.Models.BowireServiceInfo>> Discover(string url, BowireMcpProtocol? protocol = null) =>
-        (await (protocol ?? new BowireMcpProtocol()).DiscoverWithDiagnosticsAsync(url, false, Ct)).Services;
+        await (protocol ?? new BowireMcpProtocol()).DiscoverAsync(url, false, Ct);
 
     private static async Task<JsonElement> Unary(BowireMcpProtocol protocol, string url, string service, string method, object body)
     {
