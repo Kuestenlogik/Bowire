@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- #675 — data sets for data-driven runs: CSV or JSON rows, one
+         iteration each. A gRPC service with JSON transcoding, so the CLI,
+         the MCP tools and the workbench parse a data file the same way and
+         fail on it the same way. -->
+    <Description>Bowire data sets — parse CSV and JSON data files into rows for data-driven runs. A gRPC service with JSON transcoding.</Description>
+    <PackageId>Kuestenlogik.Bowire.DataSets</PackageId>
+    <PackageTags>bowire;testing;data-driven;csv;grpc</PackageTags>
+    <IsPackable>true</IsPackable>
+    <!-- Puts google/api/annotations.proto (Google.Api.CommonProtos) on the protoc import path. -->
+    <IncludeGoogleApiCommonProtos>true</IncludeGoogleApiCommonProtos>
+  </PropertyGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Grpc.AspNetCore" />
+    <PackageReference Include="Google.Api.CommonProtos" />
+    <PackageReference Include="Microsoft.AspNetCore.Grpc.JsonTranscoding" />
+  </ItemGroup>
+  <ItemGroup>
+    <Protobuf Include="Protos\bowire\datasets\v1\data_sets.proto" GrpcServices="Server" ProtoRoot="Protos" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.DataSets.Tests" />
+  </ItemGroup>
+</Project>

@@ -49,6 +49,18 @@ internal static class JUnitReport
             w.WriteAttributeString("failures", report.FailedTests.ToString(CultureInfo.InvariantCulture));
             w.WriteAttributeString("time", totalSeconds);
 
+            // #675 — a data-driven run: one <testsuite> per iteration, named
+            // after the row, and one <testcase> per assertion, so a CI
+            // reporter groups by iteration and a failure names row 137.
+            if (report.DataSetName is not null)
+            {
+                foreach (var iteration in report.Tests.GroupBy(t => t.Iteration))
+                    WriteIterationSuite(w, suiteName, iteration.Key, [.. iteration], redactor);
+                w.WriteEndElement(); // testsuites
+                w.Flush();
+                return sb.ToString();
+            }
+
             // <testsuite> — one per collection.
             w.WriteStartElement("testsuite");
             w.WriteAttributeString("name", suiteName);
@@ -114,6 +126,71 @@ internal static class JUnitReport
         }
 
         w.WriteEndElement(); // testcase
+    }
+
+    private static void WriteIterationSuite(XmlWriter w, string collectionName, int iteration, List<TestResult> tests, SecretRedactor redactor)
+    {
+        var source = tests.FirstOrDefault()?.Source;
+        var cases = tests.Sum(t => string.IsNullOrEmpty(t.Error) ? Math.Max(t.Assertions.Count, 1) : 1);
+        var failures = tests.Sum(t => string.IsNullOrEmpty(t.Error) ? t.Assertions.Count(a => !a.Passed) : 0);
+        var errors = tests.Count(t => !string.IsNullOrEmpty(t.Error));
+        var seconds = (tests.Sum(t => t.DurationMs) / 1000.0).ToString("F3", CultureInfo.InvariantCulture);
+
+        w.WriteStartElement("testsuite");
+        w.WriteAttributeString("name", $"{collectionName} · iteration {iteration.ToString(CultureInfo.InvariantCulture)} ({source})");
+        w.WriteAttributeString("tests", cases.ToString(CultureInfo.InvariantCulture));
+        w.WriteAttributeString("failures", failures.ToString(CultureInfo.InvariantCulture));
+        w.WriteAttributeString("errors", errors.ToString(CultureInfo.InvariantCulture));
+        w.WriteAttributeString("skipped", "0");
+        w.WriteAttributeString("time", seconds);
+
+        foreach (var test in tests)
+        {
+            // The test's own name, without the "[iteration n, …]" suffix the suite already carries.
+            var bracket = test.Name.LastIndexOf(" [iteration ", StringComparison.Ordinal);
+            var className = bracket > 0 ? test.Name[..bracket] : test.Name;
+            var testSeconds = (test.DurationMs / 1000.0).ToString("F3", CultureInfo.InvariantCulture);
+
+            if (!string.IsNullOrEmpty(test.Error) || test.Assertions.Count == 0)
+            {
+                w.WriteStartElement("testcase");
+                w.WriteAttributeString("classname", className);
+                w.WriteAttributeString("name", $"{className} · iteration {iteration.ToString(CultureInfo.InvariantCulture)}");
+                w.WriteAttributeString("time", testSeconds);
+                if (!string.IsNullOrEmpty(test.Error))
+                {
+                    var err = redactor.Redact($"{test.Error} ({source})");
+                    w.WriteStartElement("error");
+                    w.WriteAttributeString("message", err);
+                    w.WriteAttributeString("type", "InvocationError");
+                    w.WriteString(err);
+                    w.WriteEndElement();
+                }
+                w.WriteEndElement();
+                continue;
+            }
+
+            foreach (var a in test.Assertions)
+            {
+                var label = redactor.Redact($"{a.Path} {a.Op} {Truncate(a.Expected, 80)}");
+                w.WriteStartElement("testcase");
+                w.WriteAttributeString("classname", className);
+                w.WriteAttributeString("name", $"{label} · iteration {iteration.ToString(CultureInfo.InvariantCulture)}");
+                w.WriteAttributeString("time", testSeconds);
+                if (!a.Passed)
+                {
+                    w.WriteStartElement("failure");
+                    w.WriteAttributeString("message", $"{label} ({source})");
+                    w.WriteAttributeString("type", "AssertionFailed");
+                    w.WriteString(a.Error is not null
+                        ? $"{label}\n  row: {source}\n  error: {redactor.Redact(a.Error)}"
+                        : $"{label}\n  row: {source}\n  expected: {redactor.Redact(a.Expected)}\n  actual:   {redactor.Redact(a.ActualText)}");
+                    w.WriteEndElement();
+                }
+                w.WriteEndElement();
+            }
+        }
+        w.WriteEndElement(); // testsuite
     }
 
     private static string Truncate(string s, int max)

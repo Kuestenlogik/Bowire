@@ -1615,6 +1615,15 @@ internal static class BowireCli
             Description = "Name of a variable whose resolved value must be redacted from all CI outputs (TTY, JUnit, SARIF, ::error annotations). The variable resolves normally; only its value is masked. Repeatable.",
             AllowMultipleArgumentsPerToken = false,
         };
+        var data = new Option<string?>("--data")
+        {
+            Description = "A CSV (header row names the columns) or JSON (array of objects) data set: the collection runs once per row, the row's columns bound as variables over the environment. {{iteration}} and {{iterationCount}} are set in every run. Test collections only.",
+            DefaultValueFactory = _ => cfg["Bowire:Test:Data"],
+        };
+        var failFast = new Option<bool>("--fail-fast")
+        {
+            Description = "With --data: stop after the first iteration that has a failure.",
+        };
         var secretFile = new Option<string?>("--secret-file")
         {
             Description = "File listing one secret variable name per line (blank lines and # comments ignored). Same effect as repeating --secret; keeps a long secret list off the command line. Names only — values resolve from the run's variable scope, never from this file.",
@@ -1626,7 +1635,7 @@ internal static class BowireCli
         cmd.Add(sarif); cmd.Add(annotations); cmd.Add(updateSnapshots);
         cmd.Add(failOn); cmd.Add(workspaceDir); cmd.Add(workspaceId); cmd.Add(suite); cmd.Add(lintBaseline);
         cmd.Add(baseUrl); cmd.Add(env); cmd.Add(envFile); cmd.Add(keyring); cmd.Add(aiSeed);
-        cmd.Add(secret); cmd.Add(secretFile);
+        cmd.Add(secret); cmd.Add(secretFile); cmd.Add(data); cmd.Add(failFast);
         cmd.SetAction(async (pr, _) =>
         {
             var options = new TestCliOptions
@@ -1645,6 +1654,8 @@ internal static class BowireCli
                 AiSeed = pr.GetValue(aiSeed),
                 Secrets = pr.GetValue(secret) ?? Array.Empty<string>(),
                 SecretFile = pr.GetValue(secretFile),
+                DataPath = pr.GetValue(data),
+                FailFast = pr.GetValue(failFast),
             };
             var stdout = pr.InvocationConfiguration.Output;
             var stderr = pr.InvocationConfiguration.Error;
@@ -1704,6 +1715,20 @@ internal static class BowireCli
                 await stderr.WriteLineAsync(
                     $"bowire test: --fail-on '{options.FailOn}' is a lint severity; for a test run use 'any' or 'never', or add --suite lint.")
                     .ConfigureAwait(false);
+                return 2;
+            }
+
+            if (!string.IsNullOrEmpty(options.DataPath) && (!string.IsNullOrEmpty(wsDir) || !string.IsNullOrEmpty(wsId)))
+            {
+                // A workspace is a set of flows; a data set drives one test collection.
+                await stderr.WriteLineAsync(
+                    "bowire test: --data drives a test collection, not a workspace; name the collection file instead.")
+                    .ConfigureAwait(false);
+                return 2;
+            }
+            if (options.FailFast && string.IsNullOrEmpty(options.DataPath))
+            {
+                await stderr.WriteLineAsync("bowire test: --fail-fast stops between iterations; it needs --data.").ConfigureAwait(false);
                 return 2;
             }
 

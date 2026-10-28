@@ -9,6 +9,8 @@ using Kuestenlogik.Bowire;
 using Kuestenlogik.Bowire.App.Configuration;
 using Kuestenlogik.Bowire.Models;
 using Kuestenlogik.Bowire.Paths;
+using Kuestenlogik.Bowire.DataSets;
+using Kuestenlogik.Bowire.DataSets.V1;
 
 namespace Kuestenlogik.Bowire.App;
 
@@ -288,6 +290,12 @@ internal static class TestRunner
         }
         if (FlowTestRunner.LooksLikeFlow(rawJson))
         {
+            if (!string.IsNullOrEmpty(cli.DataPath))
+            {
+                // Silently running the flow once would report a pass the data never saw.
+                await WriteErrorAsync(stderr, "--data drives a test collection; a flow does not take a data set (yet).").ConfigureAwait(false);
+                return 2;
+            }
             var flowCli = new FlowTestCliOptions
             {
                 FlowPath = cli.CollectionPath,
@@ -354,6 +362,32 @@ internal static class TestRunner
             if (secretValues.Count > 0) redactor = new SecretRedactor(secretValues);
         }
 
+        // #675 — the data set is read in full before the first request: an
+        // empty or malformed file fails here, naming the line or item.
+        ParseDataSetResponse? dataSet = null;
+        if (!string.IsNullOrEmpty(cli.DataPath))
+        {
+            string dataText;
+            try
+            {
+                dataText = await File.ReadAllTextAsync(cli.DataPath).ConfigureAwait(false);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException)
+            {
+                await WriteErrorAsync(stderr, $"Failed to read --data '{cli.DataPath}': {ex.Message}").ConfigureAwait(false);
+                return 2;
+            }
+            try
+            {
+                dataSet = DataSetRpc.ParseDataSet(new ParseDataSetRequest { FileName = Path.GetFileName(cli.DataPath), Content = dataText });
+            }
+            catch (Grpc.Core.RpcException ex)
+            {
+                await WriteErrorAsync(stderr, ex.Status.Detail).ConfigureAwait(false);
+                return 2;
+            }
+        }
+
         // Initialize the protocol registry once and reuse for every test
         var registry = BowireProtocolRegistry.Discover();
         // Don't initialize protocols with a service provider — standalone mode
@@ -367,30 +401,64 @@ internal static class TestRunner
         {
             CollectionName = collection.Name ?? Path.GetFileNameWithoutExtension(cli.CollectionPath),
             CollectionPath = cli.CollectionPath,
-            StartedAt = DateTime.UtcNow
+            StartedAt = DateTime.UtcNow,
+            DataSetName = dataSet is null ? null : Path.GetFileName(cli.DataPath),
         };
 
         var totalAssertions = 0;
         var passedAssertions = 0;
         var failedTests = 0;
 
-        foreach (var test in collection.Tests)
+        // Without a data set the collection runs once, as iteration 1 of 1.
+        var rows = dataSet?.Rows.ToList() ?? [new DataRow { Iteration = 1 }];
+        foreach (var row in rows)
         {
-            var result = await RunTestAsync(test, collection, registry);
-            report.Tests.Add(result);
-
-            totalAssertions += result.Assertions.Count;
-            var passed = 0;
-            var anyFailed = false;
-            foreach (var a in result.Assertions)
+            var iterationVars = new Dictionary<string, string>(row.Values, StringComparer.Ordinal)
             {
-                if (a.Passed) passed++;
-                else anyFailed = true;
+                ["iteration"] = row.Iteration.ToString(CultureInfo.InvariantCulture),
+                ["iterationCount"] = rows.Count.ToString(CultureInfo.InvariantCulture),
+            };
+            if (dataSet is not null)
+            {
+                await stdout.WriteLineAsync(Dim($"  iteration {row.Iteration}/{rows.Count} · {report.DataSetName} {SourceLabel(dataSet, row)}", UseColor(stdout))).ConfigureAwait(false);
             }
-            passedAssertions += passed;
-            if (anyFailed || !string.IsNullOrEmpty(result.Error)) failedTests++;
 
-            await PrintTestResultAsync(stdout, result, redactor).ConfigureAwait(false);
+            var iterationFailed = false;
+            foreach (var test in collection.Tests)
+            {
+                var result = await RunTestAsync(test, collection, registry, iterationVars);
+                if (dataSet is not null)
+                {
+                    result.Iteration = row.Iteration;
+                    result.Source = $"{report.DataSetName} {SourceLabel(dataSet, row)}";
+                    result.Name = $"{result.Name} [iteration {row.Iteration}, {result.Source}]";
+                }
+                report.Tests.Add(result);
+
+                totalAssertions += result.Assertions.Count;
+                var passed = 0;
+                var anyFailed = false;
+                foreach (var a in result.Assertions)
+                {
+                    if (a.Passed) passed++;
+                    else anyFailed = true;
+                }
+                passedAssertions += passed;
+                if (anyFailed || !string.IsNullOrEmpty(result.Error))
+                {
+                    failedTests++;
+                    iterationFailed = true;
+                }
+
+                await PrintTestResultAsync(stdout, result, redactor).ConfigureAwait(false);
+            }
+            report.Iterations++;
+
+            if (iterationFailed && cli.FailFast && row.Iteration < rows.Count)
+            {
+                await stdout.WriteLineAsync(Red($"  stopped after iteration {row.Iteration} of {rows.Count} (--fail-fast)", UseColor(stdout))).ConfigureAwait(false);
+                break;
+            }
         }
 
         sw.Stop();
@@ -402,6 +470,7 @@ internal static class TestRunner
         await stdout.WriteLineAsync().ConfigureAwait(false);
         var summaryText = $"  {report.Tests.Count - failedTests}/{report.Tests.Count} tests passed   "
             + $"{passedAssertions}/{totalAssertions} assertions   "
+            + (dataSet is null ? "" : $"{report.Iterations}/{rows.Count} iterations   ")
             + $"in {sw.ElapsedMilliseconds} ms";
         var useColor = UseColor(stdout);
         await stdout.WriteLineAsync(failedTests > 0 ? Red(summaryText, useColor) : Green(summaryText, useColor)).ConfigureAwait(false);
@@ -461,7 +530,12 @@ internal static class TestRunner
         return failedTests > 0 ? 1 : 0;
     }
 
-    private static async Task<TestResult> RunTestAsync(TestEntry test, TestCollection collection, BowireProtocolRegistry registry)
+    // "line 4" for a CSV row, "item 4" for a JSON one: where to look in the file.
+    private static string SourceLabel(ParseDataSetResponse dataSet, DataRow row) =>
+        (dataSet.Format == "json" ? "item " : "line ") + row.SourceLine.ToString(CultureInfo.InvariantCulture);
+
+    private static async Task<TestResult> RunTestAsync(
+        TestEntry test, TestCollection collection, BowireProtocolRegistry registry, IReadOnlyDictionary<string, string> iterationVars)
     {
         var result = new TestResult
         {
@@ -479,6 +553,8 @@ internal static class TestRunner
         var serverUrl = test.ServerUrl ?? collection.ServerUrl ?? "";
         var protocolId = test.Protocol ?? collection.Protocol;
         var environment = MergeEnvironments(collection.Environment, test.Environment);
+        // #675 — the iteration's row shadows the environment.
+        foreach (var (key, value) in iterationVars) environment[key] = value;
 
         // Substitute ${var} placeholders in messages and metadata
         var messages = (test.Messages ?? ["{}"]).Select(m => SubstituteVars(m, environment)).ToList();
@@ -735,30 +811,42 @@ internal static class TestRunner
             });
     }
 
+    // ${name} and {{name}}: the workbench's two spellings (#675: {{iteration}}).
+    // $${name} and {{{{name}}}} escape to the literal text.
     private static string SubstituteVars(string input, Dictionary<string, string> env)
     {
-        if (string.IsNullOrEmpty(input) || input.IndexOf("${", StringComparison.Ordinal) < 0) return input;
-        return System.Text.RegularExpressions.Regex.Replace(input, @"\$(\$?)\{([^}]+)\}", match =>
+        if (string.IsNullOrEmpty(input)) return input;
+        var output = input;
+        if (output.Contains("{{", StringComparison.Ordinal))
+        {
+            output = System.Text.RegularExpressions.Regex.Replace(output, @"\{\{\{\{([^{}]+)\}\}\}\}|\{\{([^{}]+)\}\}", match =>
+                match.Groups[1].Success ? "{{" + match.Groups[1].Value + "}}" : ResolveVar(match.Groups[2].Value.Trim(), env) ?? match.Value);
+        }
+        if (output.IndexOf("${", StringComparison.Ordinal) < 0) return output;
+        return System.Text.RegularExpressions.Regex.Replace(output, @"\$(\$?)\{([^}]+)\}", match =>
         {
             if (match.Groups[1].Length > 0) return "${" + match.Groups[2].Value + "}"; // $${} escape
-            var key = match.Groups[2].Value.Trim();
-
-            // System variables — same set as the JS layer
-            if (key == "now") return DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture);
-            if (key == "nowMs") return DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString(CultureInfo.InvariantCulture);
-            if (key == "timestamp") return DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture);
-            if (key == "uuid") return Guid.NewGuid().ToString();
-            if (key == "random") return System.Security.Cryptography.RandomNumberGenerator.GetInt32(int.MaxValue).ToString(CultureInfo.InvariantCulture);
-            var nowMatch = System.Text.RegularExpressions.Regex.Match(key, @"^now([+-])(\d+)$");
-            if (nowMatch.Success)
-            {
-                var baseSec = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-                var offset = long.Parse(nowMatch.Groups[2].Value, CultureInfo.InvariantCulture);
-                return (nowMatch.Groups[1].Value == "+" ? baseSec + offset : baseSec - offset).ToString(CultureInfo.InvariantCulture);
-            }
-
-            return env.TryGetValue(key, out var v) ? v : match.Value;
+            return ResolveVar(match.Groups[2].Value.Trim(), env) ?? match.Value;
         });
+    }
+
+    private static string? ResolveVar(string key, Dictionary<string, string> env)
+    {
+        // System variables — same set as the JS layer
+        if (key == "now") return DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture);
+        if (key == "nowMs") return DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString(CultureInfo.InvariantCulture);
+        if (key == "timestamp") return DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture);
+        if (key == "uuid") return Guid.NewGuid().ToString();
+        if (key == "random") return System.Security.Cryptography.RandomNumberGenerator.GetInt32(int.MaxValue).ToString(CultureInfo.InvariantCulture);
+        var nowMatch = System.Text.RegularExpressions.Regex.Match(key, @"^now([+-])(\d+)$");
+        if (nowMatch.Success)
+        {
+            var baseSec = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            var offset = long.Parse(nowMatch.Groups[2].Value, CultureInfo.InvariantCulture);
+            return (nowMatch.Groups[1].Value == "+" ? baseSec + offset : baseSec - offset).ToString(CultureInfo.InvariantCulture);
+        }
+
+        return env.TryGetValue(key, out var v) ? v : null;
     }
 
     private static Dictionary<string, string> MergeEnvironments(
@@ -888,6 +976,12 @@ internal sealed class RunReport
     public int PassedAssertions { get; set; }
     public int FailedTests { get; set; }
     public List<TestResult> Tests { get; } = [];
+
+    /// <summary>#675: the data set's file name when the run was data-driven, else null.</summary>
+    public string? DataSetName { get; set; }
+
+    /// <summary>#675: iterations run (1 without a data set; fewer than the rows after --fail-fast).</summary>
+    public int Iterations { get; set; }
 }
 
 internal sealed class TestResult
@@ -900,6 +994,12 @@ internal sealed class TestResult
     public string? Response { get; set; }
     public string? Error { get; set; }
     public List<AssertionResult> Assertions { get; } = [];
+
+    /// <summary>#675: the iteration this result belongs to; 0 without a data set.</summary>
+    public int Iteration { get; set; }
+
+    /// <summary>#675: the row it ran with, e.g. "rows.csv line 4"; null without a data set.</summary>
+    public string? Source { get; set; }
 }
 
 internal sealed class AssertionResult

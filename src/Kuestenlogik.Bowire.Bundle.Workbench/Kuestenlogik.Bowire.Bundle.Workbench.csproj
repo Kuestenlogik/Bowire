@@ -59,6 +59,8 @@
     <ProjectReference Include="..\Kuestenlogik.Bowire.Scaffold\Kuestenlogik.Bowire.Scaffold.csproj" />
     <!-- #673 / #674 - import Insomnia, Bruno, .http; export .http (gRPC + JSON transcoding). -->
     <ProjectReference Include="..\Kuestenlogik.Bowire.Interop\Kuestenlogik.Bowire.Interop.csproj" />
+    <!-- #675 - data sets for data-driven runs (bowire test with a data file, the workbench runner). -->
+    <ProjectReference Include="..\Kuestenlogik.Bowire.DataSets\Kuestenlogik.Bowire.DataSets.csproj" />
     <!-- v2.1 (#325): the Proxy + Intercepted + Traffic rails AND the
          interceptor middleware + reverse-proxy host + /api/intercepted
          endpoints were lifted into a single Kuestenlogik.Bowire.Interceptor

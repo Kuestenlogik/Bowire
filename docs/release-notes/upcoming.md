@@ -43,6 +43,10 @@ A path can now be JSONPath from `$`: filters (`$.items[?(@.done == true)].id`), 
 
 Its browser and CLI implementations are held to one shared test fixture. A path that selects several values gives an array, and a malformed path fails with the position of the first character that does not fit.
 
+### Data-driven runs: `bowire test --data` (#675)
+
+`bowire test suite.json --data rows.csv` runs the collection once per row of a CSV or JSON file, with the row's columns as variables over the environment. `{{iteration}}` and `{{iterationCount}}` are available. Every failure names its iteration and source row, on the console and in the HTML, JUnit and SARIF output. JUnit gets one suite per iteration and one case per assertion. `--fail-fast` stops at the first failing iteration. A malformed data file fails before the first request, naming the line. The file is read by a new DataSets gRPC service (`POST /api/v1/datasets/parse`), so every surface parses it the same way.
+
 ## Breaking changes
 
 <!-- Each change has been on a back-compat ramp through the prior minor

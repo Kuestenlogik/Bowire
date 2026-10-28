@@ -215,6 +215,31 @@ Collections can declare a top-level `environment` map (and per-test override) so
 
 For CI, override per-environment values via env-specific collection files or by templating the JSON before invoking `bowire test`.
 
+### Data-driven runs
+
+`--data` runs the collection once per row of a data file, with the row's columns as variables:
+
+```bash
+bowire test api-smoke.json --data users.csv --junit ./artifacts/junit.xml
+```
+
+```csv
+userId,expectedName
+1,Ada
+2,Grace
+```
+
+A test then sends `{"id": "{{userId}}"}` and asserts `response.name eq {{expectedName}}`.
+
+- **Formats.** CSV: the header row names the columns; quotes, doubled quotes and line breaks inside quotes work. The separator (comma, semicolon or tab) is taken from the header. JSON: an array of objects; strings come across as they are, other values as their JSON text, and `null` as empty.
+- **Precedence.** A row's values shadow the collection's and the test's `environment`. A column a JSON row leaves out falls through to the environment.
+- **Built-in variables.** `{{iteration}}` (1-based) and `{{iterationCount}}` are set in every run, with or without `--data`; without it the run is iteration 1 of 1. `bowire test` reads `{{name}}` and `${name}` alike.
+- **Results.** Every result names its iteration and row, for example `Get user [iteration 137, users.csv line 138]`, on the console and in the HTML, SARIF and annotation output. JUnit gets one `<testsuite>` per iteration and one `<testcase>` per assertion, and a failure message names the row.
+- **`--fail-fast`** stops after the first iteration that has a failure. It is off by default, so a run reports every failing row.
+- **A bad data file stops the run before the first request.** An empty file, a header without rows, a row with the wrong number of values, an unclosed quote or a JSON item that is not an object each fail with exit code 2 and name the line or item.
+
+`--data` drives a test collection. A flow or a `--workspace` run does not take a data set yet.
+
 ### CI report formats
 
 `bowire test` writes two complementary reports:
@@ -224,7 +249,7 @@ For CI, override per-environment values via env-specific collection files or by 
 | `--report path.html` | Self-contained HTML | Humans / PR comments |
 | `--junit path.xml` | JUnit XML (`<testsuites><testsuite><testcase>`) | Jenkins, GitLab CI, Azure DevOps, GitHub Actions test reporters |
 
-Both flags can be combined; either one alone is fine. Each Bowire test maps to one `<testcase>`; assertion mismatches and invocation errors become `<failure>` children with a human-readable message and the diff detail inside.
+Both flags can be combined; either one alone is fine. Each Bowire test maps to one `<testcase>` (a `--data` run splits it into one per assertion, under one `<testsuite>` per iteration); assertion mismatches and invocation errors become `<failure>` children with a human-readable message and the diff detail inside.
 
 ```bash
 bowire test api-smoke.json \

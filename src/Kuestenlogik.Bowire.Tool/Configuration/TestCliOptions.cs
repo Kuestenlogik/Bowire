@@ -137,4 +137,14 @@ internal sealed class TestCliOptions
     /// the command line.
     /// </summary>
     public string? SecretFile { get; set; }
+
+    /// <summary>
+    /// #675 — <c>--data</c>: a CSV or JSON data set. The collection runs once
+    /// per row, the row's columns bound as variables that shadow the
+    /// collection's environment. Test-collection codepath only.
+    /// </summary>
+    public string? DataPath { get; set; }
+
+    /// <summary>#675 — <c>--fail-fast</c>: stop after the first iteration with a failure.</summary>
+    public bool FailFast { get; set; }
 }
