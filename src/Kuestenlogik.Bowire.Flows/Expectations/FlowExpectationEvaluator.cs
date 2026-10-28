@@ -6,6 +6,7 @@ using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
+using Kuestenlogik.Bowire.Paths;
 
 namespace Kuestenlogik.Bowire.Flows.Expectations;
 
@@ -118,8 +119,9 @@ public static class FlowExpectationEvaluator
             }
             case FlowExpectationKind.BodyPath:
             {
-                var node = WalkJsonPath(envelope.Body, expectation.Target ?? string.Empty);
-                if (node is null) return (null, string.Empty);
+                if (!TryWalkJsonPath(envelope.Body, expectation.Target ?? string.Empty, out var node)) return (null, string.Empty);
+                // A JSON null the path did select exists (#676); only a missing path does not.
+                if (node is null) return (FoundNull.Instance, "null");
                 if (node is JsonValue jv && jv.TryGetValue<string>(out var s)) return (s, s);
                 return (node, node.ToJsonString());
             }
@@ -132,13 +134,15 @@ public static class FlowExpectationEvaluator
         => expected is { Length: 3 } && expected.All(char.IsAsciiDigit) && expected[0] is >= '1' and <= '5';
 
     /// <summary>
-    /// Walk a dotted / $-anchored path against a (possibly null) JSON body.
-    /// Returns null when the body isn't parseable or the path doesn't
-    /// resolve — operators decide whether that's a pass or a fail.
+    /// Resolve a path against a (possibly null) JSON body through Bowire's
+    /// one resolver (#676): the short form or JSONPath from <c>$</c>. False
+    /// when the body isn't parseable, the path doesn't parse, or it selects
+    /// nothing; a selected JSON null is true with a null node.
     /// </summary>
-    private static JsonNode? WalkJsonPath(string? body, string path)
+    private static bool TryWalkJsonPath(string? body, string path, out JsonNode? node)
     {
-        if (string.IsNullOrEmpty(body)) return null;
+        node = null;
+        if (string.IsNullOrEmpty(body)) return false;
 
         JsonNode? root;
         try
@@ -147,41 +151,36 @@ public static class FlowExpectationEvaluator
         }
         catch (JsonException)
         {
-            return null;
+            return false;
         }
-        if (root is null) return null;
 
         var trimmed = path.Trim();
-        if (trimmed.Length == 0 || trimmed == "$") return root;
-        if (trimmed.StartsWith("$.", StringComparison.Ordinal)) trimmed = trimmed.Substring(2);
-        else if (trimmed[0] == '$') trimmed = trimmed.Substring(1);
-        if (trimmed.StartsWith("response.", StringComparison.Ordinal))
+        if (trimmed.Length == 0 || trimmed == "$")
         {
-            trimmed = trimmed.Substring("response.".Length);
+            node = root;
+            return true;
         }
+        // Flows wrote `$.response.x` and `$x` for the short form; both still mean it.
+        if (trimmed.StartsWith("$.response.", StringComparison.Ordinal)) trimmed = "$." + trimmed["$.response.".Length..];
+        else if (trimmed[0] == '$' && trimmed.Length > 1 && trimmed[1] is not ('.' or '[')) trimmed = trimmed[1..];
+        if (trimmed.StartsWith("response.", StringComparison.Ordinal)) trimmed = trimmed["response.".Length..];
 
-        if (trimmed.Length == 0) return root;
-
-        var current = root;
-        foreach (var segment in trimmed.Split('.'))
+        try
         {
-            if (current is null) return null;
-            if (current is JsonArray arr)
-            {
-                if (!int.TryParse(segment, NumberStyles.Integer, CultureInfo.InvariantCulture, out var idx)) return null;
-                if (idx < 0 || idx >= arr.Count) return null;
-                current = arr[idx];
-            }
-            else if (current is JsonObject obj)
-            {
-                current = obj[segment];
-            }
-            else
-            {
-                return null;
-            }
+            return BowireJsonPath.TryResolve(root, trimmed, out node);
         }
-        return current;
+        catch (JsonPathException)
+        {
+            return false;
+        }
+    }
+
+    // The actual value of a path that selected a JSON null: present, so Exists passes.
+    private sealed class FoundNull
+    {
+        public static readonly FoundNull Instance = new();
+
+        public override string ToString() => "null";
     }
 
     // ---- Operator application ----
@@ -209,6 +208,7 @@ public static class FlowExpectationEvaluator
         if (actual is null && string.IsNullOrEmpty(expected)) return true;
         if (actual is null) return false;
         if (expected is null) return false;
+        if (actual is FoundNull) return string.Equals(expected, "null", StringComparison.Ordinal);
 
         if (TryNumber(actual, actualText, out var a) && TryNumber(expected, expected, out var e))
         {

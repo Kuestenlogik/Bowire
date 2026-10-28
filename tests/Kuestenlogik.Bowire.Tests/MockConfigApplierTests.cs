@@ -78,6 +78,26 @@ public sealed class MockConfigApplierTests
     }
 
     [Fact]
+    public void Applies_A_Filter_Override_To_Every_Match()
+    {
+        // #676 — a query sets every node it selects and creates nothing.
+        var rec = OneStep("Svc", "m", """{"items":[{"sku":"a","done":true},{"sku":"b","done":false},{"sku":"c","done":true}]}""");
+        MockConfigApplier.Apply(rec, WithOverride("Svc", "m", "$.items[?(@.done == true)].sku", "X"));
+
+        using var doc = JsonDocument.Parse(Response(rec));
+        var skus = doc.RootElement.GetProperty("items").EnumerateArray().Select(i => i.GetProperty("sku").GetString()).ToArray();
+        Assert.Equal(["X", "b", "X"], skus);
+    }
+
+    [Fact]
+    public void A_Malformed_Override_Path_Changes_Nothing()
+    {
+        var rec = OneStep("Svc", "m", """{"items":[{"sku":"a"}]}""");
+        MockConfigApplier.Apply(rec, WithOverride("Svc", "m", "$.items[?(@.sku ==)]", "X"));
+        Assert.Equal("""{"items":[{"sku":"a"}]}""", Response(rec));
+    }
+
+    [Fact]
     public void Creates_Missing_Intermediate_Objects()
     {
         var rec = OneStep("Svc", "m", "{}");

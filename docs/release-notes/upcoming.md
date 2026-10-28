@@ -22,11 +22,36 @@ template for a filled-in body:
 
 When an MCP server answers a tool call with a durable task, Bowire now follows it: the task's status streams in as it changes, then its result or error. Bowire speaks the `io.modelcontextprotocol/tasks` extension (2026-07-28) and the older 2025-11-25 shape, polls at the interval the server asks for, and switches to pushed status where the server agrees to send it. A new **Tasks** service answers a task's input requests (`update`), cancels it (`cancel`, cooperative), reads it (`get`) and resumes following it after a reload (`follow`) — from the workbench, the CLI and REST alike. Servers without tasks behave exactly as before.
 
+### Import from Insomnia, Bruno and .http, export as .http (#673, #674)
+
+Bowire reads the collections of other API clients:
+- Insomnia exports, v4 (JSON or YAML) and v5 (YAML);
+- Bruno collection folders, in `.bru` files or OpenCollection YAML, and bundled OpenCollection files;
+- `.http` files with their `http-client.env.json`.
+
+Requests, folders, environments and the auth that fits a header come across. A report lists what was left out with the reason, what changed shape, and which credentials sit in clear text. In the other direction, a collection exports as a `.http` file plus `http-client.env.json` for Rider, IntelliJ, Visual Studio and VS Code, and the Code tab copies one request as `.http`. Secrets are never written.
+
+All of it runs through a new Interop gRPC service (also JSON at `/api/v1/interop/…`), shared by the workbench, `bowire import` / `bowire export http` and the MCP tools `bowire.import` / `bowire.export.http`. Migration guides per source are under *Migrating* in the docs.
+
+### JSONPath filters in assertions, chaining and mock overrides (#676)
+
+A path can now be JSONPath from `$`: filters (`$.items[?(@.done == true)].id`), wildcards, `..` descent, slices, unions and negative indices. The short form (`response.items.0.id`) stays as it was. One resolver serves:
+- assertions in the Tests tab and in `bowire test`;
+- flow expectations;
+- response chaining;
+- mock field overrides and body predicates.
+
+Its browser and CLI implementations are held to one shared test fixture. A path that selects several values gives an array, and a malformed path fails with the position of the first character that does not fit.
+
 ## Breaking changes
 
 <!-- Each change has been on a back-compat ramp through the prior minor
 and is removed in this release. Add a section per breaking change, with
 the migration path. -->
+
+### `exists` / `notexists` tell a JSON `null` from a missing field (#676)
+
+`exists` used to fail on a field whose value is `null`, and `notexists` passed on it. Both now ask whether the path selects anything: `{"deletedAt": null}` makes `deletedAt exists` pass and `deletedAt notexists` fail. Only a missing field is missing. This holds in the Tests tab, in `bowire test` and in flow expectations. To assert that a value is null, use `eq null`. To assert "absent or null", use two assertions, or `type null` where the field is always there.
 
 ### Keyring references with a URL service split after the host (#870)
 

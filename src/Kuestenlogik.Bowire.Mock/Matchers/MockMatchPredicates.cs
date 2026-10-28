@@ -6,6 +6,8 @@ using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Kuestenlogik.Bowire.Mocking;
+using Kuestenlogik.Bowire.Paths;
+using System.Text.Json.Nodes;
 
 namespace Kuestenlogik.Bowire.Mock.Matchers;
 
@@ -107,62 +109,40 @@ internal static class MockMatchPredicates
     }
 
     /// <summary>
-    /// Navigate a JSONPath (a leading <c>$</c> plus <c>.prop</c> / <c>[index]</c>
-    /// steps — the dotted <c>a.b.0</c> form is accepted too) into
-    /// <paramref name="body"/>. On a hit, <paramref name="value"/> is the
-    /// string form of the target (JSON strings unwrapped, other kinds as raw
-    /// JSON). Returns false when the body isn't JSON or the path misses.
+    /// Resolve <paramref name="jsonPath"/> in <paramref name="body"/> through
+    /// Bowire's one path resolver (#676): JSONPath from <c>$</c>, filters
+    /// included, or the dotted <c>a.b.0</c> form. On a hit,
+    /// <paramref name="value"/> is the string form of the target (JSON strings
+    /// unwrapped, other kinds as raw JSON; several matches as a JSON array).
+    /// Returns false when the body isn't JSON, the path does not parse or it
+    /// selects nothing.
     /// </summary>
     internal static bool TryJsonPath(string? body, string jsonPath, out string? value)
     {
         value = null;
         if (string.IsNullOrEmpty(body)) return false;
 
-        JsonDocument doc;
-        try { doc = JsonDocument.Parse(body); }
+        JsonNode? root;
+        try { root = JsonNode.Parse(body); }
         catch (JsonException) { return false; }
 
-        using (doc)
+        JsonNode? node;
+        try
         {
-            var element = doc.RootElement;
-            foreach (var segment in NormalizeJsonPath(jsonPath))
-            {
-                if (element.ValueKind == JsonValueKind.Object)
-                {
-                    if (!element.TryGetProperty(segment, out var next)) return false;
-                    element = next;
-                }
-                else if (element.ValueKind == JsonValueKind.Array
-                    && int.TryParse(segment, System.Globalization.NumberStyles.Integer,
-                        System.Globalization.CultureInfo.InvariantCulture, out var idx)
-                    && idx >= 0 && idx < element.GetArrayLength())
-                {
-                    element = element[idx];
-                }
-                else
-                {
-                    return false;
-                }
-            }
-
-            value = element.ValueKind switch
-            {
-                JsonValueKind.String => element.GetString(),
-                JsonValueKind.Null => null,
-                _ => element.GetRawText(),
-            };
-            return true;
+            if (!BowireJsonPath.TryResolve(root, jsonPath, out node)) return false;
         }
-    }
+        catch (JsonPathException)
+        {
+            return false;
+        }
 
-    // Split "$.user.items[0].id" (or "user.items.0.id") into ["user","items","0","id"].
-    private static string[] NormalizeJsonPath(string path)
-    {
-        var p = path;
-        if (p.StartsWith('$')) p = p[1..];
-        // Turn "[0]" into ".0" so a single dot-split handles both forms.
-        p = p.Replace("[", ".", StringComparison.Ordinal).Replace("]", "", StringComparison.Ordinal);
-        return p.Split('.', StringSplitOptions.RemoveEmptyEntries);
+        value = node switch
+        {
+            null => null,
+            JsonValue v when v.GetValueKind() == JsonValueKind.String => v.GetValue<string>(),
+            _ => node.ToJsonString(),
+        };
+        return true;
     }
 
     /// <summary>

@@ -239,6 +239,27 @@ public class FlowExpectationEvaluatorTests
     }
 
     [Fact]
+    public void BodyPath_Filter_And_A_Present_Null()
+    {
+        // #676 — filters resolve, and a JSON null the path selects exists.
+        var body = "{\"items\":[{\"id\":1,\"done\":true},{\"id\":2,\"done\":false}],\"deletedAt\":null}";
+        var filter = FlowExpectationEvaluator.Evaluate(
+            new FlowExpectation { Kind = FlowExpectationKind.BodyPath, Operator = FlowExpectationOperator.Equals, Target = "$.items[?(@.done == false)].id", Expected = "[2]" },
+            Envelope(body: body));
+        Assert.True(filter.Passed);
+
+        var present = FlowExpectationEvaluator.Evaluate(
+            new FlowExpectation { Kind = FlowExpectationKind.BodyPath, Operator = FlowExpectationOperator.Exists, Target = "$.deletedAt" },
+            Envelope(body: body));
+        Assert.True(present.Passed);
+
+        var missing = FlowExpectationEvaluator.Evaluate(
+            new FlowExpectation { Kind = FlowExpectationKind.BodyPath, Operator = FlowExpectationOperator.NotExists, Target = "$.archivedAt" },
+            Envelope(body: body));
+        Assert.True(missing.Passed);
+    }
+
+    [Fact]
     public void BodyPath_NotExists_OnInvalidPath_Pass()
     {
         var r = FlowExpectationEvaluator.Evaluate(

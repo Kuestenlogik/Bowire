@@ -31,6 +31,8 @@ Path segments are separated by dots. Object keys and array indices both use the 
 | `${response.items.0.name}` | First element's `name` field |
 | `${response.items.0.tags.2}` | Third tag of the first item |
 
+JSONPath works in a placeholder too, starting with `$` after `response.`: `{{response.$.items[?(@.default == true)].id}}`. A path that can select several values resolves to a JSON array of the matches. The syntax is the one [test assertions](test-assertions.md#jsonpath) use, from the same engine.
+
 If the path doesn't exist, the placeholder is **left untouched** so chaining bugs are visible (you'll see `${response.foo.bar}` in the outgoing request rather than an empty string).
 
 ## Streaming and channels

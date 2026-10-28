@@ -29,7 +29,24 @@ The path syntax mirrors [Request Chaining](response-chaining.md):
 | `response.id` | `body.id` |
 | `response.user.email` | `body.user.email` |
 | `response.items.0.tags.2` | Third tag of the first item |
+| `$.items[?(@.done == true)].id` | The `id` of every item whose `done` is `true` |
+| `$.items[*].price` | Every item's `price` |
+| `$..email` | Every `email` field, at any depth |
+| `$.items[-1]` | The last item |
 | `status` | The gRPC / HTTP status name (e.g. `OK`, `NotFound`, `Unauthenticated`). For a REST response an expected value written as a three-digit code — `status eq 200` — is read against the HTTP status code the invoker carries as `http_status`, so it does not fail against `OK` with the number it asked for one field away |
+
+### JSONPath
+
+A path that starts with `$` is JSONPath (a subset of [RFC 9535](https://www.rfc-editor.org/rfc/rfc9535)):
+
+- `.name` or `['name']` for a field, and `[0]` or `[-1]` for an array element (a numeric step after a dot, `$.items.0`, indexes an array too).
+- `[*]` and `.*` for every child, `..name` for a field at any depth, and `[start:end:step]` and `[0,2]` for slices and unions.
+- Filters `[?(…)]` over an array's elements or an object's values. A filter compares with `==`, `!=`, `<`, `<=`, `>` and `>=`, combines with `&&`, `||`, `!` and parentheses, and refers to the current element as `@` and to the document as `$`.
+- `@.field` on its own tests that the field exists: `[?(@.discount)]`.
+
+A path that can select several values (a wildcard, filter, slice, union or `..`) gives an **array** of what it matched, so `contains`, `eq [ … ]` and `type array` work on the result. A path that matches nothing is missing, so `notexists` passes. A malformed path fails the assertion with the position of the first character that does not fit, for example `Invalid JSONPath at position 19: expected a value or a path`.
+
+The workbench and `bowire test` resolve paths with the same engine, held to one shared test fixture, so a path that matches in the Tests tab matches in CI.
 
 ## Operators
 
@@ -40,8 +57,8 @@ The path syntax mirrors [Request Chaining](response-chaining.md):
 | `gt`, `gte`, `lt`, `lte` | Numeric comparisons | `response.count` `gte` `1` |
 | `contains` | Substring (string) or membership (array) | `response.tags` `contains` `"work"` |
 | `matches` | Regex against the string form of the value | `response.email` `matches` `^[^@]+@example\.com$` |
-| `exists` | Path resolves to a non-null value | `response.id` `exists` |
-| `notexists` | Path is missing or null | `response.error` `notexists` |
+| `exists` | The path selects something, a JSON `null` included | `response.id` `exists` |
+| `notexists` | The path selects nothing | `response.error` `notexists` |
 | `type` | typeof check (`string`, `number`, `boolean`, `object`, `array`, `null`) | `response.items` `type` `array` |
 
 `eq` and `ne` use **loose equality** so `"42"` from a text input matches the number `42` from a parsed response. Object comparison is via `JSON.stringify`, so the order of keys matters in nested objects.
@@ -221,7 +238,6 @@ The exit code is `0` only when every test passed, so CI gates work the same way 
 
 Tracked on the [roadmap](https://github.com/Kuestenlogik/Bowire/blob/main/ROADMAP.md):
 
-- **JSONPath syntax** support for queries like `$.items[?(@.done == true)].id`
 - **Pre-request scripts** for dynamic setup (currently use the chaining feature instead)
 
 ## Tips

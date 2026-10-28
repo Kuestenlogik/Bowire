@@ -1,0 +1,364 @@
+{
+  "comment": "#676 - one path resolver, two implementations. Replayed by wwwroot-js/json-path.test.mjs (json-path.js) and BowireJsonPathGoldenTests (BowireJsonPath). error = the position a malformed path is refused at.",
+  "document": {
+    "store": {
+      "name": "Bowire shop",
+      "open": true,
+      "rating": null,
+      "items": [
+        {
+          "id": "a1",
+          "title": "Anchor",
+          "price": 12.5,
+          "done": true,
+          "tags": [
+            "metal",
+            "heavy"
+          ]
+        },
+        {
+          "id": "b2",
+          "title": "Buoy",
+          "price": 8,
+          "done": false,
+          "tags": []
+        },
+        {
+          "id": "c3",
+          "title": "Chart",
+          "price": 20,
+          "done": true,
+          "tags": [
+            "paper"
+          ],
+          "meta": {
+            "rating": 5
+          }
+        }
+      ],
+      "owner": {
+        "name": "Kai",
+        "address": {
+          "city": "Kiel"
+        }
+      },
+      "with.dot": 1
+    },
+    "codes": {
+      "200": "ok"
+    },
+    "list": [
+      10,
+      20,
+      30,
+      40,
+      50
+    ],
+    "empty": [],
+    "nulls": [
+      null,
+      1
+    ]
+  },
+  "cases": [
+    {
+      "path": "store.name",
+      "found": true,
+      "value": "Bowire shop"
+    },
+    {
+      "path": "store.items.0.id",
+      "found": true,
+      "value": "a1"
+    },
+    {
+      "path": "store.items.2.tags.0",
+      "found": true,
+      "value": "paper"
+    },
+    {
+      "path": "store.items.5",
+      "found": false
+    },
+    {
+      "path": "store.rating",
+      "found": true,
+      "value": null
+    },
+    {
+      "path": "store.missing",
+      "found": false
+    },
+    {
+      "path": "codes.200",
+      "found": true,
+      "value": "ok"
+    },
+    {
+      "path": "list.1",
+      "found": true,
+      "value": 20
+    },
+    {
+      "path": "store.items[1].title",
+      "found": true,
+      "value": "Buoy"
+    },
+    {
+      "path": "store['with.dot']",
+      "found": true,
+      "value": 1
+    },
+    {
+      "path": "store.name.length",
+      "found": false
+    },
+    {
+      "path": "$.store.owner.address.city",
+      "found": true,
+      "value": "Kiel"
+    },
+    {
+      "path": "$.list.1",
+      "found": true,
+      "value": 20
+    },
+    {
+      "path": "$.codes.200",
+      "found": true,
+      "value": "ok"
+    },
+    {
+      "path": "$['store']['name']",
+      "found": true,
+      "value": "Bowire shop"
+    },
+    {
+      "path": "$.list[-1]",
+      "found": true,
+      "value": 50
+    },
+    {
+      "path": "$.list[1:3]",
+      "found": true,
+      "value": [
+        20,
+        30
+      ]
+    },
+    {
+      "path": "$.list[::2]",
+      "found": true,
+      "value": [
+        10,
+        30,
+        50
+      ]
+    },
+    {
+      "path": "$.list[::-1]",
+      "found": true,
+      "value": [
+        50,
+        40,
+        30,
+        20,
+        10
+      ]
+    },
+    {
+      "path": "$.list[-2:]",
+      "found": true,
+      "value": [
+        40,
+        50
+      ]
+    },
+    {
+      "path": "$.list[0,4]",
+      "found": true,
+      "value": [
+        10,
+        50
+      ]
+    },
+    {
+      "path": "$.store.items[*].id",
+      "found": true,
+      "value": [
+        "a1",
+        "b2",
+        "c3"
+      ]
+    },
+    {
+      "path": "$.store.items[?(@.done == true)].id",
+      "found": true,
+      "value": [
+        "a1",
+        "c3"
+      ]
+    },
+    {
+      "path": "$.store.items[?@.price > 10].title",
+      "found": true,
+      "value": [
+        "Anchor",
+        "Chart"
+      ]
+    },
+    {
+      "path": "$.store.items[?(@.price >= 8 && @.price < 20)].id",
+      "found": true,
+      "value": [
+        "a1",
+        "b2"
+      ]
+    },
+    {
+      "path": "$.store.items[?(@.done == false || @.price == 20)].id",
+      "found": true,
+      "value": [
+        "b2",
+        "c3"
+      ]
+    },
+    {
+      "path": "$.store.items[?(!@.done)].id",
+      "found": false
+    },
+    {
+      "path": "$.store.items[?(@.meta)].id",
+      "found": true,
+      "value": [
+        "c3"
+      ]
+    },
+    {
+      "path": "$.store.items[?(@.meta.rating == 5)].title",
+      "found": true,
+      "value": [
+        "Chart"
+      ]
+    },
+    {
+      "path": "$.store.items[?(@.title == 'Buoy')].price",
+      "found": true,
+      "value": [
+        8
+      ]
+    },
+    {
+      "path": "$.store.items[?(@.id == $.store.items[0].id)].title",
+      "found": true,
+      "value": [
+        "Anchor"
+      ]
+    },
+    {
+      "path": "$..city",
+      "found": true,
+      "value": [
+        "Kiel"
+      ]
+    },
+    {
+      "path": "$..tags[0]",
+      "found": true,
+      "value": [
+        "metal",
+        "paper"
+      ]
+    },
+    {
+      "path": "$.store.items[0].*",
+      "found": true,
+      "value": [
+        "a1",
+        "Anchor",
+        12.5,
+        true,
+        [
+          "metal",
+          "heavy"
+        ]
+      ]
+    },
+    {
+      "path": "$.empty[*]",
+      "found": false
+    },
+    {
+      "path": "$.nulls[0]",
+      "found": true,
+      "value": null
+    },
+    {
+      "path": "$.nulls[?(@ == null)]",
+      "found": true,
+      "value": [
+        null
+      ]
+    },
+    {
+      "path": "$.store.items[?(@.price == 12.5)].id",
+      "found": true,
+      "value": [
+        "a1"
+      ]
+    },
+    {
+      "path": "$.store.items[?(@.done == 'true')].id",
+      "found": false
+    },
+    {
+      "path": "$.store.rating",
+      "found": true,
+      "value": null
+    },
+    {
+      "path": "$.store.items[?(@.title < \"Buoy\")].id",
+      "found": true,
+      "value": [
+        "a1"
+      ]
+    },
+    {
+      "path": "$.store.items[?(@.missing != 1)].id",
+      "found": true,
+      "value": [
+        "a1",
+        "b2",
+        "c3"
+      ]
+    },
+    {
+      "path": "$.store[",
+      "error": 8
+    },
+    {
+      "path": "$.store.items[?(@.done ==)]",
+      "error": 25
+    },
+    {
+      "path": "$.list[1",
+      "error": 8
+    },
+    {
+      "path": "$.store.items[?(5)]",
+      "error": 16
+    },
+    {
+      "path": "$.store.'x'",
+      "error": 8
+    },
+    {
+      "path": "$['unterminated]",
+      "error": 2
+    },
+    {
+      "path": "$.list[1]x",
+      "error": 9
+    }
+  ]
+}

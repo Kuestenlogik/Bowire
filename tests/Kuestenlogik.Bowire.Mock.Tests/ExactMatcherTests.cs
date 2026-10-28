@@ -559,6 +559,17 @@ public sealed class ExactMatcherTests
     }
 
     [Fact]
+    public void BodyMatcher_JsonPath_Filter()
+    {
+        // #676 — a filter selects the matching item; the predicate compares its value.
+        var matcher = new ExactMatcher();
+        var rec = MakeRecording(RestStepMatched("POST", "/o",
+            new BowireStepMatch { Body = [new() { JsonPath = "$.items[?(@.primary == true)].sku", Present = true }] }, "{}"));
+        Assert.True(matcher.TryMatch(ReqEx("POST", "/o", body: """{"items":[{"sku":"A","primary":false},{"sku":"B","primary":true}]}"""), rec, out _));
+        Assert.False(matcher.TryMatch(ReqEx("POST", "/o", body: """{"items":[{"sku":"A","primary":false}]}"""), rec, out _));
+    }
+
+    [Fact]
     public void BodyMatcher_RawText_ContainsAndRegex()
     {
         var matcher = new ExactMatcher();

@@ -4,6 +4,7 @@
 using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Kuestenlogik.Bowire.Paths;
 
 namespace Kuestenlogik.Bowire.Mocking;
 
@@ -204,13 +205,25 @@ public static class MockConfigApplier
            || rule == "*"
            || string.Equals(rule, actual, StringComparison.OrdinalIgnoreCase);
 
-    // Walk the path segment-by-segment, creating missing intermediate
-    // objects, and set the leaf. Missing array indices are NOT grown (a
-    // surprising side effect); an out-of-range index leaves the node
-    // untouched and returns false.
+    // A plain path (names and indices) is walked segment by segment,
+    // creating missing intermediate objects, and the leaf is set. Missing
+    // array indices are NOT grown (a surprising side effect); an
+    // out-of-range index leaves the node untouched and returns false.
+    // A query (#676: filter, wildcard, slice, descent) sets every node it
+    // selects and creates nothing. Paths go through BowireJsonPath, the
+    // resolver assertions and chaining use.
     private static bool SetAtPath(JsonNode root, string jsonPath, JsonElement value)
     {
-        var segments = NormalizeJsonPath(jsonPath);
+        string[] segments;
+        try
+        {
+            if (!BowireJsonPath.IsSimple(jsonPath)) return SetAtMatches(root, jsonPath, value);
+            segments = [.. BowireJsonPath.SimpleSteps(jsonPath)];
+        }
+        catch (JsonPathException)
+        {
+            return false;
+        }
         if (segments.Length == 0) return false;
 
         var current = root;
@@ -258,18 +271,27 @@ public static class MockConfigApplier
         return false;
     }
 
+    private static bool SetAtMatches(JsonNode root, string jsonPath, JsonElement value)
+    {
+        var changed = false;
+        foreach (var match in BowireJsonPath.Select(root, jsonPath))
+        {
+            var node = JsonSerializer.SerializeToNode(value);
+            if (match.Parent is JsonObject parentObj && match.Name is { } name)
+            {
+                parentObj[name] = node;
+                changed = true;
+            }
+            else if (match.Parent is JsonArray parentArr && match.Index >= 0)
+            {
+                parentArr[match.Index] = node;
+                changed = true;
+            }
+        }
+        return changed;
+    }
+
     private static bool TryIndex(string segment, int count, out int index)
         => int.TryParse(segment, NumberStyles.Integer, CultureInfo.InvariantCulture, out index)
            && index >= 0 && index < count;
-
-    // Mirrors MockMatchPredicates.NormalizeJsonPath so override paths use the
-    // exact syntax the mock body matchers already accept: split
-    // "$.user.items[0].id" (or "user.items.0.id") into ["user","items","0","id"].
-    private static string[] NormalizeJsonPath(string path)
-    {
-        var p = path;
-        if (p.StartsWith('$')) p = p[1..];
-        p = p.Replace("[", ".", StringComparison.Ordinal).Replace("]", "", StringComparison.Ordinal);
-        return p.Split('.', StringSplitOptions.RemoveEmptyEntries);
-    }
 }

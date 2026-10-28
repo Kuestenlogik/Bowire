@@ -60,25 +60,37 @@
 
     function evaluateAssertion(test, statusName, parsedResponse) {
         var actual;
+        // #676 — whether the path selected anything at all. A JSON null is
+        // found; only a path that selects nothing is missing, so exists /
+        // notexists tell the two apart.
+        var found = true;
+        var pathError = null;
         var path = String(test.path || '');
         // Special path "status" reads the gRPC status name; everything else is a
-        // response-body JSON path.
+        // response-body path — the short form or JSONPath from `$`.
         if (path === 'status') {
             actual = statusName;
+            found = statusName !== undefined && statusName !== null;
         } else if (path === '' || path === 'response') {
             actual = parsedResponse;
-        } else if (path.indexOf('response.') === 0) {
-            actual = walkJsonPath(parsedResponse, path.substring('response.'.length));
         } else {
-            actual = walkJsonPath(parsedResponse, path);
+            var bodyPath = path.indexOf('response.') === 0 ? path.substring('response.'.length) : path;
+            try {
+                var resolved = bowireJsonPathResolve(parsedResponse, bodyPath);
+                found = resolved.found;
+                actual = resolved.value;
+            } catch (e) {
+                found = false;
+                pathError = e.message;
+            }
         }
 
         var op = test.op || 'eq';
         var expected = test.expected;
         var pass = false;
-        var message = null;
+        var message = pathError;
 
-        try {
+        if (!pathError) try {
             switch (op) {
                 case 'eq':       pass = deepEqualsLoose(actual, expected); break;
                 case 'ne':       pass = !deepEqualsLoose(actual, expected); break;
@@ -104,8 +116,8 @@
                         message = t('assert.invalidRegex', { reason: e.message });
                     }
                     break;
-                case 'exists':    pass = actual !== undefined && actual !== null; break;
-                case 'notexists': pass = actual === undefined || actual === null; break;
+                case 'exists':    pass = found; break;
+                case 'notexists': pass = !found; break;
                 case 'type':      pass = typeOf(actual) === String(expected); break;
                 default:
                     pass = false;

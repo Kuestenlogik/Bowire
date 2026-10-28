@@ -15,6 +15,11 @@
     <Content Include="Cli\cli-export-golden.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <!-- #676 - the JSONPath golden fixture, read the same two ways:
+         Paths/BowireJsonPathGoldenTests.cs and wwwroot-js/json-path.test.mjs. -->
+    <Content Include="Paths\json-path-golden.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" />

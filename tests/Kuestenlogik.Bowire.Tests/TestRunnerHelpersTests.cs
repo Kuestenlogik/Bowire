@@ -542,14 +542,41 @@ public sealed class TestRunnerHelpersTests
     }
 
     [Fact]
-    public void EvaluateAssertion_Exists_ResolvedValue()
+    public void EvaluateAssertion_Exists_JsonNullIsPresent()
     {
         var parsed = ParseObj("""{"x":null}""");
         var rendered = NewAssertionResult();
-        // The "x" key resolves to a null JsonNode value → exists fails.
+        // #676 — the path selects a JSON null: present, so exists passes and
+        // notexists fails. Only a path that selects nothing is missing.
         Evaluate(NewAssertion("x", "exists", ""), "OK", parsed, null,
             new Dictionary<string, string>(), rendered);
+        Assert.True(RenderedPassed(rendered));
+
+        var notExists = NewAssertionResult();
+        Evaluate(NewAssertion("x", "notexists", ""), "OK", parsed, null,
+            new Dictionary<string, string>(), notExists);
+        Assert.False(RenderedPassed(notExists));
+    }
+
+    [Fact]
+    public void EvaluateAssertion_FilterPath_SelectsEveryMatch()
+    {
+        var parsed = ParseObj("""{"items":[{"id":"a","done":true},{"id":"b","done":false},{"id":"c","done":true}]}""");
+        var rendered = NewAssertionResult();
+        Evaluate(NewAssertion("$.items[?(@.done == true)].id", "contains", "c"), "OK", parsed, null,
+            new Dictionary<string, string>(), rendered);
+        Assert.True(RenderedPassed(rendered));
+    }
+
+    [Fact]
+    public void EvaluateAssertion_MalformedPath_FailsWithThePosition()
+    {
+        var parsed = ParseObj("""{"items":[]}""");
+        var rendered = NewAssertionResult();
+        Evaluate(NewAssertion("$.items[?(@.done ==)]", "exists", ""), "OK", parsed, null,
+            new Dictionary<string, string>(), rendered);
         Assert.False(RenderedPassed(rendered));
+        Assert.StartsWith("Invalid JSONPath at position 19:", (string?)rendered.GetType().GetProperty("Error")!.GetValue(rendered), StringComparison.Ordinal);
     }
 
     [Fact]

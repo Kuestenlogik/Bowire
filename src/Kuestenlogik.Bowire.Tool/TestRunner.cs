@@ -8,6 +8,7 @@ using System.Text.Json.Nodes;
 using Kuestenlogik.Bowire;
 using Kuestenlogik.Bowire.App.Configuration;
 using Kuestenlogik.Bowire.Models;
+using Kuestenlogik.Bowire.Paths;
 
 namespace Kuestenlogik.Bowire.App;
 
@@ -567,20 +568,37 @@ internal static class TestRunner
         var op = test.Op ?? "eq";
         var expected = SubstituteVars(test.Expected ?? string.Empty, environment);
 
-        // Resolve actual
+        // Resolve actual. `found` is whether the path selected anything at
+        // all (#676): a JSON null is found, only a missing path is not, so
+        // exists / notexists tell the two apart — the same rule as the
+        // Tests tab, through the same resolver.
         object? actual;
+        var found = true;
         if (path == "status")
         {
             actual = statusName;
+            found = statusName is not null;
         }
         else if (string.IsNullOrEmpty(path) || path == "response")
         {
             actual = parsedBody is not null ? (object?)parsedBody : rawBody;
+            found = actual is not null;
         }
         else
         {
             var stripped = path.StartsWith("response.", StringComparison.Ordinal) ? path.Substring("response.".Length) : path;
-            actual = WalkJsonPath(parsedBody, stripped);
+            try
+            {
+                found = BowireJsonPath.TryResolve(parsedBody, stripped, out var node);
+                actual = node;
+            }
+            catch (JsonPathException ex)
+            {
+                rendered.ActualText = FormatActual(null);
+                rendered.Passed = false;
+                rendered.Error = ex.Message;
+                return;
+            }
         }
 
         rendered.ActualText = FormatActual(actual);
@@ -597,8 +615,8 @@ internal static class TestRunner
                 "lte"       => TryNumber(actual, out var an4) && TryNumber(expected, out var en4) && an4 <= en4,
                 "contains"  => Contains(actual, expected),
                 "matches"   => actual is not null && System.Text.RegularExpressions.Regex.IsMatch(FormatActual(actual), expected),
-                "exists"    => actual is not null,
-                "notexists" => actual is null,
+                "exists"    => found,
+                "notexists" => !found,
                 "type"      => string.Equals(TypeOf(actual), expected, StringComparison.OrdinalIgnoreCase),
                 _           => false
             };
@@ -614,29 +632,18 @@ internal static class TestRunner
         }
     }
 
+    // The short form or JSONPath (#676); null on no match or a malformed path.
     private static JsonNode? WalkJsonPath(JsonNode? root, string path)
     {
         if (root is null || string.IsNullOrEmpty(path)) return root;
-        var current = root;
-        foreach (var segment in path.Split('.'))
+        try
         {
-            if (current is null) return null;
-            if (current is JsonArray arr)
-            {
-                if (!int.TryParse(segment, NumberStyles.Integer, CultureInfo.InvariantCulture, out var idx)) return null;
-                if (idx < 0 || idx >= arr.Count) return null;
-                current = arr[idx];
-            }
-            else if (current is JsonObject obj)
-            {
-                current = obj[segment];
-            }
-            else
-            {
-                return null;
-            }
+            return BowireJsonPath.TryResolve(root, path, out var value) ? value : null;
         }
-        return current;
+        catch (JsonPathException)
+        {
+            return null;
+        }
     }
 
     private static bool DeepEqualsLoose(object? actual, object? expected)

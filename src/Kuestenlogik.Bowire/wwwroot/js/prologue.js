@@ -7817,29 +7817,20 @@
     }
 
     /**
-     * Walk a dotted path against an arbitrary JSON value.
-     * Supports nested objects, arrays via numeric segments, and quoted keys
-     * via bracket-style aren't needed for v1 — keep it simple.
+     * Resolve a path against an arbitrary JSON value: the short form
+     * (items.0.id) or JSONPath from `$` (#676, json-path.js). Returns the
+     * value, an array of the matches for a path that can select several,
+     * or undefined when nothing matches or the path does not parse.
      */
     function walkJsonPath(value, path) {
         if (value == null) return undefined;
         if (!path) return value;
-        var parts = path.split('.');
-        var cur = value;
-        for (var i = 0; i < parts.length; i++) {
-            if (cur == null) return undefined;
-            var part = parts[i];
-            if (Array.isArray(cur)) {
-                var idx = parseInt(part, 10);
-                if (Number.isNaN(idx)) return undefined;
-                cur = cur[idx];
-            } else if (typeof cur === 'object') {
-                cur = cur[part];
-            } else {
-                return undefined;
-            }
+        try {
+            var r = bowireJsonPathResolve(value, path);
+            return r.found ? r.value : undefined;
+        } catch (e) {
+            return undefined;
         }
-        return cur;
     }
 
     function resolveResponseVar(path) {
