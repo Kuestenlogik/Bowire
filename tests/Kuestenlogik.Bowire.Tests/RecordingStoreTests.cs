@@ -14,22 +14,24 @@ namespace Kuestenlogik.Bowire.Tests;
 /// </summary>
 public sealed class RecordingStoreTests : IDisposable
 {
-    private readonly string _originalPath;
     private readonly string _tempPath;
+
+    // Pinned for this test's async flow only (#942): the process-wide setter
+    // let a parallel class's cleanup delete the file this one was writing.
+    private readonly IDisposable _pin;
 
     public RecordingStoreTests()
     {
-        _originalPath = RecordingStore.StorePath;
         _tempPath = Path.Combine(
             Path.GetTempPath(),
             $"bowire-rec-test-{Guid.NewGuid():N}",
             "recordings.json");
-        RecordingStore.StorePath = _tempPath;
+        _pin = RecordingStore.PinStorePathForFlow(_tempPath);
     }
 
     public void Dispose()
     {
-        RecordingStore.StorePath = _originalPath;
+        _pin.Dispose();
         var dir = Path.GetDirectoryName(_tempPath);
         if (dir is not null && Directory.Exists(dir))
         {

@@ -19,7 +19,7 @@ namespace Kuestenlogik.Bowire.Tests.Cli;
 /// </summary>
 public sealed class WorkbenchRecordingJsonProviderCoverageTests : IDisposable
 {
-    private readonly string _originalRecordingStorePath;
+    private readonly IDisposable _storePin;
     private readonly string _sandboxRoot;
     private readonly WorkbenchRecordingJsonProvider _provider;
 
@@ -38,8 +38,8 @@ public sealed class WorkbenchRecordingJsonProviderCoverageTests : IDisposable
         // Redirect the legacy unscoped RecordingStore to a temp file
         // under the sandbox too, so its taps survive without touching
         // the developer's ~/.bowire/recordings.json.
-        _originalRecordingStorePath = RecordingStore.StorePath;
-        RecordingStore.StorePath = SafePath.Combine(_sandboxRoot, "recordings.json");
+        // Pinned for this test's async flow only (#942), not process-wide.
+        _storePin = RecordingStore.PinStorePathForFlow(SafePath.Combine(_sandboxRoot, "recordings.json"));
 
         _provider = new WorkbenchRecordingJsonProvider();
     }
@@ -47,7 +47,7 @@ public sealed class WorkbenchRecordingJsonProviderCoverageTests : IDisposable
     public void Dispose()
     {
         _userScope.Dispose();
-        RecordingStore.StorePath = _originalRecordingStorePath;
+        _storePin.Dispose();
         if (Directory.Exists(_sandboxRoot))
         {
             try { Directory.Delete(_sandboxRoot, recursive: true); } catch { /* best-effort */ }

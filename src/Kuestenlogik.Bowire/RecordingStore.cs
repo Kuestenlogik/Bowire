@@ -20,6 +20,12 @@ internal static class RecordingStore
 {
     private static string? _testStorePathOverride;
 
+    // A test's own path, for its async flow only: two test classes running in
+    // parallel each see their own file, ahead of the process-wide override
+    // that an in-process server (whose request threads an AsyncLocal does
+    // not reach) still needs.
+    private static readonly AsyncLocal<string?> s_flowStorePath = new();
+
     /// <summary>
     /// On-disk store location. Resolves through
     /// <see cref="BowireUserContext.GetUserPath"/> by default so the
@@ -30,8 +36,26 @@ internal static class RecordingStore
     /// </summary>
     internal static string StorePath
     {
-        get => _testStorePathOverride ?? BowireUserContext.GetUserPath("recordings.json");
+        get => s_flowStorePath.Value ?? _testStorePathOverride ?? BowireUserContext.GetUserPath("recordings.json");
         set => _testStorePathOverride = value;
+    }
+
+    /// <summary>
+    /// Pin <see cref="StorePath"/> for the calling async flow only, until the
+    /// returned scope is disposed. Tests that run in parallel use this instead
+    /// of the process-wide setter, so one test's cleanup cannot delete the
+    /// file another is writing.
+    /// </summary>
+    internal static IDisposable PinStorePathForFlow(string path)
+    {
+        var previous = s_flowStorePath.Value;
+        s_flowStorePath.Value = path;
+        return new FlowPin(previous);
+    }
+
+    private sealed class FlowPin(string? previous) : IDisposable
+    {
+        public void Dispose() => s_flowStorePath.Value = previous;
     }
 
     private static readonly JsonSerializerOptions JsonOptions = new()
