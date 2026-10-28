@@ -132,7 +132,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**6/27 done** · 21 backlog
+**8/29 done** · 21 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -155,14 +155,16 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [821](https://github.com/Kuestenlogik/Bowire/issues/821) | Bowire | [MCP tasks: answer input requests of 2025-11-25 tasks](#issue-kuestenlogik-bowire-821) | ⬜ Backlog |  |
 | [939](https://github.com/Kuestenlogik/Bowire/issues/939) | Bowire | [Import Yaak exports](#issue-kuestenlogik-bowire-939) | ⬜ Backlog |  |
 | [940](https://github.com/Kuestenlogik/Bowire/issues/940) | Bowire | [Verify the collection importers against real Insomnia and Bruno exports](#issue-kuestenlogik-bowire-940) | ⬜ Backlog |  |
-| [943](https://github.com/Kuestenlogik/Bowire/issues/943) | Bowire | [Collection runner in the workbench reports a failed call as PASS](#issue-kuestenlogik-bowire-943) | ⬜ Backlog |  |
-| [944](https://github.com/Kuestenlogik/Bowire/issues/944) | Bowire | [Flaky: ChunkedRecordingStore's test root override leaks across parallel test classes](#issue-kuestenlogik-bowire-944) | ⬜ Backlog |  |
+| [945](https://github.com/Kuestenlogik/Bowire/issues/945) | Bowire | [bowire.test.run over MCP, with a data set](#issue-kuestenlogik-bowire-945) | ⬜ Backlog |  |
+| [946](https://github.com/Kuestenlogik/Bowire/issues/946) | Bowire | [Data sets for flow runs and bowire test --workspace](#issue-kuestenlogik-bowire-946) | ⬜ Backlog |  |
 | [673](https://github.com/Kuestenlogik/Bowire/issues/673) | Bowire | [Export requests as .http — Copy as .http, and bowire export http for a whole collection](#issue-kuestenlogik-bowire-673) | ✅ Done | `area:workbench` |
 | [674](https://github.com/Kuestenlogik/Bowire/issues/674) | Bowire | [Import from Insomnia, Bruno and .http, with a migration guide per source](#issue-kuestenlogik-bowire-674) | ✅ Done | `area:workbench` |
 | [676](https://github.com/Kuestenlogik/Bowire/issues/676) | Bowire | [JSONPath filter expressions in assertions, chaining and mock overrides](#issue-kuestenlogik-bowire-676) | ✅ Done | `area:workbench` |
 | [801](https://github.com/Kuestenlogik/Bowire/issues/801) | Bowire | [MCP Tasks, client side: discover, call and follow tasks of task-capable MCP servers](#issue-kuestenlogik-bowire-801) | ✅ Done |  |
 | [941](https://github.com/Kuestenlogik/Bowire/issues/941) | Bowire | [JUnit XML from bowire test declares utf-16 but is written as UTF-8](#issue-kuestenlogik-bowire-941) | ✅ Done |  |
 | [942](https://github.com/Kuestenlogik/Bowire/issues/942) | Bowire | [Flaky: RecordingStore tests share a process-wide store path across parallel classes](#issue-kuestenlogik-bowire-942) | ✅ Done |  |
+| [943](https://github.com/Kuestenlogik/Bowire/issues/943) | Bowire | [Collection runner in the workbench reports a failed call as PASS](#issue-kuestenlogik-bowire-943) | ✅ Done |  |
+| [944](https://github.com/Kuestenlogik/Bowire/issues/944) | Bowire | [Flaky: ChunkedRecordingStore's test root override leaks across parallel test classes](#issue-kuestenlogik-bowire-944) | ✅ Done |  |
 
 ### v2.12 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
 
@@ -842,13 +844,13 @@ Follow-up of #674, which shipped the Insomnia, Bruno and `.http` importers. Yaak
 
 Follow-up of #674. The importers were tested with fixtures written from the formats' specifications and schemas (Insomnia v4/v5, Bru, OpenCollection v1.0.0), not with files exported from the apps. [[more]](https://github.com/Kuestenlogik/Bowire/issues/940)
 
-#### <a id="issue-kuestenlogik-bowire-943"></a>⬜ Backlog · [#943](https://github.com/Kuestenlogik/Bowire/issues/943) Collection runner in the workbench reports a failed call as PASS
+#### <a id="issue-kuestenlogik-bowire-945"></a>⬜ Backlog · [#945](https://github.com/Kuestenlogik/Bowire/issues/945) bowire.test.run over MCP, with a data set
 
-**Run All** on a collection marks an item PASS when its call failed. Example: a REST item against an unreachable host, or with no OpenAPI document. `/api/invoke` answers such a call with HTTP 200, `"status": "Error"` and the reason in `metadata.error`, e.g. *No OpenAPI document found at …*. [[more]](https://github.com/Kuestenlogik/Bowire/issues/943)
+Follow-up of #675, to be done with #802 (which makes `bowire.test.run` the first durable MCP task). [[more]](https://github.com/Kuestenlogik/Bowire/issues/945)
 
-#### <a id="issue-kuestenlogik-bowire-944"></a>⬜ Backlog · [#944](https://github.com/Kuestenlogik/Bowire/issues/944) Flaky: ChunkedRecordingStore's test root override leaks across parallel test classes
+#### <a id="issue-kuestenlogik-bowire-946"></a>⬜ Backlog · [#946](https://github.com/Kuestenlogik/Bowire/issues/946) Data sets for flow runs and bowire test --workspace
 
-In full runs of `Kuestenlogik.Bowire.Tests`, `WorkbenchRecordingJsonProviderCoverageTests` fails at random: a recording seeded under its own workspace folder is not found (`Assert.NotNull() Failure`), or the legacy fallback wins over the workspace match. Run alone, or with its class only, it passes. [[more]](https://github.com/Kuestenlogik/Bowire/issues/944)
+Follow-up of #675. `--data` drives a test collection. A flow file, or a `--workspace` run, refuses `--data` today with a clear message. [[more]](https://github.com/Kuestenlogik/Bowire/issues/946)
 
 #### <a id="issue-kuestenlogik-bowire-673"></a>✅ Done · [#673](https://github.com/Kuestenlogik/Bowire/issues/673) Export requests as .http — Copy as .http, and bowire export http for a whole collection
 
@@ -879,6 +881,14 @@ MCP Tasks let a server answer a long-running request with a durable handle inste
 #### <a id="issue-kuestenlogik-bowire-942"></a>✅ Done · [#942](https://github.com/Kuestenlogik/Bowire/issues/942) Flaky: RecordingStore tests share a process-wide store path across parallel classes
 
 `WorkbenchRecordingJsonProviderCoverageTests.TryGetRecordingJson_Returns_Null_When_Recordings_Property_Missing` failed once in a full run of `Kuestenlogik.Bowire.Tests` with `DirectoryNotFoundException` on `…\Temp\bowire-rec-test-…\recordings.json`. Run on its own, it passes. [[more]](https://github.com/Kuestenlogik/Bowire/issues/942)
+
+#### <a id="issue-kuestenlogik-bowire-943"></a>✅ Done · [#943](https://github.com/Kuestenlogik/Bowire/issues/943) Collection runner in the workbench reports a failed call as PASS
+
+**Run All** on a collection marks an item PASS when its call failed. Example: a REST item against an unreachable host, or with no OpenAPI document. `/api/invoke` answers such a call with HTTP 200, `"status": "Error"` and the reason in `metadata.error`, e.g. *No OpenAPI document found at …*. [[more]](https://github.com/Kuestenlogik/Bowire/issues/943)
+
+#### <a id="issue-kuestenlogik-bowire-944"></a>✅ Done · [#944](https://github.com/Kuestenlogik/Bowire/issues/944) Flaky: ChunkedRecordingStore's test root override leaks across parallel test classes
+
+In full runs of `Kuestenlogik.Bowire.Tests`, `WorkbenchRecordingJsonProviderCoverageTests` fails at random: a recording seeded under its own workspace folder is not found (`Assert.NotNull() Failure`), or the legacy fallback wins over the workspace match. Run alone, or with its class only, it passes. [[more]](https://github.com/Kuestenlogik/Bowire/issues/944)
 
 ### v2.12 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
 
