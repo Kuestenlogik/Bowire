@@ -16,6 +16,16 @@ namespace Kuestenlogik.Bowire.Tests;
 public class JUnitReportTests
 {
     [Fact]
+    public void Render_Declares_The_Utf8_It_Is_Written_In()
+    {
+        // The file goes to disk as UTF-8; a utf-16 declaration made strict
+        // parsers refuse it.
+        var xml = JUnitReport.Render(new RunReport { CollectionName = "c" });
+        Assert.StartsWith("<?xml version=\"1.0\" encoding=\"utf-8\"?>", xml, StringComparison.Ordinal);
+        Assert.StartsWith("<?xml version=\"1.0\" encoding=\"utf-8\"?>", FlowJUnitReport.Render(new FlowRunReport()), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Render_AllPassing_EmitsZeroFailures()
     {
         var report = new RunReport

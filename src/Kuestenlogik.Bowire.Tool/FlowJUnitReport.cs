@@ -49,7 +49,7 @@ internal static class FlowJUnitReport
         if (totalTests == 0) totalTests = report.Steps.Count;
 
         var sb = new StringBuilder();
-        using (var sw = new StringWriter(sb, CultureInfo.InvariantCulture))
+        using (var sw = new Utf8StringWriter(sb))
         using (var w = XmlWriter.Create(sw, settings))
         {
             w.WriteStartElement("testsuites");

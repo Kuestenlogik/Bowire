@@ -36,7 +36,7 @@ internal static class JUnitReport
         };
 
         var sb = new StringBuilder();
-        using (var sw = new StringWriter(sb, CultureInfo.InvariantCulture))
+        using (var sw = new Utf8StringWriter(sb))
         using (var w = XmlWriter.Create(sw, settings))
         {
             // <testsuites> aggregate — single suite for one collection,
