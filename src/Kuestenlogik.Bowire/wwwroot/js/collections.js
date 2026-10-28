@@ -1380,13 +1380,17 @@
             body: JSON.stringify(body)
         }).then(function (resp) {
             return resp.json().then(function (json) {
-                var ok = resp.ok && !json.title;
+                // #943 — /api/invoke answers a failed call (discovery,
+                // connection, plugin error) with HTTP 200, status "Error"
+                // and the reason in metadata.error; that is a failure too.
+                var invokeError = (json.metadata && json.metadata.error) || null;
+                var ok = resp.ok && !json.title && json.status !== 'Error' && !invokeError;  // i18n-exempt: the status value /api/invoke reports, not prose
                 return {
                     pass: ok,
                     status: json.status || (ok ? 'OK' : 'Error'),  // i18n-exempt: status label, carried on the console entry and the run summary
                     durationMs: json.duration_ms || 0,
                     response: json.response,
-                    error: json.title || null
+                    error: json.title || invokeError || null
                 };
             });
         });
