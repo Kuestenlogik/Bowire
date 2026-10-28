@@ -132,7 +132,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**6/26 done** · 20 backlog
+**6/27 done** · 21 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -156,6 +156,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [939](https://github.com/Kuestenlogik/Bowire/issues/939) | Bowire | [Import Yaak exports](#issue-kuestenlogik-bowire-939) | ⬜ Backlog |  |
 | [940](https://github.com/Kuestenlogik/Bowire/issues/940) | Bowire | [Verify the collection importers against real Insomnia and Bruno exports](#issue-kuestenlogik-bowire-940) | ⬜ Backlog |  |
 | [943](https://github.com/Kuestenlogik/Bowire/issues/943) | Bowire | [Collection runner in the workbench reports a failed call as PASS](#issue-kuestenlogik-bowire-943) | ⬜ Backlog |  |
+| [944](https://github.com/Kuestenlogik/Bowire/issues/944) | Bowire | [Flaky: ChunkedRecordingStore's test root override leaks across parallel test classes](#issue-kuestenlogik-bowire-944) | ⬜ Backlog |  |
 | [673](https://github.com/Kuestenlogik/Bowire/issues/673) | Bowire | [Export requests as .http — Copy as .http, and bowire export http for a whole collection](#issue-kuestenlogik-bowire-673) | ✅ Done | `area:workbench` |
 | [674](https://github.com/Kuestenlogik/Bowire/issues/674) | Bowire | [Import from Insomnia, Bruno and .http, with a migration guide per source](#issue-kuestenlogik-bowire-674) | ✅ Done | `area:workbench` |
 | [676](https://github.com/Kuestenlogik/Bowire/issues/676) | Bowire | [JSONPath filter expressions in assertions, chaining and mock overrides](#issue-kuestenlogik-bowire-676) | ✅ Done | `area:workbench` |
@@ -844,6 +845,10 @@ Follow-up of #674. The importers were tested with fixtures written from the form
 #### <a id="issue-kuestenlogik-bowire-943"></a>⬜ Backlog · [#943](https://github.com/Kuestenlogik/Bowire/issues/943) Collection runner in the workbench reports a failed call as PASS
 
 **Run All** on a collection marks an item PASS when its call failed. Example: a REST item against an unreachable host, or with no OpenAPI document. `/api/invoke` answers such a call with HTTP 200, `"status": "Error"` and the reason in `metadata.error`, e.g. *No OpenAPI document found at …*. [[more]](https://github.com/Kuestenlogik/Bowire/issues/943)
+
+#### <a id="issue-kuestenlogik-bowire-944"></a>⬜ Backlog · [#944](https://github.com/Kuestenlogik/Bowire/issues/944) Flaky: ChunkedRecordingStore's test root override leaks across parallel test classes
+
+In full runs of `Kuestenlogik.Bowire.Tests`, `WorkbenchRecordingJsonProviderCoverageTests` fails at random: a recording seeded under its own workspace folder is not found (`Assert.NotNull() Failure`), or the legacy fallback wins over the workspace match. Run alone, or with its class only, it passes. [[more]](https://github.com/Kuestenlogik/Bowire/issues/944)
 
 #### <a id="issue-kuestenlogik-bowire-673"></a>✅ Done · [#673](https://github.com/Kuestenlogik/Bowire/issues/673) Export requests as .http — Copy as .http, and bowire export http for a whole collection
 
