@@ -132,13 +132,12 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**3/23 done** · 20 backlog
+**4/23 done** · 19 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [672](https://github.com/Kuestenlogik/Bowire/issues/672) | Bowire | [Server-side script engine so pre/post scripts run in bowire test, not only in the browser](#issue-kuestenlogik-bowire-672) | ⬜ Backlog | `area:cli` |
 | [675](https://github.com/Kuestenlogik/Bowire/issues/675) | Bowire | [Data-driven collection runs: one iteration per CSV/JSON row](#issue-kuestenlogik-bowire-675) | ⬜ Backlog | `area:cli` |
-| [676](https://github.com/Kuestenlogik/Bowire/issues/676) | Bowire | [JSONPath filter expressions in assertions, chaining and mock overrides](#issue-kuestenlogik-bowire-676) | ⬜ Backlog | `area:workbench` |
 | [677](https://github.com/Kuestenlogik/Bowire/issues/677) | Bowire | [Broader code export, and snippets for the protocols no snippet library covers](#issue-kuestenlogik-bowire-677) | ⬜ Backlog | `area:workbench` |
 | [678](https://github.com/Kuestenlogik/Bowire/issues/678) | Bowire | [bowire get/post: URL-first verbs, HTTPie-style body notation, and --offline](#issue-kuestenlogik-bowire-678) | ⬜ Backlog | `area:cli` |
 | [687](https://github.com/Kuestenlogik/Bowire/issues/687) | Bowire | [Tray icon and no console window: give the running workbench a handle of its own](#issue-kuestenlogik-bowire-687) | ⬜ Backlog | `area:cli` |
@@ -158,6 +157,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [940](https://github.com/Kuestenlogik/Bowire/issues/940) | Bowire | [Verify the collection importers against real Insomnia and Bruno exports](#issue-kuestenlogik-bowire-940) | ⬜ Backlog |  |
 | [673](https://github.com/Kuestenlogik/Bowire/issues/673) | Bowire | [Export requests as .http — Copy as .http, and bowire export http for a whole collection](#issue-kuestenlogik-bowire-673) | ✅ Done | `area:workbench` |
 | [674](https://github.com/Kuestenlogik/Bowire/issues/674) | Bowire | [Import from Insomnia, Bruno and .http, with a migration guide per source](#issue-kuestenlogik-bowire-674) | ✅ Done | `area:workbench` |
+| [676](https://github.com/Kuestenlogik/Bowire/issues/676) | Bowire | [JSONPath filter expressions in assertions, chaining and mock overrides](#issue-kuestenlogik-bowire-676) | ✅ Done | `area:workbench` |
 | [801](https://github.com/Kuestenlogik/Bowire/issues/801) | Bowire | [MCP Tasks, client side: discover, call and follow tasks of task-capable MCP servers](#issue-kuestenlogik-bowire-801) | ✅ Done |  |
 
 ### v2.12 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
@@ -760,12 +760,6 @@ Pre- and post-request scripts exist — as `new Function('ctx', …)` **in the b
 
 "Run this collection two hundred times, row *n* fills the variables" is standard in Postman, Bruno, Insomnia, Requestly and Hoppscotch, and is `@loop` in httpyac. Bowire has assertions (`bowire test`) and Flows with loops, but no data-driven run. [[more]](https://github.com/Kuestenlogik/Bowire/issues/675)
 
-#### <a id="issue-kuestenlogik-bowire-676"></a>⬜ Backlog · [#676](https://github.com/Kuestenlogik/Bowire/issues/676) JSONPath filter expressions in assertions, chaining and mock overrides
-
-> `area:workbench`
-
-Assertion paths today are plain traversal — `response.items.0.tags.2`. There is no way to express "the id of every item that is done", which is the shape most real assertions want: [[more]](https://github.com/Kuestenlogik/Bowire/issues/676)
-
 #### <a id="issue-kuestenlogik-bowire-677"></a>⬜ Backlog · [#677](https://github.com/Kuestenlogik/Bowire/issues/677) Broader code export, and snippets for the protocols no snippet library covers
 
 > `area:workbench`
@@ -855,6 +849,12 @@ For "I am testing my own REST endpoint while developing it", a `.http` file is *
 > `area:workbench`
 
 Bowire reads Postman v2.1, HAR, OpenAPI, proto and SDL. It does **not** read Insomnia, Bruno (`.bru` or OpenCollection YAML), Yaak, or `.http`. [[more]](https://github.com/Kuestenlogik/Bowire/issues/674)
+
+#### <a id="issue-kuestenlogik-bowire-676"></a>✅ Done · [#676](https://github.com/Kuestenlogik/Bowire/issues/676) JSONPath filter expressions in assertions, chaining and mock overrides
+
+> `area:workbench`
+
+Assertion paths today are plain traversal — `response.items.0.tags.2`. There is no way to express "the id of every item that is done", which is the shape most real assertions want: [[more]](https://github.com/Kuestenlogik/Bowire/issues/676)
 
 #### <a id="issue-kuestenlogik-bowire-801"></a>✅ Done · [#801](https://github.com/Kuestenlogik/Bowire/issues/801) MCP Tasks, client side: discover, call and follow tasks of task-capable MCP servers
 
