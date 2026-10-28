@@ -132,7 +132,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**9/29 done** · 20 backlog
+**10/29 done** · 19 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -149,7 +149,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [810](https://github.com/Kuestenlogik/Bowire/issues/810) | Bowire | [MCP Apps, host side: render and debug MCP Apps of the servers Bowire talks to](#issue-kuestenlogik-bowire-810) | ⬜ Backlog |  |
 | [811](https://github.com/Kuestenlogik/Bowire/issues/811) | Bowire | [MCP Apps, server side: Bowire's MCP tools answer with apps (test run first)](#issue-kuestenlogik-bowire-811) | ⬜ Backlog |  |
 | [812](https://github.com/Kuestenlogik/Bowire/issues/812) | Bowire | [MCP Apps in testing and security: assert on apps, record their traffic, scan their CSP](#issue-kuestenlogik-bowire-812) | ⬜ Backlog |  |
-| [819](https://github.com/Kuestenlogik/Bowire/issues/819) | Bowire | [MCP discovery reports a fault for a tools-only server](#issue-kuestenlogik-bowire-819) | ⬜ Backlog |  |
 | [820](https://github.com/Kuestenlogik/Bowire/issues/820) | Bowire | [MCP tasks: answer sampling requests, by hand or with the configured model](#issue-kuestenlogik-bowire-820) | ⬜ Backlog |  |
 | [821](https://github.com/Kuestenlogik/Bowire/issues/821) | Bowire | [MCP tasks: answer input requests of 2025-11-25 tasks](#issue-kuestenlogik-bowire-821) | ⬜ Backlog |  |
 | [939](https://github.com/Kuestenlogik/Bowire/issues/939) | Bowire | [Import Yaak exports](#issue-kuestenlogik-bowire-939) | ⬜ Backlog |  |
@@ -161,6 +160,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [675](https://github.com/Kuestenlogik/Bowire/issues/675) | Bowire | [Data-driven collection runs: one iteration per CSV/JSON row](#issue-kuestenlogik-bowire-675) | ✅ Done | `area:cli` |
 | [676](https://github.com/Kuestenlogik/Bowire/issues/676) | Bowire | [JSONPath filter expressions in assertions, chaining and mock overrides](#issue-kuestenlogik-bowire-676) | ✅ Done | `area:workbench` |
 | [801](https://github.com/Kuestenlogik/Bowire/issues/801) | Bowire | [MCP Tasks, client side: discover, call and follow tasks of task-capable MCP servers](#issue-kuestenlogik-bowire-801) | ✅ Done |  |
+| [819](https://github.com/Kuestenlogik/Bowire/issues/819) | Bowire | [MCP discovery reports a fault for a tools-only server](#issue-kuestenlogik-bowire-819) | ✅ Done |  |
 | [941](https://github.com/Kuestenlogik/Bowire/issues/941) | Bowire | [JUnit XML from bowire test declares utf-16 but is written as UTF-8](#issue-kuestenlogik-bowire-941) | ✅ Done |  |
 | [942](https://github.com/Kuestenlogik/Bowire/issues/942) | Bowire | [Flaky: RecordingStore tests share a process-wide store path across parallel classes](#issue-kuestenlogik-bowire-942) | ✅ Done |  |
 | [943](https://github.com/Kuestenlogik/Bowire/issues/943) | Bowire | [Collection runner in the workbench reports a failed call as PASS](#issue-kuestenlogik-bowire-943) | ✅ Done |  |
@@ -818,10 +818,6 @@ Bowire's own MCP server (`bowire mcp serve`) answers agents with JSON. Some of w
 
 Once Bowire hosts MCP Apps (#810), the people building them need what Bowire offers for every other protocol: does the UI resource load, does the app behave, and is it safe? An app is third-party HTML running next to a model with tool access, so its CSP and permissions are a security surface that no … [[more]](https://github.com/Kuestenlogik/Bowire/issues/812)
 
-#### <a id="issue-kuestenlogik-bowire-819"></a>⬜ Backlog · [#819](https://github.com/Kuestenlogik/Bowire/issues/819) MCP discovery reports a fault for a tools-only server
-
-Discovering an MCP server that offers only tools (an SDK 2.2 server with `WithTools` and nothing else, stateless HTTP) reports a fault: [[more]](https://github.com/Kuestenlogik/Bowire/issues/819)
-
 #### <a id="issue-kuestenlogik-bowire-820"></a>⬜ Backlog · [#820](https://github.com/Kuestenlogik/Bowire/issues/820) MCP tasks: answer sampling requests, by hand or with the configured model
 
 An MCP server can ask its client to run a model completion for it — `sampling/createMessage`: the server borrows the client's LLM instead of holding its own model access, and the user stays in control of what the model sees. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/820)
@@ -873,6 +869,10 @@ Assertion paths today are plain traversal — `response.items.0.tags.2`. There i
 #### <a id="issue-kuestenlogik-bowire-801"></a>✅ Done · [#801](https://github.com/Kuestenlogik/Bowire/issues/801) MCP Tasks, client side: discover, call and follow tasks of task-capable MCP servers
 
 MCP Tasks let a server answer a long-running request with a durable handle instead of blocking: the client polls, answers mid-flight questions and fetches the result later, even after reconnecting. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/801)
+
+#### <a id="issue-kuestenlogik-bowire-819"></a>✅ Done · [#819](https://github.com/Kuestenlogik/Bowire/issues/819) MCP discovery reports a fault for a tools-only server
+
+Discovering an MCP server that offers only tools (an SDK 2.2 server with `WithTools` and nothing else, stateless HTTP) reports a fault: [[more]](https://github.com/Kuestenlogik/Bowire/issues/819)
 
 #### <a id="issue-kuestenlogik-bowire-941"></a>✅ Done · [#941](https://github.com/Kuestenlogik/Bowire/issues/941) JUnit XML from bowire test declares utf-16 but is written as UTF-8
 
