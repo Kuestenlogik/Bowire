@@ -76,7 +76,10 @@ internal static partial class ChunkedRecordingStore
     };
 
     private static readonly Lock DiskLock = new();
-    private static string? _testRootOverride;
+    // A test's root, for its async flow only (#944): two test classes running
+    // in parallel each see their own folder; a process-wide override let one
+    // class's root leak into the other's lookups.
+    private static readonly AsyncLocal<string?> s_testRootOverride = new();
 
     /// <summary>
     /// Root directory holding the chunked recordings. Resolves through
@@ -86,9 +89,15 @@ internal static partial class ChunkedRecordingStore
     /// </summary>
     internal static string RootPath
     {
-        get => _testRootOverride ?? BowireUserContext.GetUserPath("recordings");
-        set => _testRootOverride = value;
+        get => s_testRootOverride.Value ?? BowireUserContext.GetUserPath("recordings");
+        set => s_testRootOverride.Value = value;
     }
+
+    /// <summary>The test root of the calling async flow, or null.</summary>
+    internal static string? RootOverride => s_testRootOverride.Value;
+
+    /// <summary>Drop the calling flow's test root, back to the per-user folder.</summary>
+    internal static void ClearRootOverride() => s_testRootOverride.Value = null;
 
     /// <summary>
     /// Per-workspace root resolution (#144 Phase 1.6 / #116). When a
@@ -134,8 +143,9 @@ internal static partial class ChunkedRecordingStore
                 relativePath: "recordings");
         }
         if (string.IsNullOrEmpty(safeWorkspaceId)) return RootPath;
-        return _testRootOverride is not null
-            ? SafePath.Combine(_testRootOverride, Path.Combine("workspaces", safeWorkspaceId, "recordings"))
+        var testRoot = s_testRootOverride.Value;
+        return testRoot is not null
+            ? SafePath.Combine(testRoot, Path.Combine("workspaces", safeWorkspaceId, "recordings"))
             : BowireUserContext.GetUserPath(Path.Combine("workspaces", safeWorkspaceId, "recordings"));
     }
 

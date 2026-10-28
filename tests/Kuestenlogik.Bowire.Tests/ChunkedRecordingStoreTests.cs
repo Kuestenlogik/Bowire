@@ -42,16 +42,7 @@ public sealed class ChunkedRecordingStoreTests : IDisposable
             // The setter only accepts non-null; null out via reflection
             // — there's no public "clear" API. The override is internal
             // state so we treat it as best-effort.
-            try
-            {
-                typeof(ChunkedRecordingStore)
-                    .GetField("_testRootOverride", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)?
-                    .SetValue(null, null);
-            }
-            catch
-            {
-                // Best-effort; the next test sets its own override.
-            }
+            ChunkedRecordingStore.ClearRootOverride();
         }
         else
         {
@@ -62,19 +53,7 @@ public sealed class ChunkedRecordingStoreTests : IDisposable
         GC.SuppressFinalize(this);
     }
 
-    private static string? SafeGetRootOverride()
-    {
-        try
-        {
-            return typeof(ChunkedRecordingStore)
-                .GetField("_testRootOverride", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)?
-                .GetValue(null) as string;
-        }
-        catch
-        {
-            return null;
-        }
-    }
+    private static string? SafeGetRootOverride() => ChunkedRecordingStore.RootOverride;
 
     // ---------- LoadAll ----------
 

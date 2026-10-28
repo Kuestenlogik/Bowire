@@ -40,16 +40,7 @@ public sealed class WorkspaceStorageRootTests : IDisposable
         // collections.
         if (_originalOverride is null)
         {
-            try
-            {
-                typeof(ChunkedRecordingStore)
-                    .GetField("_testRootOverride", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)?
-                    .SetValue(null, null);
-            }
-            catch
-            {
-                // Best-effort.
-            }
+            ChunkedRecordingStore.ClearRootOverride();
         }
         else
         {
@@ -60,19 +51,7 @@ public sealed class WorkspaceStorageRootTests : IDisposable
         GC.SuppressFinalize(this);
     }
 
-    private static string? SafeGetRootOverride()
-    {
-        try
-        {
-            return typeof(ChunkedRecordingStore)
-                .GetField("_testRootOverride", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)?
-                .GetValue(null) as string;
-        }
-        catch
-        {
-            return null;
-        }
-    }
+    private static string? SafeGetRootOverride() => ChunkedRecordingStore.RootOverride;
 
     [Fact]
     public void ResolveRootPath_with_storageRoot_anchors_under_it_verbatim()
