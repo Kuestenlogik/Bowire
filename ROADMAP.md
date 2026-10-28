@@ -132,7 +132,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**4/23 done** · 19 backlog
+**4/24 done** · 20 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -155,6 +155,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [821](https://github.com/Kuestenlogik/Bowire/issues/821) | Bowire | [MCP tasks: answer input requests of 2025-11-25 tasks](#issue-kuestenlogik-bowire-821) | ⬜ Backlog |  |
 | [939](https://github.com/Kuestenlogik/Bowire/issues/939) | Bowire | [Import Yaak exports](#issue-kuestenlogik-bowire-939) | ⬜ Backlog |  |
 | [940](https://github.com/Kuestenlogik/Bowire/issues/940) | Bowire | [Verify the collection importers against real Insomnia and Bruno exports](#issue-kuestenlogik-bowire-940) | ⬜ Backlog |  |
+| [941](https://github.com/Kuestenlogik/Bowire/issues/941) | Bowire | [JUnit XML from bowire test declares utf-16 but is written as UTF-8](#issue-kuestenlogik-bowire-941) | ⬜ Backlog |  |
 | [673](https://github.com/Kuestenlogik/Bowire/issues/673) | Bowire | [Export requests as .http — Copy as .http, and bowire export http for a whole collection](#issue-kuestenlogik-bowire-673) | ✅ Done | `area:workbench` |
 | [674](https://github.com/Kuestenlogik/Bowire/issues/674) | Bowire | [Import from Insomnia, Bruno and .http, with a migration guide per source](#issue-kuestenlogik-bowire-674) | ✅ Done | `area:workbench` |
 | [676](https://github.com/Kuestenlogik/Bowire/issues/676) | Bowire | [JSONPath filter expressions in assertions, chaining and mock overrides](#issue-kuestenlogik-bowire-676) | ✅ Done | `area:workbench` |
@@ -837,6 +838,10 @@ Follow-up of #674, which shipped the Insomnia, Bruno and `.http` importers. Yaak
 #### <a id="issue-kuestenlogik-bowire-940"></a>⬜ Backlog · [#940](https://github.com/Kuestenlogik/Bowire/issues/940) Verify the collection importers against real Insomnia and Bruno exports
 
 Follow-up of #674. The importers were tested with fixtures written from the formats' specifications and schemas (Insomnia v4/v5, Bru, OpenCollection v1.0.0), not with files exported from the apps. [[more]](https://github.com/Kuestenlogik/Bowire/issues/940)
+
+#### <a id="issue-kuestenlogik-bowire-941"></a>⬜ Backlog · [#941](https://github.com/Kuestenlogik/Bowire/issues/941) JUnit XML from bowire test declares utf-16 but is written as UTF-8
+
+`bowire test --junit report.xml` writes a file that starts with `<?xml version="1.0" encoding="utf-16"?>`. The bytes on disk are UTF-8. A strict XML parser refuses the file; .NET's `XDocument.Load` fails with *There is no Unicode byte order mark. Cannot switch to Unicode*. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/941)
 
 #### <a id="issue-kuestenlogik-bowire-673"></a>✅ Done · [#673](https://github.com/Kuestenlogik/Bowire/issues/673) Export requests as .http — Copy as .http, and bowire export http for a whole collection
 
