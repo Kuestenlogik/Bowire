@@ -17,7 +17,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const scripts = resolve(__dirname, '../../../scripts/ci');
 const report = await import(pathToFileURL(join(scripts, 'report-issue-language.mjs')).href);
 const guard = await import(pathToFileURL(join(scripts, 'check-english.mjs')).href);
-const { MARKER, prose, commentBodies, flag, hasAsked, toAsk, commentBody, annotation } = report;
+const { MARKER, prose, commentBodies, flag, hasAsked, toAsk, commentBody, annotation, cell } = report;
 
 const germanTitle = 'Verbindung bricht ab, wenn der Proxy nicht erreichbar ist';
 const germanBody = 'Das passiert immer dann, wenn man die Einstellungen nicht speichert und das Fenster schliesst.';
@@ -137,5 +137,15 @@ describe('the messages', () => {
         const milestone = annotation({ kind: 'milestone', number: 1, title: 'v1, a: b', url: 'm', hits: [{ field: 'description', reason: 'r\nx' }] });
         assert.match(milestone, /^::warning title=Issue language%3A Milestone "v1%2C a%3A b"::/);
         assert.ok(milestone.includes('(r%0Ax)'));
+    });
+});
+
+describe('the summary table', () => {
+    it('escapes backslashes before pipes, so a cell cannot break out of its column', () => {
+        // A title ending in a backslash right before a pipe: escaping only the
+        // pipe would give \\| — an escaped backslash and a live column break.
+        assert.equal(cell('a\\|b'), 'a\\\\\\|b');
+        assert.equal(cell('plain'), 'plain');
+        assert.equal(cell('x|y'), 'x\\|y');
     });
 });

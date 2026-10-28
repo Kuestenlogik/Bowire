@@ -126,10 +126,16 @@ function describe(item) {
     return lines.join('\n');
 }
 
+// A Markdown table cell: escape backslashes first, then pipes, so a text
+// ending in a backslash cannot turn the escaped pipe back into a column break.
+export function cell(text) {
+    return text.replace(/\\/g, '\\\\').replace(/\|/g, '\\|');
+}
+
 function summary(flagged, asked) {
     if (!flagged.length) return '### Issue language report\n\nNo open issue or milestone reads as German.\n';
-    const rows = flagged.map(f => `| ${f.kind === 'issue' ? `[#${f.number}](${f.url})` : `[${f.title.replace(/\|/g, '\\|')}](${f.url})`} `
-        + `| ${fieldList(f)} | ${f.hits[0].reason.replace(/\|/g, '\\|')} | ${asked.has(f.number) && f.kind === 'issue' ? 'yes' : ''} |`);
+    const rows = flagged.map(f => `| ${f.kind === 'issue' ? `[#${f.number}](${f.url})` : `[${cell(f.title)}](${f.url})`} `
+        + `| ${fieldList(f)} | ${cell(f.hits[0].reason)} | ${asked.has(f.number) && f.kind === 'issue' ? 'yes' : ''} |`);
     return ['### Issue language report', '', `${flagged.length} open issue(s) or milestone(s) read as German.`, '',
         '| Where | Field | Why | Asked |', '|---|---|---|---|', ...rows, ''].join('\n');
 }

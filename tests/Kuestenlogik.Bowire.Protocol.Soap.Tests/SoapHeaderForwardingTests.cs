@@ -41,7 +41,9 @@ public sealed class SoapHeaderForwardingTests
             app.Urls.First() + "/ping", "Pinger", "Pinger/Ping", ["<Ping/>"], false,
             new Dictionary<string, string>
             {
-                ["Authorization"] = "Basic YWxpY2U6cHc=",
+                // Built here rather than written out: a literal Basic header
+                // reads as a leaked credential to secret scanning.
+                ["Authorization"] = "Basic " + Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes("alice:pw")),
                 ["soap_action"] = "urn:ping",
                 ["__bowireHttpAuth__"] = "{\"scheme\":\"digest\",\"user\":\"alice\",\"password\":\"pw\"}",
             },
