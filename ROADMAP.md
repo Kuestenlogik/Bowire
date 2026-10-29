@@ -132,7 +132,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**12/29 done** · 17 backlog
+**13/29 done** · 16 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -149,7 +149,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [811](https://github.com/Kuestenlogik/Bowire/issues/811) | Bowire | [MCP Apps, server side: Bowire's MCP tools answer with apps (test run first)](#issue-kuestenlogik-bowire-811) | ⬜ Backlog |  |
 | [812](https://github.com/Kuestenlogik/Bowire/issues/812) | Bowire | [MCP Apps in testing and security: assert on apps, record their traffic, scan their CSP](#issue-kuestenlogik-bowire-812) | ⬜ Backlog |  |
 | [820](https://github.com/Kuestenlogik/Bowire/issues/820) | Bowire | [MCP tasks: answer sampling requests, by hand or with the configured model](#issue-kuestenlogik-bowire-820) | ⬜ Backlog |  |
-| [821](https://github.com/Kuestenlogik/Bowire/issues/821) | Bowire | [MCP tasks: answer input requests of 2025-11-25 tasks](#issue-kuestenlogik-bowire-821) | ⬜ Backlog |  |
 | [939](https://github.com/Kuestenlogik/Bowire/issues/939) | Bowire | [Import Yaak exports](#issue-kuestenlogik-bowire-939) | ⬜ Backlog |  |
 | [940](https://github.com/Kuestenlogik/Bowire/issues/940) | Bowire | [Verify the collection importers against real Insomnia and Bruno exports](#issue-kuestenlogik-bowire-940) | ⬜ Backlog |  |
 | [946](https://github.com/Kuestenlogik/Bowire/issues/946) | Bowire | [Data sets for flow runs and bowire test --workspace](#issue-kuestenlogik-bowire-946) | ⬜ Backlog |  |
@@ -160,6 +159,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [801](https://github.com/Kuestenlogik/Bowire/issues/801) | Bowire | [MCP Tasks, client side: discover, call and follow tasks of task-capable MCP servers](#issue-kuestenlogik-bowire-801) | ✅ Done |  |
 | [802](https://github.com/Kuestenlogik/Bowire/issues/802) | Bowire | [MCP Tasks, server side: run long Bowire MCP tools (bowire.test.run first) as durable tasks](#issue-kuestenlogik-bowire-802) | ✅ Done |  |
 | [819](https://github.com/Kuestenlogik/Bowire/issues/819) | Bowire | [MCP discovery reports a fault for a tools-only server](#issue-kuestenlogik-bowire-819) | ✅ Done |  |
+| [821](https://github.com/Kuestenlogik/Bowire/issues/821) | Bowire | [MCP tasks: answer input requests of 2025-11-25 tasks](#issue-kuestenlogik-bowire-821) | ✅ Done |  |
 | [941](https://github.com/Kuestenlogik/Bowire/issues/941) | Bowire | [JUnit XML from bowire test declares utf-16 but is written as UTF-8](#issue-kuestenlogik-bowire-941) | ✅ Done |  |
 | [942](https://github.com/Kuestenlogik/Bowire/issues/942) | Bowire | [Flaky: RecordingStore tests share a process-wide store path across parallel classes](#issue-kuestenlogik-bowire-942) | ✅ Done |  |
 | [943](https://github.com/Kuestenlogik/Bowire/issues/943) | Bowire | [Collection runner in the workbench reports a failed call as PASS](#issue-kuestenlogik-bowire-943) | ✅ Done |  |
@@ -818,10 +818,6 @@ Once Bowire hosts MCP Apps (#810), the people building them need what Bowire off
 
 An MCP server can ask its client to run a model completion for it — `sampling/createMessage`: the server borrows the client's LLM instead of holding its own model access, and the user stays in control of what the model sees. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/820)
 
-#### <a id="issue-kuestenlogik-bowire-821"></a>⬜ Backlog · [#821](https://github.com/Kuestenlogik/Bowire/issues/821) MCP tasks: answer input requests of 2025-11-25 tasks
-
-Since #801 Bowire follows tasks of the 2025-11-25 core shape — create, poll, `tasks/result`, cancel — but cannot answer their input requests. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/821)
-
 #### <a id="issue-kuestenlogik-bowire-939"></a>⬜ Backlog · [#939](https://github.com/Kuestenlogik/Bowire/issues/939) Import Yaak exports
 
 Follow-up of #674, which shipped the Insomnia, Bruno and `.http` importers. Yaak was left out there because it did not fit the "only if small" bar. [[more]](https://github.com/Kuestenlogik/Bowire/issues/939)
@@ -869,6 +865,10 @@ Bowire's own MCP server (`bowire mcp serve`, the workbench tools for agents) ans
 #### <a id="issue-kuestenlogik-bowire-819"></a>✅ Done · [#819](https://github.com/Kuestenlogik/Bowire/issues/819) MCP discovery reports a fault for a tools-only server
 
 Discovering an MCP server that offers only tools (an SDK 2.2 server with `WithTools` and nothing else, stateless HTTP) reports a fault: [[more]](https://github.com/Kuestenlogik/Bowire/issues/819)
+
+#### <a id="issue-kuestenlogik-bowire-821"></a>✅ Done · [#821](https://github.com/Kuestenlogik/Bowire/issues/821) MCP tasks: answer input requests of 2025-11-25 tasks
+
+Since #801 Bowire follows tasks of the 2025-11-25 core shape — create, poll, `tasks/result`, cancel — but cannot answer their input requests. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/821)
 
 #### <a id="issue-kuestenlogik-bowire-941"></a>✅ Done · [#941](https://github.com/Kuestenlogik/Bowire/issues/941) JUnit XML from bowire test declares utf-16 but is written as UTF-8
 
