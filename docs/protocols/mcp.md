@@ -328,7 +328,8 @@ Bowire's MCP server advertises the tasks extension (`io.modelcontextprotocol/tas
 - **Progress.** The task's status message names the step it is on, for example `step 3/12 · Get user (iteration 2/5)`.
 - **Cancellation** is cooperative: the run stops before its next step, and the task ends as `cancelled`.
 - **Durability.** Tasks are kept in `~/.bowire/mcp-tasks/` (`TaskStorePath` in `BowireMcpOptions`), so a client that disconnects or restarts gets the result with the same task id. A result is kept for 24 hours. A task that was still running when the server stopped is reported as failed, with that reason.
-- **Other clients.** A client without the extension, and every other tool, keeps getting the synchronous answer.
+- **Confirmations.** `bowire.mock.start` and `bowire.record.start` run as tasks too. Inside a task, their confirmation is an elicitation rather than a second call. The task turns `input_required` with a yes/no question that names the plan; the client answers through `tasks/update`; the run then goes on, or ends with `{ "confirmed": false, "action": "decline" }`. `confirm: true` or a confirmation token still skips the question. A client that cannot answer an elicitation gets the token, as before.
+- **Other clients.** A client without the extension, and every other tool, keeps getting the synchronous answer, the two-step token included.
 
 ### Resource surface (roles 3 + 4)
 

@@ -67,11 +67,11 @@ public sealed class BowireMcpRecordSessionTests : IAsyncDisposable
     // ----------- record.start -----------
 
     [Fact]
-    public void RecordStart_Starts_Session_When_Confirm_True()
+    public async Task RecordStart_Starts_Session_When_Confirm_True()
     {
         var (tools, session, _) = BuildTools();
 
-        var json = tools.RecordStart(workspaceId: "ws-1", name: "alpha", confirm: true);
+        var json = await tools.RecordStart(workspaceId: "ws-1", name: "alpha", confirm: true, ct: TestContext.Current.CancellationToken);
 
         using var doc = JsonDocument.Parse(json);
         Assert.True(doc.RootElement.GetProperty("started").GetBoolean());
@@ -91,20 +91,20 @@ public sealed class BowireMcpRecordSessionTests : IAsyncDisposable
     [InlineData("replay", BowireRecordingMode.Replay)]
     [InlineData("bogus", BowireRecordingMode.Capture)] // unknown falls back to capture
     [InlineData(null, BowireRecordingMode.Capture)]
-    public void RecordStart_ParsesMode(string? mode, BowireRecordingMode expected)
+    public async Task RecordStart_ParsesMode(string? mode, BowireRecordingMode expected)
     {
         var (tools, session, _) = BuildTools();
-        _ = tools.RecordStart(workspaceId: "ws", mode: mode, confirm: true);
+        _ = await tools.RecordStart(workspaceId: "ws", mode: mode, confirm: true, ct: TestContext.Current.CancellationToken);
         Assert.NotNull(session.Active);
         Assert.Equal(expected, session.Active!.Mode);
     }
 
     [Fact]
-    public void RecordStart_Confirmation_Gate_Returns_Pending_Token()
+    public async Task RecordStart_Confirmation_Gate_Returns_Pending_Token()
     {
         var (tools, _, _) = BuildTools(requireConfirmation: true);
 
-        var json = tools.RecordStart(workspaceId: "ws", name: "alpha");
+        var json = await tools.RecordStart(workspaceId: "ws", name: "alpha", ct: TestContext.Current.CancellationToken);
 
         using var doc = JsonDocument.Parse(json);
         Assert.True(doc.RootElement.GetProperty("pending").GetBoolean());
@@ -113,15 +113,15 @@ public sealed class BowireMcpRecordSessionTests : IAsyncDisposable
     }
 
     [Fact]
-    public void RecordStart_Confirmation_Token_Redeems_Pending_Call()
+    public async Task RecordStart_Confirmation_Token_Redeems_Pending_Call()
     {
         var (tools, session, confirmations) = BuildTools(requireConfirmation: true);
 
-        var first = tools.RecordStart(workspaceId: "ws", name: "alpha");
+        var first = await tools.RecordStart(workspaceId: "ws", name: "alpha", ct: TestContext.Current.CancellationToken);
         using var firstDoc = JsonDocument.Parse(first);
         var token = firstDoc.RootElement.GetProperty("confirmationToken").GetString();
 
-        var second = tools.RecordStart(workspaceId: "ws", name: "alpha", confirmationToken: token);
+        var second = await tools.RecordStart(workspaceId: "ws", name: "alpha", confirmationToken: token, ct: TestContext.Current.CancellationToken);
         using var secondDoc = JsonDocument.Parse(second);
 
         Assert.True(secondDoc.RootElement.GetProperty("started").GetBoolean());
@@ -130,12 +130,12 @@ public sealed class BowireMcpRecordSessionTests : IAsyncDisposable
     }
 
     [Fact]
-    public void RecordStart_When_Session_Already_Active_Returns_Error()
+    public async Task RecordStart_When_Session_Already_Active_Returns_Error()
     {
         var (tools, _, _) = BuildTools();
-        _ = tools.RecordStart(workspaceId: "ws", confirm: true);
+        _ = await tools.RecordStart(workspaceId: "ws", confirm: true, ct: TestContext.Current.CancellationToken);
 
-        var second = tools.RecordStart(workspaceId: "ws", confirm: true);
+        var second = await tools.RecordStart(workspaceId: "ws", confirm: true, ct: TestContext.Current.CancellationToken);
         using var doc = JsonDocument.Parse(second);
         Assert.False(doc.RootElement.GetProperty("started").GetBoolean());
         Assert.Contains("already active",
@@ -157,10 +157,10 @@ public sealed class BowireMcpRecordSessionTests : IAsyncDisposable
     }
 
     [Fact]
-    public void RecordStop_Flushes_Active_Session_To_Recordings_Json()
+    public async Task RecordStop_Flushes_Active_Session_To_Recordings_Json()
     {
         var (tools, session, _) = BuildTools();
-        _ = tools.RecordStart(workspaceId: "ws", name: "alpha", confirm: true);
+        _ = await tools.RecordStart(workspaceId: "ws", name: "alpha", confirm: true, ct: TestContext.Current.CancellationToken);
         // Inject a step directly through the session so we can verify
         // the recording lands on disk.
         session.AppendStep(new Kuestenlogik.Bowire.Mocking.BowireRecordingStep
@@ -182,7 +182,7 @@ public sealed class BowireMcpRecordSessionTests : IAsyncDisposable
         // wrapper shape.
         var path = Path.Combine(_tempHome, ".bowire", "recordings.json");
         Assert.True(File.Exists(path));
-        using var disk = JsonDocument.Parse(File.ReadAllText(path));
+        using var disk = JsonDocument.Parse(await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
         var recordings = disk.RootElement.GetProperty("recordings");
         Assert.Equal(1, recordings.GetArrayLength());
         Assert.Equal("alpha", recordings[0].GetProperty("name").GetString());
@@ -228,10 +228,10 @@ public sealed class BowireMcpRecordSessionTests : IAsyncDisposable
     }
 
     [Fact]
-    public void RecordReplay_Switches_Existing_Capture_Session_Into_Replay()
+    public async Task RecordReplay_Switches_Existing_Capture_Session_Into_Replay()
     {
         var (tools, session, _) = BuildTools();
-        _ = tools.RecordStart(workspaceId: "ws", confirm: true);
+        _ = await tools.RecordStart(workspaceId: "ws", confirm: true, ct: TestContext.Current.CancellationToken);
         var originalRecordingId = session.Active!.RecordingId;
 
         var json = tools.RecordReplay(workspaceId: "ws", recordingId: originalRecordingId, confirm: true);
@@ -243,10 +243,10 @@ public sealed class BowireMcpRecordSessionTests : IAsyncDisposable
     }
 
     [Fact]
-    public void RecordReplay_Of_Another_Recording_While_A_Session_Is_Active_Is_Refused()
+    public async Task RecordReplay_Of_Another_Recording_While_A_Session_Is_Active_Is_Refused()
     {
         var (tools, session, _) = BuildTools();
-        _ = tools.RecordStart(workspaceId: "ws", confirm: true);
+        _ = await tools.RecordStart(workspaceId: "ws", confirm: true, ct: TestContext.Current.CancellationToken);
         var originalRecordingId = session.Active!.RecordingId;
 
         var json = tools.RecordReplay(workspaceId: "ws", recordingId: "rec_other", confirm: true);
@@ -262,12 +262,12 @@ public sealed class BowireMcpRecordSessionTests : IAsyncDisposable
     }
 
     [Fact]
-    public void RecordStop_Keeps_The_Session_When_Recordings_Json_Is_Not_The_Store_Layout()
+    public async Task RecordStop_Keeps_The_Session_When_Recordings_Json_Is_Not_The_Store_Layout()
     {
         var path = Path.Combine(_tempHome, ".bowire", "recordings.json");
-        File.WriteAllText(path, """[{"id":"r-old","steps":[]}]""");
+        await File.WriteAllTextAsync(path, """[{"id":"r-old","steps":[]}]""", TestContext.Current.CancellationToken);
         var (tools, session, _) = BuildTools();
-        _ = tools.RecordStart(workspaceId: "ws", name: "alpha", confirm: true);
+        _ = await tools.RecordStart(workspaceId: "ws", name: "alpha", confirm: true, ct: TestContext.Current.CancellationToken);
         session.AppendStep(new Kuestenlogik.Bowire.Mocking.BowireRecordingStep { Id = "s1", Service = "Foo", Method = "Bar" });
 
         using var doc = JsonDocument.Parse(tools.RecordStop(confirm: true));
@@ -279,12 +279,12 @@ public sealed class BowireMcpRecordSessionTests : IAsyncDisposable
         Assert.Contains("recordings.json", doc.RootElement.GetProperty("error").GetString(), StringComparison.Ordinal);
         Assert.NotNull(session.Active);
         Assert.Equal(1, session.Active!.StepCount);
-        Assert.Equal("""[{"id":"r-old","steps":[]}]""", File.ReadAllText(path));
+        Assert.Equal("""[{"id":"r-old","steps":[]}]""", await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
 
-        File.WriteAllText(path, """{"recordings":[]}""");
+        await File.WriteAllTextAsync(path, """{"recordings":[]}""", TestContext.Current.CancellationToken);
         using var retry = JsonDocument.Parse(tools.RecordStop(confirm: true));
         Assert.True(retry.RootElement.GetProperty("stopped").GetBoolean());
-        using var disk = JsonDocument.Parse(File.ReadAllText(path));
+        using var disk = JsonDocument.Parse(await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
         Assert.Equal("alpha", disk.RootElement.GetProperty("recordings")[0].GetProperty("name").GetString());
     }
 

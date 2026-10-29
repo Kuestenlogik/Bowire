@@ -14,6 +14,7 @@ using Kuestenlogik.Bowire.Recording;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using ModelContextProtocol.Server;
+using ModelContextProtocol.Protocol;
 
 namespace Kuestenlogik.Bowire.Mcp;
 
@@ -930,6 +931,7 @@ public sealed class BowireMcpTools
         [Description("Listen host. Default 'localhost'.")] string host = "localhost",
         [Description("Skip the pending-confirmation step. Equivalent to passing the confirmationToken from a prior call.")] bool confirm = false,
         [Description("Confirmation token returned by a prior pending call. Either this or confirm=true is required when RequireConfirmationForMutations is enabled.")] string? confirmationToken = null,
+        McpServer? server = null,
         CancellationToken ct = default)
     {
         var sources = new[] { recording, schema, grpcSchema, graphqlSchema }.Count(s => !string.IsNullOrEmpty(s));
@@ -943,8 +945,8 @@ public sealed class BowireMcpTools
         // on, the first call parks a plan and asks for a second-step
         // confirmation.
         var plan = $"Start a mock server on {host}:{port} backed by {recording ?? schema ?? grpcSchema ?? graphqlSchema}.";
-        if (TryConfirmOrPark("bowire.mock.start", plan, confirm, confirmationToken, out var pendingResponse))
-            return pendingResponse!;
+        if (await ConfirmOrParkAsync(server, "bowire.mock.start", plan, confirm, confirmationToken, ct).ConfigureAwait(false) is { } pendingResponse)
+            return pendingResponse;
 
         var options = new MockServerOptions
         {
@@ -958,14 +960,14 @@ public sealed class BowireMcpTools
 
         try
         {
-            var server = await MockServer.StartAsync(options, ct).ConfigureAwait(false);
-            var handle = _mockHandles.Register(server);
+            var mock = await MockServer.StartAsync(options, ct).ConfigureAwait(false);
+            var handle = _mockHandles.Register(mock);
             return JsonSerializer.Serialize(new
             {
                 handle,
-                port = server.Port,
+                port = mock.Port,
                 host,
-                url = $"http://{host}:{server.Port}",
+                url = $"http://{host}:{mock.Port}",
                 source = recording ?? schema ?? grpcSchema ?? graphqlSchema
             }, JsonOpts);
         }
@@ -1002,18 +1004,20 @@ public sealed class BowireMcpTools
 
     [McpServerTool(Name = "bowire.record.start")]
     [Description("Begin a new server-side recording (#285). Subsequent capture-mode invocations on the same workspace land in the buffer until bowire.record.stop. Two-step by default: the first call returns { pending, confirmationToken, plan }; re-invoke with confirm=true or pass the token back. Mode: capture (default, record live invokes), proxy (record proxied flows), replay (drive replay from a pre-existing recording). One active session per process — start fails with a 409-equivalent message when a session is already open.")]
-    public string RecordStart(
+    public async Task<string> RecordStart(
         [Description("Workspace id the recording is scoped under. Empty string accepted for legacy unscoped workspaces.")] string? workspaceId = null,
         [Description("Mode: capture, proxy, or replay. Default capture.")] string? mode = null,
         [Description("Optional human-readable recording name. Defaults to \"Untitled recording\".")] string? name = null,
         [Description("Optional pre-existing recording id (replay scenarios). When null, a fresh rec_* id is generated.")] string? recordingId = null,
         [Description("Skip the pending-confirmation step.")] bool confirm = false,
-        [Description("Confirmation token returned by a prior pending call.")] string? confirmationToken = null)
+        [Description("Confirmation token returned by a prior pending call.")] string? confirmationToken = null,
+        McpServer? server = null,
+        CancellationToken ct = default)
     {
         var resolvedMode = ParseMode(mode);
         var plan = $"Start a {ModeWireName(resolvedMode)} recording named \"{name ?? "Untitled recording"}\" on workspace \"{workspaceId ?? "(unscoped)"}\".";
-        if (TryConfirmOrPark("bowire.record.start", plan, confirm, confirmationToken, out var pendingResponse))
-            return pendingResponse!;
+        if (await ConfirmOrParkAsync(server, "bowire.record.start", plan, confirm, confirmationToken, ct).ConfigureAwait(false) is { } pendingResponse)
+            return pendingResponse;
 
         try
         {
@@ -1280,6 +1284,55 @@ public sealed class BowireMcpTools
 
     private static bool IsKnownAssertOp(string op) =>
         Array.IndexOf(KnownAssertOps, op) >= 0;
+
+    /// <summary>
+    /// #802 — the confirm gate for a mutator tool that may run as an MCP
+    /// task. Inside a task, without <c>confirm</c> or a token, it asks the
+    /// agent's user through an elicitation: the task turns
+    /// <c>input_required</c>, the client answers with <c>tasks/update</c>,
+    /// and the run goes on or ends declined. Outside a task, or when the
+    /// client cannot answer an elicitation, it is the two-step token gate of
+    /// <see cref="TryConfirmOrPark"/>. Returns the response to send instead
+    /// of executing, or null when the call may execute.
+    /// </summary>
+    private async Task<string?> ConfirmOrParkAsync(
+        McpServer? server, string kind, string plan, bool confirm, string? confirmationToken, CancellationToken ct)
+    {
+        var asTask = server is not null && Tasks.BowireMcpTaskStore.CurrentTaskId is not null;
+        if (asTask && _options.RequireConfirmationForMutations && !confirm && string.IsNullOrWhiteSpace(confirmationToken))
+        {
+            try
+            {
+                var answer = await server!.ElicitAsync(new ElicitRequestParams
+                {
+                    Message = $"{kind}: {plan} Go ahead?",
+                    RequestedSchema = new()
+                    {
+                        Properties = new Dictionary<string, ElicitRequestParams.PrimitiveSchemaDefinition>
+                        {
+                            ["confirm"] = new ElicitRequestParams.BooleanSchema { Description = "true to go ahead." },
+                        },
+                        Required = ["confirm"],
+                    },
+                }, ct).ConfigureAwait(false);
+
+                if (answer.IsAccepted
+                    && answer.Content?.TryGetValue("confirm", out var value) == true
+                    && value.ValueKind == JsonValueKind.True)
+                {
+                    return null;
+                }
+                return JsonSerializer.Serialize(new { confirmed = false, kind, plan, action = answer.Action }, JsonOpts);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                // No elicitation on this path; the token gate still holds.
+                if (_logger.IsEnabled(LogLevel.Debug))
+                    _logger.LogDebug(ex, "Elicitation for {Kind} failed; falling back to the confirmation token", kind);
+            }
+        }
+        return TryConfirmOrPark(kind, plan, confirm, confirmationToken, out var pending) ? pending : null;
+    }
 
     /// <summary>
     /// Two-step confirm gate for mutator tools. Returns <see langword="true"/>

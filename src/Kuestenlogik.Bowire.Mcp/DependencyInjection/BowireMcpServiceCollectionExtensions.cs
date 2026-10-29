@@ -182,8 +182,11 @@ public static class BowireMcpServiceCollectionExtensions
         configure?.Invoke(storeOptions);
         var taskStore = new Tasks.BowireMcpTaskStore(storeOptions.TaskStorePath);
         services.AddSingleton(taskStore);
+        // The mutators bowire.mock.start / bowire.record.start run as tasks
+        // too: inside one, their confirmation is an elicitation the client
+        // answers through tasks/update instead of a second call.
         builder.WithTasks(taskStore, o => o.ExecutionModeSelector = ctx =>
-            ctx.Params?.Name == Tasks.BowireMcpTestTools.TestRunName
+            ctx.Params?.Name is { } name && Tasks.BowireMcpTestTools.TaskToolNames.Contains(name)
                 ? McpTaskExecutionMode.Optional
                 : McpTaskExecutionMode.Synchronous);
 

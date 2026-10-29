@@ -409,7 +409,7 @@ public sealed class BowireMcpIssue37Tests : IAsyncDisposable
     }
 
     [Fact]
-    public void RecordStart_With_Confirmation_Required_Returns_Pending_Token()
+    public async Task RecordStart_With_Confirmation_Required_Returns_Pending_Token()
     {
         var options = new BowireMcpOptions
         {
@@ -418,7 +418,7 @@ public sealed class BowireMcpIssue37Tests : IAsyncDisposable
         };
         var tools = BuildTools(options);
 
-        var json = tools.RecordStart(name: "my-rec");
+        var json = await tools.RecordStart(name: "my-rec", ct: TestContext.Current.CancellationToken);
 
         using var doc = JsonDocument.Parse(json);
         Assert.True(doc.RootElement.GetProperty("pending").GetBoolean());

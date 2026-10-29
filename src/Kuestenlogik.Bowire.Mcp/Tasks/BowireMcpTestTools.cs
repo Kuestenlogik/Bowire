@@ -21,6 +21,14 @@ public sealed class BowireMcpTestTools
     /// <summary>The tool's name, also what the task selector matches.</summary>
     public const string TestRunName = "bowire.test.run";
 
+    /// <summary>
+    /// The tools that run as an MCP task for a client that declares the
+    /// extension: the long run, and the two mutators whose confirmation
+    /// becomes an elicitation inside the task.
+    /// </summary>
+    public static readonly IReadOnlySet<string> TaskToolNames =
+        new HashSet<string>(StringComparer.Ordinal) { TestRunName, "bowire.mock.start", "bowire.record.start" };
+
     private static readonly JsonSerializerOptions s_json = new() { WriteIndented = true, PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
 
     [McpServerTool(Name = TestRunName)]

@@ -249,7 +249,7 @@ public class BowireMcpToolsTests : IAsyncDisposable
     }
 
     [Fact]
-    public void ConfirmationToken_Issued_For_Another_Tool_Is_Refused()
+    public async Task ConfirmationToken_Issued_For_Another_Tool_Is_Refused()
     {
         var options = new BowireMcpOptions
         {
@@ -258,7 +258,7 @@ public class BowireMcpToolsTests : IAsyncDisposable
         };
         var tools = BuildTools(options: options);
 
-        using var pending = JsonDocument.Parse(tools.RecordStart(workspaceId: "ws", name: "n"));
+        using var pending = JsonDocument.Parse(await tools.RecordStart(workspaceId: "ws", name: "n", ct: TestContext.Current.CancellationToken));
         var token = pending.RootElement.GetProperty("confirmationToken").GetString();
 
         using var doc = JsonDocument.Parse(tools.RecordReplay(
@@ -518,13 +518,13 @@ public class BowireMcpToolsTests : IAsyncDisposable
     }
 
     [Fact]
-    public void RecordStart_Opens_Session_When_Confirm_True()
+    public async Task RecordStart_Opens_Session_When_Confirm_True()
     {
         // #285 — record.start now actually starts a session. Two-step
         // confirmation gate is exercised in BowireMcpRecordSessionTests
         // (this suite leaves RequireConfirmationForMutations off).
         var tools = BuildTools();
-        var result = tools.RecordStart(workspaceId: "ws-1", name: "my-recording", confirm: true);
+        var result = await tools.RecordStart(workspaceId: "ws-1", name: "my-recording", confirm: true, ct: TestContext.Current.CancellationToken);
         using var doc = JsonDocument.Parse(result);
         Assert.True(doc.RootElement.GetProperty("started").GetBoolean());
         Assert.Equal("ws-1", doc.RootElement.GetProperty("workspaceId").GetString());

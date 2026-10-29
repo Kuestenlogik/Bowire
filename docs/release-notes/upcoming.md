@@ -49,7 +49,7 @@ Its browser and CLI implementations are held to one shared test fixture. A path 
 
 ### `bowire.test.run`: test runs for agents, as MCP tasks (#802, #945)
 
-Agents can run a test collection or flow through Bowire's MCP server, as `bowire test` does, with an optional data set. A client that declares the MCP tasks extension gets a durable task: the status names the current step, `tasks/cancel` stops the run before its next step, and the result is kept for 24 hours under `~/.bowire/mcp-tasks/`, so a reconnecting agent gets it with the same task id. Clients without the extension get the synchronous answer, as before.
+Agents can run a test collection or flow through Bowire's MCP server, as `bowire test` does, with an optional data set. A client that declares the MCP tasks extension gets a durable task: the status names the current step, `tasks/cancel` stops the run before its next step, and the result is kept for 24 hours under `~/.bowire/mcp-tasks/`, so a reconnecting agent gets it with the same task id. Clients without the extension get the synchronous answer, as before. For task-capable clients, the confirmation of `bowire.mock.start` and `bowire.record.start` becomes an elicitation inside the task (`input_required`, answered through `tasks/update`) instead of a second call with a token.
 
 ## Breaking changes
 
