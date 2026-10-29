@@ -291,7 +291,7 @@ public sealed partial class BowireMcpProtocol : IBowireProtocol, Kuestenlogik.Bo
                     "Tools" => await CallToolAsync(client, serverUrl, method, jsonMessages, ct).ConfigureAwait(false),
                     "Resources" => await ReadResourceAsync(client, method, ct).ConfigureAwait(false),
                     "Prompts" => await GetPromptAsync(client, method, jsonMessages, ct).ConfigureAwait(false),
-                    McpTaskService.ServiceName => await McpTaskService.InvokeAsync(client, method, jsonMessages, ct).ConfigureAwait(false),
+                    McpTaskService.ServiceName => await _tasks.InvokeAsync(client, NormalizeUrl(serverUrl), method, jsonMessages, ct).ConfigureAwait(false),
                     _ => throw new InvalidOperationException(
                         $"MCP service '{service}' is not supported. Use 'Tools', 'Resources', 'Prompts', or 'Tasks'."),
                 };
@@ -406,7 +406,10 @@ public sealed partial class BowireMcpProtocol : IBowireProtocol, Kuestenlogik.Bo
             {
                 try
                 {
-                    var dialect = await _tasks.ForToolAsync(client, NormalizeUrl(serverUrl), method, ct).ConfigureAwait(false);
+                    // A 2025-11-25 task asks its questions on a connection
+                    // of its own (#821); this is how the follow opens it.
+                    var dialect = await _tasks.ForToolAsync(client, NormalizeUrl(serverUrl), method, ct,
+                        (options, token) => CreateClientAsync(serverUrl, metadata, token, options)).ConfigureAwait(false);
                     if (dialect is not null)
                     {
                         await RunToolAsTaskAsync(client, dialect, method, jsonMessages, frames.Writer, ct).ConfigureAwait(false);
@@ -479,7 +482,7 @@ public sealed partial class BowireMcpProtocol : IBowireProtocol, Kuestenlogik.Bo
     }
 
     /// <summary><c>Tasks/follow</c>: pick a task up by id — after a reload, or from the CLI.</summary>
-    private static async IAsyncEnumerable<string> FollowTaskAsync(
+    private async IAsyncEnumerable<string> FollowTaskAsync(
         string serverUrl, List<string> jsonMessages, Dictionary<string, string>? metadata,
         [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct)
     {
@@ -495,7 +498,8 @@ public sealed partial class BowireMcpProtocol : IBowireProtocol, Kuestenlogik.Bo
 
         await using (client)
         {
-            var steps = McpTaskService.FollowAsync(client, jsonMessages, ct).GetAsyncEnumerator(ct);
+            var steps = _tasks.FollowAsync(client, NormalizeUrl(serverUrl),
+                (options, token) => CreateClientAsync(serverUrl, metadata, token, options), jsonMessages, ct).GetAsyncEnumerator(ct);
             try
             {
                 while (true)
@@ -606,7 +610,8 @@ public sealed partial class BowireMcpProtocol : IBowireProtocol, Kuestenlogik.Bo
     private static async Task<McpClient> CreateClientAsync(
         string serverUrl,
         Dictionary<string, string>? metadata,
-        CancellationToken ct)
+        CancellationToken ct,
+        McpClientOptions? clientOptions = null)
     {
         var options = new HttpClientTransportOptions
         {
@@ -644,7 +649,7 @@ public sealed partial class BowireMcpProtocol : IBowireProtocol, Kuestenlogik.Bo
 #pragma warning restore CA2000
         try
         {
-            return await McpClient.CreateAsync(transport, cancellationToken: ct).ConfigureAwait(false);
+            return await McpClient.CreateAsync(transport, clientOptions, cancellationToken: ct).ConfigureAwait(false);
         }
         catch
         {
@@ -817,8 +822,10 @@ public sealed partial class BowireMcpProtocol : IBowireProtocol, Kuestenlogik.Bo
                 // Nobody here can answer: say how to, and leave the task be.
                 if (step.State is { Status: McpTaskStatuses.InputRequired })
                 {
-                    throw new InvalidOperationException(
-                        $"Task '{created.TaskId}' needs input. Answer it with Tasks/update and follow it with Tasks/follow, using that taskId.");
+                    // #821 — a 2025-11-25 question reaches only a follow, so that comes first there.
+                    throw new InvalidOperationException(dialect.Shape == McpTaskShapes.Legacy
+                        ? $"Task '{created.TaskId}' needs input. Follow it with Tasks/follow, using that taskId, and answer with Tasks/update while the follow runs."
+                        : $"Task '{created.TaskId}' needs input. Answer it with Tasks/update and follow it with Tasks/follow, using that taskId.");
                 }
             }
             return last.Kind switch

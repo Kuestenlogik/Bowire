@@ -19,7 +19,9 @@ namespace Kuestenlogik.Bowire.Protocol.Mcp.Tests;
 /// A task server written against the wire, for what an SDK-built server
 /// cannot be made to do (#801): the 2025-11-25 task shape, which SDK 2.2.0
 /// no longer models; a <c>subscriptions/listen</c> that agrees to push a
-/// task's status; a TTL the server lets lapse; a task it has purged.
+/// task's status; a TTL the server lets lapse; a task it has purged; a
+/// 2025-11-25 task that asks its question as an <c>elicitation/create</c>
+/// on <c>tasks/result</c> (#821).
 /// </summary>
 /// <remarks>
 /// Every task starts <c>working</c> and stays there until the test moves
@@ -59,6 +61,17 @@ internal sealed class FakeTaskServer : IAsyncDisposable
 
     /// <summary>The inputResponses of every tasks/update.</summary>
     public ConcurrentQueue<JsonObject> Updates { get; } = new();
+
+    /// <summary>The client capabilities of every initialize, in order.</summary>
+    public ConcurrentQueue<JsonObject> Initializations { get; } = new();
+
+    /// <summary>The 2025-11-25 shape: the elicitation/create requests sent, and what the client answered.</summary>
+    public ConcurrentQueue<(JsonObject Request, JsonObject Answer)> Elicitations { get; } = new();
+
+    // 2025-11-25: the question each task asks on its next tasks/result,
+    // and the client's answers to the server's requests, by JSON-RPC id.
+    private readonly ConcurrentDictionary<string, string> _questions = new(StringComparer.Ordinal);
+    private readonly ConcurrentDictionary<string, TaskCompletionSource<JsonObject>> _answers = new(StringComparer.Ordinal);
 
     private FakeTaskServer(WebApplication app, string url, Shape mode)
     {
@@ -115,12 +128,32 @@ internal sealed class FakeTaskServer : IAsyncDisposable
         Push(taskId);
     }
 
+    /// <summary>
+    /// The 2025-11-25 shape: turn the task <c>input_required</c> and ask
+    /// <paramref name="question"/> as an <c>elicitation/create</c> on its
+    /// next <c>tasks/result</c>. Accepted with a <c>name</c>, the task
+    /// completes with "hello" and that name; declined, with "declined".
+    /// </summary>
+    public void Ask(string taskId, string question)
+    {
+        _questions[taskId] = question;
+        Transition(taskId, "input_required");
+    }
+
     private async Task HandleAsync(HttpContext http)
     {
         var request = (await JsonNode.ParseAsync(http.Request.Body))!.AsObject();
-        var method = request["method"]!.GetValue<string>();
         var id = request["id"]?.DeepClone();
+        if (request["method"] is null)
+        {
+            // The client's answer to a request of the server's.
+            if (id is not null && _answers.TryGetValue(id.ToString(), out var waiting)) waiting.TrySetResult(request);
+            http.Response.StatusCode = 202;
+            return;
+        }
+        var method = request["method"]!.GetValue<string>();
         var p = request["params"] as JsonObject ?? [];
+        if (method == "initialize") Initializations.Enqueue(p["capabilities"]?.DeepClone().AsObject() ?? []);
 
         if (id is null)
         {
@@ -132,6 +165,13 @@ internal sealed class FakeTaskServer : IAsyncDisposable
         if (method == "subscriptions/listen")
         {
             await ListenAsync(http, p);
+            return;
+        }
+
+        if (method == "tasks/result" && Mode == Shape.Legacy
+            && p["taskId"]?.GetValue<string>() is { } asked && _questions.TryRemove(asked, out var question))
+        {
+            await AskAsync(http, id!, asked, question);
             return;
         }
 
@@ -258,6 +298,47 @@ internal sealed class FakeTaskServer : IAsyncDisposable
             default:
                 throw new McpProtocolException($"Method not found: {method}", McpErrorCode.MethodNotFound);
         }
+    }
+
+    /// <summary>
+    /// <c>tasks/result</c> of a task with a question: ask it on the
+    /// response stream, tagged with the task, wait for the client's answer,
+    /// complete the task with it, and only then answer <c>tasks/result</c>.
+    /// </summary>
+    private async Task AskAsync(HttpContext http, JsonNode id, string taskId, string question)
+    {
+        var askId = "ask-" + taskId;
+        var answer = new TaskCompletionSource<JsonObject>(TaskCreationOptions.RunContinuationsAsynchronously);
+        _answers[askId] = answer;
+        var elicit = new JsonObject
+        {
+            ["jsonrpc"] = "2.0",
+            ["id"] = askId,
+            ["method"] = "elicitation/create",
+            ["params"] = new JsonObject
+            {
+                ["message"] = question,
+                ["requestedSchema"] = new JsonObject
+                {
+                    ["type"] = "object",
+                    ["properties"] = new JsonObject { ["name"] = new JsonObject { ["type"] = "string" } },
+                    ["required"] = new JsonArray("name"),
+                },
+                ["_meta"] = new JsonObject { ["io.modelcontextprotocol/related-task"] = new JsonObject { ["taskId"] = taskId } },
+            },
+        };
+
+        http.Response.ContentType = "text/event-stream";
+        await Send(http, elicit);
+        var reply = await answer.Task.WaitAsync(http.RequestAborted);
+        _answers.TryRemove(askId, out _);
+        var result = reply["result"]?.AsObject() ?? [];
+        Elicitations.Enqueue((elicit, result.DeepClone().AsObject()));
+
+        var accepted = result["action"]?.GetValue<string>() == "accept";
+        var outcome = Content(accepted ? "hello " + result["content"]?["name"]?.GetValue<string>() : "declined");
+        Transition(taskId, "completed", result: outcome);
+        await Send(http, new JsonObject { ["jsonrpc"] = "2.0", ["id"] = id.DeepClone(), ["result"] = outcome.DeepClone() });
     }
 
     private async Task ListenAsync(HttpContext http, JsonObject p)

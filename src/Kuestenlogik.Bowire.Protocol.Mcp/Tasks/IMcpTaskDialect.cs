@@ -49,14 +49,25 @@ internal interface IMcpTaskDialect
 internal sealed record McpToolCallOutcome(JsonElement? Result, McpTaskState? Task);
 
 /// <summary>A running status listener; disposing it stops listening.</summary>
-internal sealed class McpTaskListener(bool subscribed, IAsyncDisposable? handle, Task? ended = null) : IAsyncDisposable
+internal sealed class McpTaskListener : IAsyncDisposable
 {
+    private readonly IAsyncDisposable? _handle;
+    private readonly Action<McpTaskState>? _observe;
+
+    public McpTaskListener(bool subscribed, IAsyncDisposable? handle, Task? ended = null, Action<McpTaskState>? observe = null)
+    {
+        Subscribed = subscribed;
+        _handle = handle;
+        Ended = ended ?? new TaskCompletionSource().Task;
+        _observe = observe;
+    }
+
     /// <summary>
     /// Whether the server agreed to push status for this task. When it did
     /// not, notifications may still arrive, but they cannot be relied on and
     /// the follower keeps polling.
     /// </summary>
-    public bool Subscribed { get; } = subscribed;
+    public bool Subscribed { get; }
 
     /// <summary>
     /// Completes when the subscription stream ends on its own — the server
@@ -64,7 +75,14 @@ internal sealed class McpTaskListener(bool subscribed, IAsyncDisposable? handle,
     /// goes back to polling. Never completes for a listener that did not
     /// subscribe.
     /// </summary>
-    public Task Ended { get; } = ended ?? new TaskCompletionSource().Task;
+    public Task Ended { get; }
 
-    public ValueTask DisposeAsync() => handle?.DisposeAsync() ?? ValueTask.CompletedTask;
+    /// <summary>
+    /// The follower reports each state it adopts here, so a listener can act
+    /// on one — the 2025-11-25 shape fetches the task's questions once it
+    /// turns <c>input_required</c> (#821).
+    /// </summary>
+    public void Observe(McpTaskState state) => _observe?.Invoke(state);
+
+    public ValueTask DisposeAsync() => _handle?.DisposeAsync() ?? ValueTask.CompletedTask;
 }

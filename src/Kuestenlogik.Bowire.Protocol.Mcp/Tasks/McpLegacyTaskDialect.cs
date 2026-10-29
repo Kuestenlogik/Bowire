@@ -22,9 +22,13 @@ namespace Kuestenlogik.Bowire.Protocol.Mcp.Tasks;
 /// <para>
 /// Input requests do not travel in the task here: the server sends them as
 /// ordinary <c>elicitation/create</c> requests while the client blocks on
-/// <c>tasks/result</c>. Answering those is not part of this slice —
-/// <see cref="UpdateAsync"/> says so rather than pretending, and the
-/// <c>input_required</c> status still shows.
+/// <c>tasks/result</c> (#821). A follow given a way to connect opens that
+/// call on a connection of its own (<see cref="McpLegacyTaskAnswerer"/>);
+/// the questions show as the task's <c>inputRequests</c>, and
+/// <see cref="UpdateAsync"/> answers them through
+/// <see cref="McpLegacyTaskInputs"/>. One instance per server and call:
+/// <paramref name="origin"/> keys the questions, <paramref name="connect"/>
+/// is <see langword="null"/> where nothing follows the task.
 /// </para>
 /// <para>
 /// The server capability <c>tasks.requests.tools.call</c> arrives in the
@@ -34,9 +38,9 @@ namespace Kuestenlogik.Bowire.Protocol.Mcp.Tasks;
 /// <c>required</c> is taken as the server's statement that it runs tasks.
 /// </para>
 /// </remarks>
-internal sealed class McpLegacyTaskDialect : IMcpTaskDialect
+internal sealed class McpLegacyTaskDialect(
+    McpLegacyTaskInputs inputs, string origin, Func<McpClientOptions, CancellationToken, Task<McpClient>>? connect = null) : IMcpTaskDialect
 {
-    public static readonly McpLegacyTaskDialect Instance = new();
 
     public string Shape => McpTaskShapes.Legacy;
 
@@ -103,6 +107,9 @@ internal sealed class McpLegacyTaskDialect : IMcpTaskDialect
     {
         var result = await SendAsync(client, "tasks/get", new JsonObject { ["taskId"] = taskId }, ct).ConfigureAwait(false);
         var state = McpTaskJson.Parse(Shape, JsonSerializer.SerializeToElement(result));
+        // The questions are not in the task in this shape; the ones waiting
+        // here are, so a poll shows them as the extension's tasks/get would.
+        if (inputs.Snapshot(origin, taskId) is { } waiting) state = state with { InputRequests = waiting };
         return state.Status is McpTaskStatuses.Completed or McpTaskStatuses.Failed
             ? await WithOutcomeAsync(client, state, ct).ConfigureAwait(false)
             : state;
@@ -130,10 +137,16 @@ internal sealed class McpLegacyTaskDialect : IMcpTaskDialect
         }
     }
 
-    public Task UpdateAsync(McpClient client, string taskId, JsonElement inputResponses, CancellationToken ct) =>
-        throw new NotSupportedException(
-            "This server speaks MCP tasks as of 2025-11-25, where input reaches a task as an elicitation/create "
-            + "request during tasks/result rather than through tasks/update. Bowire does not answer those yet.");
+    /// <summary>
+    /// Hand the responses to the questions waiting in this process. The
+    /// server gets them as the answers to its <c>elicitation/create</c>
+    /// requests, on the session that waits in <c>tasks/result</c>.
+    /// </summary>
+    public Task UpdateAsync(McpClient client, string taskId, JsonElement inputResponses, CancellationToken ct)
+    {
+        inputs.Answer(origin, taskId, inputResponses);
+        return Task.CompletedTask;
+    }
 
     public async Task CancelAsync(McpClient client, string taskId, CancellationToken ct) =>
         await SendAsync(client, "tasks/cancel", new JsonObject { ["taskId"] = taskId }, ct).ConfigureAwait(false);
@@ -142,6 +155,8 @@ internal sealed class McpLegacyTaskDialect : IMcpTaskDialect
     /// 2025-11-25 has no subscription: a receiver MAY send
     /// <c>notifications/tasks/status</c> on any stream, and a requestor MUST
     /// NOT rely on it. So Bowire takes what arrives and keeps polling.
+    /// With a way to connect, the listener also receives the task's questions
+    /// once it turns <c>input_required</c>.
     /// </summary>
     public Task<McpTaskListener> ListenAsync(McpClient client, string taskId, Action<McpTaskState> onStatus, CancellationToken ct)
     {
@@ -158,7 +173,10 @@ internal sealed class McpLegacyTaskDialect : IMcpTaskDialect
             }
             return ValueTask.CompletedTask;
         });
-        return Task.FromResult(new McpTaskListener(subscribed: false, handler));
+        if (connect is null) return Task.FromResult(new McpTaskListener(subscribed: false, handler));
+
+        var answerer = new McpLegacyTaskAnswerer(inputs, origin, taskId, connect, onStatus, handler, ct);
+        return Task.FromResult(new McpTaskListener(subscribed: false, answerer, observe: answerer.Observe));
     }
 
     private static async Task<JsonNode?> SendAsync(McpClient client, string method, JsonObject parameters, CancellationToken ct)

@@ -22,6 +22,8 @@ template for a filled-in body:
 
 When an MCP server answers a tool call with a durable task, Bowire now follows it: the task's status streams in as it changes, then its result or error. Bowire speaks the `io.modelcontextprotocol/tasks` extension (2026-07-28) and the older 2025-11-25 shape, polls at the interval the server asks for, and switches to pushed status where the server agrees to send it. A new **Tasks** service answers a task's input requests (`update`), cancels it (`cancel`, cooperative), reads it (`get`) and resumes following it after a reload (`follow`) — from the workbench, the CLI and REST alike. Servers without tasks behave exactly as before.
 
+On a 2025-11-25 server, a task's questions are answered as well (#821). That shape sends them as `elicitation/create` on a pending `tasks/result`. Bowire receives them on a second connection that declares elicitation, shows them on the task card, and `Tasks/update` answers them.
+
 ### Import from Insomnia, Bruno and .http, export as .http (#673, #674)
 
 Bowire reads the collections of other API clients:

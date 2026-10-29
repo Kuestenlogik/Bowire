@@ -93,14 +93,15 @@ On such a server, discovery adds a **Tasks** service, and the Tools service says
 
 Cancellation is **cooperative**: the server is asked to stop, and the task may still complete or fail before it does. The answer to `cancel` says so and shows the status the server reported right after the request; the followed stream shows how it actually ended.
 
-A unary invoke of a tool (`bowire call`, REST) follows the task itself and answers with its result. When the task needs input, the call ends with a message naming the `taskId` — answer it with `Tasks/update` and pick it up with `Tasks/follow`.
+**Input under 2025-11-25.** In that shape the questions do not travel in the task: the server sends an ordinary `elicitation/create`, tagged with the task in `_meta["io.modelcontextprotocol/related-task"]`, on a pending `tasks/result`. So when a followed task turns `input_required`, Bowire opens a second connection that declares the `elicitation` capability and calls `tasks/result` on it. Only this connection declares elicitation; every other call keeps the capabilities it had. Each question shows in the task frame's `inputRequests`, keyed by Bowire (`elicitation-1`, …), and the task card renders it as it does under the extension. `Tasks/update` hands the answer to the waiting request, and the server receives it on the session waiting in `tasks/result`. Because the question lives on that session, only the Bowire process that follows the task can answer it. A `Tasks/update` from anywhere else says so.
+
+A unary invoke of a tool (`bowire call`, REST) follows the task itself and answers with its result. When the task needs input, the call ends with a message naming the `taskId`. Under the extension, answer it with `Tasks/update` and pick it up with `Tasks/follow`. Under 2025-11-25, open `Tasks/follow` first and answer while it runs.
 
 **Limits of this release.**
 
-- Input requests of a **2025-11-25** task are not answered: in that shape they arrive as `elicitation/create` requests while the client blocks on `tasks/result`, not through `tasks/update`. The `input_required` status still shows, and `Tasks/update` says why it cannot help.
 - **Sampling** requests (`sampling/createMessage`) inside `inputRequests` are shown but not answered.
-- A 2025-11-25 server that binds tasks to its session may refuse `Tasks/get`, `follow` or `cancel` from a new session; following the tool call's own stream is not affected.
-- Bowire calls tools as tasks; it does not run its own MCP tools as tasks yet (#802), and tests and mocks do not assert on task lifecycles yet (#803).
+- A 2025-11-25 server that binds tasks to its session may refuse `Tasks/get`, `follow` or `cancel` from a new session. The same applies to the `tasks/result` that receives a task's questions, so on such a server the questions do not reach Bowire. Following the tool call's own stream is not affected.
+- Tests and mocks do not assert on task lifecycles yet (#803).
 
 ### Sample target
 

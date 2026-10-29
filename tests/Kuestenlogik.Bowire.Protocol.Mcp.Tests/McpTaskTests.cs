@@ -373,13 +373,73 @@ public sealed class McpTaskTests
         Assert.Contains("legacy boom", Data(frames[^1]).GetProperty("message").GetString(), StringComparison.Ordinal);
     }
 
+    /// <summary>
+    /// #821 — a 2025-11-25 task asks on <c>tasks/result</c>: the question shows
+    /// as the task's input request, <c>Tasks/update</c> answers it, and the
+    /// task ends in a result made from the answer.
+    /// </summary>
+    [Theory]
+    [InlineData("accept", "hello Ada")]
+    [InlineData("decline", "declined")]
+    public async Task A_2025_11_25_Task_Asks_On_Tasks_Result_And_Is_Answered_With_Update(string action, string expected)
+    {
+        await using var server = await FakeTaskServer.StartAsync(FakeTaskServer.Shape.Legacy, Ct);
+        var protocol = new BowireMcpProtocol();
+        var asked = false;
+        var answered = false;
+        string? refusal = null;
+
+        var frames = await Stream(protocol, server.Url, "Tools", "job", onFrame: async frame =>
+        {
+            if (Kind(frame) != "task") return;
+            var data = Data(frame);
+            var taskId = data.GetProperty("taskId").GetString()!;
+            if (!asked && Status(frame) == "working")
+            {
+                asked = true;
+                server.Ask(taskId, "Your name?");
+                return;
+            }
+            if (answered || !data.TryGetProperty("inputRequests", out var requests)) return;
+            answered = true;
+
+            var wrong = await protocol.InvokeAsync(server.Url, "Tasks", "update",
+                [JsonSerializer.Serialize(new { taskId, inputResponses = new { nope = new { action = "accept" } } })], false, null, Ct);
+            refusal = wrong.Status;
+
+            var key = requests.EnumerateObject().Single().Name;
+            var ack = await Unary(protocol, server.Url, "Tasks", "update", new
+            {
+                taskId,
+                inputResponses = new Dictionary<string, object> { [key] = new { action, content = new { name = "Ada" } } },
+            });
+            Assert.True(ack.GetProperty("acknowledged").GetBoolean());
+        });
+
+        var input = frames.First(f => Kind(f) == "task" && Data(f).TryGetProperty("inputRequests", out _));
+        Assert.Equal("input_required", Status(input));
+        var request = Data(input).GetProperty("inputRequests").EnumerateObject().Single().Value;
+        Assert.Equal("elicitation/create", request.GetProperty("method").GetString());
+        Assert.Equal("Your name?", request.GetProperty("params").GetProperty("message").GetString());
+        Assert.Contains("has no input request 'nope' waiting", refusal, StringComparison.Ordinal);
+
+        Assert.Equal("result", Kind(frames[^1]));
+        Assert.Contains(expected, Data(frames[^1]).GetRawText(), StringComparison.Ordinal);
+        var (_, answer) = Assert.Single(server.Elicitations);
+        Assert.Equal(action, answer["action"]!.GetValue<string>());
+
+        // Only the connection that waits in tasks/result declares elicitation.
+        Assert.Single(server.Initializations, c => c["elicitation"] is not null);
+        Assert.Contains(server.Initializations, c => c["elicitation"] is null);
+    }
+
     [Fact]
-    public async Task Answering_A_2025_11_25_Task_Says_Why_It_Cannot()
+    public async Task Answering_A_2025_11_25_Task_Nobody_Here_Follows_Says_Who_Can()
     {
         await using var server = await FakeTaskServer.StartAsync(FakeTaskServer.Shape.Legacy, Ct);
         var result = await new BowireMcpProtocol().InvokeAsync(server.Url, "Tasks", "update",
             ["""{ "taskId": "task-001", "inputResponses": {} }"""], false, null, Ct);
-        Assert.Contains("elicitation/create", result.Status, StringComparison.Ordinal);
+        Assert.Contains("only that client can answer", result.Status, StringComparison.Ordinal);
     }
 
     // ---- no tasks ----

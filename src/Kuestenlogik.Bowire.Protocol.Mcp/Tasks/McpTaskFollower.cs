@@ -61,6 +61,7 @@ internal static class McpTaskFollower
         {
             var notes = Channel.CreateUnbounded<McpTaskState>(new UnboundedChannelOptions { SingleReader = true });
             await using var listener = await dialect.ListenAsync(client, taskId, s => notes.Writer.TryWrite(s), ct).ConfigureAwait(false);
+            listener.Observe(state);
             await foreach (var step in WatchAsync(client, dialect, state, notes.Reader, listener, clock, ct).ConfigureAwait(false))
             {
                 if (step.State is { } s) state = s;
@@ -121,6 +122,7 @@ internal static class McpTaskFollower
 
             var changed = !next.State.SameAs(state);
             state = next.State;
+            listener.Observe(state);
             if (changed) yield return TaskFrame(state, next.Via);
         }
     }

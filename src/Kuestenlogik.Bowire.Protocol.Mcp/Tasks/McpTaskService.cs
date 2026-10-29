@@ -32,14 +32,21 @@ internal sealed class McpTaskService
     private readonly ConcurrentDictionary<string, IReadOnlyDictionary<string, string>> _legacySupport =
         new(StringComparer.Ordinal);
 
+    // 2025-11-25 servers: the questions of followed tasks that wait for an
+    // answer in this process (#821).
+    private readonly McpLegacyTaskInputs _legacyInputs = new();
+
     /// <summary>
     /// The dialect for a <c>Tasks/*</c> call: the extension when the server
     /// advertises it, the 2025-11-25 shape when that revision was
-    /// negotiated, otherwise none.
+    /// negotiated, otherwise none. <paramref name="connect"/> opens another
+    /// connection to the same server; a 2025-11-25 follow receives the
+    /// task's questions on one.
     /// </summary>
-    public static IMcpTaskDialect? ForServer(McpClient client) =>
+    public IMcpTaskDialect? ForServer(
+        McpClient client, string serverUrl, Func<McpClientOptions, CancellationToken, Task<McpClient>>? connect = null) =>
         McpExtensionTaskDialect.IsAdvertisedBy(client) ? McpExtensionTaskDialect.Instance
-        : McpLegacyTaskDialect.IsNegotiatedBy(client) ? McpLegacyTaskDialect.Instance
+        : McpLegacyTaskDialect.IsNegotiatedBy(client) ? new McpLegacyTaskDialect(_legacyInputs, serverUrl, connect)
         : null;
 
     /// <summary>
@@ -49,7 +56,9 @@ internal sealed class McpTaskService
     /// Under 2025-11-25 the tool decides: <c>optional</c> and
     /// <c>required</c> run as tasks — Bowire is the place to see one run.
     /// </summary>
-    public async Task<IMcpTaskDialect?> ForToolAsync(McpClient client, string serverUrl, string toolName, CancellationToken ct)
+    public async Task<IMcpTaskDialect?> ForToolAsync(
+        McpClient client, string serverUrl, string toolName, CancellationToken ct,
+        Func<McpClientOptions, CancellationToken, Task<McpClient>>? connect = null)
     {
         if (McpExtensionTaskDialect.IsAdvertisedBy(client)) return McpExtensionTaskDialect.Instance;
         if (!McpLegacyTaskDialect.IsNegotiatedBy(client)) return null;
@@ -59,7 +68,7 @@ internal sealed class McpTaskService
             support = await McpLegacyTaskDialect.ReadTaskSupportAsync(client, ct).ConfigureAwait(false);
             _legacySupport[serverUrl] = support;
         }
-        return support.ContainsKey(toolName) ? McpLegacyTaskDialect.Instance : null;
+        return support.ContainsKey(toolName) ? new McpLegacyTaskDialect(_legacyInputs, serverUrl, connect) : null;
     }
 
     /// <summary>
@@ -105,7 +114,7 @@ internal sealed class McpTaskService
             OriginUrl = serverUrl,
             Description = shape == McpTaskShapes.Extension
                 ? "MCP tasks (io.modelcontextprotocol/tasks, 2026-07-28) — this server may answer any tool call with a durable task. Follow, answer and cancel one by its taskId."
-                : "MCP tasks (2025-11-25) — the tools marked as such run as durable tasks. Follow and cancel one by its taskId.",
+                : "MCP tasks (2025-11-25) — the tools marked as such run as durable tasks. Follow, answer and cancel one by its taskId; a task's questions are answered while Bowire follows it.",
         });
         return shape;
     }
@@ -143,9 +152,9 @@ internal sealed class McpTaskService
     }
 
     /// <summary>A unary <c>Tasks/*</c> call; the payload the response pane shows.</summary>
-    public static async Task<JsonElement> InvokeAsync(McpClient client, string method, List<string> jsonMessages, CancellationToken ct)
+    public async Task<JsonElement> InvokeAsync(McpClient client, string serverUrl, string method, List<string> jsonMessages, CancellationToken ct)
     {
-        var dialect = ForServer(client) ?? throw NoTasks();
+        var dialect = ForServer(client, serverUrl) ?? throw NoTasks();
         var (taskId, body) = ReadRequest(jsonMessages);
 
         switch (method)
@@ -164,7 +173,7 @@ internal sealed class McpTaskService
                 {
                     acknowledged = true,
                     taskId,
-                    note = "The server acknowledged the responses. That is eventually consistent: follow the task to see it continue.",
+                    note = "The responses were delivered. The task goes on in its own time: follow it to see it continue.",
                 });
             }
             case Cancel:
@@ -191,10 +200,11 @@ internal sealed class McpTaskService
     }
 
     /// <summary><c>Tasks/follow</c>: the task's events from now until it ends.</summary>
-    public static async IAsyncEnumerable<McpTaskEvent> FollowAsync(
-        McpClient client, List<string> jsonMessages, [EnumeratorCancellation] CancellationToken ct)
+    public async IAsyncEnumerable<McpTaskEvent> FollowAsync(
+        McpClient client, string serverUrl, Func<McpClientOptions, CancellationToken, Task<McpClient>> connect,
+        List<string> jsonMessages, [EnumeratorCancellation] CancellationToken ct)
     {
-        var dialect = ForServer(client) ?? throw NoTasks();
+        var dialect = ForServer(client, serverUrl, connect) ?? throw NoTasks();
         var (taskId, _) = ReadRequest(jsonMessages);
         await foreach (var step in McpTaskFollower.FollowAsync(client, dialect, taskId, created: null, ct: ct).ConfigureAwait(false))
             yield return step;
