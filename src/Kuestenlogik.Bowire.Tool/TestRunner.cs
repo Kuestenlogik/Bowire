@@ -252,7 +252,8 @@ internal static class TestRunner
     public static async Task<int> RunAsync(
         TestCliOptions cli,
         TextWriter? output = null,
-        TextWriter? error = null)
+        TextWriter? error = null,
+        CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(cli);
 
@@ -313,8 +314,9 @@ internal static class TestRunner
                 AiSeed = cli.AiSeed,
                 Secrets = cli.Secrets,
                 SecretFile = cli.SecretFile,
+                Progress = cli.Progress,
             };
-            return await FlowTestRunner.RunAsync(flowCli, stdout, stderr).ConfigureAwait(false);
+            return await FlowTestRunner.RunAsync(flowCli, stdout, stderr, ct).ConfigureAwait(false);
         }
 
         TestCollection? collection;
@@ -411,6 +413,8 @@ internal static class TestRunner
 
         // Without a data set the collection runs once, as iteration 1 of 1.
         var rows = dataSet?.Rows.ToList() ?? [new DataRow { Iteration = 1 }];
+        var totalSteps = rows.Count * collection.Tests.Count;
+        var step = 0;
         foreach (var row in rows)
         {
             var iterationVars = new Dictionary<string, string>(row.Values, StringComparer.Ordinal)
@@ -426,6 +430,14 @@ internal static class TestRunner
             var iterationFailed = false;
             foreach (var test in collection.Tests)
             {
+                // #802 — cooperative cancel and progress, before the test runs.
+                ct.ThrowIfCancellationRequested();
+                step++;
+                if (cli.Progress is not null)
+                {
+                    await cli.Progress($"step {step}/{totalSteps} · {test.Name ?? (test.Service + "/" + test.Method)}"
+                        + (dataSet is null ? "" : $" (iteration {row.Iteration}/{rows.Count})")).ConfigureAwait(false);
+                }
                 var result = await RunTestAsync(test, collection, registry, iterationVars);
                 if (dataSet is not null)
                 {

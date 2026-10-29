@@ -10,6 +10,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using ModelContextProtocol;
 using ModelContextProtocol.AspNetCore;
+using ModelContextProtocol.Extensions.Tasks;
 using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
 
@@ -171,6 +172,20 @@ public static class BowireMcpServiceCollectionExtensions
             filters.AddCallToolFilter(dispatcher.FilterCallToolByPath);
         });
         dispatcher.HasInstalledSdkShims = true;
+
+        // #802 — MCP Tasks. Advertised to every client; a call becomes a task
+        // only for a client that declared the extension on that request, and
+        // only for the long-running tools. Everything else stays synchronous,
+        // so a client without the extension sees no difference. The store is
+        // durable: a finished run's result outlives the agent and the server.
+        var storeOptions = new BowireMcpOptions();
+        configure?.Invoke(storeOptions);
+        var taskStore = new Tasks.BowireMcpTaskStore(storeOptions.TaskStorePath);
+        services.AddSingleton(taskStore);
+        builder.WithTasks(taskStore, o => o.ExecutionModeSelector = ctx =>
+            ctx.Params?.Name == Tasks.BowireMcpTestTools.TestRunName
+                ? McpTaskExecutionMode.Optional
+                : McpTaskExecutionMode.Synchronous);
 
         return builder;
     }

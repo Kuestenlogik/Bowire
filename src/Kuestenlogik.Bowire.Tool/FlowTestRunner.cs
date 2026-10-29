@@ -320,8 +320,15 @@ internal static class FlowTestRunner
         // Runs one step execution (one row of a data-driven step, or the
         // whole step when it carries no data source), evaluates its
         // snapshot, and folds the result into the report + console.
+        var stepNumber = 0;
         async Task ExecuteAsync(FlowStep step, Dictionary<string, string> stepEnv, string? rowLabel)
         {
+            // #802 — cooperative cancel and progress, before the step runs.
+            ct.ThrowIfCancellationRequested();
+            stepNumber++;
+            if (cli.Progress is not null)
+                await cli.Progress($"step {stepNumber}/{flow.Nodes.Count} · {(string.IsNullOrEmpty(step.Method) ? step.Id : step.Service + "/" + step.Method)}" + (rowLabel is null ? "" : $" ({rowLabel})")).ConfigureAwait(false);
+
             var stepResult = await RunStepAsync(step, stepEnv, registry, cli.BaseUrl, rowLabel, ct).ConfigureAwait(false);
             if (step.Snapshot is { Enabled: true } && !stepResult.Skipped && string.IsNullOrEmpty(stepResult.Error))
             {
@@ -845,6 +852,9 @@ internal static class FlowTestRunner
 /// </summary>
 internal sealed class FlowTestCliOptions
 {
+    /// <summary>#802 — called before each step with a short line; see <c>TestCliOptions.Progress</c>.</summary>
+    public Func<string, Task>? Progress { get; set; }
+
     /// <summary>Path to the flow JSON file (positional arg).</summary>
     public string? FlowPath { get; set; }
     /// <summary>

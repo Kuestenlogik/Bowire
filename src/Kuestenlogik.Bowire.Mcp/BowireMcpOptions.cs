@@ -100,4 +100,11 @@ public sealed class BowireMcpOptions
     /// chatty stream from blowing up the JSON-RPC response.
     /// </summary>
     public int MaxSubscribeFrames { get; set; } = 200;
+
+    /// <summary>
+    /// #802 — the folder for the durable MCP task store (results of
+    /// <c>bowire.test.run</c> and other task tools). Null keeps the per-user
+    /// <c>~/.bowire/mcp-tasks</c>. Read once, when <c>AddBowireMcp</c> runs.
+    /// </summary>
+    public string? TaskStorePath { get; set; }
 }

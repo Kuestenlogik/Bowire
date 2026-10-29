@@ -317,8 +317,18 @@ Both transports expose the same toolset. Top-level tools include:
 | `bowire.lint` | Discover a URL and run the design-time linter over the API surface — the same rules as `bowire lint` and the Lint rail, honouring `.bowire/rules.json`. |
 | `bowire.contract.matrix` | Roll the stored contract-verification results up into the consumer × provider matrix (see [contract testing](../features/contract-testing.md)). Local-only: it reads what `bowire contract verify` stored and never contacts a provider. |
 | `bowire.report.rollup` | Roll the reports Bowire writes (lint, contract, benchmark, scan, test) up into one row per service across a portfolio — see [report rollup](../features/report-rollup.md). Local-only: it reads existing files and never calls a service. |
+| `bowire.test.run` | Run a test collection or flow, as `bowire test` does, with an optional CSV or JSON data set (`data`, one iteration per row; `failFast`). Runs as an MCP task for clients that declare the tasks extension (see below). Only on `bowire mcp serve`, which carries the test runner. |
 
 The full tool list is generated from the discovered `BowireMcpTools` class via the ModelContextProtocol C# SDK — call `tools/list` on the running server to see the current schemas.
+
+### Long-running tools as MCP tasks
+
+Bowire's MCP server advertises the tasks extension (`io.modelcontextprotocol/tasks`). A client that declares it on a `bowire.test.run` call gets a task handle back at once, not the result. The run goes on in the server; the client follows it with `tasks/get` or `notifications/tasks`, and stops it with `tasks/cancel`.
+
+- **Progress.** The task's status message names the step it is on, for example `step 3/12 · Get user (iteration 2/5)`.
+- **Cancellation** is cooperative: the run stops before its next step, and the task ends as `cancelled`.
+- **Durability.** Tasks are kept in `~/.bowire/mcp-tasks/` (`TaskStorePath` in `BowireMcpOptions`), so a client that disconnects or restarts gets the result with the same task id. A result is kept for 24 hours. A task that was still running when the server stopped is reported as failed, with that reason.
+- **Other clients.** A client without the extension, and every other tool, keeps getting the synchronous answer.
 
 ### Resource surface (roles 3 + 4)
 

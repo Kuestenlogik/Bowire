@@ -977,7 +977,7 @@ public sealed class FlowTestRunnerTests : IDisposable
         // an explicit CancellationToken yet — it predates that contract
         // and the v0 dispatch keeps its signature stable.
         var rc = await TestRunner.RunAsync(
-            new TestCliOptions { CollectionPath = flowPath }, stdout, TextWriter.Null);
+            new TestCliOptions { CollectionPath = flowPath }, stdout, TextWriter.Null, TestContext.Current.CancellationToken);
 
         Assert.Equal(0, rc);
         Assert.Contains("Bowire Flow Test Runner", stdout.ToString(), StringComparison.Ordinal);

@@ -36,20 +36,20 @@ public sealed class TestRunnerTests : IDisposable
     [Fact]
     public async Task RunAsync_NullCli_Throws()
     {
-        await Assert.ThrowsAsync<ArgumentNullException>(() => TestRunner.RunAsync(null!));
+        await Assert.ThrowsAsync<ArgumentNullException>(() => TestRunner.RunAsync(null!, ct: TestContext.Current.CancellationToken));
     }
 
     [Fact]
     public async Task RunAsync_NoCollectionPath_ReturnsUsageExit()
     {
-        var rc = await TestRunner.RunAsync(new TestCliOptions { CollectionPath = null }, TextWriter.Null, TextWriter.Null);
+        var rc = await TestRunner.RunAsync(new TestCliOptions { CollectionPath = null }, TextWriter.Null, TextWriter.Null, TestContext.Current.CancellationToken);
         Assert.Equal(2, rc);
     }
 
     [Fact]
     public async Task RunAsync_EmptyCollectionPath_ReturnsUsageExit()
     {
-        var rc = await TestRunner.RunAsync(new TestCliOptions { CollectionPath = "" }, TextWriter.Null, TextWriter.Null);
+        var rc = await TestRunner.RunAsync(new TestCliOptions { CollectionPath = "" }, TextWriter.Null, TextWriter.Null, TestContext.Current.CancellationToken);
         Assert.Equal(2, rc);
     }
 
@@ -57,7 +57,7 @@ public sealed class TestRunnerTests : IDisposable
     public async Task RunAsync_MissingFile_ReturnsUsageExit()
     {
         var path = SafePath.Combine(_tempDir, "absent.json");
-        var rc = await TestRunner.RunAsync(new TestCliOptions { CollectionPath = path }, TextWriter.Null, TextWriter.Null);
+        var rc = await TestRunner.RunAsync(new TestCliOptions { CollectionPath = path }, TextWriter.Null, TextWriter.Null, TestContext.Current.CancellationToken);
         Assert.Equal(2, rc);
     }
 
@@ -66,7 +66,7 @@ public sealed class TestRunnerTests : IDisposable
     {
         var path = SafePath.Combine(_tempDir, "broken.json");
         await File.WriteAllTextAsync(path, "{ this is not json", TestContext.Current.CancellationToken);
-        var rc = await TestRunner.RunAsync(new TestCliOptions { CollectionPath = path }, TextWriter.Null, TextWriter.Null);
+        var rc = await TestRunner.RunAsync(new TestCliOptions { CollectionPath = path }, TextWriter.Null, TextWriter.Null, TestContext.Current.CancellationToken);
         Assert.Equal(2, rc);
     }
 
@@ -75,7 +75,7 @@ public sealed class TestRunnerTests : IDisposable
     {
         var path = SafePath.Combine(_tempDir, "empty.json");
         await File.WriteAllTextAsync(path, """{ "name": "x", "tests": [] }""", TestContext.Current.CancellationToken);
-        var rc = await TestRunner.RunAsync(new TestCliOptions { CollectionPath = path }, TextWriter.Null, TextWriter.Null);
+        var rc = await TestRunner.RunAsync(new TestCliOptions { CollectionPath = path }, TextWriter.Null, TextWriter.Null, TestContext.Current.CancellationToken);
         Assert.Equal(2, rc);
     }
 
@@ -87,7 +87,7 @@ public sealed class TestRunnerTests : IDisposable
         // array.
         var path = SafePath.Combine(_tempDir, "null-tests.json");
         await File.WriteAllTextAsync(path, """{ "name": "x", "tests": null }""", TestContext.Current.CancellationToken);
-        var rc = await TestRunner.RunAsync(new TestCliOptions { CollectionPath = path }, TextWriter.Null, TextWriter.Null);
+        var rc = await TestRunner.RunAsync(new TestCliOptions { CollectionPath = path }, TextWriter.Null, TextWriter.Null, TestContext.Current.CancellationToken);
         Assert.Equal(2, rc);
     }
 
@@ -107,7 +107,7 @@ public sealed class TestRunnerTests : IDisposable
             }
             """, TestContext.Current.CancellationToken);
 
-        var rc = await TestRunner.RunAsync(new TestCliOptions { CollectionPath = path }, TextWriter.Null, TextWriter.Null);
+        var rc = await TestRunner.RunAsync(new TestCliOptions { CollectionPath = path }, TextWriter.Null, TextWriter.Null, TestContext.Current.CancellationToken);
         Assert.Equal(1, rc);
     }
 
@@ -138,7 +138,7 @@ public sealed class TestRunnerTests : IDisposable
             }
             """, TestContext.Current.CancellationToken);
 
-        var rc = await TestRunner.RunAsync(new TestCliOptions { CollectionPath = path }, TextWriter.Null, TextWriter.Null);
+        var rc = await TestRunner.RunAsync(new TestCliOptions { CollectionPath = path }, TextWriter.Null, TextWriter.Null, TestContext.Current.CancellationToken);
         Assert.Equal(1, rc);
     }
 
@@ -167,7 +167,7 @@ public sealed class TestRunnerTests : IDisposable
             CollectionPath = coll,
             ReportPath = report,
             JUnitPath = junit,
-        }, TextWriter.Null, TextWriter.Null);
+        }, TextWriter.Null, TextWriter.Null, TestContext.Current.CancellationToken);
 
         Assert.Equal(1, rc);
         Assert.True(File.Exists(report));
@@ -194,7 +194,7 @@ public sealed class TestRunnerTests : IDisposable
             }
             """, TestContext.Current.CancellationToken);
 
-        var rc = await TestRunner.RunAsync(new TestCliOptions { CollectionPath = path }, TextWriter.Null, TextWriter.Null);
+        var rc = await TestRunner.RunAsync(new TestCliOptions { CollectionPath = path }, TextWriter.Null, TextWriter.Null, TestContext.Current.CancellationToken);
         Assert.Equal(1, rc);
     }
 
@@ -217,7 +217,7 @@ public sealed class TestRunnerTests : IDisposable
             }
             """, TestContext.Current.CancellationToken);
 
-        var rc = await TestRunner.RunAsync(new TestCliOptions { CollectionPath = coll }, TextWriter.Null, TextWriter.Null);
+        var rc = await TestRunner.RunAsync(new TestCliOptions { CollectionPath = coll }, TextWriter.Null, TextWriter.Null, TestContext.Current.CancellationToken);
         Assert.Equal(1, rc);
     }
 
@@ -252,7 +252,7 @@ public sealed class TestRunnerTests : IDisposable
             CollectionPath = coll,
             ReportPath = report,
             JUnitPath = junit,
-        }, TextWriter.Null, TextWriter.Null);
+        }, TextWriter.Null, TextWriter.Null, TestContext.Current.CancellationToken);
 
         Assert.Equal(1, rc);
         Assert.False(File.Exists(report));

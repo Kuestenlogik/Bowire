@@ -188,10 +188,13 @@ internal static class McpServeCommand
             // #563 — flow-capture seam so bowire.auth-recording.capture-flow can
             // run a login chain (outbound, confirm-gated) and store the token.
             builder.Services.AddSingleton<Kuestenlogik.Bowire.Mocking.IAuthFlowCapturer, Kuestenlogik.Bowire.App.Cli.AuthFlowCapturer>();
+            // #802 — bowire.test.run runs what `bowire test` runs; the runner lives here.
+            builder.Services.AddSingleton<Kuestenlogik.Bowire.Mcp.Tasks.IBowireTestRunner, Kuestenlogik.Bowire.App.Cli.McpTestRunner>();
             builder.Services
                 .AddBowireMcp(cfg.ConfigureOptions)
                 .WithStdioServerTransport()
                 .WithTools<BowireMcpTools>()
+                .WithTools<Kuestenlogik.Bowire.Mcp.Tasks.BowireMcpTestTools>()
                 .WithResources<BowireMcpResources>()
                 .WithPrompts<BowireMcpPrompts>();
 
@@ -240,10 +243,12 @@ internal static class McpServeCommand
         {
             // #563 — flow-capture seam (see the stdio path).
             builder.Services.AddSingleton<Kuestenlogik.Bowire.Mocking.IAuthFlowCapturer, Kuestenlogik.Bowire.App.Cli.AuthFlowCapturer>();
+            builder.Services.AddSingleton<Kuestenlogik.Bowire.Mcp.Tasks.IBowireTestRunner, Kuestenlogik.Bowire.App.Cli.McpTestRunner>();
             builder.Services
                 .AddBowireMcp(cfg.ConfigureOptions)
                 .WithHttpTransport(o => o.Stateless = true)
                 .WithTools<BowireMcpTools>()
+                .WithTools<Kuestenlogik.Bowire.Mcp.Tasks.BowireMcpTestTools>()
                 .WithResources<BowireMcpResources>()
                 .WithPrompts<BowireMcpPrompts>();
         }

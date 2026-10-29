@@ -4,6 +4,13 @@
     <PackageId>Kuestenlogik.Bowire.Mcp</PackageId>
     <PackageTags>bowire;mcp;ai;claude;copilot;cursor;model-context-protocol;tools;workbench;developer-tools</PackageTags>
     <IsPackable>true</IsPackable>
+    <!-- MCPEXP001/MCPEXP002 (#802): the Tasks extension marks its whole
+         server surface [Experimental] (IMcpTaskStore, WithTasks, task
+         notifications). There is no non-experimental equivalent to call
+         instead, so the diagnostics are acknowledged here, scoped to this
+         project, rather than with #pragma per call site (#355).
+         https://github.com/modelcontextprotocol/csharp-sdk -->
+    <NoWarn>$(NoWarn);MCPEXP001;MCPEXP002</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="bowire" />
@@ -32,5 +39,7 @@
     <ProjectReference Include="..\Kuestenlogik.Bowire.Interop\Kuestenlogik.Bowire.Interop.csproj" />
     <PackageReference Include="ModelContextProtocol" />
     <PackageReference Include="ModelContextProtocol.AspNetCore" />
+    <!-- #802 - long Bowire tools (bowire.test.run) run as durable MCP tasks. -->
+    <PackageReference Include="ModelContextProtocol.Extensions.Tasks" />
   </ItemGroup>
 </Project>

@@ -59,7 +59,7 @@ public sealed class TestRunnerDataSetTests : IDisposable
         options.JUnitPath = junit;
         using var stdout = new StringWriter();
         using var stderr = new StringWriter();
-        var code = await TestRunner.RunAsync(options, stdout, stderr);
+        var code = await TestRunner.RunAsync(options, stdout, stderr, TestContext.Current.CancellationToken);
         return (code, stdout.ToString(), stderr.ToString(), File.Exists(junit) ? XDocument.Load(junit) : null);
     }
 

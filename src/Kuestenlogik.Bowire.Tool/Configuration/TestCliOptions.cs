@@ -147,4 +147,10 @@ internal sealed class TestCliOptions
 
     /// <summary>#675 — <c>--fail-fast</c>: stop after the first iteration with a failure.</summary>
     public bool FailFast { get; set; }
+
+    /// <summary>
+    /// #802 — called before each test with a short line (<c>step 3/12 · Get user</c>);
+    /// the MCP tool <c>bowire.test.run</c> turns it into task status. Null on the command line.
+    /// </summary>
+    public Func<string, Task>? Progress { get; set; }
 }

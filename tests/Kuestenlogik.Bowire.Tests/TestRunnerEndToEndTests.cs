@@ -58,7 +58,7 @@ public sealed class TestRunnerEndToEndTests : IDisposable
             }
             """, TestContext.Current.CancellationToken);
 
-        var rc = await TestRunner.RunAsync(new TestCliOptions { CollectionPath = path }, TextWriter.Null, TextWriter.Null);
+        var rc = await TestRunner.RunAsync(new TestCliOptions { CollectionPath = path }, TextWriter.Null, TextWriter.Null, TestContext.Current.CancellationToken);
         Assert.Equal(0, rc);
     }
 
@@ -88,7 +88,7 @@ public sealed class TestRunnerEndToEndTests : IDisposable
             }
             """, TestContext.Current.CancellationToken);
 
-        var rc = await TestRunner.RunAsync(new TestCliOptions { CollectionPath = path }, TextWriter.Null, TextWriter.Null);
+        var rc = await TestRunner.RunAsync(new TestCliOptions { CollectionPath = path }, TextWriter.Null, TextWriter.Null, TestContext.Current.CancellationToken);
         Assert.Equal(1, rc);
     }
 
@@ -110,7 +110,7 @@ public sealed class TestRunnerEndToEndTests : IDisposable
             }
             """, TestContext.Current.CancellationToken);
 
-        var rc = await TestRunner.RunAsync(new TestCliOptions { CollectionPath = path }, TextWriter.Null, TextWriter.Null);
+        var rc = await TestRunner.RunAsync(new TestCliOptions { CollectionPath = path }, TextWriter.Null, TextWriter.Null, TestContext.Current.CancellationToken);
         Assert.Equal(1, rc);
     }
 
@@ -131,7 +131,7 @@ public sealed class TestRunnerEndToEndTests : IDisposable
             }
             """, TestContext.Current.CancellationToken);
 
-        var rc = await TestRunner.RunAsync(new TestCliOptions { CollectionPath = path }, TextWriter.Null, TextWriter.Null);
+        var rc = await TestRunner.RunAsync(new TestCliOptions { CollectionPath = path }, TextWriter.Null, TextWriter.Null, TestContext.Current.CancellationToken);
         Assert.Equal(1, rc);
     }
 
@@ -154,7 +154,7 @@ public sealed class TestRunnerEndToEndTests : IDisposable
             }
             """, TestContext.Current.CancellationToken);
 
-        var rc = await TestRunner.RunAsync(new TestCliOptions { CollectionPath = path }, TextWriter.Null, TextWriter.Null);
+        var rc = await TestRunner.RunAsync(new TestCliOptions { CollectionPath = path }, TextWriter.Null, TextWriter.Null, TestContext.Current.CancellationToken);
         // Either 0 (stub picked) or 1 (different first protocol returned
         // an error response) — the line we care about (`registry.Protocols[0]`)
         // is reached either way.
@@ -194,7 +194,7 @@ public sealed class TestRunnerEndToEndTests : IDisposable
             }
             """, TestContext.Current.CancellationToken);
 
-        var rc = await TestRunner.RunAsync(new TestCliOptions { CollectionPath = path }, TextWriter.Null, TextWriter.Null);
+        var rc = await TestRunner.RunAsync(new TestCliOptions { CollectionPath = path }, TextWriter.Null, TextWriter.Null, TestContext.Current.CancellationToken);
         Assert.Equal(0, rc);
     }
 
@@ -226,7 +226,7 @@ public sealed class TestRunnerEndToEndTests : IDisposable
             }
             """, TestContext.Current.CancellationToken);
 
-        var rc = await TestRunner.RunAsync(new TestCliOptions { CollectionPath = path }, TextWriter.Null, TextWriter.Null);
+        var rc = await TestRunner.RunAsync(new TestCliOptions { CollectionPath = path }, TextWriter.Null, TextWriter.Null, TestContext.Current.CancellationToken);
         Assert.Equal(0, rc);
     }
 
@@ -257,7 +257,7 @@ public sealed class TestRunnerEndToEndTests : IDisposable
             }
             """, TestContext.Current.CancellationToken);
 
-        var rc = await TestRunner.RunAsync(new TestCliOptions { CollectionPath = path }, TextWriter.Null, TextWriter.Null);
+        var rc = await TestRunner.RunAsync(new TestCliOptions { CollectionPath = path }, TextWriter.Null, TextWriter.Null, TestContext.Current.CancellationToken);
         // Assertion failed → exit 1; the per-assertion Error message
         // was rendered so the line we care about ran.
         Assert.Equal(1, rc);

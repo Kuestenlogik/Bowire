@@ -295,15 +295,25 @@ public sealed class BowireMcpDualHandlerDispatcher
         string? path = null;
         if (http is not null)
         {
-            if (http.Items.TryGetValue(SessionRoutePathItemKey, out var stashed)
-                && stashed is string s
-                && !string.IsNullOrEmpty(s))
+            try
             {
-                path = s;
+                if (http.Items.TryGetValue(SessionRoutePathItemKey, out var stashed)
+                    && stashed is string s
+                    && !string.IsNullOrEmpty(s))
+                {
+                    path = s;
+                }
+                else
+                {
+                    path = http.Request.Path.Value;
+                }
             }
-            else
+            catch (ObjectDisposedException)
             {
-                path = http.Request.Path.Value;
+                // #802 — a tool running as an MCP task passes this filter in
+                // the background, after its request has answered and the
+                // context is gone. Task tools are server tools.
+                path = null;
             }
         }
 

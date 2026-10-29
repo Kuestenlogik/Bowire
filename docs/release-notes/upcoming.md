@@ -47,6 +47,10 @@ Its browser and CLI implementations are held to one shared test fixture. A path 
 
 `bowire test suite.json --data rows.csv` runs the collection once per row of a CSV or JSON file, with the row's columns as variables over the environment. `{{iteration}}` and `{{iterationCount}}` are available. Every failure names its iteration and source row, on the console and in the HTML, JUnit and SARIF output. JUnit gets one suite per iteration and one case per assertion. `--fail-fast` stops at the first failing iteration. A malformed data file fails before the first request, naming the line. In the workbench, **Data file…** attaches the same kind of file to a collection; **Run All** runs it once per row and lists PASS / FAIL per row with its source line. The file is read by a new DataSets gRPC service (`POST /api/v1/datasets/parse`), so every surface parses it the same way.
 
+### `bowire.test.run`: test runs for agents, as MCP tasks (#802, #945)
+
+Agents can run a test collection or flow through Bowire's MCP server, as `bowire test` does, with an optional data set. A client that declares the MCP tasks extension gets a durable task: the status names the current step, `tasks/cancel` stops the run before its next step, and the result is kept for 24 hours under `~/.bowire/mcp-tasks/`, so a reconnecting agent gets it with the same task id. Clients without the extension get the synchronous answer, as before.
+
 ## Breaking changes
 
 <!-- Each change has been on a back-compat ramp through the prior minor
