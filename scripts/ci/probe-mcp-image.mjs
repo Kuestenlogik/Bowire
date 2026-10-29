@@ -10,6 +10,8 @@
 // The probe runs the image the way a directory does (`docker run -i`), sends initialize and
 // tools/list over stdio, and fails unless both come back and the server lists tools. With
 // --expect-version it also fails when the image carries another release than the one expected.
+// From 2.10 on (#802) it also requires the MCP tasks extension and the bowire.test.run tool,
+// which runs as a task; the releases before that are probed as they were.
 //
 //   node scripts/ci/probe-mcp-image.mjs <image> [--expect-version 2.10.0]
 
@@ -18,6 +20,15 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const TIMEOUT_MS = 60_000;
+
+/** The MCP extension long Bowire tools run under, and the first release that advertises it. */
+export const TASKS_EXTENSION = 'io.modelcontextprotocol/tasks';
+const TASKS_SINCE = [2, 10];
+
+function atLeast(version, [major, minor]) {
+    const [a, b] = version.split('.').map(Number);
+    return a > major || (a === major && b >= minor);
+}
 
 /** The JSON-RPC lines the probe writes to the server's stdin. */
 export function probeRequests() {
@@ -39,9 +50,14 @@ export function checkProbe(stdout, { expectVersion } = {}) {
 
     const problems = [];
     const init = responses.get(1);
+    let withTasks = false;
     if (!init) problems.push('no response to initialize');
     else if (init.error) problems.push(`initialize failed: ${init.error.message}`);
     else {
+        withTasks = atLeast(init.result?.serverInfo?.version ?? '0.0', TASKS_SINCE);
+        if (withTasks && !init.result?.capabilities?.extensions?.[TASKS_EXTENSION]) {
+            problems.push(`the server does not advertise the MCP tasks extension (${TASKS_EXTENSION})`);
+        }
         // serverInfo.version is the AssemblyVersion, which Directory.Build.props binds to
         // Major.Minor: 2.9.1 reports 2.9.0.0. So only Major.Minor can be checked here; the
         // patch is held by the build, which installs the expected version or fails.
@@ -56,6 +72,9 @@ export function checkProbe(stdout, { expectVersion } = {}) {
     if (!list) problems.push('no response to tools/list');
     else if (list.error) problems.push(`tools/list failed: ${list.error.message}`);
     else if (!(list.result?.tools?.length > 0)) problems.push('tools/list returned no tools');
+    else if (withTasks && !list.result.tools.some(tool => tool.name === 'bowire.test.run')) {
+        problems.push('tools/list does not list bowire.test.run');
+    }
     return problems;
 }
 

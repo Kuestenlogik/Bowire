@@ -15,11 +15,17 @@ import { dirname, resolve } from 'node:path';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const { probeRequests, checkProbe } = await import(pathToFileURL(resolve(__dirname, '../../../scripts/ci/probe-mcp-image.mjs')).href);
 
-const initialize = (version = '2.9.0.0') => JSON.stringify({
+// From 2.10 on a release advertises the tasks extension and lists bowire.test.run (#802).
+const isTasksRelease = version => { const [a, b] = version.split('.').map(Number); return a > 2 || (a === 2 && b >= 10); };
+const initialize = (version = '2.9.0.0', { tasks = isTasksRelease(version) } = {}) => JSON.stringify({
     jsonrpc: '2.0', id: 1,
-    result: { protocolVersion: '2025-03-26', capabilities: { tools: {} }, serverInfo: { name: 'bowire-mcp', version } },
+    result: {
+        protocolVersion: '2025-03-26',
+        capabilities: tasks ? { tools: {}, extensions: { 'io.modelcontextprotocol/tasks': {} } } : { tools: {} },
+        serverInfo: { name: 'bowire-mcp', version },
+    },
 });
-const toolsList = (names = ['bowire.discover', 'bowire.invoke']) => JSON.stringify({
+const toolsList = (names = ['bowire.discover', 'bowire.invoke', 'bowire.test.run']) => JSON.stringify({
     jsonrpc: '2.0', id: 2, result: { tools: names.map(name => ({ name, inputSchema: { type: 'object' } })) },
 });
 
@@ -66,6 +72,20 @@ describe('checkProbe', () => {
     it('reports an error response', () => {
         const error = JSON.stringify({ jsonrpc: '2.0', id: 2, error: { code: -32601, message: 'Method not found' } });
         assert.match(checkProbe([initialize(), error].join('\n')).join('\n'), /Method not found/);
+    });
+
+    it('requires the tasks extension from 2.10 on', () => {
+        const problems = checkProbe([initialize('2.10.0.0', { tasks: false }), toolsList()].join('\n'));
+        assert.match(problems.join('\n'), /io\.modelcontextprotocol\/tasks/);
+    });
+
+    it('requires bowire.test.run from 2.10 on', () => {
+        const problems = checkProbe([initialize('2.10.0.0'), toolsList(['bowire.discover'])].join('\n'));
+        assert.match(problems.join('\n'), /bowire\.test\.run/);
+    });
+
+    it('probes a release before 2.10 as before, without the extension or the tool', () => {
+        assert.deepEqual(checkProbe([initialize('2.9.0.0'), toolsList(['bowire.discover'])].join('\n')), []);
     });
 
     it('ignores log lines that are not JSON-RPC', () => {

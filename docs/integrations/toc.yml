@@ -1,6 +1,9 @@
 - name: Overview
   href: index.md
 
+- name: AI agents
+  href: ai-agents.md
+
 - name: Playwright
   href: playwright.md
 
