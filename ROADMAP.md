@@ -132,7 +132,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**10/29 done** · 19 backlog
+**11/29 done** · 18 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -153,7 +153,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [821](https://github.com/Kuestenlogik/Bowire/issues/821) | Bowire | [MCP tasks: answer input requests of 2025-11-25 tasks](#issue-kuestenlogik-bowire-821) | ⬜ Backlog |  |
 | [939](https://github.com/Kuestenlogik/Bowire/issues/939) | Bowire | [Import Yaak exports](#issue-kuestenlogik-bowire-939) | ⬜ Backlog |  |
 | [940](https://github.com/Kuestenlogik/Bowire/issues/940) | Bowire | [Verify the collection importers against real Insomnia and Bruno exports](#issue-kuestenlogik-bowire-940) | ⬜ Backlog |  |
-| [945](https://github.com/Kuestenlogik/Bowire/issues/945) | Bowire | [bowire.test.run over MCP, with a data set](#issue-kuestenlogik-bowire-945) | ⬜ Backlog |  |
 | [946](https://github.com/Kuestenlogik/Bowire/issues/946) | Bowire | [Data sets for flow runs and bowire test --workspace](#issue-kuestenlogik-bowire-946) | ⬜ Backlog |  |
 | [673](https://github.com/Kuestenlogik/Bowire/issues/673) | Bowire | [Export requests as .http — Copy as .http, and bowire export http for a whole collection](#issue-kuestenlogik-bowire-673) | ✅ Done | `area:workbench` |
 | [674](https://github.com/Kuestenlogik/Bowire/issues/674) | Bowire | [Import from Insomnia, Bruno and .http, with a migration guide per source](#issue-kuestenlogik-bowire-674) | ✅ Done | `area:workbench` |
@@ -165,6 +164,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [942](https://github.com/Kuestenlogik/Bowire/issues/942) | Bowire | [Flaky: RecordingStore tests share a process-wide store path across parallel classes](#issue-kuestenlogik-bowire-942) | ✅ Done |  |
 | [943](https://github.com/Kuestenlogik/Bowire/issues/943) | Bowire | [Collection runner in the workbench reports a failed call as PASS](#issue-kuestenlogik-bowire-943) | ✅ Done |  |
 | [944](https://github.com/Kuestenlogik/Bowire/issues/944) | Bowire | [Flaky: ChunkedRecordingStore's test root override leaks across parallel test classes](#issue-kuestenlogik-bowire-944) | ✅ Done |  |
+| [945](https://github.com/Kuestenlogik/Bowire/issues/945) | Bowire | [bowire.test.run over MCP, with a data set](#issue-kuestenlogik-bowire-945) | ✅ Done |  |
 
 ### v2.12 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
 
@@ -834,10 +834,6 @@ Follow-up of #674, which shipped the Insomnia, Bruno and `.http` importers. Yaak
 
 Follow-up of #674. The importers were tested with fixtures written from the formats' specifications and schemas (Insomnia v4/v5, Bru, OpenCollection v1.0.0), not with files exported from the apps. [[more]](https://github.com/Kuestenlogik/Bowire/issues/940)
 
-#### <a id="issue-kuestenlogik-bowire-945"></a>⬜ Backlog · [#945](https://github.com/Kuestenlogik/Bowire/issues/945) bowire.test.run over MCP, with a data set
-
-Follow-up of #675, to be done with #802 (which makes `bowire.test.run` the first durable MCP task). [[more]](https://github.com/Kuestenlogik/Bowire/issues/945)
-
 #### <a id="issue-kuestenlogik-bowire-946"></a>⬜ Backlog · [#946](https://github.com/Kuestenlogik/Bowire/issues/946) Data sets for flow runs and bowire test --workspace
 
 Follow-up of #675. `--data` drives a test collection. A flow file, or a `--workspace` run, refuses `--data` today with a clear message. [[more]](https://github.com/Kuestenlogik/Bowire/issues/946)
@@ -889,6 +885,10 @@ Discovering an MCP server that offers only tools (an SDK 2.2 server with `WithTo
 #### <a id="issue-kuestenlogik-bowire-944"></a>✅ Done · [#944](https://github.com/Kuestenlogik/Bowire/issues/944) Flaky: ChunkedRecordingStore's test root override leaks across parallel test classes
 
 In full runs of `Kuestenlogik.Bowire.Tests`, `WorkbenchRecordingJsonProviderCoverageTests` fails at random: a recording seeded under its own workspace folder is not found (`Assert.NotNull() Failure`), or the legacy fallback wins over the workspace match. Run alone, or with its class only, it passes. [[more]](https://github.com/Kuestenlogik/Bowire/issues/944)
+
+#### <a id="issue-kuestenlogik-bowire-945"></a>✅ Done · [#945](https://github.com/Kuestenlogik/Bowire/issues/945) bowire.test.run over MCP, with a data set
+
+Follow-up of #675, to be done with #802 (which makes `bowire.test.run` the first durable MCP task). [[more]](https://github.com/Kuestenlogik/Bowire/issues/945)
 
 ### v2.12 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
 
@@ -1186,4 +1186,4 @@ Two warning suppressions in this repo, reviewed under the rule that warnings are
 
 ---
 
-*Generated 2026-10-28 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
+*Generated 2026-10-29 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
