@@ -21,6 +21,7 @@
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Grpc.JsonTranscoding" />
     <ProjectReference Include="..\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
     <!-- Bowire.Mcp brings the dual-mount infrastructure
          (BowireMcpEndpointRegistry + BowireMcpDualHandlerDispatcher)
