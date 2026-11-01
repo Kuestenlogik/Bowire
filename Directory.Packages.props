@@ -27,9 +27,9 @@
     <PackageVersion Include="Cronos" Version="0.13.0" />
     <!-- #673 / #674: JSON transcoding (google.api.http) for Bowire's own gRPC
          services, so the workbench reaches them over plain HTTP/1.1. -->
-    <PackageVersion Include="Microsoft.AspNetCore.Grpc.JsonTranscoding" Version="10.0.13" />
-    <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.13" />
-    <PackageVersion Include="Microsoft.AspNetCore.TestHost" Version="10.0.13" />
+    <PackageVersion Include="Microsoft.AspNetCore.Grpc.JsonTranscoding" Version="10.0.14" />
+    <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.14" />
+    <PackageVersion Include="Microsoft.AspNetCore.TestHost" Version="10.0.14" />
     <PackageVersion Include="Grpc.AspNetCore" Version="2.84.0" />
     <PackageVersion Include="Grpc.Tools" Version="2.84.0" />
     <!-- Kuestenlogik.Bowire.Protocol.TacticalApi — Rheinmetall TacticalAPI
@@ -40,7 +40,7 @@
          stays here so downstream consumers that DO opt in still get a
          known-good version. -->
     <PackageVersion Include="Kuestenlogik.Bowire.Protocol.TacticalApi" Version="1.0.4" />
-    <PackageVersion Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.13" />
+    <PackageVersion Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.14" />
     <PackageVersion Include="Microsoft.Identity.Web" Version="4.16.0" />
     <!-- Transitive overrides against live advisories. Microsoft.Identity.Web
          4.16 pulls System.Security.Cryptography.Pkcs and .Xml 10.0.10, and
@@ -157,7 +157,7 @@
          line above; kept on the 15.1.x floor for the same CVE reason. -->
     <PackageVersion Include="HotChocolate.Subscriptions.InMemory" Version="16.7.1" />
     <PackageVersion Include="SocketIOClient" Version="4.0.5" />
-    <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.13" />
+    <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.14" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.11.0" />
     <PackageVersion Include="xunit.v3" Version="4.0.2" />
     <PackageVersion Include="Microsoft.Testing.Extensions.CodeCoverage" Version="18.12.0" />
