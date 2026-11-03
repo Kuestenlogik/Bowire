@@ -16,7 +16,7 @@ import { dirname, resolve } from 'node:path';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const plan = await import(pathToFileURL(resolve(__dirname, '../../../scripts/ci/release-plan.mjs')).href);
 const check = await import(pathToFileURL(resolve(__dirname, '../../../scripts/ci/check-release-plan.mjs')).href);
-const { parseMilestone, releaseOfVersion, releaseMatches, compareVersions, planFor, problems, releases, productOfRepo, view, isFailureTracker } = plan;
+const { parseMilestone, releaseOfVersion, releaseMatches, compareVersions, planFor, problems, releases, productOfRepo, view, isFailureTracker, isTriageMilestone } = plan;
 
 const CUT = '2026-09-07T20:39:34Z';
 let seq = 0;
@@ -104,6 +104,30 @@ describe('problems', () => {
     });
     it('leaves a publish-failure tracking issue alone (#764)', () => {
         assert.deepEqual(problems(it_({ release: null, milestone: null, tracker: true })), []);
+    });
+    it('takes a ticket in the triage milestone as not planned yet: a Product, no Release', () => {
+        const triage = { repo: 'Kuestenlogik/Bowire.VulnDb', product: 'VulnDb', milestone: 'Triage — new CVEs' };
+        assert.deepEqual(problems(it_({ ...triage, release: null })), []);
+        assert.deepEqual(problems(it_({ ...triage, release: null, product: null })), ['no Product']);
+        assert.deepEqual(problems(it_({ ...triage, release: '1.4' })),
+            ['milestone is Triage — new CVEs, Release is 1.4: move it to the milestone of that release']);
+    });
+});
+
+describe('isTriageMilestone', () => {
+    it('is the bare word or the word with a theme', () => {
+        assert.equal(isTriageMilestone('Triage'), true);
+        assert.equal(isTriageMilestone('Triage — new CVEs'), true);
+        assert.equal(isTriageMilestone('Triage - new CVEs'), true);
+    });
+    it('is no release milestone and nothing that only starts with the word', () => {
+        assert.equal(isTriageMilestone('v2.8 — Triage'), false);
+        assert.equal(isTriageMilestone('Triaged'), false);
+        assert.equal(isTriageMilestone('Triage —'), false);
+        assert.equal(isTriageMilestone(null), false);
+    });
+    it('is not a release, so no release plan counts it', () => {
+        assert.equal(parseMilestone('Triage — new CVEs'), null);
     });
 });
 

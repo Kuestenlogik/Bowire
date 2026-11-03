@@ -54,6 +54,16 @@ export function parseMilestone(title) {
   return { product: m[1] ?? null, version: m[2], theme: (m[3] ?? '').trim() || null };
 }
 
+/**
+ * A triage milestone, `Triage — <theme>`: one per repository, without a version. It holds the
+ * tickets that arrive by themselves — Bowire.VulnDb's `nvd-sync` files one per new CVE — until
+ * someone decides whether they become work at all. A ticket in it names its Product but no
+ * Release yet; triage ends by closing it or by moving it into the milestone of a release.
+ */
+export function isTriageMilestone(title) {
+  return /^Triage(?:\s+[—-]\s+.+)?$/.test(String(title ?? '').trim());
+}
+
 /** `2.8.0` → `2.8` (a minor release is planned as major.minor); `2.8.1` → `2.8.1`; `v` and a prerelease suffix dropped. */
 export function releaseOfVersion(version) {
   const v = String(version ?? '').replace(/^v/, '').replace(/-.*$/, '');
@@ -144,12 +154,16 @@ export function planFor(items, product, version, since = null) {
 /**
  * Whether a ticket's three fields agree; the reasons when they do not. Used by the daily guard:
  * an open ticket names its product, the release it is planned for, and the milestone of that
- * release.
+ * release — or sits in its repository's triage milestone, not planned yet.
  */
 export function problems(it) {
   const out = [];
   if (it.state !== 'OPEN' || it.tracker) return out;
   if (!it.product) out.push('no Product');
+  if (isTriageMilestone(it.milestone)) {
+    if (it.release) out.push(`milestone is ${it.milestone}, Release is ${it.release}: move it to the milestone of that release`);
+    return out;
+  }
   if (!it.release) out.push('no Release');
   if (!it.milestone) { out.push('no milestone'); return out; }
   const ms = parseMilestone(it.milestone);
