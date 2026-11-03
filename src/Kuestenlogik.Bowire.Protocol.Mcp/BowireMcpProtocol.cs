@@ -354,11 +354,17 @@ public sealed partial class BowireMcpProtocol : IBowireProtocol, Kuestenlogik.Bo
         var frames = System.Threading.Channels.Channel.CreateUnbounded<string>(
             new System.Threading.Channels.UnboundedChannelOptions { SingleReader = true });
 
+        // #966 — the SDK hands notifications to their handlers in no
+        // particular order; this keeps the order the server sent its logs in.
+        // Logging is deprecated (SEP-2577) but still sent; see the handler below.
+#pragma warning disable MCP9005
+        var logOrder = new McpWireOrder(NotificationMethods.LoggingMessageNotification);
+#pragma warning restore MCP9005
         McpClient client;
         string? connectFailure = null;
         try
         {
-            client = await CreateClientAsync(serverUrl, metadata, ct).ConfigureAwait(false);
+            client = await CreateClientAsync(serverUrl, metadata, ct, order: logOrder).ConfigureAwait(false);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
@@ -385,9 +391,11 @@ public sealed partial class BowireMcpProtocol : IBowireProtocol, Kuestenlogik.Bo
                 NotificationMethods.LoggingMessageNotification,
                 (notification, _) =>
                 {
-                    frames.Writer.TryWrite(Frame("log", notification.Params is null ? null : JsonSerializer.SerializeToElement(notification.Params)));
+                    var frame = Frame("log", notification.Params is null ? null : JsonSerializer.SerializeToElement(notification.Params));
+                    logOrder.Deliver(notification, () => frames.Writer.TryWrite(frame));
                     return ValueTask.CompletedTask;
                 });
+            logOrder.Start();
 
             if (client.ServerCapabilities?.Logging is not null)
             {
@@ -412,13 +420,15 @@ public sealed partial class BowireMcpProtocol : IBowireProtocol, Kuestenlogik.Bo
                         (options, token) => CreateClientAsync(serverUrl, metadata, token, options)).ConfigureAwait(false);
                     if (dialect is not null)
                     {
-                        await RunToolAsTaskAsync(client, dialect, method, jsonMessages, frames.Writer, ct).ConfigureAwait(false);
+                        await RunToolAsTaskAsync(client, dialect, method, jsonMessages, frames.Writer, logOrder, ct).ConfigureAwait(false);
                         return;
                     }
                     var progress = new FrameProgress(frames.Writer);
                     var result = await client.CallToolAsync(
                         method, ParseArguments(jsonMessages),
                         progress, cancellationToken: ct).ConfigureAwait(false);
+                    // A log the server sent before its result comes before it here too.
+                    await logOrder.DeliveredAsync(ct).ConfigureAwait(false);
                     progress.End(Frame("result", JsonSerializer.SerializeToElement(result)));
                 }
                 catch (Exception ex) when (ex is not OperationCanceledException)
@@ -449,7 +459,7 @@ public sealed partial class BowireMcpProtocol : IBowireProtocol, Kuestenlogik.Bo
     /// </summary>
     private static async Task RunToolAsTaskAsync(
         McpClient client, IMcpTaskDialect dialect, string tool, List<string> jsonMessages,
-        System.Threading.Channels.ChannelWriter<string> frames, CancellationToken ct)
+        System.Threading.Channels.ChannelWriter<string> frames, McpWireOrder logOrder, CancellationToken ct)
     {
         // The SDK attaches progress only to its own CallToolAsync; this call
         // goes through the dialect, so the token and its handler are
@@ -470,14 +480,20 @@ public sealed partial class BowireMcpProtocol : IBowireProtocol, Kuestenlogik.Bo
         var outcome = await dialect.CallToolAsync(client, tool, ParseArgumentElements(jsonMessages), token, ct).ConfigureAwait(false);
         if (outcome.Task is not { } created)
         {
+            await logOrder.DeliveredAsync(ct).ConfigureAwait(false);
             progress.End(Frame("result", outcome.Result));
             return;
         }
         await foreach (var step in McpTaskFollower.FollowAsync(client, dialect, created.TaskId, created, ct: ct).ConfigureAwait(false))
         {
             var frame = Frame(step.Kind, step.Data);
-            if (step.Kind == "task") frames.TryWrite(frame);
-            else progress.End(frame);
+            if (step.Kind == "task")
+            {
+                frames.TryWrite(frame);
+                continue;
+            }
+            await logOrder.DeliveredAsync(ct).ConfigureAwait(false);
+            progress.End(frame);
         }
     }
 
@@ -611,7 +627,8 @@ public sealed partial class BowireMcpProtocol : IBowireProtocol, Kuestenlogik.Bo
         string serverUrl,
         Dictionary<string, string>? metadata,
         CancellationToken ct,
-        McpClientOptions? clientOptions = null)
+        McpClientOptions? clientOptions = null,
+        McpWireOrder? order = null)
     {
         var options = new HttpClientTransportOptions
         {
@@ -640,12 +657,15 @@ public sealed partial class BowireMcpProtocol : IBowireProtocol, Kuestenlogik.Bo
         // stays open far longer than HttpClient's 100 s default.
         // #679 — the SDK builds its own requests, so the credentials go on the
         // client itself rather than on each request.
-        var transport = new HttpClientTransport(
+        var http = new HttpClientTransport(
             options,
             Kuestenlogik.Bowire.Net.BowireHttpClientFactory.CreateAuthenticated(
                 null, "mcp", Timeout.InfiniteTimeSpan, Kuestenlogik.Bowire.Auth.BowireHttpAuth.TryParse(metadata)),
             loggerFactory: null,
             ownsHttpClient: true);
+        // #966 — where a caller needs the wire order of a notification, the
+        // transport records it as it reads.
+        IClientTransport transport = order is null ? http : new McpWireOrderTransport(http, order);
 #pragma warning restore CA2000
         try
         {
@@ -653,7 +673,7 @@ public sealed partial class BowireMcpProtocol : IBowireProtocol, Kuestenlogik.Bo
         }
         catch
         {
-            await transport.DisposeAsync().ConfigureAwait(false);
+            await ((IAsyncDisposable)transport).DisposeAsync().ConfigureAwait(false);
             throw;
         }
     }

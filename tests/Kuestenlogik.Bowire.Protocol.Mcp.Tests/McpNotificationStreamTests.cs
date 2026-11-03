@@ -70,6 +70,23 @@ public sealed class McpNotificationStreamTests
         Assert.Equal("result", Kind(frames[^1]));
     }
 
+    /// <summary>
+    /// #966 — the SDK hands notifications to their handlers in no particular
+    /// order, and the result can be handled before a log sent ahead of it. A
+    /// burst of logs with no pause between them and the result right after
+    /// is where both show; the stream still has every log, in order, first.
+    /// </summary>
+    [Fact]
+    public async Task A_Burst_Of_Logs_Comes_Through_Complete_And_In_Order_Before_The_Result()
+    {
+        await using var server = await McpTestServer.StartAsync(Ct);
+        var frames = await Stream(server.Url, "Tools", "burst", """{ "count": 40 }""");
+
+        var logs = frames.Where(f => Kind(f) == "log").Select(f => f.GetProperty("data").GetProperty("data").GetString()).ToList();
+        Assert.Equal(Enumerable.Range(1, 40).Select(i => $"log {i}"), logs);
+        Assert.Equal("result", Kind(frames[^1]));
+    }
+
     [Fact]
     public async Task A_Tool_That_Says_Nothing_Is_Its_Result_Alone()
     {
@@ -148,6 +165,22 @@ public sealed class McpNotificationStreamTests
                 await Task.Delay(20, ct);
             }
             return $"counted {steps}";
+        }
+
+        [McpServerTool(Name = "burst")]
+        [Description("Logs count times with no pause, then returns at once.")]
+        public static async Task<string> Burst(McpServer server, int count, CancellationToken ct)
+        {
+            for (var i = 1; i <= count; i++)
+            {
+#pragma warning disable MCP9005
+                await server.SendNotificationAsync(
+                    NotificationMethods.LoggingMessageNotification,
+                    new LoggingMessageNotificationParams { Level = LoggingLevel.Info, Data = JsonSerializer.SerializeToElement($"log {i}") },
+                    cancellationToken: ct);
+#pragma warning restore MCP9005
+            }
+            return $"logged {count}";
         }
 
         [McpServerTool(Name = "quiet")]
