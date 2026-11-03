@@ -132,14 +132,14 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**21/39 done** · 1 in progress · 17 backlog
+**21/39 done** · 2 in progress · 16 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
-| [974](https://github.com/Kuestenlogik/Bowire/issues/974) | Bowire | [bowire call -d @file: the parser expands the file as a response file and mangles the body](#issue-kuestenlogik-bowire-974) | 🟡 In progress |  |
+| [678](https://github.com/Kuestenlogik/Bowire/issues/678) | Bowire | [bowire send http: send a request directly, URL-first, with HTTPie-style items and --offline](#issue-kuestenlogik-bowire-678) | 🟡 In progress | `area:cli` |
+| [974](https://github.com/Kuestenlogik/Bowire/issues/974) | Bowire | [bowire call -d @file: the parser expands the file as a response file and mangles the body](#issue-kuestenlogik-bowire-974) | 🟡 In progress | `area:cli` |
 | [672](https://github.com/Kuestenlogik/Bowire/issues/672) | Bowire | [Server-side script engine so pre/post scripts run in bowire test, not only in the browser](#issue-kuestenlogik-bowire-672) | ⬜ Backlog | `area:cli` |
 | [677](https://github.com/Kuestenlogik/Bowire/issues/677) | Bowire | [Broader code export, and snippets for the protocols no snippet library covers](#issue-kuestenlogik-bowire-677) | ⬜ Backlog | `area:workbench` |
-| [678](https://github.com/Kuestenlogik/Bowire/issues/678) | Bowire | [bowire send http: send a request directly, URL-first, with HTTPie-style items and --offline](#issue-kuestenlogik-bowire-678) | ⬜ Backlog | `area:cli` |
 | [687](https://github.com/Kuestenlogik/Bowire/issues/687) | Bowire | [Tray icon and no console window: give the running workbench a handle of its own](#issue-kuestenlogik-bowire-687) | ⬜ Backlog | `area:cli` |
 | [688](https://github.com/Kuestenlogik/Bowire/issues/688) | Bowire | [Plurals: the translation layer cannot express a sentence whose shape depends on a number](#issue-kuestenlogik-bowire-688) | ⬜ Backlog | `area:workbench` |
 | [690](https://github.com/Kuestenlogik/Bowire/issues/690) | Bowire | [Translate the CLI help surface, or decide not to](#issue-kuestenlogik-bowire-690) | ⬜ Backlog | `area:cli` |
@@ -758,7 +758,15 @@ On a phone, the header of the docs, the API reference and the Bootcamp has no bu
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
+#### <a id="issue-kuestenlogik-bowire-678"></a>🟡 In progress · [#678](https://github.com/Kuestenlogik/Bowire/issues/678) bowire send http: send a request directly, URL-first, with HTTPie-style items and --offline
+
+> `area:cli`
+
+`bowire call` can do a lot: every protocol, `{{vars}}`, `--env-file`, `--stream`, `--compact`, tab completion and meaningful exit codes. What it cannot do is the thing curl and HTTPie are actually used for: **one request, right now, with no context**. [[more]](https://github.com/Kuestenlogik/Bowire/issues/678)
+
 #### <a id="issue-kuestenlogik-bowire-974"></a>🟡 In progress · [#974](https://github.com/Kuestenlogik/Bowire/issues/974) bowire call -d @file: the parser expands the file as a response file and mangles the body
+
+> `area:cli`
 
 `bowire call … -d @request.json` is documented (cli-mode, export-import, request pane) to send the file's content as the body. It does not: System.CommandLine treats every token that starts with `@` as a response file and replaces it with the file's tokens before the command sees it. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/974)
 
@@ -773,12 +781,6 @@ Pre- and post-request scripts exist — as `new Function('ctx', …)` **in the b
 > `area:workbench`
 
 Code export offers five to six target languages per protocol. Postman, Hoppscotch and Insomnia each offer twenty-five to forty, all of them via HTTPSnippet. [[more]](https://github.com/Kuestenlogik/Bowire/issues/677)
-
-#### <a id="issue-kuestenlogik-bowire-678"></a>⬜ Backlog · [#678](https://github.com/Kuestenlogik/Bowire/issues/678) bowire send http: send a request directly, URL-first, with HTTPie-style items and --offline
-
-> `area:cli`
-
-`bowire call` can do a lot: every protocol, `{{vars}}`, `--env-file`, `--stream`, `--compact`, tab completion and meaningful exit codes. What it cannot do is the thing curl and HTTPie are actually used for: **one request, right now, with no context**. [[more]](https://github.com/Kuestenlogik/Bowire/issues/678)
 
 #### <a id="issue-kuestenlogik-bowire-687"></a>⬜ Backlog · [#687](https://github.com/Kuestenlogik/Bowire/issues/687) Tray icon and no console window: give the running workbench a handle of its own
 
