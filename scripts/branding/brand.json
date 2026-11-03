@@ -1,0 +1,38 @@
+{
+  "$comment": "Bowire's logo set for the shared generator (scripts/branding/tool, #964, #965). Paths are relative to the repository root. See scripts/branding/README.md.",
+  "root": "../..",
+  "product": "Bowire",
+  "prefix": "bowire",
+  "source": "scripts/branding/bowire_mark_source.svg",
+  "frame": [77.026421, 77.673187],
+  "emblem": { "source": "scripts/branding/bowire_emblem_source.svg" },
+  "wordmark": { "text": "Bowire", "outline": "scripts/branding/wordmark.json" },
+  "images": "images",
+  "roles": {
+    "ink": { "light": "#003e60", "dark": "#ffffff", "source": ["#000000"], "why": "the bw and its ring, drawn black: Küstenlogik's navy ink on light (11.3:1 on white), white on dark (navy on #121212 would be 1.7:1)" }
+  },
+  "wordmarkRole": "ink",
+  "background": { "stops": ["#F6F8FA", "#E6EBEF", "#D3DCE3"], "why": "the family's neutral light glass; behind the tiles and og-image" },
+  "icons": [
+    { "name": "bowire.ico", "sizes": [16, 24, 32, 48, 64, 128, 256], "art": "tile" },
+    { "name": "bowire.icns", "sizes": [16, 32, 64, 128, 256, 512, 1024], "art": "tile" },
+    { "name": "bowire_app_256.png", "size": 256, "art": "tile" }
+  ],
+  "kit": { "path": "site/assets/brand/bowire_brand_kit.zip" },
+  "inline": [
+    "site/_includes/*.html",
+    "site/_layouts/*.html",
+    "site/downloads.html",
+    "docs/index.md",
+    "docs/templates/bowire/layout/_master.tmpl"
+  ],
+  "distribute": [
+    { "dir": "site/assets/images", "files": ["favicon.svg", "favicon.ico", "apple-touch-icon.png", "og-image.png", "bowire_mark_colored.svg", "bowire_mark_white.svg"] },
+    { "dir": "site/assets/brand", "files": ["bowire_mark_colored.svg", "bowire_mark_white.svg", "bowire_emblem_colored.svg", "bowire_emblem_white.svg", "bowire_lockup_h_colored.svg", "bowire_lockup_h_white.svg"] },
+    { "dir": "docs/images/brand", "files": ["bowire_mark_colored.svg", "bowire_mark_white.svg", "bowire_emblem_colored.svg", "bowire_emblem_white.svg", "bowire_lockup_h_colored.svg", "bowire_lockup_h_white.svg"] },
+    { "dir": "docs", "files": ["favicon.ico"] },
+    { "dir": "docs/templates/bowire/public", "files": ["favicon.svg"] },
+    { "dir": "src/Kuestenlogik.Bowire/wwwroot", "files": ["bowire_mark_colored.svg", "bowire_mark_white.svg", "bowire_emblem_colored.svg", "bowire_emblem_white.svg"] },
+    { "dir": "packaging/macos/Bowire.app/Contents/Resources", "files": ["bowire.icns"] }
+  ]
+}

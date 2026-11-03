@@ -19,37 +19,41 @@ one-page brand sheet). This page is the manual behind it.
 
 ## The logo system
 
-Bowire has three forms. Reach for the **full logo** by default; use the **mark**
-when space is tight or the surrounding context already says "Bowire"; use the
-**lockup** when you want the name spelled out beside the mark.
+Bowire has three forms. The **mark** is the logo: reach for it by default. Use
+the **lockup** when you want the name spelled out beside the mark, and the
+**emblem** where there is room for the whole story: the site's hero, a title
+page, a cover. All three come from one drawing each, generated into every
+format by the shared Küstenlogik branding tool.
 
-### Full logo
+### Emblem
 
-The bowline loop tied around the Circle-B — the primary, most expressive form.
+The mark in its ring, with a bowline knot tied around it: Bowire is *bowline*
+and *wire*. The most expressive form, for the places that have room for it.
 
 <div style="display:flex;gap:16px;flex-wrap:wrap;margin:18px 0">
-  <div style="background:#fafaff;border:1px solid #e1e1ee;border-radius:10px;padding:30px;flex:1;min-width:210px;text-align:center"><img src="images/brand/bowire-logo-dark.svg" alt="Bowire full logo (dark) on a light background" style="max-height:74px"></div>
-  <div style="background:#0f0f17;border:1px solid #2a2a3d;border-radius:10px;padding:30px;flex:1;min-width:210px;text-align:center"><img src="images/brand/bowire-logo-light.svg" alt="Bowire full logo (light) on a dark background" style="max-height:74px"></div>
+  <div style="background:#fafaff;border:1px solid #e1e1ee;border-radius:10px;padding:30px;flex:1;min-width:210px;text-align:center"><img src="images/brand/bowire_emblem_colored.svg" alt="Bowire emblem, navy, on a light background" style="max-height:74px"></div>
+  <div style="background:#0f0f17;border:1px solid #2a2a3d;border-radius:10px;padding:30px;flex:1;min-width:210px;text-align:center"><img src="images/brand/bowire_emblem_white.svg" alt="Bowire emblem, white, on a dark background" style="max-height:74px"></div>
 </div>
 
 ### Lockup — mark + wordmark
 
-The Circle-B with the "Bowire" wordmark set in Inter (outlined, so no font is
+The mark with the "Bowire" wordmark set in Inter Bold (outlined, so no font is
 required to render it). Use horizontally where the name should read alongside
 the mark — headers, signatures, "powered by" strips.
 
 <div style="display:flex;gap:16px;flex-wrap:wrap;margin:18px 0">
-  <div style="background:#fafaff;border:1px solid #e1e1ee;border-radius:10px;padding:30px;flex:1;min-width:210px;text-align:center"><img src="images/brand/bowire-lockup-dark.svg" alt="Bowire lockup (dark) on a light background" style="max-height:54px"></div>
-  <div style="background:#0f0f17;border:1px solid #2a2a3d;border-radius:10px;padding:30px;flex:1;min-width:210px;text-align:center"><img src="images/brand/bowire-lockup-light.svg" alt="Bowire lockup (light) on a dark background" style="max-height:54px"></div>
+  <div style="background:#fafaff;border:1px solid #e1e1ee;border-radius:10px;padding:30px;flex:1;min-width:210px;text-align:center"><img src="images/brand/bowire_lockup_h_colored.svg" alt="Bowire lockup (dark) on a light background" style="max-height:54px"></div>
+  <div style="background:#0f0f17;border:1px solid #2a2a3d;border-radius:10px;padding:30px;flex:1;min-width:210px;text-align:center"><img src="images/brand/bowire_lockup_h_white.svg" alt="Bowire lockup (light) on a dark background" style="max-height:54px"></div>
 </div>
 
 ### Mark
 
-The Circle-B alone. Use as an app icon, avatar, favicon, or any square slot.
+The "bw" alone: the main logo. Use it wherever Bowire needs one logo, and as
+an app icon, avatar, favicon, or any square slot.
 
 <div style="display:flex;gap:16px;flex-wrap:wrap;margin:18px 0">
-  <div style="background:#fafaff;border:1px solid #e1e1ee;border-radius:10px;padding:24px;flex:1;min-width:210px;text-align:center"><img src="images/brand/bowire-mark-dark.svg" alt="Bowire mark (dark) on a light background" style="max-height:66px"></div>
-  <div style="background:#0f0f17;border:1px solid #2a2a3d;border-radius:10px;padding:24px;flex:1;min-width:210px;text-align:center"><img src="images/brand/bowire-mark-light.svg" alt="Bowire mark (light) on a dark background" style="max-height:66px"></div>
+  <div style="background:#fafaff;border:1px solid #e1e1ee;border-radius:10px;padding:24px;flex:1;min-width:210px;text-align:center"><img src="images/brand/bowire_mark_colored.svg" alt="Bowire mark (dark) on a light background" style="max-height:66px"></div>
+  <div style="background:#0f0f17;border:1px solid #2a2a3d;border-radius:10px;padding:24px;flex:1;min-width:210px;text-align:center"><img src="images/brand/bowire_mark_white.svg" alt="Bowire mark (light) on a dark background" style="max-height:66px"></div>
 </div>
 
 Each form ships in two colourways: a dark (ink `#0F0F17`) version for light
@@ -59,20 +63,20 @@ version that gives the most contrast — see [Accessibility](#accessibility).
 ## Clear space
 
 Keep a protected margin around the logo so nothing crowds it. The measurement
-unit is **X = the height of the Circle-B mark** (the circular badge).
+unit is **X = the height of the mark** (the "bw").
 
 - **Minimum clear space: ½ X on every side** — top, bottom, left, right.
-- For the **lockup** and **full logo**, X is the height of the Circle-B portion,
-  not the whole artwork.
+- For the **lockup**, X is the height of its mark; for the **emblem**, the height
+  of its ring, not the whole artwork.
 - Nothing — text, photo edges, page margins, or another logo — may enter that
   margin. When in doubt, give it more.
 
 <figure style="margin:18px 0;background:#fafaff;border:1px solid #e1e1ee;border-radius:10px;padding:18px;display:flex;justify-content:center">
-<svg width="340" height="190" viewBox="0 0 340 190" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Clear-space diagram: keep half the Circle-B mark height of free space around the logo on every side" font-family="Inter, system-ui, -apple-system, 'Segoe UI', sans-serif">
+<svg width="340" height="190" viewBox="0 0 340 190" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Clear-space diagram: keep half the mark height of free space around the logo on every side" font-family="Inter, system-ui, -apple-system, 'Segoe UI', sans-serif">
   <!-- logo bounding box -->
   <rect x="142" y="40" width="56" height="56" fill="none" stroke="#d0d0dc" stroke-width="1"/>
-  <!-- the Circle-B mark -->
-  <image href="images/brand/bowire-mark-dark.svg" x="142" y="40" width="56" height="56"/>
+  <!-- the mark -->
+  <image href="images/brand/bowire_mark_colored.svg" x="142" y="40" width="56" height="56"/>
   <!-- clear-space boundary: 28 = half of the 56 mark height (½ X) on every side -->
   <rect x="114" y="12" width="112" height="112" rx="3" fill="none" stroke="#6366f1" stroke-width="1.6" stroke-dasharray="6 4"/>
   <!-- X = mark height (left dimension) -->
@@ -91,37 +95,39 @@ unit is **X = the height of the Circle-B mark** (the circular badge).
   <text x="178" y="30" text-anchor="start" font-size="13" font-weight="600" fill="#1a1a2e">½ X</text>
   <!-- captions -->
   <text x="170" y="150" text-anchor="middle" font-size="12.5" fill="#5a5a72">Dashed margin = ½ X on every side</text>
-  <text x="170" y="168" text-anchor="middle" font-size="12.5" fill="#5a5a72">X = the height of the Circle-B mark</text>
+  <text x="170" y="168" text-anchor="middle" font-size="12.5" fill="#5a5a72">X = the height of the mark</text>
 </svg>
 </figure>
 
 ## Minimum size
 
-Below these sizes the bowline strands and the B's counter start to fill in and
-the mark loses legibility.
+Below these sizes the bowline strands and the counters of the "bw" start to
+fill in and the logo loses legibility.
 
 | Form | Screen (min) | Print (min) |
 | --- | --- | --- |
-| Mark (Circle-B) | 24 px tall | 8 mm tall |
-| Full logo | 20 px tall (≈ 34 px wide) | 10 mm tall |
+| Mark | 24 px tall | 8 mm tall |
+| Emblem | 20 px tall (≈ 34 px wide) | 10 mm tall |
 | Lockup | 24 px tall (≈ 130 px wide) | 10 mm tall |
 
-Prefer the **mark** over a shrunk full logo whenever the full logo would fall
+Prefer the **mark** over a shrunk emblem or lockup whenever either would fall
 below its minimum.
 
 ## Colour
 
-You barely need colour to reference Bowire: the logo is monochrome — **ink**
-(`#0F0F17`) on light backgrounds, **white** (`#FFFFFF`) on dark. The one brand
-colour is **Bowire Indigo** — use it for an accent *around* the logo (a "works
-with Bowire" badge, a button, a link), never to recolour the logo itself.
+The logo has one colour: **navy** (`#003E60`) on light backgrounds, **white**
+(`#FFFFFF`) on dark, and black for single-colour print. Navy is the ink every
+Küstenlogik product's logo shares. Bowire's own colour is **Bowire Indigo**: use
+it for an accent *around* the logo (a "works with Bowire" badge, a button, a
+link), never to recolour the logo itself.
 
 | Colour | Hex | Use |
 | --- | --- | --- |
 | **Bowire Indigo** | `#6366F1` | The signature brand accent |
 | Indigo · on light | `#4F46E5` | The same accent where `#6366F1` would miss WCAG AA contrast on a white background |
-| **Ink** | `#0F0F17` | The dark logo; dark backgrounds |
-| **White** | `#FFFFFF` | The light logo |
+| **Navy** | `#003E60` | The logo on light backgrounds (11.3:1 on white) |
+| **Ink** | `#0F0F17` | Dark backgrounds |
+| **White** | `#FFFFFF` | The logo on dark backgrounds |
 | Off-white | `#FAFAFF` | Light backgrounds |
 
 The product's wider UI palette (surfaces, borders, state colours) isn't part of
@@ -142,11 +148,11 @@ Both are open-source: [Inter](https://rsms.me/inter/) ·
 When the Bowire logo sits next to another logo (Küstenlogik, a partner, a
 conference badge):
 
-- **Separation: at least 2 X** between the logos (X = the Circle-B height). This
+- **Separation: at least 2 X** between the logos (X = the mark's height). This
   is wider than the clear-space margin so neither mark crowds the other.
 - Optionally place a **thin vertical divider** (1 px / 0.5 pt, in the border
   grey) centred in the gap.
-- **Optically balance the sizes**: match the Circle-B height (or the wordmark
+- **Optically balance the sizes**: match the mark's height (or the wordmark
   cap-height) to the neighbouring logo's dominant element — not the bounding
   boxes, which read unevenly.
 - Keep both logos in the same colourway family (all dark on light, or all light
@@ -154,35 +160,38 @@ conference badge):
 
 ## Backgrounds
 
-Use the version that contrasts with the surface — the dark logo on light, the
-light logo on dark. Indigo is the brand colour; on it, use the white logo.
+Use the version that contrasts with the surface: the navy logo on light, the
+white logo on dark. Indigo is Bowire's colour; on it, use the white logo.
 
 <div style="display:flex;gap:14px;flex-wrap:wrap;margin:18px 0">
   <figure style="margin:0;flex:1;min-width:180px;border:1px solid #e1e1ee;border-radius:10px;overflow:hidden">
-    <div style="background:#fafaff;padding:30px 20px;text-align:center"><img src="images/brand/bowire-lockup-dark.svg" alt="Bowire dark logo on a light background" style="max-height:36px"></div>
-    <figcaption style="padding:9px 12px;font-size:13px;color:#5a5a72;border-top:1px solid #e1e1ee">Light <code>#FAFAFF</code> &rarr; dark logo</figcaption>
+    <div style="background:#fafaff;padding:30px 20px;text-align:center"><img src="images/brand/bowire_lockup_h_colored.svg" alt="Bowire navy logo on a light background" style="max-height:36px"></div>
+    <figcaption style="padding:9px 12px;font-size:13px;color:#5a5a72;border-top:1px solid #e1e1ee">Light <code>#FAFAFF</code> &rarr; navy logo</figcaption>
   </figure>
   <figure style="margin:0;flex:1;min-width:180px;border:1px solid #e1e1ee;border-radius:10px;overflow:hidden">
-    <div style="background:#0f0f17;padding:30px 20px;text-align:center"><img src="images/brand/bowire-lockup-light.svg" alt="Bowire light logo on a dark background" style="max-height:36px"></div>
-    <figcaption style="padding:9px 12px;font-size:13px;color:#5a5a72;border-top:1px solid #e1e1ee">Dark <code>#0F0F17</code> &rarr; light logo</figcaption>
+    <div style="background:#0f0f17;padding:30px 20px;text-align:center"><img src="images/brand/bowire_lockup_h_white.svg" alt="Bowire white logo on a dark background" style="max-height:36px"></div>
+    <figcaption style="padding:9px 12px;font-size:13px;color:#5a5a72;border-top:1px solid #e1e1ee">Dark <code>#0F0F17</code> &rarr; white logo</figcaption>
   </figure>
   <figure style="margin:0;flex:1;min-width:180px;border:1px solid #e1e1ee;border-radius:10px;overflow:hidden">
-    <div style="background:#6366f1;padding:30px 20px;text-align:center"><img src="images/brand/bowire-lockup-light.svg" alt="Bowire light logo on the brand indigo background" style="max-height:36px"></div>
-    <figcaption style="padding:9px 12px;font-size:13px;color:#5a5a72;border-top:1px solid #e1e1ee">Indigo <code>#6366F1</code> &rarr; light logo</figcaption>
+    <div style="background:#6366f1;padding:30px 20px;text-align:center"><img src="images/brand/bowire_lockup_h_white.svg" alt="Bowire white logo on the brand indigo background" style="max-height:36px"></div>
+    <figcaption style="padding:9px 12px;font-size:13px;color:#5a5a72;border-top:1px solid #e1e1ee">Indigo <code>#6366F1</code> &rarr; white logo</figcaption>
   </figure>
 </div>
 
 - On a photo or gradient, set the logo on a **solid or scrimmed panel** so it
   keeps its clear space and contrast — don't float it directly over busy imagery.
-- Never place the dark logo on a dark field, or the light logo on a light field.
+- Never place the navy logo on a dark field, or the white logo on a light field.
 
 ## File formats
 
 | Format | When | Notes |
 | --- | --- | --- |
-| **SVG** | Default, everywhere it's supported | Scales losslessly; the files on the [download page](https://bowire.io/brand.html) are SVG. |
-| **PNG** | Raster-only contexts (slides, raster email, app stores) | Export from the SVG at **2× or 3×** the display size, on a transparent background. Don't upscale. |
-| **ICO** | Browser-tab favicons | Use the supplied favicon. |
+| **SVG** | Default, everywhere it's supported | Scales losslessly. `adaptive` follows the page's light or dark theme; `colored`, `white` and `black` are fixed. |
+| **PNG / WebP** | Raster-only contexts (slides, raster email, app stores) | Supplied at 1× and 2× on a transparent background, every PNG also as a lossless WebP. Don't upscale. |
+| **ICO / ICNS** | Browser-tab favicons, Windows and macOS app icons | Use the supplied `favicon.ico`, `bowire.ico` and `bowire.icns`. |
+
+Every file is in the [brand kit](https://bowire.io/assets/brand/bowire_brand_kit.zip), named
+`bowire_<form>_<colourway>`: `bowire_mark_colored.svg`, `bowire_lockup_h_white.png`, `bowire_emblem_adaptive.svg`, …
 
 Never re-trace the logo from a screenshot or a raster export — always start from
 the SVG.
@@ -190,13 +199,13 @@ the SVG.
 ## Accessibility
 
 - **Contrast:** a logo is graphical content, so aim for at least **3:1** between
-  the logo and its background (WCAG 1.4.11). The Ink-on-Off-white and
-  White-on-Ink pairings clear this comfortably; pick whichever variant maximises
+  the logo and its background (WCAG 1.4.11). The navy-on-white and
+  white-on-ink pairings clear this comfortably; pick whichever variant maximises
   contrast on your surface.
 - **Alt text:** use `alt="Bowire"` for the logo/lockup, or `alt="Bowire logo"`.
   Decorative repeats can use empty `alt=""`. Don't stuff the tagline into alt.
 - **Don't rely on colour alone** to convey the brand — the mark's silhouette
-  carries it in monochrome.
+  carries it in a single colour.
 
 ## Do & don't
 
@@ -205,11 +214,11 @@ the SVG.
 - Use the supplied SVGs at their native proportions.
 - Pick the colourway that maximises contrast on your background.
 - Keep the clear space and minimum sizes above.
-- Drop to the mark alone when the full logo won't fit.
+- Drop to the mark alone when the emblem or the lockup won't fit.
 
 **Don't**
 
-- Recolour the logo, or add gradients, shadows, or outlines.
+- Recolour the logo (it is navy, white, or black), or add gradients, shadows, or outlines.
 - Stretch, squash, rotate, skew, or otherwise distort it.
 - Re-set the "Bowire" wordmark in a different typeface.
 - Crop the mark, untie the bowline, or rebuild the artwork.

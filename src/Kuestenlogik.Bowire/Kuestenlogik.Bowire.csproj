@@ -83,7 +83,11 @@
          language as the workbench without a second copy of the files. -->
     <EmbeddedResource Include="wwwroot\locales\*.json"
                       LogicalName="Kuestenlogik.Bowire.wwwroot.locales.%(Filename)%(Extension)" />
-    <EmbeddedResource Include="wwwroot\favicon.svg" LogicalName="Kuestenlogik.Bowire.wwwroot.favicon.svg" />
+    <!-- #964: the mark from the shared branding generator, colored and white (BowireHtmlGenerator). -->
+    <EmbeddedResource Include="wwwroot\bowire_mark_colored.svg" LogicalName="Kuestenlogik.Bowire.wwwroot.bowire_mark_colored.svg" />
+    <EmbeddedResource Include="wwwroot\bowire_mark_white.svg" LogicalName="Kuestenlogik.Bowire.wwwroot.bowire_mark_white.svg" />
+    <EmbeddedResource Include="wwwroot\bowire_emblem_colored.svg" LogicalName="Kuestenlogik.Bowire.wwwroot.bowire_emblem_colored.svg" />
+    <EmbeddedResource Include="wwwroot\bowire_emblem_white.svg" LogicalName="Kuestenlogik.Bowire.wwwroot.bowire_emblem_white.svg" />
     <EmbeddedResource Include="wwwroot\kuestenlogik_lockup.svg" LogicalName="Kuestenlogik.Bowire.wwwroot.kuestenlogik_lockup.svg" />
     <!--
       Phase 3-R — the MapLibre map widget moved to a separate package

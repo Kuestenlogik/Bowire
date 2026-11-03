@@ -48,7 +48,7 @@ test('the AUR package installs them too, and lists them as sources', () => {
     // have to be fetched rather than copied.
     assert.match(pkgbuild, /source=\(/);
     assert.match(pkgbuild, /packaging\/linux\/bowire\.desktop/);
-    assert.match(pkgbuild, /images\/bowire_logo_small\.png/);
+    assert.match(pkgbuild, /images\/bowire_app_256\.png/);
     assert.match(pkgbuild, /usr\/share\/applications\/\$\{pkgname\}\.desktop/);
     assert.match(pkgbuild, /hicolor\/256x256\/apps\/\$\{pkgname\}\.png/);
 });
@@ -103,10 +103,9 @@ test('the bundle carries no binary of its own — it finds the CLI at launch', (
 });
 
 test('the icns is a real container of PNG entries', () => {
-    // Written by scripts/packaging/make-icns.py rather than iconutil, because
-    // the release pipeline cross-publishes the macOS artefacts on Ubuntu. If
-    // that writer ever goes wrong the bundle gets a blank icon and nothing
-    // else complains.
+    // Written by the shared branding generator rather than iconutil, so it
+    // needs no Mac (#964). If that writer ever goes wrong the bundle gets a
+    // blank icon and nothing else complains.
     const icns = readFileSync(
         resolve(REPO, 'packaging/macos/Bowire.app/Contents/Resources/bowire.icns'));
 

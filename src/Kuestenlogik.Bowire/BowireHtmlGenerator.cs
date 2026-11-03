@@ -39,83 +39,27 @@ internal static class BowireHtmlGenerator
     }
 
     /// <summary>
-    /// Bowire favicon — three derivatives from the same source SVG,
-    /// pre-rendered as base64 data URLs once at first access so the HTML
-    /// can inline them without extra HTTP roundtrips.
-    ///
-    /// The source SVG (wwwroot/favicon.svg) carries (a) inline
-    /// `fill:#000000` style attributes on each path so it renders black
-    /// in any context that ignores CSS, and (b) an embedded
-    /// `&lt;style&gt;@media(prefers-color-scheme:dark){…!important;}&lt;/style&gt;`
-    /// block that flips the fill to white when the OS reports dark mode.
-    /// `!important` is required to beat the inline styles.
-    ///
-    /// Three variants because the workbench has its own theme switcher
-    /// that can disagree with the OS preference (user forces app=light
-    /// while OS=dark, or vice versa). For those cases the OS-driven
-    /// media query would render the wrong colour, so we strip it from
-    /// the in-app variants:
-    ///
-    ///   FaviconBrowserTabDataUrl — source as-is. Used by
-    ///     `&lt;link rel="icon"&gt;` so the browser tab respects OS theme.
-    ///   FaviconDataUrl — media-query block stripped. Guaranteed black
-    ///     regardless of OS theme. Used by the in-app loading-screen
-    ///     `&lt;img&gt;` that displays when app theme is light.
-    ///   FaviconMonoDataUrl — media-query block stripped AND inline
-    ///     fills flipped to white. Guaranteed white regardless of OS
-    ///     theme. Used by the in-app loading-screen `&lt;img&gt;` that
-    ///     displays when app theme is dark.
+    /// The Bowire mark for the tab and the workbench chrome, as base64 data
+    /// URLs made once at first access, so the page inlines them without
+    /// extra round trips. Both come from the shared branding generator
+    /// (scripts/branding, #964): the colored mark and its white variant.
+    /// Two explicit files rather than one adaptive SVG, because the
+    /// workbench has its own theme switch that can disagree with the OS,
+    /// and Chromium-family browsers do not reliably honour CSS inside a
+    /// favicon: the <c>&lt;link rel="icon"&gt;</c> pair carries the media
+    /// query instead, and the in-app images pick by the app's theme.
     /// </summary>
-    // FaviconBrowserTabDataUrl was the single-icon variant that relied
-    // on the inline @media (prefers-color-scheme) inside the SVG to
-    // flip black ↔ white. Chromium-family browsers don't reliably
-    // honour CSS-inside-SVG-favicons; switched to two explicit
-    // <link rel="icon"> tags with media="(prefers-color-scheme: ...)"
-    // attributes that point at the deterministic black + white
-    // variants below — every browser respects the attribute-level
-    // media query.
+    private static readonly Lazy<string> FaviconDataUrl = new(() => DataUrl(ReadEmbeddedFile("bowire_mark_colored.svg")));
 
-    private static readonly Lazy<string> FaviconDataUrl = new(() =>
-    {
-        var svg = StripPrefersColorSchemeStyle(ReadEmbeddedFile("favicon.svg"));
-        var bytes = System.Text.Encoding.UTF8.GetBytes(svg);
-        return "data:image/svg+xml;base64," + Convert.ToBase64String(bytes);
-    });
+    private static readonly Lazy<string> FaviconMonoDataUrl = new(() => DataUrl(ReadEmbeddedFile("bowire_mark_white.svg")));
 
-    private static readonly Lazy<string> FaviconMonoDataUrl = new(() =>
-    {
-        // Strip the OS-theme media query first, then flip every black
-        // fill to white. Order matters: leaving the media query in
-        // would let the browser undo our flip on light-OS hosts.
-        var svg = StripPrefersColorSchemeStyle(ReadEmbeddedFile("favicon.svg"));
-        svg = System.Text.RegularExpressions.Regex.Replace(
-            svg,
-            @"fill:\s*#000000|fill:\s*#000\b|fill:\s*black|fill=""#000000""|fill=""#000""|fill=""black""",
-            m =>
-            {
-                var s = m.Value;
-                if (s.StartsWith("fill=\"", StringComparison.Ordinal)) return "fill=\"#ffffff\"";
-                return "fill:#ffffff";
-            },
-            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-        var bytes = System.Text.Encoding.UTF8.GetBytes(svg);
-        return "data:image/svg+xml;base64," + Convert.ToBase64String(bytes);
-    });
+    /// <summary>The emblem (the mark with the bowline) for the About box, colored and white (#964).</summary>
+    private static readonly Lazy<string> EmblemDataUrl = new(() => DataUrl(ReadEmbeddedFile("bowire_emblem_colored.svg")));
 
-    /// <summary>
-    /// Removes the prefers-color-scheme &lt;style&gt; block from a Bowire
-    /// SVG so the resulting variant renders deterministically regardless
-    /// of OS theme. Targets the specific `path { fill: #ffffff !important }`
-    /// rule we embed; leaves any other inline CSS untouched.
-    /// </summary>
-    private static string StripPrefersColorSchemeStyle(string svg)
-    {
-        return System.Text.RegularExpressions.Regex.Replace(
-            svg,
-            @"<style[^>]*>\s*@media\s*\(prefers-color-scheme:\s*dark\)\s*\{[^}]*\{[^}]*\}\s*\}\s*</style>",
-            string.Empty,
-            System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.Singleline);
-    }
+    private static readonly Lazy<string> EmblemMonoDataUrl = new(() => DataUrl(ReadEmbeddedFile("bowire_emblem_white.svg")));
+
+    private static string DataUrl(string svg) =>
+        "data:image/svg+xml;base64," + Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(svg));
 
     /// <summary>
     /// Küstenlogik horizontal lockup, base64-encoded once at first access.
@@ -304,6 +248,8 @@ internal static class BowireHtmlGenerator
                            mapBasemap: {{mapBasemap}},
                            logoIcon: "{{FaviconDataUrl.Value}}",
                            logoIconMono: "{{FaviconMonoDataUrl.Value}}",
+                           logoEmblem: "{{EmblemDataUrl.Value}}",
+                           logoEmblemMono: "{{EmblemMonoDataUrl.Value}}",
                            version: "{{AssemblyVersionString.Value}}",
                            kuestenlogikLockup: "{{KuestenlogikLockupDataUrl.Value}}",
                            kuestenlogikLockupMono: "{{KuestenlogikLockupMonoDataUrl.Value}}",

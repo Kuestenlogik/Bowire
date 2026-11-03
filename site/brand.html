@@ -10,8 +10,9 @@ description: Bowire brand guidelines — download the logo, mark, and wordmark l
   scoped under .brand-* and reuse the site design tokens (--accent,
   --surface, --border, …) so light/dark themes both work. The logo
   assets it links live in /assets/brand/ and are generated from the
-  source SVGs (favicon.svg = the Circle-B mark, bowire-logo.svg = the
-  bowline logo) with the "Bowire" wordmark outlined from Inter Bold.
+  drawings (scripts/branding: the mark, the "bw", and the emblem, the
+  mark with the bowline) by the shared branding tool, with the "Bowire"
+  wordmark outlined from Inter Bold.
 {%- endcomment -%}
 
 <style>
@@ -123,11 +124,11 @@ description: Bowire brand guidelines — download the logo, mark, and wordmark l
     <h1>Brand &amp; logos</h1>
     <p class="brand-hero-tagline">Grab the Bowire logo in every form and see how to use it. Reach for the dark version on light backgrounds, the light version on dark. Need the exact spec — clear-space construction, minimum sizes, the full colour tokens, co-branding, file formats, accessibility? That lives in the <a href="{{ '/docs/brand-guide.html' | relative_url }}">detailed brand guide</a>.</p>
     <div class="brand-hero-actions">
-      <a class="btn btn-primary" href="{{ '/assets/brand/bowire-brand-kit.zip' | relative_url }}" download>
+      <a class="btn btn-primary" href="{{ '/assets/brand/bowire_brand_kit.zip' | relative_url }}" download>
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         Brand kit (ZIP)
       </a>
-      <a class="btn btn-secondary" href="{{ '/assets/brand/bowire-brand-guidelines.pdf' | relative_url }}">Brand sheet (PDF)</a>
+      <a class="btn btn-secondary" href="{{ '/assets/brand/bowire_brand_guide.pdf' | relative_url }}">Brand sheet (PDF)</a>
       <a class="btn btn-secondary" href="{{ '/docs/brand-guide.html' | relative_url }}">Full brand guide</a>
     </div>
   </div>
@@ -137,55 +138,55 @@ description: Bowire brand guidelines — download the logo, mark, and wordmark l
 <section class="brand-section" id="logo">
   <div class="container">
     <h2>The logo</h2>
-    <p class="brand-lede">Bowire comes in three forms. Use the <strong>full logo</strong> as the default. Drop to the <strong>mark</strong> when space is tight or the context already says &ldquo;Bowire&rdquo;. Use the <strong>lockup</strong> when you want the name spelled out beside the mark. All files are scalable SVG.</p>
+    <p class="brand-lede">Bowire comes in three forms. The <strong>mark</strong> is the logo: use it by default. Use the <strong>lockup</strong> when you want the name spelled out beside the mark, and the <strong>emblem</strong>, the mark with the bowline, where there is room for it: a hero, a title page, a cover. All files are scalable SVG.</p>
 
     <div class="brand-logo-grid">
 
-      <!-- Full logo (bowline) -->
+      <!-- Emblem (the mark with the bowline) -->
       <div class="brand-logo-card">
-        <div class="brand-logo-stage is-light"><img src="{{ '/assets/brand/bowire-logo-dark.svg' | relative_url }}" alt="Bowire full logo — bowline loop around the Circle-B mark, dark version"></div>
+        <div class="brand-logo-stage is-light"><img src="{{ '/assets/brand/bowire_emblem_colored.svg' | relative_url }}" alt="Bowire emblem — the mark in its ring with a bowline knot, navy"></div>
         <div class="brand-logo-meta">
-          <span class="brand-logo-name">Full logo<span class="brand-logo-sub">The bowline &amp; mark — primary</span></span>
-          <a class="brand-dl" href="{{ '/assets/brand/bowire-logo-dark.svg' | relative_url }}" download><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>SVG</a>
+          <span class="brand-logo-name">Emblem<span class="brand-logo-sub">The mark with the bowline — for heroes and covers</span></span>
+          <a class="brand-dl" href="{{ '/assets/brand/bowire_emblem_colored.svg' | relative_url }}" download><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>SVG</a>
         </div>
       </div>
       <div class="brand-logo-card">
-        <div class="brand-logo-stage is-dark"><img src="{{ '/assets/brand/bowire-logo-light.svg' | relative_url }}" alt="Bowire full logo, light version on a dark background"></div>
+        <div class="brand-logo-stage is-dark"><img src="{{ '/assets/brand/bowire_emblem_white.svg' | relative_url }}" alt="Bowire emblem, white, on a dark background"></div>
         <div class="brand-logo-meta">
-          <span class="brand-logo-name">Full logo — light<span class="brand-logo-sub">For dark backgrounds</span></span>
-          <a class="brand-dl" href="{{ '/assets/brand/bowire-logo-light.svg' | relative_url }}" download><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>SVG</a>
+          <span class="brand-logo-name">Emblem — white<span class="brand-logo-sub">For dark backgrounds</span></span>
+          <a class="brand-dl" href="{{ '/assets/brand/bowire_emblem_white.svg' | relative_url }}" download><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>SVG</a>
         </div>
       </div>
 
       <!-- Lockup -->
       <div class="brand-logo-card">
-        <div class="brand-logo-stage is-light"><img src="{{ '/assets/brand/bowire-lockup-dark.svg' | relative_url }}" alt="Bowire lockup — Circle-B mark with the Bowire wordmark, dark version"></div>
+        <div class="brand-logo-stage is-light"><img src="{{ '/assets/brand/bowire_lockup_h_colored.svg' | relative_url }}" alt="Bowire lockup — the mark with the Bowire wordmark, navy"></div>
         <div class="brand-logo-meta">
           <span class="brand-logo-name">Lockup<span class="brand-logo-sub">Mark + &ldquo;Bowire&rdquo; wordmark</span></span>
-          <a class="brand-dl" href="{{ '/assets/brand/bowire-lockup-dark.svg' | relative_url }}" download><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>SVG</a>
+          <a class="brand-dl" href="{{ '/assets/brand/bowire_lockup_h_colored.svg' | relative_url }}" download><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>SVG</a>
         </div>
       </div>
       <div class="brand-logo-card">
-        <div class="brand-logo-stage is-dark"><img src="{{ '/assets/brand/bowire-lockup-light.svg' | relative_url }}" alt="Bowire lockup, light version on a dark background"></div>
+        <div class="brand-logo-stage is-dark"><img src="{{ '/assets/brand/bowire_lockup_h_white.svg' | relative_url }}" alt="Bowire lockup, white, on a dark background"></div>
         <div class="brand-logo-meta">
-          <span class="brand-logo-name">Lockup — light<span class="brand-logo-sub">For dark backgrounds</span></span>
-          <a class="brand-dl" href="{{ '/assets/brand/bowire-lockup-light.svg' | relative_url }}" download><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>SVG</a>
+          <span class="brand-logo-name">Lockup — white<span class="brand-logo-sub">For dark backgrounds</span></span>
+          <a class="brand-dl" href="{{ '/assets/brand/bowire_lockup_h_white.svg' | relative_url }}" download><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>SVG</a>
         </div>
       </div>
 
       <!-- Mark -->
       <div class="brand-logo-card">
-        <div class="brand-logo-stage is-light"><img src="{{ '/assets/brand/bowire-mark-dark.svg' | relative_url }}" alt="Bowire mark — the Circle-B, dark version" style="max-height:72px"></div>
+        <div class="brand-logo-stage is-light"><img src="{{ '/assets/brand/bowire_mark_colored.svg' | relative_url }}" alt="Bowire mark — the bw, navy" style="max-height:72px"></div>
         <div class="brand-logo-meta">
-          <span class="brand-logo-name">Mark<span class="brand-logo-sub">The Circle-B — for tight spaces</span></span>
-          <a class="brand-dl" href="{{ '/assets/brand/bowire-mark-dark.svg' | relative_url }}" download><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>SVG</a>
+          <span class="brand-logo-name">Mark<span class="brand-logo-sub">The bw — the logo</span></span>
+          <a class="brand-dl" href="{{ '/assets/brand/bowire_mark_colored.svg' | relative_url }}" download><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>SVG</a>
         </div>
       </div>
       <div class="brand-logo-card">
-        <div class="brand-logo-stage is-dark"><img src="{{ '/assets/brand/bowire-mark-light.svg' | relative_url }}" alt="Bowire mark, light version on a dark background" style="max-height:72px"></div>
+        <div class="brand-logo-stage is-dark"><img src="{{ '/assets/brand/bowire_mark_white.svg' | relative_url }}" alt="Bowire mark, white, on a dark background" style="max-height:72px"></div>
         <div class="brand-logo-meta">
-          <span class="brand-logo-name">Mark — light<span class="brand-logo-sub">For dark backgrounds</span></span>
-          <a class="brand-dl" href="{{ '/assets/brand/bowire-mark-light.svg' | relative_url }}" download><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>SVG</a>
+          <span class="brand-logo-name">Mark — white<span class="brand-logo-sub">For dark backgrounds</span></span>
+          <a class="brand-dl" href="{{ '/assets/brand/bowire_mark_white.svg' | relative_url }}" download><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>SVG</a>
         </div>
       </div>
 
@@ -201,12 +202,12 @@ description: Bowire brand guidelines — download the logo, mark, and wordmark l
     <div class="brand-rules-grid">
       <div class="brand-card">
         <h3>Clear space</h3>
-        <p>Keep free space around the logo equal to <strong>half the height of the Circle-B mark</strong> (½&nbsp;X) on every side. Nothing — text, edges, other logos — should intrude into that margin.</p>
-        <div class="brand-clearspace"><img src="{{ '/assets/brand/bowire-lockup-dark.svg' | relative_url }}" alt="Clear-space example around the Bowire lockup"></div>
+        <p>Keep free space around the logo equal to <strong>half the height of the mark</strong> (½&nbsp;X) on every side. Nothing — text, edges, other logos — should intrude into that margin.</p>
+        <div class="brand-clearspace"><img src="{{ '/assets/brand/bowire_lockup_h_colored.svg' | relative_url }}" alt="Clear-space example around the Bowire lockup"></div>
       </div>
       <div class="brand-card">
         <h3>Minimum size</h3>
-        <p>For the screen, don&rsquo;t render the mark below <strong>24&nbsp;px</strong> tall, or the full logo / lockup below <strong>20&nbsp;px</strong> tall. In print, keep the mark at <strong>8&nbsp;mm</strong> or larger. Below that the bowline and the B counter start to fill in.</p>
+        <p>For the screen, don&rsquo;t render the mark below <strong>24&nbsp;px</strong> tall, or the emblem / lockup below <strong>20&nbsp;px</strong> tall. In print, keep the mark at <strong>8&nbsp;mm</strong> or larger. Below that the bowline and the counters of the bw start to fill in.</p>
       </div>
     </div>
   </div>
@@ -216,22 +217,22 @@ description: Bowire brand guidelines — download the logo, mark, and wordmark l
 <section class="brand-section">
   <div class="container">
     <h2>On light &amp; dark backgrounds</h2>
-    <p class="brand-lede">The logo is monochrome, so placing it is mostly about contrast: use the <strong>dark</strong> logo on light surfaces and the <strong>light</strong> logo on dark ones. The one brand colour is <strong>Indigo</strong> — when it&rsquo;s the backdrop, put the white logo on it.</p>
+    <p class="brand-lede">The logo has one colour, so placing it is mostly about contrast: the <strong>navy</strong> logo on light surfaces, the <strong>white</strong> logo on dark ones. The one brand colour is <strong>Indigo</strong> — when it&rsquo;s the backdrop, put the white logo on it.</p>
     <div class="brand-bg-grid">
       <figure class="brand-bg">
-        <div class="brand-bg-stage" style="background:#fafaff"><img src="{{ '/assets/brand/bowire-lockup-dark.svg' | relative_url }}" alt="Bowire dark logo on a light background"></div>
-        <figcaption>Light surface <code>#FAFAFF</code> &rarr; dark logo</figcaption>
+        <div class="brand-bg-stage" style="background:#fafaff"><img src="{{ '/assets/brand/bowire_lockup_h_colored.svg' | relative_url }}" alt="Bowire navy logo on a light background"></div>
+        <figcaption>Light surface <code>#FAFAFF</code> &rarr; navy logo</figcaption>
       </figure>
       <figure class="brand-bg">
-        <div class="brand-bg-stage" style="background:#0f0f17"><img src="{{ '/assets/brand/bowire-lockup-light.svg' | relative_url }}" alt="Bowire light logo on a dark background"></div>
-        <figcaption>Dark surface <code>#0F0F17</code> &rarr; light logo</figcaption>
+        <div class="brand-bg-stage" style="background:#0f0f17"><img src="{{ '/assets/brand/bowire_lockup_h_white.svg' | relative_url }}" alt="Bowire white logo on a dark background"></div>
+        <figcaption>Dark surface <code>#0F0F17</code> &rarr; white logo</figcaption>
       </figure>
       <figure class="brand-bg">
-        <div class="brand-bg-stage" style="background:#6366f1"><img src="{{ '/assets/brand/bowire-lockup-light.svg' | relative_url }}" alt="Bowire light logo on the brand indigo background"></div>
-        <figcaption>Brand Indigo <code>#6366F1</code> &rarr; light logo</figcaption>
+        <div class="brand-bg-stage" style="background:#6366f1"><img src="{{ '/assets/brand/bowire_lockup_h_white.svg' | relative_url }}" alt="Bowire white logo on the brand indigo background"></div>
+        <figcaption>Brand Indigo <code>#6366F1</code> &rarr; white logo</figcaption>
       </figure>
     </div>
-    <p class="brand-bg-note">That&rsquo;s the whole palette you need to place the logo: Indigo <code>#6366F1</code>, Ink <code>#0F0F17</code>, White <code>#FFFFFF</code>, Off-white <code>#FAFAFF</code>. Keep clear contrast (aim for 3:1 or more); on a photo or busy background, set the logo on a solid panel first.</p>
+    <p class="brand-bg-note">That&rsquo;s the whole palette you need to place the logo: Navy <code>#003E60</code> (the logo on light), White <code>#FFFFFF</code>, Indigo <code>#6366F1</code>, Ink <code>#0F0F17</code>, Off-white <code>#FAFAFF</code>. Keep clear contrast (aim for 3:1 or more); on a photo or busy background, set the logo on a solid panel first.</p>
   </div>
 </section>
 
@@ -262,9 +263,9 @@ description: Bowire brand guidelines — download the logo, mark, and wordmark l
         <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Do</h3>
         <ul>
           <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Use the supplied SVGs at their native proportions.</li>
-          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Pick the light logo on dark backgrounds, the dark logo on light.</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Pick the white logo on dark backgrounds, the navy logo on light.</li>
           <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Keep the clear space and minimum sizes above.</li>
-          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Drop to the mark alone when the full logo won&rsquo;t fit.</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Drop to the mark alone when the emblem or the lockup won&rsquo;t fit.</li>
         </ul>
       </div>
       <div class="brand-dd brand-dont">

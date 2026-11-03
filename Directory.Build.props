@@ -172,7 +172,7 @@
   <ItemGroup Condition="'$(IsPackable)' != 'false'">
     <None Include="$(MSBuildThisFileDirectory)README.md" Pack="true" PackagePath="\" Link="README.md" Visible="false" Condition="Exists('$(MSBuildThisFileDirectory)README.md')" />
     <None Include="$(MSBuildThisFileDirectory)LICENSE" Pack="true" PackagePath="\" Link="LICENSE" Visible="false" Condition="Exists('$(MSBuildThisFileDirectory)LICENSE')" />
-    <None Include="$(MSBuildThisFileDirectory)images\bowire_logo_small.png" Pack="true" PackagePath="icon.png" Visible="false" Condition="Exists('$(MSBuildThisFileDirectory)images\bowire_logo_small.png')" />
+    <None Include="$(MSBuildThisFileDirectory)images\icon.png" Pack="true" PackagePath="icon.png" Visible="false" Condition="Exists('$(MSBuildThisFileDirectory)images\icon.png')" />
   </ItemGroup>
 
   <!-- SourceLink: embeds GitHub raw-content URLs into the PDBs so

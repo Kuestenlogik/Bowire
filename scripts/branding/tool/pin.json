@@ -1,0 +1,17 @@
+{
+  "$comment": "A vendored copy of the shared branding tool (Kuestenlogik/Kuestenlogik, tools/branding). Do not edit the files here: change the shared tool and vendor it again (tools/branding/vendor.mjs). check-vendored.mjs compares the files with these hashes (SHA-256, LF line endings).",
+  "tool": "Kuestenlogik/Kuestenlogik tools/branding",
+  "version": "1.0.0",
+  "commit": "13c346c38fb545ebdafcf73517a4ecf5a7bae033",
+  "files": {
+    "Inter-LICENSE.txt": "262481e844521b326f5ecd053e59b98c8b2da78c8ee1bdbb6e8174305e54935a",
+    "README.md": "d860d0cdfeaa19498bb503ae91a1da1e9d0ae6d15e716016bcfe420a8cd87db2",
+    "check-vendored.mjs": "4b68b40d481e5170b7f69be93e3443a7005d6c87982435dd4fd0c11e1e652fa7",
+    "generate-logos.mjs": "5ff5ff81b1807ffd494278cf8743158393be91fa40dbbd69341334c8989b1390",
+    "lib/containers.mjs": "59a0764115e7791c1716ae905bfa41807b969d3a7c29f67f0a0dc7474a9418ad",
+    "lib/inline.mjs": "07d50afd727b5de6fe1a1c400ca662d342ba9a6db258c956036c4c6b3138e513",
+    "outline-wordmark.py": "52e584c325776621265c9d80c0ebdc42b5cc0edafd2cf01da6d335ca541aae9a",
+    "package-lock.json": "9480cef5af23b14f96501d09000e7708673cbe35635f46b2fd7249683f65385c",
+    "package.json": "d258c6c2a055496796e2d7c8879e75a8bd3f24c9a8c167303dc55ada33d327bb"
+  }
+}

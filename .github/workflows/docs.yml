@@ -205,6 +205,13 @@ jobs:
           bundle install
           bundle exec jekyll build
 
+      # The brand sheet is rendered from the built brand page, so it always
+      # shows the current logos and is never committed (#964).
+      - name: Render the brand sheet PDF
+        run: |
+          npx playwright install --with-deps chromium
+          node scripts/site/build-brand-pdf.js
+
       # Combine: Jekyll output + DocFX output + Bootcamp DocFX output
       - name: Combine outputs
         run: |

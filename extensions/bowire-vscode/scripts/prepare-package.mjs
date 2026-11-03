@@ -9,7 +9,7 @@
 // committed duplicate is a second file to keep in step by hand. So they are
 // copied in at package time and .gitignore keeps the copies out of the tree.
 //
-//   images/bowire_logo_small.png → icon.png   (the same file NuGet packs)
+//   images/icon-512.png → icon.png   (the 512 px tile of the shared branding tool)
 //   LICENSE                      → LICENSE    (vsce warns without it, and a
 //                                              marketplace listing with no
 //                                              licence is a listing nobody
@@ -29,7 +29,7 @@ import { dirname, resolve } from 'node:path';
 const here = dirname(fileURLToPath(import.meta.url));
 
 /** The one canonical icon, shared with the NuGet packages. */
-export const SOURCE = resolve(here, '../../../images/bowire_logo_small.png');
+export const SOURCE = resolve(here, '../../../images/icon-512.png');
 
 /** Where vsce expects it. */
 export const TARGET = resolve(here, '../icon.png');

@@ -57,11 +57,27 @@ Its browser and CLI implementations are held to one shared test fixture. A path 
 
 Agents can run a test collection or flow through Bowire's MCP server, as `bowire test` does, with an optional data set. A client that declares the MCP tasks extension gets a durable task: the status names the current step, `tasks/cancel` stops the run before its next step, and the result is kept for 24 hours under `~/.bowire/mcp-tasks/`, so a reconnecting agent gets it with the same task id. Clients without the extension get the synchronous answer, as before. For task-capable clients, the confirmation of `bowire.mock.start` and `bowire.record.start` becomes an elicitation inside the task (`input_required`, answered through `tasks/update`) instead of a second call with a token.
 
+### A new Bowire logo, generated in every format (#964, #965)
+
+Bowire has a new mark, the "bw", in the frame and the navy ink the Küstenlogik products share, and an emblem: the mark in its ring with a bowline knot (Bowire is *bowline* and *wire*). Every logo file now comes from those two drawings through the shared Küstenlogik branding tool:
+- marks, emblem and lockups in colored, black, white and theme-following SVG, plus PNG and WebP;
+- the favicons and the touch icon;
+- the package, Windows, macOS and Linux icons;
+- the link preview;
+- the brand kit;
+- the inline copies on the site, in the docs and in the workbench.
+
+So the site, the docs, the workbench, the NuGet packages, the installers and the VS Code extension all show the same logo. The [brand page](https://bowire.io/brand.html) and the brand guide describe the forms and colours.
+
 ## Breaking changes
 
 <!-- Each change has been on a back-compat ramp through the prior minor
 and is removed in this release. Add a section per breaking change, with
 the migration path. -->
+
+### Logo files have new names (#964)
+
+The files in `images/` carry the product prefix and say what they are: `bowire_mark_colored.svg`, `bowire_lockup_h_white.png`, `bowire_emblem_adaptive.svg`, …; `icon.png` is the package icon. `bowire_logo.svg`, `bowire_logo_small.svg` and their PNG/WebP exports, `og-image.svg` and the brand files `bowire-logo-*`, `bowire-lockup-*` and `bowire-mark-*` are gone. A link to one of those files on GitHub or on the site needs the new name.
 
 ### A JSONPath step is `[0]`, not `.0` (#676)
 

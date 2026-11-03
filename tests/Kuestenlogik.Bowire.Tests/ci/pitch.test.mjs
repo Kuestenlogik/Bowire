@@ -32,8 +32,6 @@ const SURFACES = [
     'site/brand.html',
     'site/llms.txt',
     'site/llms-full.txt',
-    'images/og-image.svg',
-    'scripts/site/og-image-template.html',
     'src/Kuestenlogik.Bowire/Kuestenlogik.Bowire.csproj',
     'src/Kuestenlogik.Bowire.Tool/Kuestenlogik.Bowire.Tool.csproj',
     'packaging/chocolatey/bowire.nuspec',

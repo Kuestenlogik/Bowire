@@ -14,7 +14,7 @@ packaging/linux/
 way in, not only `bowire` in a shell (#685). The DEB / RPM read it straight
 from this directory; the PKGBUILD fetches it from the tag, because it builds
 from the release tarball rather than a checkout. Both also install
-`images/bowire_logo_small.png` to
+`images/bowire_app_256.png` to
 `/usr/share/icons/hicolor/256x256/apps/bowire.png` — one size every desktop
 environment scales from.
 

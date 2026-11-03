@@ -4105,10 +4105,12 @@ textContent: t(discoveryState.entryCount === 1
         // big horizontal logo shows in the running workbench — the
         // first-run Home dropped it per the portal redesign.
         section.appendChild(el('div', { className: 'bowire-settings-about-brand' },
-            el('div', {
-                className: 'bowire-settings-about-brand-logo',
-                innerHTML: svgIcon('bowireLogo')
-            }),
+            // #964 — the emblem, as the generated file for the theme in use.
+            el('div', { className: 'bowire-settings-about-brand-logo' },
+                el('img', {
+                    src: getEffectiveTheme() === 'dark' ? (config.logoEmblemMono || config.logoEmblem) : config.logoEmblem,
+                    alt: 'Bowire'  // i18n-exempt: the product name
+                })),
             el('div', { className: 'bowire-settings-about-brand-text' },
                 el('div', { className: 'bowire-settings-about-brand-name', textContent: 'Bowire' }),  // i18n-exempt: the product name
                 // Order: name → tagline → version. User feedback: the

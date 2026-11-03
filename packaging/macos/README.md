@@ -25,16 +25,17 @@ into the plist; the formula installs it into the prefix and prints the one
 `ln -s` that links it into `/Applications` — a formula may not write there
 itself, that is cask territory.
 
-The icon is generated, not hand-made:
+The icon is generated, not hand-made: the shared branding generator writes
+`Contents/Resources/bowire.icns` (16 to 1024 px, the mark on its light tile)
+together with every other logo file:
 
 ```bash
-python scripts/packaging/make-icns.py
+node scripts/branding/tool/generate-logos.mjs
 ```
 
-That rebuilds `Contents/Resources/bowire.icns` from
-`images/bowire_logo_small.png`. It is checked in so the bundle is complete in
-a checkout, and it is written directly rather than through `iconutil` because
-the release pipeline cross-publishes the macOS artefacts on an Ubuntu runner.
+It is checked in so the bundle is complete in a checkout, and it is written
+directly rather than through `iconutil`, so it does not need a Mac
+(see `scripts/branding/README.md`).
 
 Homebrew picks the right archive at install time based on `OS.mac?`
 and `Hardware::CPU.arm?`.

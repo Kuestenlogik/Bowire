@@ -47,7 +47,7 @@ source_aarch64=("${pkgname}-${pkgver}-aarch64.tar.gz::${url}/releases/download/v
 # two build systems. Both live in the repo at packaging/linux/ and images/,
 # which is the single source the deb / rpm read too.
 source=("bowire.desktop::${url}/raw/v${pkgver}/packaging/linux/bowire.desktop"
-        "bowire.png::${url}/raw/v${pkgver}/images/bowire_logo_small.png")
+        "bowire.png::${url}/raw/v${pkgver}/images/bowire_app_256.png")
 
 # `updpkgsums` rewrites these on every release. Empty placeholders
 # would also work; the `SKIP` token tells makepkg to bypass the check

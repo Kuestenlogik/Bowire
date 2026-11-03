@@ -76,5 +76,5 @@ contents:
     dst: /usr/share/applications/bowire.desktop
     type: config|noreplace
 
-  - src: images/bowire_logo_small.png
+  - src: images/bowire_app_256.png
     dst: /usr/share/icons/hicolor/256x256/apps/bowire.png

@@ -14,12 +14,12 @@
  *   site/_site/brand.html  (+ its /assets/* referenced from there)
  *
  * Output:
- *   site/assets/brand/bowire-brand-guidelines.pdf
+ *   site/_site/assets/brand/bowire_brand_guide.pdf
  *
- * The ZIP brand kit (logos + this PDF + README) is a trivial archive of
- * site/assets/brand/ built by the release/site tooling — e.g.
- *   (cd site/assets/brand && zip -q bowire-brand-kit.zip \
- *      bowire-*.svg bowire-brand-guidelines.pdf README.txt)
+ * The site build (.github/workflows/docs.yml) runs this right after
+ * `jekyll build`, so the PDF always shows the current logos and is never
+ * committed. The brand kit (the logo files) is a ZIP the shared branding
+ * generator writes (scripts/branding/README.md).
  */
 const http = require('node:http');
 const fs = require('node:fs');
@@ -28,7 +28,7 @@ const { chromium } = require('@playwright/test');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const SITE = path.join(ROOT, 'site', '_site');
-const OUT = path.join(ROOT, 'site', 'assets', 'brand', 'bowire-brand-guidelines.pdf');
+const OUT = path.join(SITE, 'assets', 'brand', 'bowire_brand_guide.pdf');
 
 const MIME = {
   '.html': 'text/html', '.css': 'text/css', '.js': 'text/javascript',

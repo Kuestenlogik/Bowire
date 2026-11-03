@@ -1,0 +1,170 @@
+# Branding tool
+
+One generator for the logo set of every Kuestenlogik product. A product keeps its drawing and its configuration; the
+tool makes every logo file from them, the same set for every product. The tool names no product.
+
+| File | What it is |
+|---|---|
+| `generate-logos.mjs` | The generator (Node 22.2 or later, Edge as the browser). |
+| `lib/containers.mjs` | ICO, ICNS and ZIP writers. |
+| `lib/inline.mjs` | The inline copies between `brand:` markers. |
+| `outline-wordmark.py` | Outlines a wordmark in Inter Bold to `wordmark.json`, so the generator needs no font. |
+| `Inter-LICENSE.txt` | The licence of Inter (SIL Open Font License 1.1), whose glyph outlines the wordmarks are. |
+| `package.json`, `package-lock.json` | Playwright and sharp, pinned exactly. |
+| `check-vendored.mjs` | Checks that a product's copy of this folder is exactly the version its `pin.json` names. |
+| `vendor.mjs` | Copies this folder into a product and writes its `pin.json` (stays in this repository). |
+
+## A product's files
+
+```
+scripts/branding/
+  brand.json                 the configuration (below)
+  wordmark.json              the wordmark as an outline (outline-wordmark.py)
+  <prefix>_mark_source.svg   the owner's drawing of the mark
+  <prefix>_emblem_source.svg optional: a second drawing in its own frame
+  tool/                      the vendored copy of this folder, with pin.json
+images/                      outputs only (and a README.md the generator leaves alone)
+```
+
+## Run
+
+```sh
+cd scripts/branding/tool && npm ci && cd ../../..   # once per checkout: Playwright and sharp
+node scripts/branding/tool/generate-logos.mjs       # regenerate images/, the copies and the inline copies
+node scripts/branding/tool/generate-logos.mjs --check
+node scripts/branding/tool/generate-logos.mjs --contact-sheet artifacts/branding/contact-sheet.png
+```
+
+`--config <brand.json>` names a configuration elsewhere (default: `../brand.json`, seen from the tool). `--check`
+writes nothing: it renders into a temporary folder and fails when a committed output is missing or not an output,
+when a text output (the SVGs) differs from a fresh run, when a copy differs from its committed output, when the brand
+kit differs from the committed outputs, or when an inline copy differs from the source. PNGs, WebPs and icons are
+checked for presence only, since another Edge version may anti-alias a pixel differently. `--contact-sheet` renders
+every SVG and icon at 16 to 512 px on light and on dark into one PNG for review.
+
+`BRANDING_PLAYWRIGHT_FROM` may name another `package.json` to resolve Playwright and sharp from.
+
+## brand.json
+
+Paths are relative to the repository root (`root`, relative to `brand.json`).
+
+| Key | Required | What it sets |
+|---|---|---|
+| `root` | no (`.`) | The repository root, relative to `brand.json`; a product sets `../..`. |
+| `product` | yes | The `aria-label` of every SVG and the lockups' labels. |
+| `prefix` | yes | File names (`<prefix>_mark_*`, …) and the adaptive CSS classes (`<prefix>-<role>`). |
+| `source` | yes | The drawing of the mark. Read only; Inkscape's editing state stays in it and out of every output. |
+| `frame` | no (the drawing's) | `[width, height]` of the family frame. A drawing in another `viewBox` is scaled whole and centred into it; the drawing itself is unchanged. The family's frame is `[77.026421, 77.673187]`. |
+| `emblem` | no | `{ "source": "…" }`: a second drawing kept in its own frame (e.g. the mark in a ring). Without it no emblem is made. |
+| `wordmark` | yes | `{ "text": "…", "outline": "scripts/branding/wordmark.json" }`; the run stops when the outline holds another text. |
+| `images` | yes | The output folder; the run deletes what it did not write there (`README.md` stays). |
+| `roles` | yes | Per role `light` and `dark` colour, `source`: the drawing's fills that mean it, and `why`. Every fill of the drawing must belong to a role, or the run stops. |
+| `wordmarkRole` | yes | The role that paints the wordmark. |
+| `background` | yes | `{ "stops": [...] }`: the light background of the tiles and the Open Graph image (a radial gradient). |
+| `icons` | no | Extra app icons (below). |
+| `kit` | no | `{ "path": "…zip" }`: the brand kit (below). |
+| `inline` | no | Glob patterns of files that hold inline copies (below). |
+| `distribute` | no | `[{ "dir": "…", "files": ["favicon.svg", { "from": "icon.png", "as": "sub/name.png" }] }]`: copies of outputs, under their name or another. |
+
+The fills are read in Edge in the light colour scheme, so the effective fill counts (attribute, style, inherited, the
+drawing's own stylesheet, its `prefers-color-scheme: dark` rules left aside). The drawing's stylesheets, classes,
+ids and fills are left out of the outputs; each output paints the roles itself.
+
+## Outputs
+
+The same set for every product, in `images/`:
+
+| File | What it is |
+|---|---|
+| `<prefix>_mark_{colored,black,white,adaptive}.svg` | The mark in the family frame. `adaptive` follows the theme (CSS: `prefers-color-scheme`, and `data-theme` / `data-theme-resolved` where the SVG is inlined). |
+| `<prefix>_mark_{colored,black,white}.png`, `@2x.png`, `.webp`, `@2x.webp` | 512 and 1024 px, transparent. |
+| `<prefix>_lockup_{h,v}_{colored,black,white,adaptive}.svg` | The mark beside (1100×200) or above (480×380) the wordmark. |
+| `<prefix>_lockup_{h,v}_{colored,black,white}.png`, `@2x.png`, `.webp`, `@2x.webp` | Transparent. |
+| `<prefix>_emblem_*` | Only with `emblem`: SVGs as the mark's, PNG and WebP 512 px tall (and @2x). |
+| `favicon.svg`, `favicon.ico` | The tab icon: the mark cropped square, adaptive; the ICO 16, 32 and 48 px. |
+| `apple-touch-icon.png`, `.webp` | 180 px, the mark on the light background, opaque. |
+| `icon.png`, `.webp` | 128 px, the same tile: the package icon (NuGet `PackageIcon`, Chocolatey `iconUrl`). |
+| `icon-512.png`, `.webp` | 512 px, the same tile: the web manifest icon. |
+| `og-image.svg`, `.png`, `.webp` | 1200×630, the horizontal colored lockup on the light background: the link preview. |
+| the configured `icons` | ICO, ICNS or PNG (with its WebP). |
+
+Every PNG has a WebP twin, lossless (sharp, libwebp). The `adaptive` SVGs get no PNG: a PNG cannot follow the theme.
+
+### App icons (`icons`)
+
+```json
+"icons": [
+  { "name": "bowire.ico", "sizes": [16, 24, 32, 48, 64, 128, 256] },
+  { "name": "bowire.icns", "sizes": [16, 32, 64, 128, 256, 512, 1024], "art": "tile" },
+  { "name": "bowire-256.png", "size": 256 }
+]
+```
+
+`format` is `ico`, `icns` or `png` (default: the name's extension). `art` is `mark` (the mark cropped square,
+colored, transparent; the default) or `tile` (the mark on the light background, opaque). ICNS holds 16, 32, 64, 128,
+256, 512 and 1024 px. Copy them where they are used with `distribute` (a csproj's `ApplicationIcon`, an MSI, a macOS
+`.app`, a Linux `hicolor/256x256/apps/<name>.png`, a VS Code extension's `icon.png`).
+
+### Brand kit (`kit`)
+
+A ZIP of every output but the README, entries `<prefix>/<file>` in name order, stored, dated 1980-01-01: the same
+outputs give the same bytes. `--check` compares it byte for byte with a kit made from the committed outputs.
+
+### Inline copies (`inline`)
+
+A page or script that inlines the logo keeps the copy between markers, and the generator rewrites what lies between
+them from the drawing:
+
+```html
+<!-- brand:mark class="logo" aria-hidden="true" --><!-- /brand -->
+```
+
+```js
+const logo = '/* brand:lockup-h class="logo" */ /* /brand */';
+```
+
+The kinds are `mark`, `emblem`, `lockup-h` and `lockup-v`. The marker's attributes go onto the `<svg>`; without
+`aria-hidden`, `aria-label` or `role` it gets `role="img"` and `aria-label` = the product. Every shape is painted
+`currentColor`, and the copy is one line. `inline` lists glob patterns (`"site/**/*.html"`); files without a marker
+are left alone, but at least one must hold one.
+
+## Vendoring into a product
+
+A product holds a copy of this folder in `scripts/branding/tool/`, so a fresh clone generates and checks its logos
+without this repository beside it. The copy is pinned: `pin.json` names the version (`package.json`), the commit of
+this repository it came from and the SHA-256 of every file (LF line endings). A test in each product runs
+`node scripts/branding/tool/check-vendored.mjs`, which fails when a file of the copy differs from the pin, is missing
+or is not part of it. So a copy is never edited in place.
+
+To change the tool:
+
+1. change it here, raise `version` in `package.json` (and `npm install` when a dependency changes), commit;
+2. for each product, from a clean checkout of this repository:
+   `node tools/branding/vendor.mjs <product checkout>` (writes `scripts/branding/tool/` and its `pin.json`);
+3. in the product: `cd scripts/branding/tool && npm ci`, run the generator, commit the copy, `pin.json` and the
+   regenerated outputs together.
+
+`node scripts/branding/tool/check-vendored.mjs --against <this repository>/tools/branding` says whether a product's
+copy is behind this folder.
+
+To take a new product on: write its `scripts/branding/brand.json`, outline its wordmark
+(`outline-wordmark.py <Inter-Bold.ttf> --text <Product> --out scripts/branding/wordmark.json`), vendor the tool, add
+the check to its tests, run the generator.
+
+## The wordmark
+
+`wordmark.json` is committed, so the generator needs no font. Make it again only when the text or the font changes:
+
+```sh
+python -m venv .venv && .venv/Scripts/python -m pip install fonttools uharfbuzz
+.venv/Scripts/python scripts/branding/tool/outline-wordmark.py <path/to/Inter-Bold.ttf> --text <Product>
+```
+
+The font is Inter 4.1 from its official release (<https://github.com/rsms/inter/releases>, `Inter-4.1.zip`,
+`extras/ttf/Inter-Bold.ttf`), SIL Open Font License 1.1, licence text in `Inter-LICENSE.txt`. HarfBuzz shapes the text,
+so the font's kerning applies.
+
+## Third-party
+
+Only the generator uses these; no product ships them: Playwright 1.63.0 (Apache-2.0) drives Edge; sharp 0.35.5
+(Apache-2.0) with its prebuilt libvips (LGPL-3.0-or-later) encodes the WebPs.

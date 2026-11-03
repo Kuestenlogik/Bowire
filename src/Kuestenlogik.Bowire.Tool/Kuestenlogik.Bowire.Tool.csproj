@@ -19,13 +19,12 @@
     <!--
       Windows application icon for the compiled bowire.exe. Embedded as a
       PE resource so Task Manager, Explorer, and the title bar all show
-      the Bowire "B" glyph when the tool runs standalone. Points directly
-      at the repo-level images/bowire.ico so there's a single source of
-      truth — regenerate it via `scripts/branding/generate-icons.sh` whenever
-      images/bowire_logo_small.svg changes. The ICO is multi-resolution
-      (16/20/24/32/40/48/64/96/128/256) so Explorer picks the right size
-      for small icons, medium icons, list view, large tiles, and the
-      taskbar.
+      the Bowire mark when the tool runs standalone. Points directly at
+      the repo-level images/bowire.ico, which the shared branding
+      generator writes from scripts/branding/bowire_mark_source.svg
+      (node scripts/branding/tool/generate-logos.mjs). The ICO is
+      multi-resolution (16/24/32/48/64/128/256, the mark on its light
+      tile) so Explorer picks the right size for every view.
     -->
     <ApplicationIcon>..\..\images\bowire.ico</ApplicationIcon>
   </PropertyGroup>

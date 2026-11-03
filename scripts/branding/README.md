@@ -1,56 +1,46 @@
-# Bowire branding pipeline
+# Bowire branding
 
-Logo + favicon scripts. One author-owned source set in `images/`, fanned out to every consumer surface (workbench UI, docs, marketing site, iOS apple-touch icon).
+Bowire's logo files come from the shared Küstenlogik branding tool, the same generator every product uses. This
+folder holds what is Bowire's own; the tool itself is a pinned copy in `tool/` (`tool/README.md` explains it in full).
 
-## Sources (`images/`)
-
-| File | Role |
+| File | What it is |
 |---|---|
-| `bowire_logo.svg` | Large horizontal logo. Hero on the marketing site + docs. |
-| `bowire_logo_small.svg` | Square 1:1 mark. Favicon + app icon. |
+| `bowire_mark_source.svg` | The owner's drawing of the mark, the "bw" (Inkscape). The main logo. |
+| `bowire_emblem_source.svg` | The owner's drawing of the emblem: the mark in its ring with the bowline knot. |
+| `brand.json` | Bowire's configuration: the prefix, the palette role, the family frame, the extra app icons, the brand kit, where the inline copies live and where outputs are copied. |
+| `wordmark.json` | "Bowire" in Inter Bold as an outline, so the generator needs no font. |
+| `tool/` | The vendored generator with its `pin.json`. Never edited here; `tests/Kuestenlogik.Bowire.Tests/ci/branding-tool.test.mjs` fails a copy that differs from its pin. |
 
-Both SVGs are theme-aware (embedded `prefers-color-scheme` media query).
+Everything else is generated: `images/` (see `images/README.md`) and its copies on the site, in the docs, in the
+workbench (`wwwroot/bowire_mark_{colored,white}.svg`), in the macOS app bundle, and the brand kit
+`site/assets/brand/bowire_brand_kit.zip`. So are the inline copies between `brand:` markers in the site's includes,
+the docs template, `docs/index.md` and the workbench's `helpers.js`. The brand sheet PDF is rendered from the built
+brand page in the site build (`scripts/site/build-brand-pdf.js`).
 
-## Pipeline
-
-### 1. Generate derivatives — `generate-icons`
-
-Regenerates every PNG / WebP / ICO derivative from the source SVGs. Writes ONLY into `images/`.
+## Run
 
 ```sh
-scripts/branding/generate-icons.sh        # bash
-scripts/branding/generate-icons.ps1       # PowerShell
+cd scripts/branding/tool && npm ci && cd ../../..   # once per checkout: Playwright and sharp
+node scripts/branding/tool/generate-logos.mjs       # regenerate everything after a drawing or brand.json changes
+node scripts/branding/tool/generate-logos.mjs --check
+node scripts/site/optimize-images.mjs               # the site's AVIF/WebP variants of og-image.png
 ```
 
-Idempotent — delete every derivative in `images/` except the two source SVGs and re-run.
+`--check` writes nothing and fails when an output, a copy, the brand kit or an inline copy differs from what the
+drawings make. It needs Edge, so it runs on a developer machine before a commit that touches the logo; CI checks the
+pin of the tool.
 
-### 2. Distribute — `distribute-icons`
+## Decisions (#964, #965)
 
-Copies the now-current artefacts from `images/` into every consumer:
+- **Names** carry the product prefix: `bowire_mark_*`, `bowire_emblem_*`, `bowire_lockup_{h,v}_*`. The web's standard
+  names stay: `favicon.ico`, `favicon.svg`, `apple-touch-icon.png`, `icon.png`, `og-image.*`.
+- **Colour**: the drawings are black; `colored` paints them in Küstenlogik's navy ink `#003e60`, white on dark.
+- **Frame**: the mark is placed in the family frame (77.026421 × 77.673187), scaled whole and centred; the drawing
+  itself is unchanged. The emblem keeps its own frame.
+- **App icons** (`bowire.ico`, `bowire.icns`, `bowire_app_256.png`, `icon.png`, `icon-512.png`) show the mark on the
+  light tile, so a navy mark stays visible on a dark taskbar, dock or gallery.
 
-| Consumer | What lands |
-|---|---|
-| `src/Kuestenlogik.Bowire/wwwroot/favicon.svg` | workbench tab icon |
-| `docs/favicon.ico` | DocFX site |
-| `docs/templates/bowire/public/favicon.svg` | DocFX template |
-| `site/assets/images/favicon.{ico,svg}` | Jekyll marketing site |
-| `site/assets/images/bowire-logo.svg` | marketing-site hero |
-| `site/assets/images/apple-touch-icon.png` | iOS home-screen bookmark (180×180, rendered fresh) |
+To change the generator, change the shared tool in the Kuestenlogik repository (`tools/branding`) and vendor it
+again (`tool/README.md`, "Vendoring into a product"); never edit `tool/` here.
 
-```sh
-scripts/branding/distribute-icons.sh
-scripts/branding/distribute-icons.ps1
-```
-
-This step never touches `images/` — run `generate-icons` first when the sources change.
-
-## When to run
-
-- **Source SVG changed** → `generate-icons` then `distribute-icons`
-- **New consumer added** → just `distribute-icons`
-- **CI pipeline** → both, in order, as a single step
-
-## Out of scope
-
-- **Workbench UI icon library** (the inline SVG glyphs like `undo`, `info`, `compose`) lives in `src/Kuestenlogik.Bowire/wwwroot/js/helpers.js` as hand-edited strings. Not generated by anything here.
-- **OG image** (social-media preview) is in `scripts/marketing-site/generate-og-image.js` — that's site-only, not part of the branding fan-out.
+The wordmark's glyphs are outlines of Inter 4.1 (SIL Open Font License 1.1, `tool/Inter-LICENSE.txt`).

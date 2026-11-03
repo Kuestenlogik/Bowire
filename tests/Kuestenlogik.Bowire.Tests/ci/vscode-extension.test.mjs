@@ -668,8 +668,8 @@ describe('marketplace assets', () => {
         new URL('../../../extensions/bowire-vscode/scripts/prepare-package.mjs', import.meta.url).href);
 
     it('reuses the one canonical logo and meets the marketplace rules', async () => {
-        // The icon is copied in at package time from images/bowire_logo_small.png
-        // — the same file NuGet packs — rather than committed a second time.
+        // The icon is copied in at package time from images/icon-512.png — the
+        // shared branding generator's tile — rather than committed a second time.
         // If that image is moved or renamed, this fails here instead of
         // publishing a blank marketplace tile nobody notices.
         const mod = await prepare();

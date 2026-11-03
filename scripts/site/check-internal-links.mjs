@@ -18,6 +18,8 @@
 //   * docs/api/Kuestenlogik.*.html — the API reference DocFX generates.
 //   * /feed.xml and /sitemap.xml — written by the jekyll-feed and
 //     jekyll-sitemap plugins during the Jekyll build (#926).
+//   * /assets/brand/bowire_brand_guide.pdf — rendered from the built brand page
+//     by scripts/site/build-brand-pdf.js right after the Jekyll build (#964).
 // Links inside code (fenced blocks, inline code) are examples, not links.
 //
 // Run: `node scripts/site/check-internal-links.mjs` (CI: ci.yml, "Site link check")
@@ -34,7 +36,7 @@ import { slugFor } from '../docs/plugin-docs.mjs';
 // Pages the site build brings in from elsewhere (see the header).
 const FETCHED_PLUGIN_PAGES = new Set(Object.keys(PRODUCT_OF_REPO).map(slugFor).filter(Boolean).map(s => `docs/protocols/${s}.md`));
 const MOUNTED_SITE_PATHS = ['/bootcamp/'];
-const PLUGIN_GENERATED_FILES = new Set(['/feed.xml', '/sitemap.xml']);
+const PLUGIN_GENERATED_FILES = new Set(['/feed.xml', '/sitemap.xml', '/assets/brand/bowire_brand_guide.pdf']);
 function arrivesWithBuild(target, resolvedRel) {
   if (MOUNTED_SITE_PATHS.some(m => target === m || target.startsWith(m))) return true;
   if (PLUGIN_GENERATED_FILES.has(target)) return true;
