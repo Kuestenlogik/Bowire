@@ -132,7 +132,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**20/38 done** · 18 backlog
+**21/38 done** · 17 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -152,7 +152,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [946](https://github.com/Kuestenlogik/Bowire/issues/946) | Bowire | [Data sets for flow runs and bowire test --workspace](#issue-kuestenlogik-bowire-946) | ⬜ Backlog |  |
 | [963](https://github.com/Kuestenlogik/Bowire/issues/963) | Bowire | [WebSocketAuthProbe: forged JWT (alg:none, tampered signature) on the upgrade](#issue-kuestenlogik-bowire-963) | ⬜ Backlog | `area:security` |
 | [969](https://github.com/Kuestenlogik/Bowire/issues/969) | Bowire | [Site: images are not served in modern formats; index.html weighs 5.3 MB](#issue-kuestenlogik-bowire-969) | ⬜ Backlog | `area:site` |
-| [971](https://github.com/Kuestenlogik/Bowire/issues/971) | Bowire | [Branding: vendor the shared tool 1.1.0 with Bowire's master logos from the meta repo](#issue-kuestenlogik-bowire-971) | ⬜ Backlog | `area:site` |
 | [972](https://github.com/Kuestenlogik/Bowire/issues/972) | Bowire | [Plugin repos, Templates and Bootcamp: take the new Bowire logo](#issue-kuestenlogik-bowire-972) | ⬜ Backlog | `area:site` |
 | [673](https://github.com/Kuestenlogik/Bowire/issues/673) | Bowire | [Export requests as .http — Copy as .http, and bowire export http for a whole collection](#issue-kuestenlogik-bowire-673) | ✅ Done | `area:workbench` |
 | [674](https://github.com/Kuestenlogik/Bowire/issues/674) | Bowire | [Import from Insomnia, Bruno and .http, with a migration guide per source](#issue-kuestenlogik-bowire-674) | ✅ Done | `area:workbench` |
@@ -173,6 +172,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [967](https://github.com/Kuestenlogik/Bowire/issues/967) | Bowire | [Lighthouse PR audit always fails: it audits /comparison.html, which is not a page](#issue-kuestenlogik-bowire-967) | ✅ Done | `area:site` |
 | [968](https://github.com/Kuestenlogik/Bowire/issues/968) | Bowire | [ProxyCommandTests write the proxy CA into the real ~/.bowire](#issue-kuestenlogik-bowire-968) | ✅ Done | `area:cli` |
 | [970](https://github.com/Kuestenlogik/Bowire/issues/970) | Bowire | [About box: the Küstenlogik lockup follows the server's default theme, not the one in use](#issue-kuestenlogik-bowire-970) | ✅ Done | `area:workbench` |
+| [971](https://github.com/Kuestenlogik/Bowire/issues/971) | Bowire | [Branding: vendor the shared tool 1.1.0 with Bowire's master logos from the meta repo](#issue-kuestenlogik-bowire-971) | ✅ Done | `area:site` |
 | [973](https://github.com/Kuestenlogik/Bowire/issues/973) | Bowire | [MCP task replay and recording: two races that turn CI red](#issue-kuestenlogik-bowire-973) | ✅ Done | `area:mcp` |
 
 ### v2.12 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
@@ -837,12 +837,6 @@ Kuestenlogik/Bowire.VulnDb#51 (CVE-2026-113620, Eclipse ioFog Controller): the W
 
 With #967 the Lighthouse PR audit loads its pages for the first time, and it fails on all three of them (run https://github.com/Kuestenlogik/Bowire/actions/runs/41694236892, on #784): [[more]](https://github.com/Kuestenlogik/Bowire/issues/969)
 
-#### <a id="issue-kuestenlogik-bowire-971"></a>⬜ Backlog · [#971](https://github.com/Kuestenlogik/Bowire/issues/971) Branding: vendor the shared tool 1.1.0 with Bowire's master logos from the meta repo
-
-> `area:site`
-
-Follow-up to #964/#965. [[more]](https://github.com/Kuestenlogik/Bowire/issues/971)
-
 #### <a id="issue-kuestenlogik-bowire-972"></a>⬜ Backlog · [#972](https://github.com/Kuestenlogik/Bowire/issues/972) Plugin repos, Templates and Bootcamp: take the new Bowire logo
 
 > `area:site`
@@ -940,6 +934,12 @@ Three tests in `tests/Kuestenlogik.Bowire.Tests/Proxy/ProxyCommandTests.cs` star
 > `area:workbench`
 
 The About box picks the Küstenlogik lockup by `config.theme`, the theme the server is configured with, which the theme switch never changes. When a user switches to another theme, the lockup comes in the wrong colour. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/970)
+
+#### <a id="issue-kuestenlogik-bowire-971"></a>✅ Done · [#971](https://github.com/Kuestenlogik/Bowire/issues/971) Branding: vendor the shared tool 1.1.0 with Bowire's master logos from the meta repo
+
+> `area:site`
+
+Follow-up to #964/#965. [[more]](https://github.com/Kuestenlogik/Bowire/issues/971)
 
 #### <a id="issue-kuestenlogik-bowire-973"></a>✅ Done · [#973](https://github.com/Kuestenlogik/Bowire/issues/973) MCP task replay and recording: two races that turn CI red
 
