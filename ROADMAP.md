@@ -132,7 +132,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**19/37 done** · 18 backlog
+**19/38 done** · 19 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -154,6 +154,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [969](https://github.com/Kuestenlogik/Bowire/issues/969) | Bowire | [Site: images are not served in modern formats; index.html weighs 5.3 MB](#issue-kuestenlogik-bowire-969) | ⬜ Backlog | `area:site` |
 | [971](https://github.com/Kuestenlogik/Bowire/issues/971) | Bowire | [Branding: vendor the shared tool 1.1.0 with Bowire's master logos from the meta repo](#issue-kuestenlogik-bowire-971) | ⬜ Backlog | `area:site` |
 | [972](https://github.com/Kuestenlogik/Bowire/issues/972) | Bowire | [Plugin repos, Templates and Bootcamp: take the new Bowire logo](#issue-kuestenlogik-bowire-972) | ⬜ Backlog | `area:site` |
+| [973](https://github.com/Kuestenlogik/Bowire/issues/973) | Bowire | [MCP task replay and recording: two races that turn CI red](#issue-kuestenlogik-bowire-973) | ⬜ Backlog | `area:mcp` |
 | [673](https://github.com/Kuestenlogik/Bowire/issues/673) | Bowire | [Export requests as .http — Copy as .http, and bowire export http for a whole collection](#issue-kuestenlogik-bowire-673) | ✅ Done | `area:workbench` |
 | [674](https://github.com/Kuestenlogik/Bowire/issues/674) | Bowire | [Import from Insomnia, Bruno and .http, with a migration guide per source](#issue-kuestenlogik-bowire-674) | ✅ Done | `area:workbench` |
 | [675](https://github.com/Kuestenlogik/Bowire/issues/675) | Bowire | [Data-driven collection runs: one iteration per CSV/JSON row](#issue-kuestenlogik-bowire-675) | ✅ Done | `area:cli` |
@@ -847,6 +848,12 @@ Follow-up to #964/#965. [[more]](https://github.com/Kuestenlogik/Bowire/issues/9
 > `area:site`
 
 Follow-up to #964/#965. [[more]](https://github.com/Kuestenlogik/Bowire/issues/972)
+
+#### <a id="issue-kuestenlogik-bowire-973"></a>⬜ Backlog · [#973](https://github.com/Kuestenlogik/Bowire/issues/973) MCP task replay and recording: two races that turn CI red
+
+> `area:mcp`
+
+Follow-up to #803. `A_Recorded_Task_Call_Replays_From_The_Mock_And_A_Client_Drives_It_To_Completion` failed in CI on e542991a and 71005198, and locally in 4 of 30 runs. The cause is two defects in what #803 shipped. [[more]](https://github.com/Kuestenlogik/Bowire/issues/973)
 
 #### <a id="issue-kuestenlogik-bowire-673"></a>✅ Done · [#673](https://github.com/Kuestenlogik/Bowire/issues/673) Export requests as .http — Copy as .http, and bowire export http for a whole collection
 
