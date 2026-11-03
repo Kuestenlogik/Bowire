@@ -287,16 +287,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [779](https://github.com/Kuestenlogik/Bowire/issues/779) | Bowire | [Revoke the old VSCE_PAT in Azure DevOps](#issue-kuestenlogik-bowire-779) | ⬜ Backlog |  |
 | [613](https://github.com/Kuestenlogik/Bowire/issues/613) | Bowire | [Move the VS Code Marketplace publish off PATs to Entra ID before 2026-12-01](#issue-kuestenlogik-bowire-613) | ✅ Done | `area:cli` |
 
-### Backlog (not yet scheduled)
-
-| # | Project | Title | Status | Tags |
-|---|---|---|---|---|
-| [46](https://github.com/Kuestenlogik/Bowire.VulnDb/issues/46) | VulnDb | [CVE-2026-77366 — needs a mcp template?](#issue-kuestenlogik-bowire-vulndb-46) | ⬜ Backlog |  |
-| [47](https://github.com/Kuestenlogik/Bowire.VulnDb/issues/47) | VulnDb | [CVE-2026-82041 — needs a grpc template?](#issue-kuestenlogik-bowire-vulndb-47) | ⬜ Backlog |  |
-| [51](https://github.com/Kuestenlogik/Bowire.VulnDb/issues/51) | VulnDb | [CVE-2026-113620 — needs a websocket template?](#issue-kuestenlogik-bowire-vulndb-51) | ⬜ Backlog |  |
-| [52](https://github.com/Kuestenlogik/Bowire.VulnDb/issues/52) | VulnDb | [CVE-2026-112776 — needs a graphql template?](#issue-kuestenlogik-bowire-vulndb-52) | ⬜ Backlog |  |
-| [925](https://github.com/Kuestenlogik/Bowire/issues/925) | Bowire | [roadmap-release-field publish is failing](#issue-kuestenlogik-bowire-925) | ⬜ Backlog |  |
-
 ## Details
 
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
@@ -1188,28 +1178,6 @@ Two warning suppressions in this repo, reviewed under the rule that warnings are
 > `area:cli`
 
 > **Hard deadline: 2026-12-01.** Azure DevOps stops supporting Personal Access Tokens scoped to *all accessible organizations* on that date. That scope is what `vsce publish` has traditionally required. [[more]](https://github.com/Kuestenlogik/Bowire/issues/613)
-
-### Backlog (not yet scheduled)
-
-#### <a id="issue-kuestenlogik-bowire-vulndb-46"></a>⬜ Backlog · [Kuestenlogik/Bowire.VulnDb#46](https://github.com/Kuestenlogik/Bowire.VulnDb/issues/46) CVE-2026-77366 — needs a mcp template?
-
-A recently-published CVE matched the **mcp** keyword search and has no template in this corpus yet. Assess whether it maps to a probeable, multi-protocol misconfiguration/vulnerability Bowire can detect — and if so, author a template; otherwise close as not-applicable. [[more]](https://github.com/Kuestenlogik/Bowire.VulnDb/issues/46)
-
-#### <a id="issue-kuestenlogik-bowire-vulndb-47"></a>⬜ Backlog · [Kuestenlogik/Bowire.VulnDb#47](https://github.com/Kuestenlogik/Bowire.VulnDb/issues/47) CVE-2026-82041 — needs a grpc template?
-
-A recently-published CVE matched the **grpc** keyword search and has no template in this corpus yet. Assess whether it maps to a probeable, multi-protocol misconfiguration/vulnerability Bowire can detect — and if so, author a template; otherwise close as not-applicable. [[more]](https://github.com/Kuestenlogik/Bowire.VulnDb/issues/47)
-
-#### <a id="issue-kuestenlogik-bowire-vulndb-51"></a>⬜ Backlog · [Kuestenlogik/Bowire.VulnDb#51](https://github.com/Kuestenlogik/Bowire.VulnDb/issues/51) CVE-2026-113620 — needs a websocket template?
-
-A recently-published CVE matched the **websocket** keyword search and has no template in this corpus yet. Assess whether it maps to a probeable, multi-protocol misconfiguration/vulnerability Bowire can detect — and if so, author a template; otherwise close as not-applicable. [[more]](https://github.com/Kuestenlogik/Bowire.VulnDb/issues/51)
-
-#### <a id="issue-kuestenlogik-bowire-vulndb-52"></a>⬜ Backlog · [Kuestenlogik/Bowire.VulnDb#52](https://github.com/Kuestenlogik/Bowire.VulnDb/issues/52) CVE-2026-112776 — needs a graphql template?
-
-A recently-published CVE matched the **graphql** keyword search and has no template in this corpus yet. Assess whether it maps to a probeable, multi-protocol misconfiguration/vulnerability Bowire can detect — and if so, author a template; otherwise close as not-applicable. [[more]](https://github.com/Kuestenlogik/Bowire.VulnDb/issues/52)
-
-#### <a id="issue-kuestenlogik-bowire-925"></a>⬜ Backlog · [#925](https://github.com/Kuestenlogik/Bowire/issues/925) roadmap-release-field publish is failing
-
-<!-- publish-failure:roadmap-release-field --> The **roadmap-release-field** publish failed. - Run: https://github.com/Kuestenlogik/Bowire/actions/runs/39595717885 - Workflow: `Roadmap field guard` - Commit: 436a4621553ddab1264d7610b40c46ac3d16e43e [[more]](https://github.com/Kuestenlogik/Bowire/issues/925)
 
 ---
 
