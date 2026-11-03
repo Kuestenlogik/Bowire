@@ -5,7 +5,7 @@
       "url": [
         "http://localhost/index.html",
         "http://localhost/quickstart.html",
-        "http://localhost/comparison.html",
+        "http://localhost/features.html",
         "http://localhost/docs/index.html"
       ],
       "numberOfRuns": 1,
