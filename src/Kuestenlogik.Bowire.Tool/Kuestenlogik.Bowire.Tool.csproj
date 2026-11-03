@@ -79,6 +79,8 @@
          while the test project gets direct access via the friend
          assembly declaration. -->
     <InternalsVisibleTo Include="Kuestenlogik.Bowire.Tests" />
+    <!-- #803: flows against a real MCP task server; the core test project has fake protocols with the mcp id. -->
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.Protocol.Mcp.Tests" />
   </ItemGroup>
   <ItemGroup>
     <!-- NuGet client library used by the `bowire plugin install`

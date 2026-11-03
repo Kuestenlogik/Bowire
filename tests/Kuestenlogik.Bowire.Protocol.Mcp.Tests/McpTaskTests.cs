@@ -72,7 +72,7 @@ public sealed class McpTaskTests
         var services = await Discover(server.Url);
 
         var tasks = Assert.Single(services, s => s.Name == "Tasks");
-        Assert.Equal(["get", "follow", "update", "cancel"], tasks.Methods.Select(m => m.Name));
+        Assert.Equal(["get", "follow", "update", "cancel", "run"], tasks.Methods.Select(m => m.Name));
         Assert.True(tasks.Methods.Single(m => m.Name == "follow").ServerStreaming);
         Assert.Contains("2026-07-28", tasks.Description, StringComparison.Ordinal);
         Assert.Contains("as a task", services.Single(s => s.Name == "Tools").Description, StringComparison.Ordinal);
@@ -440,6 +440,111 @@ public sealed class McpTaskTests
         var result = await new BowireMcpProtocol().InvokeAsync(server.Url, "Tasks", "update",
             ["""{ "taskId": "task-001", "inputResponses": {} }"""], false, null, Ct);
         Assert.Contains("only that client can answer", result.Status, StringComparison.Ordinal);
+    }
+
+    // ---- Tasks/run: one step for a flow or a test (#803) ----
+
+    private static async Task<(string Status, JsonElement? Body)> Run(BowireMcpProtocol protocol, string url, object body)
+    {
+        var result = await protocol.InvokeAsync(url, "Tasks", "run", [JsonSerializer.Serialize(body)], false, null, Ct);
+        if (result.Status != "OK") return (result.Status, null);
+        using var doc = JsonDocument.Parse(result.Response!);
+        return (result.Status, doc.RootElement.Clone());
+    }
+
+    private static List<string> Strings(JsonElement body, string name) =>
+        [.. body.GetProperty(name).EnumerateArray().Select(e => e.GetString()!)];
+
+    [Fact]
+    public async Task Run_Answers_The_Input_Request_And_Reports_The_Lifecycle_And_The_Result()
+    {
+        await using var server = await SdkTaskServer.StartAsync(Ct);
+        var (status, body) = await Run(new BowireMcpProtocol(), server.Url, new
+        {
+            tool = "ask",
+            inputResponses = new Dictionary<string, object> { ["*"] = new { action = "accept", content = new { name = "Ada" } } },
+            timeoutMs = 30_000,
+        });
+
+        Assert.Equal("OK", status);
+        var run = body!.Value;
+        Assert.True(run.GetProperty("ranAsTask").GetBoolean());
+        Assert.Equal("completed", run.GetProperty("status").GetString());
+        Assert.Contains("input_required", Strings(run, "statuses"));
+        Assert.Equal("completed", Strings(run, "statuses")[^1]);
+        Assert.Single(Strings(run, "answered"));
+        Assert.Contains("hello Ada", run.GetProperty("result").GetRawText(), StringComparison.Ordinal);
+        Assert.False(run.GetProperty("cancelRequested").GetBoolean());
+    }
+
+    [Fact]
+    public async Task Run_Without_A_Response_For_An_Input_Request_Says_Which_And_How_To_Give_One()
+    {
+        await using var server = await SdkTaskServer.StartAsync(Ct);
+        var (status, _) = await Run(new BowireMcpProtocol(), server.Url, new { tool = "ask", timeoutMs = 30_000 });
+
+        Assert.Contains("asks for input", status, StringComparison.Ordinal);
+        Assert.Contains("Your name?", status, StringComparison.Ordinal);
+        Assert.Contains("inputResponses", status, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Run_Cancels_At_The_Named_Status_And_Ends_Cancelled()
+    {
+        await using var server = await SdkTaskServer.StartAsync(Ct);
+        var (status, body) = await Run(new BowireMcpProtocol(), server.Url, new { tool = "slow", cancelAt = "working", timeoutMs = 30_000 });
+
+        Assert.Equal("OK", status);
+        Assert.True(body!.Value.GetProperty("cancelRequested").GetBoolean());
+        Assert.Equal("cancelled", body.Value.GetProperty("status").GetString());
+        Assert.False(body.Value.TryGetProperty("result", out _));
+    }
+
+    [Fact]
+    public async Task Run_Gives_Up_After_Its_Timeout_And_Says_Where_The_Task_Stands()
+    {
+        await using var server = await SdkTaskServer.StartAsync(Ct);
+        var (status, _) = await Run(new BowireMcpProtocol(), server.Url, new { tool = "slow", timeoutMs = 300 });
+
+        Assert.Contains("is still 'working' after 300 ms", status, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Run_Refuses_A_Request_Without_A_Tool_Or_With_An_Unknown_CancelAt()
+    {
+        await using var server = await SdkTaskServer.StartAsync(Ct);
+        var protocol = new BowireMcpProtocol();
+        Assert.Contains("needs { \"tool\"", (await Run(protocol, server.Url, new { })).Status, StringComparison.Ordinal);
+        Assert.Contains("cancelAt is one of", (await Run(protocol, server.Url, new { tool = "slow", cancelAt = "completed" })).Status, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Run_Answers_A_2025_11_25_Task_Through_Its_Own_Follow()
+    {
+        await using var server = await FakeTaskServer.StartAsync(FakeTaskServer.Shape.Legacy, Ct, askOnCreate: "Your name?");
+        var (status, body) = await Run(new BowireMcpProtocol(), server.Url, new
+        {
+            tool = "job",
+            inputResponses = new Dictionary<string, object> { ["elicitation-1"] = new { action = "accept", content = new { name = "Ada" } } },
+            timeoutMs = 30_000,
+        });
+
+        Assert.Equal("OK", status);
+        Assert.Equal("2025-11-25", body!.Value.GetProperty("shape").GetString());
+        Assert.Equal("completed", body.Value.GetProperty("status").GetString());
+        Assert.Equal(["elicitation-1"], Strings(body.Value, "answered"));
+        Assert.Contains("hello Ada", body.Value.GetProperty("result").GetRawText(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Run_Of_A_Tool_That_Is_Not_A_Task_Calls_It_And_Says_So()
+    {
+        await using var server = await FakeTaskServer.StartAsync(FakeTaskServer.Shape.Legacy, Ct);
+        var (status, body) = await Run(new BowireMcpProtocol(), server.Url, new { tool = "plain" });
+
+        Assert.Equal("OK", status);
+        Assert.False(body!.Value.GetProperty("ranAsTask").GetBoolean());
+        Assert.Contains("ran without a task", body.Value.GetProperty("result").GetRawText(), StringComparison.Ordinal);
     }
 
     // ---- no tasks ----

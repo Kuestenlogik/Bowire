@@ -14,7 +14,8 @@ namespace Kuestenlogik.Bowire.Protocol.Mcp.Tasks;
 /// The MCP plugin's task surface (#801): which dialect a server speaks,
 /// the <c>Tasks</c> service it adds to discovery, and the four methods on
 /// it — <c>get</c>, <c>follow</c>, <c>update</c>, <c>cancel</c> — each
-/// addressed by <c>taskId</c>. They are ordinary Bowire methods, so the
+/// addressed by <c>taskId</c>, plus <c>run</c> (#803), which starts a task
+/// and drives it to its end for a flow or a test. They are ordinary Bowire methods, so the
 /// CLI, REST and the MCP adapter reach a task the same way the workbench
 /// does, and a reload resumes with <c>follow</c>.
 /// </summary>
@@ -25,6 +26,7 @@ internal sealed class McpTaskService
     public const string Follow = "follow";
     public const string Update = "update";
     public const string Cancel = "cancel";
+    public const string Run = "run";
 
     // 2025-11-25 servers: execution.taskSupport per tool, keyed by
     // normalised server URL, captured on discovery so a call does not need
@@ -148,12 +150,24 @@ internal sealed class McpTaskService
                 taskId,
                 Field("inputResponses", 2, "object", true, "One response per outstanding input request, keyed like inputRequests — for an elicitation: { \"action\": \"accept\", \"content\": { … } }.")),
             Method(Cancel, false, "tasks/cancel — ask the server to stop. Cooperative: the task may still complete or fail.", taskId),
+            // #803 — one step for a flow or `bowire test`: start, answer, cancel, wait.
+            Method(Run, false, "Call a tool as a task and drive it to its end: answer its input requests with inputResponses, cancel at cancelAt, give up after timeoutMs. Answers with the statuses it passed through, the keys it answered and its result or error.",
+                Field("tool", 1, "string", true, "The tool to call as a task."),
+                Field("arguments", 2, "object", false, "The tool's arguments."),
+                Field("inputResponses", 3, "object", false, "Responses keyed like the task's inputRequests; \"*\" answers any request without a key of its own. For an elicitation: { \"action\": \"accept\", \"content\": { … } }."),
+                Field("cancelAt", 4, "string", false, "working or input_required: ask the server to cancel when the task first reaches it."),
+                Field("timeoutMs", 5, "int64", false, "Give up after this many milliseconds; without it the run waits until the task ends or its TTL passes.")),
         ];
     }
 
     /// <summary>A unary <c>Tasks/*</c> call; the payload the response pane shows.</summary>
-    public async Task<JsonElement> InvokeAsync(McpClient client, string serverUrl, string method, List<string> jsonMessages, CancellationToken ct)
+    public async Task<JsonElement> InvokeAsync(
+        McpClient client, string serverUrl, string method, List<string> jsonMessages, CancellationToken ct,
+        Func<McpClientOptions, CancellationToken, Task<McpClient>>? connect = null)
     {
+        if (method == Run)
+            return await McpTaskRun.RunAsync(this, client, serverUrl, connect, ReadBody(jsonMessages), ct).ConfigureAwait(false);
+
         var dialect = ForServer(client, serverUrl) ?? throw NoTasks();
         var (taskId, body) = ReadRequest(jsonMessages);
 
@@ -195,7 +209,7 @@ internal sealed class McpTaskService
             case Follow:
                 throw new InvalidOperationException("Tasks/follow is a stream; invoke it as one.");
             default:
-                throw new InvalidOperationException($"MCP Tasks has no method '{method}'. Use get, follow, update or cancel.");
+                throw new InvalidOperationException($"MCP Tasks has no method '{method}'. Use get, follow, update, cancel or run.");
         }
     }
 
@@ -218,14 +232,16 @@ internal sealed class McpTaskService
         return JsonSerializer.SerializeToElement(node);
     }
 
+    private static JsonElement ReadBody(List<string> jsonMessages)
+    {
+        if (jsonMessages.Count == 0 || string.IsNullOrWhiteSpace(jsonMessages[0])) return default;
+        using var doc = JsonDocument.Parse(jsonMessages[0]);
+        return doc.RootElement.Clone();
+    }
+
     private static (string TaskId, JsonElement Body) ReadRequest(List<string> jsonMessages)
     {
-        JsonElement body = default;
-        if (jsonMessages.Count > 0 && !string.IsNullOrWhiteSpace(jsonMessages[0]))
-        {
-            using var doc = JsonDocument.Parse(jsonMessages[0]);
-            body = doc.RootElement.Clone();
-        }
+        var body = ReadBody(jsonMessages);
         if (body.ValueKind != JsonValueKind.Object
             || !body.TryGetProperty("taskId", out var id)
             || id.ValueKind != JsonValueKind.String

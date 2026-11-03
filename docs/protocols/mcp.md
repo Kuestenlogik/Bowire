@@ -90,8 +90,59 @@ On such a server, discovery adds a **Tasks** service, and the Tools service says
 | `follow` | `{ "taskId": "…" }` | a stream like the tool call's, from the task's current state on — what the workbench uses to resume after a reload |
 | `update` | `{ "taskId": "…", "inputResponses": { "<key>": { "action": "accept", "content": { … } } } }` | an acknowledgement; keys match the task's `inputRequests` |
 | `cancel` | `{ "taskId": "…" }` | an acknowledgement, plus the task's status right after |
+| `run` | `{ "tool": "…", "arguments": { … }, "inputResponses": { … }, "cancelAt": "…", "timeoutMs": … }` | what the task went through and how it ended (see [Testing a task lifecycle](#testing-a-task-lifecycle)) |
 
 Cancellation is **cooperative**: the server is asked to stop, and the task may still complete or fail before it does. The answer to `cancel` says so and shows the status the server reported right after the request; the followed stream shows how it actually ended.
+
+### Testing a task lifecycle
+
+`Tasks/run` tests a server's tasks in one step, which is what a [flow](../features/flows.md) or `bowire test` needs. Neither carries a value from one step to the next, so a `taskId` from one step could not reach another. The step:
+
+1. calls the tool as a task;
+2. answers each input request with the response under its key in `inputResponses`, or under `"*"` for any request without a key of its own;
+3. asks the server to cancel when the task first reaches `cancelAt` (`working` or `input_required`);
+4. follows the task until it ends, or gives up after `timeoutMs`.
+
+It answers with what happened:
+
+```json
+{
+  "ranAsTask": true,
+  "tool": "ask",
+  "taskId": "786512e2…",
+  "shape": "2026-07-28",
+  "status": "completed",
+  "statusMessage": null,
+  "statuses": ["working", "input_required", "working", "completed"],
+  "statusMessages": [],
+  "answered": ["name"],
+  "cancelRequested": false,
+  "result": { "content": [ { "type": "text", "text": "hello Ada" } ] }
+}
+```
+
+A flow asserts on that with its ordinary expectations. Here the step answers the elicitation, expects the task to complete, to have asked on the way, and to greet the name:
+
+```json
+{
+  "id": "ask", "type": "request", "protocol": "mcp", "serverUrl": "http://localhost:5000/mcp",
+  "service": "Tasks", "method": "run",
+  "body": "{ \"tool\": \"ask\", \"inputResponses\": { \"*\": { \"action\": \"accept\", \"content\": { \"name\": \"Ada\" } } }, \"timeoutMs\": 30000 }",
+  "expectations": [
+    { "kind": "body-path", "operator": "equals",   "target": "$.status",   "expected": "completed" },
+    { "kind": "body-path", "operator": "contains", "target": "$.statuses", "expected": "input_required" },
+    { "kind": "body-path", "operator": "contains", "target": "$.result.content[0].text", "expected": "hello Ada" }
+  ]
+}
+```
+
+A task that ends another way fails the expectation on `$.status` and shows the status it ended in. A failed task's JSON-RPC error is in `$.error`. The step itself fails, with a message, when:
+
+- the task asks for input that `inputResponses` has no response for (the message names the request and its key);
+- `timeoutMs` passes (the message says where the task stood and which statuses it went through);
+- the follow breaks (the TTL passes, or the server purged the task).
+
+A tool the server does not run as a task is called the ordinary way and answers `{ "ranAsTask": false, "result": … }`. Under 2025-11-25, `run` answers the task's questions itself, because it is the client that follows the task (keys `elicitation-1`, …).
 
 **Input under 2025-11-25.** In that shape the questions do not travel in the task: the server sends an ordinary `elicitation/create`, tagged with the task in `_meta["io.modelcontextprotocol/related-task"]`, on a pending `tasks/result`. So when a followed task turns `input_required`, Bowire opens a second connection that declares the `elicitation` capability and calls `tasks/result` on it. Only this connection declares elicitation; every other call keeps the capabilities it had. Each question shows in the task frame's `inputRequests`, keyed by Bowire (`elicitation-1`, …), and the task card renders it as it does under the extension. `Tasks/update` hands the answer to the waiting request, and the server receives it on the session waiting in `tasks/result`. Because the question lives on that session, only the Bowire process that follows the task can answer it. A `Tasks/update` from anywhere else says so.
 
@@ -101,7 +152,7 @@ A unary invoke of a tool (`bowire call`, REST) follows the task itself and answe
 
 - **Sampling** requests (`sampling/createMessage`) inside `inputRequests` are shown in full but not answered. Sampling is deprecated as of MCP 2026-07-28 ([SEP-2577](https://github.com/modelcontextprotocol/modelcontextprotocol/pull/2577)), which asks servers to call model providers directly, and a client that does not answer leaves the task waiting. **Cancel task** ends it. The connection that receives a 2025-11-25 task's questions declares `elicitation` only, not `sampling`, so such a server does not send sampling requests to Bowire.
 - A 2025-11-25 server that binds tasks to its session may refuse `Tasks/get`, `follow` or `cancel` from a new session. The same applies to the `tasks/result` that receives a task's questions, so on such a server the questions do not reach Bowire. Following the tool call's own stream is not affected.
-- Tests and mocks do not assert on task lifecycles yet (#803).
+- A recording keeps only what a task call ended in, not its lifecycle, and a mock does not serve tasks yet (#803). Flows and `bowire test` do test a lifecycle, through `Tasks/run`.
 
 ### Sample target
 

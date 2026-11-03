@@ -105,6 +105,7 @@ Flows are stored in `localStorage` under the key `bowire_flows`. They survive br
 - Use flows for **integration test sequences** -- create a resource, verify it, update it, delete it, confirm deletion.
 - Combine condition nodes with delays to **poll** an async endpoint until a status changes.
 - A flow's Request nodes use the **current environment** at run time, so you can switch environments and rerun the same flow against a different server.
+- To test an **MCP server's long-running tasks**, use one Request node on `Tasks/run`. It starts the task, answers its input requests, waits for the end, and reports the statuses and the result for the node's expectations ([Testing a task lifecycle](../protocols/mcp.md#testing-a-task-lifecycle)).
 - The flow editor reuses the same modal layout as the recordings and collections managers -- the left panel lists flows, the right panel shows the selected flow's detail.
 
 See also: [Recorder](recording.md), [Collections](collections.md), [Request Chaining](response-chaining.md), [Workspaces](workspaces.md)

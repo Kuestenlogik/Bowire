@@ -291,7 +291,8 @@ public sealed partial class BowireMcpProtocol : IBowireProtocol, Kuestenlogik.Bo
                     "Tools" => await CallToolAsync(client, serverUrl, method, jsonMessages, ct).ConfigureAwait(false),
                     "Resources" => await ReadResourceAsync(client, method, ct).ConfigureAwait(false),
                     "Prompts" => await GetPromptAsync(client, method, jsonMessages, ct).ConfigureAwait(false),
-                    McpTaskService.ServiceName => await _tasks.InvokeAsync(client, NormalizeUrl(serverUrl), method, jsonMessages, ct).ConfigureAwait(false),
+                    McpTaskService.ServiceName => await _tasks.InvokeAsync(client, NormalizeUrl(serverUrl), method, jsonMessages, ct,
+                        (options, token) => CreateClientAsync(serverUrl, metadata, token, options)).ConfigureAwait(false),
                     _ => throw new InvalidOperationException(
                         $"MCP service '{service}' is not supported. Use 'Tools', 'Resources', 'Prompts', or 'Tasks'."),
                 };

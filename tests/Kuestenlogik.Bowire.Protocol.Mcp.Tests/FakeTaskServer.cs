@@ -48,6 +48,9 @@ internal sealed class FakeTaskServer : IAsyncDisposable
     public long? TtlMs { get; init; } = 60_000;
     public long PollIntervalMs { get; init; } = 20;
 
+    /// <summary>The 2025-11-25 shape: every task created asks this at once, as <see cref="Ask"/> would (#803).</summary>
+    public string? AskOnCreate { get; init; }
+
     /// <summary>tasks/get calls seen, per task.</summary>
     public ConcurrentDictionary<string, int> Polls { get; } = new(StringComparer.Ordinal);
 
@@ -81,7 +84,7 @@ internal sealed class FakeTaskServer : IAsyncDisposable
     }
 
     public static async Task<FakeTaskServer> StartAsync(
-        Shape mode, CancellationToken ct, bool pushStatus = false, long? ttlMs = 60_000, long pollIntervalMs = 20)
+        Shape mode, CancellationToken ct, bool pushStatus = false, long? ttlMs = 60_000, long pollIntervalMs = 20, string? askOnCreate = null)
     {
         var builder = WebApplication.CreateBuilder();
         builder.WebHost.ConfigureKestrel(o => o.Listen(IPAddress.Loopback, 0));
@@ -97,6 +100,7 @@ internal sealed class FakeTaskServer : IAsyncDisposable
             PushStatus = pushStatus,
             TtlMs = ttlMs,
             PollIntervalMs = pollIntervalMs,
+            AskOnCreate = askOnCreate,
         };
         return server;
     }
@@ -274,7 +278,9 @@ internal sealed class FakeTaskServer : IAsyncDisposable
             }
             case "tools/call":
                 if (p["task"] is null) return Content("ran without a task");
-                return new JsonObject { ["task"] = Legacy(Create()) };
+                var created = Create();
+                if (AskOnCreate is not null) Ask(created["taskId"]!.GetValue<string>(), AskOnCreate);
+                return new JsonObject { ["task"] = Legacy(created) };
             case "tasks/get":
             {
                 var task = Find(p);
