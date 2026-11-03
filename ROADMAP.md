@@ -291,12 +291,8 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
-| [45](https://github.com/Kuestenlogik/Bowire.VulnDb/issues/45) | VulnDb | [CVE-2026-63688 — needs a grpc template?](#issue-kuestenlogik-bowire-vulndb-45) | ⬜ Backlog |  |
 | [46](https://github.com/Kuestenlogik/Bowire.VulnDb/issues/46) | VulnDb | [CVE-2026-77366 — needs a mcp template?](#issue-kuestenlogik-bowire-vulndb-46) | ⬜ Backlog |  |
 | [47](https://github.com/Kuestenlogik/Bowire.VulnDb/issues/47) | VulnDb | [CVE-2026-82041 — needs a grpc template?](#issue-kuestenlogik-bowire-vulndb-47) | ⬜ Backlog |  |
-| [48](https://github.com/Kuestenlogik/Bowire.VulnDb/issues/48) | VulnDb | [CVE-2026-112346 — needs a websocket template?](#issue-kuestenlogik-bowire-vulndb-48) | ⬜ Backlog |  |
-| [49](https://github.com/Kuestenlogik/Bowire.VulnDb/issues/49) | VulnDb | [CVE-2026-65184 — needs a websocket template?](#issue-kuestenlogik-bowire-vulndb-49) | ⬜ Backlog |  |
-| [50](https://github.com/Kuestenlogik/Bowire.VulnDb/issues/50) | VulnDb | [CVE-2026-46651 — needs a websocket template?](#issue-kuestenlogik-bowire-vulndb-50) | ⬜ Backlog |  |
 | [51](https://github.com/Kuestenlogik/Bowire.VulnDb/issues/51) | VulnDb | [CVE-2026-113620 — needs a websocket template?](#issue-kuestenlogik-bowire-vulndb-51) | ⬜ Backlog |  |
 | [52](https://github.com/Kuestenlogik/Bowire.VulnDb/issues/52) | VulnDb | [CVE-2026-112776 — needs a graphql template?](#issue-kuestenlogik-bowire-vulndb-52) | ⬜ Backlog |  |
 | [925](https://github.com/Kuestenlogik/Bowire/issues/925) | Bowire | [roadmap-release-field publish is failing](#issue-kuestenlogik-bowire-925) | ⬜ Backlog |  |
@@ -1195,10 +1191,6 @@ Two warning suppressions in this repo, reviewed under the rule that warnings are
 
 ### Backlog (not yet scheduled)
 
-#### <a id="issue-kuestenlogik-bowire-vulndb-45"></a>⬜ Backlog · [Kuestenlogik/Bowire.VulnDb#45](https://github.com/Kuestenlogik/Bowire.VulnDb/issues/45) CVE-2026-63688 — needs a grpc template?
-
-A recently-published CVE matched the **grpc** keyword search and has no template in this corpus yet. Assess whether it maps to a probeable, multi-protocol misconfiguration/vulnerability Bowire can detect — and if so, author a template; otherwise close as not-applicable. [[more]](https://github.com/Kuestenlogik/Bowire.VulnDb/issues/45)
-
 #### <a id="issue-kuestenlogik-bowire-vulndb-46"></a>⬜ Backlog · [Kuestenlogik/Bowire.VulnDb#46](https://github.com/Kuestenlogik/Bowire.VulnDb/issues/46) CVE-2026-77366 — needs a mcp template?
 
 A recently-published CVE matched the **mcp** keyword search and has no template in this corpus yet. Assess whether it maps to a probeable, multi-protocol misconfiguration/vulnerability Bowire can detect — and if so, author a template; otherwise close as not-applicable. [[more]](https://github.com/Kuestenlogik/Bowire.VulnDb/issues/46)
@@ -1206,18 +1198,6 @@ A recently-published CVE matched the **mcp** keyword search and has no template 
 #### <a id="issue-kuestenlogik-bowire-vulndb-47"></a>⬜ Backlog · [Kuestenlogik/Bowire.VulnDb#47](https://github.com/Kuestenlogik/Bowire.VulnDb/issues/47) CVE-2026-82041 — needs a grpc template?
 
 A recently-published CVE matched the **grpc** keyword search and has no template in this corpus yet. Assess whether it maps to a probeable, multi-protocol misconfiguration/vulnerability Bowire can detect — and if so, author a template; otherwise close as not-applicable. [[more]](https://github.com/Kuestenlogik/Bowire.VulnDb/issues/47)
-
-#### <a id="issue-kuestenlogik-bowire-vulndb-48"></a>⬜ Backlog · [Kuestenlogik/Bowire.VulnDb#48](https://github.com/Kuestenlogik/Bowire.VulnDb/issues/48) CVE-2026-112346 — needs a websocket template?
-
-A recently-published CVE matched the **websocket** keyword search and has no template in this corpus yet. Assess whether it maps to a probeable, multi-protocol misconfiguration/vulnerability Bowire can detect — and if so, author a template; otherwise close as not-applicable. [[more]](https://github.com/Kuestenlogik/Bowire.VulnDb/issues/48)
-
-#### <a id="issue-kuestenlogik-bowire-vulndb-49"></a>⬜ Backlog · [Kuestenlogik/Bowire.VulnDb#49](https://github.com/Kuestenlogik/Bowire.VulnDb/issues/49) CVE-2026-65184 — needs a websocket template?
-
-A recently-published CVE matched the **websocket** keyword search and has no template in this corpus yet. Assess whether it maps to a probeable, multi-protocol misconfiguration/vulnerability Bowire can detect — and if so, author a template; otherwise close as not-applicable. [[more]](https://github.com/Kuestenlogik/Bowire.VulnDb/issues/49)
-
-#### <a id="issue-kuestenlogik-bowire-vulndb-50"></a>⬜ Backlog · [Kuestenlogik/Bowire.VulnDb#50](https://github.com/Kuestenlogik/Bowire.VulnDb/issues/50) CVE-2026-46651 — needs a websocket template?
-
-A recently-published CVE matched the **websocket** keyword search and has no template in this corpus yet. Assess whether it maps to a probeable, multi-protocol misconfiguration/vulnerability Bowire can detect — and if so, author a template; otherwise close as not-applicable. [[more]](https://github.com/Kuestenlogik/Bowire.VulnDb/issues/50)
 
 #### <a id="issue-kuestenlogik-bowire-vulndb-51"></a>⬜ Backlog · [Kuestenlogik/Bowire.VulnDb#51](https://github.com/Kuestenlogik/Bowire.VulnDb/issues/51) CVE-2026-113620 — needs a websocket template?
 
