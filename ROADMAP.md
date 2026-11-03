@@ -287,6 +287,12 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [779](https://github.com/Kuestenlogik/Bowire/issues/779) | Bowire | [Revoke the old VSCE_PAT in Azure DevOps](#issue-kuestenlogik-bowire-779) | ⬜ Backlog |  |
 | [613](https://github.com/Kuestenlogik/Bowire/issues/613) | Bowire | [Move the VS Code Marketplace publish off PATs to Entra ID before 2026-12-01](#issue-kuestenlogik-bowire-613) | ✅ Done | `area:cli` |
 
+### Backlog (not yet scheduled)
+
+| # | Project | Title | Status | Tags |
+|---|---|---|---|---|
+| [964](https://github.com/Kuestenlogik/Bowire/issues/964) | Bowire | [Logo files: one naming scheme with the product prefix (<product>_mark_*, <product>_lockup_*)](#issue-kuestenlogik-bowire-964) | ⬜ Backlog |  |
+
 ## Details
 
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
@@ -1178,6 +1184,12 @@ Two warning suppressions in this repo, reviewed under the rule that warnings are
 > `area:cli`
 
 > **Hard deadline: 2026-12-01.** Azure DevOps stops supporting Personal Access Tokens scoped to *all accessible organizations* on that date. That scope is what `vsce publish` has traditionally required. [[more]](https://github.com/Kuestenlogik/Bowire/issues/613)
+
+### Backlog (not yet scheduled)
+
+#### <a id="issue-kuestenlogik-bowire-964"></a>⬜ Backlog · [#964](https://github.com/Kuestenlogik/Bowire/issues/964) Logo files: one naming scheme with the product prefix (<product>_mark_*, <product>_lockup_*)
+
+Owner decision (2026-11-03, set in Terracle): every logo file carries the product prefix so files stay unambiguous when they are copied between repositories and websites: - `<product>_mark_{colored,black,white,adaptive}.svg` (+ `.png` / `@2x.png` where generated), - `<product>_lockup_{h,v}_{colored, … [[more]](https://github.com/Kuestenlogik/Bowire/issues/964)
 
 ---
 
