@@ -94,6 +94,12 @@ On such a server, discovery adds a **Tasks** service, and the Tools service says
 
 Cancellation is **cooperative**: the server is asked to stop, and the task may still complete or fail before it does. The answer to `cancel` says so and shows the status the server reported right after the request; the followed stream shows how it actually ended.
 
+### Recording and mocking a task
+
+A tool call recorded as a stream keeps the task's whole lifecycle: every `task` frame (created, each status, the input requests, the end) with its time, and the `result` or `error`. An answer given through `Tasks/update` while the call is followed appears in the same stream as an `input` frame (`{ "taskId": "…", "inputResponses": { … } }`), so the recording also shows what the task was told. This holds for `Tasks/follow` too.
+
+The [mock server](../features/mock-server.md#mcp-tool-calls-and-tasks) serves such a recording as an MCP server, and replays the task with its statuses in order. It waits at `input_required` for an answer, and ends `cancelled` on `tasks/cancel`. An MCP client, Bowire's included, can then be tested against tasks without the real server.
+
 ### Testing a task lifecycle
 
 `Tasks/run` tests a server's tasks in one step, which is what a [flow](../features/flows.md) or `bowire test` needs. Neither carries a value from one step to the next, so a `taskId` from one step could not reach another. The step:
@@ -152,7 +158,6 @@ A unary invoke of a tool (`bowire call`, REST) follows the task itself and answe
 
 - **Sampling** requests (`sampling/createMessage`) inside `inputRequests` are shown in full but not answered. Sampling is deprecated as of MCP 2026-07-28 ([SEP-2577](https://github.com/modelcontextprotocol/modelcontextprotocol/pull/2577)), which asks servers to call model providers directly, and a client that does not answer leaves the task waiting. **Cancel task** ends it. The connection that receives a 2025-11-25 task's questions declares `elicitation` only, not `sampling`, so such a server does not send sampling requests to Bowire.
 - A 2025-11-25 server that binds tasks to its session may refuse `Tasks/get`, `follow` or `cancel` from a new session. The same applies to the `tasks/result` that receives a task's questions, so on such a server the questions do not reach Bowire. Following the tool call's own stream is not affected.
-- A recording keeps only what a task call ended in, not its lifecycle, and a mock does not serve tasks yet (#803). Flows and `bowire test` do test a lifecycle, through `Tasks/run`.
 
 ### Sample target
 

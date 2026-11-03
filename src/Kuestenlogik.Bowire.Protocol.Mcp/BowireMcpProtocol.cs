@@ -421,7 +421,7 @@ public sealed partial class BowireMcpProtocol : IBowireProtocol, Kuestenlogik.Bo
                         (options, token) => CreateClientAsync(serverUrl, metadata, token, options)).ConfigureAwait(false);
                     if (dialect is not null)
                     {
-                        await RunToolAsTaskAsync(client, dialect, method, jsonMessages, frames.Writer, logOrder, ct).ConfigureAwait(false);
+                        await RunToolAsTaskAsync(client, dialect, method, jsonMessages, frames.Writer, logOrder, _tasks.Answers, NormalizeUrl(serverUrl), ct).ConfigureAwait(false);
                         return;
                     }
                     var progress = new FrameProgress(frames.Writer);
@@ -460,7 +460,8 @@ public sealed partial class BowireMcpProtocol : IBowireProtocol, Kuestenlogik.Bo
     /// </summary>
     private static async Task RunToolAsTaskAsync(
         McpClient client, IMcpTaskDialect dialect, string tool, List<string> jsonMessages,
-        System.Threading.Channels.ChannelWriter<string> frames, McpWireOrder logOrder, CancellationToken ct)
+        System.Threading.Channels.ChannelWriter<string> frames, McpWireOrder logOrder,
+        McpTaskAnswers answers, string origin, CancellationToken ct)
     {
         // The SDK attaches progress only to its own CallToolAsync; this call
         // goes through the dialect, so the token and its handler are
@@ -485,6 +486,10 @@ public sealed partial class BowireMcpProtocol : IBowireProtocol, Kuestenlogik.Bo
             progress.End(Frame("result", outcome.Result));
             return;
         }
+        // #803 — the answers to the task's questions travel on calls of their
+        // own; an `input` frame puts each into this stream, and so into a
+        // recording of it.
+        using var heard = answers.Listen(origin, created.TaskId, responses => frames.TryWrite(InputFrame(created.TaskId, responses)));
         await foreach (var step in McpTaskFollower.FollowAsync(client, dialect, created.TaskId, created, ct: ct).ConfigureAwait(false))
         {
             var frame = Frame(step.Kind, step.Data);
@@ -497,6 +502,10 @@ public sealed partial class BowireMcpProtocol : IBowireProtocol, Kuestenlogik.Bo
             progress.End(frame);
         }
     }
+
+    /// <summary>An answer a task was given, as the stream that follows it shows it (#803).</summary>
+    private static string InputFrame(string taskId, JsonElement inputResponses) =>
+        Frame("input", JsonSerializer.SerializeToElement(new { taskId, inputResponses }));
 
     /// <summary><c>Tasks/follow</c>: pick a task up by id — after a reload, or from the CLI.</summary>
     private async IAsyncEnumerable<string> FollowTaskAsync(
@@ -515,34 +524,37 @@ public sealed partial class BowireMcpProtocol : IBowireProtocol, Kuestenlogik.Bo
 
         await using (client)
         {
-            var steps = _tasks.FollowAsync(client, NormalizeUrl(serverUrl),
-                (options, token) => CreateClientAsync(serverUrl, metadata, token, options), jsonMessages, ct).GetAsyncEnumerator(ct);
-            try
+            // The follow's frames and the answers given meanwhile (#803) share one stream.
+            var frames = System.Threading.Channels.Channel.CreateUnbounded<string>(
+                new System.Threading.Channels.UnboundedChannelOptions { SingleReader = true });
+            using var heard = McpTaskService.TaskIdOf(jsonMessages) is { } taskId
+                ? _tasks.Answers.Listen(NormalizeUrl(serverUrl), taskId, responses => frames.Writer.TryWrite(InputFrame(taskId, responses)))
+                : null;
+            var pump = Task.Run(async () =>
             {
-                while (true)
+                try
                 {
-                    string frame;
-                    var stop = false;
-                    try
+                    await foreach (var step in _tasks.FollowAsync(client, NormalizeUrl(serverUrl),
+                        (options, token) => CreateClientAsync(serverUrl, metadata, token, options), jsonMessages, ct).ConfigureAwait(false))
                     {
-                        if (!await steps.MoveNextAsync().ConfigureAwait(false)) break;
-                        frame = Frame(steps.Current.Kind, steps.Current.Data);
+                        frames.Writer.TryWrite(Frame(step.Kind, step.Data));
                     }
-                    catch (Exception ex) when (ex is not OperationCanceledException)
-                    {
-                        // A bad request (no taskId) or a server without
-                        // tasks: say it on the stream, as a call would.
-                        frame = Frame("error", JsonSerializer.SerializeToElement(new { message = ex.Message }));
-                        stop = true;
-                    }
-                    yield return frame;
-                    if (stop) break;
                 }
-            }
-            finally
-            {
-                await steps.DisposeAsync().ConfigureAwait(false);
-            }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    // A bad request (no taskId) or a server without
+                    // tasks: say it on the stream, as a call would.
+                    frames.Writer.TryWrite(Frame("error", JsonSerializer.SerializeToElement(new { message = ex.Message })));
+                }
+                finally
+                {
+                    frames.Writer.TryComplete();
+                }
+            }, ct);
+
+            await foreach (var frame in frames.Reader.ReadAllAsync(ct).ConfigureAwait(false))
+                yield return frame;
+            await pump.ConfigureAwait(false);
         }
     }
 

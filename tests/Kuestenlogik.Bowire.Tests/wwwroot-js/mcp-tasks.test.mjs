@@ -34,8 +34,9 @@ const task = (status, extra = {}) => frame('task', {
 
 // ---- frame recognition ----
 
-test('mcpParseFrame reads the five frame kinds the plugin emits', () => {
-    for (const kind of ['progress', 'log', 'result', 'error']) {
+test('mcpParseFrame reads the six frame kinds the plugin emits', () => {
+    // `input` (#803): an answer the task was given, written into the stream that follows it.
+    for (const kind of ['progress', 'log', 'result', 'error', 'input']) {
         assert.deepEqual(m.mcpParseFrame(frame(kind, { x: 1 })), { event: kind, data: { x: 1 } });
     }
     const t = m.mcpParseFrame(task('working'));

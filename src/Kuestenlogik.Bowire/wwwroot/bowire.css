@@ -7910,7 +7910,8 @@ response below.
     --bowire-mcp-task-tone-bg: var(--bowire-surface-hover);
 }
 .bowire-mcp-frame-badge.bowire-mcp-frame-log,
-.bowire-mcp-frame-badge.bowire-mcp-frame-progress {
+.bowire-mcp-frame-badge.bowire-mcp-frame-progress,
+.bowire-mcp-frame-badge.bowire-mcp-frame-input {
     --bowire-mcp-task-tone: var(--bowire-text-secondary);
 }
 .bowire-mcp-task-head {

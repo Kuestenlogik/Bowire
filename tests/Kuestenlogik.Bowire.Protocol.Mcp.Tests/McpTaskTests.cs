@@ -107,6 +107,12 @@ public sealed class McpTaskTests
         Assert.Contains("Your name?", Data(input).GetProperty("inputRequests").GetRawText(), StringComparison.Ordinal);
         Assert.Equal("result", Kind(frames[^1]));
         Assert.Contains("hello Ada", Data(frames[^1]).GetRawText(), StringComparison.Ordinal);
+
+        // #803 — the answer, given on a call of its own, is in this stream too: a recording keeps the exchange.
+        var answer = Assert.Single(frames, f => Kind(f) == "input");
+        Assert.Equal(Data(input).GetProperty("taskId").GetString(), Data(answer).GetProperty("taskId").GetString());
+        Assert.Contains("Ada", Data(answer).GetProperty("inputResponses").GetRawText(), StringComparison.Ordinal);
+        Assert.True(frames.IndexOf(answer) > frames.IndexOf(input));
     }
 
     [Fact]
@@ -545,6 +551,183 @@ public sealed class McpTaskTests
         Assert.Equal("OK", status);
         Assert.False(body!.Value.GetProperty("ranAsTask").GetBoolean());
         Assert.Contains("ran without a task", body.Value.GetProperty("result").GetRawText(), StringComparison.Ordinal);
+    }
+
+    // ---- recording and mock replay (#803) ----
+
+    /// <summary>
+    /// Call a tool as a stream and keep every raw frame with its time since
+    /// the stream began — what the workbench recorder writes for the call.
+    /// </summary>
+    private static async Task<Kuestenlogik.Bowire.Mocking.BowireRecordingStep> RecordAsync(
+        BowireMcpProtocol protocol, string url, string tool, Func<JsonElement, Task>? onFrame = null)
+    {
+        var received = new List<Kuestenlogik.Bowire.Mocking.BowireRecordingFrame>();
+        var clock = System.Diagnostics.Stopwatch.StartNew();
+        await foreach (var raw in protocol.InvokeStreamAsync(url, "Tools", tool, ["{}"], false, null, Ct))
+        {
+            received.Add(new Kuestenlogik.Bowire.Mocking.BowireRecordingFrame { Index = received.Count, TimestampMs = clock.ElapsedMilliseconds, Data = raw });
+            if (onFrame is not null)
+            {
+                using var doc = JsonDocument.Parse(raw);
+                await onFrame(doc.RootElement.Clone());
+            }
+        }
+        return new Kuestenlogik.Bowire.Mocking.BowireRecordingStep
+        {
+            Id = "step_" + tool,
+            Protocol = "mcp",
+            Service = "Tools",
+            Method = tool,
+            MethodType = "ServerStreaming",
+            ServerUrl = url,
+            Body = "{}",
+            Status = "OK",
+            ReceivedMessages = received,
+        };
+    }
+
+    private static async Task<Kuestenlogik.Bowire.Mock.MockServer> MockAsync(params Kuestenlogik.Bowire.Mocking.BowireRecordingStep[] steps)
+    {
+        var recording = new Kuestenlogik.Bowire.Mocking.BowireRecording { Id = "rec_tasks", Name = "tasks", RecordingFormatVersion = 2 };
+        foreach (var step in steps) recording.Steps.Add(step);
+        var file = Path.Combine(Path.GetTempPath(), $"bowire-mcp-mock-{Guid.NewGuid():N}.json");
+        await File.WriteAllTextAsync(file, JsonSerializer.Serialize(recording), Ct);
+        return await Kuestenlogik.Bowire.Mock.MockServer.StartAsync(
+            new Kuestenlogik.Bowire.Mock.MockServerOptions { RecordingPath = file, Port = 0, Watch = false }, Ct);
+    }
+
+    private static async Task<JsonElement> AnswerName(BowireMcpProtocol protocol, string url, JsonElement frame, string name)
+    {
+        var data = Data(frame);
+        var key = data.GetProperty("inputRequests").EnumerateObject().Single().Name;
+        return await Unary(protocol, url, "Tasks", "update", new
+        {
+            taskId = data.GetProperty("taskId").GetString(),
+            inputResponses = new Dictionary<string, object> { [key] = new { action = "accept", content = new { name } } },
+        });
+    }
+
+    [Fact]
+    public async Task A_Recorded_Task_Call_Replays_From_The_Mock_And_A_Client_Drives_It_To_Completion()
+    {
+        // Record: the real server asks, the recorder answers.
+        Kuestenlogik.Bowire.Mocking.BowireRecordingStep step;
+        await using (var server = await SdkTaskServer.StartAsync(Ct))
+        {
+            var recorder = new BowireMcpProtocol();
+            var answered = false;
+            step = await RecordAsync(recorder, server.Url, "ask", async frame =>
+            {
+                if (answered || Kind(frame) != "task" || !Data(frame).TryGetProperty("inputRequests", out _)) return;
+                answered = true;
+                await AnswerName(recorder, server.Url, frame, "Ada");
+            });
+        }
+        Assert.Contains(step.ReceivedMessages!, f => ((string)f.Data!).Contains("\"event\":\"input\"", StringComparison.Ordinal));
+
+        // Replay: the real server is gone; the mock serves the recorded task.
+        await using var mock = await MockAsync(step);
+        var url = $"http://127.0.0.1:{mock.Port}/";
+        var services = await new BowireMcpProtocol().DiscoverAsync(url, false, Ct);
+        Assert.Contains("ask", services.Single(s => s.Name == "Tools").Methods.Select(m => m.Name));
+        Assert.Contains(services, s => s.Name == "Tasks");
+
+        var client = new BowireMcpProtocol();
+        var asked = false;
+        var frames = await Stream(client, url, "Tools", "ask", onFrame: async frame =>
+        {
+            if (asked || Kind(frame) != "task" || !Data(frame).TryGetProperty("inputRequests", out _)) return;
+            asked = true;
+            var ack = await AnswerName(client, url, frame, "Ada");
+            Assert.True(ack.GetProperty("acknowledged").GetBoolean());
+        });
+
+        Assert.True(asked, "the replayed task asked for input");
+        Assert.Equal("2026-07-28", Data(frames[0]).GetProperty("shape").GetString());
+        var input = frames.First(f => Kind(f) == "task" && Data(f).TryGetProperty("inputRequests", out _));
+        Assert.Contains("Your name?", Data(input).GetProperty("inputRequests").GetRawText(), StringComparison.Ordinal);
+        Assert.Equal("result", Kind(frames[^1]));
+        Assert.Contains("hello Ada", Data(frames[^1]).GetRawText(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_Replayed_Task_Waits_For_Its_Answer_And_Ends_Cancelled_On_Request()
+    {
+        Kuestenlogik.Bowire.Mocking.BowireRecordingStep step;
+        await using (var server = await SdkTaskServer.StartAsync(Ct))
+        {
+            var recorder = new BowireMcpProtocol();
+            var answered = false;
+            step = await RecordAsync(recorder, server.Url, "ask", async frame =>
+            {
+                if (answered || Kind(frame) != "task" || !Data(frame).TryGetProperty("inputRequests", out _)) return;
+                answered = true;
+                await AnswerName(recorder, server.Url, frame, "Ada");
+            });
+        }
+
+        await using var mock = await MockAsync(step);
+        var url = $"http://127.0.0.1:{mock.Port}/";
+        var (status, body) = await Run(new BowireMcpProtocol(), url, new { tool = "ask", cancelAt = "input_required", timeoutMs = 30_000 });
+
+        Assert.Equal("OK", status);
+        Assert.Equal("cancelled", body!.Value.GetProperty("status").GetString());
+        Assert.Contains("input_required", Strings(body.Value, "statuses"));
+        Assert.False(body.Value.TryGetProperty("result", out _));
+    }
+
+    [Fact]
+    public async Task A_Client_Without_The_Tasks_Extension_Gets_The_Recorded_Result_Directly()
+    {
+        Kuestenlogik.Bowire.Mocking.BowireRecordingStep step;
+        await using (var server = await SdkTaskServer.StartAsync(Ct))
+        {
+            var recorder = new BowireMcpProtocol();
+            var answered = false;
+            step = await RecordAsync(recorder, server.Url, "ask", async frame =>
+            {
+                if (answered || Kind(frame) != "task" || !Data(frame).TryGetProperty("inputRequests", out _)) return;
+                answered = true;
+                await AnswerName(recorder, server.Url, frame, "Ada");
+            });
+        }
+
+        await using var mock = await MockAsync(step);
+        using var http = new HttpClient();
+        using var content = new StringContent(
+            """{"jsonrpc":"2.0","id":7,"method":"tools/call","params":{"name":"ask","arguments":{}}}""",
+            System.Text.Encoding.UTF8, "application/json");
+        using var response = await http.PostAsync(new Uri($"http://127.0.0.1:{mock.Port}/"), content, Ct);
+        using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync(Ct));
+
+        Assert.Equal(7, doc.RootElement.GetProperty("id").GetInt32());
+        Assert.Contains("hello Ada", doc.RootElement.GetProperty("result").GetRawText(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task The_Mock_Refuses_Unknown_Tools_Tasks_And_Answers_To_Questions_Never_Asked()
+    {
+        Kuestenlogik.Bowire.Mocking.BowireRecordingStep step;
+        await using (var server = await SdkTaskServer.StartAsync(Ct))
+            step = await RecordAsync(new BowireMcpProtocol(), server.Url, "quick");
+
+        await using var mock = await MockAsync(step);
+        using var http = new HttpClient();
+        async Task<JsonElement> Call(string json)
+        {
+            using var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+            using var response = await http.PostAsync(new Uri($"http://127.0.0.1:{mock.Port}/"), content, Ct);
+            using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync(Ct));
+            return doc.RootElement.Clone();
+        }
+
+        var unknownTool = await Call("""{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"nope"}}""");
+        Assert.Contains("Unknown tool: nope", unknownTool.GetProperty("error").GetProperty("message").GetString(), StringComparison.Ordinal);
+        var unknownTask = await Call("""{"jsonrpc":"2.0","id":2,"method":"tasks/get","params":{"taskId":"missing"}}""");
+        Assert.Equal(-32602, unknownTask.GetProperty("error").GetProperty("code").GetInt32());
+        var unknownMethod = await Call("""{"jsonrpc":"2.0","id":3,"method":"resources/list"}""");
+        Assert.Equal(-32601, unknownMethod.GetProperty("error").GetProperty("code").GetInt32());
     }
 
     // ---- no tasks ----

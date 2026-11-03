@@ -38,6 +38,9 @@ internal sealed class McpTaskService
     // answer in this process (#821).
     private readonly McpLegacyTaskInputs _legacyInputs = new();
 
+    /// <summary>The answers Tasks/update delivers, for the streams that follow those tasks here (#803).</summary>
+    public McpTaskAnswers Answers { get; } = new();
+
     /// <summary>
     /// The dialect for a <c>Tasks/*</c> call: the extension when the server
     /// advertises it, the 2025-11-25 shape when that revision was
@@ -183,6 +186,7 @@ internal sealed class McpTaskService
                 if (!body.TryGetProperty("inputResponses", out var responses) || responses.ValueKind != JsonValueKind.Object)
                     throw new ArgumentException("Tasks/update needs inputResponses: an object keyed like the task's inputRequests.");
                 await dialect.UpdateAsync(client, taskId, responses, ct).ConfigureAwait(false);
+                Answers.Delivered(serverUrl, taskId, responses);
                 return JsonSerializer.SerializeToElement(new
                 {
                     acknowledged = true,
@@ -230,6 +234,19 @@ internal sealed class McpTaskService
         if (state.Result is { } result) node["result"] = JsonNode.Parse(result.GetRawText());
         if (state.Error is { } error) node["error"] = JsonNode.Parse(error.GetRawText());
         return JsonSerializer.SerializeToElement(node);
+    }
+
+    /// <summary>The <c>taskId</c> of a <c>Tasks/*</c> request, or <see langword="null"/> when it names none.</summary>
+    public static string? TaskIdOf(List<string> jsonMessages)
+    {
+        try
+        {
+            var body = ReadBody(jsonMessages);
+            return body.ValueKind == JsonValueKind.Object && body.TryGetProperty("taskId", out var id) && id.ValueKind == JsonValueKind.String
+                ? id.GetString()
+                : null;
+        }
+        catch (JsonException) { return null; }
     }
 
     private static JsonElement ReadBody(List<string> jsonMessages)

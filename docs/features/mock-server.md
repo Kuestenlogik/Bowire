@@ -361,13 +361,32 @@ Phase 2f is one-shot — when the scheduler reaches the last publish, it stops. 
 The mock dispatches replay strategies by wire-level characteristics, not by the protocol label on the step. Any recorded step that has an `httpPath` + `httpVerb` goes through the REST / SSE replayer regardless of how the originating plugin tagged it. That means these protocols replay correctly today without their own code path:
 
 - **OData** &mdash; canonical REST with specific response shapes (`$metadata`, `@odata.context`, entity sets). Recordings of OData calls replay verbatim through the REST unary path.
-- **MCP (Model Context Protocol)** &mdash; streamable-HTTP transport is a `POST /mcp` that returns either a single JSON response (replayed as REST unary) or a framed SSE stream for server-pushed notifications (replayed as SSE). Both directions work today.
+- **MCP (Model Context Protocol), captured on the wire** &mdash; streamable-HTTP transport is a `POST /mcp` that returns either a single JSON response (replayed as REST unary) or a framed SSE stream for server-pushed notifications (replayed as SSE). Both directions work today. MCP tool calls recorded in the workbench carry no HTTP route; the mock serves them as an MCP server, see [MCP tool calls and tasks](#mcp-tool-calls-and-tasks).
 
 - **GraphQL subscriptions (`graphql-transport-ws`)** &mdash; the mock speaks the handshake (`connection_init` &rarr; `connection_ack`), reads the client's `subscribe` frame to capture whatever id it assigns, then replays the recorded `next`/`complete`/`error` frames with that id rewritten on every outgoing frame. Works transparently for any `graphql-ws` / Apollo / urql client. If a recording stopped before a `complete` was captured, the replayer synthesises one so the subscription ends cleanly. See [GraphQL subscription replay](#graphql-subscription-replay) below.
 
 What **doesn't** work without protocol-aware handling (tracked separately):
 
 - **SignalR / Socket.IO** &mdash; each has its own framing and control protocol on top of WebSocket. Generic WS replay gets most of the way but misses negotiation semantics. Separate slices when demand appears.
+
+### MCP tool calls and tasks
+
+The workbench records an MCP tool call as the plugin saw it: the tool, its arguments and the frames it streamed (`task`, `input`, `progress`, `log`, `result`, `error`), each with its time. It does not record the JSON-RPC on the wire. For such steps (`protocol: "mcp"`, `service: "Tools"`, no `httpPath`), the mock answers as an MCP server. It runs over Streamable HTTP, on the path of every server the recording called:
+
+- `server/discover`, `initialize` and `ping`;
+- `tools/list`, which lists the recorded tools;
+- `tools/call`, which answers with the recorded result. Where a tool was called with several argument sets, the call with matching arguments wins, else the first.
+
+A call recorded as a **task** becomes a task again for a client that declares the `io.modelcontextprotocol/tasks` extension on the call, which Bowire's client does:
+
+- The call answers with a new task id (`mock-task-0001`, …). `tasks/get` then shows the recorded statuses in their recorded order, at their recorded pace (scaled by [playback speed](#playback-speed); `0` replays at once).
+- At an `input_required` with requests not answered yet, the task waits for `tasks/update`. Then it goes on from where the recording got its answer. An answer to a request the task never made is refused (`-32602`).
+- `tasks/cancel` ends a task that is still running as `cancelled`.
+- A completed task carries its recorded result; a failed one carries the recorded JSON-RPC error.
+
+A client without the extension gets the recorded result straight from `tools/call`.
+
+The tasks are always served in the extension's shape (2026-07-28), whichever shape the recording was made against. Recorded progress and log frames are not re-sent. Only what no other recorded step matched reaches the MCP endpoint, so a wire-level capture of the same path keeps replaying as before.
 
 ### GraphQL subscription replay
 

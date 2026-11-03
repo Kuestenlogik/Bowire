@@ -263,6 +263,9 @@ public sealed class MockHandler
     public void ResetScenarios() => _scenarioStates.Clear();
 
     private const string MatchedStepIdItemKey = "__bowireMockMatchedStepId";
+
+    // #803 — an MCP server made from the recording's tool-level MCP steps.
+    private readonly Mcp.McpMockEndpoint _mcp = new();
     private const string FaultItemKey = "__bowireMockFault";
 
     public async Task HandleAsync(HttpContext ctx, Func<Task> next)
@@ -370,6 +373,14 @@ public sealed class MockHandler
         if (matched is not null)
         {
             await DispatchMatchedAsync(ctx, matched, isGrpc);
+            return;
+        }
+
+        // #803 — MCP tool calls the workbench recorded carry no HTTP route; the
+        // MCP endpoint answers them on the path of the server they were made to.
+        if (!isGrpc && await _mcp.TryHandleAsync(ctx, _recording, _options.ReplaySpeed, requestBody,
+                stepId => ctx.Items[MatchedStepIdItemKey] = stepId))
+        {
             return;
         }
 

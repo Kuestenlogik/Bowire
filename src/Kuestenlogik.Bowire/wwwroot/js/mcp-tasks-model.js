@@ -8,7 +8,8 @@
     // no network and no storage, so the unit tests can drive it directly.
     // The UI around it lives in mcp-tasks.js.
 
-    var MCP_FRAME_EVENTS = ['progress', 'log', 'result', 'error', 'task'];
+    // #803 — `input`: an answer a task was given, so a recording keeps the exchange.
+    var MCP_FRAME_EVENTS = ['progress', 'log', 'result', 'error', 'task', 'input'];
     var MCP_TASK_STATUSES = ['working', 'input_required', 'completed', 'failed', 'cancelled'];
     var MCP_TASK_TERMINAL = ['completed', 'failed', 'cancelled'];
 
