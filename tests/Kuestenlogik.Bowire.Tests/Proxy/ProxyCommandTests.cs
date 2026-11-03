@@ -29,7 +29,10 @@ public sealed class ProxyCommandTests
         // different code path, tested by accident, roughly once a week.
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
 
-        var options = new ProxyCommand.ProxyOptions { Port = 0, ApiPort = 0, Capacity = 50 };
+        // #968 — HTTPS interception is on by default, so the command loads or
+        // creates the CA; it goes into a directory of this test's own.
+        using var caDir = new TempCaDir();
+        var options = new ProxyCommand.ProxyOptions { Port = 0, ApiPort = 0, Capacity = 50, CaDir = caDir.Path };
 
         // Through the command's own readiness callback rather than by
         // scraping its stdout: a TextWriter is IDisposable, and handing one
@@ -60,7 +63,8 @@ public sealed class ProxyCommandTests
         using var cts = new CancellationTokenSource();
         await cts.CancelAsync();
 
-        var options = new ProxyCommand.ProxyOptions { Port = 0, ApiPort = 0, Capacity = 10 };
+        using var caDir = new TempCaDir();
+        var options = new ProxyCommand.ProxyOptions { Port = 0, ApiPort = 0, Capacity = 10, CaDir = caDir.Path };
         var code = await ProxyCommand.RunAsync(options, cancellationToken: cts.Token);
 
         Assert.Equal(0, code);
@@ -121,7 +125,8 @@ public sealed class ProxyCommandTests
         blocker.Start();
         var occupied = ((System.Net.IPEndPoint)blocker.LocalEndpoint).Port;
 
-        var options = new ProxyCommand.ProxyOptions { Port = occupied, ApiPort = 0, Capacity = 10 };
+        using var caDir = new TempCaDir();
+        var options = new ProxyCommand.ProxyOptions { Port = occupied, ApiPort = 0, Capacity = 10, CaDir = caDir.Path };
         var code = await ProxyCommand.RunAsync(options, cancellationToken: ct);
         Assert.Equal(1, code);
     }
@@ -206,4 +211,18 @@ public sealed class ProxyCommandTests
         return port;
     }
 
+    /// <summary>
+    /// #968 — a CA directory of the test's own, so a proxy started with HTTPS
+    /// interception never writes its CA into the real <c>~/.bowire</c>.
+    /// </summary>
+    private sealed class TempCaDir : IDisposable
+    {
+        public string Path { get; } = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"bowire-proxy-test-ca-{Guid.NewGuid():N}");
+
+        public void Dispose()
+        {
+            try { if (Directory.Exists(Path)) Directory.Delete(Path, recursive: true); }
+            catch (IOException) { /* a handle the OS has not let go of yet; the temp dir is cleaned up later */ }
+        }
+    }
 }
