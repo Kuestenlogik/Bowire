@@ -292,6 +292,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [964](https://github.com/Kuestenlogik/Bowire/issues/964) | Bowire | [Logo files: one naming scheme with the product prefix (<product>_mark_*, <product>_lockup_*)](#issue-kuestenlogik-bowire-964) | ⬜ Backlog |  |
+| [965](https://github.com/Kuestenlogik/Bowire/issues/965) | Bowire | [New Bowire mark: a redrawn B that fits the Küstenlogik family](#issue-kuestenlogik-bowire-965) | ⬜ Backlog |  |
 
 ## Details
 
@@ -1190,6 +1191,10 @@ Two warning suppressions in this repo, reviewed under the rule that warnings are
 #### <a id="issue-kuestenlogik-bowire-964"></a>⬜ Backlog · [#964](https://github.com/Kuestenlogik/Bowire/issues/964) Logo files: one naming scheme with the product prefix (<product>_mark_*, <product>_lockup_*)
 
 Owner decision (2026-11-03, set in Terracle): every logo file carries the product prefix so files stay unambiguous when they are copied between repositories and websites: - `<product>_mark_{colored,black,white,adaptive}.svg` (+ `.png` / `@2x.png` where generated), - `<product>_lockup_{h,v}_{colored, … [[more]](https://github.com/Kuestenlogik/Bowire/issues/964)
+
+#### <a id="issue-kuestenlogik-bowire-965"></a>⬜ Backlog · [#965](https://github.com/Kuestenlogik/Bowire/issues/965) New Bowire mark: a redrawn B that fits the Küstenlogik family
+
+Owner (2026-11-03): the current B in bowire_logo.svg is too plain and should fit the other products' marks better (Terracle, Surgewave, Modelzero, Sealbolt: minimal marks in the same frame, 77 x 77.7 viewBox, the shared palette). The owner redraws it as images/mark_colored.svg (source drawing). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/965)
 
 ---
 
