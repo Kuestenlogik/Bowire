@@ -132,11 +132,10 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**22/40 done** · 1 in progress · 17 backlog
+**23/40 done** · 17 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
-| [678](https://github.com/Kuestenlogik/Bowire/issues/678) | Bowire | [bowire send http: send a request directly, URL-first, with HTTPie-style items and --offline](#issue-kuestenlogik-bowire-678) | 🟡 In progress | `area:cli` |
 | [672](https://github.com/Kuestenlogik/Bowire/issues/672) | Bowire | [Server-side script engine so pre/post scripts run in bowire test, not only in the browser](#issue-kuestenlogik-bowire-672) | ⬜ Backlog | `area:cli` |
 | [677](https://github.com/Kuestenlogik/Bowire/issues/677) | Bowire | [Broader code export, and snippets for the protocols no snippet library covers](#issue-kuestenlogik-bowire-677) | ⬜ Backlog | `area:workbench` |
 | [687](https://github.com/Kuestenlogik/Bowire/issues/687) | Bowire | [Tray icon and no console window: give the running workbench a handle of its own](#issue-kuestenlogik-bowire-687) | ⬜ Backlog | `area:cli` |
@@ -154,11 +153,11 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [969](https://github.com/Kuestenlogik/Bowire/issues/969) | Bowire | [Site: images are not served in modern formats; index.html weighs 5.3 MB](#issue-kuestenlogik-bowire-969) | ⬜ Backlog | `area:site` |
 | [972](https://github.com/Kuestenlogik/Bowire/issues/972) | Bowire | [Plugin repos, Templates and Bootcamp: take the new Bowire logo](#issue-kuestenlogik-bowire-972) | ⬜ Backlog | `area:site` |
 | [975](https://github.com/Kuestenlogik/Bowire/issues/975) | Bowire | [bowire send http: --include for the response headers, --output for the body](#issue-kuestenlogik-bowire-975) | ⬜ Backlog | `area:cli` |
-| [974](https://github.com/Kuestenlogik/Bowire/issues/974) | Bowire | [bowire call -d @file: the parser expands the file as a response file and mangles the body](#issue-kuestenlogik-bowire-974) | ✅ Done | `area:cli` |
 | [673](https://github.com/Kuestenlogik/Bowire/issues/673) | Bowire | [Export requests as .http — Copy as .http, and bowire export http for a whole collection](#issue-kuestenlogik-bowire-673) | ✅ Done | `area:workbench` |
 | [674](https://github.com/Kuestenlogik/Bowire/issues/674) | Bowire | [Import from Insomnia, Bruno and .http, with a migration guide per source](#issue-kuestenlogik-bowire-674) | ✅ Done | `area:workbench` |
 | [675](https://github.com/Kuestenlogik/Bowire/issues/675) | Bowire | [Data-driven collection runs: one iteration per CSV/JSON row](#issue-kuestenlogik-bowire-675) | ✅ Done | `area:cli` |
 | [676](https://github.com/Kuestenlogik/Bowire/issues/676) | Bowire | [JSONPath filter expressions in assertions, chaining and mock overrides](#issue-kuestenlogik-bowire-676) | ✅ Done | `area:workbench` |
+| [678](https://github.com/Kuestenlogik/Bowire/issues/678) | Bowire | [bowire send http: send a request directly, URL-first, with HTTPie-style items and --offline](#issue-kuestenlogik-bowire-678) | ✅ Done | `area:cli` |
 | [801](https://github.com/Kuestenlogik/Bowire/issues/801) | Bowire | [MCP Tasks, client side: discover, call and follow tasks of task-capable MCP servers](#issue-kuestenlogik-bowire-801) | ✅ Done |  |
 | [802](https://github.com/Kuestenlogik/Bowire/issues/802) | Bowire | [MCP Tasks, server side: run long Bowire MCP tools (bowire.test.run first) as durable tasks](#issue-kuestenlogik-bowire-802) | ✅ Done |  |
 | [803](https://github.com/Kuestenlogik/Bowire/issues/803) | Bowire | [MCP Tasks in testing and mocking: assert on task lifecycles, record and replay them](#issue-kuestenlogik-bowire-803) | ✅ Done |  |
@@ -176,6 +175,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [970](https://github.com/Kuestenlogik/Bowire/issues/970) | Bowire | [About box: the Küstenlogik lockup follows the server's default theme, not the one in use](#issue-kuestenlogik-bowire-970) | ✅ Done | `area:workbench` |
 | [971](https://github.com/Kuestenlogik/Bowire/issues/971) | Bowire | [Branding: vendor the shared tool 1.1.0 with Bowire's master logos from the meta repo](#issue-kuestenlogik-bowire-971) | ✅ Done | `area:site` |
 | [973](https://github.com/Kuestenlogik/Bowire/issues/973) | Bowire | [MCP task replay and recording: two races that turn CI red](#issue-kuestenlogik-bowire-973) | ✅ Done | `area:mcp` |
+| [974](https://github.com/Kuestenlogik/Bowire/issues/974) | Bowire | [bowire call -d @file: the parser expands the file as a response file and mangles the body](#issue-kuestenlogik-bowire-974) | ✅ Done | `area:cli` |
 
 ### v2.12 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
 
@@ -759,12 +759,6 @@ On a phone, the header of the docs, the API reference and the Bootcamp has no bu
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-#### <a id="issue-kuestenlogik-bowire-678"></a>🟡 In progress · [#678](https://github.com/Kuestenlogik/Bowire/issues/678) bowire send http: send a request directly, URL-first, with HTTPie-style items and --offline
-
-> `area:cli`
-
-`bowire call` can do a lot: every protocol, `{{vars}}`, `--env-file`, `--stream`, `--compact`, tab completion and meaningful exit codes. What it cannot do is the thing curl and HTTPie are actually used for: **one request, right now, with no context**. [[more]](https://github.com/Kuestenlogik/Bowire/issues/678)
-
 #### <a id="issue-kuestenlogik-bowire-672"></a>⬜ Backlog · [#672](https://github.com/Kuestenlogik/Bowire/issues/672) Server-side script engine so pre/post scripts run in bowire test, not only in the browser
 
 > `area:cli`
@@ -851,12 +845,6 @@ Follow-up to #964/#965. [[more]](https://github.com/Kuestenlogik/Bowire/issues/9
 
 `bowire send http` (#678) prints the response body and puts the status line on stderr. Two things curl and HTTPie users reach for are still missing: - the response headers, to see a `Location`, a `Set-Cookie` or a cache header; - a binary body. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/975)
 
-#### <a id="issue-kuestenlogik-bowire-974"></a>✅ Done · [#974](https://github.com/Kuestenlogik/Bowire/issues/974) bowire call -d @file: the parser expands the file as a response file and mangles the body
-
-> `area:cli`
-
-`bowire call … -d @request.json` is documented (cli-mode, export-import, request pane) to send the file's content as the body. It does not: System.CommandLine treats every token that starts with `@` as a response file and replaces it with the file's tokens before the command sees it. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/974)
-
 #### <a id="issue-kuestenlogik-bowire-673"></a>✅ Done · [#673](https://github.com/Kuestenlogik/Bowire/issues/673) Export requests as .http — Copy as .http, and bowire export http for a whole collection
 
 > `area:workbench`
@@ -880,6 +868,12 @@ Bowire reads Postman v2.1, HAR, OpenAPI, proto and SDL. It does **not** read Ins
 > `area:workbench`
 
 Assertion paths today are plain traversal — `response.items.0.tags.2`. There is no way to express "the id of every item that is done", which is the shape most real assertions want: [[more]](https://github.com/Kuestenlogik/Bowire/issues/676)
+
+#### <a id="issue-kuestenlogik-bowire-678"></a>✅ Done · [#678](https://github.com/Kuestenlogik/Bowire/issues/678) bowire send http: send a request directly, URL-first, with HTTPie-style items and --offline
+
+> `area:cli`
+
+`bowire call` can do a lot: every protocol, `{{vars}}`, `--env-file`, `--stream`, `--compact`, tab completion and meaningful exit codes. What it cannot do is the thing curl and HTTPie are actually used for: **one request, right now, with no context**. [[more]](https://github.com/Kuestenlogik/Bowire/issues/678)
 
 #### <a id="issue-kuestenlogik-bowire-801"></a>✅ Done · [#801](https://github.com/Kuestenlogik/Bowire/issues/801) MCP Tasks, client side: discover, call and follow tasks of task-capable MCP servers
 
@@ -960,6 +954,12 @@ Follow-up to #964/#965. [[more]](https://github.com/Kuestenlogik/Bowire/issues/9
 > `area:mcp`
 
 Follow-up to #803. `A_Recorded_Task_Call_Replays_From_The_Mock_And_A_Client_Drives_It_To_Completion` failed in CI on e542991a and 71005198, and locally in 4 of 30 runs. The cause is two defects in what #803 shipped. [[more]](https://github.com/Kuestenlogik/Bowire/issues/973)
+
+#### <a id="issue-kuestenlogik-bowire-974"></a>✅ Done · [#974](https://github.com/Kuestenlogik/Bowire/issues/974) bowire call -d @file: the parser expands the file as a response file and mangles the body
+
+> `area:cli`
+
+`bowire call … -d @request.json` is documented (cli-mode, export-import, request pane) to send the file's content as the body. It does not: System.CommandLine treats every token that starts with `@` as a response file and replaces it with the file's tokens before the command sees it. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/974)
 
 ### v2.12 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
 
