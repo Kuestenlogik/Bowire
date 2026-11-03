@@ -5,7 +5,7 @@ summary: 'A command-line interface for scripting, automation, and quick explorat
 
 # CLI Mode
 
-A command-line interface for scripting, automation, and quick exploration without opening the browser UI. Commands follow the shape `bowire <verb> --url <server> [args]`.
+A command-line interface for scripting, automation, and quick exploration without opening the browser UI. Commands follow the shape `bowire <verb> --url <server> [args]`; `bowire send http [METHOD] <url> [items…]` sends one request with no discovery.
 
 ## Commands
 
@@ -194,6 +194,90 @@ The built-in `{{uuid}}` / `{{now}}` / `{{timestamp}}` / `{{random}}`
 variables resolve without being declared. Unknown names are left intact so
 a typo shows up in the request rather than as an empty value.
 
+### Send a request directly (`bowire send http`)
+
+`call` invokes a method it has discovered first. `send` sends a request you
+spell out yourself, with no discovery and no schema: the one-off request curl
+and HTTPie are used for. The protocol comes second and decides the arguments;
+`http` is the first.
+
+```bash
+bowire send http https://api.example.com/pets/1              # GET, body to stdout
+bowire send http post api.example.com/pets name=ada age:=3   # POST {"name":"ada","age":3}
+bowire send http :5000/pets q==ada limit==5                  # http://localhost:5000/pets?q=ada&limit=5
+bowire send http put :5000/pets/1 -d @pet.json               # a raw body from a file
+bowire send http :5000/upload file@./logo.png note=hi        # multipart form upload
+bowire send http propfind https://dav.example.com/files      # any method token
+bowire send http post api/x name=ada --offline               # print the request, send nothing
+```
+
+`bowire send http [METHOD] <url> [items…]`:
+- **METHOD** is optional and case-insensitive. It defaults to `GET`, or to
+  `POST` when body items or `-d` are given. Any token works, `PROPFIND`
+  included. A bare word before a URL is the method; a URL with a scheme, a
+  dotted host or `host:port` settles any doubt.
+- **The URL** may leave out the scheme: it then gets
+  `Bowire:Cli:Send:DefaultScheme` (`http` unless configured), as HTTPie does.
+  `:3000/x` is `http://localhost:3000/x`.
+- **Items**, in HTTPie's notation, so a request needs no JSON quoting:
+
+  | Item | Meaning |
+  |------|---------|
+  | `Header:value` | A request header. A later one of the same name replaces an earlier one. |
+  | `param==value` | A query parameter, URL-encoded and added to the URL's own query. |
+  | `field=value` | A JSON field holding a string; with a file item, a form field. |
+  | `field:=json` | A JSON field holding raw JSON: `age:=36`, `tags:='["a","b"]'`, `ok:=true`. |
+  | `field@file` | A file, uploaded as a `multipart/form-data` part. |
+
+  The first separator in an item decides its kind, the longest where two
+  start at the same place, so `Authorization:Bearer a=b` is a header and
+  `q==a:b` a query parameter. A backslash keeps a separator in the name:
+  `a\=b=c` is the field `a=b`. Body items become a JSON object sent as
+  `application/json`, with `Accept: application/json, */*;q=0.5`; a
+  `Content-Type:…` item names another type. `-d` and body items do not mix,
+  and a form cannot carry `:=` fields.
+
+`{{name}}` / `${name}` resolve in the URL, the items and `-d`, from `--var`
+and `--env-file` as for `call`. A variable is resolved after the item is
+split, so a value holding `=` or `:` stays a value. `--negotiate`, `--ntlm`
+and `--digest` authenticate as on `call`. The proxy and the CA bundle come
+from `--proxy-url` / `--no-proxy` / `--ca-bundle` and the network settings,
+as for every command.
+
+The response body goes to stdout: JSON indented (one line with `--compact`),
+other text as it came, a binary body only as its size on stderr. The status
+line and the time go to stderr. Exit `0` for 2xx and 3xx, `2` for 4xx and
+5xx or a usage error, `1` when the request could not be sent.
+
+`--offline` builds the request, prints it as an HTTP/1.1 message with every
+variable resolved, and opens no connection. A file part shows its name and
+size instead of its bytes.
+
+```text
+$ bowire send http post api/x name={{who}} age:=36 --var who=ada --offline
+POST /x HTTP/1.1
+Host: api
+Accept: application/json, */*;q=0.5
+User-Agent: Bowire/<version>
+Content-Type: application/json
+
+{"name":"ada","age":36}
+```
+
+**Startup.** `send` loads no protocol plugin and skips the scan for
+plugin-contributed commands, which is most of what any other command pays
+before its first byte. Measured on a Windows 11 developer machine (Release
+build, 15 runs each, median) against one local endpoint, the same pet with
+`send http` and with `call` through the REST plugin's discovery:
+
+| Command | Median |
+|---------|--------|
+| `bowire send http http://127.0.0.1:5391/pets/1` | 270 ms |
+| `bowire send http … --offline` | 202 ms |
+| `bowire call --url rest@http://127.0.0.1:5391 pet/getPetById -d '{"petId":1}'` | 656 ms |
+
+`BowirePluginLoadGuardTests` holds that `send` skips the plugin load.
+
 ### Copy a request out of the workbench
 
 The workbench's **Code** tab (and the response pane's **Copy ▾** dropdown)
@@ -220,11 +304,13 @@ cannot quietly stop being runnable.
 | `--url <url>` | all | Target server URL (required). `discover` and `call` also accept the `protocol@url` hint form |
 | `--protocol <id>` | `call` | Protocol plugin to invoke through (`grpc` / `rest` / `graphql` / `mqtt` / …). Overrides a `protocol@url` prefix |
 | `--stream` | `call` | Consume the method as a stream: one JSON document per frame until the stream ends or Ctrl+C |
-| `-d, --data <json>` | `call` | Request body (JSON string or `@filename`). Repeatable — one frame per repeat for client-streaming |
+| `-d, --data <json>` | `call`, `send http` | Request body (JSON string or `@filename`). Repeatable — one frame per repeat for client-streaming |
 | `-H <key:value>` | `call` | Add metadata header (repeatable) |
-| `--var, --env <K=V>` | `call` | Variable for the `{{name}}` / `${name}` resolver (repeatable) |
-| `--env-file <path>` | `call` | dotenv-style KEY=VALUE file for the resolver (repeatable; `--var` wins) |
-| `--compact` | `call` | One-line JSON output for piping |
+| `--var, --env <K=V>` | `call`, `send http` | Variable for the `{{name}}` / `${name}` resolver (repeatable) |
+| `--env-file <path>` | `call`, `send http` | dotenv-style KEY=VALUE file for the resolver (repeatable; `--var` wins) |
+| `--compact` | `call`, `send http` | One-line JSON output for piping |
+| `--offline` | `send http` | Print the request, variables resolved, and send nothing |
+| `--negotiate`, `--ntlm`, `--digest` | `call`, `send http` | Challenge-response authentication |
 | `-plaintext` | all | Use plaintext (no TLS) |
 | `--schema <path>` | `discover` | Discover from a schema file: `.proto`, or OpenAPI `.json` / `.yaml` / `.yml`. Repeatable; works with or without `--url`. Accepted on `list` / `describe` / `call` for OpenAPI only — use `--descriptor-set` for protobuf there |
 | `--descriptor-set <path>` | `list`, `describe`, `call` | Compiled protobuf `FileDescriptorSet` (`.pb`) for gRPC without server reflection |

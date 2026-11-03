@@ -75,7 +75,8 @@ var plugins = new BowirePluginLoader(
 // that is meant to remove a plugin is blocked by having just loaded it.
 // Skipping the load for this group keeps those verbs able to touch their
 // own files (and drops the reflection-scan warnings from their output).
-if (!BowireCli.IsPluginManagementCommand(args))
+// `send` (#678) skips it too: it needs no plugin, and its startup is the point.
+if (!BowireCli.SkipsPluginLoad(args))
 {
     plugins.Load();
 }

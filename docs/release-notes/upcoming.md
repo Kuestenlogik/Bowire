@@ -57,6 +57,10 @@ Its browser and CLI implementations are held to one shared test fixture. A path 
 
 Agents can run a test collection or flow through Bowire's MCP server, as `bowire test` does, with an optional data set. A client that declares the MCP tasks extension gets a durable task: the status names the current step, `tasks/cancel` stops the run before its next step, and the result is kept for 24 hours under `~/.bowire/mcp-tasks/`, so a reconnecting agent gets it with the same task id. Clients without the extension get the synchronous answer, as before. For task-capable clients, the confirmation of `bowire.mock.start` and `bowire.record.start` becomes an elicitation inside the task (`input_required`, answered through `tasks/update`) instead of a second call with a token.
 
+### `bowire send http`: one request, URL first, in HTTPie's notation (#678)
+
+`bowire send http post api.example.com/pets name=ada age:=3` sends `{"name":"ada","age":3}` as JSON, with no discovery and no schema. Items are `Header:value`, `param==value`, `field=value`, `field:=json` and `field@file` (a multipart upload). The method is optional, any token works, and `:3000/x` means localhost. `{{variables}}`, `--env-file`, `--compact`, the proxy and CA settings and `--negotiate` / `--ntlm` / `--digest` work as on `call`. `--offline` prints the request with every variable resolved and opens no connection. `send` loads no protocol plugin: against one local endpoint it answers in about 270 ms where `call` takes about 650 ms.
+
 ### A new Bowire logo, generated in every format (#964, #965)
 
 Bowire has a new mark, the "bw", in the frame and the navy ink the Küstenlogik products share, and an emblem: the mark in its ring with a bowline knot (Bowire is *bowline* and *wire*). Every logo file now comes from those two drawings through the shared Küstenlogik branding tool:
@@ -74,6 +78,10 @@ So the site, the docs, the workbench, the NuGet packages, the installers and the
 <!-- Each change has been on a back-compat ramp through the prior minor
 and is removed in this release. Add a section per breaking change, with
 the migration path. -->
+
+### No response files on the command line (#974)
+
+The parser no longer expands `@file` tokens into the file's arguments. That expansion had broken the documented `bowire call … -d @request.json`, whose body reached the command split on whitespace with its quotes stripped. Every `@file` Bowire documents now reaches the command, which reads the file. A command line kept in a file: expand it in the shell (`bowire $(cat args.txt)`) instead of `bowire @args.txt`.
 
 ### Logo files have new names (#964)
 

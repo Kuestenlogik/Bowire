@@ -33,20 +33,39 @@ namespace Kuestenlogik.Bowire.App.Cli;
 internal static class BowireCli
 {
     /// <summary>
-    /// True when the invocation is a <c>plugin</c> management verb (install /
-    /// uninstall / update / download / list / inspect). Program.cs skips the
-    /// pre-dispatch <see cref="IBowirePluginLoader.Load"/> for these: those
-    /// verbs act on the plugin <em>directory</em> through PluginManager, never
-    /// on loaded protocol instances, and eager-loading a plugin assembly here
-    /// memory-maps its DLL so Windows refuses the delete a subsequent
-    /// uninstall / update needs — the verb meant to remove a plugin would be
-    /// blocked by having just loaded it.
+    /// True when the invocation needs no protocol plugin, so Program.cs skips
+    /// the pre-dispatch <see cref="IBowirePluginLoader.Load"/>:
+    /// <list type="bullet">
+    ///   <item>the <c>plugin</c> management verbs (install / uninstall / update /
+    ///   download / list / inspect) act on the plugin <em>directory</em> through
+    ///   PluginManager, and eager-loading a plugin assembly memory-maps its DLL,
+    ///   so Windows refuses the delete a subsequent uninstall / update needs;</item>
+    ///   <item><c>send</c> (#678) sends a request it was given in full, and its
+    ///   startup cost is the point of the command.</item>
+    /// </list>
     /// </summary>
-    public static bool IsPluginManagementCommand(string[] args)
+    public static bool SkipsPluginLoad(string[] args)
     {
         ArgumentNullException.ThrowIfNull(args);
-        return args.Length > 0 && string.Equals(args[0], "plugin", StringComparison.Ordinal);
+        return args.Length > 0 && args[0] is "plugin" or "send";
     }
+
+    /// <summary>
+    /// True for <c>send</c>, which also skips the scan for plugin-contributed
+    /// subcommands: none of them can be reached from it.
+    /// </summary>
+    internal static bool IsSendCommand(string[] args) =>
+        args.Length > 0 && string.Equals(args[0], "send", StringComparison.Ordinal);
+
+    /// <summary>
+    /// How every command line is parsed: without response files (#974).
+    /// System.CommandLine would replace each <c>@</c> token with the tokens
+    /// of that file, so <c>-d @request.json</c> reached <c>call</c> as the
+    /// file split on whitespace with its quotes stripped. Every <c>@</c>
+    /// Bowire documents means "read this file", and the command that takes
+    /// it reads it.
+    /// </summary>
+    internal static ParserConfiguration Parsing() => new() { ResponseFileTokenReplacer = null };
 
     /// <summary>
     /// Parse <paramref name="args"/> and run the subcommand they name.
@@ -85,7 +104,8 @@ internal static class BowireCli
         // #818 — provider-namespaced auth flags (--auth-oidc-authority …)
         // belong to a plugin and cannot be declared here; they reach the
         // configuration through AuthProviderFlags, not through the parser.
-        var parseResult = root.Parse(Kuestenlogik.Bowire.App.Configuration.AuthProviderFlags.Extract(args).Remaining);
+        var parseResult = root.Parse(Kuestenlogik.Bowire.App.Configuration.AuthProviderFlags.Extract(args).Remaining,
+            Parsing());
         if (parseResult.Errors.Count > 0)
         {
             var useColor = stderr is null && !Console.IsErrorRedirected;
@@ -114,7 +134,7 @@ internal static class BowireCli
         Kuestenlogik.Bowire.Plugins.BowirePluginRoot.Apply(pluginDir);
         var root = new RootCommand(
             "Bowire — multi-protocol API workbench. Run without a subcommand to launch the browser UI; " +
-            "run a subcommand (discover / list / describe / call / catalogue / mock / mcp / plugin / test) for scripting.");
+            "run a subcommand (discover / list / describe / call / send / catalogue / mock / mcp / plugin / test) for scripting.");
 
         // Root-level options describe the browser-UI defaults so
         // `bowire --port 6000 --url http://api.local` resolves through
@@ -235,6 +255,7 @@ internal static class BowireCli
         root.Add(BuildListCommand(cfg));
         root.Add(BuildDescribeCommand(cfg));
         root.Add(BuildCallCommand(cfg));
+        root.Add(Send.SendCommand.Build(cfg));
         root.Add(BuildMockCommand(cfg, plugins));
         root.Add(BuildMcpCommand());
         root.Add(BuildPluginCommand(cfg, pluginDir));
@@ -264,6 +285,10 @@ internal static class BowireCli
         // #117 - `bowire docs translations` scaffolds and checks a UI locale.
         root.Add(TranslationsCommand.Build());
         root.Add(BuildVersionCommand(plugins));
+
+        // `send` reaches none of the contributed subcommands below, and the
+        // assembly scan is most of what its startup would cost (#678).
+        if (IsSendCommand(originalArgs)) return root;
 
         // Auto-discovered CLI commands — scanner today, fuzz / proxy /
         // jwt will follow as they extract out of Tool into their own
