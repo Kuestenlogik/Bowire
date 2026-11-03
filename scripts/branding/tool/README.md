@@ -1,30 +1,37 @@
 # Branding tool
 
-One generator for the logo set of every Kuestenlogik product. A product keeps its drawing and its configuration; the
-tool makes every logo file from them, the same set for every product. The tool names no product.
+One generator for the logo set of every Kuestenlogik product and of the company. The drawings and configurations
+live in this repository (`brand/products/<product>/`, `brand/company/`; see `brand/README.md`); a product holds a
+pinned copy of the tool and of its own brand folder, and the tool makes every logo file from them, the same set for
+every product. The tool names no product.
 
 | File | What it is |
 |---|---|
 | `generate-logos.mjs` | The generator (Node 22.2 or later, Edge as the browser). |
 | `lib/containers.mjs` | ICO, ICNS and ZIP writers. |
 | `lib/inline.mjs` | The inline copies between `brand:` markers. |
-| `outline-wordmark.py` | Outlines a wordmark in Inter Bold to `wordmark.json`, so the generator needs no font. |
+| `outline-wordmark.py` | Outlines a wordmark in Inter to `wordmark.json`, so the generator needs no font. |
 | `Inter-LICENSE.txt` | The licence of Inter (SIL Open Font License 1.1), whose glyph outlines the wordmarks are. |
 | `package.json`, `package-lock.json` | Playwright and sharp, pinned exactly. |
-| `check-vendored.mjs` | Checks that a product's copy of this folder is exactly the version its `pin.json` names. |
-| `vendor.mjs` | Copies this folder into a product and writes its `pin.json` (stays in this repository). |
+| `check-vendored.mjs` | Checks that a product's copy of this folder and its brand files are exactly what its `pin.json` names. |
+| `vendor.mjs` | Copies this folder and the product's brand folder into a product and writes its `pin.json` (stays in this repository). |
+| `test/` | Tests of the inline copies and the pin (`node --test tools/branding/test/`; stays in this repository). |
 
 ## A product's files
 
 ```
 scripts/branding/
-  brand.json                 the configuration (below)
-  wordmark.json              the wordmark as an outline (outline-wordmark.py)
-  <prefix>_mark_source.svg   the owner's drawing of the mark
-  <prefix>_emblem_source.svg optional: a second drawing in its own frame
+  brand.json                 the configuration (below)                         vendored
+  wordmark.json              the wordmark as an outline (outline-wordmark.py)  vendored
+  <prefix>_mark_source.svg   the owner's drawing of the mark                   vendored
+  <prefix>_emblem_source.svg optional: a second drawing in its own frame       vendored
+  README.md                  optional: the product's own notes                 not vendored
   tool/                      the vendored copy of this folder, with pin.json
 images/                      outputs only (and a README.md the generator leaves alone)
 ```
+
+The brand files are edited in this repository only (`brand/products/<product>/`) and vendored with the tool; the
+pin fails a product whose copy differs.
 
 ## Run
 
@@ -56,11 +63,12 @@ Paths are relative to the repository root (`root`, relative to `brand.json`).
 | `source` | yes | The drawing of the mark. Read only; Inkscape's editing state stays in it and out of every output. |
 | `frame` | no (the drawing's) | `[width, height]` of the family frame. A drawing in another `viewBox` is scaled whole and centred into it; the drawing itself is unchanged. The family's frame is `[77.026421, 77.673187]`. |
 | `emblem` | no | `{ "source": "…" }`: a second drawing kept in its own frame (e.g. the mark in a ring). Without it no emblem is made. |
-| `wordmark` | yes | `{ "text": "…", "outline": "scripts/branding/wordmark.json" }`; the run stops when the outline holds another text. |
+| `wordmark` | yes | `{ "text": "…", "outline": "scripts/branding/wordmark.json" }`; the run stops when the outline holds another text. A wordmark wider than the lockup allows (870 px horizontal, 460 px vertical) is set smaller. |
 | `images` | yes | The output folder; the run deletes what it did not write there (`README.md` stays). |
 | `roles` | yes | Per role `light` and `dark` colour, `source`: the drawing's fills that mean it, and `why`. Every fill of the drawing must belong to a role, or the run stops. |
-| `wordmarkRole` | yes | The role that paints the wordmark. |
+| `wordmarkRole` | yes | The role that paints the wordmark (a wordmark in runs paints each run by the run's own role). |
 | `background` | yes | `{ "stops": [...] }`: the light background of the tiles and the Open Graph image (a radial gradient). |
+| `faviconVariants` | no | Any of `colored`, `black`, `white`: the cropped favicon also in that variant, `favicon_<variant>.svg` and `.ico`, for pages that switch the tab icon by their own theme. |
 | `icons` | no | Extra app icons (below). |
 | `kit` | no | `{ "path": "…zip" }`: the brand kit (below). |
 | `inline` | no | Glob patterns of files that hold inline copies (below). |
@@ -82,6 +90,7 @@ The same set for every product, in `images/`:
 | `<prefix>_lockup_{h,v}_{colored,black,white}.png`, `@2x.png`, `.webp`, `@2x.webp` | Transparent. |
 | `<prefix>_emblem_*` | Only with `emblem`: SVGs as the mark's, PNG and WebP 512 px tall (and @2x). |
 | `favicon.svg`, `favicon.ico` | The tab icon: the mark cropped square, adaptive; the ICO 16, 32 and 48 px. |
+| `favicon_<variant>.svg`, `.ico` | Only with `faviconVariants`: the same crop, colored, black or white. |
 | `apple-touch-icon.png`, `.webp` | 180 px, the mark on the light background, opaque. |
 | `icon.png`, `.webp` | 128 px, the same tile: the package icon (NuGet `PackageIcon`, Chocolatey `iconUrl`). |
 | `icon-512.png`, `.webp` | 512 px, the same tile: the web manifest icon. |
@@ -120,8 +129,12 @@ them from the drawing:
 ```
 
 ```js
-const logo = '/* brand:lockup-h class="logo" */ /* /brand */';
+const logo = /* brand:lockup-h class="logo" */ '' /* /brand */;
 ```
+
+In a script the markers stand outside the string literal, as comments of the code; the generator writes a
+single-quoted string between them (`'` and `\` escaped). A marker inside a literal would be part of the string and
+show on the page; since 1.1.0 a marker left inside a literal breaks the script, so move it out.
 
 The kinds are `mark`, `emblem`, `lockup-h` and `lockup-v`. The marker's attributes go onto the `<svg>`; without
 `aria-hidden`, `aria-label` or `role` it gets `role="img"` and `aria-label` = the product. Every shape is painted
@@ -130,38 +143,70 @@ are left alone, but at least one must hold one.
 
 ## Vendoring into a product
 
-A product holds a copy of this folder in `scripts/branding/tool/`, so a fresh clone generates and checks its logos
-without this repository beside it. The copy is pinned: `pin.json` names the version (`package.json`), the commit of
-this repository it came from and the SHA-256 of every file (LF line endings). A test in each product runs
-`node scripts/branding/tool/check-vendored.mjs`, which fails when a file of the copy differs from the pin, is missing
-or is not part of it. So a copy is never edited in place.
+A product holds a copy of this folder in `scripts/branding/tool/` and a copy of its brand folder
+(`brand/products/<product>/`: the drawings, `brand.json`, `wordmark.json`) in `scripts/branding/`, so a fresh clone
+generates and checks its logos without this repository beside it. Both are pinned: `pin.json` names the version
+(`package.json`), the commit of this repository they came from, the SHA-256 of every file of the tool, and under
+`brand` the folder they came from and the SHA-256 of each brand file (LF line endings):
 
-To change the tool:
+```json
+{
+  "version": "1.1.0",
+  "commit": "<40 hex>",
+  "files": { "generate-logos.mjs": "<sha256>", "…": "…" },
+  "brand": {
+    "from": "brand/products/terracle",
+    "files": { "brand.json": "<sha256>", "terracle_mark_source.svg": "<sha256>", "wordmark.json": "<sha256>" }
+  }
+}
+```
 
-1. change it here, raise `version` in `package.json` (and `npm install` when a dependency changes), commit;
-2. for each product, from a clean checkout of this repository:
-   `node tools/branding/vendor.mjs <product checkout>` (writes `scripts/branding/tool/` and its `pin.json`);
-3. in the product: `cd scripts/branding/tool && npm ci`, run the generator, commit the copy, `pin.json` and the
-   regenerated outputs together.
+A test in each product runs the check (`check-vendored.mjs`, or the same hashes taken on their own), which fails when
+a file of the tool or a brand file differs from the pin, is missing or is not part of it (in `scripts/branding/` only
+`tool/` and a `README.md` are the product's own). So neither the tool nor a drawing is edited in a product.
+
+To change a drawing, a configuration or the tool:
+
+1. edit it here (`brand/products/<product>/`; or `tools/branding/`, raising `version` in `package.json`, and
+   `npm install` when a dependency changes), commit and push;
+2. from a clean checkout of this repository: `node tools/branding/vendor.mjs <product> <product checkout>` (writes
+   `scripts/branding/tool/`, the brand files in `scripts/branding/` and `pin.json`);
+3. in the product: `cd scripts/branding/tool && npm ci && cd ../../..`, `node scripts/branding/tool/generate-logos.mjs`,
+   then `node scripts/branding/tool/generate-logos.mjs --check`;
+4. commit the copy, the brand files, `pin.json` and the regenerated outputs together in the product.
 
 `node scripts/branding/tool/check-vendored.mjs --against <this repository>/tools/branding` says whether a product's
-copy is behind this folder.
+copy is behind this repository (the tool and the brand folder).
 
-To take a new product on: write its `scripts/branding/brand.json`, outline its wordmark
-(`outline-wordmark.py <Inter-Bold.ttf> --text <Product> --out scripts/branding/wordmark.json`), vendor the tool, add
-the check to its tests, run the generator.
+To take a new product on: create `brand/products/<product>/` with its drawing, `brand.json` (paths as seen from the
+product's repository, `root` `../..`) and its wordmark
+(`outline-wordmark.py <Inter-Bold.ttf> --text <Product> --out brand/products/<product>/wordmark.json`), commit,
+vendor it, add the check to the product's tests, run the generator there.
 
 ## The wordmark
 
-`wordmark.json` is committed, so the generator needs no font. Make it again only when the text or the font changes:
+`wordmark.json` is committed, so the generator needs no font. Make it again only when the text or the font changes
+(in `brand/products/<product>/` or `brand/company/`, with `--out`):
 
 ```sh
 python -m venv .venv && .venv/Scripts/python -m pip install fonttools uharfbuzz
-.venv/Scripts/python scripts/branding/tool/outline-wordmark.py <path/to/Inter-Bold.ttf> --text <Product>
+.venv/Scripts/python tools/branding/outline-wordmark.py <path/to/Inter-Bold.ttf> --text <Product> --out <wordmark.json>
 ```
 
+A wordmark set in more than one weight or colour (the company's lettering: its first word regular in KL Blue, the
+second bold in Blue Deep, tracked; see `brand/README.md`) is outlined in runs, each with its font and the role of
+`brand.json` that paints it:
+
+```sh
+.venv/Scripts/python tools/branding/outline-wordmark.py --run <FIRST> Inter-Regular.ttf accent \
+  --run <SECOND> Inter-Bold.ttf structure --tracking 0.0714286 --gap 0.0714286 --out brand/company/wordmark.json
+```
+
+`--tracking` is the letter spacing after every glyph in em (4 at 56 px), `--gap` extra space between two runs in em.
+Its `wordmark.json` holds `parts` (one path per run with its `role`) instead of `d`.
+
 The font is Inter 4.1 from its official release (<https://github.com/rsms/inter/releases>, `Inter-4.1.zip`,
-`extras/ttf/Inter-Bold.ttf`), SIL Open Font License 1.1, licence text in `Inter-LICENSE.txt`. HarfBuzz shapes the text,
+`extras/ttf/Inter-Bold.ttf` and `Inter-Regular.ttf`), SIL Open Font License 1.1, licence text in `Inter-LICENSE.txt`. HarfBuzz shapes the text,
 so the font's kerning applies.
 
 ## Third-party

@@ -11,14 +11,16 @@
 // Sources (the only ones; everything in the images folder is derived and may be deleted and regenerated):
 //   source             the mark, the owner's drawing; read only, never rewritten
 //   emblem.source      optional: a second drawing in its own frame (e.g. the mark in a ring); read only
-//   wordmark.outline   the wordmark text as an outline (outline-wordmark.py), so no font is needed
+//   wordmark.outline   the wordmark text as an outline (outline-wordmark.py), so no font is needed; a wordmark in
+//                      runs (its "parts") paints each run by the run's role, otherwise wordmarkRole paints it
 //
 // Steps:
 //   1. read the source in Edge (light colour scheme); every shape's fill is mapped to a role; an unknown fill stops
 //      the run; a source drawn in another frame is scaled whole and centred into the configured one;
 //   2. write the mark, emblem and lockup SVGs in colored, black, white and adaptive, cleaned: no Inkscape/sodipodi
 //      metadata, no styles or classes of the drawing, no unused defs or empty groups, role="img" and aria-label;
-//      favicon.svg (the mark, cropped square, adaptive); og-image.svg (1200×630);
+//      favicon.svg (the mark, cropped square, adaptive) and, with faviconVariants, favicon_<variant>.svg/.ico;
+//      og-image.svg (1200×630);
 //   3. render PNGs in Edge with a transparent background (1x and @2x), each also as a lossless WebP; favicon.ico
 //      (16/32/48), apple-touch-icon.png (180), icon.png (128, the package icon) and icon-512.png (the web manifest
 //      icon), the last three the mark on the light background; og-image.png; the configured app icons (ICO, ICNS,
@@ -76,12 +78,18 @@ const wordmark = JSON.parse(fs.readFileSync(path.join(root, config.wordmark.outl
 if (wordmark.text !== config.wordmark.text) {
   throw new Error(`${config.wordmark.outline} outlines "${wordmark.text}", the configuration names "${config.wordmark.text}": run outline-wordmark.py --text`);
 }
+// A wordmark in runs (outline-wordmark.py --run) paints each run by its own role; otherwise wordmarkRole paints it.
+const wordmarkParts = wordmark.parts ?? [{ role: config.wordmarkRole, d: wordmark.d }];
+for (const part of wordmarkParts) {
+  if (!roles[part.role]) throw new Error(`${config.wordmark.outline}: the run "${part.text}" names role "${part.role}", which brand.json does not have`);
+}
 
 // Lockup geometry of the family: horizontal 1100×200 (mark 180 at 10,10; text from x 220, 100 px), vertical 480×380
-// (mark 240 at 120,20; text centred at 240, 70 px, baseline near 340).
+// (mark 240 at 120,20; text centred at 240, 70 px, baseline near 340). A wordmark whose ink would be wider than
+// maxWidth is set smaller, so it stays inside the lockup.
 const lockups = {
-  h: { w: 1100, h: 200, mark: { x: 10, y: 10, size: 180 }, text: { x: 220, centreY: 100, size: 100, anchor: 'start' }, label: `${label} logo horizontal` },
-  v: { w: 480, h: 380, mark: { x: 120, y: 20, size: 240 }, text: { x: 240, baseline: 340, size: 70, anchor: 'middle' }, label: `${label} logo vertical` },
+  h: { w: 1100, h: 200, mark: { x: 10, y: 10, size: 180 }, text: { x: 220, centreY: 100, size: 100, maxWidth: 870, anchor: 'start' }, label: `${label} logo horizontal` },
+  v: { w: 480, h: 380, mark: { x: 120, y: 20, size: 240 }, text: { x: 240, baseline: 340, size: 70, maxWidth: 460, anchor: 'middle' }, label: `${label} logo vertical` },
 };
 const markPng = 512;
 const emblemPngHeight = 512;
@@ -209,17 +217,19 @@ ${style ? `  <defs>${style}</defs>\n` : ''}${inner}
 // A lockup's inner drawing (the mark beside or above the wordmark) in a variant.
 function lockupInner(kind, variant, mark) {
   const L = lockups[kind];
-  const s = L.text.size / wordmark.unitsPerEm;
   const [x0, , x1] = wordmark.bbox;
+  const s = Math.min(L.text.size / wordmark.unitsPerEm, L.text.maxWidth / (x1 - x0));
   const inkWidth = (x1 - x0) * s;
   // Horizontal: the cap height centred on the mark's centre line. Vertical: on the family's baseline.
   const baseline = L.text.baseline ?? L.text.centreY + (wordmark.capHeight * s) / 2;
   const tx = L.text.anchor === 'middle' ? L.text.x - inkWidth / 2 - x0 * s : L.text.x - x0 * s;
-  const textPaint = variant === 'adaptive' ? `class="${prefix}-${config.wordmarkRole}"` : `fill="${flat[variant] ?? roles[config.wordmarkRole].light}"`;
+  const textPaint = (role) => (variant === 'adaptive' ? `class="${prefix}-${role}"` : `fill="${flat[variant] ?? roles[role].light}"`);
+  const text = wordmarkParts.map((part) =>
+    `  <path ${textPaint(part.role)} transform="translate(${tx.toFixed(2)} ${baseline.toFixed(2)}) scale(${s.toFixed(6)})" d="${part.d}" />`).join('\n');
   return `  <svg x="${L.mark.x}" y="${L.mark.y}" width="${L.mark.size}" height="${L.mark.size}" viewBox="${square(mark, 1).map((v) => +v.toFixed(3)).join(' ')}">
 ${paint(mark.body, variant)}
   </svg>
-  <path ${textPaint} transform="translate(${tx.toFixed(2)} ${baseline.toFixed(2)}) scale(${s.toFixed(6)})" d="${wordmark.d}" />`;
+${text}`;
 }
 
 const lockup = (kind, variant, mark) =>
@@ -338,6 +348,15 @@ try {
   const icoPngs = [];
   for (const size of [16, 32, 48]) icoPngs.push({ size, data: await render(browser, fav, size, size) });
   writeBinary(out('favicon.ico'), ico(icoPngs));
+  // Optional: the cropped favicon in fixed variants, for pages that switch the tab icon by their own theme.
+  for (const variant of config.faviconVariants ?? []) {
+    if (variant === 'adaptive' || !variants.includes(variant)) throw new Error(`faviconVariants: "${variant}" is none of colored, black, white`);
+    const text = favicon(mark, variant);
+    write(out(`favicon_${variant}.svg`), text);
+    const pngs = [];
+    for (const size of [16, 32, 48]) pngs.push({ size, data: await render(browser, text, size, size) });
+    writeBinary(out(`favicon_${variant}.ico`), ico(pngs));
+  }
   const tileSvg = tile(mark);
   for (const t of tiles) await writePng(t.name, await render(browser, tileSvg, t.size, t.size));
 

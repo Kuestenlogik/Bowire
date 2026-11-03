@@ -1,12 +1,20 @@
-"""Outline a product's wordmark in Inter Bold to an SVG path, so the lockups render without the font.
+"""Outline a wordmark in Inter to an SVG path, so the lockups render without the font.
 
-The result, wordmark.json beside the product's brand.json (by default the folder above this tool), is committed:
+The result, wordmark.json beside the brand.json (by default the folder above this tool), is committed:
 generate-logos.mjs reads it and never needs the font. Run this only when the wordmark, the font or its version changes.
 
     python -m venv .venv && .venv/Scripts/python -m pip install fonttools uharfbuzz
     .venv/Scripts/python <tool>/outline-wordmark.py <path/to/Inter-Bold.ttf> --text <Product> [--out <wordmark.json>]
 
-Inter comes from its official release (https://github.com/rsms/inter/releases, extras/ttf/Inter-Bold.ttf) under the
+A wordmark set in more than one weight or colour is given as runs, each with its font and the colour role that
+paints it, optionally tracked (letter spacing after every glyph, in em) and with a gap between the runs (in em):
+
+    .venv/Scripts/python <tool>/outline-wordmark.py --run <FIRST> <Inter-Regular.ttf> accent \
+        --run <SECOND> <Inter-Bold.ttf> structure --tracking 0.0714286 --gap 0.0714286 [--out <wordmark.json>]
+
+Its wordmark.json then holds "parts", one path per run with its role, instead of the single "d".
+
+Inter comes from its official release (https://github.com/rsms/inter/releases, extras/ttf/Inter-*.ttf) under the
 SIL Open Font License 1.1; the outlined glyphs are a use the licence permits (see README.md beside this file).
 
 The text is shaped with HarfBuzz, so the font's kerning applies (e.g. the "Te" pair is kerned). Coordinates are in font
@@ -25,54 +33,90 @@ from fontTools.pens.boundsPen import BoundsPen
 from fontTools.ttLib import TTFont
 
 
-def main() -> None:
-    ap = argparse.ArgumentParser()
-    ap.add_argument("font", type=Path)
-    ap.add_argument("--text", required=True)
-    ap.add_argument("--out", type=Path, default=Path(__file__).resolve().parent.parent / "wordmark.json")
-    args = ap.parse_args()
-
-    blob = hb.Blob.from_file_path(str(args.font))
-    face = hb.Face(blob)
-    hbfont = hb.Font(face)
+def outline(font: Path, text: str, x: float, tracking: float, bounds: BoundsPen | None):
+    """Draws `text` in `font` from pen position x; returns the font, the path, the bounds pen and the new pen position."""
+    blob = hb.Blob.from_file_path(str(font))
+    hbfont = hb.Font(hb.Face(blob))
     buf = hb.Buffer()
-    buf.add_str(args.text)
+    buf.add_str(text)
     buf.guess_segment_properties()
     hb.shape(hbfont, buf, {"kern": True, "liga": True})
 
-    tt = TTFont(str(args.font))
+    tt = TTFont(str(font))
     glyphs = tt.getGlyphSet()
     order = tt.getGlyphOrder()
-    upem = tt["head"].unitsPerEm
-    os2 = tt["OS/2"]
-    name = tt["name"]
-
+    track = tracking * tt["head"].unitsPerEm if tracking else 0
     svg_pen = SVGPathPen(glyphs, ntos=lambda v: f"{round(v, 1):g}")
-    bounds = BoundsPen(glyphs)
-    x = 0
+    bounds = bounds or BoundsPen(glyphs)
     for info, pos in zip(buf.glyph_infos, buf.glyph_positions):
         gname = order[info.codepoint]
         # y up in the font, y down in SVG: flip around the baseline.
         transform = (1, 0, 0, -1, x + pos.x_offset, -pos.y_offset)
         glyphs[gname].draw(TransformPen(svg_pen, transform))
         glyphs[gname].draw(TransformPen(bounds, transform))
-        x += pos.x_advance
+        x += pos.x_advance + track
+    return tt, svg_pen.getCommands(), bounds, x
 
-    x_min, y_min, x_max, y_max = bounds.bounds
-    out = {
-        "text": args.text,
-        "font": name.getDebugName(4),
-        "fontVersion": name.getDebugName(5),
-        "licence": "SIL Open Font License 1.1 (https://openfontlicense.org), (c) 2016 The Inter Project Authors",
-        "unitsPerEm": upem,
-        "capHeight": os2.sCapHeight,
-        "xHeight": os2.sxHeight,
-        "advance": x,
-        "bbox": [x_min, y_min, x_max, y_max],
-        "d": svg_pen.getCommands(),
-    }
-    args.out.write_text(json.dumps(out, indent=2) + "\n", encoding="utf-8")
-    print(f"wrote {args.out} ({out['font']}, {out['fontVersion']}, advance {x}/{upem})")
+
+def describe(tt: TTFont) -> dict:
+    name = tt["name"]
+    return {"font": name.getDebugName(4), "fontVersion": name.getDebugName(5)}
+
+
+def main() -> None:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("font", type=Path, nargs="?", help="the font of a wordmark in one run (with --text)")
+    ap.add_argument("--text")
+    ap.add_argument("--run", nargs=3, action="append", metavar=("TEXT", "FONT", "ROLE"),
+                    help="a run of the wordmark in its font, painted by a colour role of brand.json; repeat in order")
+    ap.add_argument("--tracking", type=float, default=0.0, help="letter spacing after every glyph, in em")
+    ap.add_argument("--gap", type=float, default=0.0, help="extra space between two runs, in em")
+    ap.add_argument("--out", type=Path, default=Path(__file__).resolve().parent.parent / "wordmark.json")
+    args = ap.parse_args()
+    if bool(args.run) == bool(args.font and args.text):
+        ap.error("give either <font> --text <text> or one or more --run TEXT FONT ROLE")
+
+    licence = "SIL Open Font License 1.1 (https://openfontlicense.org), (c) 2016 The Inter Project Authors"
+    if not args.run:
+        tt, d, bounds, x = outline(args.font, args.text, 0, args.tracking, None)
+        x_min, y_min, x_max, y_max = bounds.bounds
+        out = {"text": args.text, **describe(tt), "licence": licence}
+        if args.tracking:
+            out["tracking"] = args.tracking
+        out.update({
+            "unitsPerEm": tt["head"].unitsPerEm,
+            "capHeight": tt["OS/2"].sCapHeight,
+            "xHeight": tt["OS/2"].sxHeight,
+            "advance": x,
+            "bbox": [x_min, y_min, x_max, y_max],
+            "d": d,
+        })
+    else:
+        x, bounds, parts, first = 0.0, None, [], None
+        for i, (text, font, role) in enumerate(args.run):
+            tt, d, bounds, x = outline(Path(font), text, x, args.tracking, bounds)
+            if first is None:
+                first = tt
+            elif tt["head"].unitsPerEm != first["head"].unitsPerEm:
+                ap.error("the runs' fonts have different units per em")
+            parts.append({"text": text, **describe(tt), "role": role, "d": d})
+            if i < len(args.run) - 1:
+                x += args.gap * first["head"].unitsPerEm
+        x_min, y_min, x_max, y_max = bounds.bounds
+        out = {
+            "text": "".join(p["text"] for p in parts),
+            "licence": licence,
+            "tracking": args.tracking,
+            "gap": args.gap,
+            "unitsPerEm": first["head"].unitsPerEm,
+            "capHeight": first["OS/2"].sCapHeight,
+            "xHeight": first["OS/2"].sxHeight,
+            "advance": round(x, 1),
+            "bbox": [round(v, 1) for v in (x_min, y_min, x_max, y_max)],
+            "parts": parts,
+        }
+    args.out.write_text(json.dumps(out, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    print(f"wrote {args.out} ({out['text']}, advance {out['advance']}/{out['unitsPerEm']})")
 
 
 if __name__ == "__main__":

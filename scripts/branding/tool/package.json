@@ -1,6 +1,6 @@
 {
   "name": "kuestenlogik-branding",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "type": "module",
   "description": "The shared logo generator of the Kuestenlogik products: one drawing per product in, the product's logo set out.",

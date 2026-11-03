@@ -1,7 +1,9 @@
 # Bowire branding
 
-Bowire's logo files come from the shared Küstenlogik branding tool, the same generator every product uses. This
-folder holds what is Bowire's own; the tool itself is a pinned copy in `tool/` (`tool/README.md` explains it in full).
+Bowire's logo files come from the shared Küstenlogik branding tool, the same generator every product uses. The
+master logos live in the Kuestenlogik repository, `brand/products/bowire/`: the drawings, `brand.json` and
+`wordmark.json`. They are vendored into this folder together with the tool (`tool/`, `tool/README.md` explains it in
+full), and `tool/pin.json` pins both, so an edit made here fails the pin test (#971).
 
 | File | What it is |
 |---|---|
@@ -9,7 +11,7 @@ folder holds what is Bowire's own; the tool itself is a pinned copy in `tool/` (
 | `bowire_emblem_source.svg` | The owner's drawing of the emblem: the mark in its ring with the bowline knot. |
 | `brand.json` | Bowire's configuration: the prefix, the palette role, the family frame, the extra app icons, the brand kit, where the inline copies live and where outputs are copied. |
 | `wordmark.json` | "Bowire" in Inter Bold as an outline, so the generator needs no font. |
-| `tool/` | The vendored generator with its `pin.json`. Never edited here; `tests/Kuestenlogik.Bowire.Tests/ci/branding-tool.test.mjs` fails a copy that differs from its pin. |
+| `tool/` | The vendored generator with its `pin.json`, which pins the tool and the four brand files above. Never edited here; `tests/Kuestenlogik.Bowire.Tests/ci/branding-tool.test.mjs` fails a copy that differs from its pin. |
 
 Everything else is generated: `images/` (see `images/README.md`) and its copies on the site, in the docs, in the
 workbench (`wwwroot/bowire_mark_{colored,white}.svg`), in the macOS app bundle, and the brand kit
@@ -40,7 +42,9 @@ pin of the tool.
 - **App icons** (`bowire.ico`, `bowire.icns`, `bowire_app_256.png`, `icon.png`, `icon-512.png`) show the mark on the
   light tile, so a navy mark stays visible on a dark taskbar, dock or gallery.
 
-To change the generator, change the shared tool in the Kuestenlogik repository (`tools/branding`) and vendor it
-again (`tool/README.md`, "Vendoring into a product"); never edit `tool/` here.
+To change a drawing, `brand.json` or the wordmark, change `brand/products/bowire/` in the Kuestenlogik repository; to
+change the generator, change `tools/branding` there. Then vendor again from a clean checkout of that repository
+(`node tools/branding/vendor.mjs bowire <this checkout>`), regenerate, and commit the copy, the pin and the outputs
+together. Never edit `tool/` or the brand files here.
 
 The wordmark's glyphs are outlines of Inter 4.1 (SIL Open Font License 1.1, `tool/Inter-LICENSE.txt`).
