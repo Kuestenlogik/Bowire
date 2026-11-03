@@ -132,11 +132,10 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**14/31 done** · 1 in progress · 16 backlog
+**15/31 done** · 16 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
-| [966](https://github.com/Kuestenlogik/Bowire/issues/966) | Bowire | [MCP tool stream: log frames can arrive out of order, and a log before the result can be lost](#issue-kuestenlogik-bowire-966) | 🟡 In progress | `area:mcp` |
 | [672](https://github.com/Kuestenlogik/Bowire/issues/672) | Bowire | [Server-side script engine so pre/post scripts run in bowire test, not only in the browser](#issue-kuestenlogik-bowire-672) | ⬜ Backlog | `area:cli` |
 | [677](https://github.com/Kuestenlogik/Bowire/issues/677) | Bowire | [Broader code export, and snippets for the protocols no snippet library covers](#issue-kuestenlogik-bowire-677) | ⬜ Backlog | `area:workbench` |
 | [678](https://github.com/Kuestenlogik/Bowire/issues/678) | Bowire | [bowire send http: send a request directly, URL-first, with HTTPie-style items and --offline](#issue-kuestenlogik-bowire-678) | ⬜ Backlog | `area:cli` |
@@ -167,6 +166,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [943](https://github.com/Kuestenlogik/Bowire/issues/943) | Bowire | [Collection runner in the workbench reports a failed call as PASS](#issue-kuestenlogik-bowire-943) | ✅ Done |  |
 | [944](https://github.com/Kuestenlogik/Bowire/issues/944) | Bowire | [Flaky: ChunkedRecordingStore's test root override leaks across parallel test classes](#issue-kuestenlogik-bowire-944) | ✅ Done |  |
 | [945](https://github.com/Kuestenlogik/Bowire/issues/945) | Bowire | [bowire.test.run over MCP, with a data set](#issue-kuestenlogik-bowire-945) | ✅ Done |  |
+| [966](https://github.com/Kuestenlogik/Bowire/issues/966) | Bowire | [MCP tool stream: log frames can arrive out of order, and a log before the result can be lost](#issue-kuestenlogik-bowire-966) | ✅ Done | `area:mcp` |
 
 ### v2.12 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
 
@@ -757,12 +757,6 @@ On a phone, the header of the docs, the API reference and the Bootcamp has no bu
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-#### <a id="issue-kuestenlogik-bowire-966"></a>🟡 In progress · [#966](https://github.com/Kuestenlogik/Bowire/issues/966) MCP tool stream: log frames can arrive out of order, and a log before the result can be lost
-
-> `area:mcp`
-
-A streamed MCP tool call (`InvokeStreamAsync`, the workbench stream and `bowire call` streaming) shows the server's `notifications/message` as `log` frames. They can arrive out of order, and a log the server sent before the result can be dropped. [[more]](https://github.com/Kuestenlogik/Bowire/issues/966)
-
 #### <a id="issue-kuestenlogik-bowire-672"></a>⬜ Backlog · [#672](https://github.com/Kuestenlogik/Bowire/issues/672) Server-side script engine so pre/post scripts run in bowire test, not only in the browser
 
 > `area:cli`
@@ -904,6 +898,12 @@ In full runs of `Kuestenlogik.Bowire.Tests`, `WorkbenchRecordingJsonProviderCove
 #### <a id="issue-kuestenlogik-bowire-945"></a>✅ Done · [#945](https://github.com/Kuestenlogik/Bowire/issues/945) bowire.test.run over MCP, with a data set
 
 Follow-up of #675, to be done with #802 (which makes `bowire.test.run` the first durable MCP task). [[more]](https://github.com/Kuestenlogik/Bowire/issues/945)
+
+#### <a id="issue-kuestenlogik-bowire-966"></a>✅ Done · [#966](https://github.com/Kuestenlogik/Bowire/issues/966) MCP tool stream: log frames can arrive out of order, and a log before the result can be lost
+
+> `area:mcp`
+
+A streamed MCP tool call (`InvokeStreamAsync`, the workbench stream and `bowire call` streaming) shows the server's `notifications/message` as `log` frames. They can arrive out of order, and a log the server sent before the result can be dropped. [[more]](https://github.com/Kuestenlogik/Bowire/issues/966)
 
 ### v2.12 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
 
