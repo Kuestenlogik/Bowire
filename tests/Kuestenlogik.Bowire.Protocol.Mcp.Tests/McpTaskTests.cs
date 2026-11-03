@@ -647,7 +647,11 @@ public sealed class McpTaskTests
         Assert.Equal("2026-07-28", Data(frames[0]).GetProperty("shape").GetString());
         var input = frames.First(f => Kind(f) == "task" && Data(f).TryGetProperty("inputRequests", out _));
         Assert.Contains("Your name?", Data(input).GetProperty("inputRequests").GetRawText(), StringComparison.Ordinal);
-        Assert.Equal("result", Kind(frames[^1]));
+        // Say what happened when it does not end in the result: the replay's frames and the recording.
+        var nl = Environment.NewLine;
+        Assert.True(Kind(frames[^1]) == "result",
+            $"the replay ended with {frames[^1].GetRawText()}{nl}replay:{nl}{string.Join(nl, frames.Select(f => f.GetRawText()))}"
+            + $"{nl}recording:{nl}{string.Join(nl, step.ReceivedMessages!.Select(f => $"{f.TimestampMs} {f.Data}"))}");
         Assert.Contains("hello Ada", Data(frames[^1]).GetRawText(), StringComparison.Ordinal);
     }
 

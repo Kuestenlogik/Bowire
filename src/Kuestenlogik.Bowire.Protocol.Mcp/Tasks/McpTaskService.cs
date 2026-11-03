@@ -185,8 +185,11 @@ internal sealed class McpTaskService
             {
                 if (!body.TryGetProperty("inputResponses", out var responses) || responses.ValueKind != JsonValueKind.Object)
                     throw new ArgumentException("Tasks/update needs inputResponses: an object keyed like the task's inputRequests.");
-                await dialect.UpdateAsync(client, taskId, responses, ct).ConfigureAwait(false);
+                // Before the server has it: once it does, it may finish the
+                // task and the stream that follows it close before this call
+                // returns, and the answer would be missing from a recording.
                 Answers.Delivered(serverUrl, taskId, responses);
+                await dialect.UpdateAsync(client, taskId, responses, ct).ConfigureAwait(false);
                 return JsonSerializer.SerializeToElement(new
                 {
                     acknowledged = true,

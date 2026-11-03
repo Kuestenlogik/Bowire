@@ -35,7 +35,11 @@ internal sealed class McpTaskAnswers
         });
     }
 
-    /// <summary>An answer reached the task: pass it to whoever follows it here.</summary>
+    /// <summary>
+    /// An answer is about to be sent to the task: pass it to whoever follows
+    /// it here. Called before the send, so the answer is in a following
+    /// stream before the server can finish the task and the stream close.
+    /// </summary>
     public void Delivered(string origin, string taskId, JsonElement inputResponses)
     {
         Action<JsonElement>[] listeners;

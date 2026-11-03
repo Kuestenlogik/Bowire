@@ -111,8 +111,12 @@ internal sealed class McpMockTask
             foreach (var response in inputResponses.EnumerateObject()) _answered.Add(response.Name);
             if (!_waitingForInput || asked!.Any(kv => !_answered.Contains(kv.Key))) return null;
 
-            // Go on from where the recording received its answer.
+            // Go on from where the recording received its answer. The
+            // task has what it asked for, so it works again: an
+            // input_required without open requests is not a valid task.
             _waitingForInput = false;
+            _state["status"] = "working";
+            _state.Remove("inputRequests");
             var next = _timeline.Skip(_cursor).FirstOrDefault(f => f.Event == "input");
             _anchorOffset = next?.OffsetMs ?? (_cursor < _timeline.Count ? _timeline[_cursor].OffsetMs : _anchorOffset);
             _anchorTime = now;
@@ -163,6 +167,15 @@ internal sealed class McpMockTask
                 var data = frame.Data;
                 var status = data.TryGetProperty("status", out var s) ? s.GetString() : null;
                 if (status is null) return;
+                // A poll the recording made after the answer but before the
+                // server took it still shows the question; the answer is in,
+                // so that state is behind this task already.
+                if (status == "input_required"
+                    && data.TryGetProperty("inputRequests", out var asked) && asked.ValueKind == JsonValueKind.Object
+                    && asked.EnumerateObject().All(r => _answered.Contains(r.Name)))
+                {
+                    return;
+                }
                 _state["status"] = status;
                 _state["lastUpdatedAt"] = Iso(now);
                 if (data.TryGetProperty("statusMessage", out var message) && message.ValueKind == JsonValueKind.String) _state["statusMessage"] = message.GetString();
@@ -170,11 +183,7 @@ internal sealed class McpMockTask
                 if (data.TryGetProperty("inputRequests", out var requests) && requests.ValueKind == JsonValueKind.Object)
                 {
                     _state["inputRequests"] = JsonNode.Parse(requests.GetRawText());
-                    // Wait only for a question not answered yet: a poll the
-                    // recording made before the server took the answer
-                    // still shows the old one.
-                    if (status == "input_required" && requests.EnumerateObject().Any(r => !_answered.Contains(r.Name)))
-                        _waitingForInput = true;
+                    if (status == "input_required") _waitingForInput = true;
                 }
                 else
                 {
