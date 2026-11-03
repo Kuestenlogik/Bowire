@@ -132,12 +132,11 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**21/39 done** · 2 in progress · 16 backlog
+**22/40 done** · 1 in progress · 17 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [678](https://github.com/Kuestenlogik/Bowire/issues/678) | Bowire | [bowire send http: send a request directly, URL-first, with HTTPie-style items and --offline](#issue-kuestenlogik-bowire-678) | 🟡 In progress | `area:cli` |
-| [974](https://github.com/Kuestenlogik/Bowire/issues/974) | Bowire | [bowire call -d @file: the parser expands the file as a response file and mangles the body](#issue-kuestenlogik-bowire-974) | 🟡 In progress | `area:cli` |
 | [672](https://github.com/Kuestenlogik/Bowire/issues/672) | Bowire | [Server-side script engine so pre/post scripts run in bowire test, not only in the browser](#issue-kuestenlogik-bowire-672) | ⬜ Backlog | `area:cli` |
 | [677](https://github.com/Kuestenlogik/Bowire/issues/677) | Bowire | [Broader code export, and snippets for the protocols no snippet library covers](#issue-kuestenlogik-bowire-677) | ⬜ Backlog | `area:workbench` |
 | [687](https://github.com/Kuestenlogik/Bowire/issues/687) | Bowire | [Tray icon and no console window: give the running workbench a handle of its own](#issue-kuestenlogik-bowire-687) | ⬜ Backlog | `area:cli` |
@@ -154,6 +153,8 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [963](https://github.com/Kuestenlogik/Bowire/issues/963) | Bowire | [WebSocketAuthProbe: forged JWT (alg:none, tampered signature) on the upgrade](#issue-kuestenlogik-bowire-963) | ⬜ Backlog | `area:security` |
 | [969](https://github.com/Kuestenlogik/Bowire/issues/969) | Bowire | [Site: images are not served in modern formats; index.html weighs 5.3 MB](#issue-kuestenlogik-bowire-969) | ⬜ Backlog | `area:site` |
 | [972](https://github.com/Kuestenlogik/Bowire/issues/972) | Bowire | [Plugin repos, Templates and Bootcamp: take the new Bowire logo](#issue-kuestenlogik-bowire-972) | ⬜ Backlog | `area:site` |
+| [975](https://github.com/Kuestenlogik/Bowire/issues/975) | Bowire | [bowire send http: --include for the response headers, --output for the body](#issue-kuestenlogik-bowire-975) | ⬜ Backlog | `area:cli` |
+| [974](https://github.com/Kuestenlogik/Bowire/issues/974) | Bowire | [bowire call -d @file: the parser expands the file as a response file and mangles the body](#issue-kuestenlogik-bowire-974) | ✅ Done | `area:cli` |
 | [673](https://github.com/Kuestenlogik/Bowire/issues/673) | Bowire | [Export requests as .http — Copy as .http, and bowire export http for a whole collection](#issue-kuestenlogik-bowire-673) | ✅ Done | `area:workbench` |
 | [674](https://github.com/Kuestenlogik/Bowire/issues/674) | Bowire | [Import from Insomnia, Bruno and .http, with a migration guide per source](#issue-kuestenlogik-bowire-674) | ✅ Done | `area:workbench` |
 | [675](https://github.com/Kuestenlogik/Bowire/issues/675) | Bowire | [Data-driven collection runs: one iteration per CSV/JSON row](#issue-kuestenlogik-bowire-675) | ✅ Done | `area:cli` |
@@ -764,12 +765,6 @@ On a phone, the header of the docs, the API reference and the Bootcamp has no bu
 
 `bowire call` can do a lot: every protocol, `{{vars}}`, `--env-file`, `--stream`, `--compact`, tab completion and meaningful exit codes. What it cannot do is the thing curl and HTTPie are actually used for: **one request, right now, with no context**. [[more]](https://github.com/Kuestenlogik/Bowire/issues/678)
 
-#### <a id="issue-kuestenlogik-bowire-974"></a>🟡 In progress · [#974](https://github.com/Kuestenlogik/Bowire/issues/974) bowire call -d @file: the parser expands the file as a response file and mangles the body
-
-> `area:cli`
-
-`bowire call … -d @request.json` is documented (cli-mode, export-import, request pane) to send the file's content as the body. It does not: System.CommandLine treats every token that starts with `@` as a response file and replaces it with the file's tokens before the command sees it. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/974)
-
 #### <a id="issue-kuestenlogik-bowire-672"></a>⬜ Backlog · [#672](https://github.com/Kuestenlogik/Bowire/issues/672) Server-side script engine so pre/post scripts run in bowire test, not only in the browser
 
 > `area:cli`
@@ -849,6 +844,18 @@ With #967 the Lighthouse PR audit loads its pages for the first time, and it fai
 > `area:site`
 
 Follow-up to #964/#965. [[more]](https://github.com/Kuestenlogik/Bowire/issues/972)
+
+#### <a id="issue-kuestenlogik-bowire-975"></a>⬜ Backlog · [#975](https://github.com/Kuestenlogik/Bowire/issues/975) bowire send http: --include for the response headers, --output for the body
+
+> `area:cli`
+
+`bowire send http` (#678) prints the response body and puts the status line on stderr. Two things curl and HTTPie users reach for are still missing: - the response headers, to see a `Location`, a `Set-Cookie` or a cache header; - a binary body. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/975)
+
+#### <a id="issue-kuestenlogik-bowire-974"></a>✅ Done · [#974](https://github.com/Kuestenlogik/Bowire/issues/974) bowire call -d @file: the parser expands the file as a response file and mangles the body
+
+> `area:cli`
+
+`bowire call … -d @request.json` is documented (cli-mode, export-import, request pane) to send the file's content as the body. It does not: System.CommandLine treats every token that starts with `@` as a response file and replaces it with the file's tokens before the command sees it. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/974)
 
 #### <a id="issue-kuestenlogik-bowire-673"></a>✅ Done · [#673](https://github.com/Kuestenlogik/Bowire/issues/673) Export requests as .http — Copy as .http, and bowire export http for a whole collection
 
