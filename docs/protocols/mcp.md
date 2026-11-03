@@ -99,7 +99,7 @@ A unary invoke of a tool (`bowire call`, REST) follows the task itself and answe
 
 **Limits of this release.**
 
-- **Sampling** requests (`sampling/createMessage`) inside `inputRequests` are shown but not answered.
+- **Sampling** requests (`sampling/createMessage`) inside `inputRequests` are shown in full but not answered. Sampling is deprecated as of MCP 2026-07-28 ([SEP-2577](https://github.com/modelcontextprotocol/modelcontextprotocol/pull/2577)), which asks servers to call model providers directly, and a client that does not answer leaves the task waiting. **Cancel task** ends it. The connection that receives a 2025-11-25 task's questions declares `elicitation` only, not `sampling`, so such a server does not send sampling requests to Bowire.
 - A 2025-11-25 server that binds tasks to its session may refuse `Tasks/get`, `follow` or `cancel` from a new session. The same applies to the `tasks/result` that receives a task's questions, so on such a server the questions do not reach Bowire. Following the tool call's own stream is not affected.
 - Tests and mocks do not assert on task lifecycles yet (#803).
 

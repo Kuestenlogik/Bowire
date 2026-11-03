@@ -3968,7 +3968,7 @@
   "mcpTask.input.failed": "Answer not delivered: {error}",
   "mcpTask.input.answered": "Answered — waiting for the server to continue.",
   "mcpTask.input.declined": "Declined — waiting for the server to continue.",
-  "mcpTask.input.sampling": "The server asks for an LLM completion (sampling). Bowire does not answer sampling requests.",
+  "mcpTask.input.sampling": "The server asks for an LLM completion (sampling). Sampling is deprecated as of MCP 2026-07-28 (SEP-2577), and Bowire does not answer it. The task waits until it is cancelled.",
   "mcpTask.input.unsupported": "Bowire cannot answer this kind of request from the workbench.",
   "mcpTask.field.required": "Required.",
   "mcpTask.field.number": "Enter a number.",

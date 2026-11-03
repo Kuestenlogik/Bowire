@@ -3967,7 +3967,7 @@
   "mcpTask.input.failed": "Antwort nicht zugestellt: {error}",
   "mcpTask.input.answered": "Beantwortet — wartet darauf, dass der Server weitermacht.",
   "mcpTask.input.declined": "Abgelehnt — wartet darauf, dass der Server weitermacht.",
-  "mcpTask.input.sampling": "Der Server bittet um eine LLM-Antwort (Sampling). Bowire beantwortet Sampling-Anfragen nicht.",
+  "mcpTask.input.sampling": "Der Server bittet um eine LLM-Antwort (Sampling). Sampling ist seit MCP 2026-07-28 veraltet (SEP-2577), und Bowire beantwortet es nicht. Der Task wartet, bis er abgebrochen wird.",
   "mcpTask.input.unsupported": "Diese Art von Anfrage kann Bowire in der Workbench nicht beantworten.",
   "mcpTask.field.required": "Pflichtfeld.",
   "mcpTask.field.number": "Bitte eine Zahl eingeben.",
