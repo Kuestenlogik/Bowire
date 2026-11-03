@@ -132,7 +132,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**16/33 done** · 17 backlog
+**17/34 done** · 17 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -152,7 +152,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [940](https://github.com/Kuestenlogik/Bowire/issues/940) | Bowire | [Verify the collection importers against real Insomnia and Bruno exports](#issue-kuestenlogik-bowire-940) | ⬜ Backlog |  |
 | [946](https://github.com/Kuestenlogik/Bowire/issues/946) | Bowire | [Data sets for flow runs and bowire test --workspace](#issue-kuestenlogik-bowire-946) | ⬜ Backlog |  |
 | [963](https://github.com/Kuestenlogik/Bowire/issues/963) | Bowire | [WebSocketAuthProbe: forged JWT (alg:none, tampered signature) on the upgrade](#issue-kuestenlogik-bowire-963) | ⬜ Backlog | `area:security` |
-| [967](https://github.com/Kuestenlogik/Bowire/issues/967) | Bowire | [Lighthouse PR audit always fails: it audits /comparison.html, which is not a page](#issue-kuestenlogik-bowire-967) | ⬜ Backlog | `area:site` |
+| [969](https://github.com/Kuestenlogik/Bowire/issues/969) | Bowire | [Site: images are not served in modern formats; index.html weighs 5.3 MB](#issue-kuestenlogik-bowire-969) | ⬜ Backlog | `area:site` |
 | [673](https://github.com/Kuestenlogik/Bowire/issues/673) | Bowire | [Export requests as .http — Copy as .http, and bowire export http for a whole collection](#issue-kuestenlogik-bowire-673) | ✅ Done | `area:workbench` |
 | [674](https://github.com/Kuestenlogik/Bowire/issues/674) | Bowire | [Import from Insomnia, Bruno and .http, with a migration guide per source](#issue-kuestenlogik-bowire-674) | ✅ Done | `area:workbench` |
 | [675](https://github.com/Kuestenlogik/Bowire/issues/675) | Bowire | [Data-driven collection runs: one iteration per CSV/JSON row](#issue-kuestenlogik-bowire-675) | ✅ Done | `area:cli` |
@@ -168,6 +168,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [944](https://github.com/Kuestenlogik/Bowire/issues/944) | Bowire | [Flaky: ChunkedRecordingStore's test root override leaks across parallel test classes](#issue-kuestenlogik-bowire-944) | ✅ Done |  |
 | [945](https://github.com/Kuestenlogik/Bowire/issues/945) | Bowire | [bowire.test.run over MCP, with a data set](#issue-kuestenlogik-bowire-945) | ✅ Done |  |
 | [966](https://github.com/Kuestenlogik/Bowire/issues/966) | Bowire | [MCP tool stream: log frames can arrive out of order, and a log before the result can be lost](#issue-kuestenlogik-bowire-966) | ✅ Done | `area:mcp` |
+| [967](https://github.com/Kuestenlogik/Bowire/issues/967) | Bowire | [Lighthouse PR audit always fails: it audits /comparison.html, which is not a page](#issue-kuestenlogik-bowire-967) | ✅ Done | `area:site` |
 | [968](https://github.com/Kuestenlogik/Bowire/issues/968) | Bowire | [ProxyCommandTests write the proxy CA into the real ~/.bowire](#issue-kuestenlogik-bowire-968) | ✅ Done | `area:cli` |
 
 ### v2.12 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
@@ -837,11 +838,11 @@ Follow-up of #675. `--data` drives a test collection. A flow file, or a `--works
 
 Kuestenlogik/Bowire.VulnDb#51 (CVE-2026-113620, Eclipse ioFog Controller): the WebSocket upgrades on the exec and log routes decode the bearer JWT without verifying it, so a self-minted token whose groups contain `admin` is accepted. The HTTP routes of the same server verify the token. [[more]](https://github.com/Kuestenlogik/Bowire/issues/963)
 
-#### <a id="issue-kuestenlogik-bowire-967"></a>⬜ Backlog · [#967](https://github.com/Kuestenlogik/Bowire/issues/967) Lighthouse PR audit always fails: it audits /comparison.html, which is not a page
+#### <a id="issue-kuestenlogik-bowire-969"></a>⬜ Backlog · [#969](https://github.com/Kuestenlogik/Bowire/issues/969) Site: images are not served in modern formats; index.html weighs 5.3 MB
 
 > `area:site`
 
-The *Lighthouse PR audit* check has failed on every run in the last 100 (38 of 38; e.g. on #784, #931, #947). Lighthouse gets a 404 for `http://localhost/comparison.html` and fails with `ERRORED_DOCUMENT_REQUEST`. [[more]](https://github.com/Kuestenlogik/Bowire/issues/967)
+With #967 the Lighthouse PR audit loads its pages for the first time, and it fails on all three of them (run https://github.com/Kuestenlogik/Bowire/actions/runs/41694236892, on #784): [[more]](https://github.com/Kuestenlogik/Bowire/issues/969)
 
 #### <a id="issue-kuestenlogik-bowire-673"></a>✅ Done · [#673](https://github.com/Kuestenlogik/Bowire/issues/673) Export requests as .http — Copy as .http, and bowire export http for a whole collection
 
@@ -912,6 +913,12 @@ Follow-up of #675, to be done with #802 (which makes `bowire.test.run` the first
 > `area:mcp`
 
 A streamed MCP tool call (`InvokeStreamAsync`, the workbench stream and `bowire call` streaming) shows the server's `notifications/message` as `log` frames. They can arrive out of order, and a log the server sent before the result can be dropped. [[more]](https://github.com/Kuestenlogik/Bowire/issues/966)
+
+#### <a id="issue-kuestenlogik-bowire-967"></a>✅ Done · [#967](https://github.com/Kuestenlogik/Bowire/issues/967) Lighthouse PR audit always fails: it audits /comparison.html, which is not a page
+
+> `area:site`
+
+The *Lighthouse PR audit* check has failed on every run in the last 100 (38 of 38; e.g. on #784, #931, #947). Lighthouse gets a 404 for `http://localhost/comparison.html` and fails with `ERRORED_DOCUMENT_REQUEST`. [[more]](https://github.com/Kuestenlogik/Bowire/issues/967)
 
 #### <a id="issue-kuestenlogik-bowire-968"></a>✅ Done · [#968](https://github.com/Kuestenlogik/Bowire/issues/968) ProxyCommandTests write the proxy CA into the real ~/.bowire
 
