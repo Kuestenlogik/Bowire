@@ -79,9 +79,9 @@ So the site, the docs, the workbench, the NuGet packages, the installers and the
 and is removed in this release. Add a section per breaking change, with
 the migration path. -->
 
-### No response files on the command line (#974)
+### Response files are `@file.rsp` only (#974, #976)
 
-The parser no longer expands `@file` tokens into the file's arguments. That expansion had broken the documented `bowire call … -d @request.json`, whose body reached the command split on whitespace with its quotes stripped. Every `@file` Bowire documents now reaches the command, which reads the file. A command line kept in a file: expand it in the shell (`bowire $(cat args.txt)`) instead of `bowire @args.txt`.
+The parser used to expand every `@file` token into the file's arguments. That had broken the documented `bowire call … -d @request.json`, whose body reached the command split on whitespace with its quotes stripped. Now only `@<path>.rsp` is a response file: one argument per line, as it stands, with `#` comments. It is expanded before anything reads the command line, so network and plugin options in it take effect. Every other `@file` reaches the command, which reads the file. A response file with another extension: rename it to `.rsp`. One that relied on several arguments per line: put each on its own line.
 
 ### Logo files have new names (#964)
 

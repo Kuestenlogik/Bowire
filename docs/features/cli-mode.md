@@ -342,6 +342,40 @@ If the port is held by something that is **not** Bowire, you get one line
 naming the port and the two ways out (`--port <number>`, or `--port 0` together
 with `--port-file`), and exit `1`. Either way there is no stack trace.
 
+## Response files
+
+Arguments can come from a file: `bowire @ci.rsp` reads `ci.rsp` and puts its
+arguments where the token stood, so a long command line lives in the
+repository or stays out of shell history.
+
+```text
+# ci.rsp: one argument per line, as it stands
+call
+--url
+rest@https://{{host}}/api/v3
+pet/getPetById
+-d
+{"petId": 1}
+--env-file
+staging.env
+```
+
+```bash
+bowire @ci.rsp --compact
+```
+
+- Only a token `@<path>.rsp` is a response file (the extension in any case).
+  Every other `@` token reaches the command as written, so `-d @request.json`
+  still reads that file as the body.
+- One argument per line, taken as it stands: a JSON value with spaces is one
+  argument, quotes included. Surrounding whitespace is trimmed; blank lines
+  and lines starting with `#` are skipped.
+- The file is expanded before anything else reads the command line, so
+  `--proxy-url`, `--ca-bundle` and `--plugin-dir` in it work as on the
+  command line.
+- A response file does not expand further response files, and nothing after
+  `--` is expanded. A missing file exits `2` naming it.
+
 ## CI/CD Usage
 
 CLI mode is designed for automated pipelines:

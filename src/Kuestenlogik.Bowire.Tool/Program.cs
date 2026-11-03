@@ -26,6 +26,18 @@ try
 }
 catch (IOException) { /* console handle not encoding-settable here */ }
 
+// #976 — `@file.rsp` response files, expanded before anything reads the
+// arguments: the bootstrap configuration below takes --proxy-url,
+// --ca-bundle or --plugin-dir from them as from the command line. The
+// parser itself runs with response files off (#974).
+var expandedArgs = ResponseFiles.Expand(args, out var responseFileError);
+if (expandedArgs is null)
+{
+    await Console.Error.WriteLineAsync(responseFileError);
+    return 2;
+}
+args = expandedArgs;
+
 // Settle where this process stores things, before anything reads or writes
 // it. BOWIRE_DATA_DIR first, then a project manifest that opted into
 // .bowire/ beside the code, then the machine-wide ~/.bowire.

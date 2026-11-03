@@ -63,7 +63,8 @@ internal static class BowireCli
     /// of that file, so <c>-d @request.json</c> reached <c>call</c> as the
     /// file split on whitespace with its quotes stripped. Every <c>@</c>
     /// Bowire documents means "read this file", and the command that takes
-    /// it reads it.
+    /// it reads it. Response files of Bowire's own, <c>@file.rsp</c>, are
+    /// expanded before parsing by <see cref="ResponseFiles"/> (#976).
     /// </summary>
     internal static ParserConfiguration Parsing() => new() { ResponseFileTokenReplacer = null };
 
