@@ -132,7 +132,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**13/29 done** · 16 backlog
+**13/30 done** · 17 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -152,6 +152,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [939](https://github.com/Kuestenlogik/Bowire/issues/939) | Bowire | [Import Yaak exports](#issue-kuestenlogik-bowire-939) | ⬜ Backlog |  |
 | [940](https://github.com/Kuestenlogik/Bowire/issues/940) | Bowire | [Verify the collection importers against real Insomnia and Bruno exports](#issue-kuestenlogik-bowire-940) | ⬜ Backlog |  |
 | [946](https://github.com/Kuestenlogik/Bowire/issues/946) | Bowire | [Data sets for flow runs and bowire test --workspace](#issue-kuestenlogik-bowire-946) | ⬜ Backlog |  |
+| [963](https://github.com/Kuestenlogik/Bowire/issues/963) | Bowire | [WebSocketAuthProbe: forged JWT (alg:none, tampered signature) on the upgrade](#issue-kuestenlogik-bowire-963) | ⬜ Backlog | `area:security` |
 | [673](https://github.com/Kuestenlogik/Bowire/issues/673) | Bowire | [Export requests as .http — Copy as .http, and bowire export http for a whole collection](#issue-kuestenlogik-bowire-673) | ✅ Done | `area:workbench` |
 | [674](https://github.com/Kuestenlogik/Bowire/issues/674) | Bowire | [Import from Insomnia, Bruno and .http, with a migration guide per source](#issue-kuestenlogik-bowire-674) | ✅ Done | `area:workbench` |
 | [675](https://github.com/Kuestenlogik/Bowire/issues/675) | Bowire | [Data-driven collection runs: one iteration per CSV/JSON row](#issue-kuestenlogik-bowire-675) | ✅ Done | `area:cli` |
@@ -837,6 +838,12 @@ Follow-up of #674. The importers were tested with fixtures written from the form
 #### <a id="issue-kuestenlogik-bowire-946"></a>⬜ Backlog · [#946](https://github.com/Kuestenlogik/Bowire/issues/946) Data sets for flow runs and bowire test --workspace
 
 Follow-up of #675. `--data` drives a test collection. A flow file, or a `--workspace` run, refuses `--data` today with a clear message. [[more]](https://github.com/Kuestenlogik/Bowire/issues/946)
+
+#### <a id="issue-kuestenlogik-bowire-963"></a>⬜ Backlog · [#963](https://github.com/Kuestenlogik/Bowire/issues/963) WebSocketAuthProbe: forged JWT (alg:none, tampered signature) on the upgrade
+
+> `area:security`
+
+Kuestenlogik/Bowire.VulnDb#51 (CVE-2026-113620, Eclipse ioFog Controller): the WebSocket upgrades on the exec and log routes decode the bearer JWT without verifying it, so a self-minted token whose groups contain `admin` is accepted. The HTTP routes of the same server verify the token. [[more]](https://github.com/Kuestenlogik/Bowire/issues/963)
 
 #### <a id="issue-kuestenlogik-bowire-673"></a>✅ Done · [#673](https://github.com/Kuestenlogik/Bowire/issues/673) Export requests as .http — Copy as .http, and bowire export http for a whole collection
 
