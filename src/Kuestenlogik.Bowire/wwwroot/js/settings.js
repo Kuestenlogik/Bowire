@@ -4203,7 +4203,8 @@ textContent: t(discoveryState.entryCount === 1
         section.appendChild(noticesWrap);
 
         // ---- Made by Küstenlogik ----
-        var lockupSrc = config.theme === 'dark' ? config.kuestenlogikLockupMono : config.kuestenlogikLockup;
+        // #970 — by the theme in use, as the emblem above; config.theme is only the server's default.
+        var lockupSrc = getEffectiveTheme() === 'dark' ? config.kuestenlogikLockupMono : config.kuestenlogikLockup;
         section.appendChild(el('div', { className: 'bowire-settings-about-madeby' },
             el('div', { className: 'bowire-settings-about-madeby-label', textContent: t('settings.about.madeBy') }),
             el('a', {
