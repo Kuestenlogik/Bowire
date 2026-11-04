@@ -132,11 +132,10 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**23/41 done** · 1 in progress · 17 backlog
+**24/41 done** · 17 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
-| [976](https://github.com/Kuestenlogik/Bowire/issues/976) | Bowire | [Response files again, for @file.rsp only](#issue-kuestenlogik-bowire-976) | 🟡 In progress | `area:cli` |
 | [672](https://github.com/Kuestenlogik/Bowire/issues/672) | Bowire | [Server-side script engine so pre/post scripts run in bowire test, not only in the browser](#issue-kuestenlogik-bowire-672) | ⬜ Backlog | `area:cli` |
 | [677](https://github.com/Kuestenlogik/Bowire/issues/677) | Bowire | [Broader code export, and snippets for the protocols no snippet library covers](#issue-kuestenlogik-bowire-677) | ⬜ Backlog | `area:workbench` |
 | [687](https://github.com/Kuestenlogik/Bowire/issues/687) | Bowire | [Tray icon and no console window: give the running workbench a handle of its own](#issue-kuestenlogik-bowire-687) | ⬜ Backlog | `area:cli` |
@@ -177,6 +176,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [971](https://github.com/Kuestenlogik/Bowire/issues/971) | Bowire | [Branding: vendor the shared tool 1.1.0 with Bowire's master logos from the meta repo](#issue-kuestenlogik-bowire-971) | ✅ Done | `area:site` |
 | [973](https://github.com/Kuestenlogik/Bowire/issues/973) | Bowire | [MCP task replay and recording: two races that turn CI red](#issue-kuestenlogik-bowire-973) | ✅ Done | `area:mcp` |
 | [974](https://github.com/Kuestenlogik/Bowire/issues/974) | Bowire | [bowire call -d @file: the parser expands the file as a response file and mangles the body](#issue-kuestenlogik-bowire-974) | ✅ Done | `area:cli` |
+| [976](https://github.com/Kuestenlogik/Bowire/issues/976) | Bowire | [Response files again, for @file.rsp only](#issue-kuestenlogik-bowire-976) | ✅ Done | `area:cli` |
 
 ### v2.12 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
 
@@ -760,12 +760,6 @@ On a phone, the header of the docs, the API reference and the Bootcamp has no bu
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-#### <a id="issue-kuestenlogik-bowire-976"></a>🟡 In progress · [#976](https://github.com/Kuestenlogik/Bowire/issues/976) Response files again, for @file.rsp only
-
-> `area:cli`
-
-#974 switched response files off, because the parser expanded every `@` token, and that broke `-d @request.json`. A long command line kept in a file is still useful: CI jobs with many options, or options kept out of shell history. [[more]](https://github.com/Kuestenlogik/Bowire/issues/976)
-
 #### <a id="issue-kuestenlogik-bowire-672"></a>⬜ Backlog · [#672](https://github.com/Kuestenlogik/Bowire/issues/672) Server-side script engine so pre/post scripts run in bowire test, not only in the browser
 
 > `area:cli`
@@ -967,6 +961,12 @@ Follow-up to #803. `A_Recorded_Task_Call_Replays_From_The_Mock_And_A_Client_Driv
 > `area:cli`
 
 `bowire call … -d @request.json` is documented (cli-mode, export-import, request pane) to send the file's content as the body. It does not: System.CommandLine treats every token that starts with `@` as a response file and replaces it with the file's tokens before the command sees it. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/974)
+
+#### <a id="issue-kuestenlogik-bowire-976"></a>✅ Done · [#976](https://github.com/Kuestenlogik/Bowire/issues/976) Response files again, for @file.rsp only
+
+> `area:cli`
+
+#974 switched response files off, because the parser expanded every `@` token, and that broke `-d @request.json`. A long command line kept in a file is still useful: CI jobs with many options, or options kept out of shell history. [[more]](https://github.com/Kuestenlogik/Bowire/issues/976)
 
 ### v2.12 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
 
@@ -1258,4 +1258,4 @@ Two warning suppressions in this repo, reviewed under the rule that warnings are
 
 ---
 
-*Generated 2026-11-03 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
+*Generated 2026-11-04 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
