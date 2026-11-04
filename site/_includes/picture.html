@@ -21,6 +21,8 @@
     class (optional) — class attribute on the inner <img>
     loading (optional) — "lazy" (default) or "eager" (above-fold heroes)
     decoding (optional) — "async" (default) / "sync" / "auto"
+    width, height (optional) — the image's intrinsic size, so the slot
+                       is reserved before it loads (no layout shift).
     sizes (optional) — sizes attribute. Default tuned for the typical
                        bowire.io section image: full viewport width on
                        mobile, capped at 1200 px on desktop.
@@ -47,5 +49,6 @@
           sizes="{{ sizes }}">
   <img src="{{ src | relative_url }}" alt="{{ include.alt | escape }}"
        loading="{{ loading }}" decoding="{{ decoding }}"
+       {%- if include.width %} width="{{ include.width }}" height="{{ include.height }}"{% endif -%}
        {%- if include.class %} class="{{ include.class }}"{% endif -%}>
 </picture>

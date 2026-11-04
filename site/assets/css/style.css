@@ -5617,7 +5617,7 @@ p a:not([class]):hover,
     box-shadow: 0 20px 48px rgba(0, 0, 0, 0.25);
 }
 .features-block-media-video video,
-.features-block-media-video > img {
+.features-block-media-video img {
     width: 100%;
     height: 100%;
     display: block;
@@ -9071,6 +9071,13 @@ html[data-theme="light"] {
         animation: none !important;
         transition: none !important;
     }
+}
+
+/* A <picture> (picture.html, themed-img.html) only chooses which file
+   its <img> shows; it takes no box of its own, so every rule written
+   for an <img> child of a flex or grid slot keeps applying (#969). */
+picture {
+    display: contents;
 }
 
 /* ==========================================================

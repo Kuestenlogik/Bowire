@@ -45,7 +45,11 @@ import process from "node:process";
 import sharp from "sharp";
 
 const ROOT = path.resolve(process.cwd(), "site/assets/images");
-const MIN_BYTES = 30 * 1024; // <30 KiB is already small — skip.
+// Every source gets its variants, however small: the includes
+// (themed-img.html, picture.html) reference them for every image they
+// render, and a skipped one is a 404 in a srcset (#969). Only icons that
+// are never rendered through a <picture> are left alone.
+const SKIP = new Set(["apple-touch-icon.png"]);
 const EXTS = new Set([".png", ".jpg", ".jpeg"]);
 const VARIANT_WIDTHS = [400, 1200]; // plus an original-width variant
 const CHECK_MODE = process.argv.includes("--check");
@@ -103,8 +107,8 @@ for await (const file of walk(ROOT)) {
     const ext = path.extname(file).toLowerCase();
     if (!EXTS.has(ext)) continue;
 
+    if (SKIP.has(path.basename(file))) continue;
     const stat = await fs.stat(file);
-    if (stat.size < MIN_BYTES) continue;
 
     const meta = await sharp(file).metadata();
     const srcWidth = meta.width ?? 0;

@@ -1097,6 +1097,34 @@ document.querySelectorAll('.copy-btn').forEach(btn => {
 })();
 
 // ====================================================================
+// Demo videos (#969) - `data-autoplay` instead of `autoplay`, with
+// preload="none": the theme pair would otherwise download both copies,
+// 1.3 MB each. The visible one plays while it is on screen and pauses
+// when it leaves; a hidden one (display: none) never intersects, so it
+// never loads. A visitor who asked for reduced motion gets the poster.
+// ====================================================================
+(function () {
+    const videos = Array.from(document.querySelectorAll('video[data-autoplay]'));
+    if (!videos.length || !('IntersectionObserver' in window)) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    const observer = new IntersectionObserver(entries => {
+        entries.forEach(e => {
+            const v = e.target;
+            if (e.isIntersecting && v.getClientRects().length > 0) v.play().catch(() => {});
+            else if (!v.paused) v.pause();
+        });
+    }, { rootMargin: '200px' });
+    videos.forEach(v => observer.observe(v));
+
+    // After a theme switch the other video is the visible one: observe
+    // again, so each gets a fresh entry for its new state.
+    document.addEventListener('themechange', () => {
+        videos.forEach(v => { observer.unobserve(v); observer.observe(v); });
+    });
+})();
+
+// ====================================================================
 // Demo-video fullscreen — click the hero video to request fullscreen on
 // the video element. The wrapping <button> handles keyboard activation
 // (Enter / Space); the native fullscreen API does the heavy lifting.
@@ -1208,20 +1236,34 @@ document.querySelectorAll('.copy-btn').forEach(btn => {
         return localStorage.getItem(THEME_KEY) || 'auto';
     }
 
+    // Pictures cloned in later (the feature modal renders from a
+    // <template>) call this once they are in the document.
+    window.bowireSyncThemedPictures = () => syncThemedPictures(getTheme());
+
+    // themed-img.html pictures (#969): the dark sources carry
+    // media="(prefers-color-scheme: dark)". A theme chosen with the toggle
+    // overrides the system preference, so the media follows the choice and
+    // the browser picks the matching file again; only that file loads.
+    function syncThemedPictures(theme) {
+        const media = theme === 'dark' ? 'all'
+            : theme === 'light' ? 'not all'
+            : '(prefers-color-scheme: dark)';
+        document.querySelectorAll('picture.themed-picture source[data-theme-variant="dark"]').forEach(s => {
+            if (s.media !== media) s.media = media;
+        });
+    }
+
     function applyTheme(theme) {
         document.documentElement.setAttribute('data-theme', theme);
-        // Theme-aware <video> elements come in pairs (theme-video-dark
-        // and theme-video-light). The CSS swap unhides one of them on
-        // each toggle, but the browser may have paused it while hidden;
-        // kick the now-visible video back into autoplay after the swap.
+        syncThemedPictures(theme);
+        // The demo videos follow the theme through the `themechange`
+        // event below (see the demo-video block), which plays the visible
+        // one only while it is on screen.
         try {
             requestAnimationFrame(() => {
                 const resolved = (theme === 'auto')
                     ? (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark')
                     : theme;
-                document.querySelectorAll('.theme-video-' + resolved).forEach(v => {
-                    if (v.tagName === 'VIDEO' && v.paused) v.play().catch(() => {});
-                });
                 // Broadcast the resolved (auto -> light/dark) theme so
                 // other components — Mermaid diagrams, charts, embeds —
                 // can re-render against the new palette. Listeners read

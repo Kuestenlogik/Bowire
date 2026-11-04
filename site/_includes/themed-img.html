@@ -1,17 +1,40 @@
 {%- comment -%}
-Renders a screenshot as a paired dark/light image. One stays visible
-at a time depending on `<html data-theme>`.
+Renders a screenshot that has a dark and a light variant as ONE
+<picture>, in AVIF and WebP at 400 and 1200 px (#969).
 
 Usage:
   {% include themed-img.html src="/assets/images/screenshots/streaming.png"
                               alt="Streaming response — Wireshark-style frame list"
                               class="some-extra-class" %}
 
-`src` should be the *theme-less* legacy filename ending in `.png` — the
-include rewrites it to `…-dark.png` and `…-light.png`.
+`src` is the *theme-less* name ending in `.png`. The files used are the
+variants scripts/site/optimize-images.mjs writes next to `…-dark.png`
+and `…-light.png`: `…-dark-400w.avif`, `…-dark-1200w.webp`, and so on.
+
+The dark sources come first and carry `media="(prefers-color-scheme:
+dark)"`, so without script the system preference picks the variant.
+When the visitor chooses a theme with the toggle, main.js sets that
+`media` to `all` or `not all` and the browser selects again. Only the
+variant on screen is ever downloaded; the two <img> tags this include
+used to render fetched both.
+
+`sizes` (optional) overrides the default slot width.
 {%- endcomment -%}
 {%- assign extra_class = include.class | default: "" -%}
-{%- assign dark_src = include.src | replace: ".png", "-dark.png" -%}
-{%- assign light_src = include.src | replace: ".png", "-light.png" -%}
-<img src="{{ dark_src | relative_url }}" alt="{{ include.alt }}" loading="lazy" class="theme-img-dark {{ extra_class }}">
-<img src="{{ light_src | relative_url }}" alt="{{ include.alt }}" loading="lazy" class="theme-img-light {{ extra_class }}">
+{%- assign stem = include.src | replace: ".png", "" -%}
+{%- assign sizes = include.sizes | default: "(min-width: 800px) 1200px, 100vw" -%}
+{%- assign variants = "dark,light" | split: "," -%}
+{%- assign formats = "avif,webp" | split: "," -%}
+<picture class="themed-picture" data-themed-src="{{ include.src | relative_url }}">
+  {%- for variant in variants -%}
+  {%- for format in formats %}
+  <source type="image/{{ format }}" data-theme-variant="{{ variant }}"
+          {%- if variant == "dark" %} media="(prefers-color-scheme: dark)"{% endif %}
+          srcset="{{ stem | append: '-' | append: variant | append: '-400w.' | append: format | relative_url }} 400w,
+                  {{ stem | append: '-' | append: variant | append: '-1200w.' | append: format | relative_url }} 1200w"
+          sizes="{{ sizes }}">
+  {%- endfor -%}
+  {%- endfor %}
+  <img src="{{ stem | append: '-light.png' | relative_url }}" alt="{{ include.alt }}" loading="lazy" decoding="async"
+       {%- if extra_class != "" %} class="{{ extra_class }}"{% endif %}>
+</picture>

@@ -3,31 +3,36 @@
     <h2 class="section-title">See it in action</h2>
     <p class="section-subtitle">Discovery, request, response, switch protocol — a full round-trip against the BowireDemo sample with gRPC, SignalR, REST, and WebSocket.</p>
 
+    {%- comment -%}
+      #969 - no `autoplay` and preload="none": each video is 1.3 MB, and
+      the attribute made both themes' copies download although one is
+      hidden. main.js plays the visible one once it scrolls into view.
+    {%- endcomment %}
     <button class="screenshot-hero demo-video-expand" type="button" aria-label="Expand demo video to full screen">
       <video
         class="demo-video theme-video-dark"
         src="{{ '/assets/videos/bowire-demo-dark.webm' | relative_url }}"
-        poster="{{ '/assets/images/screenshots/method-detail-dark.png' | relative_url }}"
-        autoplay
+        poster="{{ '/assets/images/screenshots/method-detail-dark-1200w.webp' | relative_url }}"
+        data-autoplay
         muted
         loop
         playsinline
         disablepictureinpicture
         controlslist="nodownload nofullscreen noremoteplayback"
-        preload="metadata"
+        preload="none"
         aria-label="Bowire UI demo — discovering services, executing requests, and switching between protocols">
       </video>
       <video
         class="demo-video theme-video-light"
         src="{{ '/assets/videos/bowire-demo-light.webm' | relative_url }}"
-        poster="{{ '/assets/images/screenshots/method-detail-light.png' | relative_url }}"
-        autoplay
+        poster="{{ '/assets/images/screenshots/method-detail-light-1200w.webp' | relative_url }}"
+        data-autoplay
         muted
         loop
         playsinline
         disablepictureinpicture
         controlslist="nodownload nofullscreen noremoteplayback"
-        preload="metadata"
+        preload="none"
         aria-label="Bowire UI demo — discovering services, executing requests, and switching between protocols">
       </video>
       <span class="demo-video-hint" aria-hidden="true">
@@ -65,7 +70,7 @@
              chrome is shared. -->
 
         <a class="screenshot-card" href="{{ '/features.html#empty-states' | relative_url }}">
-          {% include themed-img.html src="/assets/images/screenshots/first-run.png" alt="First-run welcome screen with two onboarding cards — connect to a server, or upload a schema file" %}
+          {% include themed-img.html src="/assets/images/screenshots/first-run.png" alt="First-run welcome screen with two onboarding cards — connect to a server, or upload a schema file" sizes="340px" %}
           <div class="screenshot-card-body">
             <h4>First-run welcome</h4>
             <p>Standalone tool without <code>--url</code>: two onboarding paths &mdash; connect to a live server, or upload a <code>.proto</code> / OpenAPI / GraphQL SDL.</p>
@@ -73,7 +78,7 @@
         </a>
 
         <a class="screenshot-card" href="{{ '/features.html#empty-states' | relative_url }}">
-          {% include themed-img.html src="/assets/images/screenshots/ready.png" alt="Bowire ready landing — connected to a server, services discovered, waiting for method selection" %}
+          {% include themed-img.html src="/assets/images/screenshots/ready.png" alt="Bowire ready landing — connected to a server, services discovered, waiting for method selection" sizes="340px" %}
           <div class="screenshot-card-body">
             <h4>Connected &amp; ready</h4>
             <p>Service summary, recent-history quick-recall, keyboard shortcut tips, guided tour entry point.</p>
@@ -87,7 +92,7 @@
              modal palette vs. histogram). -->
 
         <a class="screenshot-card" href="{{ '/features.html#flow-editor' | relative_url }}">
-          {% include themed-img.html src="/assets/images/screenshots/flow-editor.png" alt="Visual flow editor — pipeline of API calls with branching conditions and loops" %}
+          {% include themed-img.html src="/assets/images/screenshots/flow-editor.png" alt="Visual flow editor — pipeline of API calls with branching conditions and loops" sizes="340px" %}
           <div class="screenshot-card-body">
             <h4>Visual flow editor</h4>
             <p>Chain API calls into branching pipelines — visual node editor with loops, conditions, and variable forwarding. No Postman Teams subscription required.</p>
@@ -95,7 +100,7 @@
         </a>
 
         <a class="screenshot-card" href="{{ '/features.html#streaming' | relative_url }}">
-          {% include themed-img.html src="/assets/images/screenshots/streaming.png" alt="Streaming response view — append-only message list on the left, detail pane on the right" %}
+          {% include themed-img.html src="/assets/images/screenshots/streaming.png" alt="Streaming response view — append-only message list on the left, detail pane on the right" sizes="340px" %}
           <div class="screenshot-card-body">
             <h4>Wireshark-style streaming</h4>
             <p>Append-only message list + detail pane for server-streaming, client-streaming, and duplex. Filter by substring, jump to any frame, pin the latest.</p>
@@ -103,7 +108,7 @@
         </a>
 
         <a class="screenshot-card" href="{{ '/features.html#response-chaining' | relative_url }}">
-          {% include themed-img.html src="/assets/images/screenshots/json-chaining.png" alt="Click any JSON value in a response to copy the chaining variable expression" %}
+          {% include themed-img.html src="/assets/images/screenshots/json-chaining.png" alt="Click any JSON value in a response to copy the chaining variable expression" sizes="340px" %}
           <div class="screenshot-card-body">
             <h4>Click any JSON value to chain</h4>
             <p>Hover a leaf or key in the response, click it, paste <code>{% raw %}{{prev.path.to.value}}{% endraw %}</code> into the next request's body or URL.</p>
@@ -111,7 +116,7 @@
         </a>
 
         <a class="screenshot-card" href="{{ '/features.html#env-diff' | relative_url }}">
-          {% include themed-img.html src="/assets/images/screenshots/env-diff.png" alt="Environment diff view — two environments compared side by side with colour-coded rows" %}
+          {% include themed-img.html src="/assets/images/screenshots/env-diff.png" alt="Environment diff view — two environments compared side by side with colour-coded rows" sizes="340px" %}
           <div class="screenshot-card-body">
             <h4>Environment diff</h4>
             <p>Compare two environments side-by-side &mdash; spot drift before it hits production. Colour-coded equal / changed / only-in-A / only-in-B rows.</p>
@@ -119,7 +124,7 @@
         </a>
 
         <a class="screenshot-card" href="{{ '/features.html#command-palette' | relative_url }}">
-          {% include themed-img.html src="/assets/images/screenshots/command-palette.png" alt="Command palette open with method suggestions, environment jumps, and protocol filters" %}
+          {% include themed-img.html src="/assets/images/screenshots/command-palette.png" alt="Command palette open with method suggestions, environment jumps, and protocol filters" sizes="340px" %}
           <div class="screenshot-card-body">
             <h4>Command palette &amp; vim keys</h4>
             <p>Press <kbd>/</kbd> anywhere to search methods, switch environments, filter protocols. Vim-style <kbd>j</kbd>/<kbd>k</kbd> navigation for power users.</p>
@@ -127,7 +132,7 @@
         </a>
 
         <a class="screenshot-card" href="{{ '/features.html#recording' | relative_url }}">
-          {% include themed-img.html src="/assets/images/screenshots/recording.png" alt="Recording manager — timeline of captured calls with per-step pass/fail markers" %}
+          {% include themed-img.html src="/assets/images/screenshots/recording.png" alt="Recording manager — timeline of captured calls with per-step pass/fail markers" sizes="340px" %}
           <div class="screenshot-card-body">
             <h4>Record &amp; replay</h4>
             <p>Click record, run a sequence of calls, click stop. Replay against another environment, convert to test assertions, export as HAR or <code>.bwr</code>.</p>
@@ -135,7 +140,7 @@
         </a>
 
         <a class="screenshot-card" href="{{ '/features.html#performance' | relative_url }}">
-          {% include themed-img.html src="/assets/images/screenshots/performance.png" alt="Performance graph — latency histogram with P50 / P90 / P99 percentiles" %}
+          {% include themed-img.html src="/assets/images/screenshots/performance.png" alt="Performance graph — latency histogram with P50 / P90 / P99 percentiles" sizes="340px" %}
           <div class="screenshot-card-body">
             <h4>Performance histogram</h4>
             <p>Repeat any call N times, watch the latency histogram + timeline render in real time. P50 / P90 / P99 percentiles, success rate, throughput.</p>
@@ -145,7 +150,7 @@
         <!-- ===== v2.1 workbench surfaces ===== -->
 
         <a class="screenshot-card" href="{{ '/features.html#auto-discovery' | relative_url }}">
-          {% include themed-img.html src="/assets/images/screenshots/discover-with-response.png" alt="Discover rail with a List method executed — service tree, request pane, and response card all in one view" %}
+          {% include themed-img.html src="/assets/images/screenshots/discover-with-response.png" alt="Discover rail with a List method executed — service tree, request pane, and response card all in one view" sizes="340px" %}
           <div class="screenshot-card-body">
             <h4>Discover &rarr; invoke &rarr; response</h4>
             <p>Plug in a URL, get a live service tree, execute a method, read the response &mdash; the whole round-trip in a single pane.</p>
@@ -153,7 +158,7 @@
         </a>
 
         <a class="screenshot-card" href="{{ '/features.html#plugin-lifecycle' | relative_url }}">
-          {% include themed-img.html src="/assets/images/screenshots/settings-plugins-protocols.png" alt="Settings → Plugins → Protocols listing the bundled protocol plugins with inspect / update / uninstall actions" %}
+          {% include themed-img.html src="/assets/images/screenshots/settings-plugins-protocols.png" alt="Settings → Plugins → Protocols listing the bundled protocol plugins with inspect / update / uninstall actions" sizes="340px" %}
           <div class="screenshot-card-body">
             <h4>Every protocol is a plugin</h4>
             <p>Inspect, update, or uninstall REST, gRPC, WebSocket, MQTT and the rest from Settings &rarr; Plugins &rarr; Protocols.</p>
