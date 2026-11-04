@@ -12,12 +12,15 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.10 — Discoverability, interop and MCP tasks *(due 2027-01-11)*
 
-**142/142 done**
+**145/145 done**
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
+| [674](https://github.com/Kuestenlogik/Bowire/issues/674) | Bowire | [Import from Insomnia, Bruno and .http, with a migration guide per source](#issue-kuestenlogik-bowire-674) | ✅ Done | `area:workbench` |
 | [675](https://github.com/Kuestenlogik/Bowire/issues/675) | Bowire | [Data-driven collection runs: one iteration per CSV/JSON row](#issue-kuestenlogik-bowire-675) | ✅ Done | `area:cli` |
 | [676](https://github.com/Kuestenlogik/Bowire/issues/676) | Bowire | [JSONPath filter expressions in assertions, chaining and mock overrides](#issue-kuestenlogik-bowire-676) | ✅ Done | `area:workbench` |
+| [678](https://github.com/Kuestenlogik/Bowire/issues/678) | Bowire | [bowire send http: send a request directly, URL-first, with HTTPie-style items and --offline](#issue-kuestenlogik-bowire-678) | ✅ Done | `area:cli` |
+| [801](https://github.com/Kuestenlogik/Bowire/issues/801) | Bowire | [MCP Tasks, client side: discover, call and follow tasks of task-capable MCP servers](#issue-kuestenlogik-bowire-801) | ✅ Done |  |
 | [802](https://github.com/Kuestenlogik/Bowire/issues/802) | Bowire | [MCP Tasks, server side: run long Bowire MCP tools (bowire.test.run first) as durable tasks](#issue-kuestenlogik-bowire-802) | ✅ Done |  |
 | [803](https://github.com/Kuestenlogik/Bowire/issues/803) | Bowire | [MCP Tasks in testing and mocking: assert on task lifecycles, record and replay them](#issue-kuestenlogik-bowire-803) | ✅ Done |  |
 | [816](https://github.com/Kuestenlogik/Bowire/issues/816) | Bowire | [SCIM trace records status 200 for every request](#issue-kuestenlogik-bowire-816) | ✅ Done |  |
@@ -161,7 +164,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**4/20 done** · 16 backlog
+**1/17 done** · 16 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -182,9 +185,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [946](https://github.com/Kuestenlogik/Bowire/issues/946) | Bowire | [Data sets for flow runs and bowire test --workspace](#issue-kuestenlogik-bowire-946) | ⬜ Backlog |  |
 | [963](https://github.com/Kuestenlogik/Bowire/issues/963) | Bowire | [WebSocketAuthProbe: forged JWT (alg:none, tampered signature) on the upgrade](#issue-kuestenlogik-bowire-963) | ⬜ Backlog | `area:security` |
 | [673](https://github.com/Kuestenlogik/Bowire/issues/673) | Bowire | [Export requests as .http — Copy as .http, and bowire export http for a whole collection](#issue-kuestenlogik-bowire-673) | ✅ Done | `area:workbench` |
-| [674](https://github.com/Kuestenlogik/Bowire/issues/674) | Bowire | [Import from Insomnia, Bruno and .http, with a migration guide per source](#issue-kuestenlogik-bowire-674) | ✅ Done | `area:workbench` |
-| [678](https://github.com/Kuestenlogik/Bowire/issues/678) | Bowire | [bowire send http: send a request directly, URL-first, with HTTPie-style items and --offline](#issue-kuestenlogik-bowire-678) | ✅ Done | `area:cli` |
-| [801](https://github.com/Kuestenlogik/Bowire/issues/801) | Bowire | [MCP Tasks, client side: discover, call and follow tasks of task-capable MCP servers](#issue-kuestenlogik-bowire-801) | ✅ Done |  |
 
 ### v2.12 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
 
@@ -310,6 +310,12 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.10 — Discoverability, interop and MCP tasks *(due 2027-01-11)*
 
+#### <a id="issue-kuestenlogik-bowire-674"></a>✅ Done · [#674](https://github.com/Kuestenlogik/Bowire/issues/674) Import from Insomnia, Bruno and .http, with a migration guide per source
+
+> `area:workbench`
+
+Bowire reads Postman v2.1, HAR, OpenAPI, proto and SDL. It does **not** read Insomnia, Bruno (`.bru` or OpenCollection YAML), Yaak, or `.http`. [[more]](https://github.com/Kuestenlogik/Bowire/issues/674)
+
 #### <a id="issue-kuestenlogik-bowire-675"></a>✅ Done · [#675](https://github.com/Kuestenlogik/Bowire/issues/675) Data-driven collection runs: one iteration per CSV/JSON row
 
 > `area:cli`
@@ -321,6 +327,16 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 > `area:workbench`
 
 Assertion paths today are plain traversal — `response.items.0.tags.2`. There is no way to express "the id of every item that is done", which is the shape most real assertions want: [[more]](https://github.com/Kuestenlogik/Bowire/issues/676)
+
+#### <a id="issue-kuestenlogik-bowire-678"></a>✅ Done · [#678](https://github.com/Kuestenlogik/Bowire/issues/678) bowire send http: send a request directly, URL-first, with HTTPie-style items and --offline
+
+> `area:cli`
+
+`bowire call` can do a lot: every protocol, `{{vars}}`, `--env-file`, `--stream`, `--compact`, tab completion and meaningful exit codes. What it cannot do is the thing curl and HTTPie are actually used for: **one request, right now, with no context**. [[more]](https://github.com/Kuestenlogik/Bowire/issues/678)
+
+#### <a id="issue-kuestenlogik-bowire-801"></a>✅ Done · [#801](https://github.com/Kuestenlogik/Bowire/issues/801) MCP Tasks, client side: discover, call and follow tasks of task-capable MCP servers
+
+MCP Tasks let a server answer a long-running request with a durable handle instead of blocking: the client polls, answers mid-flight questions and fetches the result later, even after reconnecting. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/801)
 
 #### <a id="issue-kuestenlogik-bowire-802"></a>✅ Done · [#802](https://github.com/Kuestenlogik/Bowire/issues/802) MCP Tasks, server side: run long Bowire MCP tools (bowire.test.run first) as durable tasks
 
@@ -1007,22 +1023,6 @@ Kuestenlogik/Bowire.VulnDb#51 (CVE-2026-113620, Eclipse ioFog Controller): the W
 > `area:workbench`
 
 For "I am testing my own REST endpoint while developing it", a `.http` file is **better** than Bowire. The file sits next to the code, it is in the repo, there is no second window and no second process. Visual Studio 2022, Rider and the VS Code REST Client all run them natively. Competing with that is a losing framing. [[more]](https://github.com/Kuestenlogik/Bowire/issues/673)
-
-#### <a id="issue-kuestenlogik-bowire-674"></a>✅ Done · [#674](https://github.com/Kuestenlogik/Bowire/issues/674) Import from Insomnia, Bruno and .http, with a migration guide per source
-
-> `area:workbench`
-
-Bowire reads Postman v2.1, HAR, OpenAPI, proto and SDL. It does **not** read Insomnia, Bruno (`.bru` or OpenCollection YAML), Yaak, or `.http`. [[more]](https://github.com/Kuestenlogik/Bowire/issues/674)
-
-#### <a id="issue-kuestenlogik-bowire-678"></a>✅ Done · [#678](https://github.com/Kuestenlogik/Bowire/issues/678) bowire send http: send a request directly, URL-first, with HTTPie-style items and --offline
-
-> `area:cli`
-
-`bowire call` can do a lot: every protocol, `{{vars}}`, `--env-file`, `--stream`, `--compact`, tab completion and meaningful exit codes. What it cannot do is the thing curl and HTTPie are actually used for: **one request, right now, with no context**. [[more]](https://github.com/Kuestenlogik/Bowire/issues/678)
-
-#### <a id="issue-kuestenlogik-bowire-801"></a>✅ Done · [#801](https://github.com/Kuestenlogik/Bowire/issues/801) MCP Tasks, client side: discover, call and follow tasks of task-capable MCP servers
-
-MCP Tasks let a server answer a long-running request with a durable handle instead of blocking: the client polls, answers mid-flight questions and fetches the result later, even after reconnecting. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/801)
 
 ### v2.12 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
 
