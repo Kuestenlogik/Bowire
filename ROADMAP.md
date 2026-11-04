@@ -132,11 +132,12 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**29/45 done** · 1 in progress · 15 backlog
+**29/46 done** · 2 in progress · 15 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [980](https://github.com/Kuestenlogik/Bowire/issues/980) | Bowire | [German UI: technical terms are translated word by word (Stellvertreter, Attrappenwirt, Beiwagen)](#issue-kuestenlogik-bowire-980) | 🟡 In progress | `area:workbench` |
+| [981](https://github.com/Kuestenlogik/Bowire/issues/981) | Bowire | [Tests: two loopback servers probe a free port and bind it later, racing parallel tests](#issue-kuestenlogik-bowire-981) | 🟡 In progress | `area:workbench` |
 | [672](https://github.com/Kuestenlogik/Bowire/issues/672) | Bowire | [Server-side script engine so pre/post scripts run in bowire test, not only in the browser](#issue-kuestenlogik-bowire-672) | ⬜ Backlog | `area:cli` |
 | [677](https://github.com/Kuestenlogik/Bowire/issues/677) | Bowire | [Broader code export, and snippets for the protocols no snippet library covers](#issue-kuestenlogik-bowire-677) | ⬜ Backlog | `area:workbench` |
 | [687](https://github.com/Kuestenlogik/Bowire/issues/687) | Bowire | [Tray icon and no console window: give the running workbench a handle of its own](#issue-kuestenlogik-bowire-687) | ⬜ Backlog | `area:cli` |
@@ -769,6 +770,12 @@ On a phone, the header of the docs, the API reference and the Bootcamp has no bu
 > `area:workbench`
 
 The German workbench catalogue (`src/Kuestenlogik.Bowire/wwwroot/locales/de.json`) translates technical terms word by word, into German nobody uses for them: [[more]](https://github.com/Kuestenlogik/Bowire/issues/980)
+
+#### <a id="issue-kuestenlogik-bowire-981"></a>🟡 In progress · [#981](https://github.com/Kuestenlogik/Bowire/issues/981) Tests: two loopback servers probe a free port and bind it later, racing parallel tests
+
+> `area:workbench`
+
+`CliIntegrationTests.Test_FlowAgainstProvider_PassesWithExitZero` failed in a full parallel run with `HttpListenerException: Der Prozess kann nicht auf die Datei zugreifen, da sie von einem anderen Prozess verwendet wird` from `HttpListener.Start()`. It passed in every run before and alone. [[more]](https://github.com/Kuestenlogik/Bowire/issues/981)
 
 #### <a id="issue-kuestenlogik-bowire-672"></a>⬜ Backlog · [#672](https://github.com/Kuestenlogik/Bowire/issues/672) Server-side script engine so pre/post scripts run in bowire test, not only in the browser
 
