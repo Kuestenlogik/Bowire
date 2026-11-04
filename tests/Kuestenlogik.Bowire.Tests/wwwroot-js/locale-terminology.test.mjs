@@ -59,7 +59,7 @@ const REJECTED = {
         ['Zwischenspeicher (cache)', /zwischenspeicher/i],
         // The rail keeps the verb "Erkunden"; the process is "Discovery".
         ['Erkundung (discovery)', /erkundung/i],
-        ['Werkbank (workbench)', /werkbank/i],
+        ['Werkbank / Arbeitsplatz (workbench)', /werkbank|arbeitsplatz/i],
     ],
 };
 

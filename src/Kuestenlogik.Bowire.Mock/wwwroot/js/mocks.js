@@ -650,8 +650,8 @@ el('span', { className: 'bowire-home-section-count',
             method: 'PUT', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ id: rec.id, name: rec.name, scheme: rec.scheme, header: rec.header, credential: rec.credential })
         }).then(function (r) {
-            if (!r.ok) return r.json().catch(function () { return { error: 'Save failed (' + r.status + ')' }; })
-                .then(function (e) { throw new Error(e.error || 'Save failed'); });
+            if (!r.ok) return r.json().catch(function () { return { error: t('mocks.saveFailedStatus', { status: r.status }) }; })
+                .then(function (e) { throw new Error(e.error || t('mocks.saveFailed')); });
             return r.json();
         });
     }
@@ -669,8 +669,8 @@ el('span', { className: 'bowire-home-section-count',
         if (name) url += (qs ? '&' : '?') + 'name=' + encodeURIComponent(name);
         return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: flowJson })
             .then(function (r) {
-                if (!r.ok) return r.json().catch(function () { return { error: 'Capture failed (' + r.status + ')' }; })
-                    .then(function (e) { throw new Error(e.error || 'Capture failed'); });
+                if (!r.ok) return r.json().catch(function () { return { error: t('mocks.captureFailedStatus', { status: r.status }) }; })
+                    .then(function (e) { throw new Error(e.error || t('mocks.captureFailed')); });
                 return r.json();
             });
     }
@@ -703,8 +703,8 @@ el('span', { className: 'bowire-home-section-count',
         return fetch(config.prefix + '/api/mocks/' + encodeURIComponent(mockId) + '/config' + mockConfigQs(), {
             method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: body
         }).then(function (r) {
-            if (!r.ok) return r.json().catch(function () { return { error: 'Save failed (' + r.status + ')' }; })
-                .then(function (e) { throw new Error(e.error || 'Save failed'); });
+            if (!r.ok) return r.json().catch(function () { return { error: t('mocks.saveFailedStatus', { status: r.status }) }; })
+                .then(function (e) { throw new Error(e.error || t('mocks.saveFailed')); });
             // Carry the workspace so #563 auth-recording resolution scopes to
             // this mock's own workspace instead of scanning arbitrarily.
             return fetch(config.prefix + '/api/mocks/' + encodeURIComponent(mockId) + '/config/apply' + mockConfigQs(), {
@@ -868,7 +868,7 @@ el('span', { className: 'bowire-home-section-count',
         var row = el('div', { className: 'bowire-mocks-fault-rule', style: 'display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:6px 0;border-top:1px solid var(--bowire-border-subtle)' });
         row.appendChild(cfgInput(rule.service, t('mocks.ph.service'), function (v) { var r = findRow(st.config.conditionalRules, rid); if (r) { r.service = v; markDirty(st); } }));
         row.appendChild(cfgInput(rule.method, t('mocks.ph.method'), function (v) { var r = findRow(st.config.conditionalRules, rid); if (r) { r.method = v; markDirty(st); } }));
-        row.appendChild(el('span', { className: 'bowire-mocks-fault-field-label', textContent: 'when' }));
+        row.appendChild(el('span', { className: 'bowire-mocks-fault-field-label', textContent: t('mocks.fault.when') }));
         row.appendChild(cfgInput(rule.when.jsonPath, '$.path', function (v) { var r = findRow(st.config.conditionalRules, rid); if (r) { (r.when = r.when || {}).jsonPath = v; markDirty(st); } }));  // i18n-exempt: an example JSON path
         row.appendChild(faultSelect(op, RULE_OPS, function (newOp) {
             var r = findRow(st.config.conditionalRules, rid); if (!r) return;
@@ -880,12 +880,12 @@ el('span', { className: 'bowire-home-section-count',
         }));
         // Re-read the CURRENT op live so an op switch (which re-keys `when`) can't
         // strand this handler on a deleted predicate key.
-        row.appendChild(cfgInput(rule.when[op], 'value', function (v) {
+        row.appendChild(cfgInput(rule.when[op], t('mocks.fault.valuePlaceholder'), function (v) {
             var r = findRow(st.config.conditionalRules, rid); if (!r) return;
             var w = r.when || (r.when = {});
             w[currentRuleOp(w)] = v; markDirty(st);
         }));
-        row.appendChild(el('span', { className: 'bowire-mocks-fault-field-label', textContent: 'serve' }));
+        row.appendChild(el('span', { className: 'bowire-mocks-fault-field-label', textContent: t('mocks.fault.serve') }));
         row.appendChild(cfgInput(rule._responseText, t('mocks.ph.response'), function (v) { var r = findRow(st.config.conditionalRules, rid); if (r) { r._responseText = v; markDirty(st); } }));
         row.appendChild(cfgRemoveBtn(function () { st.config.conditionalRules = st.config.conditionalRules.filter(function (x) { return x._rid !== rid; }); markDirty(st); render(); }));
         return row;
@@ -1003,9 +1003,9 @@ el('span', { className: 'bowire-home-section-count',
                     form.appendChild(ta);
                     var flowBtn = el('button', { className: 'bowire-empty-card-action bowire-empty-card-action-primary', textContent: t('mocks.runFlowCapture') });
                     flowBtn.onclick = function () {
-                        if (!nr.id || !nr.flow) { st.error = 'A flow capture needs an id and the flow JSON.'; render(); return; }
+                        if (!nr.id || !nr.flow) { st.error = t('mocks.flowCaptureNeedsInput'); render(); return; }
                         captureAuthRecordingFromFlow(nr.id, nr.name, nr.flow).then(onCaptured)
-                            .catch(function (e) { st.error = e.message || 'Capture failed'; render(); });
+                            .catch(function (e) { st.error = e.message || t('mocks.captureFailed'); render(); });
                     };
                     form.appendChild(flowBtn);
                 } else {
@@ -1014,7 +1014,7 @@ el('span', { className: 'bowire-home-section-count',
                     var saveRecBtn = el('button', { className: 'bowire-empty-card-action bowire-empty-card-action-primary', textContent: t('mocks.saveRecording') });
                     saveRecBtn.onclick = function () {
                         if (!nr.id || !nr.credential) { st.error = 'A recording needs an id and a credential.'; render(); return; }
-                        saveAuthRecording(nr).then(onCaptured).catch(function (e) { st.error = e.message || 'Save failed'; render(); });
+                        saveAuthRecording(nr).then(onCaptured).catch(function (e) { st.error = e.message || t('mocks.saveFailed'); render(); });
                     };
                     credRow.appendChild(saveRecBtn);
                     form.appendChild(credRow);
@@ -1090,8 +1090,8 @@ el('span', { className: 'bowire-home-section-count',
             body: JSON.stringify({ rules: st.rules })
         }).then(function (r) {
             if (!r.ok) {
-                return r.json().catch(function () { return { error: 'Save failed (' + r.status + ')' }; })
-                    .then(function (err) { throw new Error(err.error || 'Save failed'); });
+                return r.json().catch(function () { return { error: t('mocks.saveFailedStatus', { status: r.status }) }; })
+                    .then(function (err) { throw new Error(err.error || t('mocks.saveFailed')); });
             }
             st.dirty = false;
             st.error = '';

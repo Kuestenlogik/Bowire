@@ -138,7 +138,7 @@ function bowireRenderScheduleRow(entry) {
         (last.thresholds || []).forEach(function (th) {
             if (th.ok) return;
             kids.push(el('div', { class: 'bowire-schedule-breach' },
-                th.spec + ' — actual ' + bowireFormatScheduleMs(th.actual)));
+                t('bench.scheduleBreach', { spec: th.spec, actual: bowireFormatScheduleMs(th.actual) })));
         });
     } else {
         kids.push(el('div', { class: 'bowire-schedule-last' }, t('bench.scheduleNeverRun')));
