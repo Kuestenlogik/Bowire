@@ -132,11 +132,10 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**28/44 done** · 1 in progress · 15 backlog
+**29/44 done** · 15 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
-| [969](https://github.com/Kuestenlogik/Bowire/issues/969) | Bowire | [Site: images are not served in modern formats; index.html weighs 5.3 MB](#issue-kuestenlogik-bowire-969) | 🟡 In progress | `area:site` |
 | [672](https://github.com/Kuestenlogik/Bowire/issues/672) | Bowire | [Server-side script engine so pre/post scripts run in bowire test, not only in the browser](#issue-kuestenlogik-bowire-672) | ⬜ Backlog | `area:cli` |
 | [677](https://github.com/Kuestenlogik/Bowire/issues/677) | Bowire | [Broader code export, and snippets for the protocols no snippet library covers](#issue-kuestenlogik-bowire-677) | ⬜ Backlog | `area:workbench` |
 | [687](https://github.com/Kuestenlogik/Bowire/issues/687) | Bowire | [Tray icon and no console window: give the running workbench a handle of its own](#issue-kuestenlogik-bowire-687) | ⬜ Backlog | `area:cli` |
@@ -171,6 +170,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [966](https://github.com/Kuestenlogik/Bowire/issues/966) | Bowire | [MCP tool stream: log frames can arrive out of order, and a log before the result can be lost](#issue-kuestenlogik-bowire-966) | ✅ Done | `area:mcp` |
 | [967](https://github.com/Kuestenlogik/Bowire/issues/967) | Bowire | [Lighthouse PR audit always fails: it audits /comparison.html, which is not a page](#issue-kuestenlogik-bowire-967) | ✅ Done | `area:site` |
 | [968](https://github.com/Kuestenlogik/Bowire/issues/968) | Bowire | [ProxyCommandTests write the proxy CA into the real ~/.bowire](#issue-kuestenlogik-bowire-968) | ✅ Done | `area:cli` |
+| [969](https://github.com/Kuestenlogik/Bowire/issues/969) | Bowire | [Site: images are not served in modern formats; index.html weighs 5.3 MB](#issue-kuestenlogik-bowire-969) | ✅ Done | `area:site` |
 | [970](https://github.com/Kuestenlogik/Bowire/issues/970) | Bowire | [About box: the Küstenlogik lockup follows the server's default theme, not the one in use](#issue-kuestenlogik-bowire-970) | ✅ Done | `area:workbench` |
 | [971](https://github.com/Kuestenlogik/Bowire/issues/971) | Bowire | [Branding: vendor the shared tool 1.1.0 with Bowire's master logos from the meta repo](#issue-kuestenlogik-bowire-971) | ✅ Done | `area:site` |
 | [973](https://github.com/Kuestenlogik/Bowire/issues/973) | Bowire | [MCP task replay and recording: two races that turn CI red](#issue-kuestenlogik-bowire-973) | ✅ Done | `area:mcp` |
@@ -763,12 +763,6 @@ On a phone, the header of the docs, the API reference and the Bootcamp has no bu
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-#### <a id="issue-kuestenlogik-bowire-969"></a>🟡 In progress · [#969](https://github.com/Kuestenlogik/Bowire/issues/969) Site: images are not served in modern formats; index.html weighs 5.3 MB
-
-> `area:site`
-
-With #967 the Lighthouse PR audit loads its pages for the first time, and it fails on all three of them (run https://github.com/Kuestenlogik/Bowire/actions/runs/41694236892, on #784): [[more]](https://github.com/Kuestenlogik/Bowire/issues/969)
-
 #### <a id="issue-kuestenlogik-bowire-672"></a>⬜ Backlog · [#672](https://github.com/Kuestenlogik/Bowire/issues/672) Server-side script engine so pre/post scripts run in bowire test, not only in the browser
 
 > `area:cli`
@@ -934,6 +928,12 @@ The *Lighthouse PR audit* check has failed on every run in the last 100 (38 of 3
 > `area:cli`
 
 Three tests in `tests/Kuestenlogik.Bowire.Tests/Proxy/ProxyCommandTests.cs` start `ProxyCommand` without a `CaDir`: `RunAsync_StartsOnDynamicPortsAndExitsGracefully`, `RunAsync_CancelledBeforeItFinishesStarting_StillExitsCleanly` and `RunAsync_ProxyPortAlreadyInUse_ReturnsErrorCode1`. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/968)
+
+#### <a id="issue-kuestenlogik-bowire-969"></a>✅ Done · [#969](https://github.com/Kuestenlogik/Bowire/issues/969) Site: images are not served in modern formats; index.html weighs 5.3 MB
+
+> `area:site`
+
+With #967 the Lighthouse PR audit loads its pages for the first time, and it fails on all three of them (run https://github.com/Kuestenlogik/Bowire/actions/runs/41694236892, on #784): [[more]](https://github.com/Kuestenlogik/Bowire/issues/969)
 
 #### <a id="issue-kuestenlogik-bowire-970"></a>✅ Done · [#970](https://github.com/Kuestenlogik/Bowire/issues/970) About box: the Küstenlogik lockup follows the server's default theme, not the one in use
 
