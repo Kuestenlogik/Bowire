@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
 
-**112/114 done** · 2 backlog
+**118/120 done** · 2 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -129,11 +129,17 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [928](https://github.com/Kuestenlogik/Bowire/issues/928) | Bowire | [Blog posts: images wider than the text column overflow the page](#issue-kuestenlogik-bowire-928) | ✅ Done |  |
 | [929](https://github.com/Kuestenlogik/Bowire/issues/929) | Bowire | [Site: the phone menu is see-through — page text shows behind the entries](#issue-kuestenlogik-bowire-929) | ✅ Done |  |
 | [930](https://github.com/Kuestenlogik/Bowire/issues/930) | Bowire | [Docs, API reference and Bootcamp: no phone menu — the nav runs off screen and hides search and theme](#issue-kuestenlogik-bowire-930) | ✅ Done |  |
+| [975](https://github.com/Kuestenlogik/Bowire/issues/975) | Bowire | [bowire send http: --include for the response headers, --output for the body](#issue-kuestenlogik-bowire-975) | ✅ Done | `area:cli` |
+| [976](https://github.com/Kuestenlogik/Bowire/issues/976) | Bowire | [Response files again, for @file.rsp only](#issue-kuestenlogik-bowire-976) | ✅ Done | `area:cli` |
+| [977](https://github.com/Kuestenlogik/Bowire/issues/977) | Bowire | [Site: the security-engineers workflow shows a proxy screenshot that was never captured](#issue-kuestenlogik-bowire-977) | ✅ Done | `area:site` |
+| [978](https://github.com/Kuestenlogik/Bowire/issues/978) | Bowire | [Workbench reverse proxy: forwarded requests never appear under Captured](#issue-kuestenlogik-bowire-978) | ✅ Done | `area:workbench` |
+| [980](https://github.com/Kuestenlogik/Bowire/issues/980) | Bowire | [German UI: technical terms are translated word by word (Stellvertreter, Attrappenwirt, Beiwagen)](#issue-kuestenlogik-bowire-980) | ✅ Done | `area:workbench` |
+| [981](https://github.com/Kuestenlogik/Bowire/issues/981) | Bowire | [Tests: two loopback servers probe a free port and bind it later, racing parallel tests](#issue-kuestenlogik-bowire-981) | ✅ Done | `area:workbench` |
 | [982](https://github.com/Kuestenlogik/Bowire/issues/982) | Bowire | [Store test overrides are static: parallel tests write into each other's files](#issue-kuestenlogik-bowire-982) | ✅ Done | `area:workbench` |
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**32/48 done** · 2 in progress · 14 backlog
+**26/42 done** · 2 in progress · 14 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -177,13 +183,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [971](https://github.com/Kuestenlogik/Bowire/issues/971) | Bowire | [Branding: vendor the shared tool 1.1.0 with Bowire's master logos from the meta repo](#issue-kuestenlogik-bowire-971) | ✅ Done | `area:site` |
 | [973](https://github.com/Kuestenlogik/Bowire/issues/973) | Bowire | [MCP task replay and recording: two races that turn CI red](#issue-kuestenlogik-bowire-973) | ✅ Done | `area:mcp` |
 | [974](https://github.com/Kuestenlogik/Bowire/issues/974) | Bowire | [bowire call -d @file: the parser expands the file as a response file and mangles the body](#issue-kuestenlogik-bowire-974) | ✅ Done | `area:cli` |
-| [975](https://github.com/Kuestenlogik/Bowire/issues/975) | Bowire | [bowire send http: --include for the response headers, --output for the body](#issue-kuestenlogik-bowire-975) | ✅ Done | `area:cli` |
-| [976](https://github.com/Kuestenlogik/Bowire/issues/976) | Bowire | [Response files again, for @file.rsp only](#issue-kuestenlogik-bowire-976) | ✅ Done | `area:cli` |
-| [977](https://github.com/Kuestenlogik/Bowire/issues/977) | Bowire | [Site: the security-engineers workflow shows a proxy screenshot that was never captured](#issue-kuestenlogik-bowire-977) | ✅ Done | `area:site` |
-| [978](https://github.com/Kuestenlogik/Bowire/issues/978) | Bowire | [Workbench reverse proxy: forwarded requests never appear under Captured](#issue-kuestenlogik-bowire-978) | ✅ Done | `area:workbench` |
 | [979](https://github.com/Kuestenlogik/Bowire/issues/979) | Bowire | [Intercept detail pane shows every header as undefined:](#issue-kuestenlogik-bowire-979) | ✅ Done | `area:workbench` |
-| [980](https://github.com/Kuestenlogik/Bowire/issues/980) | Bowire | [German UI: technical terms are translated word by word (Stellvertreter, Attrappenwirt, Beiwagen)](#issue-kuestenlogik-bowire-980) | ✅ Done | `area:workbench` |
-| [981](https://github.com/Kuestenlogik/Bowire/issues/981) | Bowire | [Tests: two loopback servers probe a free port and bind it later, racing parallel tests](#issue-kuestenlogik-bowire-981) | ✅ Done | `area:workbench` |
 | [983](https://github.com/Kuestenlogik/Bowire/issues/983) | Bowire | [Workbench: sentences kept in slot-named locals are never translated, and the detector cannot see them](#issue-kuestenlogik-bowire-983) | ✅ Done | `area:workbench` |
 
 ### v2.12 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
@@ -766,6 +766,42 @@ On a phone, the open burger menu of bowire.io lets the page underneath show thro
 
 On a phone, the header of the docs, the API reference and the Bootcamp has no burger menu. The navigation keeps its desktop row and runs off the right edge ("Quickstart Features Solutio…" at 390px), and the actions behind it — search, home, theme toggle, GitHub — are not reachable at all. [[more]](https://github.com/Kuestenlogik/Bowire/issues/930)
 
+#### <a id="issue-kuestenlogik-bowire-975"></a>✅ Done · [#975](https://github.com/Kuestenlogik/Bowire/issues/975) bowire send http: --include for the response headers, --output for the body
+
+> `area:cli`
+
+`bowire send http` (#678) prints the response body and puts the status line on stderr. Two things curl and HTTPie users reach for are still missing: - the response headers, to see a `Location`, a `Set-Cookie` or a cache header; - a binary body. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/975)
+
+#### <a id="issue-kuestenlogik-bowire-976"></a>✅ Done · [#976](https://github.com/Kuestenlogik/Bowire/issues/976) Response files again, for @file.rsp only
+
+> `area:cli`
+
+#974 switched response files off, because the parser expanded every `@` token, and that broke `-d @request.json`. A long command line kept in a file is still useful: CI jobs with many options, or options kept out of shell history. [[more]](https://github.com/Kuestenlogik/Bowire/issues/976)
+
+#### <a id="issue-kuestenlogik-bowire-977"></a>✅ Done · [#977](https://github.com/Kuestenlogik/Bowire/issues/977) Site: the security-engineers workflow shows a proxy screenshot that was never captured
+
+> `area:site`
+
+`site/workflows/security-engineers.html` shows `/assets/images/screenshots/proxy.png` through `themed-img.html`, but no `proxy-dark.png` or `proxy-light.png` was ever captured. bowire.io answers 404 for both, so the page shows a broken image under "Intercepting proxy". [[more]](https://github.com/Kuestenlogik/Bowire/issues/977)
+
+#### <a id="issue-kuestenlogik-bowire-978"></a>✅ Done · [#978](https://github.com/Kuestenlogik/Bowire/issues/978) Workbench reverse proxy: forwarded requests never appear under Captured
+
+> `area:workbench`
+
+The workbench's **Start a reverse proxy now** (Intercept rail, `POST /api/tools/reverse-proxy/start`) starts a proxy that forwards to the upstream, but the requests never show up under **Captured**. `/api/intercepted/flows` stays `{"flows":[]}` while requests through the proxy port succeed. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/978)
+
+#### <a id="issue-kuestenlogik-bowire-980"></a>✅ Done · [#980](https://github.com/Kuestenlogik/Bowire/issues/980) German UI: technical terms are translated word by word (Stellvertreter, Attrappenwirt, Beiwagen)
+
+> `area:workbench`
+
+The German workbench catalogue (`src/Kuestenlogik.Bowire/wwwroot/locales/de.json`) translates technical terms word by word, into German nobody uses for them: [[more]](https://github.com/Kuestenlogik/Bowire/issues/980)
+
+#### <a id="issue-kuestenlogik-bowire-981"></a>✅ Done · [#981](https://github.com/Kuestenlogik/Bowire/issues/981) Tests: two loopback servers probe a free port and bind it later, racing parallel tests
+
+> `area:workbench`
+
+`CliIntegrationTests.Test_FlowAgainstProvider_PassesWithExitZero` failed in a full parallel run with `HttpListenerException: Der Prozess kann nicht auf die Datei zugreifen, da sie von einem anderen Prozess verwendet wird` from `HttpListener.Start()`. It passed in every run before and alone. [[more]](https://github.com/Kuestenlogik/Bowire/issues/981)
+
 #### <a id="issue-kuestenlogik-bowire-982"></a>✅ Done · [#982](https://github.com/Kuestenlogik/Bowire/issues/982) Store test overrides are static: parallel tests write into each other's files
 
 > `area:workbench`
@@ -976,47 +1012,11 @@ Follow-up to #803. `A_Recorded_Task_Call_Replays_From_The_Mock_And_A_Client_Driv
 
 `bowire call … -d @request.json` is documented (cli-mode, export-import, request pane) to send the file's content as the body. It does not: System.CommandLine treats every token that starts with `@` as a response file and replaces it with the file's tokens before the command sees it. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/974)
 
-#### <a id="issue-kuestenlogik-bowire-975"></a>✅ Done · [#975](https://github.com/Kuestenlogik/Bowire/issues/975) bowire send http: --include for the response headers, --output for the body
-
-> `area:cli`
-
-`bowire send http` (#678) prints the response body and puts the status line on stderr. Two things curl and HTTPie users reach for are still missing: - the response headers, to see a `Location`, a `Set-Cookie` or a cache header; - a binary body. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/975)
-
-#### <a id="issue-kuestenlogik-bowire-976"></a>✅ Done · [#976](https://github.com/Kuestenlogik/Bowire/issues/976) Response files again, for @file.rsp only
-
-> `area:cli`
-
-#974 switched response files off, because the parser expanded every `@` token, and that broke `-d @request.json`. A long command line kept in a file is still useful: CI jobs with many options, or options kept out of shell history. [[more]](https://github.com/Kuestenlogik/Bowire/issues/976)
-
-#### <a id="issue-kuestenlogik-bowire-977"></a>✅ Done · [#977](https://github.com/Kuestenlogik/Bowire/issues/977) Site: the security-engineers workflow shows a proxy screenshot that was never captured
-
-> `area:site`
-
-`site/workflows/security-engineers.html` shows `/assets/images/screenshots/proxy.png` through `themed-img.html`, but no `proxy-dark.png` or `proxy-light.png` was ever captured. bowire.io answers 404 for both, so the page shows a broken image under "Intercepting proxy". [[more]](https://github.com/Kuestenlogik/Bowire/issues/977)
-
-#### <a id="issue-kuestenlogik-bowire-978"></a>✅ Done · [#978](https://github.com/Kuestenlogik/Bowire/issues/978) Workbench reverse proxy: forwarded requests never appear under Captured
-
-> `area:workbench`
-
-The workbench's **Start a reverse proxy now** (Intercept rail, `POST /api/tools/reverse-proxy/start`) starts a proxy that forwards to the upstream, but the requests never show up under **Captured**. `/api/intercepted/flows` stays `{"flows":[]}` while requests through the proxy port succeed. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/978)
-
 #### <a id="issue-kuestenlogik-bowire-979"></a>✅ Done · [#979](https://github.com/Kuestenlogik/Bowire/issues/979) Intercept detail pane shows every header as undefined:
 
 > `area:workbench`
 
 Selecting a captured flow (Intercept → Captured, or the proxy view) lists every request and response header as `undefined:`. [[more]](https://github.com/Kuestenlogik/Bowire/issues/979)
-
-#### <a id="issue-kuestenlogik-bowire-980"></a>✅ Done · [#980](https://github.com/Kuestenlogik/Bowire/issues/980) German UI: technical terms are translated word by word (Stellvertreter, Attrappenwirt, Beiwagen)
-
-> `area:workbench`
-
-The German workbench catalogue (`src/Kuestenlogik.Bowire/wwwroot/locales/de.json`) translates technical terms word by word, into German nobody uses for them: [[more]](https://github.com/Kuestenlogik/Bowire/issues/980)
-
-#### <a id="issue-kuestenlogik-bowire-981"></a>✅ Done · [#981](https://github.com/Kuestenlogik/Bowire/issues/981) Tests: two loopback servers probe a free port and bind it later, racing parallel tests
-
-> `area:workbench`
-
-`CliIntegrationTests.Test_FlowAgainstProvider_PassesWithExitZero` failed in a full parallel run with `HttpListenerException: Der Prozess kann nicht auf die Datei zugreifen, da sie von einem anderen Prozess verwendet wird` from `HttpListener.Start()`. It passed in every run before and alone. [[more]](https://github.com/Kuestenlogik/Bowire/issues/981)
 
 #### <a id="issue-kuestenlogik-bowire-983"></a>✅ Done · [#983](https://github.com/Kuestenlogik/Bowire/issues/983) Workbench: sentences kept in slot-named locals are never translated, and the detector cannot see them
 
