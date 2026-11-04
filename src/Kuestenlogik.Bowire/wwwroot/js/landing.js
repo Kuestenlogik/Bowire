@@ -361,7 +361,7 @@
         var card = el('div', { className: 'bowire-landing-card bowire-landing-loading' });
         card.appendChild(el('div', { className: 'bowire-landing-spinner' }));
 
-        var label = 'Discovering services\u2026';
+        var label = t('landing.loading.label');
         card.appendChild(el('div', { className: 'bowire-landing-loading-label', textContent: label }));
         card.appendChild(el('div', { className: 'bowire-landing-loading-hint',
             textContent: t('landing.loading.hint') }));

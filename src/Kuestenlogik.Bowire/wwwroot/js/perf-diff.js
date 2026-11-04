@@ -635,11 +635,11 @@
         var btnText, btnIcon, btnClass;
         if (isStreaming) {
             if (streamSubLive) {
-                btnText = 'Stop';
+                btnText = t('perf.stop');
                 btnIcon = svgIcon('stop');
                 btnClass = 'bowire-execute-btn streaming-active';
             } else {
-                btnText = 'Subscribe';
+                btnText = t('perf.subscribe');
                 btnIcon = svgIcon('subscribe');
                 btnClass = 'bowire-execute-btn bowire-subscribe-btn';
             }

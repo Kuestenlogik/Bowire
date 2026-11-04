@@ -2311,7 +2311,7 @@
             }
         } catch { /* selectedMethod may not be in scope */ }
 
-        var prompt = 'Suggest one plausible value for a variable named "' + name + '"'
+        var prompt = 'Suggest one plausible value for a variable named "' + name + '"'  // i18n-exempt: an instruction to the model, not shown
             + ctx + '. Reply with ONLY the value, no prose, no quotes, no surrounding text.';
 
         var resp = await fetch(config.prefix + '/api/ai/chat', {

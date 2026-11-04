@@ -308,10 +308,10 @@
         // default so the user sees what "Enter" would do if there
         // were a hot-key path.
         var persistDefault = bowireSemanticsPersistDefault();
-        var persistLabel = 'Persist for ▸ (' + persistDefault + ')';
+        var persistLabel = t('semantics.persistFor', { tier: t('semantics.tier.' + persistDefault) });
         var persist = bowireSubmenuItem(persistLabel);
         ['session', 'user', 'project'].forEach(function (tier) {
-            var label = tier.charAt(0).toUpperCase() + tier.slice(1)
+            var label = t('semantics.tier.' + tier)
                 + (tier === persistDefault ? '  ✓' : '');
             persist.submenu.appendChild(bowireMenuItem(label, function () {
                 bowireSetSemanticsPersistDefault(tier);
@@ -359,14 +359,14 @@
     function bowireSemanticsHeaderText(opts) {
         var src = opts.currentSource || 'none';
         if (!opts.currentTag || opts.currentTag === 'none') {
-            return opts.jsonPath + ' — (no semantic detected)';
+            return t('semantics.noneDetected', { path: opts.jsonPath });
         }
         var sourceLabel;
         switch (src) {
-            case 'auto': sourceLabel = 'Auto-detected'; break;
-            case 'plugin': sourceLabel = 'Plugin'; break;
-            case 'user': sourceLabel = 'User'; break;
-            default: sourceLabel = 'Detected';
+            case 'auto': sourceLabel = t('semantics.source.auto'); break;
+            case 'plugin': sourceLabel = t('semantics.source.plugin'); break;
+            case 'user': sourceLabel = t('semantics.source.user'); break;
+            default: sourceLabel = t('semantics.source.detected');
         }
         return opts.jsonPath + ' — ' + sourceLabel + ': ' + opts.currentTag;
     }

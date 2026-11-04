@@ -764,7 +764,7 @@
             let typeLabel = f.type;
             if (f.type === 'message' && f.messageType) typeLabel = f.messageType.name;
             if (f.type === 'enum' && f.enumValues) typeLabel = 'enum';
-            if (f.isMap) typeLabel = 'map<...>';
+            if (f.isMap) typeLabel = 'map<...>';  // i18n-exempt: protobuf type syntax
             if (f.isRepeated) typeLabel = `repeated ${typeLabel}`;
 
             // f.label is the schema's own label (proto2: optional, required,

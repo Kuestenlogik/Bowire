@@ -5045,7 +5045,7 @@
                         }
                     }
                 } else {
-                    sourceLabel = '— no source';
+                    sourceLabel = t('sidebar.sources.noSource');
                 }
 
                 var panelExpanded = isSourceExpanded(originUrl);

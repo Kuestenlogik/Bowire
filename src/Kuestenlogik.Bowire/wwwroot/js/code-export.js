@@ -217,7 +217,7 @@
             var lines = ['import requests', ''];
             lines.push('headers = ' + headersPy);
             if (verb !== 'get' && verb !== 'delete' && verb !== 'head') {
-                lines.push('body = ' + buildHttpBody(ctx));
+                lines.push('body = ' + buildHttpBody(ctx));  // i18n-exempt: Python source the snippet generates
                 lines.push('response = requests.' + verb + '(' + JSON.stringify(url) + ', headers=headers, json=body)');
             } else {
                 lines.push('response = requests.' + verb + '(' + JSON.stringify(url) + ', headers=headers)');

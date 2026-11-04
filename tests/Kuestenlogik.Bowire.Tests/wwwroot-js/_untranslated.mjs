@@ -187,6 +187,20 @@ const PATTERNS = [
     new RegExp(String.raw`\.(?:${SLOT_NAMES})\s*=\s*${STR}`, 'g'),
     new RegExp(String.raw`setAttribute\(\s*['"](?:title|aria-label|placeholder)['"]\s*,\s*${STR}`,
         'g'),
+    // var headline = 'No interceptor running'; — the text is put in a local
+    // named like a slot and handed to the slot later (#983). The Intercept
+    // rail's empty state sat in English behind exactly this while the report
+    // read zero: every pattern above looks at the slot, and the slot only
+    // ever saw the variable.
+    new RegExp(String.raw`(?<![A-Za-z0-9_$.])(?:(?:var|let|const)\s+)?(?:${SLOT_NAMES}|[a-z][A-Za-z0-9_$]*(?:${SLOT_SUFFIX}))\s*=\s*${STR}`,
+        'g'),
+    // A label further down a helper's argument list:
+    //     _envRow(null, !activeId, 'Workspace defaults', …)
+    // The two patterns for the first and second argument stop there (#983).
+    new RegExp(String.raw`,\s*${STR}\s*(?=[,)])`, 'g'),
+    // The else branch of a choice whose then branch is not a string:
+    //     (activeEnv ? activeEnv.name : 'Workspace defaults')
+    new RegExp(String.raw`(?<![?:]\s*['"][^'"\n]*['"]\s*):\s*${STR}\s*\)`, 'g'),
 ];
 
 // Words that name something outside Bowire's own text, and so are not Bowire's

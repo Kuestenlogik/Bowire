@@ -105,7 +105,7 @@
                         pass = actual.indexOf(String(expected)) >= 0;
                     } else {
                         pass = false;
-                        message = 'contains requires string or array';
+                        message = t('assert.containsNeedsStringOrArray');
                     }
                     break;
                 case 'matches':

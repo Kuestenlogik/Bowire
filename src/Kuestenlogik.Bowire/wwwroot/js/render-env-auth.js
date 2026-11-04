@@ -2153,9 +2153,9 @@
             var disabled = count === 0;
             var label = cfg.label + ' (' + count + ')';
             var title;
-            if (disabled) title = 'No ' + cfg.label.toLowerCase() + ' in trash';
-            else if (on) title = 'Click to hide ' + cfg.label.toLowerCase();
-            else title = 'Click to show ' + cfg.label.toLowerCase();
+            if (disabled) title = t('trash.chip.none', { label: cfg.label });
+            else if (on) title = t('trash.chip.hide', { label: cfg.label });
+            else title = t('trash.chip.show', { label: cfg.label });
             chipsRow.appendChild(el('button', {
                 type: 'button',
                 className: 'bowire-trash-chip',
@@ -2183,7 +2183,7 @@
             // can fix it.
             var hint;
             if (flat.length === 0) {
-                hint = 'Trash is empty.';
+                hint = t('trash.empty');
             } else if (globalTrashFilterState.query) {
                 hint = t('trash.noMatchQuery',
                     { query: globalTrashFilterState.query });
@@ -5498,7 +5498,7 @@
                 // override layer. Globals + workspace defaults still
                 // resolve (see getMergedVars in history-env.js). The
                 // label reflects what's actually active.
-                menu.appendChild(_envRow(null, !activeId, 'Workspace defaults',
+                menu.appendChild(_envRow(null, !activeId, t('topbar.workspaceDefaults'),
                     'var(--bowire-text-tertiary)',
                     function () { setActiveEnvId(''); menu.remove(); render(); }
                 ));
@@ -5563,7 +5563,7 @@
             }),
             el('span', { className: 'bowire-env-btn-text', textContent: noWorkspaceActive
                 ? t('topbar.noWorkspace')
-                : (activeEnv ? activeEnv.name : 'Workspace defaults') }),
+                : (activeEnv ? activeEnv.name : t('topbar.workspaceDefaults')) }),
             noWorkspaceActive
                 ? null
                 : el('span', { className: 'bowire-env-btn-chevron', innerHTML: svgIcon('chevronDown') })

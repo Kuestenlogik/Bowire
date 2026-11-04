@@ -5233,7 +5233,7 @@ textContent: t(discoveryState.entryCount === 1
         var mayAdminister = typeof bowireCanAdminister === 'function'
             ? bowireCanAdminister()
             : true;
-        var notAdminTitle = 'Only an administrator can change the plugins on this instance.';
+        var notAdminTitle = t('settings.plugin.notAdmin');
 
         var updateBtn = el('button', {
             type: 'button',

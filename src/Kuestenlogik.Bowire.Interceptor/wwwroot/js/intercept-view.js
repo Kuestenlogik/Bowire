@@ -130,9 +130,7 @@
     //                    that opens the existing reverse-proxy modal
     function renderInterceptActivationEmptyState(subTabLabel) {
         var embedded = bowireInterceptIsEmbedded();
-        var headline = 'No interceptor running';
-        var body = 'Embed: add app.UseBowireInterceptor() to your host. '
-            + 'Standalone: start the Reverse-Proxy from the topbar.';
+        var body = t('intercept.noInterceptorBody');
         var actions = [];
         if (!embedded && typeof window !== 'undefined'
             && typeof window.bowireOpenReverseProxyModal === 'function') {
@@ -163,7 +161,7 @@
         });
         return renderEmptyCard({
             icon: 'plug',
-            headline: headline + (subTabLabel ? ' — ' + subTabLabel : ''),
+            headline: subTabLabel ? t('intercept.noInterceptorSub', { tab: subTabLabel }) : t('intercept.noInterceptor'),
             body: body,
             actions: actions
         });

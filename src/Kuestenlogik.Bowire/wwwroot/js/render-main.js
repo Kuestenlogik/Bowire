@@ -6888,16 +6888,16 @@
             var src = svc && svc.source;
             var formLabel, jsonLabel;
             if (src === 'grpc') {
-                formLabel = 'Message';
+                formLabel = t('rb.tab.message');
                 jsonLabel = 'JSON';
             } else if (src === 'jsonrpc') {
-                formLabel = 'Params';
+                formLabel = t('rb.tab.params');
                 jsonLabel = 'JSON';
             } else if (src === 'rest' || src === 'odata') {
-                formLabel = 'Form';
-                jsonLabel = 'Body';
+                formLabel = t('rb.body.form');
+                jsonLabel = t('rb.tab.body');
             } else {
-                formLabel = 'Form';
+                formLabel = t('rb.body.form');
                 jsonLabel = 'JSON';
             }
             bodySubTabs.push({ id: 'form', label: formLabel });
@@ -8896,23 +8896,23 @@
         if (entry) {
             state = subscriptionState(entry);
             switch (state) {
-                case 'subscribed': label = 'Subscribed'; break;
-                case 'receiving': label = 'Receiving'; break;
-                case 'idle':      label = 'Idle'; break;
-                case 'error':     label = 'Error'; break;
-                default:          label = 'Closed';
+                case 'subscribed': label = t('stream.state.subscribed'); break;
+                case 'receiving': label = t('stream.state.receiving'); break;
+                case 'idle':      label = t('stream.state.idle'); break;
+                case 'error':     label = t('stream.state.error'); break;
+                default:          label = t('stream.state.closed');
             }
         } else if (frameCount > 0) {
             state = 'closed';
-            label = 'Closed';
+            label = t('stream.state.closed');
         } else if (S.isExecuting) {
             // Active unary streaming (no registry entry — should be
             // rare now) or pre-registry init.
             state = 'subscribed';
-            label = 'Subscribed';
+            label = t('stream.state.subscribed');
         } else {
             state = 'idle-empty';
-            label = 'Stream ended';
+            label = t('stream.state.ended');
         }
         var pill = el('div', {
             className: 'bowire-stream-status-pill bowire-stream-state-' + state,
@@ -10519,7 +10519,7 @@
             // Test results tab \u2014 read-only pass/fail per assertion
             // against the most recent response. Definitions are
             // managed in the request pane's Tests sub-tab.
-            var testsLabel = 'Test results';
+            var testsLabel = t('rb.response.tests');
             var summary = svc && method
                 ? getAssertionSummary(svc.name, method.name)
                 : null;
