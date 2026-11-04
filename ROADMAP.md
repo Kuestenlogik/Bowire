@@ -10,7 +10,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ## Overview
 
-### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
+### v2.10 — Discoverability, interop and MCP tasks *(due 2027-01-11)*
 
 **142/142 done**
 
@@ -308,7 +308,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ## Details
 
-### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
+### v2.10 — Discoverability, interop and MCP tasks *(due 2027-01-11)*
 
 #### <a id="issue-kuestenlogik-bowire-675"></a>✅ Done · [#675](https://github.com/Kuestenlogik/Bowire/issues/675) Data-driven collection runs: one iteration per CSV/JSON row
 
