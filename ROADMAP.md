@@ -12,12 +12,10 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
 
-**138/140 done** · 2 backlog
+**139/139 done**
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
-| [639](https://github.com/Kuestenlogik/Bowire/issues/639) | Bowire | [SCIM: live Okta and Entra ID provisioning round-trips](#issue-kuestenlogik-bowire-639) | ⬜ Backlog | `area:workbench` |
-| [670](https://github.com/Kuestenlogik/Bowire/issues/670) | Bowire | [Get listed where developers and models actually look](#issue-kuestenlogik-bowire-670) | ⬜ Backlog | `area:site` |
 | [675](https://github.com/Kuestenlogik/Bowire/issues/675) | Bowire | [Data-driven collection runs: one iteration per CSV/JSON row](#issue-kuestenlogik-bowire-675) | ✅ Done | `area:cli` |
 | [676](https://github.com/Kuestenlogik/Bowire/issues/676) | Bowire | [JSONPath filter expressions in assertions, chaining and mock overrides](#issue-kuestenlogik-bowire-676) | ✅ Done | `area:workbench` |
 | [802](https://github.com/Kuestenlogik/Bowire/issues/802) | Bowire | [MCP Tasks, server side: run long Bowire MCP tools (bowire.test.run first) as durable tasks](#issue-kuestenlogik-bowire-802) | ✅ Done |  |
@@ -156,15 +154,18 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [980](https://github.com/Kuestenlogik/Bowire/issues/980) | Bowire | [German UI: technical terms are translated word by word (Stellvertreter, Attrappenwirt, Beiwagen)](#issue-kuestenlogik-bowire-980) | ✅ Done | `area:workbench` |
 | [981](https://github.com/Kuestenlogik/Bowire/issues/981) | Bowire | [Tests: two loopback servers probe a free port and bind it later, racing parallel tests](#issue-kuestenlogik-bowire-981) | ✅ Done | `area:workbench` |
 | [982](https://github.com/Kuestenlogik/Bowire/issues/982) | Bowire | [Store test overrides are static: parallel tests write into each other's files](#issue-kuestenlogik-bowire-982) | ✅ Done | `area:workbench` |
+| [983](https://github.com/Kuestenlogik/Bowire/issues/983) | Bowire | [Workbench: sentences kept in slot-named locals are never translated, and the detector cannot see them](#issue-kuestenlogik-bowire-983) | ✅ Done | `area:workbench` |
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**6/22 done** · 2 in progress · 14 backlog
+**5/23 done** · 2 in progress · 16 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [972](https://github.com/Kuestenlogik/Bowire/issues/972) | Bowire | [Plugin repos, Templates and Bootcamp: take the new Bowire logo](#issue-kuestenlogik-bowire-972) | 🟡 In progress | `area:site` |
 | [984](https://github.com/Kuestenlogik/Bowire/issues/984) | Bowire | [Translate the 179 workbench literals the widened detector found](#issue-kuestenlogik-bowire-984) | 🟡 In progress | `area:workbench` |
+| [639](https://github.com/Kuestenlogik/Bowire/issues/639) | Bowire | [SCIM: live Okta and Entra ID provisioning round-trips](#issue-kuestenlogik-bowire-639) | ⬜ Backlog | `area:workbench` |
+| [670](https://github.com/Kuestenlogik/Bowire/issues/670) | Bowire | [Get listed where developers and models actually look](#issue-kuestenlogik-bowire-670) | ⬜ Backlog | `area:site` |
 | [672](https://github.com/Kuestenlogik/Bowire/issues/672) | Bowire | [Server-side script engine so pre/post scripts run in bowire test, not only in the browser](#issue-kuestenlogik-bowire-672) | ⬜ Backlog | `area:cli` |
 | [677](https://github.com/Kuestenlogik/Bowire/issues/677) | Bowire | [Broader code export, and snippets for the protocols no snippet library covers](#issue-kuestenlogik-bowire-677) | ⬜ Backlog | `area:workbench` |
 | [687](https://github.com/Kuestenlogik/Bowire/issues/687) | Bowire | [Tray icon and no console window: give the running workbench a handle of its own](#issue-kuestenlogik-bowire-687) | ⬜ Backlog | `area:cli` |
@@ -184,7 +185,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [678](https://github.com/Kuestenlogik/Bowire/issues/678) | Bowire | [bowire send http: send a request directly, URL-first, with HTTPie-style items and --offline](#issue-kuestenlogik-bowire-678) | ✅ Done | `area:cli` |
 | [801](https://github.com/Kuestenlogik/Bowire/issues/801) | Bowire | [MCP Tasks, client side: discover, call and follow tasks of task-capable MCP servers](#issue-kuestenlogik-bowire-801) | ✅ Done |  |
 | [979](https://github.com/Kuestenlogik/Bowire/issues/979) | Bowire | [Intercept detail pane shows every header as undefined:](#issue-kuestenlogik-bowire-979) | ✅ Done | `area:workbench` |
-| [983](https://github.com/Kuestenlogik/Bowire/issues/983) | Bowire | [Workbench: sentences kept in slot-named locals are never translated, and the detector cannot see them](#issue-kuestenlogik-bowire-983) | ✅ Done | `area:workbench` |
 
 ### v2.12 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
 
@@ -309,18 +309,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 ## Details
 
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
-
-#### <a id="issue-kuestenlogik-bowire-639"></a>⬜ Backlog · [#639](https://github.com/Kuestenlogik/Bowire/issues/639) SCIM: live Okta and Entra ID provisioning round-trips
-
-> `area:workbench`
-
-Split from #96 so the SCIM surface can ship on its own merits. [[more]](https://github.com/Kuestenlogik/Bowire/issues/639)
-
-#### <a id="issue-kuestenlogik-bowire-670"></a>⬜ Backlog · [#670](https://github.com/Kuestenlogik/Bowire/issues/670) Get listed where developers and models actually look
-
-> `area:site`
-
-Six credible competitors turned up during the competitive survey **via openalternative.co**. Bowire was not there. That is the whole diagnosis: when a developer — or a language model — asks for "open source Postman alternative", the answer is assembled from these directories, not from bowire.io. [[more]](https://github.com/Kuestenlogik/Bowire/issues/670)
 
 #### <a id="issue-kuestenlogik-bowire-675"></a>✅ Done · [#675](https://github.com/Kuestenlogik/Bowire/issues/675) Data-driven collection runs: one iteration per CSV/JSON row
 
@@ -908,6 +896,12 @@ The German workbench catalogue (`src/Kuestenlogik.Bowire/wwwroot/locales/de.json
 
 `WorkbenchAuthRecordingResolverTests.Empty_Credential_Recording_Is_Skipped` and `AuthRecordingStoreTests.Save_Typed_Overload_Round_Trips` fail now and then in a full parallel run: `IOException … typed.json … being used by another process`, or a recording read back with scheme `bearer` where `apikey` … [[more]](https://github.com/Kuestenlogik/Bowire/issues/982)
 
+#### <a id="issue-kuestenlogik-bowire-983"></a>✅ Done · [#983](https://github.com/Kuestenlogik/Bowire/issues/983) Workbench: sentences kept in slot-named locals are never translated, and the detector cannot see them
+
+> `area:workbench`
+
+Some workbench text stays English in every language. The Intercept rail's empty state reads "No interceptor running" and "Embed: add app.UseBowireInterceptor() to your host. Standalone: start the Reverse-Proxy from the topbar." in the German UI. [[more]](https://github.com/Kuestenlogik/Bowire/issues/983)
+
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
 #### <a id="issue-kuestenlogik-bowire-972"></a>🟡 In progress · [#972](https://github.com/Kuestenlogik/Bowire/issues/972) Plugin repos, Templates and Bootcamp: take the new Bowire logo
@@ -921,6 +915,18 @@ Follow-up to #964/#965. [[more]](https://github.com/Kuestenlogik/Bowire/issues/9
 > `area:workbench`
 
 #983 widened the untranslated-strings detector (`tests/Kuestenlogik.Bowire.Tests/wwwroot-js/_untranslated.mjs`) by three shapes it could not see: - a literal assigned to a local named like a slot (`var headline = '…'`); - a literal as the third or a later argument of a helper (`_envRow(null, on, 'Wo … [[more]](https://github.com/Kuestenlogik/Bowire/issues/984)
+
+#### <a id="issue-kuestenlogik-bowire-639"></a>⬜ Backlog · [#639](https://github.com/Kuestenlogik/Bowire/issues/639) SCIM: live Okta and Entra ID provisioning round-trips
+
+> `area:workbench`
+
+Split from #96 so the SCIM surface can ship on its own merits. [[more]](https://github.com/Kuestenlogik/Bowire/issues/639)
+
+#### <a id="issue-kuestenlogik-bowire-670"></a>⬜ Backlog · [#670](https://github.com/Kuestenlogik/Bowire/issues/670) Get listed where developers and models actually look
+
+> `area:site`
+
+Six credible competitors turned up during the competitive survey **via openalternative.co**. Bowire was not there. That is the whole diagnosis: when a developer — or a language model — asks for "open source Postman alternative", the answer is assembled from these directories, not from bowire.io. [[more]](https://github.com/Kuestenlogik/Bowire/issues/670)
 
 #### <a id="issue-kuestenlogik-bowire-672"></a>⬜ Backlog · [#672](https://github.com/Kuestenlogik/Bowire/issues/672) Server-side script engine so pre/post scripts run in bowire test, not only in the browser
 
@@ -1017,12 +1023,6 @@ MCP Tasks let a server answer a long-running request with a durable handle inste
 > `area:workbench`
 
 Selecting a captured flow (Intercept → Captured, or the proxy view) lists every request and response header as `undefined:`. [[more]](https://github.com/Kuestenlogik/Bowire/issues/979)
-
-#### <a id="issue-kuestenlogik-bowire-983"></a>✅ Done · [#983](https://github.com/Kuestenlogik/Bowire/issues/983) Workbench: sentences kept in slot-named locals are never translated, and the detector cannot see them
-
-> `area:workbench`
-
-Some workbench text stays English in every language. The Intercept rail's empty state reads "No interceptor running" and "Embed: add app.UseBowireInterceptor() to your host. Standalone: start the Reverse-Proxy from the topbar." in the German UI. [[more]](https://github.com/Kuestenlogik/Bowire/issues/983)
 
 ### v2.12 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
 
