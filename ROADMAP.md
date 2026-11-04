@@ -12,15 +12,20 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
 
-**128/130 done** · 2 backlog
+**136/138 done** · 2 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [639](https://github.com/Kuestenlogik/Bowire/issues/639) | Bowire | [SCIM: live Okta and Entra ID provisioning round-trips](#issue-kuestenlogik-bowire-639) | ⬜ Backlog | `area:workbench` |
 | [670](https://github.com/Kuestenlogik/Bowire/issues/670) | Bowire | [Get listed where developers and models actually look](#issue-kuestenlogik-bowire-670) | ⬜ Backlog | `area:site` |
+| [802](https://github.com/Kuestenlogik/Bowire/issues/802) | Bowire | [MCP Tasks, server side: run long Bowire MCP tools (bowire.test.run first) as durable tasks](#issue-kuestenlogik-bowire-802) | ✅ Done |  |
+| [803](https://github.com/Kuestenlogik/Bowire/issues/803) | Bowire | [MCP Tasks in testing and mocking: assert on task lifecycles, record and replay them](#issue-kuestenlogik-bowire-803) | ✅ Done |  |
 | [816](https://github.com/Kuestenlogik/Bowire/issues/816) | Bowire | [SCIM trace records status 200 for every request](#issue-kuestenlogik-bowire-816) | ✅ Done |  |
 | [817](https://github.com/Kuestenlogik/Bowire/issues/817) | Bowire | [OIDC provider cannot run as an installed plugin](#issue-kuestenlogik-bowire-817) | ✅ Done |  |
 | [818](https://github.com/Kuestenlogik/Bowire/issues/818) | Bowire | [--auth-oidc-* flags are documented but never read](#issue-kuestenlogik-bowire-818) | ✅ Done |  |
+| [819](https://github.com/Kuestenlogik/Bowire/issues/819) | Bowire | [MCP discovery reports a fault for a tools-only server](#issue-kuestenlogik-bowire-819) | ✅ Done |  |
+| [820](https://github.com/Kuestenlogik/Bowire/issues/820) | Bowire | [MCP tasks: answer sampling requests, by hand or with the configured model](#issue-kuestenlogik-bowire-820) | ✅ Done |  |
+| [821](https://github.com/Kuestenlogik/Bowire/issues/821) | Bowire | [MCP tasks: answer input requests of 2025-11-25 tasks](#issue-kuestenlogik-bowire-821) | ✅ Done |  |
 | [822](https://github.com/Kuestenlogik/Bowire/issues/822) | Bowire | [Help markdown renderer hangs on an empty heading or a fence like ```c++](#issue-kuestenlogik-bowire-822) | ✅ Done |  |
 | [823](https://github.com/Kuestenlogik/Bowire/issues/823) | Bowire | [Help search counts repeated query terms and gives the title bonus for substrings](#issue-kuestenlogik-bowire-823) | ✅ Done |  |
 | [824](https://github.com/Kuestenlogik/Bowire/issues/824) | Bowire | [Help search does not index fenced code blocks](#issue-kuestenlogik-bowire-824) | ✅ Done |  |
@@ -129,6 +134,9 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [928](https://github.com/Kuestenlogik/Bowire/issues/928) | Bowire | [Blog posts: images wider than the text column overflow the page](#issue-kuestenlogik-bowire-928) | ✅ Done |  |
 | [929](https://github.com/Kuestenlogik/Bowire/issues/929) | Bowire | [Site: the phone menu is see-through — page text shows behind the entries](#issue-kuestenlogik-bowire-929) | ✅ Done |  |
 | [930](https://github.com/Kuestenlogik/Bowire/issues/930) | Bowire | [Docs, API reference and Bootcamp: no phone menu — the nav runs off screen and hides search and theme](#issue-kuestenlogik-bowire-930) | ✅ Done |  |
+| [941](https://github.com/Kuestenlogik/Bowire/issues/941) | Bowire | [JUnit XML from bowire test declares utf-16 but is written as UTF-8](#issue-kuestenlogik-bowire-941) | ✅ Done |  |
+| [942](https://github.com/Kuestenlogik/Bowire/issues/942) | Bowire | [Flaky: RecordingStore tests share a process-wide store path across parallel classes](#issue-kuestenlogik-bowire-942) | ✅ Done |  |
+| [943](https://github.com/Kuestenlogik/Bowire/issues/943) | Bowire | [Collection runner in the workbench reports a failed call as PASS](#issue-kuestenlogik-bowire-943) | ✅ Done |  |
 | [944](https://github.com/Kuestenlogik/Bowire/issues/944) | Bowire | [Flaky: ChunkedRecordingStore's test root override leaks across parallel test classes](#issue-kuestenlogik-bowire-944) | ✅ Done |  |
 | [945](https://github.com/Kuestenlogik/Bowire/issues/945) | Bowire | [bowire.test.run over MCP, with a data set](#issue-kuestenlogik-bowire-945) | ✅ Done |  |
 | [966](https://github.com/Kuestenlogik/Bowire/issues/966) | Bowire | [MCP tool stream: log frames can arrive out of order, and a log before the result can be lost](#issue-kuestenlogik-bowire-966) | ✅ Done | `area:mcp` |
@@ -149,7 +157,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**16/32 done** · 2 in progress · 14 backlog
+**8/24 done** · 2 in progress · 14 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -175,14 +183,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [676](https://github.com/Kuestenlogik/Bowire/issues/676) | Bowire | [JSONPath filter expressions in assertions, chaining and mock overrides](#issue-kuestenlogik-bowire-676) | ✅ Done | `area:workbench` |
 | [678](https://github.com/Kuestenlogik/Bowire/issues/678) | Bowire | [bowire send http: send a request directly, URL-first, with HTTPie-style items and --offline](#issue-kuestenlogik-bowire-678) | ✅ Done | `area:cli` |
 | [801](https://github.com/Kuestenlogik/Bowire/issues/801) | Bowire | [MCP Tasks, client side: discover, call and follow tasks of task-capable MCP servers](#issue-kuestenlogik-bowire-801) | ✅ Done |  |
-| [802](https://github.com/Kuestenlogik/Bowire/issues/802) | Bowire | [MCP Tasks, server side: run long Bowire MCP tools (bowire.test.run first) as durable tasks](#issue-kuestenlogik-bowire-802) | ✅ Done |  |
-| [803](https://github.com/Kuestenlogik/Bowire/issues/803) | Bowire | [MCP Tasks in testing and mocking: assert on task lifecycles, record and replay them](#issue-kuestenlogik-bowire-803) | ✅ Done |  |
-| [819](https://github.com/Kuestenlogik/Bowire/issues/819) | Bowire | [MCP discovery reports a fault for a tools-only server](#issue-kuestenlogik-bowire-819) | ✅ Done |  |
-| [820](https://github.com/Kuestenlogik/Bowire/issues/820) | Bowire | [MCP tasks: answer sampling requests, by hand or with the configured model](#issue-kuestenlogik-bowire-820) | ✅ Done |  |
-| [821](https://github.com/Kuestenlogik/Bowire/issues/821) | Bowire | [MCP tasks: answer input requests of 2025-11-25 tasks](#issue-kuestenlogik-bowire-821) | ✅ Done |  |
-| [941](https://github.com/Kuestenlogik/Bowire/issues/941) | Bowire | [JUnit XML from bowire test declares utf-16 but is written as UTF-8](#issue-kuestenlogik-bowire-941) | ✅ Done |  |
-| [942](https://github.com/Kuestenlogik/Bowire/issues/942) | Bowire | [Flaky: RecordingStore tests share a process-wide store path across parallel classes](#issue-kuestenlogik-bowire-942) | ✅ Done |  |
-| [943](https://github.com/Kuestenlogik/Bowire/issues/943) | Bowire | [Collection runner in the workbench reports a failed call as PASS](#issue-kuestenlogik-bowire-943) | ✅ Done |  |
 | [979](https://github.com/Kuestenlogik/Bowire/issues/979) | Bowire | [Intercept detail pane shows every header as undefined:](#issue-kuestenlogik-bowire-979) | ✅ Done | `area:workbench` |
 | [983](https://github.com/Kuestenlogik/Bowire/issues/983) | Bowire | [Workbench: sentences kept in slot-named locals are never translated, and the detector cannot see them](#issue-kuestenlogik-bowire-983) | ✅ Done | `area:workbench` |
 
@@ -322,6 +322,14 @@ Split from #96 so the SCIM surface can ship on its own merits. [[more]](https://
 
 Six credible competitors turned up during the competitive survey **via openalternative.co**. Bowire was not there. That is the whole diagnosis: when a developer — or a language model — asks for "open source Postman alternative", the answer is assembled from these directories, not from bowire.io. [[more]](https://github.com/Kuestenlogik/Bowire/issues/670)
 
+#### <a id="issue-kuestenlogik-bowire-802"></a>✅ Done · [#802](https://github.com/Kuestenlogik/Bowire/issues/802) MCP Tasks, server side: run long Bowire MCP tools (bowire.test.run first) as durable tasks
+
+Bowire's own MCP server (`bowire mcp serve`, the workbench tools for agents) answers every call synchronously. That is fine for the 25 tools it has today, none of which runs long. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/802)
+
+#### <a id="issue-kuestenlogik-bowire-803"></a>✅ Done · [#803](https://github.com/Kuestenlogik/Bowire/issues/803) MCP Tasks in testing and mocking: assert on task lifecycles, record and replay them
+
+Once Bowire can call task-capable MCP servers, the next question from anyone building one is: does my server's task lifecycle actually work? Polling, `input_required`, cancellation, TTL expiry and the final result are exactly the parts that break, and no tool tests them. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/803)
+
 #### <a id="issue-kuestenlogik-bowire-816"></a>✅ Done · [#816](https://github.com/Kuestenlogik/Bowire/issues/816) SCIM trace records status 200 for every request
 
 `ScimTraceFilter` (src/Kuestenlogik.Bowire.Scim/ScimTraceFilter.cs) records `http.Response.StatusCode` in the `finally` after `await next(context)`. In an endpoint filter, `next` returns the handler's `IResult` — it has not been executed yet, so the response status is still the default 200. [[more]](https://github.com/Kuestenlogik/Bowire/issues/816)
@@ -333,6 +341,18 @@ Six credible competitors turned up during the competitive survey **via openalter
 #### <a id="issue-kuestenlogik-bowire-818"></a>✅ Done · [#818](https://github.com/Kuestenlogik/Bowire/issues/818) --auth-oidc-* flags are documented but never read
 
 The `--auth-provider` help text (src/Kuestenlogik.Bowire.Tool/Cli/BowireCli.cs) and `docs/setup/multi-user.md` name provider-namespaced flags — `--auth-oidc-authority`, `--auth-oidc-client-id`, `--auth-oidc-required-claim` — "forwarded as Bowire:Auth:Oidc:*". … [[more]](https://github.com/Kuestenlogik/Bowire/issues/818)
+
+#### <a id="issue-kuestenlogik-bowire-819"></a>✅ Done · [#819](https://github.com/Kuestenlogik/Bowire/issues/819) MCP discovery reports a fault for a tools-only server
+
+Discovering an MCP server that offers only tools (an SDK 2.2 server with `WithTools` and nothing else, stateless HTTP) reports a fault: [[more]](https://github.com/Kuestenlogik/Bowire/issues/819)
+
+#### <a id="issue-kuestenlogik-bowire-820"></a>✅ Done · [#820](https://github.com/Kuestenlogik/Bowire/issues/820) MCP tasks: answer sampling requests, by hand or with the configured model
+
+An MCP server can ask its client to run a model completion for it — `sampling/createMessage`: the server borrows the client's LLM instead of holding its own model access, and the user stays in control of what the model sees. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/820)
+
+#### <a id="issue-kuestenlogik-bowire-821"></a>✅ Done · [#821](https://github.com/Kuestenlogik/Bowire/issues/821) MCP tasks: answer input requests of 2025-11-25 tasks
+
+Since #801 Bowire follows tasks of the 2025-11-25 core shape — create, poll, `tasks/result`, cancel — but cannot answer their input requests. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/821)
 
 #### <a id="issue-kuestenlogik-bowire-822"></a>✅ Done · [#822](https://github.com/Kuestenlogik/Bowire/issues/822) Help markdown renderer hangs on an empty heading or a fence like ```c++
 
@@ -766,6 +786,18 @@ On a phone, the open burger menu of bowire.io lets the page underneath show thro
 
 On a phone, the header of the docs, the API reference and the Bootcamp has no burger menu. The navigation keeps its desktop row and runs off the right edge ("Quickstart Features Solutio…" at 390px), and the actions behind it — search, home, theme toggle, GitHub — are not reachable at all. [[more]](https://github.com/Kuestenlogik/Bowire/issues/930)
 
+#### <a id="issue-kuestenlogik-bowire-941"></a>✅ Done · [#941](https://github.com/Kuestenlogik/Bowire/issues/941) JUnit XML from bowire test declares utf-16 but is written as UTF-8
+
+`bowire test --junit report.xml` writes a file that starts with `<?xml version="1.0" encoding="utf-16"?>`. The bytes on disk are UTF-8. A strict XML parser refuses the file; .NET's `XDocument.Load` fails with *There is no Unicode byte order mark. Cannot switch to Unicode*. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/941)
+
+#### <a id="issue-kuestenlogik-bowire-942"></a>✅ Done · [#942](https://github.com/Kuestenlogik/Bowire/issues/942) Flaky: RecordingStore tests share a process-wide store path across parallel classes
+
+`WorkbenchRecordingJsonProviderCoverageTests.TryGetRecordingJson_Returns_Null_When_Recordings_Property_Missing` failed once in a full run of `Kuestenlogik.Bowire.Tests` with `DirectoryNotFoundException` on `…\Temp\bowire-rec-test-…\recordings.json`. Run on its own, it passes. [[more]](https://github.com/Kuestenlogik/Bowire/issues/942)
+
+#### <a id="issue-kuestenlogik-bowire-943"></a>✅ Done · [#943](https://github.com/Kuestenlogik/Bowire/issues/943) Collection runner in the workbench reports a failed call as PASS
+
+**Run All** on a collection marks an item PASS when its call failed. Example: a REST item against an unreachable host, or with no OpenAPI document. `/api/invoke` answers such a call with HTTP 200, `"status": "Error"` and the reason in `metadata.error`, e.g. *No OpenAPI document found at …*. [[more]](https://github.com/Kuestenlogik/Bowire/issues/943)
+
 #### <a id="issue-kuestenlogik-bowire-944"></a>✅ Done · [#944](https://github.com/Kuestenlogik/Bowire/issues/944) Flaky: ChunkedRecordingStore's test root override leaks across parallel test classes
 
 In full runs of `Kuestenlogik.Bowire.Tests`, `WorkbenchRecordingJsonProviderCoverageTests` fails at random: a recording seeded under its own workspace folder is not found (`Assert.NotNull() Failure`), or the legacy fallback wins over the workspace match. Run alone, or with its class only, it passes. [[more]](https://github.com/Kuestenlogik/Bowire/issues/944)
@@ -979,38 +1011,6 @@ Assertion paths today are plain traversal — `response.items.0.tags.2`. There i
 #### <a id="issue-kuestenlogik-bowire-801"></a>✅ Done · [#801](https://github.com/Kuestenlogik/Bowire/issues/801) MCP Tasks, client side: discover, call and follow tasks of task-capable MCP servers
 
 MCP Tasks let a server answer a long-running request with a durable handle instead of blocking: the client polls, answers mid-flight questions and fetches the result later, even after reconnecting. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/801)
-
-#### <a id="issue-kuestenlogik-bowire-802"></a>✅ Done · [#802](https://github.com/Kuestenlogik/Bowire/issues/802) MCP Tasks, server side: run long Bowire MCP tools (bowire.test.run first) as durable tasks
-
-Bowire's own MCP server (`bowire mcp serve`, the workbench tools for agents) answers every call synchronously. That is fine for the 25 tools it has today, none of which runs long. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/802)
-
-#### <a id="issue-kuestenlogik-bowire-803"></a>✅ Done · [#803](https://github.com/Kuestenlogik/Bowire/issues/803) MCP Tasks in testing and mocking: assert on task lifecycles, record and replay them
-
-Once Bowire can call task-capable MCP servers, the next question from anyone building one is: does my server's task lifecycle actually work? Polling, `input_required`, cancellation, TTL expiry and the final result are exactly the parts that break, and no tool tests them. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/803)
-
-#### <a id="issue-kuestenlogik-bowire-819"></a>✅ Done · [#819](https://github.com/Kuestenlogik/Bowire/issues/819) MCP discovery reports a fault for a tools-only server
-
-Discovering an MCP server that offers only tools (an SDK 2.2 server with `WithTools` and nothing else, stateless HTTP) reports a fault: [[more]](https://github.com/Kuestenlogik/Bowire/issues/819)
-
-#### <a id="issue-kuestenlogik-bowire-820"></a>✅ Done · [#820](https://github.com/Kuestenlogik/Bowire/issues/820) MCP tasks: answer sampling requests, by hand or with the configured model
-
-An MCP server can ask its client to run a model completion for it — `sampling/createMessage`: the server borrows the client's LLM instead of holding its own model access, and the user stays in control of what the model sees. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/820)
-
-#### <a id="issue-kuestenlogik-bowire-821"></a>✅ Done · [#821](https://github.com/Kuestenlogik/Bowire/issues/821) MCP tasks: answer input requests of 2025-11-25 tasks
-
-Since #801 Bowire follows tasks of the 2025-11-25 core shape — create, poll, `tasks/result`, cancel — but cannot answer their input requests. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/821)
-
-#### <a id="issue-kuestenlogik-bowire-941"></a>✅ Done · [#941](https://github.com/Kuestenlogik/Bowire/issues/941) JUnit XML from bowire test declares utf-16 but is written as UTF-8
-
-`bowire test --junit report.xml` writes a file that starts with `<?xml version="1.0" encoding="utf-16"?>`. The bytes on disk are UTF-8. A strict XML parser refuses the file; .NET's `XDocument.Load` fails with *There is no Unicode byte order mark. Cannot switch to Unicode*. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/941)
-
-#### <a id="issue-kuestenlogik-bowire-942"></a>✅ Done · [#942](https://github.com/Kuestenlogik/Bowire/issues/942) Flaky: RecordingStore tests share a process-wide store path across parallel classes
-
-`WorkbenchRecordingJsonProviderCoverageTests.TryGetRecordingJson_Returns_Null_When_Recordings_Property_Missing` failed once in a full run of `Kuestenlogik.Bowire.Tests` with `DirectoryNotFoundException` on `…\Temp\bowire-rec-test-…\recordings.json`. Run on its own, it passes. [[more]](https://github.com/Kuestenlogik/Bowire/issues/942)
-
-#### <a id="issue-kuestenlogik-bowire-943"></a>✅ Done · [#943](https://github.com/Kuestenlogik/Bowire/issues/943) Collection runner in the workbench reports a failed call as PASS
-
-**Run All** on a collection marks an item PASS when its call failed. Example: a REST item against an unreachable host, or with no OpenAPI document. `/api/invoke` answers such a call with HTTP 200, `"status": "Error"` and the reason in `metadata.error`, e.g. *No OpenAPI document found at …*. [[more]](https://github.com/Kuestenlogik/Bowire/issues/943)
 
 #### <a id="issue-kuestenlogik-bowire-979"></a>✅ Done · [#979](https://github.com/Kuestenlogik/Bowire/issues/979) Intercept detail pane shows every header as undefined:
 
