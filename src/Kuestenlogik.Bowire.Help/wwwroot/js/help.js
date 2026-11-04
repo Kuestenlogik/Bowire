@@ -189,7 +189,7 @@
         });
         // Bold + italic. Order matters: ** before _.
         s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-        s = s.replace(/(^|[^_])_([^_]+)_/g, '$1<em>$2</em>');
+        s = s.replace(/(^|[^_])_([^_]+)_/g, '$1<em>$2</em>');  // i18n-exempt: a regex replacement
         return s;
     }
 

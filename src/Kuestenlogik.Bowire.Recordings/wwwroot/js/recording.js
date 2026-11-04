@@ -2667,7 +2667,7 @@ toast(trashed(removed.length === 1 ? 'rec.movedToTrashOne' : 'rec.movedToTrashMa
                 // Benchmarks / Intercept rail icon to hand it off. Layered
                 // after reorder so effectAllowed ends up 'copyMove'.
                 if (typeof makeCrossRailDraggable === 'function') {
-                    makeCrossRailDraggable(recRow, 'application/x-bowire-recording', { recordingId: rec.id });
+                    makeCrossRailDraggable(recRow, 'application/x-bowire-recording', { recordingId: rec.id });  // i18n-exempt: a drag-and-drop MIME type
                 }
                 list.appendChild(recRow);
             });

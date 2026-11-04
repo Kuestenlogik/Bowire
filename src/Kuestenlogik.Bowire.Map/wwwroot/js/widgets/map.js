@@ -1029,7 +1029,7 @@
                     vertexPaths: keys.map(function (kk) { return ng.points[kk].parentPath; }),
                     closed: false,
                     modifiers: {
-                        AM_DISTANCE: Math.round(Math.max(r1, r2)) + ',' + Math.round(Math.min(r1, r2)),
+                        AM_DISTANCE: Math.round(Math.max(r1, r2)) + ',' + Math.round(Math.min(r1, r2)),  // i18n-exempt: a milsymbol modifier value
                         AN_AZIMUTH: String(Math.round(rotation))
                     }
                 });
@@ -1061,8 +1061,8 @@
                     vertexPaths: [first.parentPath],
                     closed: false,
                     modifiers: {
-                        AM_DISTANCE: Math.round(Math.max(0, minRange || 0)) + ',' + Math.round(maxRange),
-                        AN_AZIMUTH: Math.round(leftAz) + ',' + Math.round(rightAz)
+                        AM_DISTANCE: Math.round(Math.max(0, minRange || 0)) + ',' + Math.round(maxRange),  // i18n-exempt: a milsymbol modifier value
+                        AN_AZIMUTH: Math.round(leftAz) + ',' + Math.round(rightAz)  // i18n-exempt: a milsymbol modifier value
                     }
                 });
                 return;

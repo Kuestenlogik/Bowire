@@ -754,7 +754,7 @@
         benchmarkActiveSpecId = spec.id;
 
         var displayName = spec.name || (spec.targets && spec.targets[0]
-            ? _benchmarkTargetLabel(spec.targets[0]) : 'Envelope');
+            ? _benchmarkTargetLabel(spec.targets[0]) : 'Envelope');  // i18n-exempt: Bowire's name for a benchmark spec, kept as Envelope in every language; it fills the console's method column
         addConsoleEntry({
             type: 'request',
             method: displayName,
@@ -1606,9 +1606,9 @@
             'aria-label': t('bench.dispatchMode')
         },
             seg('sequential', t('bench.modeSequential'),
-                'Targets are invoked one after the other per VU iteration. Iteration fails on first error.'),
+                t('bench.modeSequentialTitle')),
             seg('parallel', t('bench.modeParallel'),
-                'Targets are all invoked at once per VU iteration. Iteration succeeds when every target succeeds.')
+                t('bench.modeParallelTitle'))
         );
     }
 
@@ -3100,15 +3100,15 @@
         var stem = (spec.name || 'envelope').replace(/[^\w\-]+/g, '_');
         if (format === 'artillery') {
             var artillery = exportEnvelopeAsArtillery(spec);
-            _downloadEnvelopeArtifact(stem + '.artillery.json', 'application/json',
+            _downloadEnvelopeArtifact(stem + '.artillery.json', 'application/json',  // i18n-exempt: a file name and MIME type
                 JSON.stringify(artillery, null, 2));
             toast(t('bench.exportedArtillery'), 'success');
         } else if (format === 'k6') {
             var k6 = exportEnvelopeAsK6(spec);
-            _downloadEnvelopeArtifact(stem + '.k6.js', 'application/javascript', k6);
+            _downloadEnvelopeArtifact(stem + '.k6.js', 'application/javascript', k6);  // i18n-exempt: a file name and MIME type
             toast(t('bench.exportedK6'), 'success');
         } else if (format === 'native') {
-            _downloadEnvelopeArtifact(stem + '.bowire-envelope.json', 'application/json',
+            _downloadEnvelopeArtifact(stem + '.bowire-envelope.json', 'application/json',  // i18n-exempt: a file name and MIME type
                 JSON.stringify(spec, null, 2));
             toast(t('bench.exportedEnvelope'), 'success');
         }
@@ -3596,20 +3596,20 @@
         var stem = (spec.name || 'run').replace(/[^\w\-]+/g, '_');
         if (format === 'csv') {
             var csv = exportRunAsCsv(spec, 'per-method');
-            _downloadEnvelopeArtifact(stem + '.results.csv', 'text/csv;charset=utf-8', csv);
+            _downloadEnvelopeArtifact(stem + '.results.csv', 'text/csv;charset=utf-8', csv);  // i18n-exempt: a file name and MIME type
             toast(t('bench.exportedCsv'), 'success');
         } else if (format === 'csv-iterations') {
             var csvIter = exportRunAsCsv(spec, 'per-iteration');
-            _downloadEnvelopeArtifact(stem + '.iterations.csv', 'text/csv;charset=utf-8', csvIter);
+            _downloadEnvelopeArtifact(stem + '.iterations.csv', 'text/csv;charset=utf-8', csvIter);  // i18n-exempt: a file name and MIME type
             toast(t('bench.exportedCsvIteration'), 'success');
         } else if (format === 'k6-summary') {
             var k6 = exportRunAsK6Summary(spec);
-            _downloadEnvelopeArtifact(stem + '.k6-summary.json', 'application/json',
+            _downloadEnvelopeArtifact(stem + '.k6-summary.json', 'application/json',  // i18n-exempt: a file name and MIME type
                 JSON.stringify(k6, null, 2));
             toast(t('bench.exportedK6Summary'), 'success');
         } else if (format === 'otlp') {
             var otlp = exportRunAsOtlpJson(spec);
-            _downloadEnvelopeArtifact(stem + '.otlp.json', 'application/json',
+            _downloadEnvelopeArtifact(stem + '.otlp.json', 'application/json',  // i18n-exempt: a file name and MIME type
                 JSON.stringify(otlp, null, 2));
             toast(t('bench.exportedOtlp'), 'success');
         }

@@ -1297,7 +1297,7 @@
             S.statusInfo = { status: 'Error', durationMs: elapsed };  // i18n-exempt: status label, carried on the console entry and the run summary
             S.isExecuting = false;
             markJobDone(service, method);
-            markSubscriptionError(service, method, 'Stream error');
+            markSubscriptionError(service, method, t('main.streamErrorShort'));
             es.close();
             if (S.sseSource === es) S.sseSource = null;
             unregisterSubscription(service, method);

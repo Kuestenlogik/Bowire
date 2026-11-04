@@ -999,7 +999,7 @@
             ? selectedMethod.httpPath : '/';
 
         var panel = bowireOpenFuzzPanel(opts, category);
-        bowireRenderFuzzPanelHeader(panel, opts, category, 'sending probes…');
+        bowireRenderFuzzPanelHeader(panel, opts, category, t('semantics.fuzzSending'));
 
         var prefix = (window.__BOWIRE_CONFIG__ && window.__BOWIRE_CONFIG__.prefix) || '';
         fetch(prefix + '/api/security/fuzz', {
@@ -1062,7 +1062,7 @@
         } catch { /* keep defaults */ }
 
         var panel = bowireOpenAiFuzzPanel(opts, leafName);
-        bowireRenderAiFuzzPanelStatus(panel, 'Asking the model for boundary values…');
+        bowireRenderAiFuzzPanelStatus(panel, t('semantics.aiFuzzAsking'));
 
         fetch(prefix + '/api/ai/fuzz-values', {
             method: 'POST',
@@ -1084,7 +1084,7 @@
             }
             var values = (resp.body && resp.body.values) || [];
             if (values.length === 0) {
-                bowireRenderAiFuzzPanelStatus(panel, 'Model returned no usable values — try again or fall back to the deterministic Fuzz submenu.');
+                bowireRenderAiFuzzPanelStatus(panel, t('semantics.aiFuzzEmpty'));
                 return;
             }
             bowireRenderAiFuzzPicker(panel, opts, values, leafName);

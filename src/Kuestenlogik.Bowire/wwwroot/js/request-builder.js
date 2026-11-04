@@ -1242,7 +1242,7 @@
             // input springs'). Non-enumerable so it never leaks into saved
             // presets / request exports (_kvToObject already ignores it).
             if (r._uid == null) {
-                Object.defineProperty(r, '_uid', {
+                Object.defineProperty(r, '_uid', {  // i18n-exempt: a property name
                     value: ++_kvRowUid, enumerable: false, writable: false, configurable: true
                 });
             }

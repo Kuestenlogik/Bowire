@@ -1418,7 +1418,7 @@
         // drift helper). 'inline'/unset uses the self-contained url as-is.
         var schemaUrl;
         if (item.urlMode === 'source') {
-            schemaUrl = resolveSourceUrl(item.serverUrl, 'collection item');
+            schemaUrl = resolveSourceUrl(item.serverUrl, 'collection item');  // i18n-exempt: a label in a developer console warning
         } else {
             schemaUrl = item.serverUrl || (serverUrls.length > 0 ? serverUrls[0] : '');
         }

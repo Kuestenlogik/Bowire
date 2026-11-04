@@ -349,7 +349,7 @@
             },
             render: function (c) {
                 return t('hint.extraFields.text', {
-                    fields: c.responseUnknownKeys.slice(0, 3).join(', ')
+                    fields: c.responseUnknownKeys.slice(0, 3).join(', ')  // i18n-exempt: the separator in a list of values
                         + (c.responseUnknownKeys.length > 3 ? ', …' : ''),
                     host: c.serverUrl || t('hint.host')
                 });
@@ -837,7 +837,7 @@
         if (!result.ok) {
             host.appendChild(el('div', {
                 className: 'bowire-ai-template-error',
-                textContent: '⚠ ' + problemTitle(result.body, 'request failed')
+                textContent: '⚠ ' + problemTitle(result.body, t('ai.templateRequestFailed'))
             }));
             return;
         }
@@ -882,7 +882,7 @@
                                 saveBtn.textContent = t('ai.saveToTemplates');
                             }, 3000);
                         } else {
-                            saveBtn.textContent = '⚠ ' + problemTitle(resp.body, 'save failed');
+                            saveBtn.textContent = '⚠ ' + problemTitle(resp.body, t('ai.saveFailed'));
                         }
                     })
                     .catch(function (err) {
@@ -1622,7 +1622,7 @@
                     if (!hit || !hit.endpoint) return;
                     var models = Array.isArray(hit.models) ? hit.models.filter(function (m) { return !!m; }) : [];
                     var preview = models.length > 0
-                        ? models.slice(0, 3).join(', ') + (models.length > 3 ? ', …' : '')
+                        ? models.slice(0, 3).join(', ') + (models.length > 3 ? ', …' : '')  // i18n-exempt: the separator in a list of values
                         : t('ai.noModelsLoaded');
                     footer.appendChild(el('div', {
                         className: 'bowire-ai-detected',

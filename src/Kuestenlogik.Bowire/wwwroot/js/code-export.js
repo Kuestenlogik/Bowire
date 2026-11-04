@@ -231,11 +231,11 @@
             var verb = ctx.httpMethod;
             var lines = [
                 'using var client = new HttpClient();',
-                'using var request = new HttpRequestMessage(HttpMethod.' + (verb.charAt(0) + verb.slice(1).toLowerCase()) + ', ' + JSON.stringify(url) + ');'
+                'using var request = new HttpRequestMessage(HttpMethod.' + (verb.charAt(0) + verb.slice(1).toLowerCase()) + ', ' + JSON.stringify(url) + ');'  // i18n-exempt: generated code in the snippet export
             ];
             var hdrKeys = Object.keys(ctx.metadata);
             for (var i = 0; i < hdrKeys.length; i++) {
-                lines.push('request.Headers.TryAddWithoutValidation(' + JSON.stringify(hdrKeys[i]) + ', ' + JSON.stringify(ctx.metadata[hdrKeys[i]]) + ');');
+                lines.push('request.Headers.TryAddWithoutValidation(' + JSON.stringify(hdrKeys[i]) + ', ' + JSON.stringify(ctx.metadata[hdrKeys[i]]) + ');');  // i18n-exempt: generated code in the snippet export
             }
             if (verb !== 'GET' && verb !== 'DELETE' && verb !== 'HEAD') {
                 lines.push('request.Content = new StringContent(' + JSON.stringify(buildHttpBody(ctx)) + ', Encoding.UTF8, "application/json");');
@@ -320,7 +320,7 @@
                 '});',
                 '',
                 "ws.addEventListener('message', (event) => {",
-                '  console.log(event.data);',
+                '  console.log(event.data);',  // i18n-exempt: generated code in the snippet export
                 '});',
                 '',
                 "ws.addEventListener('close', () => console.log('disconnected'));"
@@ -332,11 +332,11 @@
             return [
                 'using Microsoft.AspNetCore.SignalR.Client;',
                 '',
-                'var connection = new HubConnectionBuilder()',
+                'var connection = new HubConnectionBuilder()',  // i18n-exempt: generated code in the snippet export
                 '    .WithUrl(' + JSON.stringify(ctx.serverUrl) + ')',
-                '    .Build();',
+                '    .Build();',  // i18n-exempt: generated code in the snippet export
                 '',
-                'await connection.StartAsync();',
+                'await connection.StartAsync();',  // i18n-exempt: generated code in the snippet export
                 '',
                 'var result = await connection.InvokeAsync<object>(' + JSON.stringify(ctx.method) + ');',
                 '// payload from: ' + ctx.bodyJson,
@@ -348,11 +348,11 @@
             return [
                 "import * as signalR from '@microsoft/signalr';",
                 '',
-                'const connection = new signalR.HubConnectionBuilder()',
+                'const connection = new signalR.HubConnectionBuilder()',  // i18n-exempt: generated code in the snippet export
                 '  .withUrl(' + JSON.stringify(ctx.serverUrl) + ')',
-                '  .build();',
+                '  .build();',  // i18n-exempt: generated code in the snippet export
                 '',
-                'await connection.start();',
+                'await connection.start();',  // i18n-exempt: generated code in the snippet export
                 '',
                 'const result = await connection.invoke(' + JSON.stringify(ctx.method) + ');',
                 '// payload from: ' + ctx.bodyJson,

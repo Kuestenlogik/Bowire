@@ -94,7 +94,7 @@ function bowireRollupSources(service) {
         return el('li', { className: 'bowire-rollup-source' }, src.kind + '  ·  ' + src.path);
     });
     if (items.length === 0) {
-        items = [el('li', { className: 'bowire-rollup-source' }, 'no source files recorded')];
+        items = [el('li', { className: 'bowire-rollup-source' }, t('rollup.noSources'))];
     }
     return el('tr', { className: 'bowire-rollup-sources-row' },
         el('td', { colspan: '8' }, el('ul', { className: 'bowire-rollup-sources' }, items)));
@@ -145,9 +145,10 @@ function renderRollupMain() {
         }));
     } else {
         var head = el('tr', {}, [
-            el('th', {}, 'Service'), el('th', {}, 'Worst'), el('th', {}, 'Lint H/M/L'),
-            el('th', {}, 'Contracts'), el('th', {}, 'Tests'), el('th', {}, 'p95'),
-            el('th', {}, 'Scan'), el('th', {}, 'Last'),
+            el('th', {}, t('rollup.col.service')), el('th', {}, t('rollup.col.worst')), el('th', {}, t('rollup.col.lint')),
+            el('th', {}, t('rail.contracts')), el('th', {}, t('drawer.tests')),
+            el('th', {}, 'p95'),  // i18n-exempt: the name of a latency percentile
+            el('th', {}, t('rollup.col.scan')), el('th', {}, t('rollup.col.last')),
         ]);
 
         var rows = [head];

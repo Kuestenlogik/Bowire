@@ -141,7 +141,7 @@ function bowireRenderScheduleRow(entry) {
                 th.spec + ' — actual ' + bowireFormatScheduleMs(th.actual)));
         });
     } else {
-        kids.push(el('div', { class: 'bowire-schedule-last' }, 'never run'));
+        kids.push(el('div', { class: 'bowire-schedule-last' }, t('bench.scheduleNeverRun')));
     }
 
     return el('li', { class: 'bowire-schedule-row' }, kids);
@@ -165,7 +165,9 @@ function renderBenchmarkSchedules() {
         body.push(el('div', { class: 'bowire-schedule-empty' }, t('bench.pressRefresh')));
     } else if (bowireBenchmarkSchedules.length === 0) {
         body.push(el('div', { class: 'bowire-schedule-empty' },
-            'No scheduled runs. Add one with: bowire bench schedule add <id> --cron "0 3 * * *" --target Svc/Method -url rest@http://…'));
+            t('bench.noSchedules', {
+                command: 'bowire bench schedule add <id> --cron "0 3 * * *" --target Svc/Method -url rest@http://…'  // i18n-exempt: a CLI command
+            })));
     } else {
         body.push(el('ul', { class: 'bowire-schedule-list' },
             bowireBenchmarkSchedules.map(bowireRenderScheduleRow)));

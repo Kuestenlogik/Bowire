@@ -2192,7 +2192,7 @@
         section.appendChild(renderSettingsAction(
             t('settings.refreshDetection'),
             t('settings.refreshDetectionDesc'),
-            'Refresh',
+            t('sidebar.sources.refresh'),
             function () { loadAiSettings(true); }
         ));
 
@@ -2822,7 +2822,7 @@ textContent: t(discoveryState.entryCount === 1
                     return input;
                 }));
             section.appendChild(renderSettingsRow(t('settings.cat.bootstrapToken'),
-                'Sent verbatim as the Authorization request header. Leave blank to keep the existing stored value.',
+                t('settings.cat.bootstrapTokenDesc'),
                 function () {
                     var wrap = el('div', { className: 'bowire-settings-apikey-wrap' });
                     var input = el('input', {
@@ -3263,8 +3263,8 @@ textContent: t(discoveryState.entryCount === 1
     function renderSettingsWorkspaceSources() {
         var section = el('div', { className: 'bowire-settings-section' });
         var ws = _renderWorkspaceSubpageHeader(section,
-            'Sources / URLs',
-            'Server URLs configured for this workspace. Each URL travels with the .bww file so a team member opening the workspace inherits the same discovery targets, aliases, and per-URL headers.');
+            t('settings.nav.sources'),
+            t('settings.ws.sourcesDesc'));
         if (!ws) return section;
 
         var urls = (typeof serverUrls !== 'undefined' && Array.isArray(serverUrls)) ? serverUrls : [];
@@ -3337,8 +3337,8 @@ textContent: t(discoveryState.entryCount === 1
     function renderSettingsWorkspaceEnvironments() {
         var section = el('div', { className: 'bowire-settings-section' });
         var ws = _renderWorkspaceSubpageHeader(section,
-            'Environments',
-            'Variable environments this workspace ships with. Globals + per-env vars travel with the .bww file so imports round-trip staging / prod / mock configurations without hand-rebuilding them.');
+            t('sidebar.envs.title'),
+            t('settings.ws.envsDesc'));
         if (!ws) return section;
 
         var envs = (typeof getEnvironments === 'function') ? getEnvironments() : [];
@@ -3639,7 +3639,7 @@ textContent: t(discoveryState.entryCount === 1
         section.appendChild(renderSettingsAction(
             t('settings.data.resetAll'),
             t('settings.data.resetAllDesc'),
-            'Reset All',
+            t('settings.data.resetConfirm'),
             function () {
                 bowireConfirm(t('settings.data.resetAsk'), function () {
                     // #194 — snapshot every localStorage key into an
@@ -3697,7 +3697,7 @@ textContent: t(discoveryState.entryCount === 1
         section.appendChild(renderSettingsAction(
             t('settings.data.clearHistory'),
             t('settings.data.clearHistoryDesc'),
-            'Clear History',
+            t('settings.data.clearHistoryHeading'),
             function () {
                 bowireConfirm(t('settings.data.clearHistoryAsk'), function () {
                     var backup = getHistory();
@@ -3717,7 +3717,7 @@ textContent: t(discoveryState.entryCount === 1
         section.appendChild(renderSettingsAction(
             t('settings.data.clearFavorites'),
             t('settings.data.clearFavoritesDesc'),
-            'Clear Favorites',
+            t('settings.data.clearFavoritesHeading'),
             function () {
                 bowireConfirm(t('settings.data.clearFavoritesAsk'), function () {
                     var backup = getFavorites();
@@ -3742,7 +3742,7 @@ textContent: t(discoveryState.entryCount === 1
         section.appendChild(renderSettingsAction(
             t('settings.data.clearRecordings'),
             t('settings.data.clearRecordingsDesc'),
-            'Clear Recordings',
+            t('settings.data.clearRecordingsHeading'),
             function () {
                 bowireConfirm(t('settings.data.clearRecordingsAsk'), function () {
                     if (!Array.isArray(recordingsList) || recordingsList.length === 0) {
@@ -3804,7 +3804,7 @@ textContent: t(discoveryState.entryCount === 1
         section.appendChild(renderSettingsAction(
             t('settings.data.clearCollections'),
             t('settings.data.clearCollectionsDesc'),
-            'Clear Collections',
+            t('settings.data.clearCollectionsHeading'),
             function () {
                 bowireConfirm(t('settings.data.clearCollectionsAsk'), function () {
                     if (!Array.isArray(collectionsList) || collectionsList.length === 0) {
@@ -3865,7 +3865,7 @@ textContent: t(discoveryState.entryCount === 1
         section.appendChild(renderSettingsAction(
             'Migrate ${name} → {{name}}',  // i18n-exempt: Bowire's own variable syntax on both sides of the arrow
             t('settings.data.migrateVarsDesc'),
-            'Migrate',
+            t('settings.data.migrateConfirm'),
             function () {
                 bowireConfirm(
                     t('settings.migrateVarsConfirm'),
@@ -3951,8 +3951,8 @@ textContent: t(discoveryState.entryCount === 1
     function renderSettingsWorkspaceData() {
         var section = el('div', { className: 'bowire-settings-section' });
         var ws = _renderWorkspaceSubpageHeader(section,
-            'Data',
-            'Clear + migrate actions scoped to this workspace, plus the workspace-level storage mode toggle. Every Clear here mutates only .bww-owned state; the machine-wide Reset lives under System \u2192 Data.');
+            t('settings.nav.data'),
+            t('settings.ws.dataDesc'));
         if (!ws) return section;
 
         // Storage mode toggle \u2014 the same control shown on the workspace
@@ -4412,7 +4412,7 @@ textContent: t(discoveryState.entryCount === 1
         }
         textRow('proxyUrl', 'settings.network.proxyUrl', 'settings.network.proxyUrlDesc', 'http://proxy.corp:3128');
         textRow('noProxy', 'settings.network.noProxy', 'settings.network.noProxyDesc', '.corp.local, 10.0.0.0/8, <local>', true);
-        textRow('proxyUser', 'settings.network.proxyUser', 'settings.network.proxyUserDesc', 'CORP\\alice');
+        textRow('proxyUser', 'settings.network.proxyUser', 'settings.network.proxyUserDesc', 'CORP\\alice');  // i18n-exempt: an example value
         textRow('proxyPasswordRef', 'settings.network.passwordRef', 'settings.network.passwordRefDesc', 'keyring:corp-proxy/alice');
         textRow('caBundle', 'settings.network.caBundle', 'settings.network.caBundleDesc', '/etc/ssl/corp-root.pem', true);
 

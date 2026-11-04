@@ -70,7 +70,7 @@
                 return r.json().catch(function () {
     return { title: t('mocks.startFailedStatus', { status: r.status }) };
 })
-                    .then(function (err) { throw new Error(problemTitle(err, 'Mock start failed')); });
+                    .then(function (err) { throw new Error(problemTitle(err, t('mocks.startFailed'))); });
             }
             return r.json();
         }).then(function (summary) {
@@ -142,7 +142,7 @@
                 return r.json().catch(function () {
     return { title: t('mocks.schemaStartFailedStatus', { status: r.status }) };
 })
-                    .then(function (err) { throw new Error(problemTitle(err, 'Schema mock start failed')); });
+                    .then(function (err) { throw new Error(problemTitle(err, t('mocks.schemaStartFailed'))); });
             }
             return r.json();
         }).then(function (summary) {
@@ -746,7 +746,7 @@ el('span', { className: 'bowire-home-section-count',
     function cfgActions(st, mockId, onAdd, addLabel) {
         var actions = el('div', { style: 'display:flex;gap:8px;margin-top:10px;align-items:center' });
         var addBtn = el('button', { className: 'bowire-empty-card-action',
-    textContent: t('mocks.addLabel', { what: addLabel }) });
+    textContent: addLabel });
         addBtn.onclick = onAdd;
         actions.appendChild(addBtn);
         // Always clickable — an in-place field edit sets dirty WITHOUT a render,
@@ -808,17 +808,17 @@ el('span', { className: 'bowire-home-section-count',
         card.appendChild(cfgActions(st, selected.mockId, function () {
             var ov = { service: '*', method: '*', jsonPath: '$.field', _valueText: '' }; ridOf(ov);
             st.config.fieldOverrides.push(ov); markDirty(st); render();
-        }, 'field override'));
+        }, t('mocks.addOverride')));
         return card;
     }
 
     function renderOverrideRow(st, rid) {
         var ov = findRow(st.config.fieldOverrides, rid);
         var row = el('div', { className: 'bowire-mocks-fault-rule', style: 'display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:6px 0;border-top:1px solid var(--bowire-border-subtle)' });
-        row.appendChild(cfgInput(ov.service, 'service (* = any)', function (v) { var o = findRow(st.config.fieldOverrides, rid); if (o) { o.service = v; markDirty(st); } }));
-        row.appendChild(cfgInput(ov.method, 'method (* = any)', function (v) { var o = findRow(st.config.fieldOverrides, rid); if (o) { o.method = v; markDirty(st); } }));
-        row.appendChild(cfgInput(ov.jsonPath, '$.path', function (v) { var o = findRow(st.config.fieldOverrides, rid); if (o) { o.jsonPath = v; markDirty(st); } }));
-        row.appendChild(cfgInput(ov._valueText, 'value (JSON or text)', function (v) { var o = findRow(st.config.fieldOverrides, rid); if (o) { o._valueText = v; markDirty(st); } }));
+        row.appendChild(cfgInput(ov.service, t('mocks.ph.service'), function (v) { var o = findRow(st.config.fieldOverrides, rid); if (o) { o.service = v; markDirty(st); } }));
+        row.appendChild(cfgInput(ov.method, t('mocks.ph.method'), function (v) { var o = findRow(st.config.fieldOverrides, rid); if (o) { o.method = v; markDirty(st); } }));
+        row.appendChild(cfgInput(ov.jsonPath, '$.path', function (v) { var o = findRow(st.config.fieldOverrides, rid); if (o) { o.jsonPath = v; markDirty(st); } }));  // i18n-exempt: an example JSON path
+        row.appendChild(cfgInput(ov._valueText, t('mocks.ph.value'), function (v) { var o = findRow(st.config.fieldOverrides, rid); if (o) { o._valueText = v; markDirty(st); } }));
         row.appendChild(cfgRemoveBtn(function () { st.config.fieldOverrides = st.config.fieldOverrides.filter(function (x) { return x._rid !== rid; }); markDirty(st); render(); }));
         return row;
     }
@@ -847,7 +847,7 @@ el('span', { className: 'bowire-home-section-count',
         card.appendChild(cfgActions(st, selected.mockId, function () {
             var rule = { service: '*', method: '*', when: { jsonPath: '$.field', equals: '' }, _responseText: '' }; ridOf(rule);
             st.config.conditionalRules.push(rule); markDirty(st); render();
-        }, 'rule'));
+        }, t('mocks.addRule')));
         return card;
     }
 
@@ -866,10 +866,10 @@ el('span', { className: 'bowire-home-section-count',
         rule.when = rule.when || {};
         var op = currentRuleOp(rule.when);
         var row = el('div', { className: 'bowire-mocks-fault-rule', style: 'display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:6px 0;border-top:1px solid var(--bowire-border-subtle)' });
-        row.appendChild(cfgInput(rule.service, 'service (* = any)', function (v) { var r = findRow(st.config.conditionalRules, rid); if (r) { r.service = v; markDirty(st); } }));
-        row.appendChild(cfgInput(rule.method, 'method (* = any)', function (v) { var r = findRow(st.config.conditionalRules, rid); if (r) { r.method = v; markDirty(st); } }));
+        row.appendChild(cfgInput(rule.service, t('mocks.ph.service'), function (v) { var r = findRow(st.config.conditionalRules, rid); if (r) { r.service = v; markDirty(st); } }));
+        row.appendChild(cfgInput(rule.method, t('mocks.ph.method'), function (v) { var r = findRow(st.config.conditionalRules, rid); if (r) { r.method = v; markDirty(st); } }));
         row.appendChild(el('span', { className: 'bowire-mocks-fault-field-label', textContent: 'when' }));
-        row.appendChild(cfgInput(rule.when.jsonPath, '$.path', function (v) { var r = findRow(st.config.conditionalRules, rid); if (r) { (r.when = r.when || {}).jsonPath = v; markDirty(st); } }));
+        row.appendChild(cfgInput(rule.when.jsonPath, '$.path', function (v) { var r = findRow(st.config.conditionalRules, rid); if (r) { (r.when = r.when || {}).jsonPath = v; markDirty(st); } }));  // i18n-exempt: an example JSON path
         row.appendChild(faultSelect(op, RULE_OPS, function (newOp) {
             var r = findRow(st.config.conditionalRules, rid); if (!r) return;
             var w = r.when || (r.when = {});
@@ -886,7 +886,7 @@ el('span', { className: 'bowire-home-section-count',
             w[currentRuleOp(w)] = v; markDirty(st);
         }));
         row.appendChild(el('span', { className: 'bowire-mocks-fault-field-label', textContent: 'serve' }));
-        row.appendChild(cfgInput(rule._responseText, 'response (JSON)', function (v) { var r = findRow(st.config.conditionalRules, rid); if (r) { r._responseText = v; markDirty(st); } }));
+        row.appendChild(cfgInput(rule._responseText, t('mocks.ph.response'), function (v) { var r = findRow(st.config.conditionalRules, rid); if (r) { r._responseText = v; markDirty(st); } }));
         row.appendChild(cfgRemoveBtn(function () { st.config.conditionalRules = st.config.conditionalRules.filter(function (x) { return x._rid !== rid; }); markDirty(st); render(); }));
         return row;
     }
@@ -985,10 +985,10 @@ el('span', { className: 'bowire-home-section-count',
                 };
                 var form = el('div', { style: 'display:flex;flex-direction:column;gap:6px;margin:4px 0 8px 0' });
                 var topRow = el('div', { style: 'display:flex;flex-wrap:wrap;gap:6px;align-items:center' });
-                topRow.appendChild(cfgInput(nr.id, 'id (referenced by authRecordingId)', function (v) { nr.id = v; }));
-                topRow.appendChild(cfgInput(nr.name, 'name (optional)', function (v) { nr.name = v; }));
+                topRow.appendChild(cfgInput(nr.id, t('mocks.ph.recordingId'), function (v) { nr.id = v; }));
+                topRow.appendChild(cfgInput(nr.name, t('mocks.ph.recordingName'), function (v) { nr.name = v; }));
                 topRow.appendChild(faultSelect(nr.scheme || 'bearer', AUTH_SCHEMES, function (v) { nr.scheme = v; }));
-                topRow.appendChild(cfgInput(nr.header, 'header (default Authorization)', function (v) { nr.header = v; }));
+                topRow.appendChild(cfgInput(nr.header, t('mocks.ph.header'), function (v) { nr.header = v; }));
                 topRow.appendChild(faultSelect(nr.mode || 'static',
                     [{ value: 'static', label: t('mocks.credStatic') }, { value: 'flow', label: t('mocks.credFlow') }],
                     function (v) { nr.mode = v; render(); }));
@@ -1010,7 +1010,7 @@ el('span', { className: 'bowire-home-section-count',
                     form.appendChild(flowBtn);
                 } else {
                     var credRow = el('div', { style: 'display:flex;flex-wrap:wrap;gap:6px;align-items:center' });
-                    credRow.appendChild(cfgInput(nr.credential, 'credential (stored locally)', function (v) { nr.credential = v; }));
+                    credRow.appendChild(cfgInput(nr.credential, t('mocks.ph.credential'), function (v) { nr.credential = v; }));
                     var saveRecBtn = el('button', { className: 'bowire-empty-card-action bowire-empty-card-action-primary', textContent: t('mocks.saveRecording') });
                     saveRecBtn.onclick = function () {
                         if (!nr.id || !nr.credential) { st.error = 'A recording needs an id and a credential.'; render(); return; }
@@ -1029,9 +1029,9 @@ el('span', { className: 'bowire-home-section-count',
                     : t('mocks.credHint') }));
             var row = el('div', { style: 'display:flex;flex-wrap:wrap;gap:6px;align-items:center' });
             row.appendChild(faultSelect(auth.scheme || 'bearer', AUTH_SCHEMES, function (v) { st.config.auth.scheme = v; markDirty(st); render(); }));
-            row.appendChild(cfgInput(auth.header, 'header (default Authorization)', function (v) { st.config.auth.header = v; markDirty(st); }));
+            row.appendChild(cfgInput(auth.header, t('mocks.ph.header'), function (v) { st.config.auth.header = v; markDirty(st); }));
             if (!usingRecording) {
-                row.appendChild(cfgInput(auth.credential, 'expected credential (blank = any)', function (v) { st.config.auth.credential = v; markDirty(st); }));
+                row.appendChild(cfgInput(auth.credential, t('mocks.ph.expectedCredential'), function (v) { st.config.auth.credential = v; markDirty(st); }));
             }
             card.appendChild(row);
         }

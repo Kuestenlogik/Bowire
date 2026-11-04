@@ -30,7 +30,7 @@
         var wrap = el('div', { className: 'bowire-request-builder-grpc-picker-wrap' });
         var label = ps.service && ps.method
             ? (ps.service + '/' + ps.method)
-            : (ps.service ? (ps.service + '/…') : 'Service / Method');
+            : (ps.service ? (ps.service + '/…') : t('rbGrpc.pickerEmpty'));
         var btn = el('button', {
             type: 'button',
             className: 'bowire-request-builder-grpc-picker-btn'

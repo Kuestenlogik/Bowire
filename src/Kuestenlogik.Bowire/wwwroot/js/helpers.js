@@ -2450,38 +2450,41 @@
     // handler in init.js — the sheet is the public face, the handler
     // is the wiring. Grouped categories so the sheet reads as
     // "here's what you can do" instead of an alphabetised dump.
+    // The table holds catalogue keys, not sentences: it is built once at load,
+    // and the sheet resolves each key when it paints, so a language switch
+    // reaches it.
     var BOWIRE_KEYBINDINGS = [
-        { group: 'Execution', binds: [
-            { keys: ['Ctrl/Cmd', 'Enter'], action: 'Execute current method' },
-            { keys: ['Ctrl/Cmd', 'S'], action: 'Save / flush all pending writes' },
-            { keys: ['R'], action: 'Repeat the last call' },
+        { group: 'shortcuts.group.execution', binds: [
+            { keys: ['Ctrl/Cmd', 'Enter'], action: 'shortcuts.action.execute' },
+            { keys: ['Ctrl/Cmd', 'S'], action: 'shortcuts.action.save' },
+            { keys: ['R'], action: 'shortcuts.action.repeat' },
         ]},
-        { group: 'History', binds: [
-            { keys: ['Ctrl/Cmd', 'Z'], action: 'Undo the most recent reversible action' },
-            { keys: ['Ctrl/Cmd', 'Shift', 'Z'], action: 'Redo the last undone action' },
+        { group: 'shortcuts.group.history', binds: [
+            { keys: ['Ctrl/Cmd', 'Z'], action: 'shortcuts.action.undo' },
+            { keys: ['Ctrl/Cmd', 'Shift', 'Z'], action: 'shortcuts.action.redo' },  // i18n-exempt: key names on the keyboard
         ]},
-        { group: 'Navigation', binds: [
-            { keys: ['Ctrl/Cmd', 'K'], action: 'Open the command palette' },
-            { keys: ['Ctrl/Cmd', 'T'], action: 'New freeform request tab' },
-            { keys: ['Ctrl/Cmd', 'L'], action: 'Open Hoppscotch-style request bar (#289)' },
-            { keys: ['Ctrl/Cmd', 'W'], action: 'Close the active request tab' },
-            { keys: ['Ctrl/Cmd', '1-9'], action: 'Switch to tab N' },
-            { keys: ['Ctrl', 'Tab'], action: 'Cycle to the next request tab' },
-            { keys: ['Ctrl', 'Shift', 'Tab'], action: 'Cycle to the previous request tab' },
+        { group: 'shortcuts.group.navigation', binds: [
+            { keys: ['Ctrl/Cmd', 'K'], action: 'shortcuts.action.palette' },
+            { keys: ['Ctrl/Cmd', 'T'], action: 'shortcuts.action.newTab' },
+            { keys: ['Ctrl/Cmd', 'L'], action: 'shortcuts.action.requestBar' },
+            { keys: ['Ctrl/Cmd', 'W'], action: 'shortcuts.action.closeTab' },
+            { keys: ['Ctrl/Cmd', '1-9'], action: 'shortcuts.action.switchTab' },
+            { keys: ['Ctrl', 'Tab'], action: 'shortcuts.action.nextTab' },
+            { keys: ['Ctrl', 'Shift', 'Tab'], action: 'shortcuts.action.previousTab' },  // i18n-exempt: key names on the keyboard
         ]},
-        { group: 'Workspace', binds: [
-            { keys: ['Ctrl/Cmd', 'Shift', 'U'], action: 'Add a URL or schema to the active workspace' },
+        { group: 'shortcuts.group.workspace', binds: [
+            { keys: ['Ctrl/Cmd', 'Shift', 'U'], action: 'shortcuts.action.addSource' },  // i18n-exempt: key names on the keyboard
         ]},
-        { group: 'Drawers + layout', binds: [
-            { keys: ['Ctrl/Cmd', 'B'], action: 'Toggle the sidebar' },
-            { keys: ['F1'], action: 'Open the Help drawer (contextual)' },
-            { keys: ['Ctrl/Cmd', 'Shift', 'A'], action: 'Toggle the Assistant drawer' },
-            { keys: ['Ctrl/Cmd', 'Alt', '\\'], action: 'Toggle horizontal / vertical split' },
-            { keys: ['Ctrl/Cmd', '\\'], action: 'Split the active tab to the right (or move it to the other pane)' },
+        { group: 'shortcuts.group.layout', binds: [
+            { keys: ['Ctrl/Cmd', 'B'], action: 'shortcuts.action.sidebar' },
+            { keys: ['F1'], action: 'shortcuts.action.help' },
+            { keys: ['Ctrl/Cmd', 'Shift', 'A'], action: 'shortcuts.action.assistant' },  // i18n-exempt: key names on the keyboard
+            { keys: ['Ctrl/Cmd', 'Alt', '\\'], action: 'shortcuts.action.splitDirection' },  // i18n-exempt: key names on the keyboard
+            { keys: ['Ctrl/Cmd', '\\'], action: 'shortcuts.action.splitRight' },
         ]},
-        { group: 'System', binds: [
-            { keys: ['Ctrl/Cmd', '/'], action: 'Show this shortcut sheet' },
-            { keys: ['Esc'], action: 'Close any overlay; stop active streaming; disconnect channel' },
+        { group: 'shortcuts.group.system', binds: [
+            { keys: ['Ctrl/Cmd', '/'], action: 'shortcuts.action.sheet' },
+            { keys: ['Esc'], action: 'shortcuts.action.escape' },
         ]},
     ];
 
@@ -2516,7 +2519,7 @@
             var section = el('div', { className: 'bowire-shortcut-section' });
             section.appendChild(el('div', {
                 className: 'bowire-shortcut-section-title',
-                textContent: g.group
+                textContent: t(g.group)
             }));
             var rows = el('div', { className: 'bowire-shortcut-rows' });
             g.binds.forEach(function (b) {
@@ -2532,7 +2535,7 @@
                 });
                 row.appendChild(chord);
                 row.appendChild(el('span', {
-                    className: 'bowire-shortcut-action', textContent: b.action
+                    className: 'bowire-shortcut-action', textContent: t(b.action)
                 }));
                 rows.appendChild(row);
             });
@@ -3745,10 +3748,10 @@ var railName = opts.railLabel || t('prereq.thisRail');
     // the Duplex channel shape, etc. Order = sensible default first.
     function getSupportedMethodTypes(protocolId) {
         switch ((protocolId || '').toLowerCase()) {
-            case 'grpc':       return ['Unary', 'ServerStreaming', 'ClientStreaming', 'Duplex'];
+            case 'grpc':       return ['Unary', 'ServerStreaming', 'ClientStreaming', 'Duplex'];  // i18n-exempt: protocol method types, matched as identifiers
             case 'rest':       return ['Unary'];
             case 'graphql':    return ['Unary', 'ServerStreaming'];
-            case 'signalr':    return ['Unary', 'ServerStreaming', 'Duplex'];
+            case 'signalr':    return ['Unary', 'ServerStreaming', 'Duplex'];  // i18n-exempt: protocol method types, matched as identifiers
             case 'mqtt':       return ['Duplex'];
             case 'websocket':  return ['Duplex'];
             case 'sse':        return ['ServerStreaming'];
@@ -3759,7 +3762,7 @@ var railName = opts.railLabel || t('prereq.thisRail');
             case 'jsonrpc':    return ['Unary', 'ServerStreaming'];
             case 'nats':       return ['Unary', 'Duplex'];
             case 'pulsar':     return ['Duplex'];
-            default:           return ['Unary', 'ServerStreaming', 'ClientStreaming', 'Duplex'];
+            default:           return ['Unary', 'ServerStreaming', 'ClientStreaming', 'Duplex'];  // i18n-exempt: protocol method types, matched as identifiers
         }
     }
 

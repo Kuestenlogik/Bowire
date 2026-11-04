@@ -203,7 +203,7 @@
         lines.push('# Service comparison — ' + aLabel + ' → ' + bLabel);
         lines.push('');
         var d = state.schemaDiff;
-        lines.push('**Schema:** ' + (d ? compareSchemaSummary(d) : 'not computed') + '.');
+        lines.push('**Schema:** ' + (d ? compareSchemaSummary(d) : 'not computed') + '.');  // i18n-exempt: the Markdown export is a report file, written in English like the rest of it
         lines.push('');
 
         if (d) {
@@ -444,7 +444,7 @@
         var md = buildCompareMarkdown(serviceCompareState);
         var a = (serviceCompareState.sides.a.serviceName || 'a').replace(/[^A-Za-z0-9._-]+/g, '-');
         var b = (serviceCompareState.sides.b.serviceName || 'b').replace(/[^A-Za-z0-9._-]+/g, '-');
-        downloadTextFile(md, 'compare-' + a + '-vs-' + b + '.md', 'text/markdown');
+        downloadTextFile(md, 'compare-' + a + '-vs-' + b + '.md', 'text/markdown');  // i18n-exempt: a file name and MIME type
         if (typeof toast === 'function') toast(t('compare.exported'), 'success');
     }
 

@@ -830,14 +830,14 @@
 
         // Skip — always present so the operator can bail anywhere.
         actions.appendChild(_iconBtn('bowire-tour-btn-skip', 'close',
-            'Skip tour', function () { tourStop(); }));
+            t('tour.skip'), function () { tourStop(); }));
 
         // Back — present from step 2 onwards. Chevron flipped left
         // via inline transform on the svg.
         if (_tourState.index > 0) {
             actions.appendChild(_iconBtn('bowire-tour-btn-secondary', 'chevron',
-                'Back', function () { _tourState.index--; _renderTourStep(); },
-                'transform: rotate(180deg)'));
+                t('scaffold.back'), function () { _tourState.index--; _renderTourStep(); },
+                'transform: rotate(180deg)'));  // i18n-exempt: an inline CSS style
         }
 
         var isLast = _tourState.index === _tourState.steps.length - 1;
@@ -882,7 +882,7 @@
                 };
                 actions.appendChild(ctaBtnE);
                 actions.appendChild(_iconBtn('bowire-tour-btn-secondary', 'chevron',
-                    'Skip this step', function () { _advanceOrFinish(); }));
+                    t('tour.skipStep'), function () { _advanceOrFinish(); }));
             } else if (step.cta && step.cta.label) {
                 // No onClick — purely declarative 'Waiting for …' hint.
                 var waiting = document.createElement('span');

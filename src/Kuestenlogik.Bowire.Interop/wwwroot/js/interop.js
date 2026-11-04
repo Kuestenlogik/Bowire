@@ -201,8 +201,8 @@
                 environments: interopEnvironments()
             });
             var base = (col.name || 'collection').replace(/[^a-zA-Z0-9._-]/g, '_');
-            interopDownload(base + '.http', result.http || '', 'text/plain');
-            if (result.envJson) interopDownload('http-client.env.json', result.envJson, 'application/json');
+            interopDownload(base + '.http', result.http || '', 'text/plain');  // i18n-exempt: a file name and MIME type
+            if (result.envJson) interopDownload('http-client.env.json', result.envJson, 'application/json');  // i18n-exempt: a file name and MIME type
             var summary = t('interop.exported', { name: base + '.http' });
             if (interopHasFindings(result.report)) interopShowReport(t('interop.exportReportTitle'), summary, result.report);
             else toast(summary, 'success');

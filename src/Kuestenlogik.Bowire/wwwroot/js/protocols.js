@@ -598,7 +598,7 @@
                 S.channelError = 'Channel stream error.';
                 S.statusInfo = { status: 'Error', durationMs: 0 };  // i18n-exempt: status label, carried on the console entry and the run summary
                 S.duplexConnected = false;
-                markSubscriptionError(chanSvc, chanMethod, 'Channel stream error');
+                markSubscriptionError(chanSvc, chanMethod, t('console.body.channelStreamError'));
                 if (S.duplexSseSource === es) {
                     es.close();
                     S.duplexSseSource = null;

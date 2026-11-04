@@ -20,9 +20,12 @@
         var ids = st.missing.map(function (m) { return m.id; });
         var summary;
         if (ids.length <= 3) {
-            summary = ids.join(', ');
+            summary = ids.join(', ');  // i18n-exempt: the separator in a list of values
         } else {
-            summary = ids.slice(0, 3).join(', ') + ' and ' + (ids.length - 3) + ' more';
+            summary = t('main.ws.idsAndMore', {
+                ids: ids.slice(0, 3).join(', '),  // i18n-exempt: the separator in a list of values
+                count: ids.length - 3
+            });
         }
         var text = embedded
             ? t('main.ws.expects', { summary: summary })
@@ -3943,7 +3946,7 @@
                         helpOpenDrawer();
                     }
                 } else {
-                    window.open('https://bowire.io/docs', '_blank', 'noopener');
+                    window.open('https://bowire.io/docs', '_blank', 'noopener');  // i18n-exempt: a URL
                 }
             }
         }, el('span', {
@@ -5881,7 +5884,7 @@
         // Type-specific config inputs
         if (auth.type === 'bearer') {
             section.appendChild(renderAuthField(t('rbAuth.token'), 'bowire-auth-token', auth.token || '',
-                'Bearer token (supports ${var})', 'password',
+                t('rbAuth.ph.bearerToken'), 'password',
                 function (v) { setAuth(Object.assign({}, getAuth(), { type: 'bearer', token: v })); }));
         } else if (auth.type === 'session') {
             // #32 — zero-config mode. The workbench's own login token
@@ -5894,10 +5897,10 @@
             }));
         } else if (auth.type === 'basic') {
             section.appendChild(renderAuthField(t('rbAuth.username'), 'bowire-auth-username', auth.username || '',
-                'Username (supports ${var})', 'text',
+                t('rbAuth.ph.username'), 'text',
                 function (v) { setAuth(Object.assign({}, getAuth(), { type: 'basic', username: v })); }));
             section.appendChild(renderAuthField(t('rbAuth.password'), 'bowire-auth-password', auth.password || '',
-                'Password (supports ${var})', 'password',
+                t('rbAuth.ph.password'), 'password',
                 function (v) { setAuth(Object.assign({}, getAuth(), { type: 'basic', password: v })); }));
         } else if (auth.type === 'negotiate') {
             section.appendChild(el('p', { className: 'bowire-auth-session-note', textContent: t('auth.negotiateHint') }));
@@ -5908,14 +5911,14 @@
             var httpType = auth.type;
             if (httpType === 'ntlm') {
                 section.appendChild(renderAuthField(t('auth.domain'), 'bowire-auth-domain', auth.domain || '',
-                    'CORP (supports ${var})', 'text',
+                    t('rbAuth.ph.domain'), 'text',
                     function (v) { setAuth(Object.assign({}, getAuth(), { type: httpType, domain: v })); }));
             }
             section.appendChild(renderAuthField(t('rbAuth.username'), 'bowire-auth-username', auth.username || '',
-                'Username (supports ${var})', 'text',
+                t('rbAuth.ph.username'), 'text',
                 function (v) { setAuth(Object.assign({}, getAuth(), { type: httpType, username: v })); }));
             section.appendChild(renderAuthField(t('rbAuth.password'), 'bowire-auth-password', auth.password || '',
-                'Password (supports ${var} / {{secret.name}})', 'password',
+                t('rbAuth.ph.passwordOrSecret'), 'password',
                 function (v) { setAuth(Object.assign({}, getAuth(), { type: httpType, password: v })); }));
             section.appendChild(el('p', { className: 'bowire-auth-session-note',
                 textContent: t(httpType === 'ntlm' ? 'auth.ntlmHint' : 'auth.digestHint') }));
@@ -5948,7 +5951,7 @@
                 keyPlaceholder, 'text',
                 function (v) { setAuth(Object.assign({}, getAuth(), { type: 'apikey', key: v })); }));
             section.appendChild(renderAuthField(t('rb.kv.value'), 'bowire-auth-value', auth.value || '',
-                'API key value (supports ${var})', 'password',
+                t('rbAuth.ph.apiKeyValue'), 'password',
                 function (v) { setAuth(Object.assign({}, getAuth(), { type: 'apikey', value: v })); }));
         } else if (auth.type === 'jwt') {
             // Algorithm dropdown — HMAC, RSA, and ECDSA all in one list.
@@ -5999,7 +6002,7 @@
             // RSA / ECDSA so users can paste the full key block.
             if (isAsymmetricJwtAlg(auth.algorithm)) {
                 section.appendChild(renderAuthTextarea(t('rbAuth.privateKeyPkcs8'), auth.secret || '',
-                    '-----BEGIN PRIVATE KEY-----\nMIIEvQIBADAN...\n-----END PRIVATE KEY-----',
+                    '-----BEGIN PRIVATE KEY-----\nMIIEvQIBADAN...\n-----END PRIVATE KEY-----',  // i18n-exempt: a PEM example
                     function (v) { setAuth(Object.assign({}, getAuth(), { secret: v })); }));
                 section.appendChild(el('div', {
                     className: 'bowire-auth-hint',
@@ -6007,7 +6010,7 @@
                 }));
             } else {
                 section.appendChild(renderAuthField(t('rbAuth.secret'), 'bowire-auth-secret', auth.secret || '',
-                    'Signing secret (supports ${var})', 'password',
+                    t('rbAuth.ph.signingSecret'), 'password',
                     function (v) { setAuth(Object.assign({}, getAuth(), { secret: v })); }));
             }
 
@@ -6018,16 +6021,16 @@
                 'https://login.example.com/oauth2/token', 'text',
                 function (v) { setAuth(Object.assign({}, getAuth(), { tokenUrl: v })); clearOauthTokenCache(); }));
             section.appendChild(renderAuthField(t('rbAuth.clientId'), 'bowire-auth-clientid', auth.clientId || '',
-                'Client ID (supports ${var})', 'text',
+                t('rbAuth.ph.clientId'), 'text',
                 function (v) { setAuth(Object.assign({}, getAuth(), { clientId: v })); clearOauthTokenCache(); }));
             section.appendChild(renderAuthField(t('rbAuth.clientSecret'), 'bowire-auth-clientsecret', auth.clientSecret || '',
-                'Client secret (supports ${var})', 'password',
+                t('rbAuth.ph.clientSecret'), 'password',
                 function (v) { setAuth(Object.assign({}, getAuth(), { clientSecret: v })); clearOauthTokenCache(); }));
             section.appendChild(renderAuthField(t('rbAuth.scope'), 'bowire-auth-scope', auth.scope || '',
-                'Optional, space-separated', 'text',
+                t('rbAuth.ph.optionalSpaceSeparated'), 'text',
                 function (v) { setAuth(Object.assign({}, getAuth(), { scope: v })); clearOauthTokenCache(); }));
             section.appendChild(renderAuthField(t('rbAuth.audience'), 'bowire-auth-audience', auth.audience || '',
-                'Optional', 'text',
+                t('rbAuth.ph.optional'), 'text',
                 function (v) { setAuth(Object.assign({}, getAuth(), { audience: v })); clearOauthTokenCache(); }));
 
             // Test button + cache status
@@ -6068,15 +6071,15 @@
                 function (v) { setAuth(Object.assign({}, getAuth(), { tokenHeaders: v })); clearCustomTokenCache(); }));
 
             section.appendChild(renderAuthField(t('rbAuth.tokenJsonPath'), 'bowire-auth-tokenpath', auth.tokenJsonPath || 'token',
-                'e.g. token, data.access_token, auth.jwt', 'text',
-                function (v) { setAuth(Object.assign({}, getAuth(), { tokenJsonPath: v })); clearCustomTokenCache(); }));  // i18n-exempt: an example of the prefix format
+                'e.g. token, data.access_token, auth.jwt', 'text',  // i18n-exempt: example JSON paths
+                function (v) { setAuth(Object.assign({}, getAuth(), { tokenJsonPath: v })); clearCustomTokenCache(); }));
 
             section.appendChild(renderAuthField(t('rbAuth.expiryJsonPath'), 'bowire-auth-expirypath', auth.expiresInJsonPath || '',
-                'e.g. expiresIn, expires_in (TTL in seconds)', 'text',
+                t('rbAuth.ph.expiryPath'), 'text',
                 function (v) { setAuth(Object.assign({}, getAuth(), { expiresInJsonPath: v })); clearCustomTokenCache(); }));
 
             section.appendChild(renderAuthField(t('rbAuth.tokenPrefix'), 'bowire-auth-tokenprefix', auth.tokenPrefix == null ? 'Bearer ' : auth.tokenPrefix,  // i18n-exempt: the Authorization scheme prefix
-                'e.g. "Bearer " (with trailing space) or empty', 'text',
+                t('rbAuth.ph.tokenPrefix'), 'text',
                 function (v) { setAuth(Object.assign({}, getAuth(), { tokenPrefix: v })); }));
 
             section.appendChild(renderCustomTokenTestButton(auth));
@@ -6088,13 +6091,13 @@
                 'https://login.example.com/oauth2/token', 'text',
                 function (v) { setAuth(Object.assign({}, getAuth(), { tokenUrl: v })); clearOauth2AcTokenCacheForEnv(getActiveEnvId()); }));
             section.appendChild(renderAuthField(t('rbAuth.clientId'), 'bowire-auth-oauth-clientid', auth.clientId || '',
-                'Client ID (supports ${var})', 'text',
+                t('rbAuth.ph.clientId'), 'text',
                 function (v) { setAuth(Object.assign({}, getAuth(), { clientId: v })); clearOauth2AcTokenCacheForEnv(getActiveEnvId()); }));
             section.appendChild(renderAuthField(t('rbAuth.clientSecretPublic'), 'bowire-auth-oauth-clientsecret', auth.clientSecret || '',
-                'Only required for confidential clients', 'password',
+                t('rbAuth.ph.confidentialOnly'), 'password',
                 function (v) { setAuth(Object.assign({}, getAuth(), { clientSecret: v })); clearOauth2AcTokenCacheForEnv(getActiveEnvId()); }));
             section.appendChild(renderAuthField(t('rbAuth.scope'), 'bowire-auth-oauth-scope', auth.scope || '',
-                'Space-separated scopes (e.g. openid profile email)', 'text',
+                t('rbAuth.ph.scopes'), 'text',
                 function (v) { setAuth(Object.assign({}, getAuth(), { scope: v })); clearOauth2AcTokenCacheForEnv(getActiveEnvId()); }));
 
             // Read-only redirect URI hint — users have to register this
@@ -6121,19 +6124,19 @@
                 textContent: t('auth.awsHint')
             }));
             section.appendChild(renderAuthField('Access Key ID', 'bowire-auth-aws-access', auth.accessKey || '',  // i18n-exempt: the name AWS gives the field
-                'AKIA... (supports ${var})', 'text',
+                t('rbAuth.ph.awsAccessKey'), 'text',
                 function (v) { setAuth(Object.assign({}, getAuth(), { accessKey: v })); }));
             section.appendChild(renderAuthField('Secret Access Key', 'bowire-auth-aws-secret', auth.secretKey || '',  // i18n-exempt: the name AWS gives the field
-                'Secret access key (supports ${var})', 'password',
+                t('rbAuth.ph.awsSecretKey'), 'password',
                 function (v) { setAuth(Object.assign({}, getAuth(), { secretKey: v })); }));
             section.appendChild(renderAuthField(t('rbAuth.region'), 'bowire-auth-aws-region', auth.region || 'us-east-1',
-                'e.g. us-east-1', 'text',
+                'e.g. us-east-1', 'text',  // i18n-exempt: an example value
                 function (v) { setAuth(Object.assign({}, getAuth(), { region: v })); }));
             section.appendChild(renderAuthField(t('flows.fieldService'), 'bowire-auth-aws-service', auth.service || '',
-                'e.g. execute-api, s3, dynamodb', 'text',
+                'e.g. execute-api, s3, dynamodb', 'text',  // i18n-exempt: example values
                 function (v) { setAuth(Object.assign({}, getAuth(), { service: v })); }));
             section.appendChild(renderAuthField(t('rbAuth.sessionToken'), 'bowire-auth-aws-session', auth.sessionToken || '',
-                'STS session token (supports ${var})', 'password',
+                t('rbAuth.ph.stsSessionToken'), 'password',
                 function (v) { setAuth(Object.assign({}, getAuth(), { sessionToken: v })); }));
         } else if (auth.type === 'mtls') {
             section.appendChild(el('div', {
@@ -6141,16 +6144,16 @@
                 textContent: t('auth.mtlsHint')
             }));
             section.appendChild(renderAuthTextarea(t('rbAuth.clientCert'), auth.certificate || '',
-                '-----BEGIN CERTIFICATE-----\nMIID...\n-----END CERTIFICATE-----',
+                '-----BEGIN CERTIFICATE-----\nMIID...\n-----END CERTIFICATE-----',  // i18n-exempt: a PEM example
                 function (v) { setAuth(Object.assign({}, getAuth(), { certificate: v })); }));
             section.appendChild(renderAuthTextarea(t('rbAuth.privateKeyPem'), auth.privateKey || '',
-                '-----BEGIN PRIVATE KEY-----\nMIIE...\n-----END PRIVATE KEY-----',
+                '-----BEGIN PRIVATE KEY-----\nMIIE...\n-----END PRIVATE KEY-----',  // i18n-exempt: a PEM example
                 function (v) { setAuth(Object.assign({}, getAuth(), { privateKey: v })); }));
             section.appendChild(renderAuthField(t('rbAuth.passphrase'), 'bowire-auth-mtls-passphrase', auth.passphrase || '',
-                'Only required for encrypted private keys', 'password',
+                t('rbAuth.ph.passphrase'), 'password',
                 function (v) { setAuth(Object.assign({}, getAuth(), { passphrase: v })); }));
             section.appendChild(renderAuthTextarea(t('rbAuth.caCert'), auth.caCertificate || '',
-                'Trust anchor for the server certificate. Use this to verify against a private CA without trusting the system store.',
+                t('rbAuth.ph.caCert'),
                 function (v) { setAuth(Object.assign({}, getAuth(), { caCertificate: v })); }));
 
             var allowRow = el('div', { className: 'bowire-auth-row' });

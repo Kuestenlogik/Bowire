@@ -255,7 +255,7 @@
     // `target` sits ahead of every repeatable option so none of them can
     // swallow the positional.
     function cliCommandArgv(spec) {
-        var argv = ['bowire', 'call', '--url', spec.url];
+        var argv = ['bowire', 'call', '--url', spec.url];  // i18n-exempt: CLI argv
         if (spec.protocol) argv.push('--protocol', spec.protocol);
         argv.push(spec.target);
         for (var i = 0; i < spec.data.length; i++) argv.push('-d', spec.data[i]);

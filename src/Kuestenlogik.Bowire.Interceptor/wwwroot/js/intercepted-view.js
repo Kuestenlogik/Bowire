@@ -344,7 +344,7 @@
                 actions: [{
                     label: t('intercept.docs'),
                     primary: true,
-                    onClick: function () { window.open('https://bowire.io/docs/features/', '_blank', 'noopener'); }
+                    onClick: function () { window.open('https://bowire.io/docs/features/', '_blank', 'noopener'); }  // i18n-exempt: a URL
                 }]
             }));
             return;

@@ -673,18 +673,14 @@
             );
         }
         return el('div', { className: 'bowire-recording-timeline-legend' },
-            swatch('is-strong', 'strong',
-                'The key’s own name and value were both found in this step’s payload.'),
-            swatch('is-weak', 'weak',
-                'The value turned up on some other id-shaped field. Low-cardinality ids collide, so this tier stays visibly separate.'),
+            swatch('is-strong', t('corr.strongSwatch'),
+                t('corr.strongHint')),
+            swatch('is-weak', t('corr.weakSwatch'),
+                t('corr.weakHint')),
             swatch('is-weak is-derived', t('corr.derivedSwatch'),  // i18n-exempt: two CSS class names written together
-                'The key is absent, but this step shares a distinctive id-shaped value with a step the key matched '
-                + 'strongly. A bridge value has to be id-shaped at both ends, at least 6 characters, never carried by '
-                + 'a non-id field, and on only a minority of the steps — which is why a bare 1 never links anything, '
-                + 'and why a session id cannot fuse a whole capture into one transaction. The value that linked each '
-                + 'step in is listed under the lanes.'),
-            swatch('is-none', 'unmatched',
-                'The key does not appear in this step at all.')
+                t('corr.derivedHint')),
+            swatch('is-none', t('corr.unmatchedSwatch'),
+                t('corr.unmatchedHint'))
         );
     }
 

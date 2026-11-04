@@ -90,7 +90,7 @@
         if (!service || !method) return schemaUrl;
         var ov = getInvocationOverride(service.name, method.name);
         if (!ov || ov.mode === 'schema') return schemaUrl;
-        if (ov.mode === 'source') return resolveSourceUrl(ov.url, 'method invocation') || schemaUrl;
+        if (ov.mode === 'source') return resolveSourceUrl(ov.url, 'method invocation') || schemaUrl;  // i18n-exempt: a label in a developer console warning
         if (ov.mode === 'inline') {
             var u = (ov.url || '').trim();
             return u || schemaUrl;
@@ -187,9 +187,9 @@
         }
         var hasSources = typeof serverUrls !== 'undefined' && Array.isArray(serverUrls) && serverUrls.length > 0;
         var seg = el('div', { className: 'bowire-invoke-url-modes', role: 'group', 'aria-label': t('invokeUrl.modeAria') });
-        [['schema', 'Same as schema', false],
-         ['source', 'From Source', !hasSources],
-         ['inline', 'Custom', false]].forEach(function (m) {
+        [['schema', t('invokeUrl.mode.schema'), false],
+         ['source', t('main.fromSource'), !hasSources],
+         ['inline', t('invokeUrl.mode.custom'), false]].forEach(function (m) {
             seg.appendChild(el('button', {
                 type: 'button',
                 className: 'bowire-invoke-url-mode-btn' + (ov.mode === m[0] ? ' is-active' : ''),
@@ -247,7 +247,7 @@
             return u || schemaResolvedUrl;
         }
         if (mode === 'source') {
-            return resolveSourceUrl(item.invocationUrl, 'collection item invocation') || schemaResolvedUrl;
+            return resolveSourceUrl(item.invocationUrl, 'collection item invocation') || schemaResolvedUrl;  // i18n-exempt: a label in a developer console warning
         }
         // 'same-as-schema' or absent (pre-#253) → the schema URL.
         return schemaResolvedUrl;

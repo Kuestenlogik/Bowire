@@ -51,7 +51,7 @@
 
         if (auth.type === 'bearer') {
             var token = substituteVars(auth.token || '');
-            if (token && !metadataHasKey(out, 'Authorization')) {
+            if (token && !metadataHasKey(out, 'Authorization')) {  // i18n-exempt: an HTTP header name
                 out['Authorization'] = 'Bearer ' + token;
             }
         } else if (auth.type === 'session') {
@@ -68,7 +68,7 @@
                 } else {
                     var sessionData = await sessionResp.json();
                     if (sessionData && sessionData.hasToken && sessionData.token
-                        && !metadataHasKey(out, 'Authorization')) {
+                        && !metadataHasKey(out, 'Authorization')) {  // i18n-exempt: an HTTP header name
                         out['Authorization'] = (sessionData.scheme || 'Bearer') + ' ' + sessionData.token;
                     } else if (sessionData && !sessionData.hasToken) {
                         if (sessionData.reason === 'anonymous') {
@@ -84,7 +84,7 @@
         } else if (auth.type === 'basic') {
             var user = substituteVars(auth.username || '');
             var pass = substituteVars(auth.password || '');
-            if (user && !metadataHasKey(out, 'Authorization')) {
+            if (user && !metadataHasKey(out, 'Authorization')) {  // i18n-exempt: an HTTP header name
                 out['Authorization'] = 'Basic ' + utf8ToBase64(user + ':' + pass);
             }
         } else if (auth.type === 'negotiate') {
@@ -120,7 +120,7 @@
         } else if (auth.type === 'jwt') {
             try {
                 var jwt = await buildJwt(auth);
-                if (jwt && !metadataHasKey(out, 'Authorization')) {
+                if (jwt && !metadataHasKey(out, 'Authorization')) {  // i18n-exempt: an HTTP header name
                     out['Authorization'] = 'Bearer ' + jwt;
                 }
             } catch (e) {
@@ -129,7 +129,7 @@
         } else if (auth.type === 'oauth2_cc') {
             try {
                 var token2 = await fetchOauthClientCredentialsToken(auth);
-                if (token2 && !metadataHasKey(out, 'Authorization')) {
+                if (token2 && !metadataHasKey(out, 'Authorization')) {  // i18n-exempt: an HTTP header name
                     out['Authorization'] = 'Bearer ' + token2;
                 }
             } catch (e) {
@@ -138,7 +138,7 @@
         } else if (auth.type === 'custom_token') {
             try {
                 var token3 = await fetchCustomToken(auth);
-                if (token3 && !metadataHasKey(out, 'Authorization')) {
+                if (token3 && !metadataHasKey(out, 'Authorization')) {  // i18n-exempt: an HTTP header name
                     var prefix = (auth.tokenPrefix == null ? 'Bearer ' : auth.tokenPrefix);  // i18n-exempt: the Authorization scheme prefix
                     out['Authorization'] = prefix + token3;
                 }
@@ -149,7 +149,7 @@
             try {
                 var envId = getActiveEnvId();
                 var token4 = await ensureOauth2AcAccessToken(envId, auth);
-                if (token4 && !metadataHasKey(out, 'Authorization')) {
+                if (token4 && !metadataHasKey(out, 'Authorization')) {  // i18n-exempt: an HTTP header name
                     out['Authorization'] = 'Bearer ' + token4;
                 }
             } catch (e) {
@@ -487,7 +487,7 @@
         if (scope) params.append('scope', scope);
 
         var fullAuthUrl = authUrl + (authUrl.indexOf('?') >= 0 ? '&' : '?') + params.toString();
-        var popup = window.open(fullAuthUrl, 'bowire-oauth', 'width=520,height=640');
+        var popup = window.open(fullAuthUrl, 'bowire-oauth', 'width=520,height=640');  // i18n-exempt: a window name and window features
         if (!popup) throw new Error('Popup blocked — allow popups for this site');
 
         var callback = await waitForOauthCallback(popup, state);

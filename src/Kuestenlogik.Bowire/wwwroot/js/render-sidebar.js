@@ -980,7 +980,7 @@
 
         // Default selection: active env, or first env, or globals
         if (!envSidebarSelectedId) {
-            envSidebarSelectedId = activeId || (envs.length > 0 ? envs[0].id : '__globals__');
+            envSidebarSelectedId = activeId || (envs.length > 0 ? envs[0].id : '__globals__');  // i18n-exempt: an internal id
         }
 
         // Unified sidebar toolbar — primary "+ New environment".
@@ -4569,7 +4569,7 @@
                                 })
                                 : null
                         ));
-                        var typeOrder = ['Unary', 'ServerStreaming', 'ClientStreaming', 'Duplex'];
+                        var typeOrder = ['Unary', 'ServerStreaming', 'ClientStreaming', 'Duplex'];  // i18n-exempt: protocol method types, matched as identifiers
                         for (var ti = 0; ti < typeOrder.length; ti++) {
                             (function (mtype) {
                                 if (!presentTypes.has(mtype)) return;

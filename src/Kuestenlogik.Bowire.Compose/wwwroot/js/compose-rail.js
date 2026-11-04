@@ -667,8 +667,8 @@
             //     here from another collection.
             onDragOver: function (e) {
                 var types = (e.dataTransfer && e.dataTransfer.types) || [];
-                var isMethod = Array.prototype.indexOf.call(types, 'application/x-bowire-method') >= 0;
-                var isItem = Array.prototype.indexOf.call(types, 'application/x-bowire-compose') >= 0;
+                var isMethod = Array.prototype.indexOf.call(types, 'application/x-bowire-method') >= 0;  // i18n-exempt: a drag-and-drop MIME type
+                var isItem = Array.prototype.indexOf.call(types, 'application/x-bowire-compose') >= 0;  // i18n-exempt: a drag-and-drop MIME type
                 if (isMethod || isItem) {
                     e.preventDefault();
                     e.dataTransfer.dropEffect = isItem ? 'move' : 'copy';
@@ -679,7 +679,7 @@
             onDrop: function (e) {
                 head.classList.remove('is-drop-target');
                 var types = (e.dataTransfer && e.dataTransfer.types) || [];
-                if (Array.prototype.indexOf.call(types, 'application/x-bowire-compose') >= 0) {
+                if (Array.prototype.indexOf.call(types, 'application/x-bowire-compose') >= 0) {  // i18n-exempt: a drag-and-drop MIME type
                     _composeDropItemOnCollection(col.id, e);
                 } else {
                     _composeDropMethodOnCollection(col.id, e);

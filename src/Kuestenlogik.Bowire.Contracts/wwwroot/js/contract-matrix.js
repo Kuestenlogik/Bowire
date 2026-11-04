@@ -92,7 +92,7 @@ function bowireRenderContractCell(cell) {
 
 function bowireRenderContractGrid() {
   var m = bowireContractMatrix;
-  var head = [el('th', { className: 'bowire-contract-corner' }, 'consumer \\ provider')];
+  var head = [el('th', { className: 'bowire-contract-corner' }, t('contracts.corner'))];
   m.providers.forEach(function (p) {
     head.push(el('th', { className: 'bowire-contract-col' }, p));
   });

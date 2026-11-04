@@ -277,8 +277,8 @@
         var table = el('table', { className: 'bowire-mon-table' });
         var thead = el('thead', {});
         var headRow = el('tr', {});
-        ['Time', 'Result', 'Latency', 'Detail'].forEach(function (label) {
-            headRow.appendChild(el('th', { textContent: label }));
+        ['monitoring.col.time', 'main.result', 'mocks.latency', 'monitoring.col.detail'].forEach(function (key) {
+            headRow.appendChild(el('th', { textContent: t(key) }));
         });
         thead.appendChild(headRow);
         table.appendChild(thead);

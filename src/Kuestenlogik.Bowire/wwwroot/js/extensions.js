@@ -1091,9 +1091,12 @@
         var lines = [];
         for (var i = 0; i < hints.length; i++) {
             var h = hints[i];
-            lines.push(label + ': '
-                + h.present.join(', ') + ' marked at ' + h.parentPath
-                + ', ' + h.missing.join(', ') + ' needed.');
+            lines.push(t('extensions.pairingHint', {
+                label: label,
+                present: h.present.join(', '),  // i18n-exempt: the separator in a list of kinds
+                path: h.parentPath,
+                missing: h.missing.join(', ')  // i18n-exempt: the separator in a list of kinds
+            }));
         }
         div.textContent = lines.join(' ');
         return div;

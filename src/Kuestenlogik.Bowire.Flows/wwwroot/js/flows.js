@@ -1535,14 +1535,14 @@
         } catch { /* env machinery not ready */ }
         // System vars from history-env.js — hard-coded names since the
         // resolver doesn't expose an enumeration.
-        ['now', 'nowMs', 'timestamp', 'uuid', 'random'].forEach(function (k) { add(k, 'system'); });
+        ['now', 'nowMs', 'timestamp', 'uuid', 'random'].forEach(function (k) { add(k, t('flows.varSystem')); });
         // Response chaining
-        add(t('flows.varLastResponse'), 'last response (whole body)');
+        add('response', t('flows.varLastResponse'));  // i18n-exempt: the variable name the resolver reads
         if (lastResponseJson && typeof lastResponseJson === 'object') {
             var keys = Array.isArray(lastResponseJson)
                 ? lastResponseJson.slice(0, 5).map(function (_, i) { return String(i); })
                 : Object.keys(lastResponseJson).slice(0, 8);
-            keys.forEach(function (k) { add('response.' + k, 'last response field'); });
+            keys.forEach(function (k) { add('response.' + k, t('flows.varLastResponseField')); });  // i18n-exempt: the variable path the resolver reads
         }
         return out;
     }

@@ -610,7 +610,7 @@
                 if (prob) renderProblem(prob, errOut);
                 else errOut.textContent = (typeof S.responseError === 'string')
                     ? S.responseError
-                    : problemTitle(S.responseError, 'Request failed');
+                    : problemTitle(S.responseError, t('rb.response.failed'));
                 resPane.appendChild(errOut);
             } else if (S.responseData) {
                 var output = el('div', { className: 'bowire-response-output is-interactive' });
@@ -842,7 +842,7 @@
             status: fr.mockStatus || 'OK',
             durationMs: 0
         });
-        if (!bowireEnsureRecordingAndCapture(step, 'Manual mocks')) return;
+        if (!bowireEnsureRecordingAndCapture(step, 'Manual mocks')) return;  // i18n-exempt: a recording name, written into stored data
         toast(t('main.savedMockStep'), 'success');
         render();
     }
@@ -4902,7 +4902,7 @@
                     if (recent.length > 0) {
                         continueGrid.appendChild(_renderContinueTile(
                             'compass', t('main.home.lastMethod'), recent[0].service + ' / ' + recent[0].method,
-                            'Open in Discover',
+                            t('main.openInDiscover'),
                             function () {
                                 var r = recent[0];
                                 var svc = (services || []).find(function (s) { return s.name === r.service; });
@@ -8077,13 +8077,13 @@
                     return [
                         '// gRPC pre-request — set authorization metadata',
                         '// + a 5s deadline.',
-                        'ctx.metadata.set("authorization", "Bearer " + ctx.env.get("TOKEN"));',
+                        'ctx.metadata.set("authorization", "Bearer " + ctx.env.get("TOKEN"));',  // i18n-exempt: a script example, JavaScript the operator edits
                         'ctx.deadline.setSeconds(5);'
                     ].join('\n');
                 case 'mqtt':
                     return [
                         '// MQTT pre-request — exactly-once delivery, no retain.',
-                        'ctx.publish.qos = 1;',
+                        'ctx.publish.qos = 1;',  // i18n-exempt: a script example, JavaScript the operator edits
                         'ctx.publish.retain = false;'
                     ].join('\n');
                 case 'websocket':
@@ -8095,7 +8095,7 @@
                 default:
                     return [
                         '// REST pre-request — sign the body, stamp the URL.',
-                        'ctx.request.headers.set("X-Sent-At", String(Date.now()));',
+                        'ctx.request.headers.set("X-Sent-At", String(Date.now()));',  // i18n-exempt: a script example, JavaScript the operator edits
                         'ctx.request.query.set("trace", ctx.env.get("TRACE_ID") || "anon");'
                     ].join('\n');
             }
@@ -8105,14 +8105,14 @@
             case 'grpc':
                 return [
                     '// gRPC post-response — capture a token, assert OK.',
-                    'ctx.assert.equal(ctx.response.status, "OK");',
-                    'var body = ctx.response.json();',
+                    'ctx.assert.equal(ctx.response.status, "OK");',  // i18n-exempt: a script example, JavaScript the operator edits
+                    'var body = ctx.response.json();',  // i18n-exempt: a script example, JavaScript the operator edits
                     'if (body && body.accessToken) ctx.vars.captured.token = body.accessToken;'
                 ].join('\n');
             case 'mqtt':
                 return [
                     '// MQTT post-response — log the broker ack and assert.',
-                    'ctx.log("ack", ctx.response.body);',
+                    'ctx.log("ack", ctx.response.body);',  // i18n-exempt: a script example, JavaScript the operator edits
                     'ctx.assert.ok(ctx.response.status, "broker did not ack");'
                 ].join('\n');
             case 'websocket':
@@ -8123,8 +8123,8 @@
             default:
                 return [
                     '// REST post-response — capture + assert.',
-                    'ctx.assert.equal(ctx.response.status, "OK");',
-                    'var body = ctx.response.json();',
+                    'ctx.assert.equal(ctx.response.status, "OK");',  // i18n-exempt: a script example, JavaScript the operator edits
+                    'var body = ctx.response.json();',  // i18n-exempt: a script example, JavaScript the operator edits
                     'if (body && body.id) ctx.vars.captured.lastId = body.id;'
                 ].join('\n');
         }
@@ -8240,13 +8240,13 @@
         var system = [
             'You are a script-generator for the Bowire workbench.',
             'Emit a single JavaScript snippet that runs inside the typed ctx.* sandbox for a ' + shape.toUpperCase() + ' ' + (phase === 'pre' ? 'pre-request' : 'post-response') + ' phase.',
-            'The available ctx.* surface for this phase is:',
+            'The available ctx.* surface for this phase is:',  // i18n-exempt: part of the prompt sent to the model
             surface,
-            'Constraints:',
-            '- Output ONLY the script body — no Markdown fences, no commentary.',
-            '- Use only members the surface above lists.',
-            '- Prefer ctx.env.get(...) over hard-coded secrets.',
-            '- Keep the snippet idempotent where possible.',
+            'Constraints:',  // i18n-exempt: part of the prompt sent to the model
+            '- Output ONLY the script body — no Markdown fences, no commentary.',  // i18n-exempt: part of the prompt sent to the model
+            '- Use only members the surface above lists.',  // i18n-exempt: part of the prompt sent to the model
+            '- Prefer ctx.env.get(...) over hard-coded secrets.',  // i18n-exempt: part of the prompt sent to the model
+            '- Keep the snippet idempotent where possible.',  // i18n-exempt: part of the prompt sent to the model
             methodSchema ? t('main.methodSchema', { schema: methodSchema }) : ''
         ].filter(Boolean).join('\n');
         var body = {
@@ -8286,21 +8286,21 @@
     function _ctxSurfaceFor(shape) {
         var always = [
             'ctx.env.get(key) / ctx.env.set(key, value) — workspace env vars',
-            'ctx.vars.captured.NAME = value — value future {{captured.NAME}} resolves to',
-            'ctx.assert.equal(actual, expected) / ctx.assert.ok(value) / ctx.assert.deepEqual(a, b)',
+            'ctx.vars.captured.NAME = value — value future {{captured.NAME}} resolves to',  // i18n-exempt: the ctx.* surface listed in the prompt sent to the model
+            'ctx.assert.equal(actual, expected) / ctx.assert.ok(value) / ctx.assert.deepEqual(a, b)',  // i18n-exempt: the ctx.* surface listed in the prompt sent to the model
             'ctx.log(...args) — surfaces in the Console panel'
         ];
         switch (shape) {
             case 'grpc':
                 return always.concat([
                     'ctx.metadata.set(key, value) / ctx.metadata.get(key)',
-                    'ctx.deadline.setSeconds(n)',
+                    'ctx.deadline.setSeconds(n)',  // i18n-exempt: the ctx.* surface listed in the prompt sent to the model
                     'ctx.request.body (pre) | ctx.response.body, ctx.response.json(), ctx.response.metadata (post)'
                 ]).join('\n  - ');
             case 'mqtt':
                 return always.concat([
                     'ctx.publish.qos = 0|1|2',
-                    'ctx.publish.retain = true|false',
+                    'ctx.publish.retain = true|false',  // i18n-exempt: the ctx.* surface listed in the prompt sent to the model
                     'ctx.request.body (pre) | ctx.response.body (post)'
                 ]).join('\n  - ');
             case 'websocket':
@@ -8310,8 +8310,8 @@
             default:
                 return always.concat([
                     'ctx.request.headers.set/get/delete(key[, value])',
-                    'ctx.request.query.set/get/delete(key[, value])',
-                    'ctx.request.body / ctx.request.method / ctx.request.url',
+                    'ctx.request.query.set/get/delete(key[, value])',  // i18n-exempt: the ctx.* surface listed in the prompt sent to the model
+                    'ctx.request.body / ctx.request.method / ctx.request.url',  // i18n-exempt: the ctx.* surface listed in the prompt sent to the model
                     'ctx.response.json(), ctx.response.body, ctx.response.status, ctx.response.headers (post)'
                 ]).join('\n  - ');
         }
@@ -10869,7 +10869,7 @@
             } else {
                 output.textContent = (typeof S.responseError === 'string')
                     ? S.responseError
-                    : (problemTitle(S.responseError, 'Request failed'));
+                    : (problemTitle(S.responseError, t('rb.response.failed')));
             }
             respBody.appendChild(output);
         } else if (S.streamMessages.length > 0) {
