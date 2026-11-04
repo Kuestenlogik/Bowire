@@ -359,6 +359,12 @@ public static class BowireInterceptorEndpoints
         responseBodyTruncated = flow.ResponseBodyTruncated,
     };
 
+    // #979 - `{ key, value }`, the shape the detail pane reads. A
+    // KeyValuePair serialises as `{ "Key", "Value" }`, which rendered every
+    // header as "undefined:".
+    private static object[] ProjectHeaders(IEnumerable<KeyValuePair<string, string>> headers) =>
+        headers.Select(h => (object)new { key = h.Key, value = h.Value }).ToArray();
+
     private static object ProjectFull(InterceptedFlow flow) => new
     {
         id = flow.Id,
@@ -367,12 +373,12 @@ public static class BowireInterceptorEndpoints
         url = flow.Url,
         path = flow.Path,
         scheme = flow.Scheme,
-        requestHeaders = flow.RequestHeaders,
+        requestHeaders = ProjectHeaders(flow.RequestHeaders),
         requestBody = flow.RequestBody,
         requestBodyBase64 = flow.RequestBodyBase64,
         requestBodyTruncated = flow.RequestBodyTruncated,
         responseStatus = flow.ResponseStatus,
-        responseHeaders = flow.ResponseHeaders,
+        responseHeaders = ProjectHeaders(flow.ResponseHeaders),
         responseBody = flow.ResponseBody,
         responseBodyBase64 = flow.ResponseBodyBase64,
         responseBodyTruncated = flow.ResponseBodyTruncated,

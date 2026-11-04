@@ -92,6 +92,10 @@ public sealed class BowireInterceptorEndpointsTests
         var full = await hit.Content.ReadFromJsonAsync<JsonElement>(ct);
         Assert.Equal("request-body", full.GetProperty("requestBody").GetString());
         Assert.Equal("{\"ok\":true}", full.GetProperty("responseBody").GetString());
+        // #979 - `{ key, value }`, the shape the detail pane reads.
+        var header = Assert.Single(full.GetProperty("requestHeaders").EnumerateArray());
+        Assert.Equal("Host", header.GetProperty("key").GetString());
+        Assert.Equal("example", header.GetProperty("value").GetString());
 
         using var miss = await http.GetAsync(new Uri("/api/intercepted/flows/9999", UriKind.Relative), ct);
         Assert.Equal(HttpStatusCode.NotFound, miss.StatusCode);

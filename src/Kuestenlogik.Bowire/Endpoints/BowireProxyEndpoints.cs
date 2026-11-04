@@ -101,6 +101,12 @@ internal static class BowireProxyEndpoints
         responseBodySize = (flow.ResponseBody?.Length) ?? (flow.ResponseBodyBase64 is null ? 0 : (flow.ResponseBodyBase64.Length * 3 / 4)),
     };
 
+    // #979 - `{ key, value }`, the shape the detail pane reads. A
+    // KeyValuePair serialises as `{ "Key", "Value" }`, which rendered every
+    // header as "undefined:".
+    private static object[] ProjectHeaders(IEnumerable<KeyValuePair<string, string>> headers) =>
+        headers.Select(h => (object)new { key = h.Key, value = h.Value }).ToArray();
+
     private static object ProjectFull(CapturedFlow flow) => new
     {
         id = flow.Id,
@@ -108,11 +114,11 @@ internal static class BowireProxyEndpoints
         method = flow.Method,
         url = flow.Url,
         scheme = flow.Scheme,
-        requestHeaders = flow.RequestHeaders,
+        requestHeaders = ProjectHeaders(flow.RequestHeaders),
         requestBody = flow.RequestBody,
         requestBodyBase64 = flow.RequestBodyBase64,
         responseStatus = flow.ResponseStatus,
-        responseHeaders = flow.ResponseHeaders,
+        responseHeaders = ProjectHeaders(flow.ResponseHeaders),
         responseBody = flow.ResponseBody,
         responseBodyBase64 = flow.ResponseBodyBase64,
         latencyMs = flow.LatencyMs,
