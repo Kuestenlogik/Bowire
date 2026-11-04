@@ -1,11 +1,10 @@
 ---
 # The release's `#` heading. A sentence about this delivery, not the version.
-title: <fill in before the tag>
+title: A Bowire that follows long-running MCP tools, takes in other clients' collections, and has a logo of its own
 version: 2.10.0
 ---
 
-<One-sentence frame for what 2.10 is about. Replaces this placeholder
-before the tag.>
+2.10 is the release for moving work into Bowire and for the tools agents run for minutes, not milliseconds. Bowire follows MCP tasks from call to result, imports Insomnia, Bruno and `.http` collections, runs a collection once per data row, filters with JSONPath, and sends a one-off HTTP request from the command line. Along the way a sweep through every protocol plugin fixed about a hundred defects — one of them sent the mTLS private key to the target as a header — and Bowire got its new logo, a blog and a lighter site.
 
 ## Highlights
 
@@ -72,6 +71,39 @@ Bowire has a new mark, the "bw", in the frame and the navy ink the Küstenlogik 
 - the inline copies on the site, in the docs and in the workbench.
 
 So the site, the docs, the workbench, the NuGet packages, the installers and the VS Code extension all show the same logo. The [brand page](https://bowire.io/brand.html) and the brand guide describe the forms and colours.
+
+## Fixes along the way
+
+### A security fix: REST ad-hoc requests sent internal markers as headers (#899)
+
+A request sent from the freeform REST builder carried Bowire's internal `__bowire*` metadata to the target as HTTP headers — the mTLS marker among them, which holds the client's private key. Every internal marker is now stripped on that path too, as on every other. If you sent ad-hoc REST requests with mTLS configured to a server you do not control, rotate that client certificate.
+
+### A sweep through every protocol plugin (#816–#924)
+
+Each plugin was read against its protocol's specification, and what did not match was fixed:
+- **gRPC:** packed repeated scalars, `sint32`/`sint64` zigzag, the fixed-width types and map fields encode and decode correctly, and `int64` values given as JSON strings are accepted (#889–#891, #894, #895). Connect keeps the base path and no longer hangs on an early end of stream (#897, #898).
+- **REST and OpenAPI:** self-referencing schemas, `application/json; charset=utf-8` keys and duplicate operation keys no longer break discovery, a DELETE keeps its body, a 3xx is OK, and SigV4 signs repeated query parameters as AWS expects (#828, #844, #845, #900, #904–#907). The OpenAPI export and the sample generator write the types the schema has (#859, #861, #902, #903).
+- **GraphQL, AsyncAPI, SignalR, SSE, WebSocket, MQTT, NATS, Socket.IO, JSON-RPC, OData, Pulsar:** cycles, wrong nullability, envelopes and payload decoding, channel URLs, stream ends and settings that were read nowhere (#826, #827, #843, #846–#858, #862–#867, #888, #893, #909–#924).
+- **MCP server tools:** the URL allowlist matches hosts and ports, not text prefixes; a confirmation token is bound to its tool and plan; and the recording tools read and keep the stores as they are written (#877–#887, #892, #896, #908).
+- **SCIM, OIDC, Nuclei, OAST, Scaffold, keyring, workspaces, monitoring, contracts, telemetry and the CLI:** among them a lock file that never recovered, a monitoring window across midnight, and contract results of different pairs that overwrote each other (#816–#818, #829–#842, #848, #849, #860, #868–#876, #881).
+
+### Intercept shows what the reverse proxy captured (#978, #979)
+
+A reverse proxy started from the workbench forwarded requests but recorded them where the Captured tab never looked, and the detail pane showed every header as `undefined:`. Both work now.
+
+### German: technical terms the way developers say them (#980, #983, #984)
+
+The German interface had translated technical terms word by word — "Stellvertreter" for proxy, "Attrappenwirt" for mock server, "Beiwagen" for sidecar. It now says Proxy, Mock-Server, Sidecar, Host, Port, Header and Token, following a glossary in the translation guide that a test holds. More than a hundred sentences that stayed English in every language are translated, and the check that finds them sees the shapes it missed.
+
+## The site
+
+### A blog, a Resources menu, and a phone menu that works (#926–#930)
+
+bowire.io has a blog, with a feed and a canonical home for posts that are cross-posted. Documentation, Bootcamp, Blog and Community sit under **Resources**, and the site, the docs, the API reference and the Bootcamp have a phone menu that stays readable.
+
+### A home page of 410 KiB instead of 5.2 MB (#969)
+
+Every image on the site is served as AVIF or WebP at the size it is shown, only the screenshot of the current theme is loaded, and the demo video loads when it comes into view. The Lighthouse audit passes.
 
 ## Breaking changes
 
