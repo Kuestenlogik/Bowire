@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
 
-**139/139 done**
+**140/140 done**
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -151,6 +151,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [976](https://github.com/Kuestenlogik/Bowire/issues/976) | Bowire | [Response files again, for @file.rsp only](#issue-kuestenlogik-bowire-976) | ✅ Done | `area:cli` |
 | [977](https://github.com/Kuestenlogik/Bowire/issues/977) | Bowire | [Site: the security-engineers workflow shows a proxy screenshot that was never captured](#issue-kuestenlogik-bowire-977) | ✅ Done | `area:site` |
 | [978](https://github.com/Kuestenlogik/Bowire/issues/978) | Bowire | [Workbench reverse proxy: forwarded requests never appear under Captured](#issue-kuestenlogik-bowire-978) | ✅ Done | `area:workbench` |
+| [979](https://github.com/Kuestenlogik/Bowire/issues/979) | Bowire | [Intercept detail pane shows every header as undefined:](#issue-kuestenlogik-bowire-979) | ✅ Done | `area:workbench` |
 | [980](https://github.com/Kuestenlogik/Bowire/issues/980) | Bowire | [German UI: technical terms are translated word by word (Stellvertreter, Attrappenwirt, Beiwagen)](#issue-kuestenlogik-bowire-980) | ✅ Done | `area:workbench` |
 | [981](https://github.com/Kuestenlogik/Bowire/issues/981) | Bowire | [Tests: two loopback servers probe a free port and bind it later, racing parallel tests](#issue-kuestenlogik-bowire-981) | ✅ Done | `area:workbench` |
 | [982](https://github.com/Kuestenlogik/Bowire/issues/982) | Bowire | [Store test overrides are static: parallel tests write into each other's files](#issue-kuestenlogik-bowire-982) | ✅ Done | `area:workbench` |
@@ -158,7 +159,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**5/23 done** · 2 in progress · 16 backlog
+**4/22 done** · 2 in progress · 16 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -184,7 +185,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [674](https://github.com/Kuestenlogik/Bowire/issues/674) | Bowire | [Import from Insomnia, Bruno and .http, with a migration guide per source](#issue-kuestenlogik-bowire-674) | ✅ Done | `area:workbench` |
 | [678](https://github.com/Kuestenlogik/Bowire/issues/678) | Bowire | [bowire send http: send a request directly, URL-first, with HTTPie-style items and --offline](#issue-kuestenlogik-bowire-678) | ✅ Done | `area:cli` |
 | [801](https://github.com/Kuestenlogik/Bowire/issues/801) | Bowire | [MCP Tasks, client side: discover, call and follow tasks of task-capable MCP servers](#issue-kuestenlogik-bowire-801) | ✅ Done |  |
-| [979](https://github.com/Kuestenlogik/Bowire/issues/979) | Bowire | [Intercept detail pane shows every header as undefined:](#issue-kuestenlogik-bowire-979) | ✅ Done | `area:workbench` |
 
 ### v2.12 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
 
@@ -878,6 +878,12 @@ Follow-up to #803. `A_Recorded_Task_Call_Replays_From_The_Mock_And_A_Client_Driv
 
 The workbench's **Start a reverse proxy now** (Intercept rail, `POST /api/tools/reverse-proxy/start`) starts a proxy that forwards to the upstream, but the requests never show up under **Captured**. `/api/intercepted/flows` stays `{"flows":[]}` while requests through the proxy port succeed. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/978)
 
+#### <a id="issue-kuestenlogik-bowire-979"></a>✅ Done · [#979](https://github.com/Kuestenlogik/Bowire/issues/979) Intercept detail pane shows every header as undefined:
+
+> `area:workbench`
+
+Selecting a captured flow (Intercept → Captured, or the proxy view) lists every request and response header as `undefined:`. [[more]](https://github.com/Kuestenlogik/Bowire/issues/979)
+
 #### <a id="issue-kuestenlogik-bowire-980"></a>✅ Done · [#980](https://github.com/Kuestenlogik/Bowire/issues/980) German UI: technical terms are translated word by word (Stellvertreter, Attrappenwirt, Beiwagen)
 
 > `area:workbench`
@@ -1017,12 +1023,6 @@ Bowire reads Postman v2.1, HAR, OpenAPI, proto and SDL. It does **not** read Ins
 #### <a id="issue-kuestenlogik-bowire-801"></a>✅ Done · [#801](https://github.com/Kuestenlogik/Bowire/issues/801) MCP Tasks, client side: discover, call and follow tasks of task-capable MCP servers
 
 MCP Tasks let a server answer a long-running request with a durable handle instead of blocking: the client polls, answers mid-flight questions and fetches the result later, even after reconnecting. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/801)
-
-#### <a id="issue-kuestenlogik-bowire-979"></a>✅ Done · [#979](https://github.com/Kuestenlogik/Bowire/issues/979) Intercept detail pane shows every header as undefined:
-
-> `area:workbench`
-
-Selecting a captured flow (Intercept → Captured, or the proxy view) lists every request and response header as `undefined:`. [[more]](https://github.com/Kuestenlogik/Bowire/issues/979)
 
 ### v2.12 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
 
