@@ -158,6 +158,12 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [779](https://github.com/Kuestenlogik/Bowire/issues/779) | Bowire | [Revoke the old VSCE_PAT in Azure DevOps](#issue-kuestenlogik-bowire-779) | ⬜ Backlog |  |
 | [613](https://github.com/Kuestenlogik/Bowire/issues/613) | Bowire | [Move the VS Code Marketplace publish off PATs to Entra ID before 2026-12-01](#issue-kuestenlogik-bowire-613) | ✅ Done | `area:cli` |
 
+### Backlog (not yet scheduled)
+
+| # | Project | Title | Status | Tags |
+|---|---|---|---|---|
+| [988](https://github.com/Kuestenlogik/Bowire/issues/988) | Bowire | [Embedded gRPC discovery without a reflection endpoint: read the host's in-process service descriptors, and let the host switch the auto-mapped reflection off](#issue-kuestenlogik-bowire-988) | ⬜ Backlog |  |
+
 ## Details
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
@@ -559,6 +565,12 @@ Two warning suppressions in this repo, reviewed under the rule that warnings are
 > `area:cli`
 
 > **Hard deadline: 2026-12-01.** Azure DevOps stops supporting Personal Access Tokens scoped to *all accessible organizations* on that date. That scope is what `vsce publish` has traditionally required. [[more]](https://github.com/Kuestenlogik/Bowire/issues/613)
+
+### Backlog (not yet scheduled)
+
+#### <a id="issue-kuestenlogik-bowire-988"></a>⬜ Backlog · [#988](https://github.com/Kuestenlogik/Bowire/issues/988) Embedded gRPC discovery without a reflection endpoint: read the host's in-process service descriptors, and let the host switch the auto-mapped reflection off
+
+**Seen in an embedding host (Terracle, Bowire 2.10.0):** since 2.8 the core carries no protocol, so an embedded workbench needs `Kuestenlogik.Bowire.Protocol.Grpc` to list the host's gRPC services. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/988)
 
 ---
 
