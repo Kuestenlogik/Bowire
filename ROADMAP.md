@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
 
-**118/120 done** · 2 backlog
+**128/130 done** · 2 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -129,6 +129,16 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [928](https://github.com/Kuestenlogik/Bowire/issues/928) | Bowire | [Blog posts: images wider than the text column overflow the page](#issue-kuestenlogik-bowire-928) | ✅ Done |  |
 | [929](https://github.com/Kuestenlogik/Bowire/issues/929) | Bowire | [Site: the phone menu is see-through — page text shows behind the entries](#issue-kuestenlogik-bowire-929) | ✅ Done |  |
 | [930](https://github.com/Kuestenlogik/Bowire/issues/930) | Bowire | [Docs, API reference and Bootcamp: no phone menu — the nav runs off screen and hides search and theme](#issue-kuestenlogik-bowire-930) | ✅ Done |  |
+| [944](https://github.com/Kuestenlogik/Bowire/issues/944) | Bowire | [Flaky: ChunkedRecordingStore's test root override leaks across parallel test classes](#issue-kuestenlogik-bowire-944) | ✅ Done |  |
+| [945](https://github.com/Kuestenlogik/Bowire/issues/945) | Bowire | [bowire.test.run over MCP, with a data set](#issue-kuestenlogik-bowire-945) | ✅ Done |  |
+| [966](https://github.com/Kuestenlogik/Bowire/issues/966) | Bowire | [MCP tool stream: log frames can arrive out of order, and a log before the result can be lost](#issue-kuestenlogik-bowire-966) | ✅ Done | `area:mcp` |
+| [967](https://github.com/Kuestenlogik/Bowire/issues/967) | Bowire | [Lighthouse PR audit always fails: it audits /comparison.html, which is not a page](#issue-kuestenlogik-bowire-967) | ✅ Done | `area:site` |
+| [968](https://github.com/Kuestenlogik/Bowire/issues/968) | Bowire | [ProxyCommandTests write the proxy CA into the real ~/.bowire](#issue-kuestenlogik-bowire-968) | ✅ Done | `area:cli` |
+| [969](https://github.com/Kuestenlogik/Bowire/issues/969) | Bowire | [Site: images are not served in modern formats; index.html weighs 5.3 MB](#issue-kuestenlogik-bowire-969) | ✅ Done | `area:site` |
+| [970](https://github.com/Kuestenlogik/Bowire/issues/970) | Bowire | [About box: the Küstenlogik lockup follows the server's default theme, not the one in use](#issue-kuestenlogik-bowire-970) | ✅ Done | `area:workbench` |
+| [971](https://github.com/Kuestenlogik/Bowire/issues/971) | Bowire | [Branding: vendor the shared tool 1.1.0 with Bowire's master logos from the meta repo](#issue-kuestenlogik-bowire-971) | ✅ Done | `area:site` |
+| [973](https://github.com/Kuestenlogik/Bowire/issues/973) | Bowire | [MCP task replay and recording: two races that turn CI red](#issue-kuestenlogik-bowire-973) | ✅ Done | `area:mcp` |
+| [974](https://github.com/Kuestenlogik/Bowire/issues/974) | Bowire | [bowire call -d @file: the parser expands the file as a response file and mangles the body](#issue-kuestenlogik-bowire-974) | ✅ Done | `area:cli` |
 | [975](https://github.com/Kuestenlogik/Bowire/issues/975) | Bowire | [bowire send http: --include for the response headers, --output for the body](#issue-kuestenlogik-bowire-975) | ✅ Done | `area:cli` |
 | [976](https://github.com/Kuestenlogik/Bowire/issues/976) | Bowire | [Response files again, for @file.rsp only](#issue-kuestenlogik-bowire-976) | ✅ Done | `area:cli` |
 | [977](https://github.com/Kuestenlogik/Bowire/issues/977) | Bowire | [Site: the security-engineers workflow shows a proxy screenshot that was never captured](#issue-kuestenlogik-bowire-977) | ✅ Done | `area:site` |
@@ -139,7 +149,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**26/42 done** · 2 in progress · 14 backlog
+**16/32 done** · 2 in progress · 14 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -173,16 +183,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [941](https://github.com/Kuestenlogik/Bowire/issues/941) | Bowire | [JUnit XML from bowire test declares utf-16 but is written as UTF-8](#issue-kuestenlogik-bowire-941) | ✅ Done |  |
 | [942](https://github.com/Kuestenlogik/Bowire/issues/942) | Bowire | [Flaky: RecordingStore tests share a process-wide store path across parallel classes](#issue-kuestenlogik-bowire-942) | ✅ Done |  |
 | [943](https://github.com/Kuestenlogik/Bowire/issues/943) | Bowire | [Collection runner in the workbench reports a failed call as PASS](#issue-kuestenlogik-bowire-943) | ✅ Done |  |
-| [944](https://github.com/Kuestenlogik/Bowire/issues/944) | Bowire | [Flaky: ChunkedRecordingStore's test root override leaks across parallel test classes](#issue-kuestenlogik-bowire-944) | ✅ Done |  |
-| [945](https://github.com/Kuestenlogik/Bowire/issues/945) | Bowire | [bowire.test.run over MCP, with a data set](#issue-kuestenlogik-bowire-945) | ✅ Done |  |
-| [966](https://github.com/Kuestenlogik/Bowire/issues/966) | Bowire | [MCP tool stream: log frames can arrive out of order, and a log before the result can be lost](#issue-kuestenlogik-bowire-966) | ✅ Done | `area:mcp` |
-| [967](https://github.com/Kuestenlogik/Bowire/issues/967) | Bowire | [Lighthouse PR audit always fails: it audits /comparison.html, which is not a page](#issue-kuestenlogik-bowire-967) | ✅ Done | `area:site` |
-| [968](https://github.com/Kuestenlogik/Bowire/issues/968) | Bowire | [ProxyCommandTests write the proxy CA into the real ~/.bowire](#issue-kuestenlogik-bowire-968) | ✅ Done | `area:cli` |
-| [969](https://github.com/Kuestenlogik/Bowire/issues/969) | Bowire | [Site: images are not served in modern formats; index.html weighs 5.3 MB](#issue-kuestenlogik-bowire-969) | ✅ Done | `area:site` |
-| [970](https://github.com/Kuestenlogik/Bowire/issues/970) | Bowire | [About box: the Küstenlogik lockup follows the server's default theme, not the one in use](#issue-kuestenlogik-bowire-970) | ✅ Done | `area:workbench` |
-| [971](https://github.com/Kuestenlogik/Bowire/issues/971) | Bowire | [Branding: vendor the shared tool 1.1.0 with Bowire's master logos from the meta repo](#issue-kuestenlogik-bowire-971) | ✅ Done | `area:site` |
-| [973](https://github.com/Kuestenlogik/Bowire/issues/973) | Bowire | [MCP task replay and recording: two races that turn CI red](#issue-kuestenlogik-bowire-973) | ✅ Done | `area:mcp` |
-| [974](https://github.com/Kuestenlogik/Bowire/issues/974) | Bowire | [bowire call -d @file: the parser expands the file as a response file and mangles the body](#issue-kuestenlogik-bowire-974) | ✅ Done | `area:cli` |
 | [979](https://github.com/Kuestenlogik/Bowire/issues/979) | Bowire | [Intercept detail pane shows every header as undefined:](#issue-kuestenlogik-bowire-979) | ✅ Done | `area:workbench` |
 | [983](https://github.com/Kuestenlogik/Bowire/issues/983) | Bowire | [Workbench: sentences kept in slot-named locals are never translated, and the detector cannot see them](#issue-kuestenlogik-bowire-983) | ✅ Done | `area:workbench` |
 
@@ -766,6 +766,62 @@ On a phone, the open burger menu of bowire.io lets the page underneath show thro
 
 On a phone, the header of the docs, the API reference and the Bootcamp has no burger menu. The navigation keeps its desktop row and runs off the right edge ("Quickstart Features Solutio…" at 390px), and the actions behind it — search, home, theme toggle, GitHub — are not reachable at all. [[more]](https://github.com/Kuestenlogik/Bowire/issues/930)
 
+#### <a id="issue-kuestenlogik-bowire-944"></a>✅ Done · [#944](https://github.com/Kuestenlogik/Bowire/issues/944) Flaky: ChunkedRecordingStore's test root override leaks across parallel test classes
+
+In full runs of `Kuestenlogik.Bowire.Tests`, `WorkbenchRecordingJsonProviderCoverageTests` fails at random: a recording seeded under its own workspace folder is not found (`Assert.NotNull() Failure`), or the legacy fallback wins over the workspace match. Run alone, or with its class only, it passes. [[more]](https://github.com/Kuestenlogik/Bowire/issues/944)
+
+#### <a id="issue-kuestenlogik-bowire-945"></a>✅ Done · [#945](https://github.com/Kuestenlogik/Bowire/issues/945) bowire.test.run over MCP, with a data set
+
+Follow-up of #675, to be done with #802 (which makes `bowire.test.run` the first durable MCP task). [[more]](https://github.com/Kuestenlogik/Bowire/issues/945)
+
+#### <a id="issue-kuestenlogik-bowire-966"></a>✅ Done · [#966](https://github.com/Kuestenlogik/Bowire/issues/966) MCP tool stream: log frames can arrive out of order, and a log before the result can be lost
+
+> `area:mcp`
+
+A streamed MCP tool call (`InvokeStreamAsync`, the workbench stream and `bowire call` streaming) shows the server's `notifications/message` as `log` frames. They can arrive out of order, and a log the server sent before the result can be dropped. [[more]](https://github.com/Kuestenlogik/Bowire/issues/966)
+
+#### <a id="issue-kuestenlogik-bowire-967"></a>✅ Done · [#967](https://github.com/Kuestenlogik/Bowire/issues/967) Lighthouse PR audit always fails: it audits /comparison.html, which is not a page
+
+> `area:site`
+
+The *Lighthouse PR audit* check has failed on every run in the last 100 (38 of 38; e.g. on #784, #931, #947). Lighthouse gets a 404 for `http://localhost/comparison.html` and fails with `ERRORED_DOCUMENT_REQUEST`. [[more]](https://github.com/Kuestenlogik/Bowire/issues/967)
+
+#### <a id="issue-kuestenlogik-bowire-968"></a>✅ Done · [#968](https://github.com/Kuestenlogik/Bowire/issues/968) ProxyCommandTests write the proxy CA into the real ~/.bowire
+
+> `area:cli`
+
+Three tests in `tests/Kuestenlogik.Bowire.Tests/Proxy/ProxyCommandTests.cs` start `ProxyCommand` without a `CaDir`: `RunAsync_StartsOnDynamicPortsAndExitsGracefully`, `RunAsync_CancelledBeforeItFinishesStarting_StillExitsCleanly` and `RunAsync_ProxyPortAlreadyInUse_ReturnsErrorCode1`. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/968)
+
+#### <a id="issue-kuestenlogik-bowire-969"></a>✅ Done · [#969](https://github.com/Kuestenlogik/Bowire/issues/969) Site: images are not served in modern formats; index.html weighs 5.3 MB
+
+> `area:site`
+
+With #967 the Lighthouse PR audit loads its pages for the first time, and it fails on all three of them (run https://github.com/Kuestenlogik/Bowire/actions/runs/41694236892, on #784): [[more]](https://github.com/Kuestenlogik/Bowire/issues/969)
+
+#### <a id="issue-kuestenlogik-bowire-970"></a>✅ Done · [#970](https://github.com/Kuestenlogik/Bowire/issues/970) About box: the Küstenlogik lockup follows the server's default theme, not the one in use
+
+> `area:workbench`
+
+The About box picks the Küstenlogik lockup by `config.theme`, the theme the server is configured with, which the theme switch never changes. When a user switches to another theme, the lockup comes in the wrong colour. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/970)
+
+#### <a id="issue-kuestenlogik-bowire-971"></a>✅ Done · [#971](https://github.com/Kuestenlogik/Bowire/issues/971) Branding: vendor the shared tool 1.1.0 with Bowire's master logos from the meta repo
+
+> `area:site`
+
+Follow-up to #964/#965. [[more]](https://github.com/Kuestenlogik/Bowire/issues/971)
+
+#### <a id="issue-kuestenlogik-bowire-973"></a>✅ Done · [#973](https://github.com/Kuestenlogik/Bowire/issues/973) MCP task replay and recording: two races that turn CI red
+
+> `area:mcp`
+
+Follow-up to #803. `A_Recorded_Task_Call_Replays_From_The_Mock_And_A_Client_Drives_It_To_Completion` failed in CI on e542991a and 71005198, and locally in 4 of 30 runs. The cause is two defects in what #803 shipped. [[more]](https://github.com/Kuestenlogik/Bowire/issues/973)
+
+#### <a id="issue-kuestenlogik-bowire-974"></a>✅ Done · [#974](https://github.com/Kuestenlogik/Bowire/issues/974) bowire call -d @file: the parser expands the file as a response file and mangles the body
+
+> `area:cli`
+
+`bowire call … -d @request.json` is documented (cli-mode, export-import, request pane) to send the file's content as the body. It does not: System.CommandLine treats every token that starts with `@` as a response file and replaces it with the file's tokens before the command sees it. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/974)
+
 #### <a id="issue-kuestenlogik-bowire-975"></a>✅ Done · [#975](https://github.com/Kuestenlogik/Bowire/issues/975) bowire send http: --include for the response headers, --output for the body
 
 > `area:cli`
@@ -955,62 +1011,6 @@ Since #801 Bowire follows tasks of the 2025-11-25 core shape — create, poll, `
 #### <a id="issue-kuestenlogik-bowire-943"></a>✅ Done · [#943](https://github.com/Kuestenlogik/Bowire/issues/943) Collection runner in the workbench reports a failed call as PASS
 
 **Run All** on a collection marks an item PASS when its call failed. Example: a REST item against an unreachable host, or with no OpenAPI document. `/api/invoke` answers such a call with HTTP 200, `"status": "Error"` and the reason in `metadata.error`, e.g. *No OpenAPI document found at …*. [[more]](https://github.com/Kuestenlogik/Bowire/issues/943)
-
-#### <a id="issue-kuestenlogik-bowire-944"></a>✅ Done · [#944](https://github.com/Kuestenlogik/Bowire/issues/944) Flaky: ChunkedRecordingStore's test root override leaks across parallel test classes
-
-In full runs of `Kuestenlogik.Bowire.Tests`, `WorkbenchRecordingJsonProviderCoverageTests` fails at random: a recording seeded under its own workspace folder is not found (`Assert.NotNull() Failure`), or the legacy fallback wins over the workspace match. Run alone, or with its class only, it passes. [[more]](https://github.com/Kuestenlogik/Bowire/issues/944)
-
-#### <a id="issue-kuestenlogik-bowire-945"></a>✅ Done · [#945](https://github.com/Kuestenlogik/Bowire/issues/945) bowire.test.run over MCP, with a data set
-
-Follow-up of #675, to be done with #802 (which makes `bowire.test.run` the first durable MCP task). [[more]](https://github.com/Kuestenlogik/Bowire/issues/945)
-
-#### <a id="issue-kuestenlogik-bowire-966"></a>✅ Done · [#966](https://github.com/Kuestenlogik/Bowire/issues/966) MCP tool stream: log frames can arrive out of order, and a log before the result can be lost
-
-> `area:mcp`
-
-A streamed MCP tool call (`InvokeStreamAsync`, the workbench stream and `bowire call` streaming) shows the server's `notifications/message` as `log` frames. They can arrive out of order, and a log the server sent before the result can be dropped. [[more]](https://github.com/Kuestenlogik/Bowire/issues/966)
-
-#### <a id="issue-kuestenlogik-bowire-967"></a>✅ Done · [#967](https://github.com/Kuestenlogik/Bowire/issues/967) Lighthouse PR audit always fails: it audits /comparison.html, which is not a page
-
-> `area:site`
-
-The *Lighthouse PR audit* check has failed on every run in the last 100 (38 of 38; e.g. on #784, #931, #947). Lighthouse gets a 404 for `http://localhost/comparison.html` and fails with `ERRORED_DOCUMENT_REQUEST`. [[more]](https://github.com/Kuestenlogik/Bowire/issues/967)
-
-#### <a id="issue-kuestenlogik-bowire-968"></a>✅ Done · [#968](https://github.com/Kuestenlogik/Bowire/issues/968) ProxyCommandTests write the proxy CA into the real ~/.bowire
-
-> `area:cli`
-
-Three tests in `tests/Kuestenlogik.Bowire.Tests/Proxy/ProxyCommandTests.cs` start `ProxyCommand` without a `CaDir`: `RunAsync_StartsOnDynamicPortsAndExitsGracefully`, `RunAsync_CancelledBeforeItFinishesStarting_StillExitsCleanly` and `RunAsync_ProxyPortAlreadyInUse_ReturnsErrorCode1`. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/968)
-
-#### <a id="issue-kuestenlogik-bowire-969"></a>✅ Done · [#969](https://github.com/Kuestenlogik/Bowire/issues/969) Site: images are not served in modern formats; index.html weighs 5.3 MB
-
-> `area:site`
-
-With #967 the Lighthouse PR audit loads its pages for the first time, and it fails on all three of them (run https://github.com/Kuestenlogik/Bowire/actions/runs/41694236892, on #784): [[more]](https://github.com/Kuestenlogik/Bowire/issues/969)
-
-#### <a id="issue-kuestenlogik-bowire-970"></a>✅ Done · [#970](https://github.com/Kuestenlogik/Bowire/issues/970) About box: the Küstenlogik lockup follows the server's default theme, not the one in use
-
-> `area:workbench`
-
-The About box picks the Küstenlogik lockup by `config.theme`, the theme the server is configured with, which the theme switch never changes. When a user switches to another theme, the lockup comes in the wrong colour. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/970)
-
-#### <a id="issue-kuestenlogik-bowire-971"></a>✅ Done · [#971](https://github.com/Kuestenlogik/Bowire/issues/971) Branding: vendor the shared tool 1.1.0 with Bowire's master logos from the meta repo
-
-> `area:site`
-
-Follow-up to #964/#965. [[more]](https://github.com/Kuestenlogik/Bowire/issues/971)
-
-#### <a id="issue-kuestenlogik-bowire-973"></a>✅ Done · [#973](https://github.com/Kuestenlogik/Bowire/issues/973) MCP task replay and recording: two races that turn CI red
-
-> `area:mcp`
-
-Follow-up to #803. `A_Recorded_Task_Call_Replays_From_The_Mock_And_A_Client_Drives_It_To_Completion` failed in CI on e542991a and 71005198, and locally in 4 of 30 runs. The cause is two defects in what #803 shipped. [[more]](https://github.com/Kuestenlogik/Bowire/issues/973)
-
-#### <a id="issue-kuestenlogik-bowire-974"></a>✅ Done · [#974](https://github.com/Kuestenlogik/Bowire/issues/974) bowire call -d @file: the parser expands the file as a response file and mangles the body
-
-> `area:cli`
-
-`bowire call … -d @request.json` is documented (cli-mode, export-import, request pane) to send the file's content as the body. It does not: System.CommandLine treats every token that starts with `@` as a response file and replaces it with the file's tokens before the command sees it. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/974)
 
 #### <a id="issue-kuestenlogik-bowire-979"></a>✅ Done · [#979](https://github.com/Kuestenlogik/Bowire/issues/979) Intercept detail pane shows every header as undefined:
 
