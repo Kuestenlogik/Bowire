@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
 
-**111/113 done** · 2 backlog
+**112/114 done** · 2 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -129,10 +129,11 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [928](https://github.com/Kuestenlogik/Bowire/issues/928) | Bowire | [Blog posts: images wider than the text column overflow the page](#issue-kuestenlogik-bowire-928) | ✅ Done |  |
 | [929](https://github.com/Kuestenlogik/Bowire/issues/929) | Bowire | [Site: the phone menu is see-through — page text shows behind the entries](#issue-kuestenlogik-bowire-929) | ✅ Done |  |
 | [930](https://github.com/Kuestenlogik/Bowire/issues/930) | Bowire | [Docs, API reference and Bootcamp: no phone menu — the nav runs off screen and hides search and theme](#issue-kuestenlogik-bowire-930) | ✅ Done |  |
+| [982](https://github.com/Kuestenlogik/Bowire/issues/982) | Bowire | [Store test overrides are static: parallel tests write into each other's files](#issue-kuestenlogik-bowire-982) | ✅ Done | `area:workbench` |
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**33/49 done** · 2 in progress · 14 backlog
+**32/48 done** · 2 in progress · 14 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -183,7 +184,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [979](https://github.com/Kuestenlogik/Bowire/issues/979) | Bowire | [Intercept detail pane shows every header as undefined:](#issue-kuestenlogik-bowire-979) | ✅ Done | `area:workbench` |
 | [980](https://github.com/Kuestenlogik/Bowire/issues/980) | Bowire | [German UI: technical terms are translated word by word (Stellvertreter, Attrappenwirt, Beiwagen)](#issue-kuestenlogik-bowire-980) | ✅ Done | `area:workbench` |
 | [981](https://github.com/Kuestenlogik/Bowire/issues/981) | Bowire | [Tests: two loopback servers probe a free port and bind it later, racing parallel tests](#issue-kuestenlogik-bowire-981) | ✅ Done | `area:workbench` |
-| [982](https://github.com/Kuestenlogik/Bowire/issues/982) | Bowire | [Store test overrides are static: parallel tests write into each other's files](#issue-kuestenlogik-bowire-982) | ✅ Done | `area:workbench` |
 | [983](https://github.com/Kuestenlogik/Bowire/issues/983) | Bowire | [Workbench: sentences kept in slot-named locals are never translated, and the detector cannot see them](#issue-kuestenlogik-bowire-983) | ✅ Done | `area:workbench` |
 
 ### v2.12 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
@@ -766,6 +766,12 @@ On a phone, the open burger menu of bowire.io lets the page underneath show thro
 
 On a phone, the header of the docs, the API reference and the Bootcamp has no burger menu. The navigation keeps its desktop row and runs off the right edge ("Quickstart Features Solutio…" at 390px), and the actions behind it — search, home, theme toggle, GitHub — are not reachable at all. [[more]](https://github.com/Kuestenlogik/Bowire/issues/930)
 
+#### <a id="issue-kuestenlogik-bowire-982"></a>✅ Done · [#982](https://github.com/Kuestenlogik/Bowire/issues/982) Store test overrides are static: parallel tests write into each other's files
+
+> `area:workbench`
+
+`WorkbenchAuthRecordingResolverTests.Empty_Credential_Recording_Is_Skipped` and `AuthRecordingStoreTests.Save_Typed_Overload_Round_Trips` fail now and then in a full parallel run: `IOException … typed.json … being used by another process`, or a recording read back with scheme `bearer` where `apikey` … [[more]](https://github.com/Kuestenlogik/Bowire/issues/982)
+
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
 #### <a id="issue-kuestenlogik-bowire-972"></a>🟡 In progress · [#972](https://github.com/Kuestenlogik/Bowire/issues/972) Plugin repos, Templates and Bootcamp: take the new Bowire logo
@@ -1011,12 +1017,6 @@ The German workbench catalogue (`src/Kuestenlogik.Bowire/wwwroot/locales/de.json
 > `area:workbench`
 
 `CliIntegrationTests.Test_FlowAgainstProvider_PassesWithExitZero` failed in a full parallel run with `HttpListenerException: Der Prozess kann nicht auf die Datei zugreifen, da sie von einem anderen Prozess verwendet wird` from `HttpListener.Start()`. It passed in every run before and alone. [[more]](https://github.com/Kuestenlogik/Bowire/issues/981)
-
-#### <a id="issue-kuestenlogik-bowire-982"></a>✅ Done · [#982](https://github.com/Kuestenlogik/Bowire/issues/982) Store test overrides are static: parallel tests write into each other's files
-
-> `area:workbench`
-
-`WorkbenchAuthRecordingResolverTests.Empty_Credential_Recording_Is_Skipped` and `AuthRecordingStoreTests.Save_Typed_Overload_Round_Trips` fail now and then in a full parallel run: `IOException … typed.json … being used by another process`, or a recording read back with scheme `bearer` where `apikey` … [[more]](https://github.com/Kuestenlogik/Bowire/issues/982)
 
 #### <a id="issue-kuestenlogik-bowire-983"></a>✅ Done · [#983](https://github.com/Kuestenlogik/Bowire/issues/983) Workbench: sentences kept in slot-named locals are never translated, and the detector cannot see them
 
