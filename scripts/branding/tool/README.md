@@ -10,6 +10,7 @@ every product. The tool names no product.
 | `generate-logos.mjs` | The generator (Node 22.2 or later, Edge as the browser). |
 | `lib/containers.mjs` | ICO, ICNS and ZIP writers. |
 | `lib/inline.mjs` | The inline copies between `brand:` markers. |
+| `lib/lockup.mjs` | The lockups' geometry and the wordmark's paint per variant. |
 | `outline-wordmark.py` | Outlines a wordmark in Inter to `wordmark.json`, so the generator needs no font. |
 | `Inter-LICENSE.txt` | The licence of Inter (SIL Open Font License 1.1), whose glyph outlines the wordmarks are. |
 | `package.json`, `package-lock.json` | Playwright and sharp, pinned exactly. |
@@ -86,7 +87,7 @@ The same set for every product, in `images/`:
 |---|---|
 | `<prefix>_mark_{colored,black,white,adaptive}.svg` | The mark in the family frame. `adaptive` follows the theme (CSS: `prefers-color-scheme`, and `data-theme` / `data-theme-resolved` where the SVG is inlined). |
 | `<prefix>_mark_{colored,black,white}.png`, `@2x.png`, `.webp`, `@2x.webp` | 512 and 1024 px, transparent. |
-| `<prefix>_lockup_{h,v}_{colored,black,white,adaptive}.svg` | The mark beside (1100×200) or above (480×380) the wordmark. |
+| `<prefix>_lockup_{h,v}_{colored,black,white,adaptive}.svg` | The mark beside (200 tall) or above (380 tall) the wordmark, as wide as the ink needs (below). |
 | `<prefix>_lockup_{h,v}_{colored,black,white}.png`, `@2x.png`, `.webp`, `@2x.webp` | Transparent. |
 | `<prefix>_emblem_*` | Only with `emblem`: SVGs as the mark's, PNG and WebP 512 px tall (and @2x). |
 | `favicon.svg`, `favicon.ico` | The tab icon: the mark cropped square, adaptive; the ICO 16, 32 and 48 px. |
@@ -98,6 +99,13 @@ The same set for every product, in `images/`:
 | the configured `icons` | ICO, ICNS or PNG (with its WebP). |
 
 Every PNG has a WebP twin, lossless (sharp, libwebp). The `adaptive` SVGs get no PNG: a PNG cannot follow the theme.
+
+A lockup is as wide as its ink needs, the same rule for every product (`lib/lockup.mjs`). Horizontal: 200 tall, a
+margin of 10, the mark 180, a gap of 30, the wordmark's ink at 100 px (cap height centred on the mark), a margin of 10;
+vertical: 380 tall, the mark 240 at the top, the wordmark's ink at 70 px centred below it, the wider of the two with a
+margin of 10 on each side. The width is rounded up to a whole pixel. Since 1.2.0; before, every lockup was 1100 or 480
+wide. A wordmark in runs is painted by each run's role in `colored` and `adaptive` only; `black`, `white` and the
+inline copies paint every run the one colour.
 
 ### App icons (`icons`)
 
@@ -151,7 +159,7 @@ generates and checks its logos without this repository beside it. Both are pinne
 
 ```json
 {
-  "version": "1.1.0",
+  "version": "1.2.0",
   "commit": "<40 hex>",
   "files": { "generate-logos.mjs": "<sha256>", "…": "…" },
   "brand": {
@@ -211,5 +219,5 @@ so the font's kerning applies.
 
 ## Third-party
 
-Only the generator uses these; no product ships them: Playwright 1.63.0 (Apache-2.0) drives Edge; sharp 0.35.5
+Only the generator uses these; no product ships them: Playwright 1.64.1 (Apache-2.0) drives Edge; sharp 0.35.5
 (Apache-2.0) with its prebuilt libvips (LGPL-3.0-or-later) encodes the WebPs.

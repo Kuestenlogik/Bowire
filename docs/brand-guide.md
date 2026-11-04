@@ -115,17 +115,21 @@ below its minimum.
 
 ## Colour
 
-The logo has one colour: **navy** (`#003E60`) on light backgrounds, **white**
-(`#FFFFFF`) on dark, and black for single-colour print. Navy is the ink every
-Küstenlogik product's logo shares. Bowire's own colour is **Bowire Indigo**: use
-it for an accent *around* the logo (a "works with Bowire" badge, a button, a
-link), never to recolour the logo itself.
+The logo has two colours. **Navy** (`#003E60`) is the ink every Küstenlogik
+product shares: the b of the mark, the emblem's disc and the "Bo" of the
+wordmark. **Bowire Violet** (`#865BC4`) is Bowire's signature: the w of the mark,
+the emblem's bowline frame and the "wire" of the wordmark. On dark backgrounds
+the adaptive logo turns the navy **white** (`#FFFFFF`) and the violet lighter
+(`#9369D4`); the `white` files are all white, for photos and coloured
+backdrops. For single-colour print the whole logo is black. Never recolour the
+logo otherwise.
 
 | Colour | Hex | Use |
 | --- | --- | --- |
-| **Bowire Indigo** | `#6366F1` | The signature brand accent |
-| Indigo · on light | `#4F46E5` | The same accent where `#6366F1` would miss WCAG AA contrast on a white background |
-| **Navy** | `#003E60` | The logo on light backgrounds (11.3:1 on white) |
+| **Navy** | `#003E60` | The b, the disc and "Bo" on light backgrounds (11.3:1 on white) |
+| **Bowire Violet** | `#865BC4` | Bowire's signature: the w, the bowline frame and "wire" on light backgrounds (4.88:1 on white) |
+| Violet · on dark | `#9369D4` | The same parts on dark backgrounds (4.65:1 on `#121212`) |
+| Bowire Indigo | `#6366F1` | The workbench's UI accent, not a logo colour |
 | **Ink** | `#0F0F17` | Dark backgrounds |
 | **White** | `#FFFFFF` | The logo on dark backgrounds |
 | Off-white | `#FAFAFF` | Light backgrounds |
@@ -160,13 +164,14 @@ conference badge):
 
 ## Backgrounds
 
-Use the version that contrasts with the surface: the navy logo on light, the
-white logo on dark. Indigo is Bowire's colour; on it, use the white logo.
+Use the version that contrasts with the surface: the navy and violet logo on
+light, the white logo on dark (or the adaptive one, white and light violet). On a coloured backdrop such as
+Indigo, use the white logo.
 
 <div style="display:flex;gap:14px;flex-wrap:wrap;margin:18px 0">
   <figure style="margin:0;flex:1;min-width:180px;border:1px solid #e1e1ee;border-radius:10px;overflow:hidden">
-    <div style="background:#fafaff;padding:30px 20px;text-align:center"><img src="images/brand/bowire_lockup_h_colored.svg" alt="Bowire navy logo on a light background" style="max-height:36px"></div>
-    <figcaption style="padding:9px 12px;font-size:13px;color:#5a5a72;border-top:1px solid #e1e1ee">Light <code>#FAFAFF</code> &rarr; navy logo</figcaption>
+    <div style="background:#fafaff;padding:30px 20px;text-align:center"><img src="images/brand/bowire_lockup_h_colored.svg" alt="Bowire navy and violet logo on a light background" style="max-height:36px"></div>
+    <figcaption style="padding:9px 12px;font-size:13px;color:#5a5a72;border-top:1px solid #e1e1ee">Light <code>#FAFAFF</code> &rarr; navy and violet logo</figcaption>
   </figure>
   <figure style="margin:0;flex:1;min-width:180px;border:1px solid #e1e1ee;border-radius:10px;overflow:hidden">
     <div style="background:#0f0f17;padding:30px 20px;text-align:center"><img src="images/brand/bowire_lockup_h_white.svg" alt="Bowire white logo on a dark background" style="max-height:36px"></div>
@@ -180,7 +185,7 @@ white logo on dark. Indigo is Bowire's colour; on it, use the white logo.
 
 - On a photo or gradient, set the logo on a **solid or scrimmed panel** so it
   keeps its clear space and contrast — don't float it directly over busy imagery.
-- Never place the navy logo on a dark field, or the white logo on a light field.
+- Never place the navy and violet logo on a dark field, or the white logo on a light field.
 
 ## File formats
 

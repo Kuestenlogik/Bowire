@@ -17,7 +17,8 @@ Its wordmark.json then holds "parts", one path per run with its role, instead of
 Inter comes from its official release (https://github.com/rsms/inter/releases, extras/ttf/Inter-*.ttf) under the
 SIL Open Font License 1.1; the outlined glyphs are a use the licence permits (see README.md beside this file).
 
-The text is shaped with HarfBuzz, so the font's kerning applies (e.g. the "Te" pair is kerned). Coordinates are in font
+The text is shaped with HarfBuzz, so the font's kerning applies (e.g. the "Te" pair is kerned), across the boundary of
+two neighbouring runs in the same font without a gap too. Coordinates are in font
 units, y pointing down, the baseline at y = 0, the pen starting at x = 0.
 """
 from __future__ import annotations
@@ -33,12 +34,13 @@ from fontTools.pens.boundsPen import BoundsPen
 from fontTools.ttLib import TTFont
 
 
-def outline(font: Path, text: str, x: float, tracking: float, bounds: BoundsPen | None):
-    """Draws `text` in `font` from pen position x; returns the font, the path, the bounds pen and the new pen position."""
+def outline(font: Path, texts: list[str], x: float, tracking: float, bounds: BoundsPen | None):
+    """Draws the runs `texts` in `font` from pen position x, shaped as one text, so the font's kerning applies across
+    the runs' boundaries too; returns the font, one path per run, the bounds pen and the new pen position."""
     blob = hb.Blob.from_file_path(str(font))
     hbfont = hb.Font(hb.Face(blob))
     buf = hb.Buffer()
-    buf.add_str(text)
+    buf.add_str("".join(texts))
     buf.guess_segment_properties()
     hb.shape(hbfont, buf, {"kern": True, "liga": True})
 
@@ -46,16 +48,22 @@ def outline(font: Path, text: str, x: float, tracking: float, bounds: BoundsPen 
     glyphs = tt.getGlyphSet()
     order = tt.getGlyphOrder()
     track = tracking * tt["head"].unitsPerEm if tracking else 0
-    svg_pen = SVGPathPen(glyphs, ntos=lambda v: f"{round(v, 1):g}")
+    pens = [SVGPathPen(glyphs, ntos=lambda v: f"{round(v, 1):g}") for _ in texts]
+    # A glyph belongs to the run its cluster (the index of its first character) lies in.
+    ends, end = [], 0
+    for text in texts:
+        end += len(text)
+        ends.append(end)
     bounds = bounds or BoundsPen(glyphs)
     for info, pos in zip(buf.glyph_infos, buf.glyph_positions):
         gname = order[info.codepoint]
+        run = next(i for i, e in enumerate(ends) if info.cluster < e)
         # y up in the font, y down in SVG: flip around the baseline.
         transform = (1, 0, 0, -1, x + pos.x_offset, -pos.y_offset)
-        glyphs[gname].draw(TransformPen(svg_pen, transform))
+        glyphs[gname].draw(TransformPen(pens[run], transform))
         glyphs[gname].draw(TransformPen(bounds, transform))
         x += pos.x_advance + track
-    return tt, svg_pen.getCommands(), bounds, x
+    return tt, [pen.getCommands() for pen in pens], bounds, x
 
 
 def describe(tt: TTFont) -> dict:
@@ -78,7 +86,7 @@ def main() -> None:
 
     licence = "SIL Open Font License 1.1 (https://openfontlicense.org), (c) 2016 The Inter Project Authors"
     if not args.run:
-        tt, d, bounds, x = outline(args.font, args.text, 0, args.tracking, None)
+        tt, (d,), bounds, x = outline(args.font, [args.text], 0, args.tracking, None)
         x_min, y_min, x_max, y_max = bounds.bounds
         out = {"text": args.text, **describe(tt), "licence": licence}
         if args.tracking:
@@ -92,15 +100,25 @@ def main() -> None:
             "d": d,
         })
     else:
+        # Neighbouring runs in the same font with no gap between them are shaped together (kerned across the
+        # boundary, so a wordmark split only for its colours keeps the single run's geometry); any other boundary
+        # is shaped apart, the gap after it.
+        groups = []
+        for text, font, role in args.run:
+            same = groups and not args.gap and Path(font).resolve() == groups[-1][0].resolve()
+            if same:
+                groups[-1][1].append((text, role))
+            else:
+                groups.append((Path(font), [(text, role)]))
         x, bounds, parts, first = 0.0, None, [], None
-        for i, (text, font, role) in enumerate(args.run):
-            tt, d, bounds, x = outline(Path(font), text, x, args.tracking, bounds)
+        for i, (font, runs) in enumerate(groups):
+            tt, ds, bounds, x = outline(font, [t for t, _ in runs], x, args.tracking, bounds)
             if first is None:
                 first = tt
             elif tt["head"].unitsPerEm != first["head"].unitsPerEm:
                 ap.error("the runs' fonts have different units per em")
-            parts.append({"text": text, **describe(tt), "role": role, "d": d})
-            if i < len(args.run) - 1:
+            parts += [{"text": t, **describe(tt), "role": role, "d": d} for (t, role), d in zip(runs, ds)]
+            if i < len(groups) - 1:
                 x += args.gap * first["head"].unitsPerEm
         x_min, y_min, x_max, y_max = bounds.bounds
         out = {

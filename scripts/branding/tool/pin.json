@@ -1,26 +1,27 @@
 {
   "$comment": "A vendored copy of the shared branding tool (Kuestenlogik/Kuestenlogik, tools/branding) and of the product's brand files (Kuestenlogik/Kuestenlogik, brand/products/<product>; here in the folder above the tool). Do not edit either here: change them in the Kuestenlogik repository and vendor them again (tools/branding/vendor.mjs). check-vendored.mjs compares the files with these hashes (SHA-256, LF line endings).",
   "tool": "Kuestenlogik/Kuestenlogik tools/branding",
-  "version": "1.1.0",
-  "commit": "f69e290e7586b6f2c9ada66019d167be34a74409",
+  "version": "1.2.0",
+  "commit": "0268f3c09fd9b3ab4fd7ad9c260af171200eac49",
   "files": {
     "Inter-LICENSE.txt": "262481e844521b326f5ecd053e59b98c8b2da78c8ee1bdbb6e8174305e54935a",
-    "README.md": "1e7fd851d6afaf7fc67a2165c8b8741e9dc602dcf7f462d55139eecf5df8a577",
+    "README.md": "95e55cf36f041cea15f044cbc3ceeb341adc289d1c23d6e2641a44932b5a81a4",
     "check-vendored.mjs": "c521d55a9abb096ee1eac343ed4e1f2c93eb77ba7244cbc5b8b51ed49fc6e5a1",
-    "generate-logos.mjs": "4a44592cae632e6fc150a5f93539fcb84bc326daa3264ebc455f4bbd3b501768",
+    "generate-logos.mjs": "bcdb48aa8d59b3d21ff0f154285fbe9b6eb74acbc93b147729456cb1a738155f",
     "lib/containers.mjs": "59a0764115e7791c1716ae905bfa41807b969d3a7c29f67f0a0dc7474a9418ad",
     "lib/inline.mjs": "81d003728c42bfa67cae4e1a01f836d43589bd2d90cd1fe6afd9766740a11492",
-    "outline-wordmark.py": "56ea51bf3848f60cce120aae49fcb494aab7cfea1fc7c230de91465ed30d19ad",
-    "package-lock.json": "4222f920c5681e25ae109104121298d607672dd61b13c5c05f289d77edb450cb",
-    "package.json": "ab829b1522a862b8215b71666f44f540a4e9bdf20d3aae4a73c410f242308bdd"
+    "lib/lockup.mjs": "18d0e6940f0d9cfef2511d924ea9d0b1855af02908c5fbcfbf12a4f9599a570e",
+    "outline-wordmark.py": "4dc03ae776c28568bd3368f645b49155c686c667fdc8c4ae598309fd7b7f22fb",
+    "package-lock.json": "082baa786448f5ee2cb0688fb667b8bb95cd24e20a7d52301184c769d1106daf",
+    "package.json": "44e0b51bbd0936544577be3cde4f816ec5b9cb9f2e8843642e63a1f4a5aa10fe"
   },
   "brand": {
     "from": "brand/products/bowire",
     "files": {
-      "bowire_emblem_source.svg": "80dfa3cdc6ab267b99e86efca53230621e2d6040bc1594ba7b417e97399e00c3",
-      "bowire_mark_source.svg": "347152010241dc4e1dcbdcd807f9c0e47fbc6f67f4b2ff5037dc82b9df9222e2",
-      "brand.json": "eec2dd78635cdb87708c701897e196ac88a0a909e96d321eb97b67ff4f2c1d2f",
-      "wordmark.json": "1936a8f50e059bd0b315b24cd03cbe1609b9f9a13fc7a13e9df85c13ae7d884b"
+      "bowire_emblem_source.svg": "6795cf8095b81bdd1af5b17313f0853e8b1c6f5566ab200fcc1b8dc24b22acb3",
+      "bowire_mark_source.svg": "71196099e58992f0c717178891182eb8bf2c6fb3c85ceb4c5ff35701356e29ac",
+      "brand.json": "174d8629aad856bf50fa5f9c2f40cf3b62ad68847c36917c6e5a1abad201873e",
+      "wordmark.json": "2169ae0ecdd4a0e836f4fda59d10cd0d279bbdfe70a4f2c325d5612229b7778f"
     }
   }
 }

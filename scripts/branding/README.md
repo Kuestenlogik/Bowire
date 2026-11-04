@@ -36,11 +36,14 @@ pin of the tool.
 
 - **Names** carry the product prefix: `bowire_mark_*`, `bowire_emblem_*`, `bowire_lockup_{h,v}_*`. The web's standard
   names stay: `favicon.ico`, `favicon.svg`, `apple-touch-icon.png`, `icon.png`, `og-image.*`.
-- **Colour**: the drawings are black; `colored` paints them in Küstenlogik's navy ink `#003e60`, white on dark.
+- **Colour** (the Küstenlogik family colours, 4 November 2026): the drawings are black; `colored` paints the b of
+  the mark and the emblem's disc in Küstenlogik's navy `#003e60`, and the w of the mark, the emblem's bowline frame
+  and the run "wire" of the wordmark in Bowire's signature violet `#865bc4` (`#9369d4` on dark; the role `wire`,
+  CSS class `.bowire-wire` in the adaptive SVGs). On dark the navy turns white.
 - **Frame**: the mark is placed in the family frame (77.026421 × 77.673187), scaled whole and centred; the drawing
   itself is unchanged. The emblem keeps its own frame.
 - **App icons** (`bowire.ico`, `bowire.icns`, `bowire_app_256.png`, `icon.png`, `icon-512.png`) show the mark on the
-  light tile, so a navy mark stays visible on a dark taskbar, dock or gallery.
+  light tile, so the navy and violet mark stays visible on a dark taskbar, dock or gallery.
 
 To change a drawing, `brand.json` or the wordmark, change `brand/products/bowire/` in the Kuestenlogik repository; to
 change the generator, change `tools/branding` there. Then vendor again from a clean checkout of that repository

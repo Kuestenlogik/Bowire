@@ -41,6 +41,7 @@ import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { ico, icns, icnsSizes, zip } from './lib/containers.mjs';
 import { syncInline, hasMarker } from './lib/inline.mjs';
+import { flat, lockupGeometry, partPaint } from './lib/lockup.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const args = process.argv.slice(2);
@@ -69,7 +70,6 @@ const sharp = toolRequire('sharp');
 const roles = Object.fromEntries(Object.entries(config.roles).map(([role, c]) =>
   [role, { light: c.light, dark: c.dark, source: c.source.map((v) => v.toLowerCase()) }]));
 if (!roles[config.wordmarkRole]) throw new Error(`${configFile}: wordmarkRole "${config.wordmarkRole}" is no role`);
-const flat = { black: '#000000', white: '#ffffff', current: 'currentColor' };
 // The light background behind the tiles (touch, package and manifest icon) and the Open Graph image: a radial
 // gradient over these stops.
 const glass = config.background.stops;
@@ -84,12 +84,11 @@ for (const part of wordmarkParts) {
   if (!roles[part.role]) throw new Error(`${config.wordmark.outline}: the run "${part.text}" names role "${part.role}", which brand.json does not have`);
 }
 
-// Lockup geometry of the family: horizontal 1100×200 (mark 180 at 10,10; text from x 220, 100 px), vertical 480×380
-// (mark 240 at 120,20; text centred at 240, 70 px, baseline near 340). A wordmark whose ink would be wider than
-// maxWidth is set smaller, so it stays inside the lockup.
+// Lockup geometry of the family (lib/lockup.mjs): 200 tall beside, 380 tall above, each as wide as mark, gap and the
+// wordmark's ink need with the margin.
 const lockups = {
-  h: { w: 1100, h: 200, mark: { x: 10, y: 10, size: 180 }, text: { x: 220, centreY: 100, size: 100, maxWidth: 870, anchor: 'start' }, label: `${label} logo horizontal` },
-  v: { w: 480, h: 380, mark: { x: 120, y: 20, size: 240 }, text: { x: 240, baseline: 340, size: 70, maxWidth: 460, anchor: 'middle' }, label: `${label} logo vertical` },
+  h: { ...lockupGeometry('h', wordmark), label: `${label} logo horizontal` },
+  v: { ...lockupGeometry('v', wordmark), label: `${label} logo vertical` },
 };
 const markPng = 512;
 const emblemPngHeight = 512;
@@ -217,16 +216,10 @@ ${style ? `  <defs>${style}</defs>\n` : ''}${inner}
 // A lockup's inner drawing (the mark beside or above the wordmark) in a variant.
 function lockupInner(kind, variant, mark) {
   const L = lockups[kind];
-  const [x0, , x1] = wordmark.bbox;
-  const s = Math.min(L.text.size / wordmark.unitsPerEm, L.text.maxWidth / (x1 - x0));
-  const inkWidth = (x1 - x0) * s;
-  // Horizontal: the cap height centred on the mark's centre line. Vertical: on the family's baseline.
-  const baseline = L.text.baseline ?? L.text.centreY + (wordmark.capHeight * s) / 2;
-  const tx = L.text.anchor === 'middle' ? L.text.x - inkWidth / 2 - x0 * s : L.text.x - x0 * s;
-  const textPaint = (role) => (variant === 'adaptive' ? `class="${prefix}-${role}"` : `fill="${flat[variant] ?? roles[role].light}"`);
+  const { s, tx, baseline } = L.text;
   const text = wordmarkParts.map((part) =>
-    `  <path ${textPaint(part.role)} transform="translate(${tx.toFixed(2)} ${baseline.toFixed(2)}) scale(${s.toFixed(6)})" d="${part.d}" />`).join('\n');
-  return `  <svg x="${L.mark.x}" y="${L.mark.y}" width="${L.mark.size}" height="${L.mark.size}" viewBox="${square(mark, 1).map((v) => +v.toFixed(3)).join(' ')}">
+    `  <path ${partPaint(variant, part.role, roles, prefix)} transform="translate(${tx.toFixed(2)} ${baseline.toFixed(2)}) scale(${s.toFixed(6)})" d="${part.d}" />`).join('\n');
+  return `  <svg x="${+L.mark.x.toFixed(3)}" y="${+L.mark.y.toFixed(3)}" width="${L.mark.size}" height="${L.mark.size}" viewBox="${square(mark, 1).map((v) => +v.toFixed(3)).join(' ')}">
 ${paint(mark.body, variant)}
   </svg>
 ${text}`;

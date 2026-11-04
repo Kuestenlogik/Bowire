@@ -9,7 +9,8 @@
   "wordmark": { "text": "Bowire", "outline": "scripts/branding/wordmark.json" },
   "images": "images",
   "roles": {
-    "ink": { "light": "#003e60", "dark": "#ffffff", "source": ["#000000"], "why": "the bw and its ring, drawn black: Küstenlogik's navy ink on light (11.3:1 on white), white on dark (navy on #121212 would be 1.7:1)" }
+    "ink": { "light": "#003e60", "dark": "#ffffff", "source": ["#916f8a"], "why": "Navy, the family base: the b of the mark and the emblem's disc with the bw knocked out of it (both drawn #916f8a), and the run Bo; 11.30:1 on white; white on dark (navy on #121212 would be 1.7:1)" },
+    "wire": { "light": "#865bc4", "dark": "#9369d4", "source": ["#000000"], "why": "the signature (OKLCH L 0.565 C 0.16 h 300; dark L 0.61): the w of the mark and the emblem's bowline frame (both drawn black), and the run wire; 4.88:1 on white, the dark tone 4.65:1 on #121212" }
   },
   "wordmarkRole": "ink",
   "background": { "stops": ["#F6F8FA", "#E6EBEF", "#D3DCE3"], "why": "the family's neutral light glass; behind the tiles and og-image" },
