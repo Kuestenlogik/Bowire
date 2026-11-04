@@ -132,13 +132,14 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**25/43 done** · 3 in progress · 15 backlog
+**25/44 done** · 4 in progress · 15 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [969](https://github.com/Kuestenlogik/Bowire/issues/969) | Bowire | [Site: images are not served in modern formats; index.html weighs 5.3 MB](#issue-kuestenlogik-bowire-969) | 🟡 In progress | `area:site` |
 | [977](https://github.com/Kuestenlogik/Bowire/issues/977) | Bowire | [Site: the security-engineers workflow shows a proxy screenshot that was never captured](#issue-kuestenlogik-bowire-977) | 🟡 In progress | `area:site` |
 | [978](https://github.com/Kuestenlogik/Bowire/issues/978) | Bowire | [Workbench reverse proxy: forwarded requests never appear under Captured](#issue-kuestenlogik-bowire-978) | 🟡 In progress | `area:workbench` |
+| [979](https://github.com/Kuestenlogik/Bowire/issues/979) | Bowire | [Intercept detail pane shows every header as undefined:](#issue-kuestenlogik-bowire-979) | 🟡 In progress | `area:workbench` |
 | [672](https://github.com/Kuestenlogik/Bowire/issues/672) | Bowire | [Server-side script engine so pre/post scripts run in bowire test, not only in the browser](#issue-kuestenlogik-bowire-672) | ⬜ Backlog | `area:cli` |
 | [677](https://github.com/Kuestenlogik/Bowire/issues/677) | Bowire | [Broader code export, and snippets for the protocols no snippet library covers](#issue-kuestenlogik-bowire-677) | ⬜ Backlog | `area:workbench` |
 | [687](https://github.com/Kuestenlogik/Bowire/issues/687) | Bowire | [Tray icon and no console window: give the running workbench a handle of its own](#issue-kuestenlogik-bowire-687) | ⬜ Backlog | `area:cli` |
@@ -779,6 +780,12 @@ With #967 the Lighthouse PR audit loads its pages for the first time, and it fai
 > `area:workbench`
 
 The workbench's **Start a reverse proxy now** (Intercept rail, `POST /api/tools/reverse-proxy/start`) starts a proxy that forwards to the upstream, but the requests never show up under **Captured**. `/api/intercepted/flows` stays `{"flows":[]}` while requests through the proxy port succeed. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/978)
+
+#### <a id="issue-kuestenlogik-bowire-979"></a>🟡 In progress · [#979](https://github.com/Kuestenlogik/Bowire/issues/979) Intercept detail pane shows every header as undefined:
+
+> `area:workbench`
+
+Selecting a captured flow (Intercept → Captured, or the proxy view) lists every request and response header as `undefined:`. [[more]](https://github.com/Kuestenlogik/Bowire/issues/979)
 
 #### <a id="issue-kuestenlogik-bowire-672"></a>⬜ Backlog · [#672](https://github.com/Kuestenlogik/Bowire/issues/672) Server-side script engine so pre/post scripts run in bowire test, not only in the browser
 
