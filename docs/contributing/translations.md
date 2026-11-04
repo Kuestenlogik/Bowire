@@ -188,6 +188,48 @@ The sentence *around* one of these is translated; the thing being named is not. 
 
 The same reasoning applies to anything Bowire *writes into data*. A workspace name, a collection name, an action-log entry: those travel through `.bww` export into somebody else's Bowire, so a default written in one language would arrive in theirs. Bowire stores them empty or in English and translates only the display.
 
+## Technical terms in German
+
+A technical term reads the way developers who speak the language say it. Use the established term in that language where one exists; otherwise use the usual English term. Never translate a technical term word by word: German developers say "Proxy", not "Stellvertreter", and a word-by-word translation reads like an error they have to translate back (#980).
+
+The German catalogue follows this glossary. A test (`tests/Kuestenlogik.Bowire.Tests/wwwroot-js/locale-terminology.test.mjs`) fails on the rejected forms in the last column.
+
+| English | German | Not |
+|---|---|---|
+| proxy, reverse proxy | Proxy, Reverse-Proxy | Stellvertreter, gegenläufiger Stellvertreter |
+| mock, mock server, mock rule | Mock, Mock-Server, Mock-Regel | Attrappe, Attrappenwirt |
+| host (a server, or an app that hosts Bowire) | Host | Wirt |
+| sidecar | Sidecar | Beiwagen, Beipack |
+| port | Port | Anschluss |
+| stream, streaming | Stream, Streaming | Strom |
+| flow (a Bowire flow) | Flow | Ablauf |
+| flow (a captured HTTP exchange) | Mitschnitt | Strom |
+| captured | mitgeschnitten | aufgefangen |
+| rail (the activity bar) | Leiste | Schiene |
+| tab, sub-tab | Tab, Unter-Tab | Reiter, Unterreiter |
+| header, body, payload | Header, Body, Payload | Kopfzeile, Rumpf, Nutzlast |
+| token, session token | Token, Session-Token | Merkmal |
+| cookie | Cookie | Keks |
+| secret | Secret | Geheimnis (as a term) |
+| hub, frame, topic, broker | Hub, Frame, Topic, Broker | Nabe, Bild, Thema, Verteiler |
+| snapshot, bundle, widget, overlay, pipeline | Snapshot, Bundle, Widget, Overlay, Pipeline | Abzug, Bündel, Baustein, Auflage, Verarbeitungskette |
+| plugin | Plugin | Zusatzpaket |
+| benchmark | Benchmark | Prüfstand |
+| fuzzing, spider, probe | Fuzzing, Spider, Probe | Abklopfen, Verwirrspiel, Spinne, Sonde |
+| assertion, override | Assertion, Override | Zusicherung, Abweichung |
+| upstream | Upstream | vorgelagerter Dienst |
+| handshake, certificate | Handshake, Zertifikat | Handschlag, Zeugnis |
+| credentials | Zugangsdaten | Nachweis |
+| URL, base URL | URL, Basis-URL | Adresse, Grundadresse |
+| callback, cache, dropdown | Callback, Cache, Dropdown | Rückruf, Zwischenspeicher, Ausklappmenü |
+| version | Version | Fassung |
+| discovery (the process) | Discovery | Erkundung, Ermittlung |
+| workbench | Workbench | Werkbank, Arbeitsplatz |
+
+The rail's feature names follow the same rule: Start, Erkunden, Compose, Aufzeichnungen, Flows, Lint, Contracts, Rollup, Intercept, Benchmarks, Monitoring, Sicherheit, Arbeitsbereiche, Hilfe.
+
+Established German terms stay German: Anfrage, Antwort, Einstellungen, Umgebung, Arbeitsbereich, Sammlung, Aufzeichnung, Methode, Dienst, Endpunkt, Vorlage, Verlauf, Sitzung, Seitenleiste, Befehlspalette, Latenz, Durchsatz, Zugangsdaten, Schlüsselbund.
+
 ## The guard that says when the sweep is done
 
 Twice the sweep looked finished and wasn't, both times because the search drew the boundary and the files quietly disagreed. First the guards scanned only `src/Kuestenlogik.Bowire/wwwroot/js` &mdash; the same directory the sweep had walked &mdash; so six hundred literals in the sibling packages were invisible to both. Then the search knew only the slots it had been handed (`textContent`, `title`, `placeholder`, `label`, `aria-label`), so the `headline:` and `body:` of every empty-state card went unseen, along with every label passed to a helper positionally.
