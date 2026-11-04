@@ -5,7 +5,8 @@ name: Release
 # (HTML zip + custom-rendered PDF), then publishes everything to:
 #   - GitHub Releases (all assets, all tags)
 #   - GitHub Packages   (NuGets, every tag — RCs included)
-#   - nuget.org         (NuGets, every tag, gated on NUGET_API_KEY; RCs
+#   - nuget.org         (NuGets, every tag, via Trusted Publishing — gated
+#                        on the NUGET_USER variable; RCs
 #                        show up as pre-release versions and only flow
 #                        to consumers who opt in via `--prerelease`)
 #   - GHCR              (multi-arch container, always on tag)
@@ -59,13 +60,24 @@ jobs:
     name: Build (Linux artefacts + container)
     runs-on: ubuntu-latest
 
+    # The workflow's permissions, plus id-token: nuget.org's Trusted
+    # Publishing exchanges this job's GitHub OIDC token for a one-hour API
+    # key, so no long-lived nuget.org key is stored anywhere.
+    permissions:
+      contents: write
+      packages: write
+      id-token: write
+
     # Job-level env so optional secrets are visible in `if:` expressions
     # (the `secrets` context isn't available there directly). Empty
     # values when the secret isn't set, so `env.X != ''` gates work.
     env:
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-      NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+      # The nuget.org profile name the Trusted Publishing policy belongs to
+      # (an organization variable, not a secret). Empty means no nuget.org
+      # publish, the same as an unset key used to.
+      NUGET_USER: ${{ vars.NUGET_USER }}
 
     steps:
       - uses: actions/checkout@v7
@@ -416,9 +428,19 @@ jobs:
         if: ${{ github.ref_type == 'tag' }}
         run: dotnet nuget push "artifacts/packages/*.nupkg" --source "https://nuget.pkg.github.com/Kuestenlogik/index.json" --api-key ${{ secrets.GITHUB_TOKEN }} --skip-duplicate
 
+      # Trusted Publishing: the policy on nuget.org trusts this repository's
+      # release.yml. The temporary key lives one hour, so it is fetched right
+      # before the push rather than at the start of the job.
+      - name: nuget.org login (OIDC → temporary API key)
+        if: ${{ github.ref_type == 'tag' && env.NUGET_USER != '' }}
+        id: nuget-login
+        uses: NuGet/login@8d196754b4036150537f80ac539e15c2f1028841 # v1.2.0
+        with:
+          user: ${{ env.NUGET_USER }}
+
       - name: Publish to nuget.org
-        if: ${{ github.ref_type == 'tag' && env.NUGET_API_KEY != '' }}
-        run: dotnet nuget push "artifacts/packages/*.nupkg" --source https://api.nuget.org/v3/index.json --api-key "${{ env.NUGET_API_KEY }}" --skip-duplicate
+        if: ${{ github.ref_type == 'tag' && env.NUGET_USER != '' }}
+        run: dotnet nuget push "artifacts/packages/*.nupkg" --source https://api.nuget.org/v3/index.json --api-key "${{ steps.nuget-login.outputs.NUGET_API_KEY }}" --skip-duplicate
 
       # nuget.org indexing-lag guard — the fix for the sibling NU1102 race.
       # `dotnet nuget push` returns the instant the upload is accepted, but
@@ -435,7 +457,7 @@ jobs:
       # reference and what NU1102'd; the sibling NuGets push together and
       # index alongside it, so gating on the contract package is enough.)
       - name: Wait for nuget.org to index the release
-        if: ${{ github.ref_type == 'tag' && env.NUGET_API_KEY != '' }}
+        if: ${{ github.ref_type == 'tag' && env.NUGET_USER != '' }}
         env:
           NEW_V: ${{ steps.version.outputs.VERSION }}
         run: |
@@ -475,7 +497,7 @@ jobs:
       # on whitespace.
       - name: Collect published package ids
         id: pkgs
-        if: ${{ github.ref_type == 'tag' && env.NUGET_API_KEY != '' }}
+        if: ${{ github.ref_type == 'tag' && env.NUGET_USER != '' }}
         env:
           V: ${{ steps.version.outputs.VERSION }}
         run: |
@@ -512,7 +534,7 @@ jobs:
       # Versioning is intentionally async -- siblings tag whatever's
       # next for them.
       - name: Dispatch to sibling repos
-        if: ${{ github.ref_type == 'tag' && env.NUGET_API_KEY != '' }}
+        if: ${{ github.ref_type == 'tag' && env.NUGET_USER != '' }}
         env:
           GH_TOKEN: ${{ secrets.BOWIRE_DISPATCH_TOKEN }}
           NEW_V: ${{ steps.version.outputs.VERSION }}
