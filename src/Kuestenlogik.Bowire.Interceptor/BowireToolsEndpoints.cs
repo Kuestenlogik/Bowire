@@ -128,11 +128,15 @@ public static class BowireToolsEndpoints
                     instance: ctx.Request.Path);
             }
 
+            // #978 — the workbench's own store, so what the proxy captures
+            // shows up under Intercept → Captured. Without it the host made
+            // a private store, and the forwarded requests were never seen.
             var hostOpts = new BowireReverseProxyHostOptions
             {
                 Upstream = upstreamUri,
                 ListenAddress = IPAddress.Loopback,
                 ListenPort = payload.Port,
+                Store = ctx.RequestServices.GetService<InterceptedFlowStore>(),
             };
 
             BowireReverseProxyHost host;

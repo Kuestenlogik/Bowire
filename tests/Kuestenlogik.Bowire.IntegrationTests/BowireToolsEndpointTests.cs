@@ -36,7 +36,7 @@ namespace Kuestenlogik.Bowire.IntegrationTests;
 /// </remarks>
 public sealed class BowireToolsEndpointTests
 {
-    private static async Task<IHost> BuildHost(bool withRegistry = true)
+    private static async Task<IHost> BuildHost(bool withRegistry = true, InterceptedFlowStore? store = null)
     {
         var host = new HostBuilder()
             .ConfigureWebHost(web =>
@@ -51,6 +51,7 @@ public sealed class BowireToolsEndpointTests
                    {
                        s.AddRouting();
                        if (withRegistry) s.AddSingleton<ReverseProxyRegistry>();
+                       if (store is not null) s.AddSingleton(store);
                    });
             })
             .Build();
@@ -271,6 +272,64 @@ public sealed class BowireToolsEndpointTests
             using var resp = await host.GetTestClient().GetAsync(
                 new Uri("/bowire/api/tools/reverse-proxy", UriKind.Relative), TestContext.Current.CancellationToken);
             Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+        }
+    }
+
+    [Fact]
+    public async Task A_Started_Proxy_Records_Into_The_Workbench_Store()
+    {
+        // #978: the forwarded request has to land in the store the Captured
+        // tab reads, not in a private one the host made for itself.
+        var ct = TestContext.Current.CancellationToken;
+        var store = new InterceptedFlowStore();
+        using var upstream = new System.Net.Sockets.TcpListener(IPAddress.Loopback, 0);
+        upstream.Start();
+        var upstreamPort = ((IPEndPoint)upstream.LocalEndpoint).Port;
+        var answered = Task.Run(async () =>
+        {
+            using var client = await upstream.AcceptTcpClientAsync(ct);
+            var stream = client.GetStream();
+            var buffer = new byte[8192];
+            var head = new StringBuilder();
+            while (!head.ToString().Contains("\r\n\r\n", StringComparison.Ordinal))
+            {
+                var n = await stream.ReadAsync(buffer, ct);
+                if (n == 0) break;
+                head.Append(Encoding.ASCII.GetString(buffer, 0, n));
+            }
+            await stream.WriteAsync(Encoding.ASCII.GetBytes(
+                "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 4\r\nConnection: close\r\n\r\npong"), ct);
+        }, ct);
+
+        // A port for the proxy: the endpoint takes 1..65535, not 0.
+        using var probe = new System.Net.Sockets.TcpListener(IPAddress.Loopback, 0);
+        probe.Start();
+        var edgePort = ((IPEndPoint)probe.LocalEndpoint).Port;
+        probe.Stop();
+
+        using var host = await BuildHost(store: store);
+        var reader = store.Subscribe(ct);
+        using (var started = await PostJson(host, "/api/tools/reverse-proxy/start",
+            $$"""{"upstream":"http://127.0.0.1:{{upstreamPort}}","port":{{edgePort}}}"""))
+        {
+            Assert.Equal(HttpStatusCode.OK, started.StatusCode);
+        }
+        try
+        {
+            using var http = new HttpClient();
+            var body = await http.GetStringAsync(new Uri($"http://127.0.0.1:{edgePort}/ping?x=1"), ct);
+            Assert.Equal("pong", body);
+            await answered;
+
+            var flow = await reader.ReadAsync(ct);
+            Assert.Equal("GET", flow.Method);
+            Assert.Equal("/ping?x=1", flow.Path);
+            Assert.Equal(200, flow.ResponseStatus);
+            Assert.Single(store.Snapshot());
+        }
+        finally
+        {
+            await host.Services.GetRequiredService<ReverseProxyRegistry>().StopAllAsync(ct);
         }
     }
 
