@@ -132,11 +132,12 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**32/49 done** · 1 in progress · 16 backlog
+**33/49 done** · 2 in progress · 14 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
-| [983](https://github.com/Kuestenlogik/Bowire/issues/983) | Bowire | [Workbench: sentences kept in slot-named locals are never translated, and the detector cannot see them](#issue-kuestenlogik-bowire-983) | 🟡 In progress | `area:workbench` |
+| [972](https://github.com/Kuestenlogik/Bowire/issues/972) | Bowire | [Plugin repos, Templates and Bootcamp: take the new Bowire logo](#issue-kuestenlogik-bowire-972) | 🟡 In progress | `area:site` |
+| [984](https://github.com/Kuestenlogik/Bowire/issues/984) | Bowire | [Translate the 179 workbench literals the widened detector found](#issue-kuestenlogik-bowire-984) | 🟡 In progress | `area:workbench` |
 | [672](https://github.com/Kuestenlogik/Bowire/issues/672) | Bowire | [Server-side script engine so pre/post scripts run in bowire test, not only in the browser](#issue-kuestenlogik-bowire-672) | ⬜ Backlog | `area:cli` |
 | [677](https://github.com/Kuestenlogik/Bowire/issues/677) | Bowire | [Broader code export, and snippets for the protocols no snippet library covers](#issue-kuestenlogik-bowire-677) | ⬜ Backlog | `area:workbench` |
 | [687](https://github.com/Kuestenlogik/Bowire/issues/687) | Bowire | [Tray icon and no console window: give the running workbench a handle of its own](#issue-kuestenlogik-bowire-687) | ⬜ Backlog | `area:cli` |
@@ -151,8 +152,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [940](https://github.com/Kuestenlogik/Bowire/issues/940) | Bowire | [Verify the collection importers against real Insomnia and Bruno exports](#issue-kuestenlogik-bowire-940) | ⬜ Backlog |  |
 | [946](https://github.com/Kuestenlogik/Bowire/issues/946) | Bowire | [Data sets for flow runs and bowire test --workspace](#issue-kuestenlogik-bowire-946) | ⬜ Backlog |  |
 | [963](https://github.com/Kuestenlogik/Bowire/issues/963) | Bowire | [WebSocketAuthProbe: forged JWT (alg:none, tampered signature) on the upgrade](#issue-kuestenlogik-bowire-963) | ⬜ Backlog | `area:security` |
-| [972](https://github.com/Kuestenlogik/Bowire/issues/972) | Bowire | [Plugin repos, Templates and Bootcamp: take the new Bowire logo](#issue-kuestenlogik-bowire-972) | ⬜ Backlog | `area:site` |
-| [984](https://github.com/Kuestenlogik/Bowire/issues/984) | Bowire | [Translate the 179 workbench literals the widened detector found](#issue-kuestenlogik-bowire-984) | ⬜ Backlog | `area:workbench` |
 | [673](https://github.com/Kuestenlogik/Bowire/issues/673) | Bowire | [Export requests as .http — Copy as .http, and bowire export http for a whole collection](#issue-kuestenlogik-bowire-673) | ✅ Done | `area:workbench` |
 | [674](https://github.com/Kuestenlogik/Bowire/issues/674) | Bowire | [Import from Insomnia, Bruno and .http, with a migration guide per source](#issue-kuestenlogik-bowire-674) | ✅ Done | `area:workbench` |
 | [675](https://github.com/Kuestenlogik/Bowire/issues/675) | Bowire | [Data-driven collection runs: one iteration per CSV/JSON row](#issue-kuestenlogik-bowire-675) | ✅ Done | `area:cli` |
@@ -185,6 +184,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [980](https://github.com/Kuestenlogik/Bowire/issues/980) | Bowire | [German UI: technical terms are translated word by word (Stellvertreter, Attrappenwirt, Beiwagen)](#issue-kuestenlogik-bowire-980) | ✅ Done | `area:workbench` |
 | [981](https://github.com/Kuestenlogik/Bowire/issues/981) | Bowire | [Tests: two loopback servers probe a free port and bind it later, racing parallel tests](#issue-kuestenlogik-bowire-981) | ✅ Done | `area:workbench` |
 | [982](https://github.com/Kuestenlogik/Bowire/issues/982) | Bowire | [Store test overrides are static: parallel tests write into each other's files](#issue-kuestenlogik-bowire-982) | ✅ Done | `area:workbench` |
+| [983](https://github.com/Kuestenlogik/Bowire/issues/983) | Bowire | [Workbench: sentences kept in slot-named locals are never translated, and the detector cannot see them](#issue-kuestenlogik-bowire-983) | ✅ Done | `area:workbench` |
 
 ### v2.12 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
 
@@ -768,11 +768,17 @@ On a phone, the header of the docs, the API reference and the Bootcamp has no bu
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-#### <a id="issue-kuestenlogik-bowire-983"></a>🟡 In progress · [#983](https://github.com/Kuestenlogik/Bowire/issues/983) Workbench: sentences kept in slot-named locals are never translated, and the detector cannot see them
+#### <a id="issue-kuestenlogik-bowire-972"></a>🟡 In progress · [#972](https://github.com/Kuestenlogik/Bowire/issues/972) Plugin repos, Templates and Bootcamp: take the new Bowire logo
+
+> `area:site`
+
+Follow-up to #964/#965. [[more]](https://github.com/Kuestenlogik/Bowire/issues/972)
+
+#### <a id="issue-kuestenlogik-bowire-984"></a>🟡 In progress · [#984](https://github.com/Kuestenlogik/Bowire/issues/984) Translate the 179 workbench literals the widened detector found
 
 > `area:workbench`
 
-Some workbench text stays English in every language. The Intercept rail's empty state reads "No interceptor running" and "Embed: add app.UseBowireInterceptor() to your host. Standalone: start the Reverse-Proxy from the topbar." in the German UI. [[more]](https://github.com/Kuestenlogik/Bowire/issues/983)
+#983 widened the untranslated-strings detector (`tests/Kuestenlogik.Bowire.Tests/wwwroot-js/_untranslated.mjs`) by three shapes it could not see: - a literal assigned to a local named like a slot (`var headline = '…'`); - a literal as the third or a later argument of a helper (`_envRow(null, on, 'Wo … [[more]](https://github.com/Kuestenlogik/Bowire/issues/984)
 
 #### <a id="issue-kuestenlogik-bowire-672"></a>⬜ Backlog · [#672](https://github.com/Kuestenlogik/Bowire/issues/672) Server-side script engine so pre/post scripts run in bowire test, not only in the browser
 
@@ -841,18 +847,6 @@ Follow-up of #675. `--data` drives a test collection. A flow file, or a `--works
 > `area:security`
 
 Kuestenlogik/Bowire.VulnDb#51 (CVE-2026-113620, Eclipse ioFog Controller): the WebSocket upgrades on the exec and log routes decode the bearer JWT without verifying it, so a self-minted token whose groups contain `admin` is accepted. The HTTP routes of the same server verify the token. [[more]](https://github.com/Kuestenlogik/Bowire/issues/963)
-
-#### <a id="issue-kuestenlogik-bowire-972"></a>⬜ Backlog · [#972](https://github.com/Kuestenlogik/Bowire/issues/972) Plugin repos, Templates and Bootcamp: take the new Bowire logo
-
-> `area:site`
-
-Follow-up to #964/#965. [[more]](https://github.com/Kuestenlogik/Bowire/issues/972)
-
-#### <a id="issue-kuestenlogik-bowire-984"></a>⬜ Backlog · [#984](https://github.com/Kuestenlogik/Bowire/issues/984) Translate the 179 workbench literals the widened detector found
-
-> `area:workbench`
-
-#983 widened the untranslated-strings detector (`tests/Kuestenlogik.Bowire.Tests/wwwroot-js/_untranslated.mjs`) by three shapes it could not see: - a literal assigned to a local named like a slot (`var headline = '…'`); - a literal as the third or a later argument of a helper (`_envRow(null, on, 'Wo … [[more]](https://github.com/Kuestenlogik/Bowire/issues/984)
 
 #### <a id="issue-kuestenlogik-bowire-673"></a>✅ Done · [#673](https://github.com/Kuestenlogik/Bowire/issues/673) Export requests as .http — Copy as .http, and bowire export http for a whole collection
 
@@ -1023,6 +1017,12 @@ The German workbench catalogue (`src/Kuestenlogik.Bowire/wwwroot/locales/de.json
 > `area:workbench`
 
 `WorkbenchAuthRecordingResolverTests.Empty_Credential_Recording_Is_Skipped` and `AuthRecordingStoreTests.Save_Typed_Overload_Round_Trips` fail now and then in a full parallel run: `IOException … typed.json … being used by another process`, or a recording read back with scheme `bearer` where `apikey` … [[more]](https://github.com/Kuestenlogik/Bowire/issues/982)
+
+#### <a id="issue-kuestenlogik-bowire-983"></a>✅ Done · [#983](https://github.com/Kuestenlogik/Bowire/issues/983) Workbench: sentences kept in slot-named locals are never translated, and the detector cannot see them
+
+> `area:workbench`
+
+Some workbench text stays English in every language. The Intercept rail's empty state reads "No interceptor running" and "Embed: add app.UseBowireInterceptor() to your host. Standalone: start the Reverse-Proxy from the topbar." in the German UI. [[more]](https://github.com/Kuestenlogik/Bowire/issues/983)
 
 ### v2.12 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
 
