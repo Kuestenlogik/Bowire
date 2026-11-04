@@ -21,7 +21,9 @@ namespace Kuestenlogik.Bowire;
 /// </summary>
 internal static partial class AuthRecordingStore
 {
-    private static string? _testStorePathOverride;
+    // #982 - per async flow, not per process: a test that redirects the
+    // store must not redirect every other test running beside it.
+    private static readonly AsyncLocal<string?> s_testStorePathOverride = new();
 
     // CodeQL cs/path-injection allow-list — the same anchored pattern the
     // mock-config / preset / recordings stores use so a user-supplied id can't
@@ -39,7 +41,7 @@ internal static partial class AuthRecordingStore
     /// </summary>
     internal static string GetStorePath(string workspaceId, string? storageRoot, string recordingId)
     {
-        if (_testStorePathOverride is not null) return _testStorePathOverride;
+        if (s_testStorePathOverride.Value is { } testPath) return testPath;
         var safeId = SanitiseRecordingId(recordingId);
         var safeWs = string.IsNullOrEmpty(workspaceId)
             ? string.Empty
@@ -61,7 +63,7 @@ internal static partial class AuthRecordingStore
 
     internal static void OverrideStorePathForTesting(string? path)
     {
-        _testStorePathOverride = path;
+        s_testStorePathOverride.Value = path;
     }
 
     /// <summary>
