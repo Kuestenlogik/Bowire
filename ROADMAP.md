@@ -132,7 +132,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**24/41 done** · 17 backlog
+**25/41 done** · 16 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -152,7 +152,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [963](https://github.com/Kuestenlogik/Bowire/issues/963) | Bowire | [WebSocketAuthProbe: forged JWT (alg:none, tampered signature) on the upgrade](#issue-kuestenlogik-bowire-963) | ⬜ Backlog | `area:security` |
 | [969](https://github.com/Kuestenlogik/Bowire/issues/969) | Bowire | [Site: images are not served in modern formats; index.html weighs 5.3 MB](#issue-kuestenlogik-bowire-969) | ⬜ Backlog | `area:site` |
 | [972](https://github.com/Kuestenlogik/Bowire/issues/972) | Bowire | [Plugin repos, Templates and Bootcamp: take the new Bowire logo](#issue-kuestenlogik-bowire-972) | ⬜ Backlog | `area:site` |
-| [975](https://github.com/Kuestenlogik/Bowire/issues/975) | Bowire | [bowire send http: --include for the response headers, --output for the body](#issue-kuestenlogik-bowire-975) | ⬜ Backlog | `area:cli` |
 | [673](https://github.com/Kuestenlogik/Bowire/issues/673) | Bowire | [Export requests as .http — Copy as .http, and bowire export http for a whole collection](#issue-kuestenlogik-bowire-673) | ✅ Done | `area:workbench` |
 | [674](https://github.com/Kuestenlogik/Bowire/issues/674) | Bowire | [Import from Insomnia, Bruno and .http, with a migration guide per source](#issue-kuestenlogik-bowire-674) | ✅ Done | `area:workbench` |
 | [675](https://github.com/Kuestenlogik/Bowire/issues/675) | Bowire | [Data-driven collection runs: one iteration per CSV/JSON row](#issue-kuestenlogik-bowire-675) | ✅ Done | `area:cli` |
@@ -176,6 +175,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [971](https://github.com/Kuestenlogik/Bowire/issues/971) | Bowire | [Branding: vendor the shared tool 1.1.0 with Bowire's master logos from the meta repo](#issue-kuestenlogik-bowire-971) | ✅ Done | `area:site` |
 | [973](https://github.com/Kuestenlogik/Bowire/issues/973) | Bowire | [MCP task replay and recording: two races that turn CI red](#issue-kuestenlogik-bowire-973) | ✅ Done | `area:mcp` |
 | [974](https://github.com/Kuestenlogik/Bowire/issues/974) | Bowire | [bowire call -d @file: the parser expands the file as a response file and mangles the body](#issue-kuestenlogik-bowire-974) | ✅ Done | `area:cli` |
+| [975](https://github.com/Kuestenlogik/Bowire/issues/975) | Bowire | [bowire send http: --include for the response headers, --output for the body](#issue-kuestenlogik-bowire-975) | ✅ Done | `area:cli` |
 | [976](https://github.com/Kuestenlogik/Bowire/issues/976) | Bowire | [Response files again, for @file.rsp only](#issue-kuestenlogik-bowire-976) | ✅ Done | `area:cli` |
 
 ### v2.12 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
@@ -840,12 +840,6 @@ With #967 the Lighthouse PR audit loads its pages for the first time, and it fai
 
 Follow-up to #964/#965. [[more]](https://github.com/Kuestenlogik/Bowire/issues/972)
 
-#### <a id="issue-kuestenlogik-bowire-975"></a>⬜ Backlog · [#975](https://github.com/Kuestenlogik/Bowire/issues/975) bowire send http: --include for the response headers, --output for the body
-
-> `area:cli`
-
-`bowire send http` (#678) prints the response body and puts the status line on stderr. Two things curl and HTTPie users reach for are still missing: - the response headers, to see a `Location`, a `Set-Cookie` or a cache header; - a binary body. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/975)
-
 #### <a id="issue-kuestenlogik-bowire-673"></a>✅ Done · [#673](https://github.com/Kuestenlogik/Bowire/issues/673) Export requests as .http — Copy as .http, and bowire export http for a whole collection
 
 > `area:workbench`
@@ -961,6 +955,12 @@ Follow-up to #803. `A_Recorded_Task_Call_Replays_From_The_Mock_And_A_Client_Driv
 > `area:cli`
 
 `bowire call … -d @request.json` is documented (cli-mode, export-import, request pane) to send the file's content as the body. It does not: System.CommandLine treats every token that starts with `@` as a response file and replaces it with the file's tokens before the command sees it. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/974)
+
+#### <a id="issue-kuestenlogik-bowire-975"></a>✅ Done · [#975](https://github.com/Kuestenlogik/Bowire/issues/975) bowire send http: --include for the response headers, --output for the body
+
+> `area:cli`
+
+`bowire send http` (#678) prints the response body and puts the status line on stderr. Two things curl and HTTPie users reach for are still missing: - the response headers, to see a `Location`, a `Set-Cookie` or a cache header; - a binary body. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/975)
 
 #### <a id="issue-kuestenlogik-bowire-976"></a>✅ Done · [#976](https://github.com/Kuestenlogik/Bowire/issues/976) Response files again, for @file.rsp only
 
