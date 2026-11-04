@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**1/17 done** · 16 backlog
+**1/19 done** · 18 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -32,6 +32,8 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [940](https://github.com/Kuestenlogik/Bowire/issues/940) | Bowire | [Verify the collection importers against real Insomnia and Bruno exports](#issue-kuestenlogik-bowire-940) | ⬜ Backlog |  |
 | [946](https://github.com/Kuestenlogik/Bowire/issues/946) | Bowire | [Data sets for flow runs and bowire test --workspace](#issue-kuestenlogik-bowire-946) | ⬜ Backlog |  |
 | [963](https://github.com/Kuestenlogik/Bowire/issues/963) | Bowire | [WebSocketAuthProbe: forged JWT (alg:none, tampered signature) on the upgrade](#issue-kuestenlogik-bowire-963) | ⬜ Backlog | `area:security` |
+| [986](https://github.com/Kuestenlogik/Bowire/issues/986) | Bowire | [The .NET plugin loader scans sidecar folders and logs ManifestMissing for every sidecar](#issue-kuestenlogik-bowire-986) | ⬜ Backlog | `area:plugin-sdk` |
+| [987](https://github.com/Kuestenlogik/Bowire/issues/987) | Bowire | [sidecar-plugins.md: no SDK sends select options, and python3 as the manifest example fails on Windows](#issue-kuestenlogik-bowire-987) | ⬜ Backlog | `area:docs` |
 | [673](https://github.com/Kuestenlogik/Bowire/issues/673) | Bowire | [Export requests as .http — Copy as .http, and bowire export http for a whole collection](#issue-kuestenlogik-bowire-673) | ✅ Done | `area:workbench` |
 
 ### v2.12 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
@@ -112,30 +114,32 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### Sdk.Node v0.2 — Polyglot SDK parity: settings, channels, manifests
 
-**0/3 done** · 3 backlog
+**3/3 done**
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
-| [4](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/4) | Sdk.Node | [openChannel is declared but nothing routes it](#issue-kuestenlogik-bowire-sdk-node-4) | ⬜ Backlog |  |
-| [5](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/5) | Sdk.Node | [Example manifest: name node directly and drop run.sh, once a host with Kuestenlogik/Bowire#692 ships](#issue-kuestenlogik-bowire-sdk-node-5) | ⬜ Backlog |  |
-| [6](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/6) | Sdk.Node | [Settings: a plugin can declare them but cannot read the values the host now sends](#issue-kuestenlogik-bowire-sdk-node-6) | ⬜ Backlog |  |
+| [4](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/4) | Sdk.Node | [openChannel is declared but nothing routes it](#issue-kuestenlogik-bowire-sdk-node-4) | ✅ Done |  |
+| [5](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/5) | Sdk.Node | [Example manifest: name node directly and drop run.sh, once a host with Kuestenlogik/Bowire#692 ships](#issue-kuestenlogik-bowire-sdk-node-5) | ✅ Done |  |
+| [6](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/6) | Sdk.Node | [Settings: a plugin can declare them but cannot read the values the host now sends](#issue-kuestenlogik-bowire-sdk-node-6) | ✅ Done |  |
 
 ### Sdk.Python v0.3 — Polyglot SDK parity: settings, channels, manifests
 
-**0/2 done** · 2 backlog
+**2/2 done**
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
-| [3](https://github.com/Kuestenlogik/Bowire.Sdk.Python/issues/3) | Sdk.Python | [Example manifest: name python3 directly, once a host with Kuestenlogik/Bowire#692 ships](#issue-kuestenlogik-bowire-sdk-python-3) | ⬜ Backlog |  |
-| [4](https://github.com/Kuestenlogik/Bowire.Sdk.Python/issues/4) | Sdk.Python | [Settings: a plugin can declare them but cannot read the values the host now sends](#issue-kuestenlogik-bowire-sdk-python-4) | ⬜ Backlog |  |
+| [3](https://github.com/Kuestenlogik/Bowire.Sdk.Python/issues/3) | Sdk.Python | [Example manifest: name python3 directly, once a host with Kuestenlogik/Bowire#692 ships](#issue-kuestenlogik-bowire-sdk-python-3) | ✅ Done |  |
+| [4](https://github.com/Kuestenlogik/Bowire.Sdk.Python/issues/4) | Sdk.Python | [Settings: a plugin can declare them but cannot read the values the host now sends](#issue-kuestenlogik-bowire-sdk-python-4) | ✅ Done |  |
 
 ### Sdk.Rust v0.2 — Polyglot SDK parity: settings, channels, manifests
 
-**0/1 done** · 1 backlog
+**1/3 done** · 2 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
-| [5](https://github.com/Kuestenlogik/Bowire.Sdk.Rust/issues/5) | Sdk.Rust | [openChannel is declared but nothing routes it](#issue-kuestenlogik-bowire-sdk-rust-5) | ⬜ Backlog |  |
+| [9](https://github.com/Kuestenlogik/Bowire.Sdk.Rust/issues/9) | Sdk.Rust | [Settings: the plugin's declarations never reach the host, and the values the host sends never reach the plugin](#issue-kuestenlogik-bowire-sdk-rust-9) | ⬜ Backlog | `area:plugin-sdk` |
+| [10](https://github.com/Kuestenlogik/Bowire.Sdk.Rust/issues/10) | Sdk.Rust | [run() exits at stdin EOF before replying to the requests it already read](#issue-kuestenlogik-bowire-sdk-rust-10) | ⬜ Backlog | `area:plugin-sdk` |
+| [5](https://github.com/Kuestenlogik/Bowire.Sdk.Rust/issues/5) | Sdk.Rust | [openChannel is declared but nothing routes it](#issue-kuestenlogik-bowire-sdk-rust-5) | ✅ Done |  |
 
 ### Templates v1.1.17 — No warning suppressions *(due 2026-11-14)*
 
@@ -237,6 +241,18 @@ Follow-up of #675. `--data` drives a test collection. A flow file, or a `--works
 > `area:security`
 
 Kuestenlogik/Bowire.VulnDb#51 (CVE-2026-113620, Eclipse ioFog Controller): the WebSocket upgrades on the exec and log routes decode the bearer JWT without verifying it, so a self-minted token whose groups contain `admin` is accepted. The HTTP routes of the same server verify the token. [[more]](https://github.com/Kuestenlogik/Bowire/issues/963)
+
+#### <a id="issue-kuestenlogik-bowire-986"></a>⬜ Backlog · [#986](https://github.com/Kuestenlogik/Bowire/issues/986) The .NET plugin loader scans sidecar folders and logs ManifestMissing for every sidecar
+
+> `area:plugin-sdk`
+
+Starting the workbench with a sidecar plugin installed logs, for every sidecar: [[more]](https://github.com/Kuestenlogik/Bowire/issues/986)
+
+#### <a id="issue-kuestenlogik-bowire-987"></a>⬜ Backlog · [#987](https://github.com/Kuestenlogik/Bowire/issues/987) sidecar-plugins.md: no SDK sends select options, and python3 as the manifest example fails on Windows
+
+> `area:docs`
+
+`docs/architecture/sidecar-plugins.md` and a code comment describe a state the SDKs have moved past: - they say no SDK sends `options` for a `select` setting; the Node and Python SDKs now do (and Go will); - the manifest example uses `"executable": "python3"`, which fails on a stock Windows install: … [[more]](https://github.com/Kuestenlogik/Bowire/issues/987)
 
 #### <a id="issue-kuestenlogik-bowire-673"></a>✅ Done · [#673](https://github.com/Kuestenlogik/Bowire/issues/673) Export requests as .http — Copy as .http, and bowire export http for a whole collection
 
@@ -484,31 +500,43 @@ The settings hook this SDK already has now reaches somewhere, and the other half
 
 ### Sdk.Node v0.2 — Polyglot SDK parity: settings, channels, manifests
 
-#### <a id="issue-kuestenlogik-bowire-sdk-node-4"></a>⬜ Backlog · [Kuestenlogik/Bowire.Sdk.Node#4](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/4) openChannel is declared but nothing routes it
+#### <a id="issue-kuestenlogik-bowire-sdk-node-4"></a>✅ Done · [Kuestenlogik/Bowire.Sdk.Node#4](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/4) openChannel is declared but nothing routes it
 
 The plugin surface declares a duplex capability that no dispatcher routes. `the BowirePlugin interface's openChannel` is part of the public API — a plugin author implements it, ships it, and nothing ever calls it, because the dispatcher has no `openChannel` case at all. [[more]](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/4)
 
-#### <a id="issue-kuestenlogik-bowire-sdk-node-5"></a>⬜ Backlog · [Kuestenlogik/Bowire.Sdk.Node#5](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/5) Example manifest: name node directly and drop run.sh, once a host with Kuestenlogik/Bowire#692 ships
+#### <a id="issue-kuestenlogik-bowire-sdk-node-5"></a>✅ Done · [Kuestenlogik/Bowire.Sdk.Node#5](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/5) Example manifest: name node directly and drop run.sh, once a host with Kuestenlogik/Bowire#692 ships
 
 The example manifest works around a host defect that no longer exists. [[more]](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/5)
 
-#### <a id="issue-kuestenlogik-bowire-sdk-node-6"></a>⬜ Backlog · [Kuestenlogik/Bowire.Sdk.Node#6](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/6) Settings: a plugin can declare them but cannot read the values the host now sends
+#### <a id="issue-kuestenlogik-bowire-sdk-node-6"></a>✅ Done · [Kuestenlogik/Bowire.Sdk.Node#6](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/6) Settings: a plugin can declare them but cannot read the values the host now sends
 
 The settings hook this SDK already has now reaches somewhere, and the other half of it has nowhere to land. [[more]](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/6)
 
 ### Sdk.Python v0.3 — Polyglot SDK parity: settings, channels, manifests
 
-#### <a id="issue-kuestenlogik-bowire-sdk-python-3"></a>⬜ Backlog · [Kuestenlogik/Bowire.Sdk.Python#3](https://github.com/Kuestenlogik/Bowire.Sdk.Python/issues/3) Example manifest: name python3 directly, once a host with Kuestenlogik/Bowire#692 ships
+#### <a id="issue-kuestenlogik-bowire-sdk-python-3"></a>✅ Done · [Kuestenlogik/Bowire.Sdk.Python#3](https://github.com/Kuestenlogik/Bowire.Sdk.Python/issues/3) Example manifest: name python3 directly, once a host with Kuestenlogik/Bowire#692 ships
 
 The example manifest works around a host defect that no longer exists. [[more]](https://github.com/Kuestenlogik/Bowire.Sdk.Python/issues/3)
 
-#### <a id="issue-kuestenlogik-bowire-sdk-python-4"></a>⬜ Backlog · [Kuestenlogik/Bowire.Sdk.Python#4](https://github.com/Kuestenlogik/Bowire.Sdk.Python/issues/4) Settings: a plugin can declare them but cannot read the values the host now sends
+#### <a id="issue-kuestenlogik-bowire-sdk-python-4"></a>✅ Done · [Kuestenlogik/Bowire.Sdk.Python#4](https://github.com/Kuestenlogik/Bowire.Sdk.Python/issues/4) Settings: a plugin can declare them but cannot read the values the host now sends
 
 The settings hook this SDK already has now reaches somewhere, and the other half of it has nowhere to land. [[more]](https://github.com/Kuestenlogik/Bowire.Sdk.Python/issues/4)
 
 ### Sdk.Rust v0.2 — Polyglot SDK parity: settings, channels, manifests
 
-#### <a id="issue-kuestenlogik-bowire-sdk-rust-5"></a>⬜ Backlog · [Kuestenlogik/Bowire.Sdk.Rust#5](https://github.com/Kuestenlogik/Bowire.Sdk.Rust/issues/5) openChannel is declared but nothing routes it
+#### <a id="issue-kuestenlogik-bowire-sdk-rust-9"></a>⬜ Backlog · [Kuestenlogik/Bowire.Sdk.Rust#9](https://github.com/Kuestenlogik/Bowire.Sdk.Rust/issues/9) Settings: the plugin's declarations never reach the host, and the values the host sends never reach the plugin
+
+> `area:plugin-sdk`
+
+The same gap the Go, Node and Python SDKs had (`Kuestenlogik/Bowire#693`), here in both halves: - the `initialize` reply does not send `BowirePlugin::settings()`, so the declarations never reach the host and the workbench shows no settings for a Rust plugin; - the dispatcher does not read the `setti … [[more]](https://github.com/Kuestenlogik/Bowire.Sdk.Rust/issues/9)
+
+#### <a id="issue-kuestenlogik-bowire-sdk-rust-10"></a>⬜ Backlog · [Kuestenlogik/Bowire.Sdk.Rust#10](https://github.com/Kuestenlogik/Bowire.Sdk.Rust/issues/10) run() exits at stdin EOF before replying to the requests it already read
+
+> `area:plugin-sdk`
+
+`run()` returns as soon as stdin reaches EOF, even while replies to requests already read are still being produced. Piping several requests in at once (`printf '…\n…\n' | plugin`) can therefore print nothing. The CI smoke test's comment about "empty stdout" is most likely this. [[more]](https://github.com/Kuestenlogik/Bowire.Sdk.Rust/issues/10)
+
+#### <a id="issue-kuestenlogik-bowire-sdk-rust-5"></a>✅ Done · [Kuestenlogik/Bowire.Sdk.Rust#5](https://github.com/Kuestenlogik/Bowire.Sdk.Rust/issues/5) openChannel is declared but nothing routes it
 
 The plugin surface declares a duplex capability that no dispatcher routes. `the BowirePlugin trait's open_channel` is part of the public API — a plugin author implements it, ships it, and nothing ever calls it, because the dispatcher has no `openChannel` case at all. [[more]](https://github.com/Kuestenlogik/Bowire.Sdk.Rust/issues/5)
 
