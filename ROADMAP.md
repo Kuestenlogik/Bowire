@@ -132,7 +132,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**32/48 done** · 1 in progress · 15 backlog
+**32/49 done** · 1 in progress · 16 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -152,6 +152,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [946](https://github.com/Kuestenlogik/Bowire/issues/946) | Bowire | [Data sets for flow runs and bowire test --workspace](#issue-kuestenlogik-bowire-946) | ⬜ Backlog |  |
 | [963](https://github.com/Kuestenlogik/Bowire/issues/963) | Bowire | [WebSocketAuthProbe: forged JWT (alg:none, tampered signature) on the upgrade](#issue-kuestenlogik-bowire-963) | ⬜ Backlog | `area:security` |
 | [972](https://github.com/Kuestenlogik/Bowire/issues/972) | Bowire | [Plugin repos, Templates and Bootcamp: take the new Bowire logo](#issue-kuestenlogik-bowire-972) | ⬜ Backlog | `area:site` |
+| [984](https://github.com/Kuestenlogik/Bowire/issues/984) | Bowire | [Translate the 179 workbench literals the widened detector found](#issue-kuestenlogik-bowire-984) | ⬜ Backlog | `area:workbench` |
 | [673](https://github.com/Kuestenlogik/Bowire/issues/673) | Bowire | [Export requests as .http — Copy as .http, and bowire export http for a whole collection](#issue-kuestenlogik-bowire-673) | ✅ Done | `area:workbench` |
 | [674](https://github.com/Kuestenlogik/Bowire/issues/674) | Bowire | [Import from Insomnia, Bruno and .http, with a migration guide per source](#issue-kuestenlogik-bowire-674) | ✅ Done | `area:workbench` |
 | [675](https://github.com/Kuestenlogik/Bowire/issues/675) | Bowire | [Data-driven collection runs: one iteration per CSV/JSON row](#issue-kuestenlogik-bowire-675) | ✅ Done | `area:cli` |
@@ -846,6 +847,12 @@ Kuestenlogik/Bowire.VulnDb#51 (CVE-2026-113620, Eclipse ioFog Controller): the W
 > `area:site`
 
 Follow-up to #964/#965. [[more]](https://github.com/Kuestenlogik/Bowire/issues/972)
+
+#### <a id="issue-kuestenlogik-bowire-984"></a>⬜ Backlog · [#984](https://github.com/Kuestenlogik/Bowire/issues/984) Translate the 179 workbench literals the widened detector found
+
+> `area:workbench`
+
+#983 widened the untranslated-strings detector (`tests/Kuestenlogik.Bowire.Tests/wwwroot-js/_untranslated.mjs`) by three shapes it could not see: - a literal assigned to a local named like a slot (`var headline = '…'`); - a literal as the third or a later argument of a helper (`_envRow(null, on, 'Wo … [[more]](https://github.com/Kuestenlogik/Bowire/issues/984)
 
 #### <a id="issue-kuestenlogik-bowire-673"></a>✅ Done · [#673](https://github.com/Kuestenlogik/Bowire/issues/673) Export requests as .http — Copy as .http, and bowire export http for a whole collection
 
