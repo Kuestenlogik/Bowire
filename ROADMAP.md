@@ -163,6 +163,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [988](https://github.com/Kuestenlogik/Bowire/issues/988) | Bowire | [Embedded gRPC discovery without a reflection endpoint: read the host's in-process service descriptors, and let the host switch the auto-mapped reflection off](#issue-kuestenlogik-bowire-988) | ⬜ Backlog |  |
+| [989](https://github.com/Kuestenlogik/Bowire/issues/989) | Bowire | [PluginUpdateCheckService keeps an IHttpClientFactory client, so a disposed host is never collected](#issue-kuestenlogik-bowire-989) | ⬜ Backlog |  |
 
 ## Details
 
@@ -571,6 +572,10 @@ Two warning suppressions in this repo, reviewed under the rule that warnings are
 #### <a id="issue-kuestenlogik-bowire-988"></a>⬜ Backlog · [#988](https://github.com/Kuestenlogik/Bowire/issues/988) Embedded gRPC discovery without a reflection endpoint: read the host's in-process service descriptors, and let the host switch the auto-mapped reflection off
 
 **Seen in an embedding host (Terracle, Bowire 2.10.0):** since 2.8 the core carries no protocol, so an embedded workbench needs `Kuestenlogik.Bowire.Protocol.Grpc` to list the host's gRPC services. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/988)
+
+#### <a id="issue-kuestenlogik-bowire-989"></a>⬜ Backlog · [#989](https://github.com/Kuestenlogik/Bowire/issues/989) PluginUpdateCheckService keeps an IHttpClientFactory client, so a disposed host is never collected
+
+`PluginUpdateCheckService` takes an `HttpClient` in its constructor and keeps it in `_http`. When that client comes from `IHttpClientFactory` (the default-named client, `CreateClient()`), the singleton keeps the factory's handler, and the handler never gets rotated or cleaned up: [[more]](https://github.com/Kuestenlogik/Bowire/issues/989)
 
 ---
 
