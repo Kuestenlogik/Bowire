@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.10 — Discoverability: the pitch, the directories, the licence *(due 2027-01-11)*
 
-**140/140 done**
+**142/142 done**
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -145,6 +145,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [969](https://github.com/Kuestenlogik/Bowire/issues/969) | Bowire | [Site: images are not served in modern formats; index.html weighs 5.3 MB](#issue-kuestenlogik-bowire-969) | ✅ Done | `area:site` |
 | [970](https://github.com/Kuestenlogik/Bowire/issues/970) | Bowire | [About box: the Küstenlogik lockup follows the server's default theme, not the one in use](#issue-kuestenlogik-bowire-970) | ✅ Done | `area:workbench` |
 | [971](https://github.com/Kuestenlogik/Bowire/issues/971) | Bowire | [Branding: vendor the shared tool 1.1.0 with Bowire's master logos from the meta repo](#issue-kuestenlogik-bowire-971) | ✅ Done | `area:site` |
+| [972](https://github.com/Kuestenlogik/Bowire/issues/972) | Bowire | [Plugin repos, Templates and Bootcamp: take the new Bowire logo](#issue-kuestenlogik-bowire-972) | ✅ Done | `area:site` |
 | [973](https://github.com/Kuestenlogik/Bowire/issues/973) | Bowire | [MCP task replay and recording: two races that turn CI red](#issue-kuestenlogik-bowire-973) | ✅ Done | `area:mcp` |
 | [974](https://github.com/Kuestenlogik/Bowire/issues/974) | Bowire | [bowire call -d @file: the parser expands the file as a response file and mangles the body](#issue-kuestenlogik-bowire-974) | ✅ Done | `area:cli` |
 | [975](https://github.com/Kuestenlogik/Bowire/issues/975) | Bowire | [bowire send http: --include for the response headers, --output for the body](#issue-kuestenlogik-bowire-975) | ✅ Done | `area:cli` |
@@ -156,15 +157,14 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [981](https://github.com/Kuestenlogik/Bowire/issues/981) | Bowire | [Tests: two loopback servers probe a free port and bind it later, racing parallel tests](#issue-kuestenlogik-bowire-981) | ✅ Done | `area:workbench` |
 | [982](https://github.com/Kuestenlogik/Bowire/issues/982) | Bowire | [Store test overrides are static: parallel tests write into each other's files](#issue-kuestenlogik-bowire-982) | ✅ Done | `area:workbench` |
 | [983](https://github.com/Kuestenlogik/Bowire/issues/983) | Bowire | [Workbench: sentences kept in slot-named locals are never translated, and the detector cannot see them](#issue-kuestenlogik-bowire-983) | ✅ Done | `area:workbench` |
+| [984](https://github.com/Kuestenlogik/Bowire/issues/984) | Bowire | [Translate the 179 workbench literals the widened detector found](#issue-kuestenlogik-bowire-984) | ✅ Done | `area:workbench` |
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**4/22 done** · 2 in progress · 16 backlog
+**4/20 done** · 16 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
-| [972](https://github.com/Kuestenlogik/Bowire/issues/972) | Bowire | [Plugin repos, Templates and Bootcamp: take the new Bowire logo](#issue-kuestenlogik-bowire-972) | 🟡 In progress | `area:site` |
-| [984](https://github.com/Kuestenlogik/Bowire/issues/984) | Bowire | [Translate the 179 workbench literals the widened detector found](#issue-kuestenlogik-bowire-984) | 🟡 In progress | `area:workbench` |
 | [639](https://github.com/Kuestenlogik/Bowire/issues/639) | Bowire | [SCIM: live Okta and Entra ID provisioning round-trips](#issue-kuestenlogik-bowire-639) | ⬜ Backlog | `area:workbench` |
 | [670](https://github.com/Kuestenlogik/Bowire/issues/670) | Bowire | [Get listed where developers and models actually look](#issue-kuestenlogik-bowire-670) | ⬜ Backlog | `area:site` |
 | [672](https://github.com/Kuestenlogik/Bowire/issues/672) | Bowire | [Server-side script engine so pre/post scripts run in bowire test, not only in the browser](#issue-kuestenlogik-bowire-672) | ⬜ Backlog | `area:cli` |
@@ -842,6 +842,12 @@ The About box picks the Küstenlogik lockup by `config.theme`, the theme the ser
 
 Follow-up to #964/#965. [[more]](https://github.com/Kuestenlogik/Bowire/issues/971)
 
+#### <a id="issue-kuestenlogik-bowire-972"></a>✅ Done · [#972](https://github.com/Kuestenlogik/Bowire/issues/972) Plugin repos, Templates and Bootcamp: take the new Bowire logo
+
+> `area:site`
+
+Follow-up to #964/#965. [[more]](https://github.com/Kuestenlogik/Bowire/issues/972)
+
 #### <a id="issue-kuestenlogik-bowire-973"></a>✅ Done · [#973](https://github.com/Kuestenlogik/Bowire/issues/973) MCP task replay and recording: two races that turn CI red
 
 > `area:mcp`
@@ -908,19 +914,13 @@ The German workbench catalogue (`src/Kuestenlogik.Bowire/wwwroot/locales/de.json
 
 Some workbench text stays English in every language. The Intercept rail's empty state reads "No interceptor running" and "Embed: add app.UseBowireInterceptor() to your host. Standalone: start the Reverse-Proxy from the topbar." in the German UI. [[more]](https://github.com/Kuestenlogik/Bowire/issues/983)
 
-### v2.11 — Interop and migration *(due 2027-03-30)*
-
-#### <a id="issue-kuestenlogik-bowire-972"></a>🟡 In progress · [#972](https://github.com/Kuestenlogik/Bowire/issues/972) Plugin repos, Templates and Bootcamp: take the new Bowire logo
-
-> `area:site`
-
-Follow-up to #964/#965. [[more]](https://github.com/Kuestenlogik/Bowire/issues/972)
-
-#### <a id="issue-kuestenlogik-bowire-984"></a>🟡 In progress · [#984](https://github.com/Kuestenlogik/Bowire/issues/984) Translate the 179 workbench literals the widened detector found
+#### <a id="issue-kuestenlogik-bowire-984"></a>✅ Done · [#984](https://github.com/Kuestenlogik/Bowire/issues/984) Translate the 179 workbench literals the widened detector found
 
 > `area:workbench`
 
 #983 widened the untranslated-strings detector (`tests/Kuestenlogik.Bowire.Tests/wwwroot-js/_untranslated.mjs`) by three shapes it could not see: - a literal assigned to a local named like a slot (`var headline = '…'`); - a literal as the third or a later argument of a helper (`_envRow(null, on, 'Wo … [[more]](https://github.com/Kuestenlogik/Bowire/issues/984)
+
+### v2.11 — Interop and migration *(due 2027-03-30)*
 
 #### <a id="issue-kuestenlogik-bowire-639"></a>⬜ Backlog · [#639](https://github.com/Kuestenlogik/Bowire/issues/639) SCIM: live Okta and Entra ID provisioning round-trips
 
