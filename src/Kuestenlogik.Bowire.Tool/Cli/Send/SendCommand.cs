@@ -78,6 +78,16 @@ internal static class SendCommand
                 + "item says otherwise. @file reads it from a file.",
             HelpName = "body|@file",
         };
+        var include = new Option<bool>("--include", "-i")
+        {
+            Description = "Print the status line and the response headers to stdout before the body.",
+        };
+        var output = new Option<string?>("--output", "-o")
+        {
+            Description = "Write the body to this file as the server sent it, whatever its type, and print it "
+                + "nowhere else. - writes the raw bytes to stdout, for a pipe.",
+            HelpName = "file|-",
+        };
         var negotiate = new Option<bool>("--negotiate")
         {
             Description = "Windows-integrated authentication (Kerberos, falling back to NTLM) as the signed-in account. Windows only.",
@@ -98,6 +108,8 @@ internal static class SendCommand
             + "and 5xx, 1 when the request could not be sent.");
         cmd.Add(request);
         cmd.Add(data);
+        cmd.Add(include);
+        cmd.Add(output);
         shared.AddTo(cmd);
         cmd.Add(negotiate); cmd.Add(ntlm); cmd.Add(digest);
         cmd.SetAction(async (pr, ct) =>
@@ -113,6 +125,8 @@ internal static class SendCommand
                 Negotiate = pr.GetValue(negotiate),
                 Ntlm = pr.GetValue(ntlm),
                 Digest = pr.GetValue(digest),
+                Include = pr.GetValue(include),
+                Output = pr.GetValue(output),
                 DefaultScheme = cfg["Bowire:Cli:Send:DefaultScheme"] ?? "http",
             };
             return await HttpSender.RunAsync(options,

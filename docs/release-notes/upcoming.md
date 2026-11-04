@@ -59,7 +59,7 @@ Agents can run a test collection or flow through Bowire's MCP server, as `bowire
 
 ### `bowire send http`: one request, URL first, in HTTPie's notation (#678)
 
-`bowire send http post api.example.com/pets name=ada age:=3` sends `{"name":"ada","age":3}` as JSON, with no discovery and no schema. Items are `Header:value`, `param==value`, `field=value`, `field:=json` and `field@file` (a multipart upload). The method is optional, any token works, and `:3000/x` means localhost. `{{variables}}`, `--env-file`, `--compact`, the proxy and CA settings and `--negotiate` / `--ntlm` / `--digest` work as on `call`. `--offline` prints the request with every variable resolved and opens no connection. `send` loads no protocol plugin: against one local endpoint it answers in about 270 ms where `call` takes about 650 ms.
+`bowire send http post api.example.com/pets name=ada age:=3` sends `{"name":"ada","age":3}` as JSON, with no discovery and no schema. Items are `Header:value`, `param==value`, `field=value`, `field:=json` and `field@file` (a multipart upload). The method is optional, any token works, and `:3000/x` means localhost. `{{variables}}`, `--env-file`, `--compact`, the proxy and CA settings and `--negotiate` / `--ntlm` / `--digest` work as on `call`. `--offline` prints the request with every variable resolved and opens no connection. `-i` shows the response headers, and `-o <file>` saves the body as the server sent it, so a download works too (#975). `send` loads no protocol plugin: against one local endpoint it answers in about 270 ms where `call` takes about 650 ms.
 
 ### A new Bowire logo, generated in every format (#964, #965)
 

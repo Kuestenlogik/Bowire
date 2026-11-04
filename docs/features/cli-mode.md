@@ -246,7 +246,19 @@ as for every command.
 
 The response body goes to stdout: JSON indented (one line with `--compact`),
 other text as it came, a binary body only as its size on stderr. The status
-line and the time go to stderr. Exit `0` for 2xx and 3xx, `2` for 4xx and
+line and the time go to stderr. `-i` / `--include` prints the status line and
+the response headers to stdout before the body, as curl does. `-o <file>` /
+`--output <file>` writes the body to the file exactly as the server sent it,
+whatever its type, and prints it nowhere else; `-o -` writes the raw bytes to
+stdout, for a pipe:
+
+```bash
+bowire send http -i :5000/pets name=ada            # Location, Set-Cookie, … then the body
+bowire send http :5000/logo.png -o logo.png        # the exact bytes
+bowire send http :5000/export.zip -o - | unzip -l /dev/stdin
+```
+
+Exit `0` for 2xx and 3xx, `2` for 4xx and
 5xx or a usage error, `1` when the request could not be sent.
 
 `--offline` builds the request, prints it as an HTTP/1.1 message with every
@@ -309,6 +321,8 @@ cannot quietly stop being runnable.
 | `--var, --env <K=V>` | `call`, `send http` | Variable for the `{{name}}` / `${name}` resolver (repeatable) |
 | `--env-file <path>` | `call`, `send http` | dotenv-style KEY=VALUE file for the resolver (repeatable; `--var` wins) |
 | `--compact` | `call`, `send http` | One-line JSON output for piping |
+| `-i, --include` | `send http` | Print the status line and the response headers before the body |
+| `-o, --output <file>` | `send http` | Write the body as bytes to the file; `-` for stdout |
 | `--offline` | `send http` | Print the request, variables resolved, and send nothing |
 | `--negotiate`, `--ntlm`, `--digest` | `call`, `send http` | Challenge-response authentication |
 | `-plaintext` | all | Use plaintext (no TLS) |

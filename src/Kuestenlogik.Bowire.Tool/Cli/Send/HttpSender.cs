@@ -22,6 +22,12 @@ internal sealed class HttpSendOptions
     public string? Ntlm { get; init; }
     public string? Digest { get; init; }
     public string DefaultScheme { get; init; } = "http";
+
+    /// <summary><c>-i</c>: the status line and the response headers go to stdout before the body.</summary>
+    public bool Include { get; init; }
+
+    /// <summary><c>-o</c>: write the body as bytes to this file, or to stdout for <c>-</c>.</summary>
+    public string? Output { get; init; }
 }
 
 /// <summary>
@@ -41,9 +47,11 @@ internal static class HttpSender
     /// <param name="io">Where the body and the diagnostics go.</param>
     /// <param name="createClient">Makes the client; never called with <c>--offline</c>.</param>
     /// <param name="ct">Cancels the request.</param>
+    /// <param name="openStdout">The raw stdout for <c>-o -</c>; the console's when <c>null</c>.</param>
     /// <returns>0 for 2xx and 3xx, 2 for 4xx and 5xx or a usage error, 1 when nothing could be sent.</returns>
     public static async Task<int> RunAsync(
-        HttpSendOptions options, CommandIo io, Func<HttpMessageInvoker> createClient, CancellationToken ct)
+        HttpSendOptions options, CommandIo io, Func<HttpClient> createClient, CancellationToken ct,
+        Func<Stream>? openStdout = null)
     {
         ArgumentNullException.ThrowIfNull(options);
         ArgumentNullException.ThrowIfNull(createClient);
@@ -95,7 +103,8 @@ internal static class HttpSender
         HttpResponseMessage response;
         try
         {
-            response = await client.SendAsync(message, ct).ConfigureAwait(false);
+            // Headers first, so -o can stream a large body to its file.
+            response = await client.SendAsync(message, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
         }
         catch (HttpRequestException ex)
         {
@@ -110,13 +119,78 @@ internal static class HttpSender
 
         using (response)
         {
+            var status = (int)response.StatusCode;
+            var statusLine = string.Create(CultureInfo.InvariantCulture,
+                $"HTTP/{response.Version} {status} {response.ReasonPhrase}");
+            if (options.Include) WriteHead(io, statusLine, response);
+            var code = status is >= 200 and < 400 ? 0 : 2;
+
+            if (options.Output is { Length: > 0 } output)
+            {
+                // The body as the server sent it, whatever its type, and
+                // nothing on stdout but the -i head.
+                long written;
+                try
+                {
+                    written = await SaveBodyAsync(response, output, io, openStdout, ct).ConfigureAwait(false);
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    io.ErrLine($"Failed to write --output '{output}': {ex.Message}");
+                    return 1;
+                }
+                watch.Stop();
+                io.ErrLine(string.Create(CultureInfo.InvariantCulture, $"{statusLine}  {watch.ElapsedMilliseconds}ms"));
+                if (output != "-") io.ErrLine(string.Create(CultureInfo.InvariantCulture, $"{written} bytes written to {output}"));
+                return code;
+            }
+
             var bytes = await response.Content.ReadAsByteArrayAsync(ct).ConfigureAwait(false);
             watch.Stop();
-            var status = (int)response.StatusCode;
-            io.ErrLine(string.Create(CultureInfo.InvariantCulture,
-                $"HTTP/{response.Version} {status} {response.ReasonPhrase}  {watch.ElapsedMilliseconds}ms"));
+            io.ErrLine(string.Create(CultureInfo.InvariantCulture, $"{statusLine}  {watch.ElapsedMilliseconds}ms"));
             WriteBody(io, response.Content.Headers.ContentType, bytes, options.Compact);
-            return status is >= 200 and < 400 ? 0 : 2;
+            return code;
+        }
+    }
+
+    /// <summary>
+    /// <c>-i</c>: the status line and every response header, content
+    /// headers included, then a blank line, as curl prints them.
+    /// </summary>
+    private static void WriteHead(CommandIo io, string statusLine, HttpResponseMessage response)
+    {
+        io.OutLine(statusLine);
+        foreach (var (name, values) in response.Headers.Concat(response.Content.Headers))
+        {
+            foreach (var value in values) io.OutLine($"{name}: {value}");
+        }
+        io.OutLine();
+    }
+
+    private static async Task<long> SaveBodyAsync(
+        HttpResponseMessage response, string output, CommandIo io, Func<Stream>? openStdout, CancellationToken ct)
+    {
+        var body = await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
+        await using (body.ConfigureAwait(false))
+        {
+            if (output == "-")
+            {
+                // The -i head was written as text; it has to be out before the bytes.
+                await io.Out.FlushAsync(ct).ConfigureAwait(false);
+                var stdout = (openStdout ?? Console.OpenStandardOutput)();
+                await using (stdout.ConfigureAwait(false))
+                {
+                    await body.CopyToAsync(stdout, ct).ConfigureAwait(false);
+                    await stdout.FlushAsync(ct).ConfigureAwait(false);
+                    return -1;
+                }
+            }
+            var file = new FileStream(output, FileMode.Create, FileAccess.Write, FileShare.None, 81920, useAsync: true);
+            await using (file.ConfigureAwait(false))
+            {
+                await body.CopyToAsync(file, ct).ConfigureAwait(false);
+                return file.Length;
+            }
         }
     }
 
@@ -160,7 +234,7 @@ internal static class HttpSender
         var media = type?.MediaType ?? string.Empty;
         if (!IsText(media, bytes))
         {
-            io.ErrLine($"[{bytes.Length} bytes of {(media.Length > 0 ? media : "binary data")} not printed]");
+            io.ErrLine($"[{bytes.Length} bytes of {(media.Length > 0 ? media : "binary data")} not printed; -o <file> saves them]");
             return;
         }
         var encoding = System.Text.Encoding.UTF8;

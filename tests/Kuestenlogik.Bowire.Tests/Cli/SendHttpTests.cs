@@ -286,7 +286,7 @@ public sealed class SendHttpTests
             });
         Assert.Equal(0, rc);
         Assert.Empty(stdout);
-        Assert.Contains("[4 bytes of image/png not printed]", stderr, StringComparison.Ordinal);
+        Assert.Contains("[4 bytes of image/png not printed; -o <file> saves them]", stderr, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -387,8 +387,98 @@ public sealed class SendHttpTests
         var http = send.Subcommands.Single(c => c.Name == "http");
         var help = string.Join('\n', http.Arguments.Select(a => a.Description).Concat(http.Options.Select(o => o.Name)));
         foreach (var expected in new[] { "Header:value", "param==value", "field=value", "field:=json", "field@file",
-                     "--offline", "--var", "--env-file", "--compact", "--negotiate", "--ntlm", "--digest" })
+                     "--offline", "--var", "--env-file", "--compact", "--include", "--output", "--negotiate", "--ntlm", "--digest" })
             Assert.Contains(expected, help, StringComparison.Ordinal);
+    }
+
+    private static readonly byte[] Png = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0xFF];
+
+    private static HttpResponseMessage Binary(HttpStatusCode status, byte[] bytes)
+    {
+        var response = new HttpResponseMessage(status) { Content = new ByteArrayContent(bytes) };
+        response.Content.Headers.ContentType = new("image/png");
+        response.Headers.ETag = new("\"v1\"");
+        return response;
+    }
+
+    [Fact]
+    public async Task Include_PrintsTheStatusLineAndHeaders_BeforeTheBody()
+    {
+        // #975
+        var (rc, stdout, _) = await RunAgainst(
+            new HttpSendOptions { Tokens = [":5000/pets/1"], Include = true, Compact = true },
+            _ =>
+            {
+                var response = Json(HttpStatusCode.Created, """{"id":1}""");
+                response.Headers.Location = new Uri("https://api/pets/1");
+                return response;
+            });
+
+        Assert.Equal(0, rc);
+        var lines = stdout.ReplaceLineEndings("\n").Split('\n');
+        Assert.Equal("HTTP/1.1 201 Created", lines[0]);
+        Assert.Contains("Location: https://api/pets/1", lines);
+        Assert.Contains("Content-Type: application/json; charset=utf-8", lines);
+        var blank = Array.IndexOf(lines, string.Empty);
+        Assert.True(blank > 0);
+        Assert.Equal("""{"id":1}""", lines[blank + 1]);
+    }
+
+    [Fact]
+    public async Task Output_WritesTheExactBytes_AndNothingToStdout()
+    {
+        // #975: `bowire send http :5000/logo.png -o logo.png`.
+        var dir = Directory.CreateTempSubdirectory("bowire-send-");
+        try
+        {
+            var path = Path.Combine(dir.FullName, "logo.png");
+            var (rc, stdout, stderr) = await RunAgainst(
+                new HttpSendOptions { Tokens = [":5000/logo.png"], Output = path },
+                _ => Binary(HttpStatusCode.OK, Png));
+
+            Assert.Equal(0, rc);
+            Assert.Equal(Png, await File.ReadAllBytesAsync(path, TestContext.Current.CancellationToken));
+            Assert.Empty(stdout);
+            Assert.Contains($"10 bytes written to {path}", stderr, StringComparison.Ordinal);
+        }
+        finally
+        {
+            dir.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task Output_StillWritesAnErrorBody_AndExitsTwo()
+    {
+        var dir = Directory.CreateTempSubdirectory("bowire-send-");
+        try
+        {
+            var path = Path.Combine(dir.FullName, "error.json");
+            var (rc, _, _) = await RunAgainst(
+                new HttpSendOptions { Tokens = [":5000/x"], Output = path },
+                _ => Json(HttpStatusCode.NotFound, """{"error":"nope"}"""));
+
+            Assert.Equal(2, rc);
+            Assert.Equal("""{"error":"nope"}""", await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
+        }
+        finally
+        {
+            dir.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task OutputDash_WritesTheRawBytesToStdout_AfterTheHead()
+    {
+        using var raw = new MemoryStream();
+        var (rc, stdout, _) = await RunAgainst(
+            new HttpSendOptions { Tokens = [":5000/logo.png"], Output = "-", Include = true },
+            _ => Binary(HttpStatusCode.OK, Png), raw);
+
+        Assert.Equal(0, rc);
+        Assert.Equal(Png, raw.ToArray());
+        Assert.StartsWith("HTTP/1.1 200 OK", stdout, StringComparison.Ordinal);
+        Assert.Contains("ETag: \"v1\"", stdout, StringComparison.Ordinal);
     }
 
     private static HttpSendRequest Build(string? method, string url, params string[] items)
@@ -402,12 +492,13 @@ public sealed class SendHttpTests
         new(status) { Content = new StringContent(json, Encoding.UTF8, "application/json") };
 
     private static async Task<(int Rc, string Stdout, string Stderr)> RunAgainst(
-        HttpSendOptions options, Func<HttpRequestMessage, HttpResponseMessage> respond)
+        HttpSendOptions options, Func<HttpRequestMessage, HttpResponseMessage> respond, Stream? rawStdout = null)
     {
         using var stdout = new StringWriter();
         using var stderr = new StringWriter();
         var rc = await HttpSender.RunAsync(options, new CommandIo(stdout, stderr),
-            () => new HttpMessageInvoker(new FakeHandler(respond)), TestContext.Current.CancellationToken);
+            () => new HttpClient(new FakeHandler(respond)), TestContext.Current.CancellationToken,
+            rawStdout is null ? null : () => rawStdout);
         return (rc, stdout.ToString(), stderr.ToString());
     }
 
