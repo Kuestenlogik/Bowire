@@ -5,6 +5,7 @@ using System.Net;
 using System.Text;
 using Kuestenlogik.Bowire.App.Cli;
 using Kuestenlogik.Bowire.App.Configuration;
+using Kuestenlogik.Bowire.Testing;
 using Kuestenlogik.Bowire.Tests.Plugins;
 
 namespace Kuestenlogik.Bowire.Tests;
@@ -190,16 +191,18 @@ public sealed class CliIntegrationTests : IDisposable
 
         public LoopbackServer(Func<string, string, (int Status, string Body)> responder)
         {
-            int port;
-            using (var probe = new System.Net.Sockets.TcpListener(IPAddress.Loopback, 0))
+            // #981 - HttpListener will not take port 0, so a port is drawn
+            // and bound; when a parallel test took it in between, the next
+            // draw is tried instead of failing this test.
+            HttpListener? bound = null;
+            var port = LoopbackHost.OnAFreePort(p =>
             {
-                probe.Start();
-                port = ((IPEndPoint)probe.LocalEndpoint).Port;
-            }
+                bound = new HttpListener();
+                bound.Prefixes.Add($"http://127.0.0.1:{p}/");
+                bound.Start();
+            });
             Url = $"http://127.0.0.1:{port}";
-            _listener = new HttpListener();
-            _listener.Prefixes.Add(Url + "/");
-            _listener.Start();
+            _listener = bound!;
             _loop = Task.Run(async () =>
             {
                 while (!_cts.IsCancellationRequested)

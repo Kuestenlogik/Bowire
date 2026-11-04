@@ -302,18 +302,19 @@ public sealed class BowireToolsEndpointTests
         }, ct);
 
         // A port for the proxy: the endpoint takes 1..65535, not 0.
-        using var probe = new System.Net.Sockets.TcpListener(IPAddress.Loopback, 0);
-        probe.Start();
-        var edgePort = ((IPEndPoint)probe.LocalEndpoint).Port;
-        probe.Stop();
-
         using var host = await BuildHost(store: store);
         var reader = store.Subscribe(ct);
-        using (var started = await PostJson(host, "/api/tools/reverse-proxy/start",
-            $$"""{"upstream":"http://127.0.0.1:{{upstreamPort}}","port":{{edgePort}}}"""))
+        // The endpoint takes a concrete port (1..65535), so one is drawn; a
+        // parallel test that took it in between answers 409 bind-failed and
+        // the next draw is tried (#981).
+        var edgePort = await Kuestenlogik.Bowire.Testing.LoopbackHost.OnAFreePortAsync(async port =>
         {
+            using var started = await PostJson(host, "/api/tools/reverse-proxy/start",
+                $$"""{"upstream":"http://127.0.0.1:{{upstreamPort}}","port":{{port}}}""");
+            if (started.StatusCode == HttpStatusCode.Conflict)
+                throw new IOException($"port {port} was taken: {await started.Content.ReadAsStringAsync(ct)}");
             Assert.Equal(HttpStatusCode.OK, started.StatusCode);
-        }
+        });
         try
         {
             using var http = new HttpClient();
