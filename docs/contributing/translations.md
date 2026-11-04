@@ -228,7 +228,7 @@ The German catalogue follows this glossary. A test (`tests/Kuestenlogik.Bowire.T
 
 The rail's feature names follow the same rule: Start, Erkunden, Compose, Aufzeichnungen, Flows, Lint, Contracts, Rollup, Intercept, Benchmarks, Monitoring, Sicherheit, Arbeitsbereiche, Hilfe.
 
-Established German terms stay German: Anfrage, Antwort, Einstellungen, Umgebung, Arbeitsbereich, Sammlung, Aufzeichnung, Methode, Dienst, Endpunkt, Vorlage, Verlauf, Sitzung, Seitenleiste, Befehlspalette, Latenz, Durchsatz, Zugangsdaten, Schlüsselbund.
+Established German terms stay German: Anfrage, Antwort, Einstellungen, Umgebung, Arbeitsbereich, Sammlung, Aufzeichnung, Methode, Dienst, Endpunkt, Vorlage, Verlauf, Sitzung, Seitenleiste, Befehlspalette, Latenz, Durchsatz, Zugangsdaten, Schlüsselbund. <!-- lang-exempt: the German terms the glossary keeps -->
 
 ## The guard that says when the sweep is done
 
