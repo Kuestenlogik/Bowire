@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**7/31 done** · 24 backlog
+**8/32 done** · 24 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -36,15 +36,16 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [992](https://github.com/Kuestenlogik/Bowire/issues/992) | Bowire | [gRPC embedded: discover from the host's compiled descriptors instead of mapping a reflection service](#issue-kuestenlogik-bowire-992) | ⬜ Backlog | `area:workbench` |
 | [993](https://github.com/Kuestenlogik/Bowire/issues/993) | Bowire | [REST embedded: discover from the host's OpenAPI document instead of reflecting over its types](#issue-kuestenlogik-bowire-993) | ⬜ Backlog | `area:workbench` |
 | [994](https://github.com/Kuestenlogik/Bowire/issues/994) | Bowire | [Schema imports per plugin: GraphQL SDL, AsyncAPI, WSDL, EDMX and OpenRPC](#issue-kuestenlogik-bowire-994) | ⬜ Backlog | `area:workbench` |
-| [995](https://github.com/Kuestenlogik/Bowire/issues/995) | Bowire | [Manual entry for every protocol: freeform metadata and streaming, Compose layouts for the protocols without one](#issue-kuestenlogik-bowire-995) | ⬜ Backlog | `area:workbench` |
 | [1000](https://github.com/Kuestenlogik/Bowire/issues/1000) | Bowire | [SOAP: a discovered call sends an empty SOAPAction and no target namespace](#issue-kuestenlogik-bowire-1000) | ⬜ Backlog |  |
 | [1001](https://github.com/Kuestenlogik/Bowire/issues/1001) | Bowire | [NATS: a discovered request runs as a publish, and three methods share one name](#issue-kuestenlogik-bowire-1001) | ⬜ Backlog |  |
 | [1002](https://github.com/Kuestenlogik/Bowire/issues/1002) | Bowire | [SignalR: a channel to a method the host does not list is always opened as duplex](#issue-kuestenlogik-bowire-1002) | ⬜ Backlog |  |
+| [1003](https://github.com/Kuestenlogik/Bowire/issues/1003) | Bowire | [Sidecar plugins describe their hand-entry form in the initialize reply](#issue-kuestenlogik-bowire-1003) | ⬜ Backlog |  |
 | [673](https://github.com/Kuestenlogik/Bowire/issues/673) | Bowire | [Export requests as .http — Copy as .http, and bowire export http for a whole collection](#issue-kuestenlogik-bowire-673) | ✅ Done | `area:workbench` |
 | [986](https://github.com/Kuestenlogik/Bowire/issues/986) | Bowire | [The .NET plugin loader scans sidecar folders and logs ManifestMissing for every sidecar](#issue-kuestenlogik-bowire-986) | ✅ Done | `area:plugin-sdk` |
 | [987](https://github.com/Kuestenlogik/Bowire/issues/987) | Bowire | [sidecar-plugins.md: no SDK sends select options, and python3 as the manifest example fails on Windows](#issue-kuestenlogik-bowire-987) | ✅ Done | `area:docs` |
 | [989](https://github.com/Kuestenlogik/Bowire/issues/989) | Bowire | [PluginUpdateCheckService keeps an IHttpClientFactory client, so a disposed host is never collected](#issue-kuestenlogik-bowire-989) | ✅ Done |  |
 | [990](https://github.com/Kuestenlogik/Bowire/issues/990) | Bowire | [Sidecar executable: a bare name in the plugin directory ignores PATHEXT on Windows](#issue-kuestenlogik-bowire-990) | ✅ Done | `area:plugin-sdk` |
+| [995](https://github.com/Kuestenlogik/Bowire/issues/995) | Bowire | [Manual entry for every protocol: freeform metadata and streaming, Compose layouts for the protocols without one](#issue-kuestenlogik-bowire-995) | ✅ Done | `area:workbench` |
 | [996](https://github.com/Kuestenlogik/Bowire/issues/996) | Bowire | [SOAP by hand: the freeform form drops the metadata that carries soap_action and target_namespace](#issue-kuestenlogik-bowire-996) | ✅ Done | `area:workbench` |
 | [998](https://github.com/Kuestenlogik/Bowire/issues/998) | Bowire | [Release announcements on Discussions are titled with the bare version since 2.8.0](#issue-kuestenlogik-bowire-998) | ✅ Done |  |
 
@@ -107,11 +108,20 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### Protocol.Akka v1.2 — Tell in trimmed and AOT hosts
 
-**0/1 done** · 1 backlog
+**0/2 done** · 2 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [90](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/90) | Protocol.Akka | [Tell without reflection: source-generated JSON type info for the allow-listed types](#issue-kuestenlogik-bowire-protocol-akka-90) | ⬜ Backlog | `area:plugin-sdk` |
+| [91](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/91) | Protocol.Akka | [Describe the hand-entry form: Akka.Remote streams only, embedded Akka has Tell and Mailboxes](#issue-kuestenlogik-bowire-protocol-akka-91) | ⬜ Backlog |  |
+
+### Protocol.Amqp v1.2 — Hand-entry form
+
+**0/1 done** · 1 backlog
+
+| # | Project | Title | Status | Tags |
+|---|---|---|---|---|
+| [86](https://github.com/Kuestenlogik/Bowire.Protocol.Amqp/issues/86) | Protocol.Amqp | [Describe the hand-entry form: send and receive, for AMQP 0.9.1 and 1.0](#issue-kuestenlogik-bowire-protocol-amqp-86) | ⬜ Backlog |  |
 
 ### Protocol.Dis v1.2 — Interactive DIS sandbox *(due 2026-11-29)*
 
@@ -126,21 +136,23 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### Protocol.Kafka v1.1 — Typed produce through the Schema Registry
 
-**0/2 done** · 2 backlog
+**0/3 done** · 3 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [92](https://github.com/Kuestenlogik/Bowire.Protocol.Kafka/issues/92) | Protocol.Kafka | [Typed produce through the Schema Registry: field shapes and Avro / Protobuf encoding](#issue-kuestenlogik-bowire-protocol-kafka-92) | ⬜ Backlog | `area:plugin-sdk` |
 | [93](https://github.com/Kuestenlogik/Bowire.Protocol.Kafka/issues/93) | Protocol.Kafka | [Produce sends none of the call's metadata as Kafka headers, although the code says it does](#issue-kuestenlogik-bowire-protocol-kafka-93) | ⬜ Backlog |  |
+| [94](https://github.com/Kuestenlogik/Bowire.Protocol.Kafka/issues/94) | Protocol.Kafka | [Describe the hand-entry form: produce and consume, topic, key and partition](#issue-kuestenlogik-bowire-protocol-kafka-94) | ⬜ Backlog |  |
 
 ### Protocol.Surgewave v0.2 — Typed produce through the Schema Registry
 
-**0/2 done** · 2 backlog
+**0/3 done** · 3 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [85](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/85) | Protocol.Surgewave | [Typed produce through the Schema Registry: field shapes and Avro / Protobuf encoding](#issue-kuestenlogik-bowire-protocol-surgewave-85) | ⬜ Backlog | `area:plugin-sdk` |
 | [86](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/86) | Protocol.Surgewave | [Produce sends none of the call's metadata as record headers, although the code says it does](#issue-kuestenlogik-bowire-protocol-surgewave-86) | ⬜ Backlog |  |
+| [87](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/87) | Protocol.Surgewave | [Describe the hand-entry form: produce and consume, topic, key and partition](#issue-kuestenlogik-bowire-protocol-surgewave-87) | ⬜ Backlog |  |
 
 ### Sdk.Go v0.1 — Polyglot SDK parity: settings, channels, manifests
 
@@ -313,12 +325,6 @@ Embedded REST discovery walks ApiExplorer and reflects over the body types with 
 
 The workbench upload knows two kinds: `.proto` goes to the proto endpoint, everything else to the OpenAPI endpoint (`src/Kuestenlogik.Bowire/wwwroot/js/helpers.js:179-181`), and the picker accepts only `.proto,.json,.yaml,.yml` (`render-sidebar.js:722`). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/994)
 
-#### <a id="issue-kuestenlogik-bowire-995"></a>⬜ Backlog · [#995](https://github.com/Kuestenlogik/Bowire/issues/995) Manual entry for every protocol: freeform metadata and streaming, Compose layouts for the protocols without one
-
-> `area:workbench`
-
-The invoke endpoint does not require a method to have been discovered (`BowireInvokeEndpoints.cs:193-195`), so typing a call by hand works in principle for every protocol. The UI is the limit: [[more]](https://github.com/Kuestenlogik/Bowire/issues/995)
-
 #### <a id="issue-kuestenlogik-bowire-1000"></a>⬜ Backlog · [#1000](https://github.com/Kuestenlogik/Bowire/issues/1000) SOAP: a discovered call sends an empty SOAPAction and no target namespace
 
 A SOAP operation discovered from a WSDL is invoked with `SOAPAction: ""` and no target namespace, unless the user types both into the metadata by hand. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/1000)
@@ -330,6 +336,10 @@ NATS discovery gives the subscribe, publish and request method of a subject the 
 #### <a id="issue-kuestenlogik-bowire-1002"></a>⬜ Backlog · [#1002](https://github.com/Kuestenlogik/Bowire/issues/1002) SignalR: a channel to a method the host does not list is always opened as duplex
 
 `BowireSignalRProtocol.OpenChannelAsync` looks the method up in the live hub scan and, on a miss, defaults both streaming flags to `true` (`src/Kuestenlogik.Bowire.Protocol.SignalR/BowireSignalRProtocol.cs:387-388`). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/1002)
+
+#### <a id="issue-kuestenlogik-bowire-1003"></a>⬜ Backlog · [#1003](https://github.com/Kuestenlogik/Bowire/issues/1003) Sidecar plugins describe their hand-entry form in the initialize reply
+
+A .NET plugin describes how a call to it is entered by hand through `IBowireManualEntry` (#995). A sidecar plugin cannot implement a .NET interface; `SidecarBowireProtocol` speaks for it. Until a sidecar can describe itself, its freeform form offers all four method types and Compose has no form for it. [[more]](https://github.com/Kuestenlogik/Bowire/issues/1003)
 
 #### <a id="issue-kuestenlogik-bowire-673"></a>✅ Done · [#673](https://github.com/Kuestenlogik/Bowire/issues/673) Export requests as .http — Copy as .http, and bowire export http for a whole collection
 
@@ -358,6 +368,12 @@ Starting the workbench with a sidecar plugin installed logs, for every sidecar: 
 > `area:plugin-sdk`
 
 A sidecar manifest that names its own binary as a bare name — `"executable": "echo"` next to `echo.exe` in the plugin directory — does not start on Windows. [[more]](https://github.com/Kuestenlogik/Bowire/issues/990)
+
+#### <a id="issue-kuestenlogik-bowire-995"></a>✅ Done · [#995](https://github.com/Kuestenlogik/Bowire/issues/995) Manual entry for every protocol: freeform metadata and streaming, Compose layouts for the protocols without one
+
+> `area:workbench`
+
+The invoke endpoint does not require a method to have been discovered (`BowireInvokeEndpoints.cs:193-195`), so typing a call by hand works in principle for every protocol. The UI is the limit: [[more]](https://github.com/Kuestenlogik/Bowire/issues/995)
 
 #### <a id="issue-kuestenlogik-bowire-996"></a>✅ Done · [#996](https://github.com/Kuestenlogik/Bowire/issues/996) SOAP by hand: the freeform form drops the metadata that carries soap_action and target_namespace
 
@@ -591,6 +607,16 @@ No project is marked trimmable or AOT-compatible, and nothing carries trimming a
 
 The embedded Akka plugin resolves message types with `Type.GetType` from configuration (`BowireAkkaExtension.cs:136`) and deserialises a Tell with the reflection-based `JsonSerializer.Deserialize(json, type)` (`TellGateway.cs:100-103`). Neither works in a trimmed or AOT host, and neither warns. [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/90)
 
+#### <a id="issue-kuestenlogik-bowire-protocol-akka-91"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Akka#91](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/91) Describe the hand-entry form: Akka.Remote streams only, embedded Akka has Tell and Mailboxes
+
+Bowire 2.11 lets a protocol plugin describe how a call to it is entered by hand (Kuestenlogik/Bowire#995): `IBowireManualEntry` returns the call kinds (each with a method type and its `service` / `method` as templates over the fields) and the fields (each going into the templates or into the metadat … [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/91)
+
+### Protocol.Amqp v1.2 — Hand-entry form
+
+#### <a id="issue-kuestenlogik-bowire-protocol-amqp-86"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Amqp#86](https://github.com/Kuestenlogik/Bowire.Protocol.Amqp/issues/86) Describe the hand-entry form: send and receive, for AMQP 0.9.1 and 1.0
+
+Bowire 2.11 lets a protocol plugin describe how a call to it is entered by hand (Kuestenlogik/Bowire#995): `IBowireManualEntry` returns the call kinds (each with a method type and its `service` / `method` as templates over the fields) and the fields (each going into the templates or into the metadat … [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Amqp/issues/86)
+
 ### Protocol.Dis v1.2 — Interactive DIS sandbox *(due 2026-11-29)*
 
 #### <a id="issue-kuestenlogik-bowire-protocol-dis-68"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Dis#68](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/68) Show datum IDs with their SISO name (Variable Record Types)
@@ -623,6 +649,10 @@ Produce sends the value as UTF-8 text only (`BowireKafkaProtocol.cs:431-438`). T
 
 `BowireKafkaProtocol.InvokeAsync` strips the security markers with the comment "before forwarding the rest as Kafka headers" (`BowireKafkaProtocol.cs:232-234`), reads `key` and `partition`, and builds the message without `Headers` (`:240-244`). No metadata entry ever reaches the record as a header. [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Kafka/issues/93)
 
+#### <a id="issue-kuestenlogik-bowire-protocol-kafka-94"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Kafka#94](https://github.com/Kuestenlogik/Bowire.Protocol.Kafka/issues/94) Describe the hand-entry form: produce and consume, topic, key and partition
+
+Bowire 2.11 lets a protocol plugin describe how a call to it is entered by hand (Kuestenlogik/Bowire#995): `IBowireManualEntry` returns the call kinds (each with a method type and its `service` / `method` as templates over the fields) and the fields (each going into the templates or into the metadat … [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Kafka/issues/94)
+
 ### Protocol.Surgewave v0.2 — Typed produce through the Schema Registry
 
 #### <a id="issue-kuestenlogik-bowire-protocol-surgewave-85"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Surgewave#85](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/85) Typed produce through the Schema Registry: field shapes and Avro / Protobuf encoding
@@ -634,6 +664,10 @@ Same gap as the Kafka plugin: produce sends the value as UTF-8 only, and the Sch
 #### <a id="issue-kuestenlogik-bowire-protocol-surgewave-86"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Surgewave#86](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/86) Produce sends none of the call's metadata as record headers, although the code says it does
 
 Same as the Kafka plugin: the security config and `BowireSurgewaveProtocol.cs:212,221` say the remaining metadata goes out as Kafka headers, but produce sets no headers on the message; only `key` and `partition` are read (`:264,274`). [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/86)
+
+#### <a id="issue-kuestenlogik-bowire-protocol-surgewave-87"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Surgewave#87](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/87) Describe the hand-entry form: produce and consume, topic, key and partition
+
+Bowire 2.11 lets a protocol plugin describe how a call to it is entered by hand (Kuestenlogik/Bowire#995): `IBowireManualEntry` returns the call kinds (each with a method type and its `service` / `method` as templates over the fields) and the fields (each going into the templates or into the metadat … [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/87)
 
 ### Sdk.Go v0.1 — Polyglot SDK parity: settings, channels, manifests
 
