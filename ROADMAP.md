@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**6/27 done** · 21 backlog
+**7/28 done** · 21 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -43,6 +43,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [989](https://github.com/Kuestenlogik/Bowire/issues/989) | Bowire | [PluginUpdateCheckService keeps an IHttpClientFactory client, so a disposed host is never collected](#issue-kuestenlogik-bowire-989) | ✅ Done |  |
 | [990](https://github.com/Kuestenlogik/Bowire/issues/990) | Bowire | [Sidecar executable: a bare name in the plugin directory ignores PATHEXT on Windows](#issue-kuestenlogik-bowire-990) | ✅ Done | `area:plugin-sdk` |
 | [996](https://github.com/Kuestenlogik/Bowire/issues/996) | Bowire | [SOAP by hand: the freeform form drops the metadata that carries soap_action and target_namespace](#issue-kuestenlogik-bowire-996) | ✅ Done | `area:workbench` |
+| [998](https://github.com/Kuestenlogik/Bowire/issues/998) | Bowire | [Release announcements on Discussions are titled with the bare version since 2.8.0](#issue-kuestenlogik-bowire-998) | ✅ Done |  |
 
 ### v2.12 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
 
@@ -340,6 +341,10 @@ A sidecar manifest that names its own binary as a bare name — `"executable": "
 > `area:workbench`
 
 A SOAP call entered by hand (no WSDL discovered) cannot be made from the workbench. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/996)
+
+#### <a id="issue-kuestenlogik-bowire-998"></a>✅ Done · [#998](https://github.com/Kuestenlogik/Bowire/issues/998) Release announcements on Discussions are titled with the bare version since 2.8.0
+
+Since 2.8.0 every announcement in GitHub Discussions is titled with the version alone (`2.8.0`, `2.9.0`, … `2.10.0`). Up to 2.7.0 the title carried what the release was about. [[more]](https://github.com/Kuestenlogik/Bowire/issues/998)
 
 ### v2.12 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
 
