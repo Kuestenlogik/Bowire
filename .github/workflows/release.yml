@@ -51,6 +51,7 @@ env:
 permissions:
   contents: write   # softprops/action-gh-release creates the GitHub Release
   packages: write   # nuget push to GitHub Packages + container push to GHCR
+  discussions: write   # the release's Announcements discussion, created and then titled
 
 jobs:
   # ================================================================
@@ -888,3 +889,13 @@ jobs:
             artifacts/packages/*.nupkg
             publish/archives/*
             checksums.txt
+
+      # The discussion above is named after the release, which is the version alone, so every
+      # announcement since 2.8.0 read "2.8.0" and nothing else. The Discussions list has room
+      # for a line: rename it to the version and the delivery's title, the `#` the body opens
+      # with. Never fails the release (scripts/ci/discussion-title.mjs warns instead).
+      - name: Title the release discussion
+        if: ${{ !contains(github.ref, '-rc') }}
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_PAT || secrets.GITHUB_TOKEN }}
+        run: node scripts/ci/discussion-title.mjs "${GITHUB_REF_NAME}" release-body.md
