@@ -86,7 +86,7 @@ internal static class BowireChannelEndpoints
                 Net.BowireProxyNotice.Report(protocol, serverUrl, ctx);
                 var channel = await protocol.OpenChannelAsync(
                     serverUrl, body.Service, channelMethod,
-                    options.ShowInternalServices, body.Metadata, ctx.RequestAborted);
+                    options.ShowInternalServices, WithMethodType(body.Metadata, body.MethodType), ctx.RequestAborted);
 
                 if (channel is null)
                     return BowireEndpointHelpers.Problem(
@@ -298,7 +298,23 @@ internal static class BowireChannelEndpoints
         string Service,
         string Method,
         string? Protocol,
-        Dictionary<string, string>? Metadata);
+        Dictionary<string, string>? Metadata,
+        string? MethodType = null);
+
+    /// <summary>
+    /// #1002 - the method type the caller asked for, as the
+    /// <see cref="BowireMetadataKeys.MethodType"/> marker; the metadata
+    /// unchanged when it names none.
+    /// </summary>
+    internal static Dictionary<string, string>? WithMethodType(Dictionary<string, string>? metadata, string? methodType)
+    {
+        if (string.IsNullOrWhiteSpace(methodType)) return metadata;
+        var result = metadata is null
+            ? new Dictionary<string, string>(StringComparer.Ordinal)
+            : new Dictionary<string, string>(metadata, StringComparer.Ordinal);
+        result[BowireMetadataKeys.MethodType] = methodType;
+        return result;
+    }
 
     private sealed record ChannelSendRequest(
         string Message);

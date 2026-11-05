@@ -51,7 +51,9 @@
             service: fr.service,
             method: fr.method,
             protocol: fr.protocol || undefined,
-            metadata: _freeformMetadata(fr) || undefined
+            metadata: _freeformMetadata(fr) || undefined,
+            // #1002 - the plugin cannot always look the method up.
+            methodType: fr.methodType || undefined
         };
     }
 

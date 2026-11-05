@@ -74,6 +74,58 @@ public sealed class SignalRChannelIntegrationTests
         }
     }
 
+    [Theory]
+    [InlineData("ClientStreaming", false)]
+    [InlineData(null, true)]
+    public async Task A_Channel_To_A_Hub_Discovery_Cannot_See_Runs_As_The_Caller_Says(
+        string? methodType, bool expectServerStreaming)
+    {
+        // #1002 — a plugin without the host's services is a remote hub: the
+        // scan finds nothing, so the method type has to come from the caller.
+        // Without one the channel stays duplex, as before.
+        await using var host = await StartChatHubHostAsync();
+        var remote = new BowireSignalRProtocol();
+        var metadata = methodType is null ? null
+            : new Dictionary<string, string> { [BowireMetadataKeys.MethodType] = methodType };
+
+        var channel = await remote.OpenChannelAsync(
+            host.BaseUrl, "/chathub", "CountLines", false, metadata, TestContext.Current.CancellationToken);
+
+        Assert.NotNull(channel);
+        await using (channel)
+        {
+            Assert.True(channel!.IsClientStreaming);
+            Assert.Equal(expectServerStreaming, channel.IsServerStreaming);
+        }
+    }
+
+    [Fact]
+    public async Task A_Client_Streaming_Channel_To_A_Remote_Hub_Gets_Its_One_Answer()
+    {
+        await using var host = await StartChatHubHostAsync();
+        var remote = new BowireSignalRProtocol();
+
+        var channel = await remote.OpenChannelAsync(
+            host.BaseUrl, "/chathub", "CountLines", false,
+            new Dictionary<string, string> { [BowireMetadataKeys.MethodType] = "ClientStreaming" },
+            TestContext.Current.CancellationToken);
+        Assert.NotNull(channel);
+        await using (channel)
+        {
+            await channel!.SendAsync("\"one\"", TestContext.Current.CancellationToken);
+            await channel.SendAsync("\"two\"", TestContext.Current.CancellationToken);
+            await channel.CloseAsync(TestContext.Current.CancellationToken);
+
+            using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+            cts.CancelAfter(TimeSpan.FromSeconds(10));
+            var responses = new List<string>();
+            await foreach (var r in channel.ReadResponsesAsync(cts.Token)) responses.Add(r);
+
+            // As a duplex call the hub refused it: CountLines does not stream.
+            Assert.Equal("2", Assert.Single(responses).Trim());
+        }
+    }
+
     [Fact]
     public async Task OpenChannel_Counter_ServerStreaming_Yields_All_Items()
     {

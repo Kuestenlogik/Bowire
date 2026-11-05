@@ -26,6 +26,13 @@ internal static class SignalRManualEntry
             Description = "Call a hub method that streams, and follow its items.",
             BodyExample = "10",
         },
+        new BowireManualCallKind("client-stream", "Client stream", "ClientStreaming")
+        {
+            Service = "{hub}",
+            Method = "{hubMethod}",
+            Description = "Stream each message you send to the hub method; it answers once when you disconnect.",
+            BodyExample = "\"hello\"",
+        },
         new BowireManualCallKind("channel", "Channel", "Duplex")
         {
             Service = "{hub}",

@@ -161,7 +161,7 @@ test('a channel opens with service, method, protocol and metadata, then sends an
 
     assert.equal(calls[0].url, '/bowire/api/channel/open?serverUrl=' + encodeURIComponent('http://localhost:5000'));
     assert.deepEqual(JSON.parse(calls[0].init.body), {
-        service: '/chathub', method: 'Echo', protocol: 'signalr', metadata: { Authorization: 'Bearer x' },
+        service: '/chathub', method: 'Echo', protocol: 'signalr', metadata: { Authorization: 'Bearer x' }, methodType: 'Duplex',
     });
     assert.equal(opened[0].url, '/bowire/api/channel/c1/responses');
     assert.equal(m.freeformCall.state, 'open');

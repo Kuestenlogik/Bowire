@@ -13,6 +13,15 @@ internal sealed class ChatHub : Hub
         return Task.FromResult($"Echo: {message}");
     }
 
+    // Client streaming (#1002): takes the caller's stream, answers once.
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "SignalR binds hub methods only among public instance methods, so this cannot be static.")]
+    public async Task<int> CountLines(IAsyncEnumerable<string> lines)
+    {
+        var count = 0;
+        await foreach (var _ in lines) count++;
+        return count;
+    }
+
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "SignalR binds hub methods only among public instance methods, so this cannot be static.")]
     public async IAsyncEnumerable<int> Counter(int count, int delayMs)
     {

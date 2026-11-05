@@ -433,7 +433,9 @@
                     service: selectedService.name,
                     method: selectedMethod.name,
                     protocol: (selectedService && selectedService.source) || selectedProtocol || undefined,
-                    metadata: hasMetadata ? channelMetadata : undefined
+                    metadata: hasMetadata ? channelMetadata : undefined,
+                    // #1002 - the plugin cannot always look the method up.
+                    methodType: chanMethodType || undefined
                 })
             });
 

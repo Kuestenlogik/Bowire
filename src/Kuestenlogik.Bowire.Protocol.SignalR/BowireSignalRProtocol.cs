@@ -387,8 +387,12 @@ public sealed class BowireSignalRProtocol : IBowireProtocol, IBowireManualEntry,
         var svc = services.FirstOrDefault(s => s.Name == service || s.Package == service);
         var methodInfo = svc?.Methods.FirstOrDefault(m => m.Name == method);
 
+        // #1002 - a method the scan does not know (a remote hub, a call typed
+        // in by hand) runs as the caller says: a client-streaming method
+        // answers once and rejects a duplex call. Duplex when nobody says.
+        var askedFor = metadata?.GetValueOrDefault(BowireMetadataKeys.MethodType);
         var isClientStreaming = methodInfo?.ClientStreaming ?? true;
-        var isServerStreaming = methodInfo?.ServerStreaming ?? true;
+        var isServerStreaming = methodInfo?.ServerStreaming ?? askedFor != "ClientStreaming";
 
         var mtlsConfig = MtlsConfig.TryParseFromMetadata(metadata);
         var sanitisedMetadata = mtlsConfig is null ? metadata : MtlsConfig.StripMarker(metadata);

@@ -40,6 +40,10 @@ Discovery read an operation's SOAPAction only into its description and did not r
 
 NATS discovery gave the subscribe, publish and request of a subject one name, the subject itself, and a bare subject runs as a publish. A discovered request therefore never waited for a reply. Each operation now has its own name, such as `orders.created/request`, so the sidebar also tells the three apart. JetStream and Services methods reach their stream or service route through any caller, including MCP tools and benchmarks. A request saved with the bare subject runs as it did.
 
+### A client-streaming SignalR channel to a remote hub gets its answer (#1002)
+
+SignalR can only look a hub method up in its own host. For a remote hub, or a call typed in by hand, it opened every channel as duplex, and a client-streaming hub method refused that. `/api/channel/open` now takes the `methodType` the caller opens the channel for and hands it to the plugin as the reserved `__bowireMethodType__` marker. The workbench sends it from every channel it opens, and SignalR's hand-entry form offers client streaming as a call kind of its own.
+
 ### A SOAP call entered by hand reaches the service (#996)
 
 The freeform form sent its Metadata tab for ad-hoc REST only, so a SOAP call typed in by hand, against a service with no WSDL, went out without its `soap_action` and `target_namespace`. The metadata now reaches every protocol's invoke.

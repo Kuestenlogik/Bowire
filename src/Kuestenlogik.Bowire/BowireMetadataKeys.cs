@@ -79,6 +79,20 @@ public static class BowireMetadataKeys
     public const string PluginHint = "__bowirePluginHint";
 
     /// <summary>
+    /// The method type the caller opens a channel for: <c>ClientStreaming</c>
+    /// or <c>Duplex</c> (#1002).
+    /// </summary>
+    /// <remarks>
+    /// <c>OpenChannelAsync</c> has no method-type parameter, and a plugin that
+    /// can look the method up — SignalR on its own host — cannot do so for a
+    /// remote hub or a call typed in by hand. SignalR then opened every such
+    /// channel as duplex, which a client-streaming hub method rejects. The
+    /// channel endpoint sets this marker from the <c>methodType</c> of the
+    /// open request; a plugin uses it when it knows no better.
+    /// </remarks>
+    public const string MethodType = "__bowireMethodType__";
+
+    /// <summary>
     /// The prefix every Bowire-internal metadata key starts with.
     /// </summary>
     public const string InternalPrefix = "__bowire";
