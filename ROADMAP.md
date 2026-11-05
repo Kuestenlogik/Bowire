@@ -171,6 +171,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [85](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/85) | Protocol.Surgewave | [Typed produce through the Schema Registry: field shapes and Avro / Protobuf encoding](#issue-kuestenlogik-bowire-protocol-surgewave-85) | ⬜ Backlog | `area:plugin-sdk` |
+| [90](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/90) | Protocol.Akka | [Tell without reflection: source-generated JSON type info for the allow-listed types](#issue-kuestenlogik-bowire-protocol-akka-90) | ⬜ Backlog | `area:plugin-sdk` |
 | [92](https://github.com/Kuestenlogik/Bowire.Protocol.Kafka/issues/92) | Protocol.Kafka | [Typed produce through the Schema Registry: field shapes and Avro / Protobuf encoding](#issue-kuestenlogik-bowire-protocol-kafka-92) | ⬜ Backlog | `area:plugin-sdk` |
 | [988](https://github.com/Kuestenlogik/Bowire/issues/988) | Bowire | [Embedded gRPC discovery without a reflection endpoint: read the host's in-process service descriptors, and let the host switch the auto-mapped reflection off](#issue-kuestenlogik-bowire-988) | ⬜ Backlog |  |
 | [989](https://github.com/Kuestenlogik/Bowire/issues/989) | Bowire | [PluginUpdateCheckService keeps an IHttpClientFactory client, so a disposed host is never collected](#issue-kuestenlogik-bowire-989) | ⬜ Backlog |  |
@@ -632,6 +633,12 @@ Two warning suppressions in this repo, reviewed under the rule that warnings are
 > `area:plugin-sdk`
 
 Same gap as the Kafka plugin: produce sends the value as UTF-8 only, and the Schema Registry (`SurgewaveSchemaRegistry.cs:10-21`) is used to summarise and to decode on consume, not to describe or encode a produce. [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/85)
+
+#### <a id="issue-kuestenlogik-bowire-protocol-akka-90"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Akka#90](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/90) Tell without reflection: source-generated JSON type info for the allow-listed types
+
+> `area:plugin-sdk`
+
+The embedded Akka plugin resolves message types with `Type.GetType` from configuration (`BowireAkkaExtension.cs:136`) and deserialises a Tell with the reflection-based `JsonSerializer.Deserialize(json, type)` (`TellGateway.cs:100-103`). Neither works in a trimmed or AOT host, and neither warns. [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/90)
 
 #### <a id="issue-kuestenlogik-bowire-protocol-kafka-92"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Kafka#92](https://github.com/Kuestenlogik/Bowire.Protocol.Kafka/issues/92) Typed produce through the Schema Registry: field shapes and Avro / Protobuf encoding
 
