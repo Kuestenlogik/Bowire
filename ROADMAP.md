@@ -194,6 +194,12 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [779](https://github.com/Kuestenlogik/Bowire/issues/779) | Bowire | [Revoke the old VSCE_PAT in Azure DevOps](#issue-kuestenlogik-bowire-779) | ⬜ Backlog |  |
 | [613](https://github.com/Kuestenlogik/Bowire/issues/613) | Bowire | [Move the VS Code Marketplace publish off PATs to Entra ID before 2026-12-01](#issue-kuestenlogik-bowire-613) | ✅ Done | `area:cli` |
 
+### Backlog (not yet scheduled)
+
+| # | Project | Title | Status | Tags |
+|---|---|---|---|---|
+| [999](https://github.com/Kuestenlogik/Bowire/issues/999) | Bowire | [roadmap-release-field publish is failing](#issue-kuestenlogik-bowire-999) | ⬜ Backlog |  |
+
 ## Details
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
@@ -685,6 +691,12 @@ Owner rule from 2026-10-14: warnings are fixed at the cause instead of suppresse
 > `area:cli`
 
 > **Hard deadline: 2026-12-01.** Azure DevOps stops supporting Personal Access Tokens scoped to *all accessible organizations* on that date. That scope is what `vsce publish` has traditionally required. [[more]](https://github.com/Kuestenlogik/Bowire/issues/613)
+
+### Backlog (not yet scheduled)
+
+#### <a id="issue-kuestenlogik-bowire-999"></a>⬜ Backlog · [#999](https://github.com/Kuestenlogik/Bowire/issues/999) roadmap-release-field publish is failing
+
+<!-- publish-failure:roadmap-release-field --> The **roadmap-release-field** publish failed. - Run: https://github.com/Kuestenlogik/Bowire/actions/runs/42047737460 - Workflow: `Roadmap field guard` - Commit: a097880038191e58036fa9b35819b42c802013b4 [[more]](https://github.com/Kuestenlogik/Bowire/issues/999)
 
 ---
 
