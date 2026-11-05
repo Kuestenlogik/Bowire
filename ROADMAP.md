@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**8/32 done** · 24 backlog
+**10/32 done** · 22 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -36,8 +36,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [992](https://github.com/Kuestenlogik/Bowire/issues/992) | Bowire | [gRPC embedded: discover from the host's compiled descriptors instead of mapping a reflection service](#issue-kuestenlogik-bowire-992) | ⬜ Backlog | `area:workbench` |
 | [993](https://github.com/Kuestenlogik/Bowire/issues/993) | Bowire | [REST embedded: discover from the host's OpenAPI document instead of reflecting over its types](#issue-kuestenlogik-bowire-993) | ⬜ Backlog | `area:workbench` |
 | [994](https://github.com/Kuestenlogik/Bowire/issues/994) | Bowire | [Schema imports per plugin: GraphQL SDL, AsyncAPI, WSDL, EDMX and OpenRPC](#issue-kuestenlogik-bowire-994) | ⬜ Backlog | `area:workbench` |
-| [1000](https://github.com/Kuestenlogik/Bowire/issues/1000) | Bowire | [SOAP: a discovered call sends an empty SOAPAction and no target namespace](#issue-kuestenlogik-bowire-1000) | ⬜ Backlog |  |
-| [1001](https://github.com/Kuestenlogik/Bowire/issues/1001) | Bowire | [NATS: a discovered request runs as a publish, and three methods share one name](#issue-kuestenlogik-bowire-1001) | ⬜ Backlog |  |
 | [1002](https://github.com/Kuestenlogik/Bowire/issues/1002) | Bowire | [SignalR: a channel to a method the host does not list is always opened as duplex](#issue-kuestenlogik-bowire-1002) | ⬜ Backlog |  |
 | [1003](https://github.com/Kuestenlogik/Bowire/issues/1003) | Bowire | [Sidecar plugins describe their hand-entry form in the initialize reply](#issue-kuestenlogik-bowire-1003) | ⬜ Backlog |  |
 | [673](https://github.com/Kuestenlogik/Bowire/issues/673) | Bowire | [Export requests as .http — Copy as .http, and bowire export http for a whole collection](#issue-kuestenlogik-bowire-673) | ✅ Done | `area:workbench` |
@@ -48,6 +46,8 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [995](https://github.com/Kuestenlogik/Bowire/issues/995) | Bowire | [Manual entry for every protocol: freeform metadata and streaming, Compose layouts for the protocols without one](#issue-kuestenlogik-bowire-995) | ✅ Done | `area:workbench` |
 | [996](https://github.com/Kuestenlogik/Bowire/issues/996) | Bowire | [SOAP by hand: the freeform form drops the metadata that carries soap_action and target_namespace](#issue-kuestenlogik-bowire-996) | ✅ Done | `area:workbench` |
 | [998](https://github.com/Kuestenlogik/Bowire/issues/998) | Bowire | [Release announcements on Discussions are titled with the bare version since 2.8.0](#issue-kuestenlogik-bowire-998) | ✅ Done |  |
+| [1000](https://github.com/Kuestenlogik/Bowire/issues/1000) | Bowire | [SOAP: a discovered call sends an empty SOAPAction and no target namespace](#issue-kuestenlogik-bowire-1000) | ✅ Done |  |
+| [1001](https://github.com/Kuestenlogik/Bowire/issues/1001) | Bowire | [NATS: a discovered request runs as a publish, and three methods share one name](#issue-kuestenlogik-bowire-1001) | ✅ Done |  |
 
 ### v2.12 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
 
@@ -325,14 +325,6 @@ Embedded REST discovery walks ApiExplorer and reflects over the body types with 
 
 The workbench upload knows two kinds: `.proto` goes to the proto endpoint, everything else to the OpenAPI endpoint (`src/Kuestenlogik.Bowire/wwwroot/js/helpers.js:179-181`), and the picker accepts only `.proto,.json,.yaml,.yml` (`render-sidebar.js:722`). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/994)
 
-#### <a id="issue-kuestenlogik-bowire-1000"></a>⬜ Backlog · [#1000](https://github.com/Kuestenlogik/Bowire/issues/1000) SOAP: a discovered call sends an empty SOAPAction and no target namespace
-
-A SOAP operation discovered from a WSDL is invoked with `SOAPAction: ""` and no target namespace, unless the user types both into the metadata by hand. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/1000)
-
-#### <a id="issue-kuestenlogik-bowire-1001"></a>⬜ Backlog · [#1001](https://github.com/Kuestenlogik/Bowire/issues/1001) NATS: a discovered request runs as a publish, and three methods share one name
-
-NATS discovery gives the subscribe, publish and request method of a subject the same `Name`, the subject itself (`src/Kuestenlogik.Bowire.Protocol.Nats/NatsDiscovery.cs:108,122,136`); only `FullName` carries the operation (`nats/<subject>/request`). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/1001)
-
 #### <a id="issue-kuestenlogik-bowire-1002"></a>⬜ Backlog · [#1002](https://github.com/Kuestenlogik/Bowire/issues/1002) SignalR: a channel to a method the host does not list is always opened as duplex
 
 `BowireSignalRProtocol.OpenChannelAsync` looks the method up in the live hub scan and, on a miss, defaults both streaming flags to `true` (`src/Kuestenlogik.Bowire.Protocol.SignalR/BowireSignalRProtocol.cs:387-388`). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/1002)
@@ -384,6 +376,14 @@ A SOAP call entered by hand (no WSDL discovered) cannot be made from the workben
 #### <a id="issue-kuestenlogik-bowire-998"></a>✅ Done · [#998](https://github.com/Kuestenlogik/Bowire/issues/998) Release announcements on Discussions are titled with the bare version since 2.8.0
 
 Since 2.8.0 every announcement in GitHub Discussions is titled with the version alone (`2.8.0`, `2.9.0`, … `2.10.0`). Up to 2.7.0 the title carried what the release was about. [[more]](https://github.com/Kuestenlogik/Bowire/issues/998)
+
+#### <a id="issue-kuestenlogik-bowire-1000"></a>✅ Done · [#1000](https://github.com/Kuestenlogik/Bowire/issues/1000) SOAP: a discovered call sends an empty SOAPAction and no target namespace
+
+A SOAP operation discovered from a WSDL is invoked with `SOAPAction: ""` and no target namespace, unless the user types both into the metadata by hand. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/1000)
+
+#### <a id="issue-kuestenlogik-bowire-1001"></a>✅ Done · [#1001](https://github.com/Kuestenlogik/Bowire/issues/1001) NATS: a discovered request runs as a publish, and three methods share one name
+
+NATS discovery gives the subscribe, publish and request method of a subject the same `Name`, the subject itself (`src/Kuestenlogik.Bowire.Protocol.Nats/NatsDiscovery.cs:108,122,136`); only `FullName` carries the operation (`nats/<subject>/request`). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/1001)
 
 ### v2.12 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
 
