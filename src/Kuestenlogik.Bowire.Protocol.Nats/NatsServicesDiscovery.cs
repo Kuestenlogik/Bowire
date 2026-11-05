@@ -207,7 +207,7 @@ internal static class NatsServicesDiscovery
             });
         }
 
-        return new BowireServiceInfo($"Service:{name}", "nats", methods)
+        return new BowireServiceInfo(BowireNatsProtocol.ServicesServicePrefix + name, "nats", methods)
         {
             Source = "nats",
             OriginUrl = originUrl,

@@ -105,7 +105,10 @@ internal static class NatsDiscovery
             {
                 // Subscribe — server-streaming.
                 methods.Add(new BowireMethodInfo(
-                    Name: subject,
+                    // #1001 - the three operations of a subject need three
+                    // names: the workbench sends the name, and a bare subject
+                    // runs as a publish.
+                    Name: $"{subject}/subscribe",
                     FullName: $"nats/{subject}/subscribe",
                     ClientStreaming: false,
                     ServerStreaming: true,
@@ -119,7 +122,7 @@ internal static class NatsDiscovery
 
                 // Publish — fire-and-forget unary.
                 methods.Add(new BowireMethodInfo(
-                    Name: subject,
+                    Name: $"{subject}/publish",
                     FullName: $"nats/{subject}/publish",
                     ClientStreaming: false,
                     ServerStreaming: false,
@@ -133,7 +136,7 @@ internal static class NatsDiscovery
 
                 // Request — req/reply unary.
                 methods.Add(new BowireMethodInfo(
-                    Name: subject,
+                    Name: $"{subject}/request",
                     FullName: $"nats/{subject}/request",
                     ClientStreaming: false,
                     ServerStreaming: false,

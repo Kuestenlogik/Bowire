@@ -144,11 +144,45 @@ public sealed class BowireNatsProtocol : IBowireProtocol, IBowireManualEntry, Ku
         return all;
     }
 
+    /// <summary>
+    /// #1001 - the route a discovered method name stands for. JetStream and
+    /// Services methods are named <c>info</c>, <c>consume</c>, a subject or an
+    /// endpoint, which only their service turns into a route
+    /// (<c>nats/jetstream/&lt;stream&gt;/info</c>,
+    /// <c>nats/services/&lt;service&gt;/&lt;endpoint&gt;</c>). A route, a
+    /// <c>&lt;subject&gt;/&lt;op&gt;</c> name and a bare subject pass through.
+    /// </summary>
+    public string ResolveMethodName(string service, string method)
+    {
+        if (string.IsNullOrEmpty(method) || method.StartsWith("nats/", StringComparison.Ordinal)) return method;
+        if (service?.StartsWith(JetStreamServicePrefix, StringComparison.Ordinal) == true)
+        {
+            var stream = service[JetStreamServicePrefix.Length..];
+            return method is "info" or "consume"
+                ? $"nats/jetstream/{stream}/{method}"
+                : $"nats/jetstream/{stream}/publish/{method}";
+        }
+        if (service?.StartsWith(ServicesServicePrefix, StringComparison.Ordinal) == true)
+            return $"nats/services/{service[ServicesServicePrefix.Length..]}/{method}";
+        // The default contract: a "<service>/<name>" full name is the name.
+        var prefix = service + "/";
+        return !string.IsNullOrEmpty(service) && method.Length > prefix.Length
+            && method.StartsWith(prefix, StringComparison.Ordinal)
+            ? method[prefix.Length..]
+            : method;
+    }
+
+    internal const string JetStreamServicePrefix = "JetStream:";
+    internal const string ServicesServicePrefix = "Service:";
+
     public async Task<InvokeResult> InvokeAsync(
         string serverUrl, string service, string method,
         List<string> jsonMessages, bool showInternalServices,
         Dictionary<string, string>? metadata = null, CancellationToken ct = default)
     {
+        // Callers that reach the plugin without the invoke endpoint (MCP
+        // tools, benchmarks, monitoring) get the same route; a route maps to itself.
+        method = ResolveMethodName(service, method);
         var normalised = NatsConnectionHelper.NormaliseServerUrl(serverUrl);
         if (normalised is null)
             return new InvokeResult(null, 0, "Invalid NATS server URL", new());
@@ -246,7 +280,7 @@ public sealed class BowireNatsProtocol : IBowireProtocol, IBowireManualEntry, Ku
         var normalised = NatsConnectionHelper.NormaliseServerUrl(serverUrl);
         if (normalised is null) yield break;
 
-        var route = ParseRoute(method);
+        var route = ParseRoute(ResolveMethodName(service, method));
         if (route.Family == NatsRouteFamily.JetStream && route.Op == "consume")
         {
             await foreach (var msg in StreamJetStreamConsumerAsync(normalised, route, ct).ConfigureAwait(false))

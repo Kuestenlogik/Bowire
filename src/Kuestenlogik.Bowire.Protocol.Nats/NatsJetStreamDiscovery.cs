@@ -108,7 +108,7 @@ internal static class NatsJetStreamDiscovery
                     });
                 }
 
-                services.Add(new BowireServiceInfo($"JetStream:{name}", "nats", methods)
+                services.Add(new BowireServiceInfo(BowireNatsProtocol.JetStreamServicePrefix + name, "nats", methods)
                 {
                     Source = "nats",
                     OriginUrl = originUrl,

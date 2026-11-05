@@ -36,6 +36,10 @@ The .NET plugin loader also leaves sidecar folders to the sidecar loader, so a s
 
 Discovery read an operation's SOAPAction only into its description and did not read the target namespace at all, so a call to a discovered operation went out with an empty SOAPAction and an unqualified body element. The SOAP plugin now takes both from the WSDL. For a document-style operation the namespace is that of the input element, for an rpc-style one it is that of `soap:body`. A call made without discovering first, from the CLI, a flow or a recording, loads the WSDL once itself. Metadata the user enters still wins.
 
+### A discovered NATS request waits for its reply (#1001)
+
+NATS discovery gave the subscribe, publish and request of a subject one name, the subject itself, and a bare subject runs as a publish. A discovered request therefore never waited for a reply. Each operation now has its own name, such as `orders.created/request`, so the sidebar also tells the three apart. JetStream and Services methods reach their stream or service route through any caller, including MCP tools and benchmarks. A request saved with the bare subject runs as it did.
+
 ### A SOAP call entered by hand reaches the service (#996)
 
 The freeform form sent its Metadata tab for ad-hoc REST only, so a SOAP call typed in by hand, against a service with no WSDL, went out without its `soap_action` and `target_namespace`. The metadata now reaches every protocol's invoke.

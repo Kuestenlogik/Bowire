@@ -350,8 +350,11 @@ public sealed class NatsAdditionalGapsTests
         var services = BuildServices(["alpha.beta.gamma.delta"], "nats://h:4222");
         var alpha = Assert.Single(services);
         Assert.Equal("alpha", alpha.Name);
-        // Methods keep the full subject as Name.
-        Assert.All(alpha.Methods, m => Assert.Equal("alpha.beta.gamma.delta", m.Name));
+        // Methods keep the full subject in their name, with the operation
+        // after it, so the three of one subject are told apart (#1001).
+        Assert.Equal(
+            ["alpha.beta.gamma.delta/subscribe", "alpha.beta.gamma.delta/publish", "alpha.beta.gamma.delta/request"],
+            alpha.Methods.Select(m => m.Name));
     }
 
     [Fact]
