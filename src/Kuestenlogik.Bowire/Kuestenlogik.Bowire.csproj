@@ -48,6 +48,7 @@
     <InternalsVisibleTo Include="Kuestenlogik.Bowire.Recordings" />
     <InternalsVisibleTo Include="Kuestenlogik.Bowire.Recordings.Tests" />
     <InternalsVisibleTo Include="bowire" />
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.ManualEntry" />
     <InternalsVisibleTo Include="Kuestenlogik.Bowire.Tests" />
     <InternalsVisibleTo Include="Kuestenlogik.Bowire.Protocol.Grpc.Tests" />
     <InternalsVisibleTo Include="Kuestenlogik.Bowire.IntegrationTests" />
@@ -280,6 +281,11 @@
          descriptors. Function declarations are hoisted inside the shared
          IIFE so the descriptors' callback references resolve at runtime. -->
     <BowireJsFragment Include="wwwroot\js\request-builder-protocols.js" />
+    <!-- #995 - the hand-entry forms the plugins describe: method types for the
+         freeform form, and one generic Compose layout per protocol without a
+         layout of its own. AFTER request-builder*.js (it registers into their
+         rbLayouts) and freeform-calls.js (it runs streams and channels through it). -->
+    <BowireJsFragment Include="wwwroot\js\manual-entry.js" />
     <!-- #311 — compose-rail.js moved to Kuestenlogik.Bowire.Compose
          (renamed from Kuestenlogik.Bowire.Rail.Compose in v2.1 #325);
          see the comment above the schema-form.js fragment and the

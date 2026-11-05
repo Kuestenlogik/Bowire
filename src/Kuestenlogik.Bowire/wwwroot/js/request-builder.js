@@ -771,8 +771,10 @@
         // #117 - the key, not the text: the table is built at load time,
         // and setLocale does not reload. A placeholder already translated
         // here would freeze the language of the start.
-        var urlPlaceholder = t((layout && layout.urlPlaceholderKey)
-            || 'rb.urlPlaceholder');
+        // A catalogue key first, then a literal example (MCP, WebSocket, SSE,
+        // and the example a plugin's hand-entry form names - #995), then REST's.
+        var urlPlaceholder = (layout && layout.urlPlaceholderKey) ? t(layout.urlPlaceholderKey)
+            : (layout && layout.urlPlaceholder) || t('rb.urlPlaceholder');
         var urlInput = el('input', {
             // No `id` — see the header note on _renderRequestBuilder.
             type: 'text',

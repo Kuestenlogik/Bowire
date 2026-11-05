@@ -21,8 +21,11 @@ namespace Kuestenlogik.Bowire.Protocol.Grpc;
 /// <c>MapGrpcReflectionService()</c> — no manual setup required.
 /// </para>
 /// </summary>
-public sealed class BowireGrpcProtocol : IBowireProtocol, Kuestenlogik.Bowire.Net.IBowireProxySupport, IBowireProtocolServices, IBowireStreamingWithWireBytes
+public sealed class BowireGrpcProtocol : IBowireProtocol, IBowireManualEntry, Kuestenlogik.Bowire.Net.IBowireProxySupport, IBowireProtocolServices, IBowireStreamingWithWireBytes
 {
+    /// <summary>The method types the freeform form offers (#995); the workbench has its own form for this protocol.</summary>
+    public BowireManualEntryForm DescribeManualEntry() => BowireManualEntryForm.ForMethodTypes("Unary", "ServerStreaming", "ClientStreaming", "Duplex");
+
     /// <inheritdoc />
     public Kuestenlogik.Bowire.Net.BowireProxySupport ProxySupport => Kuestenlogik.Bowire.Net.BowireProxySupport.Partial;
 

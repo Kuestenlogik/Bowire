@@ -29,8 +29,11 @@ namespace Kuestenlogik.Bowire.Protocol.Mqtt;
 ///
 /// Auto-discovered by <see cref="BowireProtocolRegistry"/>.
 /// </summary>
-public sealed class BowireMqttProtocol : IBowireProtocol, Kuestenlogik.Bowire.Net.IBowireProxySupport
+public sealed class BowireMqttProtocol : IBowireProtocol, IBowireManualEntry, Kuestenlogik.Bowire.Net.IBowireProxySupport
 {
+    /// <summary>The method types the freeform form offers (#995); the workbench has its own form for this protocol.</summary>
+    public BowireManualEntryForm DescribeManualEntry() => BowireManualEntryForm.ForMethodTypes("Duplex");
+
     /// <inheritdoc />
     public Kuestenlogik.Bowire.Net.BowireProxySupport ProxySupport => Kuestenlogik.Bowire.Net.BowireProxySupport.None;
 

@@ -35,8 +35,11 @@ namespace Kuestenlogik.Bowire.Protocol.Nats;
 /// the pub/sub surface is settled.
 /// </para>
 /// </remarks>
-public sealed class BowireNatsProtocol : IBowireProtocol, Kuestenlogik.Bowire.Net.IBowireProxySupport
+public sealed class BowireNatsProtocol : IBowireProtocol, IBowireManualEntry, Kuestenlogik.Bowire.Net.IBowireProxySupport
 {
+    /// <inheritdoc />
+    public BowireManualEntryForm DescribeManualEntry() => NatsManualEntry.Form;
+
     /// <inheritdoc />
     public Kuestenlogik.Bowire.Net.BowireProxySupport ProxySupport => Kuestenlogik.Bowire.Net.BowireProxySupport.None;
 

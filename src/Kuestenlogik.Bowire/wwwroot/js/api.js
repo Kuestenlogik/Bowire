@@ -181,6 +181,9 @@
         try { protocolsResp = await fetch(`${config.prefix}/api/protocols`); }
         catch (_) { /* no answer — applyProtocolsResponse says so */ }
         await applyProtocolsResponse(protocolsResp);
+        // #995 - the hand-entry forms of the loaded plugins; not awaited, the
+        // freeform form and Compose pick them up when they arrive.
+        loadManualEntryForms();
 
         // Always run embedded discovery (no URL) first — this finds
         // gRPC (via reflection), SignalR (via hub metadata), REST (via

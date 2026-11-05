@@ -48,8 +48,11 @@ namespace Kuestenlogik.Bowire.Protocol.Mcp;
 /// are synthesised from Bowire's <c>BowireProtocolRegistry</c>.
 /// </para>
 /// </remarks>
-public sealed partial class BowireMcpProtocol : IBowireProtocol, Kuestenlogik.Bowire.Net.IBowireProxySupport, IBowireDiscoveryDiagnostics
+public sealed partial class BowireMcpProtocol : IBowireProtocol, IBowireManualEntry, Kuestenlogik.Bowire.Net.IBowireProxySupport, IBowireDiscoveryDiagnostics
 {
+    /// <summary>The method types the freeform form offers (#995); the workbench has its own form for this protocol.</summary>
+    public BowireManualEntryForm DescribeManualEntry() => BowireManualEntryForm.ForMethodTypes("Unary", "ServerStreaming");
+
     /// <inheritdoc />
     public Kuestenlogik.Bowire.Net.BowireProxySupport ProxySupport => Kuestenlogik.Bowire.Net.BowireProxySupport.Full;
 

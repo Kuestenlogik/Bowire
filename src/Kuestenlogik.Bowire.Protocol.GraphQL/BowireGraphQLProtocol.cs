@@ -19,8 +19,11 @@ namespace Kuestenlogik.Bowire.Protocol.GraphQL;
 /// invokes them by building a parameterised operation string with
 /// <see cref="GraphQLQueryBuilder"/>.
 /// </summary>
-public sealed class BowireGraphQLProtocol : IBowireProtocol, Kuestenlogik.Bowire.Net.IBowireProxySupport, IDisposable
+public sealed class BowireGraphQLProtocol : IBowireProtocol, IBowireManualEntry, Kuestenlogik.Bowire.Net.IBowireProxySupport, IDisposable
 {
+    /// <summary>The method types the freeform form offers (#995); the workbench has its own form for this protocol.</summary>
+    public BowireManualEntryForm DescribeManualEntry() => BowireManualEntryForm.ForMethodTypes("Unary", "ServerStreaming");
+
     /// <inheritdoc />
     public Kuestenlogik.Bowire.Net.BowireProxySupport ProxySupport => Kuestenlogik.Bowire.Net.BowireProxySupport.Full;
 

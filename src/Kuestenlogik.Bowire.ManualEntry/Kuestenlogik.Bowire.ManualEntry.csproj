@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- #995 — how a call to each protocol plugin is entered by hand: the
+         forms the plugins describe (IBowireManualEntry), behind a gRPC service
+         with JSON transcoding that the workbench's generic Compose layout reads. -->
+    <Description>Bowire manual entry — the hand-entry forms the protocol plugins describe, served as a gRPC service with JSON transcoding for the workbench's generic request form.</Description>
+    <PackageId>Kuestenlogik.Bowire.ManualEntry</PackageId>
+    <PackageTags>bowire;manual-entry;request-builder;grpc</PackageTags>
+    <IsPackable>true</IsPackable>
+    <!-- Puts google/api/annotations.proto (Google.Api.CommonProtos) on the protoc import path. -->
+    <IncludeGoogleApiCommonProtos>true</IncludeGoogleApiCommonProtos>
+  </PropertyGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Grpc.AspNetCore" />
+    <PackageReference Include="Google.Api.CommonProtos" />
+    <PackageReference Include="Microsoft.AspNetCore.Grpc.JsonTranscoding" />
+  </ItemGroup>
+  <ItemGroup>
+    <Protobuf Include="Protos\bowire\manualentry\v1\manual_entry.proto" GrpcServices="Server" ProtoRoot="Protos" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.ManualEntry.Tests" />
+  </ItemGroup>
+</Project>

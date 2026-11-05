@@ -11,8 +11,11 @@ namespace Kuestenlogik.Bowire.Protocol.SocketIo;
 /// <summary>
 /// Bowire protocol plugin for Socket.IO 4.x servers via SocketIOClient.
 /// </summary>
-public sealed class BowireSocketIoProtocol : IBowireProtocol, Kuestenlogik.Bowire.Net.IBowireProxySupport
+public sealed class BowireSocketIoProtocol : IBowireProtocol, IBowireManualEntry, Kuestenlogik.Bowire.Net.IBowireProxySupport
 {
+    /// <inheritdoc />
+    public BowireManualEntryForm DescribeManualEntry() => SocketIoManualEntry.Form;
+
     /// <inheritdoc />
     public Kuestenlogik.Bowire.Net.BowireProxySupport ProxySupport => Kuestenlogik.Bowire.Net.BowireProxySupport.Partial;
 

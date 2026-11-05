@@ -33,8 +33,11 @@ namespace Kuestenlogik.Bowire.Protocol.Pulsar;
 /// state would leak across browser sessions).
 /// </para>
 /// </remarks>
-public sealed class BowirePulsarProtocol : IBowireProtocol, Kuestenlogik.Bowire.Net.IBowireProxySupport, IDisposable
+public sealed class BowirePulsarProtocol : IBowireProtocol, IBowireManualEntry, Kuestenlogik.Bowire.Net.IBowireProxySupport, IDisposable
 {
+    /// <inheritdoc />
+    public BowireManualEntryForm DescribeManualEntry() => PulsarManualEntry.Form;
+
     /// <inheritdoc />
     public Kuestenlogik.Bowire.Net.BowireProxySupport ProxySupport => Kuestenlogik.Bowire.Net.BowireProxySupport.Partial;
 

@@ -3741,36 +3741,12 @@ var railName = opts.railLabel || t('prereq.thisRail');
         return row;
     }
 
-    // Per-protocol method-type capability table. Used by the freeform
-    // request builder + the "+" new-request menu so the type dropdown
-    // only offers shapes the protocol actually supports — e.g. picking
-    // REST doesn't surface ClientStreaming, picking MQTT only offers
-    // the Duplex channel shape, etc. Order = sensible default first.
+    // The method types a protocol offers by hand, for the freeform form and
+    // the "+" new-request menu, so the type bar only offers shapes the
+    // protocol supports; first = the default. #995 - they come from the
+    // plugin's own description (manual-entry.js), not from a list here.
     function getSupportedMethodTypes(protocolId) {
-        switch ((protocolId || '').toLowerCase()) {
-            case 'grpc':       return ['Unary', 'ServerStreaming', 'ClientStreaming', 'Duplex'];  // i18n-exempt: protocol method types, matched as identifiers
-            case 'rest':       return ['Unary'];
-            case 'graphql':    return ['Unary', 'ServerStreaming'];
-            case 'signalr':    return ['Unary', 'ServerStreaming', 'Duplex'];  // i18n-exempt: protocol method types, matched as identifiers
-            case 'mqtt':       return ['Duplex'];
-            case 'websocket':  return ['Duplex'];
-            case 'sse':        return ['ServerStreaming'];
-            case 'socketio':   return ['Unary', 'ServerStreaming'];
-            case 'mcp':        return ['Unary', 'ServerStreaming'];
-            case 'odata':      return ['Unary'];
-            case 'soap':       return ['Unary'];
-            case 'jsonrpc':    return ['Unary', 'ServerStreaming'];
-            // #995 - none of these three opens a channel; each streams
-            // (subscribe / listen) and invokes (publish / produce / emit).
-            case 'nats':       return ['Unary', 'ServerStreaming'];
-            case 'pulsar':     return ['Unary', 'ServerStreaming'];
-            case 'kafka':      return ['Unary', 'ServerStreaming'];
-            case 'surgewave':  return ['Unary', 'ServerStreaming'];
-            case 'amqp':       return ['Unary', 'ServerStreaming'];
-            // Akka.Remote only streams its monitor feed.
-            case 'akka-remote': return ['ServerStreaming'];
-            default:           return ['Unary', 'ServerStreaming', 'ClientStreaming', 'Duplex'];  // i18n-exempt: protocol method types, matched as identifiers
-        }
+        return manualEntryMethodTypes((protocolId || '').toLowerCase());
     }
 
     function renderTree(nodes, opts) {

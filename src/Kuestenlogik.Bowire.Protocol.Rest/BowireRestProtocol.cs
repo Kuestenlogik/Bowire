@@ -16,8 +16,11 @@ namespace Kuestenlogik.Bowire.Protocol.Rest;
 /// <see cref="BowireProtocolRegistry"/>.
 /// </summary>
 public sealed class BowireRestProtocol
-    : IBowireProtocol, Kuestenlogik.Bowire.Net.IBowireProxySupport, IInlineHttpInvoker, IBowireDiscoveryDiagnostics, IDisposable
+    : IBowireProtocol, IBowireManualEntry, Kuestenlogik.Bowire.Net.IBowireProxySupport, IInlineHttpInvoker, IBowireDiscoveryDiagnostics, IDisposable
 {
+    /// <summary>The method types the freeform form offers (#995); the workbench has its own form for this protocol.</summary>
+    public BowireManualEntryForm DescribeManualEntry() => BowireManualEntryForm.ForMethodTypes("Unary");
+
     /// <inheritdoc />
     public Kuestenlogik.Bowire.Net.BowireProxySupport ProxySupport => Kuestenlogik.Bowire.Net.BowireProxySupport.Full;
 

@@ -24,8 +24,11 @@ namespace Kuestenlogik.Bowire.Protocol.WebSocket;
 /// open WebSocket channels — with sub-protocols + auth headers — without
 /// taking a compile-time dependency on this assembly.
 /// </summary>
-public sealed class BowireWebSocketProtocol : IBowireProtocol, Kuestenlogik.Bowire.Net.IBowireProxySupport, IInlineWebSocketChannel
+public sealed class BowireWebSocketProtocol : IBowireProtocol, IBowireManualEntry, Kuestenlogik.Bowire.Net.IBowireProxySupport, IInlineWebSocketChannel
 {
+    /// <summary>The method types the freeform form offers (#995); the workbench has its own form for this protocol.</summary>
+    public BowireManualEntryForm DescribeManualEntry() => BowireManualEntryForm.ForMethodTypes("Duplex");
+
     /// <inheritdoc />
     public Kuestenlogik.Bowire.Net.BowireProxySupport ProxySupport => Kuestenlogik.Bowire.Net.BowireProxySupport.Full;
 

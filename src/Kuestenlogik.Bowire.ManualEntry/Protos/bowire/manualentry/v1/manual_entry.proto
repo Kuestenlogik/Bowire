@@ -1,0 +1,98 @@
+// Copyright 2026 Küstenlogik
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+package bowire.manualentry.v1;
+
+option csharp_namespace = "Kuestenlogik.Bowire.ManualEntry.V1";
+
+import "google/api/annotations.proto";
+
+// How a call to each protocol plugin is entered by hand, without discovery
+// (#995). A plugin describes the fields a call needs and the kinds of call it
+// offers (IBowireManualEntry); the workbench renders one generic form from
+// that, and assembles the call from what was typed.
+service ManualEntry {
+  // The hand-entry forms of the loaded plugins that describe one, ordered by
+  // protocol id. Paged (AIP-158): the page token is the last protocol id of
+  // the previous page, so a plugin loaded or removed between two pages never
+  // makes a client see one twice or skip one.
+  rpc ListManualEntryForms(ListManualEntryFormsRequest) returns (ListManualEntryFormsResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/manual-entry-forms"
+    };
+  }
+}
+
+message ListManualEntryFormsRequest {
+  // At most this many forms; 0 means the default (50), more than 200 is cut to 200.
+  int32 page_size = 1;
+  // From next_page_token of the previous page; empty for the first page.
+  string page_token = 2;
+}
+
+message ListManualEntryFormsResponse {
+  repeated ManualEntryForm forms = 1;
+  // Empty on the last page.
+  string next_page_token = 2;
+}
+
+// How a call to one protocol is entered by hand.
+message ManualEntryForm {
+  // The plugin's protocol id, e.g. "kafka".
+  string protocol = 1;
+  // The kinds of call it offers, in the order the form lists them.
+  repeated CallKind call_kinds = 2;
+  // The fields a call needs, in the order the form shows them.
+  repeated Field fields = 3;
+  // An example server URL, e.g. "kafka://localhost:9092".
+  string url_placeholder = 4;
+}
+
+// One kind of call, e.g. Kafka's produce or SignalR's stream.
+message CallKind {
+  // Stable within the protocol, e.g. "produce".
+  string id = 1;
+  string label = 2;
+  // "Unary", "ServerStreaming", "ClientStreaming" or "Duplex".
+  string method_type = 3;
+  // The call's service and method as templates: "{key}" is the value of the
+  // field with that key.
+  string service = 4;
+  string method = 5;
+  string description = 6;
+  // An example payload, in the protocol's own format.
+  string body_example = 7;
+}
+
+// One field of the form.
+message Field {
+  // The template placeholder or metadata key.
+  string key = 1;
+  string label = 2;
+  Placement placement = 3;
+  string description = 4;
+  string placeholder = 5;
+  bool required = 6;
+  // "string", "number", "bool" or "select".
+  string type = 7;
+  repeated Option options = 8;
+  string default_value = 9;
+  // The call kinds the field belongs to; empty means all.
+  repeated string call_kinds = 10;
+}
+
+enum Placement {
+  PLACEMENT_UNSPECIFIED = 0;
+  // Into the call's metadata, under the field's key.
+  PLACEMENT_METADATA = 1;
+  // Only into the service and method templates.
+  PLACEMENT_TEMPLATE = 2;
+}
+
+// One choice of a select field.
+message Option {
+  string value = 1;
+  string label = 2;
+}

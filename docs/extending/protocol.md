@@ -134,6 +134,37 @@ public async Task<BowireDiscoveryReport> DiscoverWithDiagnosticsAsync(
 
 Throwing still works and is still the stronger signal — an exception is classified `error` (or `timeout`) with its own message. A diagnostic is for the case where you have something to return.
 
+### Describing how a call is entered by hand
+
+A user can call your protocol without discovery: the freeform form and Compose let them type a call in. Only your plugin knows what such a call needs. A Kafka produce needs a topic and a key, a SOAP call needs an action and a namespace, and a NATS request needs a subject and the `request` operation. Implement `IBowireManualEntry` to describe it, and the workbench renders a form from your description. It also offers exactly your method types in the freeform form. You ship no workbench code.
+
+```csharp
+public sealed class MyBrokerProtocol : IBowireProtocol, IBowireManualEntry
+{
+    public BowireManualEntryForm DescribeManualEntry() => new(
+    [
+        new BowireManualCallKind("produce", "Produce", "Unary") { Service = "{topic}", Method = "produce" },
+        new BowireManualCallKind("consume", "Consume", "ServerStreaming") { Service = "{topic}", Method = "consume" },
+    ])
+    {
+        UrlPlaceholder = "mybroker://localhost:9000",
+        Fields =
+        [
+            new BowireManualField("topic", "Topic", BowireManualFieldPlacement.Template) { Required = true },
+            new BowireManualField("key", "Key", BowireManualFieldPlacement.Metadata) { CallKinds = ["produce"] },
+        ],
+    };
+    // …
+}
+```
+
+- **Call kinds** are what the user picks between. Each one names a method type: `Unary` runs through invoke, `ServerStreaming` through the stream endpoint, and `ClientStreaming` or `Duplex` opens a channel. It also gives the call's `service` and `method` as templates, where `{key}` stands for the value of the field with that key.
+- **Fields** are what the user fills in. A `Template` field only feeds the templates. A `Metadata` field goes into the call's metadata under its key, which is where your invoke already reads it. `CallKinds` limits a field to the kinds it belongs to. `Type` is `string`, `number`, `bool` or `select` (with `Options`).
+- **Forms that are wrong are not served.** Examples: a method type outside the four, a placeholder no field declares, a `select` without options, or a field naming an unknown call kind. The host logs why. The Compose form is the one place a broken description would surface, so check it in a test.
+- **A plugin with a form of its own in the workbench** (REST, gRPC, MQTT, …) still describes its method types, with `BowireManualEntryForm.ForMethodTypes("Unary", "ServerStreaming")`. The workbench keeps its own form and offers those types in the freeform form.
+
+The workbench reads the descriptions through the `bowire.manualentry.v1.ManualEntry` service (`GET /api/v1/manual-entry-forms`, paged), in the `Kuestenlogik.Bowire.ManualEntry` package.
+
 ## Registration
 
 Auto-discovery is the only path. `BowireProtocolRegistry.Discover` (in `src/Kuestenlogik.Bowire/BowireProtocolRegistry.cs`) does the work:

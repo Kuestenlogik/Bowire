@@ -32,8 +32,11 @@ namespace Kuestenlogik.Bowire.Protocol.Soap;
 /// streams + null channels accordingly.
 /// </para>
 /// </remarks>
-public sealed class BowireSoapProtocol : IBowireProtocol, Kuestenlogik.Bowire.Net.IBowireProxySupport, IDisposable
+public sealed class BowireSoapProtocol : IBowireProtocol, IBowireManualEntry, Kuestenlogik.Bowire.Net.IBowireProxySupport, IDisposable
 {
+    /// <inheritdoc />
+    public BowireManualEntryForm DescribeManualEntry() => SoapManualEntry.Form;
+
     /// <inheritdoc />
     public Kuestenlogik.Bowire.Net.BowireProxySupport ProxySupport => Kuestenlogik.Bowire.Net.BowireProxySupport.Full;
 
