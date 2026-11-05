@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**1/19 done** · 18 backlog
+**1/20 done** · 19 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -34,6 +34,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [963](https://github.com/Kuestenlogik/Bowire/issues/963) | Bowire | [WebSocketAuthProbe: forged JWT (alg:none, tampered signature) on the upgrade](#issue-kuestenlogik-bowire-963) | ⬜ Backlog | `area:security` |
 | [986](https://github.com/Kuestenlogik/Bowire/issues/986) | Bowire | [The .NET plugin loader scans sidecar folders and logs ManifestMissing for every sidecar](#issue-kuestenlogik-bowire-986) | ⬜ Backlog | `area:plugin-sdk` |
 | [987](https://github.com/Kuestenlogik/Bowire/issues/987) | Bowire | [sidecar-plugins.md: no SDK sends select options, and python3 as the manifest example fails on Windows](#issue-kuestenlogik-bowire-987) | ⬜ Backlog | `area:docs` |
+| [990](https://github.com/Kuestenlogik/Bowire/issues/990) | Bowire | [Sidecar executable: a bare name in the plugin directory ignores PATHEXT on Windows](#issue-kuestenlogik-bowire-990) | ⬜ Backlog | `area:plugin-sdk` |
 | [673](https://github.com/Kuestenlogik/Bowire/issues/673) | Bowire | [Export requests as .http — Copy as .http, and bowire export http for a whole collection](#issue-kuestenlogik-bowire-673) | ✅ Done | `area:workbench` |
 
 ### v2.12 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
@@ -260,6 +261,12 @@ Starting the workbench with a sidecar plugin installed logs, for every sidecar: 
 > `area:docs`
 
 `docs/architecture/sidecar-plugins.md` and a code comment describe a state the SDKs have moved past: - they say no SDK sends `options` for a `select` setting; the Node and Python SDKs now do (and Go will); - the manifest example uses `"executable": "python3"`, which fails on a stock Windows install: … [[more]](https://github.com/Kuestenlogik/Bowire/issues/987)
+
+#### <a id="issue-kuestenlogik-bowire-990"></a>⬜ Backlog · [#990](https://github.com/Kuestenlogik/Bowire/issues/990) Sidecar executable: a bare name in the plugin directory ignores PATHEXT on Windows
+
+> `area:plugin-sdk`
+
+A sidecar manifest that names its own binary as a bare name — `"executable": "echo"` next to `echo.exe` in the plugin directory — does not start on Windows. [[more]](https://github.com/Kuestenlogik/Bowire/issues/990)
 
 #### <a id="issue-kuestenlogik-bowire-673"></a>✅ Done · [#673](https://github.com/Kuestenlogik/Bowire/issues/673) Export requests as .http — Copy as .http, and bowire export http for a whole collection
 
@@ -579,4 +586,4 @@ Two warning suppressions in this repo, reviewed under the rule that warnings are
 
 ---
 
-*Generated 2026-11-04 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
+*Generated 2026-11-05 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
