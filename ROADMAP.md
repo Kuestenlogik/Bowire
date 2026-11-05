@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**1/20 done** · 19 backlog
+**1/23 done** · 22 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -35,6 +35,9 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [986](https://github.com/Kuestenlogik/Bowire/issues/986) | Bowire | [The .NET plugin loader scans sidecar folders and logs ManifestMissing for every sidecar](#issue-kuestenlogik-bowire-986) | ⬜ Backlog | `area:plugin-sdk` |
 | [987](https://github.com/Kuestenlogik/Bowire/issues/987) | Bowire | [sidecar-plugins.md: no SDK sends select options, and python3 as the manifest example fails on Windows](#issue-kuestenlogik-bowire-987) | ⬜ Backlog | `area:docs` |
 | [990](https://github.com/Kuestenlogik/Bowire/issues/990) | Bowire | [Sidecar executable: a bare name in the plugin directory ignores PATHEXT on Windows](#issue-kuestenlogik-bowire-990) | ⬜ Backlog | `area:plugin-sdk` |
+| [991](https://github.com/Kuestenlogik/Bowire/issues/991) | Bowire | [gRPC without server reflection: upload a descriptor set and call through it from the workbench](#issue-kuestenlogik-bowire-991) | ⬜ Backlog | `area:workbench` |
+| [992](https://github.com/Kuestenlogik/Bowire/issues/992) | Bowire | [gRPC embedded: discover from the host's compiled descriptors instead of mapping a reflection service](#issue-kuestenlogik-bowire-992) | ⬜ Backlog | `area:workbench` |
+| [993](https://github.com/Kuestenlogik/Bowire/issues/993) | Bowire | [REST embedded: discover from the host's OpenAPI document instead of reflecting over its types](#issue-kuestenlogik-bowire-993) | ⬜ Backlog | `area:workbench` |
 | [673](https://github.com/Kuestenlogik/Bowire/issues/673) | Bowire | [Export requests as .http — Copy as .http, and bowire export http for a whole collection](#issue-kuestenlogik-bowire-673) | ✅ Done | `area:workbench` |
 
 ### v2.12 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
@@ -106,12 +109,12 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### Sdk.Go v0.1 — Polyglot SDK parity: settings, channels, manifests
 
-**0/2 done** · 2 backlog
+**2/2 done**
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
-| [3](https://github.com/Kuestenlogik/Bowire.Sdk.Go/issues/3) | Sdk.Go | [openChannel is declared but nothing routes it](#issue-kuestenlogik-bowire-sdk-go-3) | ⬜ Backlog |  |
-| [4](https://github.com/Kuestenlogik/Bowire.Sdk.Go/issues/4) | Sdk.Go | [Settings: a plugin can declare them but cannot read the values the host now sends](#issue-kuestenlogik-bowire-sdk-go-4) | ⬜ Backlog |  |
+| [3](https://github.com/Kuestenlogik/Bowire.Sdk.Go/issues/3) | Sdk.Go | [openChannel is declared but nothing routes it](#issue-kuestenlogik-bowire-sdk-go-3) | ✅ Done |  |
+| [4](https://github.com/Kuestenlogik/Bowire.Sdk.Go/issues/4) | Sdk.Go | [Settings: a plugin can declare them but cannot read the values the host now sends](#issue-kuestenlogik-bowire-sdk-go-4) | ✅ Done |  |
 
 ### Sdk.Node v0.2 — Polyglot SDK parity: settings, channels, manifests
 
@@ -267,6 +270,24 @@ Starting the workbench with a sidecar plugin installed logs, for every sidecar: 
 > `area:plugin-sdk`
 
 A sidecar manifest that names its own binary as a bare name — `"executable": "echo"` next to `echo.exe` in the plugin directory — does not start on Windows. [[more]](https://github.com/Kuestenlogik/Bowire/issues/990)
+
+#### <a id="issue-kuestenlogik-bowire-991"></a>⬜ Backlog · [#991](https://github.com/Kuestenlogik/Bowire/issues/991) gRPC without server reflection: upload a descriptor set and call through it from the workbench
+
+> `area:workbench`
+
+Without server reflection a gRPC method cannot be called from the workbench. An uploaded `.proto` fills the sidebar but is not invokable: `ProtoFileParser` is regex-based and yields names, not descriptors (`src/Kuestenlogik.Bowire.Protocol.Grpc/GrpcDescriptorSet.cs:18-24`). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/991)
+
+#### <a id="issue-kuestenlogik-bowire-992"></a>⬜ Backlog · [#992](https://github.com/Kuestenlogik/Bowire/issues/992) gRPC embedded: discover from the host's compiled descriptors instead of mapping a reflection service
+
+> `area:workbench`
+
+Embedded, `AddBowire` / `MapBowire` register and map the host's gRPC reflection service (`src/Kuestenlogik.Bowire.Protocol.Grpc/BowireGrpcProtocol.cs:207-220`, `BowireApiEndpoints.cs:74`), and Bowire then reads the host's own services back over the wire. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/992)
+
+#### <a id="issue-kuestenlogik-bowire-993"></a>⬜ Backlog · [#993](https://github.com/Kuestenlogik/Bowire/issues/993) REST embedded: discover from the host's OpenAPI document instead of reflecting over its types
+
+> `area:workbench`
+
+Embedded REST discovery walks ApiExplorer and reflects over the body types with `GetProperties` (`src/Kuestenlogik.Bowire.Protocol.Rest/EmbeddedDiscovery.cs:31, 107, 352, 418`). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/993)
 
 #### <a id="issue-kuestenlogik-bowire-673"></a>✅ Done · [#673](https://github.com/Kuestenlogik/Bowire/issues/673) Export requests as .http — Copy as .http, and bowire export http for a whole collection
 
@@ -504,11 +525,11 @@ A test program with which you **drive DIS in Bowire by hand**. The existing samp
 
 ### Sdk.Go v0.1 — Polyglot SDK parity: settings, channels, manifests
 
-#### <a id="issue-kuestenlogik-bowire-sdk-go-3"></a>⬜ Backlog · [Kuestenlogik/Bowire.Sdk.Go#3](https://github.com/Kuestenlogik/Bowire.Sdk.Go/issues/3) openChannel is declared but nothing routes it
+#### <a id="issue-kuestenlogik-bowire-sdk-go-3"></a>✅ Done · [Kuestenlogik/Bowire.Sdk.Go#3](https://github.com/Kuestenlogik/Bowire.Sdk.Go/issues/3) openChannel is declared but nothing routes it
 
 The plugin surface declares a duplex capability that no dispatcher routes. `the ChannelPlugin optional interface` is part of the public API — a plugin author implements it, ships it, and nothing ever calls it, because the dispatcher has no `openChannel` case at all. [[more]](https://github.com/Kuestenlogik/Bowire.Sdk.Go/issues/3)
 
-#### <a id="issue-kuestenlogik-bowire-sdk-go-4"></a>⬜ Backlog · [Kuestenlogik/Bowire.Sdk.Go#4](https://github.com/Kuestenlogik/Bowire.Sdk.Go/issues/4) Settings: a plugin can declare them but cannot read the values the host now sends
+#### <a id="issue-kuestenlogik-bowire-sdk-go-4"></a>✅ Done · [Kuestenlogik/Bowire.Sdk.Go#4](https://github.com/Kuestenlogik/Bowire.Sdk.Go/issues/4) Settings: a plugin can declare them but cannot read the values the host now sends
 
 The settings hook this SDK already has now reaches somewhere, and the other half of it has nowhere to land. [[more]](https://github.com/Kuestenlogik/Bowire.Sdk.Go/issues/4)
 
