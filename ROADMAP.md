@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**2/26 done** · 24 backlog
+**2/27 done** · 25 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -34,6 +34,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [963](https://github.com/Kuestenlogik/Bowire/issues/963) | Bowire | [WebSocketAuthProbe: forged JWT (alg:none, tampered signature) on the upgrade](#issue-kuestenlogik-bowire-963) | ⬜ Backlog | `area:security` |
 | [986](https://github.com/Kuestenlogik/Bowire/issues/986) | Bowire | [The .NET plugin loader scans sidecar folders and logs ManifestMissing for every sidecar](#issue-kuestenlogik-bowire-986) | ⬜ Backlog | `area:plugin-sdk` |
 | [987](https://github.com/Kuestenlogik/Bowire/issues/987) | Bowire | [sidecar-plugins.md: no SDK sends select options, and python3 as the manifest example fails on Windows](#issue-kuestenlogik-bowire-987) | ⬜ Backlog | `area:docs` |
+| [989](https://github.com/Kuestenlogik/Bowire/issues/989) | Bowire | [PluginUpdateCheckService keeps an IHttpClientFactory client, so a disposed host is never collected](#issue-kuestenlogik-bowire-989) | ⬜ Backlog |  |
 | [991](https://github.com/Kuestenlogik/Bowire/issues/991) | Bowire | [gRPC without server reflection: upload a descriptor set and call through it from the workbench](#issue-kuestenlogik-bowire-991) | ⬜ Backlog | `area:workbench` |
 | [992](https://github.com/Kuestenlogik/Bowire/issues/992) | Bowire | [gRPC embedded: discover from the host's compiled descriptors instead of mapping a reflection service](#issue-kuestenlogik-bowire-992) | ⬜ Backlog | `area:workbench` |
 | [993](https://github.com/Kuestenlogik/Bowire/issues/993) | Bowire | [REST embedded: discover from the host's OpenAPI document instead of reflecting over its types](#issue-kuestenlogik-bowire-993) | ⬜ Backlog | `area:workbench` |
@@ -173,8 +174,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [85](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/85) | Protocol.Surgewave | [Typed produce through the Schema Registry: field shapes and Avro / Protobuf encoding](#issue-kuestenlogik-bowire-protocol-surgewave-85) | ⬜ Backlog | `area:plugin-sdk` |
 | [90](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/90) | Protocol.Akka | [Tell without reflection: source-generated JSON type info for the allow-listed types](#issue-kuestenlogik-bowire-protocol-akka-90) | ⬜ Backlog | `area:plugin-sdk` |
 | [92](https://github.com/Kuestenlogik/Bowire.Protocol.Kafka/issues/92) | Protocol.Kafka | [Typed produce through the Schema Registry: field shapes and Avro / Protobuf encoding](#issue-kuestenlogik-bowire-protocol-kafka-92) | ⬜ Backlog | `area:plugin-sdk` |
-| [988](https://github.com/Kuestenlogik/Bowire/issues/988) | Bowire | [Embedded gRPC discovery without a reflection endpoint: read the host's in-process service descriptors, and let the host switch the auto-mapped reflection off](#issue-kuestenlogik-bowire-988) | ⬜ Backlog |  |
-| [989](https://github.com/Kuestenlogik/Bowire/issues/989) | Bowire | [PluginUpdateCheckService keeps an IHttpClientFactory client, so a disposed host is never collected](#issue-kuestenlogik-bowire-989) | ⬜ Backlog |  |
 
 ## Details
 
@@ -271,6 +270,10 @@ Starting the workbench with a sidecar plugin installed logs, for every sidecar: 
 > `area:docs`
 
 `docs/architecture/sidecar-plugins.md` and a code comment describe a state the SDKs have moved past: - they say no SDK sends `options` for a `select` setting; the Node and Python SDKs now do (and Go will); - the manifest example uses `"executable": "python3"`, which fails on a stock Windows install: … [[more]](https://github.com/Kuestenlogik/Bowire/issues/987)
+
+#### <a id="issue-kuestenlogik-bowire-989"></a>⬜ Backlog · [#989](https://github.com/Kuestenlogik/Bowire/issues/989) PluginUpdateCheckService keeps an IHttpClientFactory client, so a disposed host is never collected
+
+`PluginUpdateCheckService` takes an `HttpClient` in its constructor and keeps it in `_http`. When that client comes from `IHttpClientFactory` (the default-named client, `CreateClient()`), the singleton keeps the factory's handler, and the handler never gets rotated or cleaned up: [[more]](https://github.com/Kuestenlogik/Bowire/issues/989)
 
 #### <a id="issue-kuestenlogik-bowire-991"></a>⬜ Backlog · [#991](https://github.com/Kuestenlogik/Bowire/issues/991) gRPC without server reflection: upload a descriptor set and call through it from the workbench
 
@@ -645,14 +648,6 @@ The embedded Akka plugin resolves message types with `Type.GetType` from configu
 > `area:plugin-sdk`
 
 Produce sends the value as UTF-8 text only (`BowireKafkaProtocol.cs:431-438`). The plugin already talks to the Schema Registry, but only to summarise subjects and to decode on consume (`:158-175`); topics with an Avro or Protobuf value schema cannot be produced to from the workbench, and their methods show no fields. [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Kafka/issues/92)
-
-#### <a id="issue-kuestenlogik-bowire-988"></a>⬜ Backlog · [#988](https://github.com/Kuestenlogik/Bowire/issues/988) Embedded gRPC discovery without a reflection endpoint: read the host's in-process service descriptors, and let the host switch the auto-mapped reflection off
-
-**Seen in an embedding host (Terracle, Bowire 2.10.0):** since 2.8 the core carries no protocol, so an embedded workbench needs `Kuestenlogik.Bowire.Protocol.Grpc` to list the host's gRPC services. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/988)
-
-#### <a id="issue-kuestenlogik-bowire-989"></a>⬜ Backlog · [#989](https://github.com/Kuestenlogik/Bowire/issues/989) PluginUpdateCheckService keeps an IHttpClientFactory client, so a disposed host is never collected
-
-`PluginUpdateCheckService` takes an `HttpClient` in its constructor and keeps it in `_http`. When that client comes from `IHttpClientFactory` (the default-named client, `CreateClient()`), the singleton keeps the factory's handler, and the handler never gets rotated or cleaned up: [[more]](https://github.com/Kuestenlogik/Bowire/issues/989)
 
 ---
 
