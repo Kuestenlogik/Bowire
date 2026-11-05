@@ -67,7 +67,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v3.0 — Cleanups + breaking-change cuts *(due 2027-07-27)*
 
-**1/27 done** · 26 backlog
+**1/28 done** · 27 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -97,6 +97,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [611](https://github.com/Kuestenlogik/Bowire/issues/611) | Bowire | [Sidecar: add gRPC as a third transport alongside stdio and HTTP](#issue-kuestenlogik-bowire-611) | ⬜ Backlog |  |
 | [709](https://github.com/Kuestenlogik/Bowire/issues/709) | Bowire | [UnaryReplayer: eight protocol paths, each with its own copy of the shared rules](#issue-kuestenlogik-bowire-709) | ⬜ Backlog |  |
 | [782](https://github.com/Kuestenlogik/Bowire/issues/782) | Bowire | [Document the public API and drop the CS1591 suppression](#issue-kuestenlogik-bowire-782) | ⬜ Backlog |  |
+| [997](https://github.com/Kuestenlogik/Bowire/issues/997) | Bowire | [AOT and trimming readiness: explicit plugin registration, annotated reflection paths](#issue-kuestenlogik-bowire-997) | ⬜ Backlog | `area:plugin-sdk` |
 | [215](https://github.com/Kuestenlogik/Bowire/issues/215) | Bowire | [Test infra: IProcessLauncher seam in PluginManager to cover dotnet-shell-out paths](#issue-kuestenlogik-bowire-215) | ✅ Done | `area:plugin-sdk` |
 
 ### Protocol.Dis v1.2 — Interactive DIS sandbox *(due 2026-11-29)*
@@ -169,6 +170,8 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
+| [85](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/85) | Protocol.Surgewave | [Typed produce through the Schema Registry: field shapes and Avro / Protobuf encoding](#issue-kuestenlogik-bowire-protocol-surgewave-85) | ⬜ Backlog | `area:plugin-sdk` |
+| [92](https://github.com/Kuestenlogik/Bowire.Protocol.Kafka/issues/92) | Protocol.Kafka | [Typed produce through the Schema Registry: field shapes and Avro / Protobuf encoding](#issue-kuestenlogik-bowire-protocol-kafka-92) | ⬜ Backlog | `area:plugin-sdk` |
 | [988](https://github.com/Kuestenlogik/Bowire/issues/988) | Bowire | [Embedded gRPC discovery without a reflection endpoint: read the host's in-process service descriptors, and let the host switch the auto-mapped reflection off](#issue-kuestenlogik-bowire-988) | ⬜ Backlog |  |
 | [989](https://github.com/Kuestenlogik/Bowire/issues/989) | Bowire | [PluginUpdateCheckService keeps an IHttpClientFactory client, so a disposed host is never collected](#issue-kuestenlogik-bowire-989) | ⬜ Backlog |  |
 
@@ -518,6 +521,12 @@ Sidecars speak JSON-RPC 2.0 over two transports today: `stdio` (NDJSON) and `htt
 
 Every packable project generates its XML documentation file, but `Directory.Build.props` suppresses CS1591 (missing XML comment for a publicly visible member). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/782)
 
+#### <a id="issue-kuestenlogik-bowire-997"></a>⬜ Backlog · [#997](https://github.com/Kuestenlogik/Bowire/issues/997) AOT and trimming readiness: explicit plugin registration, annotated reflection paths
+
+> `area:plugin-sdk`
+
+No project is marked trimmable or AOT-compatible, and nothing carries trimming annotations. The reflection that blocks it: [[more]](https://github.com/Kuestenlogik/Bowire/issues/997)
+
 #### <a id="issue-kuestenlogik-bowire-215"></a>✅ Done · [#215](https://github.com/Kuestenlogik/Bowire/issues/215) Test infra: IProcessLauncher seam in PluginManager to cover dotnet-shell-out paths
 
 > `area:plugin-sdk`
@@ -617,6 +626,18 @@ Two warning suppressions in this repo, reviewed under the rule that warnings are
 > **Hard deadline: 2026-12-01.** Azure DevOps stops supporting Personal Access Tokens scoped to *all accessible organizations* on that date. That scope is what `vsce publish` has traditionally required. [[more]](https://github.com/Kuestenlogik/Bowire/issues/613)
 
 ### Backlog (not yet scheduled)
+
+#### <a id="issue-kuestenlogik-bowire-protocol-surgewave-85"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Surgewave#85](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/85) Typed produce through the Schema Registry: field shapes and Avro / Protobuf encoding
+
+> `area:plugin-sdk`
+
+Same gap as the Kafka plugin: produce sends the value as UTF-8 only, and the Schema Registry (`SurgewaveSchemaRegistry.cs:10-21`) is used to summarise and to decode on consume, not to describe or encode a produce. [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/85)
+
+#### <a id="issue-kuestenlogik-bowire-protocol-kafka-92"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Kafka#92](https://github.com/Kuestenlogik/Bowire.Protocol.Kafka/issues/92) Typed produce through the Schema Registry: field shapes and Avro / Protobuf encoding
+
+> `area:plugin-sdk`
+
+Produce sends the value as UTF-8 text only (`BowireKafkaProtocol.cs:431-438`). The plugin already talks to the Schema Registry, but only to summarise subjects and to decode on consume (`:158-175`); topics with an Avro or Protobuf value schema cannot be produced to from the workbench, and their methods show no fields. [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Kafka/issues/92)
 
 #### <a id="issue-kuestenlogik-bowire-988"></a>⬜ Backlog · [#988](https://github.com/Kuestenlogik/Bowire/issues/988) Embedded gRPC discovery without a reflection endpoint: read the host's in-process service descriptors, and let the host switch the auto-mapped reflection off
 
