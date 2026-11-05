@@ -135,11 +135,12 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### Protocol.Surgewave v0.2 — Typed produce through the Schema Registry
 
-**0/1 done** · 1 backlog
+**0/2 done** · 2 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [85](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/85) | Protocol.Surgewave | [Typed produce through the Schema Registry: field shapes and Avro / Protobuf encoding](#issue-kuestenlogik-bowire-protocol-surgewave-85) | ⬜ Backlog | `area:plugin-sdk` |
+| [86](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/86) | Protocol.Surgewave | [Produce sends none of the call's metadata as record headers, although the code says it does](#issue-kuestenlogik-bowire-protocol-surgewave-86) | ⬜ Backlog |  |
 
 ### Sdk.Go v0.1 — Polyglot SDK parity: settings, channels, manifests
 
@@ -629,6 +630,10 @@ Produce sends the value as UTF-8 text only (`BowireKafkaProtocol.cs:431-438`). T
 > `area:plugin-sdk`
 
 Same gap as the Kafka plugin: produce sends the value as UTF-8 only, and the Schema Registry (`SurgewaveSchemaRegistry.cs:10-21`) is used to summarise and to decode on consume, not to describe or encode a produce. [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/85)
+
+#### <a id="issue-kuestenlogik-bowire-protocol-surgewave-86"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Surgewave#86](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/86) Produce sends none of the call's metadata as record headers, although the code says it does
+
+Same as the Kafka plugin: the security config and `BowireSurgewaveProtocol.cs:212,221` say the remaining metadata goes out as Kafka headers, but produce sets no headers on the message; only `key` and `partition` are read (`:264,274`). [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/86)
 
 ### Sdk.Go v0.1 — Polyglot SDK parity: settings, channels, manifests
 
