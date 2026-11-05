@@ -108,7 +108,7 @@ public sealed class PluginUpdateCheckHostedServiceTests : IDisposable
         // the LogWarning catch and the loop continues — the host stays
         // up. We can't see the log directly, but the service should
         // shut down cleanly when cancelled despite the iteration error.
-        var throwingInner = new ThrowingService();
+        using var throwingInner = new ThrowingService();
         using var svc = new PluginUpdateCheckHostedService(
             throwingInner,
             Options.Create(new BowirePluginUpdateCheckOptions { Enabled = true, IntervalHours = 24 }),
@@ -145,11 +145,11 @@ public sealed class PluginUpdateCheckHostedServiceTests : IDisposable
 
     private static PluginUpdateCheckHostedService NewService(BowirePluginUpdateCheckOptions opts)
     {
-        // CA2000: HttpClient owns the FakeHandler and disposes it.
+        // CA2000: the inner service owns the handler; the hosted service
+        // does not dispose the inner one, and the fake holds nothing.
 #pragma warning disable CA2000
-        var http = new HttpClient(new BlockNetworkHandler());
+        var inner = new PluginUpdateCheckService(new BlockNetworkHandler());
 #pragma warning restore CA2000
-        var inner = new PluginUpdateCheckService(http);
         return new PluginUpdateCheckHostedService(
             inner,
             Options.Create(opts),
@@ -165,11 +165,10 @@ public sealed class PluginUpdateCheckHostedServiceTests : IDisposable
         private int _calls;
         public int Calls => Volatile.Read(ref _calls);
 
-        // CA2000: PluginUpdateCheckService owns the HttpClient. The test
-        // double doesn't actually use it, but the base ctor still needs
-        // a non-null instance.
+        // CA2000: the base owns the handler and disposes it with the
+        // service, which the analyzer cannot see.
 #pragma warning disable CA2000
-        public ThrowingService() : base(new HttpClient()) { }
+        public ThrowingService() : base(new BlockNetworkHandler()) { }
 #pragma warning restore CA2000
 
         public override Task<PluginUpdateCheckSnapshot> CheckAsync(bool includePrerelease, CancellationToken ct)

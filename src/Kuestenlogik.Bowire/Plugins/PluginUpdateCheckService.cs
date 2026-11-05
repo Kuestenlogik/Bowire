@@ -22,7 +22,7 @@ namespace Kuestenlogik.Bowire.Plugins;
 /// the last-known state without re-hitting nuget.org on every page
 /// load.
 /// </remarks>
-public class PluginUpdateCheckService
+public class PluginUpdateCheckService : IDisposable
 {
     // Plugin dir stays on the legacy flat path -- the per-user-vs-
     // system-wide split is #28 Phase D ("Per-user plugin installs --
@@ -85,11 +85,56 @@ public class PluginUpdateCheckService
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     };
 
+    private static readonly TimeSpan s_timeout = TimeSpan.FromSeconds(10);
+
     private readonly HttpClient _http;
 
-    public PluginUpdateCheckService(HttpClient? http = null)
+    /// <summary>
+    /// The service owns its client and the handler under it. It must not
+    /// take an <see cref="HttpClient"/> from DI: <c>AddHttpClient</c>
+    /// registers <see cref="HttpClient"/> as the factory's default-named
+    /// client, and a singleton that keeps one keeps the factory's handler
+    /// entry — which holds the host's root provider, so a disposed host
+    /// is never collected (#989). A long-lived client instead recycles
+    /// its connections itself, so a DNS change still reaches the check.
+    /// </summary>
+    public PluginUpdateCheckService()
     {
-        _http = http ?? new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
+        // CA2000: the handler's ownership moves into the client
+        // (disposeHandler: true), which the analyzer cannot model; a
+        // try/catch around it does not satisfy it either. Same case as
+        // BowireHttpClientFactory.Create.
+        // https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca2000
+#pragma warning disable CA2000
+        var handler = new SocketsHttpHandler { PooledConnectionLifetime = TimeSpan.FromMinutes(2) };
+#pragma warning restore CA2000
+        _http = new HttpClient(handler, disposeHandler: true);
+        _http.Timeout = s_timeout;
+    }
+
+    /// <summary>
+    /// Test seam: the service builds its client over
+    /// <paramref name="handler"/> and disposes both. Internal so DI,
+    /// which only sees public constructors, never picks it.
+    /// </summary>
+    internal PluginUpdateCheckService(HttpMessageHandler handler)
+    {
+        ArgumentNullException.ThrowIfNull(handler);
+        _http = new HttpClient(handler, disposeHandler: true);
+        _http.Timeout = s_timeout;
+    }
+
+    /// <inheritdoc />
+    public void Dispose()
+    {
+        Dispose(disposing: true);
+        GC.SuppressFinalize(this);
+    }
+
+    /// <summary>Releases the client; derived test doubles call the base.</summary>
+    protected virtual void Dispose(bool disposing)
+    {
+        if (disposing) _http.Dispose();
     }
 
     /// <summary>

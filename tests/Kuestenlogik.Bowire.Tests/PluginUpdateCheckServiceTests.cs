@@ -55,8 +55,7 @@ public sealed class PluginUpdateCheckServiceTests : IDisposable
     {
         // PluginDir exists but is empty — the scan returns zero rows.
         // The snapshot still persists so ReadCached can replay it.
-        using var http = NewHttpClient(_ => throw new InvalidOperationException("no HTTP calls expected"));
-        var service = new PluginUpdateCheckService(http);
+        using var service = NewService(_ => throw new InvalidOperationException("no HTTP calls expected"));
 
         var snapshot = await service.CheckAsync(includePrerelease: false, TestContext.Current.CancellationToken);
 
@@ -74,7 +73,7 @@ public sealed class PluginUpdateCheckServiceTests : IDisposable
         await WritePluginManifestAsync("Kuestenlogik.Bowire.Protocol.Demo", "1.0.0");
         await WritePluginManifestAsync("Kuestenlogik.Bowire.Protocol.Other", "2.0.0");
 
-        using var http = NewHttpClient(url =>
+        using var service = NewService(url =>
         {
             if (url.Contains("kuestenlogik.bowire.protocol.demo", StringComparison.Ordinal))
                 return Json("""{"versions":["1.0.0","1.1.0","1.2.0","1.3.0-preview"]}""");
@@ -82,7 +81,6 @@ public sealed class PluginUpdateCheckServiceTests : IDisposable
                 return Json("""{"versions":["2.0.0","2.1.0"]}""");
             return new HttpResponseMessage(HttpStatusCode.NotFound);
         });
-        var service = new PluginUpdateCheckService(http);
 
         var snapshot = await service.CheckAsync(includePrerelease: false, TestContext.Current.CancellationToken);
 
@@ -100,9 +98,8 @@ public sealed class PluginUpdateCheckServiceTests : IDisposable
     {
         await WritePluginManifestAsync("Kuestenlogik.Bowire.Protocol.Demo", "1.2.0");
 
-        using var http = NewHttpClient(_ =>
+        using var service = NewService(_ =>
             Json("""{"versions":["1.0.0","1.1.0","1.2.0"]}"""));
-        var service = new PluginUpdateCheckService(http);
 
         var snapshot = await service.CheckAsync(includePrerelease: false, TestContext.Current.CancellationToken);
         var row = Assert.Single(snapshot.Results);
@@ -115,9 +112,8 @@ public sealed class PluginUpdateCheckServiceTests : IDisposable
     {
         await WritePluginManifestAsync("Kuestenlogik.Bowire.Protocol.Demo", "1.0.0");
 
-        using var http = NewHttpClient(_ =>
+        using var service = NewService(_ =>
             Json("""{"versions":["1.0.0","1.1.0","1.2.0-preview","1.3.0-rc.1"]}"""));
-        var service = new PluginUpdateCheckService(http);
 
         var snapshot = await service.CheckAsync(includePrerelease: true, TestContext.Current.CancellationToken);
         var row = Assert.Single(snapshot.Results);
@@ -134,13 +130,12 @@ public sealed class PluginUpdateCheckServiceTests : IDisposable
         await WritePluginManifestAsync("Kuestenlogik.Bowire.Protocol.Good", "1.0.0");
         await WritePluginManifestAsync("Kuestenlogik.Bowire.Protocol.Bad", "1.0.0");
 
-        using var http = NewHttpClient(url =>
+        using var service = NewService(url =>
         {
             if (url.Contains("good", StringComparison.Ordinal))
                 return Json("""{"versions":["1.0.0","1.1.0"]}""");
             return new HttpResponseMessage(HttpStatusCode.InternalServerError);
         });
-        var service = new PluginUpdateCheckService(http);
 
         var snapshot = await service.CheckAsync(includePrerelease: false, TestContext.Current.CancellationToken);
 
@@ -162,8 +157,7 @@ public sealed class PluginUpdateCheckServiceTests : IDisposable
         // mid-extraction).
         Directory.CreateDirectory(SafePath.Combine(_pluginDir, "Kuestenlogik.Bowire.Protocol.Demo"));
 
-        using var http = NewHttpClient(_ => throw new InvalidOperationException("no HTTP expected"));
-        var service = new PluginUpdateCheckService(http);
+        using var service = NewService(_ => throw new InvalidOperationException("no HTTP expected"));
 
         var snapshot = await service.CheckAsync(includePrerelease: false, TestContext.Current.CancellationToken);
         Assert.Empty(snapshot.Results);
@@ -176,8 +170,7 @@ public sealed class PluginUpdateCheckServiceTests : IDisposable
         Directory.CreateDirectory(dir);
         await File.WriteAllTextAsync(SafePath.Combine(dir, "plugin.json"), "{not valid json", TestContext.Current.CancellationToken);
 
-        using var http = NewHttpClient(_ => throw new InvalidOperationException("no HTTP expected"));
-        var service = new PluginUpdateCheckService(http);
+        using var service = NewService(_ => throw new InvalidOperationException("no HTTP expected"));
 
         var snapshot = await service.CheckAsync(includePrerelease: false, TestContext.Current.CancellationToken);
         Assert.Empty(snapshot.Results);
@@ -203,9 +196,8 @@ public sealed class PluginUpdateCheckServiceTests : IDisposable
     public async Task ReadCached_Returns_Persisted_Snapshot_After_Check()
     {
         await WritePluginManifestAsync("Kuestenlogik.Bowire.Protocol.Demo", "1.0.0");
-        using var http = NewHttpClient(_ =>
+        using var service = NewService(_ =>
             Json("""{"versions":["1.0.0","1.1.0"]}"""));
-        var service = new PluginUpdateCheckService(http);
 
         await service.CheckAsync(includePrerelease: false, TestContext.Current.CancellationToken);
         var cached = PluginUpdateCheckService.ReadCached();
@@ -223,13 +215,13 @@ public sealed class PluginUpdateCheckServiceTests : IDisposable
         await File.WriteAllTextAsync(SafePath.Combine(dir, "plugin.json"), manifest, TestContext.Current.CancellationToken);
     }
 
-    private static HttpClient NewHttpClient(Func<string, HttpResponseMessage> handler)
+    /// <summary>The service over a fake handler; it owns and disposes the handler.</summary>
+    private static PluginUpdateCheckService NewService(Func<string, HttpResponseMessage> handler)
     {
-        // CA2000: HttpClient owns the handler when constructed with the
-        // single-arg ctor and disposes it on HttpClient.Dispose(); the
-        // analyzer can't see the ownership transfer.
+        // CA2000: ownership of the handler moves into the service, which
+        // the analyzer cannot see.
 #pragma warning disable CA2000
-        return new HttpClient(new FakeHttpMessageHandler(handler));
+        return new(new FakeHttpMessageHandler(handler));
 #pragma warning restore CA2000
     }
 
