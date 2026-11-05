@@ -163,6 +163,7 @@
                     role: 'option',
                     'aria-selected': p.id === fr.protocol ? 'true' : 'false',
                     onClick: function () {
+                        stopFreeformCall();
                         fr.protocol = p.id;
                         var supported = getSupportedMethodTypes(fr.protocol);
                         if (supported.indexOf(fr.methodType) < 0) fr.methodType = supported[0];
@@ -195,6 +196,7 @@
                     textContent: type,
                     onClick: function () {
                         if (fr.methodType === type) return;
+                        stopFreeformCall();
                         fr.methodType = type;
                         render();
                     }
@@ -603,7 +605,10 @@
         // empty hint.
         var resPane = el('div', { className: 'bowire-pane bowire-freeform-res-pane' });
         resPane.appendChild(el('div', { className: 'bowire-pane-heading', textContent: t('rb.response.heading') }));
-        if (S.responseError || S.responseData) {
+        var callModeNow = fr.protocol === 'rest' ? 'unary' : freeformCallMode(fr.methodType);
+        if (callModeNow !== 'unary' && freeformCall.mode === callModeNow) {
+            resPane.appendChild(renderFreeformFrames());
+        } else if (S.responseError || S.responseData) {
             if (S.responseError) {
                 var errOut = el('div', { className: 'bowire-response-output error' });
                 var prob = (typeof S.responseError === 'object') ? normalizeProblem(S.responseError) : null;
@@ -653,8 +658,15 @@
             onClick: function () { executeFreeformRequest(); }
         },
             el('span', { innerHTML: svgIcon('play'), style: 'width:14px;height:14px;display:flex' }),
-            el('span', { textContent: t('main.execute') })
+            el('span', { textContent: freeformExecuteLabel(fr) })
         ));
+        if (freeformCall.mode === 'channel' && freeformCall.state === 'open') {
+            actionBar.appendChild(el('button', {
+                id: 'bowire-freeform-disconnect-btn',
+                className: 'bowire-repeat-btn',
+                onClick: function () { stopFreeformCall(); render(); }
+            }, el('span', { textContent: t('channel.disconnect') })));
+        }
         actionBar.appendChild(el('button', {
             id: 'bowire-freeform-save-mock-btn',
             className: 'bowire-repeat-btn',
@@ -724,6 +736,21 @@
             }
         } else if (!fr.service || !fr.method) {
             toast(t('main.needsServiceMethod'), 'error');
+            return;
+        }
+
+        // #995 - a server-streaming call reads the stream endpoint, a
+        // client-streaming or duplex call opens a channel; the button sends
+        // on an open channel and stops a running stream.
+        var callMode = isRestAdHoc ? 'unary' : freeformCallMode(fr.methodType);
+        if (callMode === 'stream') {
+            if (freeformCallActive()) { stopFreeformCall(); render(); }
+            else startFreeformStream(fr);
+            return;
+        }
+        if (callMode === 'channel') {
+            if (freeformCall.state === 'open') await sendFreeformChannel(fr.body || '{}');
+            else await openFreeformChannel(fr);
             return;
         }
 

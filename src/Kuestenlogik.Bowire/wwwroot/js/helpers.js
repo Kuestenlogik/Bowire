@@ -3755,13 +3755,20 @@ var railName = opts.railLabel || t('prereq.thisRail');
             case 'mqtt':       return ['Duplex'];
             case 'websocket':  return ['Duplex'];
             case 'sse':        return ['ServerStreaming'];
-            case 'socketio':   return ['Duplex'];
+            case 'socketio':   return ['Unary', 'ServerStreaming'];
             case 'mcp':        return ['Unary', 'ServerStreaming'];
             case 'odata':      return ['Unary'];
             case 'soap':       return ['Unary'];
             case 'jsonrpc':    return ['Unary', 'ServerStreaming'];
-            case 'nats':       return ['Unary', 'Duplex'];
-            case 'pulsar':     return ['Duplex'];
+            // #995 - none of these three opens a channel; each streams
+            // (subscribe / listen) and invokes (publish / produce / emit).
+            case 'nats':       return ['Unary', 'ServerStreaming'];
+            case 'pulsar':     return ['Unary', 'ServerStreaming'];
+            case 'kafka':      return ['Unary', 'ServerStreaming'];
+            case 'surgewave':  return ['Unary', 'ServerStreaming'];
+            case 'amqp':       return ['Unary', 'ServerStreaming'];
+            // Akka.Remote only streams its monitor feed.
+            case 'akka-remote': return ['ServerStreaming'];
             default:           return ['Unary', 'ServerStreaming', 'ClientStreaming', 'Duplex'];  // i18n-exempt: protocol method types, matched as identifiers
         }
     }

@@ -258,6 +258,9 @@
     <!-- #996 — the freeform form's /api/invoke body; BEFORE render-main.js,
          which calls buildFreeformInvokeBody. -->
     <BowireJsFragment Include="wwwroot\js\freeform-invoke.js" />
+    <!-- #995 - streaming and channel calls of the freeform form; BEFORE
+         render-main.js, which calls into it. -->
+    <BowireJsFragment Include="wwwroot\js\freeform-calls.js" />
     <BowireJsFragment Include="wwwroot\js\render-main.js" />
     <!-- #289 — Hoppscotch-style single-line request bar. Adds a NEW
          layout for freeformRequest when fr._requestBuilder marker is present:

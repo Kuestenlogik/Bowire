@@ -550,6 +550,7 @@
   "channel.disconnect": "Disconnect",
   "channel.connected": "Connected",
   "channel.streaming": "Streaming",
+  "freeform.stop": "Stop",
   "execute.moreOptions": "More run options",
   "execute.asBenchmark": "Run as benchmark…",
   "execute.withPreset": "Run with preset…",

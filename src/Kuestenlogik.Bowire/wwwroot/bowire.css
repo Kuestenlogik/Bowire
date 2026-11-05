@@ -12343,6 +12343,28 @@ so the textarea
     grid-template-columns: 1fr 1.5fr;
     gap: 6px;
 }
+/* #995 - frames of a freeform stream or channel, in arrival order. */
+.bowire-freeform-frames {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px 12px;
+    overflow: auto;
+}
+.bowire-freeform-frames-state {
+    font-size: 12px;
+    color: var(--bowire-text-muted);
+}
+.bowire-freeform-frame {
+    display: grid;
+    grid-template-columns: 16px 1fr;
+    gap: 6px;
+    align-items: start;
+}
+.bowire-freeform-frame-dir {
+    color: var(--bowire-text-muted);
+    line-height: 1.6;
+}
 
 /* Services toolbar — contains +,
 filter,

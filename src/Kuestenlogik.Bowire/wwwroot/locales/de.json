@@ -547,6 +547,7 @@
   "channel.disconnect": "Verbindung trennen",
   "channel.connected": "Verbunden",
   "channel.streaming": "Streaming",
+  "freeform.stop": "Anhalten",
   "execute.moreOptions": "Weitere Möglichkeiten zum Ausführen",
   "execute.asBenchmark": "Als Benchmark ausführen…",
   "execute.withPreset": "Mit einer Voreinstellung ausführen…",

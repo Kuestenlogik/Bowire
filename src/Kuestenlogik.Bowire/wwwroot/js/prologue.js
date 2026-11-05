@@ -6679,6 +6679,8 @@
         } else {
             initialServerUrl = serverUrls.length > 0 ? serverUrls[0] : '';
         }
+        // #995 - a stream or channel of the previous freeform request ends with it.
+        if (typeof stopFreeformCall === 'function') stopFreeformCall();
         freeformRequest = {
             protocol: resolvedProtocol,
             serverUrl: initialServerUrl,

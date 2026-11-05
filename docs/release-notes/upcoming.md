@@ -18,6 +18,10 @@ template for a filled-in body:
   <2-4 sentences>
 -->
 
+### Streams and channels typed in by hand (#995)
+
+The freeform form offered a method type for every protocol but always made a unary call. A server-streaming call typed in by hand now follows its stream frame by frame, and a client-streaming or duplex call opens a channel: connect, send each message, disconnect. Neither needs the method to have been discovered first.
+
 ## Fixes along the way
 
 ### A compiled sidecar ships one manifest for every platform (#990, #986)
