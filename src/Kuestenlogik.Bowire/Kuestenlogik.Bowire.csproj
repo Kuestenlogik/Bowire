@@ -255,6 +255,9 @@
     <BowireJsFragment Include="wwwroot\js\render-sidebar.js" />
     <BowireJsFragment Include="wwwroot\js\landing.js" />
     <BowireJsFragment Include="wwwroot\js\autocomplete.js" />
+    <!-- #996 — the freeform form's /api/invoke body; BEFORE render-main.js,
+         which calls buildFreeformInvokeBody. -->
+    <BowireJsFragment Include="wwwroot\js\freeform-invoke.js" />
     <BowireJsFragment Include="wwwroot\js\render-main.js" />
     <!-- #289 — Hoppscotch-style single-line request bar. Adds a NEW
          layout for freeformRequest when fr._requestBuilder marker is present:

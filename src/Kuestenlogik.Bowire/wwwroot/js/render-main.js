@@ -751,22 +751,12 @@
         try {
             var url = config.prefix + '/api/invoke'
                 + (fr.serverUrl ? '?serverUrl=' + encodeURIComponent(fr.serverUrl) : '');
-            // Metadata (headers): pass fr.metadata through for ad-hoc
-            // REST so custom Authorization / Accept / X-* headers
-            // reach RestInvoker.InvokeAdHocAsync. Other protocols
-            // keep null until they grow custom header support.
-            var metaToSend = (isRestAdHoc && fr.metadata && Object.keys(fr.metadata).length > 0)
-                ? fr.metadata : null;
+            // Metadata reaches every protocol's invoke (#996) — see
+            // buildFreeformInvokeBody in freeform-invoke.js.
             var resp = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    service: fr.service,
-                    method: fr.method,
-                    messages: [verbHasBody ? bodyToSend : '{}'],
-                    metadata: metaToSend,
-                    protocol: fr.protocol
-                })
+                body: JSON.stringify(buildFreeformInvokeBody(fr, bodyToSend, verbHasBody))
             });
             var result = await resp.json();
             if (result.title) {
