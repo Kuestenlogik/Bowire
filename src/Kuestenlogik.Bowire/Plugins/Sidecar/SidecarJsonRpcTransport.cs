@@ -99,9 +99,9 @@ internal sealed class SidecarJsonRpcTransport : ISidecarTransport
     /// a compiled sidecar needs one manifest for every platform;</description></item>
     /// <item><description><c>PATH</c>, but only for a bare name (no
     /// directory separator). That step is what lets a manifest say
-    /// <c>"executable": "python3", "args": ["plugin.py"]</c> and work on
+    /// <c>"executable": "python", "args": ["plugin.py"]</c> and work on
     /// every platform, rather than resolving to a non-existent
-    /// <c>&lt;pluginDir&gt;/python3</c>.</description></item>
+    /// <c>&lt;pluginDir&gt;/python</c>.</description></item>
     /// </list>
     /// <para>
     /// The order is the security-relevant part: the plugin directory is
@@ -113,7 +113,7 @@ internal sealed class SidecarJsonRpcTransport : ISidecarTransport
     /// The lookup itself is left to the OS — passing a name without a
     /// separator as <see cref="ProcessStartInfo.FileName"/> is what makes
     /// it search <c>PATH</c> (and, on Windows, apply <c>PATHEXT</c>, so
-    /// <c>python3</c> finds <c>python3.exe</c>). Doing it by hand here
+    /// <c>python</c> finds <c>python.exe</c>). Doing it by hand here
     /// would mean reimplementing both.
     /// </para>
     /// </remarks>

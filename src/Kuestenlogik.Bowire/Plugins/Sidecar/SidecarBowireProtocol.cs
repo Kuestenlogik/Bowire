@@ -535,9 +535,9 @@ public sealed class SidecarBowireProtocol : IBowireProtocol, IBowireDeferredSett
     /// Every field but <c>key</c> is optional, because the three SDKs that
     /// implement the hook do not agree on what they send: Python omits
     /// <c>required</c>, Node and Go send it and the host has no such
-    /// concept, and none of them sends <c>options</c>. Unknown fields are
-    /// ignored rather than rejected, so an SDK can add one before the host
-    /// reads it.
+    /// concept. All three send <c>options</c> for a <c>select</c>, and only
+    /// there. Unknown fields are ignored rather than rejected, so an SDK
+    /// can add one before the host reads it.
     /// </remarks>
     internal sealed record SidecarSetting(
         string? Key,

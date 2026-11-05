@@ -134,8 +134,16 @@ A sidecar does not have to be a compiled binary the plugin ships. An
 interpreted one names its interpreter, and the arguments name the script:
 
 ```json
-{ "executable": "python3", "args": ["echo_plugin.py"] }
+{ "executable": "python", "args": ["echo_plugin.py"] }
 ```
+
+Name the interpreter the way every target platform has it. A stock
+Windows install has no `python3.exe`: the bare `python3` reaches the
+Microsoft Store stub, which starts nothing. `python` is what the
+python.org installer puts on `PATH`, and what the Python SDK's manifest
+names. `python3` is the right name only for a sidecar that runs on
+Linux and macOS alone, where some distributions ship `python3` and no
+`python`.
 
 The host resolves `executable` in two steps, in this order:
 
@@ -150,7 +158,7 @@ The host resolves `executable` in two steps, in this order:
    `.exe`. The file as written wins over one with an extension.
 2. **`PATH`.** Only for a **bare name** — one containing neither `/` nor
    `\`. The name is handed to the OS unchanged, which searches `PATH`
-   and, on Windows, applies `PATHEXT` (so `python3` finds `python3.exe`).
+   and, on Windows, applies `PATHEXT` (so `python` finds `python.exe`).
 
 The order is deliberate, and it is the security-relevant part: the plugin
 directory is the trusted location, so a binary the plugin ships is never
@@ -255,6 +263,10 @@ plugin's section of the Settings dialog, the same way a .NET plugin's
 | `defaultValue` | no | Any JSON value. |
 | `options` | select | `[{value, label}]` — a `select` without them has nothing to pick from. |
 | `labelKey`, `descriptionKey` | no | Catalogue keys (#691). The workbench prefers the key when its catalogue has an entry, and falls back to the text. A third-party plugin has no entry in Bowire's catalogue and sends neither. |
+
+The Node, Python and Go SDKs send `options` for a `select` setting, and
+refuse to declare a `select` without them. The Rust SDK's settings do not
+reach the host yet ([Bowire.Sdk.Rust#9](https://github.com/Kuestenlogik/Bowire.Sdk.Rust/issues/9)).
 
 Fields the host does not know are ignored rather than rejected, so an SDK
 can add one before a host reads it. That is how `required` behaves today:
