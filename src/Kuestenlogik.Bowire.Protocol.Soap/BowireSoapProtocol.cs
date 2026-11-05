@@ -42,6 +42,13 @@ public sealed class BowireSoapProtocol : IBowireProtocol, IBowireManualEntry, Ku
 
     private HttpClient _http = Kuestenlogik.Bowire.Net.BowireHttpClientFactory.Create(null, "soap", TimeSpan.FromSeconds(30));
 
+    // #1000 - the SOAPAction and target namespace of each operation, per WSDL
+    // URL. Discovery fills it; an invoke that arrives first (the CLI, a flow,
+    // a recording) loads the WSDL once itself. A URL without a WSDL caches
+    // as empty, so a call typed in by hand does not fetch it again each time.
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, Task<IReadOnlyDictionary<string, SoapOperationAddress>>> _addresses =
+        new(StringComparer.Ordinal);
+
     public string Name => "SOAP";
     public string Description => "Legacy SOAP services — WSDL discovery + envelope invoke.";
 
@@ -109,7 +116,40 @@ public sealed class BowireSoapProtocol : IBowireProtocol, IBowireManualEntry, Ku
         try { doc = XDocument.Parse(text); }
         catch (System.Xml.XmlException) { return []; }
 
+        _addresses[wsdlUri.AbsoluteUri] = Task.FromResult(SoapOperationAddresses.Parse(doc));
         return WsdlParser.Parse(doc, serverUrl);
+    }
+
+    /// <summary>
+    /// The address of <paramref name="operation"/> from the WSDL behind
+    /// <paramref name="serverUrl"/>, loading it when discovery has not; null
+    /// when there is no WSDL or it does not name the operation.
+    /// </summary>
+    private async Task<SoapOperationAddress?> FindAddressAsync(string serverUrl, string service, string operation)
+    {
+        if (!TryResolveWsdlUri(serverUrl, out var wsdlUri)) return null;
+        var addresses = await _addresses.GetOrAdd(wsdlUri.AbsoluteUri, _ => LoadAddressesAsync(wsdlUri)).ConfigureAwait(false);
+        return SoapOperationAddresses.Find(addresses, service, operation);
+    }
+
+    // Shared by every caller of one URL, so it runs on its own deadline rather
+    // than on the token of whichever call happened to start it.
+    private async Task<IReadOnlyDictionary<string, SoapOperationAddress>> LoadAddressesAsync(Uri wsdlUri)
+    {
+        try
+        {
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+            using var resp = await _http.GetAsync(wsdlUri, cts.Token).ConfigureAwait(false);
+            if (!resp.IsSuccessStatusCode) return new Dictionary<string, SoapOperationAddress>();
+            var text = await resp.Content.ReadAsStringAsync(cts.Token).ConfigureAwait(false);
+            return SoapOperationAddresses.Parse(XDocument.Parse(text));
+        }
+        // A missing, slow or malformed WSDL only means there is nothing to
+        // fill in: the call goes out with what its metadata says.
+        catch (Exception ex) when (ex is HttpRequestException or OperationCanceledException or System.Xml.XmlException)
+        {
+            return new Dictionary<string, SoapOperationAddress>();
+        }
     }
 
     public async Task<InvokeResult> InvokeAsync(
@@ -139,11 +179,22 @@ public sealed class BowireSoapProtocol : IBowireProtocol, IBowireManualEntry, Ku
         var soapVersion = metadata?.GetValueOrDefault("soap_version")
             ?? _settings?.GetValue(Id, "defaultSoapVersion")
             ?? "1.1";
-        var soapAction = metadata?.GetValueOrDefault("soap_action") ?? "";
-        var targetNamespace = metadata?.GetValueOrDefault("target_namespace") ?? "";
+        var soapAction = metadata?.GetValueOrDefault("soap_action");
+        var targetNamespace = metadata?.GetValueOrDefault("target_namespace");
 
         var bodyXml = jsonMessages.FirstOrDefault() ?? "";
         var operation = ExtractOperationName(method);
+
+        // #1000 - what the metadata does not say comes from the WSDL; what it
+        // says wins.
+        if (soapAction is null || targetNamespace is null)
+        {
+            var address = await FindAddressAsync(serverUrl, service, operation).ConfigureAwait(false);
+            soapAction ??= address?.SoapAction;
+            targetNamespace ??= address?.TargetNamespace;
+        }
+        soapAction ??= "";
+        targetNamespace ??= "";
         var envelope = SoapEnvelopeBuilder.BuildRequestEnvelope(
             operation, targetNamespace, bodyXml, soapVersion);
 
