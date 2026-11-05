@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**1/23 done** · 22 backlog
+**1/26 done** · 25 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -38,6 +38,9 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [991](https://github.com/Kuestenlogik/Bowire/issues/991) | Bowire | [gRPC without server reflection: upload a descriptor set and call through it from the workbench](#issue-kuestenlogik-bowire-991) | ⬜ Backlog | `area:workbench` |
 | [992](https://github.com/Kuestenlogik/Bowire/issues/992) | Bowire | [gRPC embedded: discover from the host's compiled descriptors instead of mapping a reflection service](#issue-kuestenlogik-bowire-992) | ⬜ Backlog | `area:workbench` |
 | [993](https://github.com/Kuestenlogik/Bowire/issues/993) | Bowire | [REST embedded: discover from the host's OpenAPI document instead of reflecting over its types](#issue-kuestenlogik-bowire-993) | ⬜ Backlog | `area:workbench` |
+| [994](https://github.com/Kuestenlogik/Bowire/issues/994) | Bowire | [Schema imports per plugin: GraphQL SDL, AsyncAPI, WSDL, EDMX and OpenRPC](#issue-kuestenlogik-bowire-994) | ⬜ Backlog | `area:workbench` |
+| [995](https://github.com/Kuestenlogik/Bowire/issues/995) | Bowire | [Manual entry for every protocol: freeform metadata and streaming, Compose layouts for the protocols without one](#issue-kuestenlogik-bowire-995) | ⬜ Backlog | `area:workbench` |
+| [996](https://github.com/Kuestenlogik/Bowire/issues/996) | Bowire | [SOAP by hand: the freeform form drops the metadata that carries soap_action and target_namespace](#issue-kuestenlogik-bowire-996) | ⬜ Backlog | `area:workbench` |
 | [673](https://github.com/Kuestenlogik/Bowire/issues/673) | Bowire | [Export requests as .http — Copy as .http, and bowire export http for a whole collection](#issue-kuestenlogik-bowire-673) | ✅ Done | `area:workbench` |
 
 ### v2.12 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
@@ -288,6 +291,24 @@ Embedded, `AddBowire` / `MapBowire` register and map the host's gRPC reflection 
 > `area:workbench`
 
 Embedded REST discovery walks ApiExplorer and reflects over the body types with `GetProperties` (`src/Kuestenlogik.Bowire.Protocol.Rest/EmbeddedDiscovery.cs:31, 107, 352, 418`). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/993)
+
+#### <a id="issue-kuestenlogik-bowire-994"></a>⬜ Backlog · [#994](https://github.com/Kuestenlogik/Bowire/issues/994) Schema imports per plugin: GraphQL SDL, AsyncAPI, WSDL, EDMX and OpenRPC
+
+> `area:workbench`
+
+The workbench upload knows two kinds: `.proto` goes to the proto endpoint, everything else to the OpenAPI endpoint (`src/Kuestenlogik.Bowire/wwwroot/js/helpers.js:179-181`), and the picker accepts only `.proto,.json,.yaml,.yml` (`render-sidebar.js:722`). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/994)
+
+#### <a id="issue-kuestenlogik-bowire-995"></a>⬜ Backlog · [#995](https://github.com/Kuestenlogik/Bowire/issues/995) Manual entry for every protocol: freeform metadata and streaming, Compose layouts for the protocols without one
+
+> `area:workbench`
+
+The invoke endpoint does not require a method to have been discovered (`BowireInvokeEndpoints.cs:193-195`), so typing a call by hand works in principle for every protocol. The UI is the limit: [[more]](https://github.com/Kuestenlogik/Bowire/issues/995)
+
+#### <a id="issue-kuestenlogik-bowire-996"></a>⬜ Backlog · [#996](https://github.com/Kuestenlogik/Bowire/issues/996) SOAP by hand: the freeform form drops the metadata that carries soap_action and target_namespace
+
+> `area:workbench`
+
+A SOAP call entered by hand (no WSDL discovered) cannot be made from the workbench. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/996)
 
 #### <a id="issue-kuestenlogik-bowire-673"></a>✅ Done · [#673](https://github.com/Kuestenlogik/Bowire/issues/673) Export requests as .http — Copy as .http, and bowire export http for a whole collection
 
