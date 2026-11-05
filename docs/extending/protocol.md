@@ -162,6 +162,7 @@ public sealed class MyBrokerProtocol : IBowireProtocol, IBowireManualEntry
 - **Fields** are what the user fills in. A `Template` field only feeds the templates. A `Metadata` field goes into the call's metadata under its key, which is where your invoke already reads it. `CallKinds` limits a field to the kinds it belongs to. `Type` is `string`, `number`, `bool` or `select` (with `Options`).
 - **Forms that are wrong are not served.** Examples: a method type outside the four, a placeholder no field declares, a `select` without options, or a field naming an unknown call kind. The host logs why. The Compose form is the one place a broken description would surface, so check it in a test.
 - **A plugin with a form of its own in the workbench** (REST, gRPC, MQTT, …) still describes its method types, with `BowireManualEntryForm.ForMethodTypes("Unary", "ServerStreaming")`. The workbench keeps its own form and offers those types in the freeform form.
+- **Nothing to describe:** return `null`, and the plugin is not listed. A sidecar does this when its `initialize` reply carries no `manualEntry` (see [Sidecar plugins](../architecture/sidecar-plugins.md)).
 
 The workbench reads the descriptions through the `bowire.manualentry.v1.ManualEntry` service (`GET /api/v1/manual-entry-forms`, paged), in the `Kuestenlogik.Bowire.ManualEntry` package.
 

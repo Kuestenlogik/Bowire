@@ -314,6 +314,43 @@ environment to the subprocess, which is a different mechanism, and a value
 placed in the environment is fixed for the life of the process — exactly
 the restart-to-change behaviour the per-call form avoids.
 
+**A hand-entry form.** A user can call a sidecar without discovery, from the
+freeform form or Compose, and only the sidecar knows what such a call needs.
+The `initialize` reply may carry a `manualEntry` object for that, in the shape
+a .NET plugin returns from `IBowireManualEntry` (see
+[Build a protocol plugin](../extending/protocol.md#describing-how-a-call-is-entered-by-hand)).
+The workbench renders a Compose form from it and offers exactly these method
+types in the freeform form.
+
+```json
+"manualEntry": {
+  "urlPlaceholder": "zenoh://localhost:7447",
+  "callKinds": [
+    { "id": "put", "label": "Put", "methodType": "Unary", "service": "Pub", "method": "{key}/put" },
+    { "id": "subscribe", "label": "Subscribe", "methodType": "ServerStreaming", "service": "Sub", "method": "{key}" }
+  ],
+  "fields": [
+    { "key": "key", "label": "Key expression", "placement": "template", "required": true },
+    { "key": "priority", "label": "Priority", "placement": "metadata", "type": "select",
+      "options": [{ "value": "realtime" }, { "value": "data" }], "callKinds": ["put"] }
+  ]
+}
+```
+
+| Field | What it is |
+|-------|------------|
+| `callKinds[].methodType` | `Unary` (invoke), `ServerStreaming` (invokeStream), `ClientStreaming` or `Duplex` (openChannel). |
+| `callKinds[].service`, `.method` | The call's `service` and `method` as templates; `{key}` is the value of the field with that key. |
+| `fields[].placement` | `template` (only into the templates) or `metadata` (default: into the call's metadata under the key). |
+| `fields[].type` | `string` (default), `number`, `bool`, `select` (with `options`). |
+| `fields[].callKinds` | The call kinds the field belongs to; absent means all. |
+
+A call kind without an `id` and a field without a `key` are dropped. A form
+that is still wrong, such as an unknown method type or a placeholder no
+field declares, is not served, and the host logs why. Like the settings, the
+form is read after the lazy spawn: the ManualEntry service prepares every
+sidecar first, the same way `GET /api/protocols` does.
+
 A failed `initialize` (id mismatch, incompatible `protocolVersion`, missing
 dependency, etc.) returns a JSON-RPC error; the host marks the plugin as
 unhealthy and surfaces the error in `bowire plugin list --verbose`.

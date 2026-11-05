@@ -33,7 +33,10 @@ using System.Text.Json.Nodes;
 //   --settings              advertise two settings in the initialize reply (#693);
 //                           invoke then echoes the settings the host sent back in
 //                           its metadata, so a test can see a value arrive
+//   --manual-entry          describe a hand-entry form in the initialize reply (#1003)
 var advertiseHandshake = true;
+var advertiseManualEntry = false;
+string[] s_sendOnly = ["send"];
 var protocolVersion = 1;
 var channelsCapability = true;
 var advertiseSettings = false;
@@ -47,6 +50,7 @@ for (var ai = 0; ai < args.Length; ai++)
         case "--legacy": advertiseHandshake = false; break;
         // #693: advertise two settings so the host has something to map.
         case "--settings": advertiseSettings = true; break;
+        case "--manual-entry": advertiseManualEntry = true; break;
     }
 }
 
@@ -84,6 +88,25 @@ while ((line = await reader.ReadLineAsync().ConfigureAwait(false)) is not null)
                         {
                             new { key = "probeWindow", label = "Probe window", type = "number", defaultValue = 5 },
                             new { key = "verbose", label = "Verbose", description = "Log every frame", type = "bool", defaultValue = false },
+                        }
+                        : null,
+                    manualEntry = advertiseManualEntry
+                        ? new
+                        {
+                            urlPlaceholder = "fake://localhost:1",
+                            callKinds = new object[]
+                            {
+                                new { id = "send", label = "Send", methodType = "Unary", service = "{topic}", method = "send", bodyExample = "{}" },
+                                new { id = "watch", methodType = "ServerStreaming", service = "{topic}", method = "watch" },
+                                new { label = "No id, dropped" },
+                            },
+                            fields = new object[]
+                            {
+                                new { key = "topic", label = "Topic", placement = "template", required = true },
+                                new { key = "priority", placement = "metadata", type = "select", callKinds = s_sendOnly,
+                                      options = new object[] { new { value = "high", label = "High" }, new { value = "low" } } },
+                                new { label = "No key, dropped" },
+                            },
                         }
                         : null,
                 });

@@ -46,7 +46,8 @@ internal static partial class ManualEntryRpc
         for (; index < described.Count && response.Forms.Count < size; index++)
         {
             var protocol = described[index];
-            var form = ((IBowireManualEntry)protocol).DescribeManualEntry();
+            // A plugin with nothing to describe is not listed, and is not an error.
+            if (((IBowireManualEntry)protocol).DescribeManualEntry() is not { } form) continue;
             var problems = Problems(form);
             if (problems.Count > 0)
             {

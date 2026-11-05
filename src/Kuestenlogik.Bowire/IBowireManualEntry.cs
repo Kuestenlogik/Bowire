@@ -27,8 +27,12 @@ namespace Kuestenlogik.Bowire;
 /// </remarks>
 public interface IBowireManualEntry
 {
-    /// <summary>The form a call to this protocol is entered with.</summary>
-    BowireManualEntryForm DescribeManualEntry();
+    /// <summary>
+    /// The form a call to this protocol is entered with, or <c>null</c> when
+    /// the plugin has none to give — a sidecar whose <c>initialize</c> reply
+    /// carries no form, or one that has not been started (#1003).
+    /// </summary>
+    BowireManualEntryForm? DescribeManualEntry();
 }
 
 /// <summary>How a call to one protocol is entered by hand.</summary>

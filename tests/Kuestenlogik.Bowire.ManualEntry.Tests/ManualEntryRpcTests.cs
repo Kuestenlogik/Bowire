@@ -42,9 +42,24 @@ public sealed class ManualEntryRpcTests
             => Task.FromResult<IBowireChannel?>(null);
     }
 
-    private sealed class Described(string id, BowireManualEntryForm form) : Plugin(id), IBowireManualEntry
+    private sealed class Described(string id, BowireManualEntryForm? form) : Plugin(id), IBowireManualEntry
     {
-        public BowireManualEntryForm DescribeManualEntry() => form;
+        public BowireManualEntryForm? DescribeManualEntry() => form;
+    }
+
+    [Fact]
+    public void A_Plugin_That_Describes_Nothing_Is_Left_Out_Without_A_Report()
+    {
+        // #1003 - a sidecar whose initialize reply carries no form.
+        var rejected = new List<string>();
+
+        var response = ManualEntryRpc.List(
+            [new Described("sidecar", null), new Described("kafka", s_valid)],
+            new ListManualEntryFormsRequest(),
+            (id, _) => rejected.Add(id));
+
+        Assert.Equal(["kafka"], response.Forms.Select(f => f.Protocol));
+        Assert.Empty(rejected);
     }
 
     [Fact]

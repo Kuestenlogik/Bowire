@@ -45,7 +45,7 @@ namespace Kuestenlogik.Bowire.Plugins.Sidecar;
 // the registry). Mirroring IDisposable through IBowireProtocol just
 // for one disposable field would ripple through every plugin.
 #pragma warning disable CA1001
-public sealed class SidecarBowireProtocol : IBowireProtocol, IBowireDeferredSettings
+public sealed class SidecarBowireProtocol : IBowireProtocol, IBowireDeferredSettings, IBowireManualEntry
 #pragma warning restore CA1001
 {
     /// <summary>
@@ -108,6 +108,16 @@ public sealed class SidecarBowireProtocol : IBowireProtocol, IBowireDeferredSett
         _initResult?.Settings is { Count: > 0 } declared
             ? [.. declared.Where(s => !string.IsNullOrEmpty(s.Key)).Select(ToHostSetting)]
             : [];
+
+    /// <summary>
+    /// The hand-entry form the sidecar described in its <c>initialize</c>
+    /// reply (#1003); <c>null</c> before the handshake, when the sidecar
+    /// described none, or when it would not start. Like <see cref="Settings"/>,
+    /// the caller prepares it with <see cref="PrepareSettingsAsync"/>, which
+    /// the ManualEntry service does.
+    /// </summary>
+    public BowireManualEntryForm? DescribeManualEntry() =>
+        SidecarManualEntryMapper.ToHostForm(_initResult?.ManualEntry);
 
     /// <inheritdoc />
     public async Task PrepareSettingsAsync(CancellationToken ct = default)
@@ -524,7 +534,8 @@ public sealed class SidecarBowireProtocol : IBowireProtocol, IBowireDeferredSett
         string? IconSvg,
         int? ProtocolVersion = null,
         SidecarCapabilities? Capabilities = null,
-        IReadOnlyList<SidecarSetting>? Settings = null);
+        IReadOnlyList<SidecarSetting>? Settings = null,
+        SidecarManualEntry? ManualEntry = null);
 
     /// <summary>
     /// One entry of the <c>settings</c> array a sidecar puts in its

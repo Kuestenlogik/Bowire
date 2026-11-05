@@ -26,5 +26,7 @@
   </ItemGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="Kuestenlogik.Bowire.ManualEntry.Tests" />
+    <!-- #1003 - the sidecar tests run a fake sidecar's form through the rpc. -->
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.Tests" />
   </ItemGroup>
 </Project>

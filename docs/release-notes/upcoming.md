@@ -24,6 +24,8 @@ The freeform form offered a method type for every protocol but always made a una
 
 Compose gains a form for every protocol plugin that describes one. SOAP, SignalR, NATS, Pulsar and Socket.IO do so far. You pick a call kind (produce or subscribe, invoke, stream or channel, publish, request or JetStream consume) and fill in the fields that kind needs, such as topic, hub method, subject, SOAPAction or namespace. Bowire assembles the call from them. The plugin describes its form on the server through the new `IBowireManualEntry` contract, so a plugin in its own repository adds a Compose form without workbench code. The freeform form now offers each protocol the method types its plugin names, instead of a list kept in the workbench.
 
+A sidecar plugin describes its form the same way, as a `manualEntry` object in its `initialize` reply (#1003).
+
 ## Fixes along the way
 
 ### A compiled sidecar ships one manifest for every platform (#990, #986)
