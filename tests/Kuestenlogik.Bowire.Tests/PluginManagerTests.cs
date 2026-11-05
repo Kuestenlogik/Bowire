@@ -547,6 +547,21 @@ public sealed class PluginManagerTests : IDisposable
     }
 
     [Fact]
+    public void LoadPlugins_SidecarSubdir_Is_Left_To_The_Sidecar_Loader()
+    {
+        // #986: a sidecar ships sidecar.json and no <packageId>.dll. The
+        // .NET loader must not report it at all — a ManifestMissing for
+        // it read like a failure on every start.
+        var subDir = SafePath.Combine(_tempDir, "Kuestenlogik.Bowire.Sidecar.Echo");
+        Directory.CreateDirectory(subDir);
+        File.WriteAllText(SafePath.Combine(subDir, "sidecar.json"), "{}");
+
+        var results = TestPluginLoaders.For(_tempDir).Load();
+
+        Assert.DoesNotContain(results, r => r.PackageId == "Kuestenlogik.Bowire.Sidecar.Echo");
+    }
+
+    [Fact]
     public void LoadPlugins_DirWithEmptyPluginSubdir_DoesNotThrow()
     {
         // A subdirectory with no DLLs creates a load context but loads

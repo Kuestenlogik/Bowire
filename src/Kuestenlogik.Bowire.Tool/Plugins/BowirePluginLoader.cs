@@ -92,6 +92,13 @@ internal sealed class BowirePluginLoader : IBowirePluginLoader
                 continue;
             }
 
+            // A sidecar plugin is the sidecar loader's (SidecarPluginDiscovery),
+            // which reports on it itself. It ships no <packageId>.dll, so
+            // treating it here only produced a ManifestMissing for every
+            // sidecar that read like a failure (#986).
+            if (File.Exists(Path.Combine(subDir, Kuestenlogik.Bowire.Plugins.Sidecar.SidecarPluginManifest.FileName)))
+                continue;
+
             var manifest = Path.Combine(subDir, packageId + ".dll");
             if (!File.Exists(manifest))
             {

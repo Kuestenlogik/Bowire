@@ -20,9 +20,11 @@ template for a filled-in body:
 
 ## Fixes along the way
 
-### A compiled sidecar ships one manifest for every platform (#990)
+### A compiled sidecar ships one manifest for every platform (#990, #986)
 
 On Windows a manifest's `executable` is now also looked up in the plugin directory with each `PATHEXT` extension, so `"executable": "echo"` starts the shipped `echo.exe` instead of the first `echo.exe` on `PATH`. A Go or Rust sidecar names its binary once and runs on Linux, macOS and Windows.
+
+The .NET plugin loader also leaves sidecar folders to the sidecar loader, so a start no longer logs `ManifestMissing` for every installed sidecar (#986).
 
 ### An embedded workbench no longer keeps a disposed host alive (#989)
 
