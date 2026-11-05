@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**1/26 done** · 25 backlog
+**2/26 done** · 24 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -34,7 +34,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [963](https://github.com/Kuestenlogik/Bowire/issues/963) | Bowire | [WebSocketAuthProbe: forged JWT (alg:none, tampered signature) on the upgrade](#issue-kuestenlogik-bowire-963) | ⬜ Backlog | `area:security` |
 | [986](https://github.com/Kuestenlogik/Bowire/issues/986) | Bowire | [The .NET plugin loader scans sidecar folders and logs ManifestMissing for every sidecar](#issue-kuestenlogik-bowire-986) | ⬜ Backlog | `area:plugin-sdk` |
 | [987](https://github.com/Kuestenlogik/Bowire/issues/987) | Bowire | [sidecar-plugins.md: no SDK sends select options, and python3 as the manifest example fails on Windows](#issue-kuestenlogik-bowire-987) | ⬜ Backlog | `area:docs` |
-| [990](https://github.com/Kuestenlogik/Bowire/issues/990) | Bowire | [Sidecar executable: a bare name in the plugin directory ignores PATHEXT on Windows](#issue-kuestenlogik-bowire-990) | ⬜ Backlog | `area:plugin-sdk` |
 | [991](https://github.com/Kuestenlogik/Bowire/issues/991) | Bowire | [gRPC without server reflection: upload a descriptor set and call through it from the workbench](#issue-kuestenlogik-bowire-991) | ⬜ Backlog | `area:workbench` |
 | [992](https://github.com/Kuestenlogik/Bowire/issues/992) | Bowire | [gRPC embedded: discover from the host's compiled descriptors instead of mapping a reflection service](#issue-kuestenlogik-bowire-992) | ⬜ Backlog | `area:workbench` |
 | [993](https://github.com/Kuestenlogik/Bowire/issues/993) | Bowire | [REST embedded: discover from the host's OpenAPI document instead of reflecting over its types](#issue-kuestenlogik-bowire-993) | ⬜ Backlog | `area:workbench` |
@@ -42,6 +41,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [995](https://github.com/Kuestenlogik/Bowire/issues/995) | Bowire | [Manual entry for every protocol: freeform metadata and streaming, Compose layouts for the protocols without one](#issue-kuestenlogik-bowire-995) | ⬜ Backlog | `area:workbench` |
 | [996](https://github.com/Kuestenlogik/Bowire/issues/996) | Bowire | [SOAP by hand: the freeform form drops the metadata that carries soap_action and target_namespace](#issue-kuestenlogik-bowire-996) | ⬜ Backlog | `area:workbench` |
 | [673](https://github.com/Kuestenlogik/Bowire/issues/673) | Bowire | [Export requests as .http — Copy as .http, and bowire export http for a whole collection](#issue-kuestenlogik-bowire-673) | ✅ Done | `area:workbench` |
+| [990](https://github.com/Kuestenlogik/Bowire/issues/990) | Bowire | [Sidecar executable: a bare name in the plugin directory ignores PATHEXT on Windows](#issue-kuestenlogik-bowire-990) | ✅ Done | `area:plugin-sdk` |
 
 ### v2.12 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
 
@@ -272,12 +272,6 @@ Starting the workbench with a sidecar plugin installed logs, for every sidecar: 
 
 `docs/architecture/sidecar-plugins.md` and a code comment describe a state the SDKs have moved past: - they say no SDK sends `options` for a `select` setting; the Node and Python SDKs now do (and Go will); - the manifest example uses `"executable": "python3"`, which fails on a stock Windows install: … [[more]](https://github.com/Kuestenlogik/Bowire/issues/987)
 
-#### <a id="issue-kuestenlogik-bowire-990"></a>⬜ Backlog · [#990](https://github.com/Kuestenlogik/Bowire/issues/990) Sidecar executable: a bare name in the plugin directory ignores PATHEXT on Windows
-
-> `area:plugin-sdk`
-
-A sidecar manifest that names its own binary as a bare name — `"executable": "echo"` next to `echo.exe` in the plugin directory — does not start on Windows. [[more]](https://github.com/Kuestenlogik/Bowire/issues/990)
-
 #### <a id="issue-kuestenlogik-bowire-991"></a>⬜ Backlog · [#991](https://github.com/Kuestenlogik/Bowire/issues/991) gRPC without server reflection: upload a descriptor set and call through it from the workbench
 
 > `area:workbench`
@@ -319,6 +313,12 @@ A SOAP call entered by hand (no WSDL discovered) cannot be made from the workben
 > `area:workbench`
 
 For "I am testing my own REST endpoint while developing it", a `.http` file is **better** than Bowire. The file sits next to the code, it is in the repo, there is no second window and no second process. Visual Studio 2022, Rider and the VS Code REST Client all run them natively. Competing with that is a losing framing. [[more]](https://github.com/Kuestenlogik/Bowire/issues/673)
+
+#### <a id="issue-kuestenlogik-bowire-990"></a>✅ Done · [#990](https://github.com/Kuestenlogik/Bowire/issues/990) Sidecar executable: a bare name in the plugin directory ignores PATHEXT on Windows
+
+> `area:plugin-sdk`
+
+A sidecar manifest that names its own binary as a bare name — `"executable": "echo"` next to `echo.exe` in the plugin directory — does not start on Windows. [[more]](https://github.com/Kuestenlogik/Bowire/issues/990)
 
 ### v2.12 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
 
