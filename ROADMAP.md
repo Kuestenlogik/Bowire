@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**11/32 done** · 21 backlog
+**12/32 done** · 20 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -36,7 +36,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [992](https://github.com/Kuestenlogik/Bowire/issues/992) | Bowire | [gRPC embedded: discover from the host's compiled descriptors instead of mapping a reflection service](#issue-kuestenlogik-bowire-992) | ⬜ Backlog | `area:workbench` |
 | [993](https://github.com/Kuestenlogik/Bowire/issues/993) | Bowire | [REST embedded: discover from the host's OpenAPI document instead of reflecting over its types](#issue-kuestenlogik-bowire-993) | ⬜ Backlog | `area:workbench` |
 | [994](https://github.com/Kuestenlogik/Bowire/issues/994) | Bowire | [Schema imports per plugin: GraphQL SDL, AsyncAPI, WSDL, EDMX and OpenRPC](#issue-kuestenlogik-bowire-994) | ⬜ Backlog | `area:workbench` |
-| [1003](https://github.com/Kuestenlogik/Bowire/issues/1003) | Bowire | [Sidecar plugins describe their hand-entry form in the initialize reply](#issue-kuestenlogik-bowire-1003) | ⬜ Backlog |  |
 | [673](https://github.com/Kuestenlogik/Bowire/issues/673) | Bowire | [Export requests as .http — Copy as .http, and bowire export http for a whole collection](#issue-kuestenlogik-bowire-673) | ✅ Done | `area:workbench` |
 | [986](https://github.com/Kuestenlogik/Bowire/issues/986) | Bowire | [The .NET plugin loader scans sidecar folders and logs ManifestMissing for every sidecar](#issue-kuestenlogik-bowire-986) | ✅ Done | `area:plugin-sdk` |
 | [987](https://github.com/Kuestenlogik/Bowire/issues/987) | Bowire | [sidecar-plugins.md: no SDK sends select options, and python3 as the manifest example fails on Windows](#issue-kuestenlogik-bowire-987) | ✅ Done | `area:docs` |
@@ -48,6 +47,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [1000](https://github.com/Kuestenlogik/Bowire/issues/1000) | Bowire | [SOAP: a discovered call sends an empty SOAPAction and no target namespace](#issue-kuestenlogik-bowire-1000) | ✅ Done |  |
 | [1001](https://github.com/Kuestenlogik/Bowire/issues/1001) | Bowire | [NATS: a discovered request runs as a publish, and three methods share one name](#issue-kuestenlogik-bowire-1001) | ✅ Done |  |
 | [1002](https://github.com/Kuestenlogik/Bowire/issues/1002) | Bowire | [SignalR: a channel to a method the host does not list is always opened as duplex](#issue-kuestenlogik-bowire-1002) | ✅ Done |  |
+| [1003](https://github.com/Kuestenlogik/Bowire/issues/1003) | Bowire | [Sidecar plugins describe their hand-entry form in the initialize reply](#issue-kuestenlogik-bowire-1003) | ✅ Done |  |
 
 ### v2.12 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
 
@@ -156,40 +156,44 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### Sdk.Go v0.1 — Polyglot SDK parity: settings, channels, manifests
 
-**2/2 done**
+**2/3 done** · 1 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
+| [6](https://github.com/Kuestenlogik/Bowire.Sdk.Go/issues/6) | Sdk.Go | [Declare a hand-entry form (manualEntry in the initialize reply)](#issue-kuestenlogik-bowire-sdk-go-6) | ⬜ Backlog |  |
 | [3](https://github.com/Kuestenlogik/Bowire.Sdk.Go/issues/3) | Sdk.Go | [openChannel is declared but nothing routes it](#issue-kuestenlogik-bowire-sdk-go-3) | ✅ Done |  |
 | [4](https://github.com/Kuestenlogik/Bowire.Sdk.Go/issues/4) | Sdk.Go | [Settings: a plugin can declare them but cannot read the values the host now sends](#issue-kuestenlogik-bowire-sdk-go-4) | ✅ Done |  |
 
 ### Sdk.Node v0.2 — Polyglot SDK parity: settings, channels, manifests
 
-**3/3 done**
+**3/4 done** · 1 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
+| [16](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/16) | Sdk.Node | [Declare a hand-entry form (manualEntry in the initialize reply)](#issue-kuestenlogik-bowire-sdk-node-16) | ⬜ Backlog |  |
 | [4](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/4) | Sdk.Node | [openChannel is declared but nothing routes it](#issue-kuestenlogik-bowire-sdk-node-4) | ✅ Done |  |
 | [5](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/5) | Sdk.Node | [Example manifest: name node directly and drop run.sh, once a host with Kuestenlogik/Bowire#692 ships](#issue-kuestenlogik-bowire-sdk-node-5) | ✅ Done |  |
 | [6](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/6) | Sdk.Node | [Settings: a plugin can declare them but cannot read the values the host now sends](#issue-kuestenlogik-bowire-sdk-node-6) | ✅ Done |  |
 
 ### Sdk.Python v0.3 — Polyglot SDK parity: settings, channels, manifests
 
-**2/2 done**
+**2/3 done** · 1 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
+| [7](https://github.com/Kuestenlogik/Bowire.Sdk.Python/issues/7) | Sdk.Python | [Declare a hand-entry form (manualEntry in the initialize reply)](#issue-kuestenlogik-bowire-sdk-python-7) | ⬜ Backlog |  |
 | [3](https://github.com/Kuestenlogik/Bowire.Sdk.Python/issues/3) | Sdk.Python | [Example manifest: name python3 directly, once a host with Kuestenlogik/Bowire#692 ships](#issue-kuestenlogik-bowire-sdk-python-3) | ✅ Done |  |
 | [4](https://github.com/Kuestenlogik/Bowire.Sdk.Python/issues/4) | Sdk.Python | [Settings: a plugin can declare them but cannot read the values the host now sends](#issue-kuestenlogik-bowire-sdk-python-4) | ✅ Done |  |
 
 ### Sdk.Rust v0.2 — Polyglot SDK parity: settings, channels, manifests
 
-**1/3 done** · 2 backlog
+**1/4 done** · 3 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [9](https://github.com/Kuestenlogik/Bowire.Sdk.Rust/issues/9) | Sdk.Rust | [Settings: the plugin's declarations never reach the host, and the values the host sends never reach the plugin](#issue-kuestenlogik-bowire-sdk-rust-9) | ⬜ Backlog | `area:plugin-sdk` |
 | [10](https://github.com/Kuestenlogik/Bowire.Sdk.Rust/issues/10) | Sdk.Rust | [run() exits at stdin EOF before replying to the requests it already read](#issue-kuestenlogik-bowire-sdk-rust-10) | ⬜ Backlog | `area:plugin-sdk` |
+| [11](https://github.com/Kuestenlogik/Bowire.Sdk.Rust/issues/11) | Sdk.Rust | [Declare a hand-entry form (manualEntry in the initialize reply)](#issue-kuestenlogik-bowire-sdk-rust-11) | ⬜ Backlog |  |
 | [5](https://github.com/Kuestenlogik/Bowire.Sdk.Rust/issues/5) | Sdk.Rust | [openChannel is declared but nothing routes it](#issue-kuestenlogik-bowire-sdk-rust-5) | ✅ Done |  |
 
 ### Templates v1.1.17 — No warning suppressions *(due 2026-11-14)*
@@ -325,10 +329,6 @@ Embedded REST discovery walks ApiExplorer and reflects over the body types with 
 
 The workbench upload knows two kinds: `.proto` goes to the proto endpoint, everything else to the OpenAPI endpoint (`src/Kuestenlogik.Bowire/wwwroot/js/helpers.js:179-181`), and the picker accepts only `.proto,.json,.yaml,.yml` (`render-sidebar.js:722`). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/994)
 
-#### <a id="issue-kuestenlogik-bowire-1003"></a>⬜ Backlog · [#1003](https://github.com/Kuestenlogik/Bowire/issues/1003) Sidecar plugins describe their hand-entry form in the initialize reply
-
-A .NET plugin describes how a call to it is entered by hand through `IBowireManualEntry` (#995). A sidecar plugin cannot implement a .NET interface; `SidecarBowireProtocol` speaks for it. Until a sidecar can describe itself, its freeform form offers all four method types and Compose has no form for it. [[more]](https://github.com/Kuestenlogik/Bowire/issues/1003)
-
 #### <a id="issue-kuestenlogik-bowire-673"></a>✅ Done · [#673](https://github.com/Kuestenlogik/Bowire/issues/673) Export requests as .http — Copy as .http, and bowire export http for a whole collection
 
 > `area:workbench`
@@ -384,6 +384,10 @@ NATS discovery gives the subscribe, publish and request method of a subject the 
 #### <a id="issue-kuestenlogik-bowire-1002"></a>✅ Done · [#1002](https://github.com/Kuestenlogik/Bowire/issues/1002) SignalR: a channel to a method the host does not list is always opened as duplex
 
 `BowireSignalRProtocol.OpenChannelAsync` looks the method up in the live hub scan and, on a miss, defaults both streaming flags to `true` (`src/Kuestenlogik.Bowire.Protocol.SignalR/BowireSignalRProtocol.cs:387-388`). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/1002)
+
+#### <a id="issue-kuestenlogik-bowire-1003"></a>✅ Done · [#1003](https://github.com/Kuestenlogik/Bowire/issues/1003) Sidecar plugins describe their hand-entry form in the initialize reply
+
+A .NET plugin describes how a call to it is entered by hand through `IBowireManualEntry` (#995). A sidecar plugin cannot implement a .NET interface; `SidecarBowireProtocol` speaks for it. Until a sidecar can describe itself, its freeform form offers all four method types and Compose has no form for it. [[more]](https://github.com/Kuestenlogik/Bowire/issues/1003)
 
 ### v2.12 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
 
@@ -671,6 +675,10 @@ Bowire 2.11 lets a protocol plugin describe how a call to it is entered by hand 
 
 ### Sdk.Go v0.1 — Polyglot SDK parity: settings, channels, manifests
 
+#### <a id="issue-kuestenlogik-bowire-sdk-go-6"></a>⬜ Backlog · [Kuestenlogik/Bowire.Sdk.Go#6](https://github.com/Kuestenlogik/Bowire.Sdk.Go/issues/6) Declare a hand-entry form (manualEntry in the initialize reply)
+
+Bowire 2.11 lets a sidecar describe how a call to it is entered by hand (Kuestenlogik/Bowire#1003): its `initialize` reply may carry a `manualEntry` object, the call kinds (each with a method type and its `service` / `method` as templates over the fields) and the fields (each going into the template … [[more]](https://github.com/Kuestenlogik/Bowire.Sdk.Go/issues/6)
+
 #### <a id="issue-kuestenlogik-bowire-sdk-go-3"></a>✅ Done · [Kuestenlogik/Bowire.Sdk.Go#3](https://github.com/Kuestenlogik/Bowire.Sdk.Go/issues/3) openChannel is declared but nothing routes it
 
 The plugin surface declares a duplex capability that no dispatcher routes. `the ChannelPlugin optional interface` is part of the public API — a plugin author implements it, ships it, and nothing ever calls it, because the dispatcher has no `openChannel` case at all. [[more]](https://github.com/Kuestenlogik/Bowire.Sdk.Go/issues/3)
@@ -680,6 +688,10 @@ The plugin surface declares a duplex capability that no dispatcher routes. `the 
 The settings hook this SDK already has now reaches somewhere, and the other half of it has nowhere to land. [[more]](https://github.com/Kuestenlogik/Bowire.Sdk.Go/issues/4)
 
 ### Sdk.Node v0.2 — Polyglot SDK parity: settings, channels, manifests
+
+#### <a id="issue-kuestenlogik-bowire-sdk-node-16"></a>⬜ Backlog · [Kuestenlogik/Bowire.Sdk.Node#16](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/16) Declare a hand-entry form (manualEntry in the initialize reply)
+
+Bowire 2.11 lets a sidecar describe how a call to it is entered by hand (Kuestenlogik/Bowire#1003): its `initialize` reply may carry a `manualEntry` object, the call kinds (each with a method type and its `service` / `method` as templates over the fields) and the fields (each going into the template … [[more]](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/16)
 
 #### <a id="issue-kuestenlogik-bowire-sdk-node-4"></a>✅ Done · [Kuestenlogik/Bowire.Sdk.Node#4](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/4) openChannel is declared but nothing routes it
 
@@ -694,6 +706,10 @@ The example manifest works around a host defect that no longer exists. [[more]](
 The settings hook this SDK already has now reaches somewhere, and the other half of it has nowhere to land. [[more]](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/6)
 
 ### Sdk.Python v0.3 — Polyglot SDK parity: settings, channels, manifests
+
+#### <a id="issue-kuestenlogik-bowire-sdk-python-7"></a>⬜ Backlog · [Kuestenlogik/Bowire.Sdk.Python#7](https://github.com/Kuestenlogik/Bowire.Sdk.Python/issues/7) Declare a hand-entry form (manualEntry in the initialize reply)
+
+Bowire 2.11 lets a sidecar describe how a call to it is entered by hand (Kuestenlogik/Bowire#1003): its `initialize` reply may carry a `manualEntry` object, the call kinds (each with a method type and its `service` / `method` as templates over the fields) and the fields (each going into the template … [[more]](https://github.com/Kuestenlogik/Bowire.Sdk.Python/issues/7)
 
 #### <a id="issue-kuestenlogik-bowire-sdk-python-3"></a>✅ Done · [Kuestenlogik/Bowire.Sdk.Python#3](https://github.com/Kuestenlogik/Bowire.Sdk.Python/issues/3) Example manifest: name python3 directly, once a host with Kuestenlogik/Bowire#692 ships
 
@@ -716,6 +732,10 @@ The same gap the Go, Node and Python SDKs had (`Kuestenlogik/Bowire#693`), here 
 > `area:plugin-sdk`
 
 `run()` returns as soon as stdin reaches EOF, even while replies to requests already read are still being produced. Piping several requests in at once (`printf '…\n…\n' | plugin`) can therefore print nothing. The CI smoke test's comment about "empty stdout" is most likely this. [[more]](https://github.com/Kuestenlogik/Bowire.Sdk.Rust/issues/10)
+
+#### <a id="issue-kuestenlogik-bowire-sdk-rust-11"></a>⬜ Backlog · [Kuestenlogik/Bowire.Sdk.Rust#11](https://github.com/Kuestenlogik/Bowire.Sdk.Rust/issues/11) Declare a hand-entry form (manualEntry in the initialize reply)
+
+Bowire 2.11 lets a sidecar describe how a call to it is entered by hand (Kuestenlogik/Bowire#1003): its `initialize` reply may carry a `manualEntry` object, the call kinds (each with a method type and its `service` / `method` as templates over the fields) and the fields (each going into the template … [[more]](https://github.com/Kuestenlogik/Bowire.Sdk.Rust/issues/11)
 
 #### <a id="issue-kuestenlogik-bowire-sdk-rust-5"></a>✅ Done · [Kuestenlogik/Bowire.Sdk.Rust#5](https://github.com/Kuestenlogik/Bowire.Sdk.Rust/issues/5) openChannel is declared but nothing routes it
 
