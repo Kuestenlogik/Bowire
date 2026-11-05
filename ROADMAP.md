@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**5/27 done** · 22 backlog
+**6/27 done** · 21 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -37,12 +37,12 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [993](https://github.com/Kuestenlogik/Bowire/issues/993) | Bowire | [REST embedded: discover from the host's OpenAPI document instead of reflecting over its types](#issue-kuestenlogik-bowire-993) | ⬜ Backlog | `area:workbench` |
 | [994](https://github.com/Kuestenlogik/Bowire/issues/994) | Bowire | [Schema imports per plugin: GraphQL SDL, AsyncAPI, WSDL, EDMX and OpenRPC](#issue-kuestenlogik-bowire-994) | ⬜ Backlog | `area:workbench` |
 | [995](https://github.com/Kuestenlogik/Bowire/issues/995) | Bowire | [Manual entry for every protocol: freeform metadata and streaming, Compose layouts for the protocols without one](#issue-kuestenlogik-bowire-995) | ⬜ Backlog | `area:workbench` |
-| [996](https://github.com/Kuestenlogik/Bowire/issues/996) | Bowire | [SOAP by hand: the freeform form drops the metadata that carries soap_action and target_namespace](#issue-kuestenlogik-bowire-996) | ⬜ Backlog | `area:workbench` |
 | [673](https://github.com/Kuestenlogik/Bowire/issues/673) | Bowire | [Export requests as .http — Copy as .http, and bowire export http for a whole collection](#issue-kuestenlogik-bowire-673) | ✅ Done | `area:workbench` |
 | [986](https://github.com/Kuestenlogik/Bowire/issues/986) | Bowire | [The .NET plugin loader scans sidecar folders and logs ManifestMissing for every sidecar](#issue-kuestenlogik-bowire-986) | ✅ Done | `area:plugin-sdk` |
 | [987](https://github.com/Kuestenlogik/Bowire/issues/987) | Bowire | [sidecar-plugins.md: no SDK sends select options, and python3 as the manifest example fails on Windows](#issue-kuestenlogik-bowire-987) | ✅ Done | `area:docs` |
 | [989](https://github.com/Kuestenlogik/Bowire/issues/989) | Bowire | [PluginUpdateCheckService keeps an IHttpClientFactory client, so a disposed host is never collected](#issue-kuestenlogik-bowire-989) | ✅ Done |  |
 | [990](https://github.com/Kuestenlogik/Bowire/issues/990) | Bowire | [Sidecar executable: a bare name in the plugin directory ignores PATHEXT on Windows](#issue-kuestenlogik-bowire-990) | ✅ Done | `area:plugin-sdk` |
+| [996](https://github.com/Kuestenlogik/Bowire/issues/996) | Bowire | [SOAP by hand: the freeform form drops the metadata that carries soap_action and target_namespace](#issue-kuestenlogik-bowire-996) | ✅ Done | `area:workbench` |
 
 ### v2.12 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
 
@@ -307,12 +307,6 @@ The workbench upload knows two kinds: `.proto` goes to the proto endpoint, every
 
 The invoke endpoint does not require a method to have been discovered (`BowireInvokeEndpoints.cs:193-195`), so typing a call by hand works in principle for every protocol. The UI is the limit: [[more]](https://github.com/Kuestenlogik/Bowire/issues/995)
 
-#### <a id="issue-kuestenlogik-bowire-996"></a>⬜ Backlog · [#996](https://github.com/Kuestenlogik/Bowire/issues/996) SOAP by hand: the freeform form drops the metadata that carries soap_action and target_namespace
-
-> `area:workbench`
-
-A SOAP call entered by hand (no WSDL discovered) cannot be made from the workbench. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/996)
-
 #### <a id="issue-kuestenlogik-bowire-673"></a>✅ Done · [#673](https://github.com/Kuestenlogik/Bowire/issues/673) Export requests as .http — Copy as .http, and bowire export http for a whole collection
 
 > `area:workbench`
@@ -340,6 +334,12 @@ Starting the workbench with a sidecar plugin installed logs, for every sidecar: 
 > `area:plugin-sdk`
 
 A sidecar manifest that names its own binary as a bare name — `"executable": "echo"` next to `echo.exe` in the plugin directory — does not start on Windows. [[more]](https://github.com/Kuestenlogik/Bowire/issues/990)
+
+#### <a id="issue-kuestenlogik-bowire-996"></a>✅ Done · [#996](https://github.com/Kuestenlogik/Bowire/issues/996) SOAP by hand: the freeform form drops the metadata that carries soap_action and target_namespace
+
+> `area:workbench`
+
+A SOAP call entered by hand (no WSDL discovered) cannot be made from the workbench. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/996)
 
 ### v2.12 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
 
