@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**3/27 done** · 24 backlog
+**5/27 done** · 22 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -32,8 +32,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [940](https://github.com/Kuestenlogik/Bowire/issues/940) | Bowire | [Verify the collection importers against real Insomnia and Bruno exports](#issue-kuestenlogik-bowire-940) | ⬜ Backlog |  |
 | [946](https://github.com/Kuestenlogik/Bowire/issues/946) | Bowire | [Data sets for flow runs and bowire test --workspace](#issue-kuestenlogik-bowire-946) | ⬜ Backlog |  |
 | [963](https://github.com/Kuestenlogik/Bowire/issues/963) | Bowire | [WebSocketAuthProbe: forged JWT (alg:none, tampered signature) on the upgrade](#issue-kuestenlogik-bowire-963) | ⬜ Backlog | `area:security` |
-| [986](https://github.com/Kuestenlogik/Bowire/issues/986) | Bowire | [The .NET plugin loader scans sidecar folders and logs ManifestMissing for every sidecar](#issue-kuestenlogik-bowire-986) | ⬜ Backlog | `area:plugin-sdk` |
-| [987](https://github.com/Kuestenlogik/Bowire/issues/987) | Bowire | [sidecar-plugins.md: no SDK sends select options, and python3 as the manifest example fails on Windows](#issue-kuestenlogik-bowire-987) | ⬜ Backlog | `area:docs` |
 | [991](https://github.com/Kuestenlogik/Bowire/issues/991) | Bowire | [gRPC without server reflection: upload a descriptor set and call through it from the workbench](#issue-kuestenlogik-bowire-991) | ⬜ Backlog | `area:workbench` |
 | [992](https://github.com/Kuestenlogik/Bowire/issues/992) | Bowire | [gRPC embedded: discover from the host's compiled descriptors instead of mapping a reflection service](#issue-kuestenlogik-bowire-992) | ⬜ Backlog | `area:workbench` |
 | [993](https://github.com/Kuestenlogik/Bowire/issues/993) | Bowire | [REST embedded: discover from the host's OpenAPI document instead of reflecting over its types](#issue-kuestenlogik-bowire-993) | ⬜ Backlog | `area:workbench` |
@@ -41,6 +39,8 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [995](https://github.com/Kuestenlogik/Bowire/issues/995) | Bowire | [Manual entry for every protocol: freeform metadata and streaming, Compose layouts for the protocols without one](#issue-kuestenlogik-bowire-995) | ⬜ Backlog | `area:workbench` |
 | [996](https://github.com/Kuestenlogik/Bowire/issues/996) | Bowire | [SOAP by hand: the freeform form drops the metadata that carries soap_action and target_namespace](#issue-kuestenlogik-bowire-996) | ⬜ Backlog | `area:workbench` |
 | [673](https://github.com/Kuestenlogik/Bowire/issues/673) | Bowire | [Export requests as .http — Copy as .http, and bowire export http for a whole collection](#issue-kuestenlogik-bowire-673) | ✅ Done | `area:workbench` |
+| [986](https://github.com/Kuestenlogik/Bowire/issues/986) | Bowire | [The .NET plugin loader scans sidecar folders and logs ManifestMissing for every sidecar](#issue-kuestenlogik-bowire-986) | ✅ Done | `area:plugin-sdk` |
+| [987](https://github.com/Kuestenlogik/Bowire/issues/987) | Bowire | [sidecar-plugins.md: no SDK sends select options, and python3 as the manifest example fails on Windows](#issue-kuestenlogik-bowire-987) | ✅ Done | `area:docs` |
 | [989](https://github.com/Kuestenlogik/Bowire/issues/989) | Bowire | [PluginUpdateCheckService keeps an IHttpClientFactory client, so a disposed host is never collected](#issue-kuestenlogik-bowire-989) | ✅ Done |  |
 | [990](https://github.com/Kuestenlogik/Bowire/issues/990) | Bowire | [Sidecar executable: a bare name in the plugin directory ignores PATHEXT on Windows](#issue-kuestenlogik-bowire-990) | ✅ Done | `area:plugin-sdk` |
 
@@ -101,6 +101,14 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [997](https://github.com/Kuestenlogik/Bowire/issues/997) | Bowire | [AOT and trimming readiness: explicit plugin registration, annotated reflection paths](#issue-kuestenlogik-bowire-997) | ⬜ Backlog | `area:plugin-sdk` |
 | [215](https://github.com/Kuestenlogik/Bowire/issues/215) | Bowire | [Test infra: IProcessLauncher seam in PluginManager to cover dotnet-shell-out paths](#issue-kuestenlogik-bowire-215) | ✅ Done | `area:plugin-sdk` |
 
+### Protocol.Akka v1.2 — Tell in trimmed and AOT hosts
+
+**0/1 done** · 1 backlog
+
+| # | Project | Title | Status | Tags |
+|---|---|---|---|---|
+| [90](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/90) | Protocol.Akka | [Tell without reflection: source-generated JSON type info for the allow-listed types](#issue-kuestenlogik-bowire-protocol-akka-90) | ⬜ Backlog | `area:plugin-sdk` |
+
 ### Protocol.Dis v1.2 — Interactive DIS sandbox *(due 2026-11-29)*
 
 **2/4 done** · 2 backlog
@@ -111,6 +119,22 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [69](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/69) | Protocol.Dis | [DIS sandbox: receive objects of other instances and show them read-only](#issue-kuestenlogik-bowire-protocol-dis-69) | ⬜ Backlog |  |
 | [67](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/67) | Protocol.Dis | [DIS sandbox: place and move objects on a map, state as key-value pairs](#issue-kuestenlogik-bowire-protocol-dis-67) | ✅ Done |  |
 | [70](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/70) | Protocol.Dis | [Pin the .NET SDK to 10.0.402 and check for packages with known advisories](#issue-kuestenlogik-bowire-protocol-dis-70) | ✅ Done | `area:plugin-sdk` |
+
+### Protocol.Kafka v1.1 — Typed produce through the Schema Registry
+
+**0/1 done** · 1 backlog
+
+| # | Project | Title | Status | Tags |
+|---|---|---|---|---|
+| [92](https://github.com/Kuestenlogik/Bowire.Protocol.Kafka/issues/92) | Protocol.Kafka | [Typed produce through the Schema Registry: field shapes and Avro / Protobuf encoding](#issue-kuestenlogik-bowire-protocol-kafka-92) | ⬜ Backlog | `area:plugin-sdk` |
+
+### Protocol.Surgewave v0.2 — Typed produce through the Schema Registry
+
+**0/1 done** · 1 backlog
+
+| # | Project | Title | Status | Tags |
+|---|---|---|---|---|
+| [85](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/85) | Protocol.Surgewave | [Typed produce through the Schema Registry: field shapes and Avro / Protobuf encoding](#issue-kuestenlogik-bowire-protocol-surgewave-85) | ⬜ Backlog | `area:plugin-sdk` |
 
 ### Sdk.Go v0.1 — Polyglot SDK parity: settings, channels, manifests
 
@@ -152,11 +176,13 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### Templates v1.1.17 — No warning suppressions *(due 2026-11-14)*
 
-**0/1 done** · 1 in progress
+**2/3 done** · 1 in progress
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [24](https://github.com/Kuestenlogik/Bowire.Templates/issues/24) | Templates | [Warning suppressions: NU5128 on the template pack, CS1591 in the plugin template](#issue-kuestenlogik-bowire-templates-24) | 🟡 In progress | `area:plugin-sdk` |
+| [23](https://github.com/Kuestenlogik/Bowire.Templates/issues/23) | Templates | [Scaffolded plugins start without a known advisory: SignalR.Client and TestHost pins to 10.0.13](#issue-kuestenlogik-bowire-templates-23) | ✅ Done | `area:plugin-sdk` |
+| [25](https://github.com/Kuestenlogik/Bowire.Templates/issues/25) | Templates | [No suppression without a reason in the template package](#issue-kuestenlogik-bowire-templates-25) | ✅ Done |  |
 
 ### VS Code v1.1 — Marketplace publish via Entra ID *(due 2026-11-30)*
 
@@ -166,14 +192,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 |---|---|---|---|---|
 | [779](https://github.com/Kuestenlogik/Bowire/issues/779) | Bowire | [Revoke the old VSCE_PAT in Azure DevOps](#issue-kuestenlogik-bowire-779) | ⬜ Backlog |  |
 | [613](https://github.com/Kuestenlogik/Bowire/issues/613) | Bowire | [Move the VS Code Marketplace publish off PATs to Entra ID before 2026-12-01](#issue-kuestenlogik-bowire-613) | ✅ Done | `area:cli` |
-
-### Backlog (not yet scheduled)
-
-| # | Project | Title | Status | Tags |
-|---|---|---|---|---|
-| [85](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/85) | Protocol.Surgewave | [Typed produce through the Schema Registry: field shapes and Avro / Protobuf encoding](#issue-kuestenlogik-bowire-protocol-surgewave-85) | ⬜ Backlog | `area:plugin-sdk` |
-| [90](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/90) | Protocol.Akka | [Tell without reflection: source-generated JSON type info for the allow-listed types](#issue-kuestenlogik-bowire-protocol-akka-90) | ⬜ Backlog | `area:plugin-sdk` |
-| [92](https://github.com/Kuestenlogik/Bowire.Protocol.Kafka/issues/92) | Protocol.Kafka | [Typed produce through the Schema Registry: field shapes and Avro / Protobuf encoding](#issue-kuestenlogik-bowire-protocol-kafka-92) | ⬜ Backlog | `area:plugin-sdk` |
 
 ## Details
 
@@ -259,18 +277,6 @@ Follow-up of #675. `--data` drives a test collection. A flow file, or a `--works
 
 Kuestenlogik/Bowire.VulnDb#51 (CVE-2026-113620, Eclipse ioFog Controller): the WebSocket upgrades on the exec and log routes decode the bearer JWT without verifying it, so a self-minted token whose groups contain `admin` is accepted. The HTTP routes of the same server verify the token. [[more]](https://github.com/Kuestenlogik/Bowire/issues/963)
 
-#### <a id="issue-kuestenlogik-bowire-986"></a>⬜ Backlog · [#986](https://github.com/Kuestenlogik/Bowire/issues/986) The .NET plugin loader scans sidecar folders and logs ManifestMissing for every sidecar
-
-> `area:plugin-sdk`
-
-Starting the workbench with a sidecar plugin installed logs, for every sidecar: [[more]](https://github.com/Kuestenlogik/Bowire/issues/986)
-
-#### <a id="issue-kuestenlogik-bowire-987"></a>⬜ Backlog · [#987](https://github.com/Kuestenlogik/Bowire/issues/987) sidecar-plugins.md: no SDK sends select options, and python3 as the manifest example fails on Windows
-
-> `area:docs`
-
-`docs/architecture/sidecar-plugins.md` and a code comment describe a state the SDKs have moved past: - they say no SDK sends `options` for a `select` setting; the Node and Python SDKs now do (and Go will); - the manifest example uses `"executable": "python3"`, which fails on a stock Windows install: … [[more]](https://github.com/Kuestenlogik/Bowire/issues/987)
-
 #### <a id="issue-kuestenlogik-bowire-991"></a>⬜ Backlog · [#991](https://github.com/Kuestenlogik/Bowire/issues/991) gRPC without server reflection: upload a descriptor set and call through it from the workbench
 
 > `area:workbench`
@@ -312,6 +318,18 @@ A SOAP call entered by hand (no WSDL discovered) cannot be made from the workben
 > `area:workbench`
 
 For "I am testing my own REST endpoint while developing it", a `.http` file is **better** than Bowire. The file sits next to the code, it is in the repo, there is no second window and no second process. Visual Studio 2022, Rider and the VS Code REST Client all run them natively. Competing with that is a losing framing. [[more]](https://github.com/Kuestenlogik/Bowire/issues/673)
+
+#### <a id="issue-kuestenlogik-bowire-986"></a>✅ Done · [#986](https://github.com/Kuestenlogik/Bowire/issues/986) The .NET plugin loader scans sidecar folders and logs ManifestMissing for every sidecar
+
+> `area:plugin-sdk`
+
+Starting the workbench with a sidecar plugin installed logs, for every sidecar: [[more]](https://github.com/Kuestenlogik/Bowire/issues/986)
+
+#### <a id="issue-kuestenlogik-bowire-987"></a>✅ Done · [#987](https://github.com/Kuestenlogik/Bowire/issues/987) sidecar-plugins.md: no SDK sends select options, and python3 as the manifest example fails on Windows
+
+> `area:docs`
+
+`docs/architecture/sidecar-plugins.md` and a code comment describe a state the SDKs have moved past: - they say no SDK sends `options` for a `select` setting; the Node and Python SDKs now do (and Go will); - the manifest example uses `"executable": "python3"`, which fails on a stock Windows install: … [[more]](https://github.com/Kuestenlogik/Bowire/issues/987)
 
 #### <a id="issue-kuestenlogik-bowire-989"></a>✅ Done · [#989](https://github.com/Kuestenlogik/Bowire/issues/989) PluginUpdateCheckService keeps an IHttpClientFactory client, so a disposed host is never collected
 
@@ -537,6 +555,14 @@ No project is marked trimmable or AOT-compatible, and nothing carries trimming a
 
 > **Status:** obsolete, not done. The premise no longer holds — the body below records why; the original proposal is in the issue history. [[more]](https://github.com/Kuestenlogik/Bowire/issues/215)
 
+### Protocol.Akka v1.2 — Tell in trimmed and AOT hosts
+
+#### <a id="issue-kuestenlogik-bowire-protocol-akka-90"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Akka#90](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/90) Tell without reflection: source-generated JSON type info for the allow-listed types
+
+> `area:plugin-sdk`
+
+The embedded Akka plugin resolves message types with `Type.GetType` from configuration (`BowireAkkaExtension.cs:136`) and deserialises a Tell with the reflection-based `JsonSerializer.Deserialize(json, type)` (`TellGateway.cs:100-103`). Neither works in a trimmed or AOT host, and neither warns. [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/90)
+
 ### Protocol.Dis v1.2 — Interactive DIS sandbox *(due 2026-11-29)*
 
 #### <a id="issue-kuestenlogik-bowire-protocol-dis-68"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Dis#68](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/68) Show datum IDs with their SISO name (Variable Record Types)
@@ -556,6 +582,22 @@ A test program with which you **drive DIS in Bowire by hand**. The existing samp
 > `area:plugin-sdk`
 
 `global.json` pins the .NET SDK to 10.0.401, which has been superseded by the 10.0.402 patch (a machine that took the update only has 10.0.402). [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Dis/issues/70)
+
+### Protocol.Kafka v1.1 — Typed produce through the Schema Registry
+
+#### <a id="issue-kuestenlogik-bowire-protocol-kafka-92"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Kafka#92](https://github.com/Kuestenlogik/Bowire.Protocol.Kafka/issues/92) Typed produce through the Schema Registry: field shapes and Avro / Protobuf encoding
+
+> `area:plugin-sdk`
+
+Produce sends the value as UTF-8 text only (`BowireKafkaProtocol.cs:431-438`). The plugin already talks to the Schema Registry, but only to summarise subjects and to decode on consume (`:158-175`); topics with an Avro or Protobuf value schema cannot be produced to from the workbench, and their methods show no fields. [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Kafka/issues/92)
+
+### Protocol.Surgewave v0.2 — Typed produce through the Schema Registry
+
+#### <a id="issue-kuestenlogik-bowire-protocol-surgewave-85"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Surgewave#85](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/85) Typed produce through the Schema Registry: field shapes and Avro / Protobuf encoding
+
+> `area:plugin-sdk`
+
+Same gap as the Kafka plugin: produce sends the value as UTF-8 only, and the Schema Registry (`SurgewaveSchemaRegistry.cs:10-21`) is used to summarise and to decode on consume, not to describe or encode a produce. [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/85)
 
 ### Sdk.Go v0.1 — Polyglot SDK parity: settings, channels, manifests
 
@@ -617,6 +659,16 @@ The plugin surface declares a duplex capability that no dispatcher routes. `the 
 
 Two warning suppressions in this repo, reviewed under the rule that warnings are fixed at the cause and a suppression stays only where no fix exists, narrowly and with a reason: [[more]](https://github.com/Kuestenlogik/Bowire.Templates/issues/24)
 
+#### <a id="issue-kuestenlogik-bowire-templates-23"></a>✅ Done · [Kuestenlogik/Bowire.Templates#23](https://github.com/Kuestenlogik/Bowire.Templates/issues/23) Scaffolded plugins start without a known advisory: SignalR.Client and TestHost pins to 10.0.13
+
+> `area:plugin-sdk`
+
+The `bowire-plugin` template writes package pins into every project it scaffolds, and two of them are old 10.0.x patches: [[more]](https://github.com/Kuestenlogik/Bowire.Templates/issues/23)
+
+#### <a id="issue-kuestenlogik-bowire-templates-25"></a>✅ Done · [Kuestenlogik/Bowire.Templates#25](https://github.com/Kuestenlogik/Bowire.Templates/issues/25) No suppression without a reason in the template package
+
+Owner rule from 2026-10-14: warnings are fixed at the cause instead of suppressed. A suppression stays only where no fix exists, narrowly scoped and with its reason. [[more]](https://github.com/Kuestenlogik/Bowire.Templates/issues/25)
+
 ### VS Code v1.1 — Marketplace publish via Entra ID *(due 2026-11-30)*
 
 #### <a id="issue-kuestenlogik-bowire-779"></a>⬜ Backlog · [#779](https://github.com/Kuestenlogik/Bowire/issues/779) Revoke the old VSCE_PAT in Azure DevOps
@@ -628,26 +680,6 @@ Two warning suppressions in this repo, reviewed under the rule that warnings are
 > `area:cli`
 
 > **Hard deadline: 2026-12-01.** Azure DevOps stops supporting Personal Access Tokens scoped to *all accessible organizations* on that date. That scope is what `vsce publish` has traditionally required. [[more]](https://github.com/Kuestenlogik/Bowire/issues/613)
-
-### Backlog (not yet scheduled)
-
-#### <a id="issue-kuestenlogik-bowire-protocol-surgewave-85"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Surgewave#85](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/85) Typed produce through the Schema Registry: field shapes and Avro / Protobuf encoding
-
-> `area:plugin-sdk`
-
-Same gap as the Kafka plugin: produce sends the value as UTF-8 only, and the Schema Registry (`SurgewaveSchemaRegistry.cs:10-21`) is used to summarise and to decode on consume, not to describe or encode a produce. [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/85)
-
-#### <a id="issue-kuestenlogik-bowire-protocol-akka-90"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Akka#90](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/90) Tell without reflection: source-generated JSON type info for the allow-listed types
-
-> `area:plugin-sdk`
-
-The embedded Akka plugin resolves message types with `Type.GetType` from configuration (`BowireAkkaExtension.cs:136`) and deserialises a Tell with the reflection-based `JsonSerializer.Deserialize(json, type)` (`TellGateway.cs:100-103`). Neither works in a trimmed or AOT host, and neither warns. [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/90)
-
-#### <a id="issue-kuestenlogik-bowire-protocol-kafka-92"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Kafka#92](https://github.com/Kuestenlogik/Bowire.Protocol.Kafka/issues/92) Typed produce through the Schema Registry: field shapes and Avro / Protobuf encoding
-
-> `area:plugin-sdk`
-
-Produce sends the value as UTF-8 text only (`BowireKafkaProtocol.cs:431-438`). The plugin already talks to the Schema Registry, but only to summarise subjects and to decode on consume (`:158-175`); topics with an Avro or Protobuf value schema cannot be produced to from the workbench, and their methods show no fields. [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Kafka/issues/92)
 
 ---
 
