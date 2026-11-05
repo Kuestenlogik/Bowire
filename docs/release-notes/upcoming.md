@@ -18,6 +18,12 @@ template for a filled-in body:
   <2-4 sentences>
 -->
 
+## Fixes along the way
+
+### A compiled sidecar ships one manifest for every platform (#990)
+
+On Windows a manifest's `executable` is now also looked up in the plugin directory with each `PATHEXT` extension, so `"executable": "echo"` starts the shipped `echo.exe` instead of the first `echo.exe` on `PATH`. A Go or Rust sidecar names its binary once and runs on Linux, macOS and Windows.
+
 ## Breaking changes
 
 <!-- Each change has been on a back-compat ramp through the prior minor

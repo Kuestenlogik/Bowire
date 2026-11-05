@@ -68,6 +68,101 @@ public sealed class SidecarExecutableResolutionTests : IDisposable
     }
 
     [Fact]
+    public void A_Bare_Name_Finds_The_Shipped_File_Through_The_Executable_Extensions()
+    {
+        // #990: "executable": "echo" next to echo.exe. The OS applies
+        // PATHEXT only to its PATH search, so without this step the
+        // shipped binary lost to the first echo.exe on PATH (Git's).
+        var shipped = TouchInPluginDir("echo.exe");
+
+        var (fileName, source) = SidecarJsonRpcTransport.ResolveExecutable(
+            "echo", _pluginDir, [".com", ".exe", ".cmd"]);
+
+        Assert.Equal(shipped, fileName);
+        Assert.Equal(SidecarJsonRpcTransport.ExecutableSource.PluginDirectory, source);
+    }
+
+    [Fact]
+    public void The_Executable_Extensions_Are_Tried_In_Their_Order()
+    {
+        TouchInPluginDir("sidecar.cmd");
+        var exe = TouchInPluginDir("sidecar.exe");
+
+        var (fileName, _) = SidecarJsonRpcTransport.ResolveExecutable(
+            "sidecar", _pluginDir, [".exe", ".cmd"]);
+
+        Assert.Equal(exe, fileName);
+    }
+
+    [Fact]
+    public void The_File_As_Written_Wins_Over_One_With_An_Extension()
+    {
+        var asWritten = TouchInPluginDir("sidecar");
+        TouchInPluginDir("sidecar.exe");
+
+        var (fileName, _) = SidecarJsonRpcTransport.ResolveExecutable(
+            "sidecar", _pluginDir, [".exe"]);
+
+        Assert.Equal(asWritten, fileName);
+    }
+
+    [Fact]
+    public void A_Relative_Path_Also_Gets_The_Executable_Extensions()
+    {
+        // One manifest for every platform: "bin/zenoh-sidecar" is the
+        // Linux binary and bin/zenoh-sidecar.exe the Windows one.
+        var shipped = TouchInPluginDir(Path.Combine("bin", "zenoh-sidecar.exe"));
+
+        var (fileName, source) = SidecarJsonRpcTransport.ResolveExecutable(
+            "bin/zenoh-sidecar", _pluginDir, [".exe"]);
+
+        Assert.Equal(Path.GetFullPath(shipped), Path.GetFullPath(fileName));
+        Assert.Equal(SidecarJsonRpcTransport.ExecutableSource.PluginDirectory, source);
+    }
+
+    [Fact]
+    public void Without_Executable_Extensions_A_Bare_Name_Still_Falls_Back_To_Path()
+    {
+        // Off Windows the list is empty: echo.exe in the plugin directory
+        // is not what "echo" names there.
+        TouchInPluginDir("echo.exe");
+
+        var (fileName, source) = SidecarJsonRpcTransport.ResolveExecutable("echo", _pluginDir, []);
+
+        Assert.Equal("echo", fileName);
+        Assert.Equal(SidecarJsonRpcTransport.ExecutableSource.SearchPath, source);
+    }
+
+    [Fact]
+    public void On_Windows_The_Shipped_Exe_Wins_Over_A_Path_Namesake()
+    {
+        Assert.SkipUnless(OperatingSystem.IsWindows(), "PATHEXT only applies on Windows");
+
+        // cmd.exe is on PATH on every Windows machine; a plugin that ships
+        // its own cmd.exe must get that one, through the real PATHEXT.
+        var shipped = TouchInPluginDir("cmd.exe");
+
+        var (fileName, source) = SidecarJsonRpcTransport.ResolveExecutable("cmd", _pluginDir);
+
+        Assert.Equal(shipped, fileName, ignoreCase: true);
+        Assert.Equal(SidecarJsonRpcTransport.ExecutableSource.PluginDirectory, source);
+    }
+
+    [Theory]
+    [InlineData(null, ".COM")]
+    [InlineData("", ".COM")]
+    [InlineData(".EXE;.CMD", ".EXE")]
+    [InlineData(" exe ; ;.cmd", ".exe")]
+    public void PathExt_Is_Split_Into_Dotted_Extensions(string? pathExt, string first)
+    {
+        var extensions = SidecarJsonRpcTransport.ParsePathExt(pathExt);
+
+        Assert.Equal(first, extensions[0]);
+        Assert.All(extensions, e => Assert.StartsWith(".", e, StringComparison.Ordinal));
+        Assert.DoesNotContain(extensions, e => e.Trim().Length < 2);
+    }
+
+    [Fact]
     public void A_Relative_Path_Resolves_Against_The_Plugin_Directory()
     {
         var shipped = TouchInPluginDir(Path.Combine("bin", "zenoh-sidecar"));

@@ -92,7 +92,11 @@ internal sealed class SidecarJsonRpcTransport : ISidecarTransport
     /// <para>Two steps, in this order:</para>
     /// <list type="number">
     /// <item><description>the plugin's own directory — an absolute path,
-    /// or a relative path that exists under <paramref name="pluginDir"/>;</description></item>
+    /// or a relative path that exists under <paramref name="pluginDir"/>.
+    /// On Windows a relative path that is not there as written is tried
+    /// again with each <c>PATHEXT</c> extension, in order, so
+    /// <c>"executable": "echo"</c> finds the shipped <c>echo.exe</c> and
+    /// a compiled sidecar needs one manifest for every platform;</description></item>
     /// <item><description><c>PATH</c>, but only for a bare name (no
     /// directory separator). That step is what lets a manifest say
     /// <c>"executable": "python3", "args": ["plugin.py"]</c> and work on
@@ -115,19 +119,69 @@ internal sealed class SidecarJsonRpcTransport : ISidecarTransport
     /// </remarks>
     internal static (string FileName, ExecutableSource Source) ResolveExecutable(
         string executable, string pluginDir)
+        => ResolveExecutable(executable, pluginDir, PlatformExecutableExtensions());
+
+    /// <summary>
+    /// <see cref="ResolveExecutable(string, string)"/> with the extensions
+    /// to try in the plugin directory given explicitly — empty off
+    /// Windows, <c>PATHEXT</c> on it. Separate so the probing is testable
+    /// on every platform without touching the process environment.
+    /// </summary>
+    internal static (string FileName, ExecutableSource Source) ResolveExecutable(
+        string executable, string pluginDir, IReadOnlyList<string> executableExtensions)
     {
         ArgumentNullException.ThrowIfNull(executable);
         ArgumentNullException.ThrowIfNull(pluginDir);
+        ArgumentNullException.ThrowIfNull(executableExtensions);
 
         if (Path.IsPathRooted(executable))
             return (executable, ExecutableSource.PluginDirectory);
 
         var pluginLocal = Path.Combine(pluginDir, executable);
-        if (File.Exists(pluginLocal) || !IsBareName(executable))
+        if (File.Exists(pluginLocal))
+            return (pluginLocal, ExecutableSource.PluginDirectory);
+
+        // The OS applies PATHEXT only to the PATH search below, never to a
+        // file in the plugin directory — without this step a bare "echo"
+        // next to echo.exe skipped the shipped binary and started the
+        // first echo.exe on PATH instead (#990).
+        foreach (var extension in executableExtensions)
+        {
+            var withExtension = pluginLocal + extension;
+            if (File.Exists(withExtension))
+                return (withExtension, ExecutableSource.PluginDirectory);
+        }
+
+        if (!IsBareName(executable))
             return (pluginLocal, ExecutableSource.PluginDirectory);
 
         return (executable, ExecutableSource.SearchPath);
     }
+
+    /// <summary>
+    /// The extensions Windows treats as executable, from <c>PATHEXT</c>
+    /// in its order (the documented default when it is unset); none
+    /// elsewhere, where a file is executable by its mode bit, not its name.
+    /// </summary>
+    private static IReadOnlyList<string> PlatformExecutableExtensions()
+    {
+        if (!OperatingSystem.IsWindows()) return [];
+        return ParsePathExt(Environment.GetEnvironmentVariable("PATHEXT"));
+    }
+
+    /// <summary>Split a <c>PATHEXT</c> value into its extensions, each with
+    /// its leading dot; blank entries are dropped.</summary>
+    internal static IReadOnlyList<string> ParsePathExt(string? pathExt)
+    {
+        if (string.IsNullOrWhiteSpace(pathExt)) pathExt = DefaultPathExt;
+        return pathExt
+            .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(e => e.StartsWith('.') ? e : "." + e)
+            .ToArray();
+    }
+
+    /// <summary>Windows' default <c>PATHEXT</c>, used when the variable is unset.</summary>
+    private const string DefaultPathExt = ".COM;.EXE;.BAT;.CMD;.VBS;.VBE;.JS;.JSE;.WSF;.WSH;.MSC";
 
     /// <summary>
     /// Failure message naming every place the executable was looked for.
@@ -142,7 +196,9 @@ internal sealed class SidecarJsonRpcTransport : ISidecarTransport
         var tried = source switch
         {
             ExecutableSource.SearchPath =>
-                "tried '" + pluginLocal + "' (the plugin ships no such file), then '"
+                "tried '" + pluginLocal + "'"
+                + (OperatingSystem.IsWindows() ? " and its PATHEXT extensions" : "")
+                + " (the plugin ships no such file), then '"
                 + executable + "' on PATH",
             _ when Path.IsPathRooted(executable) =>
                 "tried '" + executable + "'",
@@ -158,7 +214,7 @@ internal sealed class SidecarJsonRpcTransport : ISidecarTransport
     /// start the read loop. The plugin directory is the working
     /// directory and the first place the <c>executable</c> is looked
     /// for; a bare name the plugin doesn't ship falls back to
-    /// <c>PATH</c> — see <see cref="ResolveExecutable"/>.
+    /// <c>PATH</c> — see <see cref="ResolveExecutable(string, string)"/>.
     /// </summary>
     public static SidecarJsonRpcTransport Start(SidecarPluginManifest manifest, string pluginDir)
     {

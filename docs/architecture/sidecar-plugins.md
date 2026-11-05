@@ -141,7 +141,13 @@ The host resolves `executable` in two steps, in this order:
 
 1. **The plugin directory.** An absolute path is taken as given. A
    relative path is resolved against the plugin directory, and wins
-   whenever the file is there.
+   whenever the file is there. On Windows a relative path that is not
+   there as written is tried again with each `PATHEXT` extension, in
+   `PATHEXT` order — so `"executable": "echo"` finds the shipped
+   `echo.exe`, and `bin/sidecar` finds `bin/sidecar.exe`. A compiled
+   sidecar (Go, Rust) therefore ships one manifest for every platform:
+   the Linux and macOS binary without an extension, the Windows one with
+   `.exe`. The file as written wins over one with an extension.
 2. **`PATH`.** Only for a **bare name** — one containing neither `/` nor
    `\`. The name is handed to the OS unchanged, which searches `PATH`
    and, on Windows, applies `PATHEXT` (so `python3` finds `python3.exe`).
