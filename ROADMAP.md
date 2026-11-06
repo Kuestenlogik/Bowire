@@ -136,65 +136,85 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### Protocol.Kafka v1.1 — Typed produce through the Schema Registry
 
-**0/3 done** · 3 backlog
+**1/3 done** · 2 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [92](https://github.com/Kuestenlogik/Bowire.Protocol.Kafka/issues/92) | Protocol.Kafka | [Typed produce through the Schema Registry: field shapes and Avro / Protobuf encoding](#issue-kuestenlogik-bowire-protocol-kafka-92) | ⬜ Backlog | `area:plugin-sdk` |
-| [93](https://github.com/Kuestenlogik/Bowire.Protocol.Kafka/issues/93) | Protocol.Kafka | [Produce sends none of the call's metadata as Kafka headers, although the code says it does](#issue-kuestenlogik-bowire-protocol-kafka-93) | ⬜ Backlog |  |
 | [94](https://github.com/Kuestenlogik/Bowire.Protocol.Kafka/issues/94) | Protocol.Kafka | [Describe the hand-entry form: produce and consume, topic, key and partition](#issue-kuestenlogik-bowire-protocol-kafka-94) | ⬜ Backlog |  |
+| [93](https://github.com/Kuestenlogik/Bowire.Protocol.Kafka/issues/93) | Protocol.Kafka | [Produce sends none of the call's metadata as Kafka headers, although the code says it does](#issue-kuestenlogik-bowire-protocol-kafka-93) | ✅ Done |  |
 
 ### Protocol.Surgewave v0.2 — Typed produce through the Schema Registry
-
-**0/3 done** · 3 backlog
-
-| # | Project | Title | Status | Tags |
-|---|---|---|---|---|
-| [85](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/85) | Protocol.Surgewave | [Typed produce through the Schema Registry: field shapes and Avro / Protobuf encoding](#issue-kuestenlogik-bowire-protocol-surgewave-85) | ⬜ Backlog | `area:plugin-sdk` |
-| [86](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/86) | Protocol.Surgewave | [Produce sends none of the call's metadata as record headers, although the code says it does](#issue-kuestenlogik-bowire-protocol-surgewave-86) | ⬜ Backlog |  |
-| [87](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/87) | Protocol.Surgewave | [Describe the hand-entry form: produce and consume, topic, key and partition](#issue-kuestenlogik-bowire-protocol-surgewave-87) | ⬜ Backlog |  |
-
-### Sdk.Go v0.1 — Polyglot SDK parity: settings, channels, manifests
-
-**2/3 done** · 1 backlog
-
-| # | Project | Title | Status | Tags |
-|---|---|---|---|---|
-| [6](https://github.com/Kuestenlogik/Bowire.Sdk.Go/issues/6) | Sdk.Go | [Declare a hand-entry form (manualEntry in the initialize reply)](#issue-kuestenlogik-bowire-sdk-go-6) | ⬜ Backlog |  |
-| [3](https://github.com/Kuestenlogik/Bowire.Sdk.Go/issues/3) | Sdk.Go | [openChannel is declared but nothing routes it](#issue-kuestenlogik-bowire-sdk-go-3) | ✅ Done |  |
-| [4](https://github.com/Kuestenlogik/Bowire.Sdk.Go/issues/4) | Sdk.Go | [Settings: a plugin can declare them but cannot read the values the host now sends](#issue-kuestenlogik-bowire-sdk-go-4) | ✅ Done |  |
-
-### Sdk.Node v0.2 — Polyglot SDK parity: settings, channels, manifests
-
-**3/4 done** · 1 backlog
-
-| # | Project | Title | Status | Tags |
-|---|---|---|---|---|
-| [16](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/16) | Sdk.Node | [Declare a hand-entry form (manualEntry in the initialize reply)](#issue-kuestenlogik-bowire-sdk-node-16) | ⬜ Backlog |  |
-| [4](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/4) | Sdk.Node | [openChannel is declared but nothing routes it](#issue-kuestenlogik-bowire-sdk-node-4) | ✅ Done |  |
-| [5](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/5) | Sdk.Node | [Example manifest: name node directly and drop run.sh, once a host with Kuestenlogik/Bowire#692 ships](#issue-kuestenlogik-bowire-sdk-node-5) | ✅ Done |  |
-| [6](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/6) | Sdk.Node | [Settings: a plugin can declare them but cannot read the values the host now sends](#issue-kuestenlogik-bowire-sdk-node-6) | ✅ Done |  |
-
-### Sdk.Python v0.3 — Polyglot SDK parity: settings, channels, manifests
-
-**2/3 done** · 1 backlog
-
-| # | Project | Title | Status | Tags |
-|---|---|---|---|---|
-| [7](https://github.com/Kuestenlogik/Bowire.Sdk.Python/issues/7) | Sdk.Python | [Declare a hand-entry form (manualEntry in the initialize reply)](#issue-kuestenlogik-bowire-sdk-python-7) | ⬜ Backlog |  |
-| [3](https://github.com/Kuestenlogik/Bowire.Sdk.Python/issues/3) | Sdk.Python | [Example manifest: name python3 directly, once a host with Kuestenlogik/Bowire#692 ships](#issue-kuestenlogik-bowire-sdk-python-3) | ✅ Done |  |
-| [4](https://github.com/Kuestenlogik/Bowire.Sdk.Python/issues/4) | Sdk.Python | [Settings: a plugin can declare them but cannot read the values the host now sends](#issue-kuestenlogik-bowire-sdk-python-4) | ✅ Done |  |
-
-### Sdk.Rust v0.2 — Polyglot SDK parity: settings, channels, manifests
 
 **1/4 done** · 3 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
-| [9](https://github.com/Kuestenlogik/Bowire.Sdk.Rust/issues/9) | Sdk.Rust | [Settings: the plugin's declarations never reach the host, and the values the host sends never reach the plugin](#issue-kuestenlogik-bowire-sdk-rust-9) | ⬜ Backlog | `area:plugin-sdk` |
-| [10](https://github.com/Kuestenlogik/Bowire.Sdk.Rust/issues/10) | Sdk.Rust | [run() exits at stdin EOF before replying to the requests it already read](#issue-kuestenlogik-bowire-sdk-rust-10) | ⬜ Backlog | `area:plugin-sdk` |
-| [11](https://github.com/Kuestenlogik/Bowire.Sdk.Rust/issues/11) | Sdk.Rust | [Declare a hand-entry form (manualEntry in the initialize reply)](#issue-kuestenlogik-bowire-sdk-rust-11) | ⬜ Backlog |  |
-| [5](https://github.com/Kuestenlogik/Bowire.Sdk.Rust/issues/5) | Sdk.Rust | [openChannel is declared but nothing routes it](#issue-kuestenlogik-bowire-sdk-rust-5) | ✅ Done |  |
+| [85](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/85) | Protocol.Surgewave | [Typed produce through the Schema Registry: field shapes and Avro / Protobuf encoding](#issue-kuestenlogik-bowire-protocol-surgewave-85) | ⬜ Backlog | `area:plugin-sdk` |
+| [87](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/87) | Protocol.Surgewave | [Describe the hand-entry form: produce and consume, topic, key and partition](#issue-kuestenlogik-bowire-protocol-surgewave-87) | ⬜ Backlog |  |
+| [88](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/88) | Protocol.Surgewave | [?protocol=kafka fails: the plugin does not ship the Kafka wire transport](#issue-kuestenlogik-bowire-protocol-surgewave-88) | ⬜ Backlog |  |
+| [86](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/86) | Protocol.Surgewave | [Produce sends none of the call's metadata as record headers, although the code says it does](#issue-kuestenlogik-bowire-protocol-surgewave-86) | ✅ Done |  |
+
+### Sdk.Go v0.2 — Windows in CI, against Bowire 2.11
+
+**0/1 done** · 1 backlog
+
+| # | Project | Title | Status | Tags |
+|---|---|---|---|---|
+| [7](https://github.com/Kuestenlogik/Bowire.Sdk.Go/issues/7) | Sdk.Go | [e2e on Windows in CI, once Bowire 2.11 is released](#issue-kuestenlogik-bowire-sdk-go-7) | ⬜ Backlog |  |
+
+### Sdk.Go v0.3 — HTTP transport proven against the host
+
+**0/1 done** · 1 backlog
+
+| # | Project | Title | Status | Tags |
+|---|---|---|---|---|
+| [8](https://github.com/Kuestenlogik/Bowire.Sdk.Go/issues/8) | Sdk.Go | [e2e: the HTTP/SSE transport against the real host](#issue-kuestenlogik-bowire-sdk-go-8) | ⬜ Backlog |  |
+
+### Sdk.Node v0.2 — Polyglot SDK parity: settings, channels, manifests
+
+**4/4 done**
+
+| # | Project | Title | Status | Tags |
+|---|---|---|---|---|
+| [4](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/4) | Sdk.Node | [openChannel is declared but nothing routes it](#issue-kuestenlogik-bowire-sdk-node-4) | ✅ Done |  |
+| [5](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/5) | Sdk.Node | [Example manifest: name node directly and drop run.sh, once a host with Kuestenlogik/Bowire#692 ships](#issue-kuestenlogik-bowire-sdk-node-5) | ✅ Done |  |
+| [6](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/6) | Sdk.Node | [Settings: a plugin can declare them but cannot read the values the host now sends](#issue-kuestenlogik-bowire-sdk-node-6) | ✅ Done |  |
+| [16](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/16) | Sdk.Node | [Declare a hand-entry form (manualEntry in the initialize reply)](#issue-kuestenlogik-bowire-sdk-node-16) | ✅ Done |  |
+
+### Sdk.Node v0.3 — HTTP transport proven against the host
+
+**0/1 done** · 1 backlog
+
+| # | Project | Title | Status | Tags |
+|---|---|---|---|---|
+| [17](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/17) | Sdk.Node | [e2e: the HTTP/SSE transport against the real host](#issue-kuestenlogik-bowire-sdk-node-17) | ⬜ Backlog |  |
+
+### Sdk.Python v0.3 — Polyglot SDK parity: settings, channels, manifests
+
+**3/3 done**
+
+| # | Project | Title | Status | Tags |
+|---|---|---|---|---|
+| [3](https://github.com/Kuestenlogik/Bowire.Sdk.Python/issues/3) | Sdk.Python | [Example manifest: name python3 directly, once a host with Kuestenlogik/Bowire#692 ships](#issue-kuestenlogik-bowire-sdk-python-3) | ✅ Done |  |
+| [4](https://github.com/Kuestenlogik/Bowire.Sdk.Python/issues/4) | Sdk.Python | [Settings: a plugin can declare them but cannot read the values the host now sends](#issue-kuestenlogik-bowire-sdk-python-4) | ✅ Done |  |
+| [7](https://github.com/Kuestenlogik/Bowire.Sdk.Python/issues/7) | Sdk.Python | [Declare a hand-entry form (manualEntry in the initialize reply)](#issue-kuestenlogik-bowire-sdk-python-7) | ✅ Done |  |
+
+### Sdk.Python v0.4 — HTTP transport proven against the host
+
+**0/1 done** · 1 backlog
+
+| # | Project | Title | Status | Tags |
+|---|---|---|---|---|
+| [8](https://github.com/Kuestenlogik/Bowire.Sdk.Python/issues/8) | Sdk.Python | [e2e: the HTTP/SSE transport against the real host](#issue-kuestenlogik-bowire-sdk-python-8) | ⬜ Backlog |  |
+
+### Sdk.Rust v0.3 — HTTP transport proven against the host
+
+**0/1 done** · 1 backlog
+
+| # | Project | Title | Status | Tags |
+|---|---|---|---|---|
+| [12](https://github.com/Kuestenlogik/Bowire.Sdk.Rust/issues/12) | Sdk.Rust | [e2e: the HTTP/SSE transport against the real host](#issue-kuestenlogik-bowire-sdk-rust-12) | ⬜ Backlog |  |
 
 ### Templates v1.1.17 — No warning suppressions *(due 2026-11-14)*
 
@@ -649,13 +669,13 @@ A test program with which you **drive DIS in Bowire by hand**. The existing samp
 
 Produce sends the value as UTF-8 text only (`BowireKafkaProtocol.cs:431-438`). The plugin already talks to the Schema Registry, but only to summarise subjects and to decode on consume (`:158-175`); topics with an Avro or Protobuf value schema cannot be produced to from the workbench, and their methods show no fields. [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Kafka/issues/92)
 
-#### <a id="issue-kuestenlogik-bowire-protocol-kafka-93"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Kafka#93](https://github.com/Kuestenlogik/Bowire.Protocol.Kafka/issues/93) Produce sends none of the call's metadata as Kafka headers, although the code says it does
-
-`BowireKafkaProtocol.InvokeAsync` strips the security markers with the comment "before forwarding the rest as Kafka headers" (`BowireKafkaProtocol.cs:232-234`), reads `key` and `partition`, and builds the message without `Headers` (`:240-244`). No metadata entry ever reaches the record as a header. [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Kafka/issues/93)
-
 #### <a id="issue-kuestenlogik-bowire-protocol-kafka-94"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Kafka#94](https://github.com/Kuestenlogik/Bowire.Protocol.Kafka/issues/94) Describe the hand-entry form: produce and consume, topic, key and partition
 
 Bowire 2.11 lets a protocol plugin describe how a call to it is entered by hand (Kuestenlogik/Bowire#995): `IBowireManualEntry` returns the call kinds (each with a method type and its `service` / `method` as templates over the fields) and the fields (each going into the templates or into the metadat … [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Kafka/issues/94)
+
+#### <a id="issue-kuestenlogik-bowire-protocol-kafka-93"></a>✅ Done · [Kuestenlogik/Bowire.Protocol.Kafka#93](https://github.com/Kuestenlogik/Bowire.Protocol.Kafka/issues/93) Produce sends none of the call's metadata as Kafka headers, although the code says it does
+
+`BowireKafkaProtocol.InvokeAsync` strips the security markers with the comment "before forwarding the rest as Kafka headers" (`BowireKafkaProtocol.cs:232-234`), reads `key` and `partition`, and builds the message without `Headers` (`:240-244`). No metadata entry ever reaches the record as a header. [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Kafka/issues/93)
 
 ### Protocol.Surgewave v0.2 — Typed produce through the Schema Registry
 
@@ -665,33 +685,31 @@ Bowire 2.11 lets a protocol plugin describe how a call to it is entered by hand 
 
 Same gap as the Kafka plugin: produce sends the value as UTF-8 only, and the Schema Registry (`SurgewaveSchemaRegistry.cs:10-21`) is used to summarise and to decode on consume, not to describe or encode a produce. [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/85)
 
-#### <a id="issue-kuestenlogik-bowire-protocol-surgewave-86"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Surgewave#86](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/86) Produce sends none of the call's metadata as record headers, although the code says it does
-
-Same as the Kafka plugin: the security config and `BowireSurgewaveProtocol.cs:212,221` say the remaining metadata goes out as Kafka headers, but produce sets no headers on the message; only `key` and `partition` are read (`:264,274`). [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/86)
-
 #### <a id="issue-kuestenlogik-bowire-protocol-surgewave-87"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Surgewave#87](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/87) Describe the hand-entry form: produce and consume, topic, key and partition
 
 Bowire 2.11 lets a protocol plugin describe how a call to it is entered by hand (Kuestenlogik/Bowire#995): `IBowireManualEntry` returns the call kinds (each with a method type and its `service` / `method` as templates over the fields) and the fields (each going into the templates or into the metadat … [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/87)
 
-### Sdk.Go v0.1 — Polyglot SDK parity: settings, channels, manifests
+#### <a id="issue-kuestenlogik-bowire-protocol-surgewave-88"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Surgewave#88](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/88) ?protocol=kafka fails: the plugin does not ship the Kafka wire transport
 
-#### <a id="issue-kuestenlogik-bowire-sdk-go-6"></a>⬜ Backlog · [Kuestenlogik/Bowire.Sdk.Go#6](https://github.com/Kuestenlogik/Bowire.Sdk.Go/issues/6) Declare a hand-entry form (manualEntry in the initialize reply)
+README and `docs/protocol.md` offer `surgewave://broker:9092?protocol=kafka` (the interoperable wire, with Confluent Schema Registry decode). `BuildSurgewaveClientAsync` then calls `UseKafkaProtocol()`, and every call fails with: [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/88)
 
-Bowire 2.11 lets a sidecar describe how a call to it is entered by hand (Kuestenlogik/Bowire#1003): its `initialize` reply may carry a `manualEntry` object, the call kinds (each with a method type and its `service` / `method` as templates over the fields) and the fields (each going into the template … [[more]](https://github.com/Kuestenlogik/Bowire.Sdk.Go/issues/6)
+#### <a id="issue-kuestenlogik-bowire-protocol-surgewave-86"></a>✅ Done · [Kuestenlogik/Bowire.Protocol.Surgewave#86](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/86) Produce sends none of the call's metadata as record headers, although the code says it does
 
-#### <a id="issue-kuestenlogik-bowire-sdk-go-3"></a>✅ Done · [Kuestenlogik/Bowire.Sdk.Go#3](https://github.com/Kuestenlogik/Bowire.Sdk.Go/issues/3) openChannel is declared but nothing routes it
+Same as the Kafka plugin: the security config and `BowireSurgewaveProtocol.cs:212,221` say the remaining metadata goes out as Kafka headers, but produce sets no headers on the message; only `key` and `partition` are read (`:264,274`). [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/86)
 
-The plugin surface declares a duplex capability that no dispatcher routes. `the ChannelPlugin optional interface` is part of the public API — a plugin author implements it, ships it, and nothing ever calls it, because the dispatcher has no `openChannel` case at all. [[more]](https://github.com/Kuestenlogik/Bowire.Sdk.Go/issues/3)
+### Sdk.Go v0.2 — Windows in CI, against Bowire 2.11
 
-#### <a id="issue-kuestenlogik-bowire-sdk-go-4"></a>✅ Done · [Kuestenlogik/Bowire.Sdk.Go#4](https://github.com/Kuestenlogik/Bowire.Sdk.Go/issues/4) Settings: a plugin can declare them but cannot read the values the host now sends
+#### <a id="issue-kuestenlogik-bowire-sdk-go-7"></a>⬜ Backlog · [Kuestenlogik/Bowire.Sdk.Go#7](https://github.com/Kuestenlogik/Bowire.Sdk.Go/issues/7) e2e on Windows in CI, once Bowire 2.11 is released
 
-The settings hook this SDK already has now reaches somewhere, and the other half of it has nowhere to land. [[more]](https://github.com/Kuestenlogik/Bowire.Sdk.Go/issues/4)
+The e2e job runs on Linux only. The example's manifest names its binary as a bare `echo`, and on Windows the host used to miss the shipped `echo.exe` and start the first `echo.exe` on PATH instead (Git's). … [[more]](https://github.com/Kuestenlogik/Bowire.Sdk.Go/issues/7)
+
+### Sdk.Go v0.3 — HTTP transport proven against the host
+
+#### <a id="issue-kuestenlogik-bowire-sdk-go-8"></a>⬜ Backlog · [Kuestenlogik/Bowire.Sdk.Go#8](https://github.com/Kuestenlogik/Bowire.Sdk.Go/issues/8) e2e: the HTTP/SSE transport against the real host
+
+Bowire speaks the sidecar contract over two transports: stdio, where the host spawns the plugin, and HTTP/SSE (`"transport": "http"`, `"url"`), where JSON-RPC requests are POSTed to the sidecar and notifications such as `$/stream/data` and `$/channel/data` come back over one long-lived SSE GET on th … [[more]](https://github.com/Kuestenlogik/Bowire.Sdk.Go/issues/8)
 
 ### Sdk.Node v0.2 — Polyglot SDK parity: settings, channels, manifests
-
-#### <a id="issue-kuestenlogik-bowire-sdk-node-16"></a>⬜ Backlog · [Kuestenlogik/Bowire.Sdk.Node#16](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/16) Declare a hand-entry form (manualEntry in the initialize reply)
-
-Bowire 2.11 lets a sidecar describe how a call to it is entered by hand (Kuestenlogik/Bowire#1003): its `initialize` reply may carry a `manualEntry` object, the call kinds (each with a method type and its `service` / `method` as templates over the fields) and the fields (each going into the template … [[more]](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/16)
 
 #### <a id="issue-kuestenlogik-bowire-sdk-node-4"></a>✅ Done · [Kuestenlogik/Bowire.Sdk.Node#4](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/4) openChannel is declared but nothing routes it
 
@@ -705,11 +723,17 @@ The example manifest works around a host defect that no longer exists. [[more]](
 
 The settings hook this SDK already has now reaches somewhere, and the other half of it has nowhere to land. [[more]](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/6)
 
+#### <a id="issue-kuestenlogik-bowire-sdk-node-16"></a>✅ Done · [Kuestenlogik/Bowire.Sdk.Node#16](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/16) Declare a hand-entry form (manualEntry in the initialize reply)
+
+Bowire 2.11 lets a sidecar describe how a call to it is entered by hand (Kuestenlogik/Bowire#1003): its `initialize` reply may carry a `manualEntry` object, the call kinds (each with a method type and its `service` / `method` as templates over the fields) and the fields (each going into the template … [[more]](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/16)
+
+### Sdk.Node v0.3 — HTTP transport proven against the host
+
+#### <a id="issue-kuestenlogik-bowire-sdk-node-17"></a>⬜ Backlog · [Kuestenlogik/Bowire.Sdk.Node#17](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/17) e2e: the HTTP/SSE transport against the real host
+
+Bowire speaks the sidecar contract over two transports: stdio, where the host spawns the plugin, and HTTP/SSE (`"transport": "http"`, `"url"`), where JSON-RPC requests are POSTed to the sidecar and notifications such as `$/stream/data` and `$/channel/data` come back over one long-lived SSE GET on th … [[more]](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/17)
+
 ### Sdk.Python v0.3 — Polyglot SDK parity: settings, channels, manifests
-
-#### <a id="issue-kuestenlogik-bowire-sdk-python-7"></a>⬜ Backlog · [Kuestenlogik/Bowire.Sdk.Python#7](https://github.com/Kuestenlogik/Bowire.Sdk.Python/issues/7) Declare a hand-entry form (manualEntry in the initialize reply)
-
-Bowire 2.11 lets a sidecar describe how a call to it is entered by hand (Kuestenlogik/Bowire#1003): its `initialize` reply may carry a `manualEntry` object, the call kinds (each with a method type and its `service` / `method` as templates over the fields) and the fields (each going into the template … [[more]](https://github.com/Kuestenlogik/Bowire.Sdk.Python/issues/7)
 
 #### <a id="issue-kuestenlogik-bowire-sdk-python-3"></a>✅ Done · [Kuestenlogik/Bowire.Sdk.Python#3](https://github.com/Kuestenlogik/Bowire.Sdk.Python/issues/3) Example manifest: name python3 directly, once a host with Kuestenlogik/Bowire#692 ships
 
@@ -719,27 +743,21 @@ The example manifest works around a host defect that no longer exists. [[more]](
 
 The settings hook this SDK already has now reaches somewhere, and the other half of it has nowhere to land. [[more]](https://github.com/Kuestenlogik/Bowire.Sdk.Python/issues/4)
 
-### Sdk.Rust v0.2 — Polyglot SDK parity: settings, channels, manifests
+#### <a id="issue-kuestenlogik-bowire-sdk-python-7"></a>✅ Done · [Kuestenlogik/Bowire.Sdk.Python#7](https://github.com/Kuestenlogik/Bowire.Sdk.Python/issues/7) Declare a hand-entry form (manualEntry in the initialize reply)
 
-#### <a id="issue-kuestenlogik-bowire-sdk-rust-9"></a>⬜ Backlog · [Kuestenlogik/Bowire.Sdk.Rust#9](https://github.com/Kuestenlogik/Bowire.Sdk.Rust/issues/9) Settings: the plugin's declarations never reach the host, and the values the host sends never reach the plugin
+Bowire 2.11 lets a sidecar describe how a call to it is entered by hand (Kuestenlogik/Bowire#1003): its `initialize` reply may carry a `manualEntry` object, the call kinds (each with a method type and its `service` / `method` as templates over the fields) and the fields (each going into the template … [[more]](https://github.com/Kuestenlogik/Bowire.Sdk.Python/issues/7)
 
-> `area:plugin-sdk`
+### Sdk.Python v0.4 — HTTP transport proven against the host
 
-The same gap the Go, Node and Python SDKs had (`Kuestenlogik/Bowire#693`), here in both halves: - the `initialize` reply does not send `BowirePlugin::settings()`, so the declarations never reach the host and the workbench shows no settings for a Rust plugin; - the dispatcher does not read the `setti … [[more]](https://github.com/Kuestenlogik/Bowire.Sdk.Rust/issues/9)
+#### <a id="issue-kuestenlogik-bowire-sdk-python-8"></a>⬜ Backlog · [Kuestenlogik/Bowire.Sdk.Python#8](https://github.com/Kuestenlogik/Bowire.Sdk.Python/issues/8) e2e: the HTTP/SSE transport against the real host
 
-#### <a id="issue-kuestenlogik-bowire-sdk-rust-10"></a>⬜ Backlog · [Kuestenlogik/Bowire.Sdk.Rust#10](https://github.com/Kuestenlogik/Bowire.Sdk.Rust/issues/10) run() exits at stdin EOF before replying to the requests it already read
+Bowire speaks the sidecar contract over two transports: stdio, where the host spawns the plugin, and HTTP/SSE (`"transport": "http"`, `"url"`), where JSON-RPC requests are POSTed to the sidecar and notifications such as `$/stream/data` and `$/channel/data` come back over one long-lived SSE GET on th … [[more]](https://github.com/Kuestenlogik/Bowire.Sdk.Python/issues/8)
 
-> `area:plugin-sdk`
+### Sdk.Rust v0.3 — HTTP transport proven against the host
 
-`run()` returns as soon as stdin reaches EOF, even while replies to requests already read are still being produced. Piping several requests in at once (`printf '…\n…\n' | plugin`) can therefore print nothing. The CI smoke test's comment about "empty stdout" is most likely this. [[more]](https://github.com/Kuestenlogik/Bowire.Sdk.Rust/issues/10)
+#### <a id="issue-kuestenlogik-bowire-sdk-rust-12"></a>⬜ Backlog · [Kuestenlogik/Bowire.Sdk.Rust#12](https://github.com/Kuestenlogik/Bowire.Sdk.Rust/issues/12) e2e: the HTTP/SSE transport against the real host
 
-#### <a id="issue-kuestenlogik-bowire-sdk-rust-11"></a>⬜ Backlog · [Kuestenlogik/Bowire.Sdk.Rust#11](https://github.com/Kuestenlogik/Bowire.Sdk.Rust/issues/11) Declare a hand-entry form (manualEntry in the initialize reply)
-
-Bowire 2.11 lets a sidecar describe how a call to it is entered by hand (Kuestenlogik/Bowire#1003): its `initialize` reply may carry a `manualEntry` object, the call kinds (each with a method type and its `service` / `method` as templates over the fields) and the fields (each going into the template … [[more]](https://github.com/Kuestenlogik/Bowire.Sdk.Rust/issues/11)
-
-#### <a id="issue-kuestenlogik-bowire-sdk-rust-5"></a>✅ Done · [Kuestenlogik/Bowire.Sdk.Rust#5](https://github.com/Kuestenlogik/Bowire.Sdk.Rust/issues/5) openChannel is declared but nothing routes it
-
-The plugin surface declares a duplex capability that no dispatcher routes. `the BowirePlugin trait's open_channel` is part of the public API — a plugin author implements it, ships it, and nothing ever calls it, because the dispatcher has no `openChannel` case at all. [[more]](https://github.com/Kuestenlogik/Bowire.Sdk.Rust/issues/5)
+Bowire speaks the sidecar contract over two transports: stdio, where the host spawns the plugin, and HTTP/SSE (`"transport": "http"`, `"url"`), where JSON-RPC requests are POSTed to the sidecar and notifications such as `$/stream/data` and `$/channel/data` come back over one long-lived SSE GET on th … [[more]](https://github.com/Kuestenlogik/Bowire.Sdk.Rust/issues/12)
 
 ### Templates v1.1.17 — No warning suppressions *(due 2026-11-14)*
 
@@ -779,4 +797,4 @@ Owner rule from 2026-10-14: warnings are fixed at the cause instead of suppresse
 
 ---
 
-*Generated 2026-11-05 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
+*Generated 2026-11-06 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
