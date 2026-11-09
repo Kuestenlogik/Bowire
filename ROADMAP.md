@@ -173,13 +173,14 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### Sdk.Node v0.2 — Polyglot SDK parity: settings, channels, manifests
 
-**4/4 done**
+**5/5 done**
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [4](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/4) | Sdk.Node | [openChannel is declared but nothing routes it](#issue-kuestenlogik-bowire-sdk-node-4) | ✅ Done |  |
 | [5](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/5) | Sdk.Node | [Example manifest: name node directly and drop run.sh, once a host with Kuestenlogik/Bowire#692 ships](#issue-kuestenlogik-bowire-sdk-node-5) | ✅ Done |  |
 | [6](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/6) | Sdk.Node | [Settings: a plugin can declare them but cannot read the values the host now sends](#issue-kuestenlogik-bowire-sdk-node-6) | ✅ Done |  |
+| [15](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/15) | Sdk.Node | [capabilities.invokeStream is true for every plugin: BowirePluginBase has an empty default](#issue-kuestenlogik-bowire-sdk-node-15) | ✅ Done | `area:plugin-sdk` |
 | [16](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/16) | Sdk.Node | [Declare a hand-entry form (manualEntry in the initialize reply)](#issue-kuestenlogik-bowire-sdk-node-16) | ✅ Done |  |
 
 ### Sdk.Node v0.3 — HTTP transport proven against the host
@@ -723,6 +724,12 @@ The example manifest works around a host defect that no longer exists. [[more]](
 
 The settings hook this SDK already has now reaches somewhere, and the other half of it has nowhere to land. [[more]](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/6)
 
+#### <a id="issue-kuestenlogik-bowire-sdk-node-15"></a>✅ Done · [Kuestenlogik/Bowire.Sdk.Node#15](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/15) capabilities.invokeStream is true for every plugin: BowirePluginBase has an empty default
+
+> `area:plugin-sdk`
+
+`BowirePluginBase` declares an empty default `invokeStream`, so every subclass looks as if it implements streaming and `capabilities.invokeStream` is `true` for all of them. A plugin without streaming then answers the host's `invokeStream` with an empty stream instead of the host short-circuiting it. [[more]](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/15)
+
 #### <a id="issue-kuestenlogik-bowire-sdk-node-16"></a>✅ Done · [Kuestenlogik/Bowire.Sdk.Node#16](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/16) Declare a hand-entry form (manualEntry in the initialize reply)
 
 Bowire 2.11 lets a sidecar describe how a call to it is entered by hand (Kuestenlogik/Bowire#1003): its `initialize` reply may carry a `manualEntry` object, the call kinds (each with a method type and its `service` / `method` as templates over the fields) and the fields (each going into the template … [[more]](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/16)
@@ -797,4 +804,4 @@ Owner rule from 2026-10-14: warnings are fixed at the cause instead of suppresse
 
 ---
 
-*Generated 2026-11-08 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
+*Generated 2026-11-09 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
