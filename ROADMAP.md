@@ -804,4 +804,4 @@ Owner rule from 2026-10-14: warnings are fixed at the cause instead of suppresse
 
 ---
 
-*Generated 2026-11-09 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
+*Generated 2026-11-10 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
