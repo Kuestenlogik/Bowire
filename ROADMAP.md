@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**12/32 done** · 20 backlog
+**12/33 done** · 21 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -36,6 +36,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [992](https://github.com/Kuestenlogik/Bowire/issues/992) | Bowire | [gRPC embedded: discover from the host's compiled descriptors instead of mapping a reflection service](#issue-kuestenlogik-bowire-992) | ⬜ Backlog | `area:workbench` |
 | [993](https://github.com/Kuestenlogik/Bowire/issues/993) | Bowire | [REST embedded: discover from the host's OpenAPI document instead of reflecting over its types](#issue-kuestenlogik-bowire-993) | ⬜ Backlog | `area:workbench` |
 | [994](https://github.com/Kuestenlogik/Bowire/issues/994) | Bowire | [Schema imports per plugin: GraphQL SDL, AsyncAPI, WSDL, EDMX and OpenRPC](#issue-kuestenlogik-bowire-994) | ⬜ Backlog | `area:workbench` |
+| [1014](https://github.com/Kuestenlogik/Bowire/issues/1014) | Bowire | [Sidecar contract: what shutdown means for an http sidecar that several hosts share](#issue-kuestenlogik-bowire-1014) | ⬜ Backlog |  |
 | [673](https://github.com/Kuestenlogik/Bowire/issues/673) | Bowire | [Export requests as .http — Copy as .http, and bowire export http for a whole collection](#issue-kuestenlogik-bowire-673) | ✅ Done | `area:workbench` |
 | [986](https://github.com/Kuestenlogik/Bowire/issues/986) | Bowire | [The .NET plugin loader scans sidecar folders and logs ManifestMissing for every sidecar](#issue-kuestenlogik-bowire-986) | ✅ Done | `area:plugin-sdk` |
 | [987](https://github.com/Kuestenlogik/Bowire/issues/987) | Bowire | [sidecar-plugins.md: no SDK sends select options, and python3 as the manifest example fails on Windows](#issue-kuestenlogik-bowire-987) | ✅ Done | `area:docs` |
@@ -165,57 +166,36 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### Sdk.Go v0.3 — HTTP transport proven against the host
 
-**0/1 done** · 1 backlog
+**1/1 done**
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
-| [8](https://github.com/Kuestenlogik/Bowire.Sdk.Go/issues/8) | Sdk.Go | [e2e: the HTTP/SSE transport against the real host](#issue-kuestenlogik-bowire-sdk-go-8) | ⬜ Backlog |  |
-
-### Sdk.Node v0.2 — Polyglot SDK parity: settings, channels, manifests
-
-**5/5 done**
-
-| # | Project | Title | Status | Tags |
-|---|---|---|---|---|
-| [4](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/4) | Sdk.Node | [openChannel is declared but nothing routes it](#issue-kuestenlogik-bowire-sdk-node-4) | ✅ Done |  |
-| [5](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/5) | Sdk.Node | [Example manifest: name node directly and drop run.sh, once a host with Kuestenlogik/Bowire#692 ships](#issue-kuestenlogik-bowire-sdk-node-5) | ✅ Done |  |
-| [6](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/6) | Sdk.Node | [Settings: a plugin can declare them but cannot read the values the host now sends](#issue-kuestenlogik-bowire-sdk-node-6) | ✅ Done |  |
-| [15](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/15) | Sdk.Node | [capabilities.invokeStream is true for every plugin: BowirePluginBase has an empty default](#issue-kuestenlogik-bowire-sdk-node-15) | ✅ Done | `area:plugin-sdk` |
-| [16](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/16) | Sdk.Node | [Declare a hand-entry form (manualEntry in the initialize reply)](#issue-kuestenlogik-bowire-sdk-node-16) | ✅ Done |  |
+| [8](https://github.com/Kuestenlogik/Bowire.Sdk.Go/issues/8) | Sdk.Go | [e2e: the HTTP/SSE transport against the real host](#issue-kuestenlogik-bowire-sdk-go-8) | ✅ Done |  |
 
 ### Sdk.Node v0.3 — HTTP transport proven against the host
 
-**0/1 done** · 1 backlog
+**1/1 done**
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
-| [17](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/17) | Sdk.Node | [e2e: the HTTP/SSE transport against the real host](#issue-kuestenlogik-bowire-sdk-node-17) | ⬜ Backlog |  |
-
-### Sdk.Python v0.3 — Polyglot SDK parity: settings, channels, manifests
-
-**3/3 done**
-
-| # | Project | Title | Status | Tags |
-|---|---|---|---|---|
-| [3](https://github.com/Kuestenlogik/Bowire.Sdk.Python/issues/3) | Sdk.Python | [Example manifest: name python3 directly, once a host with Kuestenlogik/Bowire#692 ships](#issue-kuestenlogik-bowire-sdk-python-3) | ✅ Done |  |
-| [4](https://github.com/Kuestenlogik/Bowire.Sdk.Python/issues/4) | Sdk.Python | [Settings: a plugin can declare them but cannot read the values the host now sends](#issue-kuestenlogik-bowire-sdk-python-4) | ✅ Done |  |
-| [7](https://github.com/Kuestenlogik/Bowire.Sdk.Python/issues/7) | Sdk.Python | [Declare a hand-entry form (manualEntry in the initialize reply)](#issue-kuestenlogik-bowire-sdk-python-7) | ✅ Done |  |
+| [17](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/17) | Sdk.Node | [e2e: the HTTP/SSE transport against the real host](#issue-kuestenlogik-bowire-sdk-node-17) | ✅ Done |  |
 
 ### Sdk.Python v0.4 — HTTP transport proven against the host
 
-**0/1 done** · 1 backlog
+**1/1 done**
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
-| [8](https://github.com/Kuestenlogik/Bowire.Sdk.Python/issues/8) | Sdk.Python | [e2e: the HTTP/SSE transport against the real host](#issue-kuestenlogik-bowire-sdk-python-8) | ⬜ Backlog |  |
+| [8](https://github.com/Kuestenlogik/Bowire.Sdk.Python/issues/8) | Sdk.Python | [e2e: the HTTP/SSE transport against the real host](#issue-kuestenlogik-bowire-sdk-python-8) | ✅ Done |  |
 
 ### Sdk.Rust v0.3 — HTTP transport proven against the host
 
-**0/1 done** · 1 backlog
+**2/2 done**
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
-| [12](https://github.com/Kuestenlogik/Bowire.Sdk.Rust/issues/12) | Sdk.Rust | [e2e: the HTTP/SSE transport against the real host](#issue-kuestenlogik-bowire-sdk-rust-12) | ⬜ Backlog |  |
+| [12](https://github.com/Kuestenlogik/Bowire.Sdk.Rust/issues/12) | Sdk.Rust | [e2e: the HTTP/SSE transport against the real host](#issue-kuestenlogik-bowire-sdk-rust-12) | ✅ Done |  |
+| [13](https://github.com/Kuestenlogik/Bowire.Sdk.Rust/issues/13) | Sdk.Rust | [capabilities.invokeStream is true for every plugin: invoke_stream has a default](#issue-kuestenlogik-bowire-sdk-rust-13) | ✅ Done |  |
 
 ### Templates v1.1.17 — No warning suppressions *(due 2026-11-14)*
 
@@ -349,6 +329,10 @@ Embedded REST discovery walks ApiExplorer and reflects over the body types with 
 > `area:workbench`
 
 The workbench upload knows two kinds: `.proto` goes to the proto endpoint, everything else to the OpenAPI endpoint (`src/Kuestenlogik.Bowire/wwwroot/js/helpers.js:179-181`), and the picker accepts only `.proto,.json,.yaml,.yml` (`render-sidebar.js:722`). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/994)
+
+#### <a id="issue-kuestenlogik-bowire-1014"></a>⬜ Backlog · [#1014](https://github.com/Kuestenlogik/Bowire/issues/1014) Sidecar contract: what shutdown means for an http sidecar that several hosts share
+
+An http sidecar is not its host's. The docs say so (docs/architecture/sidecar-plugins.md, "Transports"): Bowire does not own the process. On dispose, the host sends a best-effort `shutdown` that "the service may ignore", and the transport suits deployments where one sidecar serves many hosts. [[more]](https://github.com/Kuestenlogik/Bowire/issues/1014)
 
 #### <a id="issue-kuestenlogik-bowire-673"></a>✅ Done · [#673](https://github.com/Kuestenlogik/Bowire/issues/673) Export requests as .http — Copy as .http, and bowire export http for a whole collection
 
@@ -706,65 +690,31 @@ The e2e job runs on Linux only. The example's manifest names its binary as a bar
 
 ### Sdk.Go v0.3 — HTTP transport proven against the host
 
-#### <a id="issue-kuestenlogik-bowire-sdk-go-8"></a>⬜ Backlog · [Kuestenlogik/Bowire.Sdk.Go#8](https://github.com/Kuestenlogik/Bowire.Sdk.Go/issues/8) e2e: the HTTP/SSE transport against the real host
+#### <a id="issue-kuestenlogik-bowire-sdk-go-8"></a>✅ Done · [Kuestenlogik/Bowire.Sdk.Go#8](https://github.com/Kuestenlogik/Bowire.Sdk.Go/issues/8) e2e: the HTTP/SSE transport against the real host
 
 Bowire speaks the sidecar contract over two transports: stdio, where the host spawns the plugin, and HTTP/SSE (`"transport": "http"`, `"url"`), where JSON-RPC requests are POSTed to the sidecar and notifications such as `$/stream/data` and `$/channel/data` come back over one long-lived SSE GET on th … [[more]](https://github.com/Kuestenlogik/Bowire.Sdk.Go/issues/8)
 
-### Sdk.Node v0.2 — Polyglot SDK parity: settings, channels, manifests
-
-#### <a id="issue-kuestenlogik-bowire-sdk-node-4"></a>✅ Done · [Kuestenlogik/Bowire.Sdk.Node#4](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/4) openChannel is declared but nothing routes it
-
-The plugin surface declares a duplex capability that no dispatcher routes. `the BowirePlugin interface's openChannel` is part of the public API — a plugin author implements it, ships it, and nothing ever calls it, because the dispatcher has no `openChannel` case at all. [[more]](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/4)
-
-#### <a id="issue-kuestenlogik-bowire-sdk-node-5"></a>✅ Done · [Kuestenlogik/Bowire.Sdk.Node#5](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/5) Example manifest: name node directly and drop run.sh, once a host with Kuestenlogik/Bowire#692 ships
-
-The example manifest works around a host defect that no longer exists. [[more]](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/5)
-
-#### <a id="issue-kuestenlogik-bowire-sdk-node-6"></a>✅ Done · [Kuestenlogik/Bowire.Sdk.Node#6](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/6) Settings: a plugin can declare them but cannot read the values the host now sends
-
-The settings hook this SDK already has now reaches somewhere, and the other half of it has nowhere to land. [[more]](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/6)
-
-#### <a id="issue-kuestenlogik-bowire-sdk-node-15"></a>✅ Done · [Kuestenlogik/Bowire.Sdk.Node#15](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/15) capabilities.invokeStream is true for every plugin: BowirePluginBase has an empty default
-
-> `area:plugin-sdk`
-
-`BowirePluginBase` declares an empty default `invokeStream`, so every subclass looks as if it implements streaming and `capabilities.invokeStream` is `true` for all of them. A plugin without streaming then answers the host's `invokeStream` with an empty stream instead of the host short-circuiting it. [[more]](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/15)
-
-#### <a id="issue-kuestenlogik-bowire-sdk-node-16"></a>✅ Done · [Kuestenlogik/Bowire.Sdk.Node#16](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/16) Declare a hand-entry form (manualEntry in the initialize reply)
-
-Bowire 2.11 lets a sidecar describe how a call to it is entered by hand (Kuestenlogik/Bowire#1003): its `initialize` reply may carry a `manualEntry` object, the call kinds (each with a method type and its `service` / `method` as templates over the fields) and the fields (each going into the template … [[more]](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/16)
-
 ### Sdk.Node v0.3 — HTTP transport proven against the host
 
-#### <a id="issue-kuestenlogik-bowire-sdk-node-17"></a>⬜ Backlog · [Kuestenlogik/Bowire.Sdk.Node#17](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/17) e2e: the HTTP/SSE transport against the real host
+#### <a id="issue-kuestenlogik-bowire-sdk-node-17"></a>✅ Done · [Kuestenlogik/Bowire.Sdk.Node#17](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/17) e2e: the HTTP/SSE transport against the real host
 
 Bowire speaks the sidecar contract over two transports: stdio, where the host spawns the plugin, and HTTP/SSE (`"transport": "http"`, `"url"`), where JSON-RPC requests are POSTed to the sidecar and notifications such as `$/stream/data` and `$/channel/data` come back over one long-lived SSE GET on th … [[more]](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/17)
 
-### Sdk.Python v0.3 — Polyglot SDK parity: settings, channels, manifests
-
-#### <a id="issue-kuestenlogik-bowire-sdk-python-3"></a>✅ Done · [Kuestenlogik/Bowire.Sdk.Python#3](https://github.com/Kuestenlogik/Bowire.Sdk.Python/issues/3) Example manifest: name python3 directly, once a host with Kuestenlogik/Bowire#692 ships
-
-The example manifest works around a host defect that no longer exists. [[more]](https://github.com/Kuestenlogik/Bowire.Sdk.Python/issues/3)
-
-#### <a id="issue-kuestenlogik-bowire-sdk-python-4"></a>✅ Done · [Kuestenlogik/Bowire.Sdk.Python#4](https://github.com/Kuestenlogik/Bowire.Sdk.Python/issues/4) Settings: a plugin can declare them but cannot read the values the host now sends
-
-The settings hook this SDK already has now reaches somewhere, and the other half of it has nowhere to land. [[more]](https://github.com/Kuestenlogik/Bowire.Sdk.Python/issues/4)
-
-#### <a id="issue-kuestenlogik-bowire-sdk-python-7"></a>✅ Done · [Kuestenlogik/Bowire.Sdk.Python#7](https://github.com/Kuestenlogik/Bowire.Sdk.Python/issues/7) Declare a hand-entry form (manualEntry in the initialize reply)
-
-Bowire 2.11 lets a sidecar describe how a call to it is entered by hand (Kuestenlogik/Bowire#1003): its `initialize` reply may carry a `manualEntry` object, the call kinds (each with a method type and its `service` / `method` as templates over the fields) and the fields (each going into the template … [[more]](https://github.com/Kuestenlogik/Bowire.Sdk.Python/issues/7)
-
 ### Sdk.Python v0.4 — HTTP transport proven against the host
 
-#### <a id="issue-kuestenlogik-bowire-sdk-python-8"></a>⬜ Backlog · [Kuestenlogik/Bowire.Sdk.Python#8](https://github.com/Kuestenlogik/Bowire.Sdk.Python/issues/8) e2e: the HTTP/SSE transport against the real host
+#### <a id="issue-kuestenlogik-bowire-sdk-python-8"></a>✅ Done · [Kuestenlogik/Bowire.Sdk.Python#8](https://github.com/Kuestenlogik/Bowire.Sdk.Python/issues/8) e2e: the HTTP/SSE transport against the real host
 
 Bowire speaks the sidecar contract over two transports: stdio, where the host spawns the plugin, and HTTP/SSE (`"transport": "http"`, `"url"`), where JSON-RPC requests are POSTed to the sidecar and notifications such as `$/stream/data` and `$/channel/data` come back over one long-lived SSE GET on th … [[more]](https://github.com/Kuestenlogik/Bowire.Sdk.Python/issues/8)
 
 ### Sdk.Rust v0.3 — HTTP transport proven against the host
 
-#### <a id="issue-kuestenlogik-bowire-sdk-rust-12"></a>⬜ Backlog · [Kuestenlogik/Bowire.Sdk.Rust#12](https://github.com/Kuestenlogik/Bowire.Sdk.Rust/issues/12) e2e: the HTTP/SSE transport against the real host
+#### <a id="issue-kuestenlogik-bowire-sdk-rust-12"></a>✅ Done · [Kuestenlogik/Bowire.Sdk.Rust#12](https://github.com/Kuestenlogik/Bowire.Sdk.Rust/issues/12) e2e: the HTTP/SSE transport against the real host
 
 Bowire speaks the sidecar contract over two transports: stdio, where the host spawns the plugin, and HTTP/SSE (`"transport": "http"`, `"url"`), where JSON-RPC requests are POSTed to the sidecar and notifications such as `$/stream/data` and `$/channel/data` come back over one long-lived SSE GET on th … [[more]](https://github.com/Kuestenlogik/Bowire.Sdk.Rust/issues/12)
+
+#### <a id="issue-kuestenlogik-bowire-sdk-rust-13"></a>✅ Done · [Kuestenlogik/Bowire.Sdk.Rust#13](https://github.com/Kuestenlogik/Bowire.Sdk.Rust/issues/13) capabilities.invokeStream is true for every plugin: invoke_stream has a default
+
+`BowirePlugin::invoke_stream` has a default implementation that emits one "not implemented" error frame, and `Capabilities::default()` reports `invoke_stream: true`. A plugin that does not stream therefore tells the host it does, and the host offers its server-streaming calls. … [[more]](https://github.com/Kuestenlogik/Bowire.Sdk.Rust/issues/13)
 
 ### Templates v1.1.17 — No warning suppressions *(due 2026-11-14)*
 
@@ -804,4 +754,4 @@ Owner rule from 2026-10-14: warnings are fixed at the cause instead of suppresse
 
 ---
 
-*Generated 2026-11-10 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
+*Generated 2026-11-11 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
