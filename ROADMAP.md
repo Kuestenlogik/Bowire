@@ -164,39 +164,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 |---|---|---|---|---|
 | [7](https://github.com/Kuestenlogik/Bowire.Sdk.Go/issues/7) | Sdk.Go | [e2e on Windows in CI, once Bowire 2.11 is released](#issue-kuestenlogik-bowire-sdk-go-7) | ⬜ Backlog |  |
 
-### Sdk.Go v0.3 — HTTP transport proven against the host
-
-**1/1 done**
-
-| # | Project | Title | Status | Tags |
-|---|---|---|---|---|
-| [8](https://github.com/Kuestenlogik/Bowire.Sdk.Go/issues/8) | Sdk.Go | [e2e: the HTTP/SSE transport against the real host](#issue-kuestenlogik-bowire-sdk-go-8) | ✅ Done |  |
-
-### Sdk.Node v0.3 — HTTP transport proven against the host
-
-**1/1 done**
-
-| # | Project | Title | Status | Tags |
-|---|---|---|---|---|
-| [17](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/17) | Sdk.Node | [e2e: the HTTP/SSE transport against the real host](#issue-kuestenlogik-bowire-sdk-node-17) | ✅ Done |  |
-
-### Sdk.Python v0.4 — HTTP transport proven against the host
-
-**1/1 done**
-
-| # | Project | Title | Status | Tags |
-|---|---|---|---|---|
-| [8](https://github.com/Kuestenlogik/Bowire.Sdk.Python/issues/8) | Sdk.Python | [e2e: the HTTP/SSE transport against the real host](#issue-kuestenlogik-bowire-sdk-python-8) | ✅ Done |  |
-
-### Sdk.Rust v0.3 — HTTP transport proven against the host
-
-**2/2 done**
-
-| # | Project | Title | Status | Tags |
-|---|---|---|---|---|
-| [12](https://github.com/Kuestenlogik/Bowire.Sdk.Rust/issues/12) | Sdk.Rust | [e2e: the HTTP/SSE transport against the real host](#issue-kuestenlogik-bowire-sdk-rust-12) | ✅ Done |  |
-| [13](https://github.com/Kuestenlogik/Bowire.Sdk.Rust/issues/13) | Sdk.Rust | [capabilities.invokeStream is true for every plugin: invoke_stream has a default](#issue-kuestenlogik-bowire-sdk-rust-13) | ✅ Done |  |
-
 ### Templates v1.1.17 — No warning suppressions *(due 2026-11-14)*
 
 **2/3 done** · 1 in progress
@@ -687,34 +654,6 @@ Same as the Kafka plugin: the security config and `BowireSurgewaveProtocol.cs:21
 #### <a id="issue-kuestenlogik-bowire-sdk-go-7"></a>⬜ Backlog · [Kuestenlogik/Bowire.Sdk.Go#7](https://github.com/Kuestenlogik/Bowire.Sdk.Go/issues/7) e2e on Windows in CI, once Bowire 2.11 is released
 
 The e2e job runs on Linux only. The example's manifest names its binary as a bare `echo`, and on Windows the host used to miss the shipped `echo.exe` and start the first `echo.exe` on PATH instead (Git's). … [[more]](https://github.com/Kuestenlogik/Bowire.Sdk.Go/issues/7)
-
-### Sdk.Go v0.3 — HTTP transport proven against the host
-
-#### <a id="issue-kuestenlogik-bowire-sdk-go-8"></a>✅ Done · [Kuestenlogik/Bowire.Sdk.Go#8](https://github.com/Kuestenlogik/Bowire.Sdk.Go/issues/8) e2e: the HTTP/SSE transport against the real host
-
-Bowire speaks the sidecar contract over two transports: stdio, where the host spawns the plugin, and HTTP/SSE (`"transport": "http"`, `"url"`), where JSON-RPC requests are POSTed to the sidecar and notifications such as `$/stream/data` and `$/channel/data` come back over one long-lived SSE GET on th … [[more]](https://github.com/Kuestenlogik/Bowire.Sdk.Go/issues/8)
-
-### Sdk.Node v0.3 — HTTP transport proven against the host
-
-#### <a id="issue-kuestenlogik-bowire-sdk-node-17"></a>✅ Done · [Kuestenlogik/Bowire.Sdk.Node#17](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/17) e2e: the HTTP/SSE transport against the real host
-
-Bowire speaks the sidecar contract over two transports: stdio, where the host spawns the plugin, and HTTP/SSE (`"transport": "http"`, `"url"`), where JSON-RPC requests are POSTed to the sidecar and notifications such as `$/stream/data` and `$/channel/data` come back over one long-lived SSE GET on th … [[more]](https://github.com/Kuestenlogik/Bowire.Sdk.Node/issues/17)
-
-### Sdk.Python v0.4 — HTTP transport proven against the host
-
-#### <a id="issue-kuestenlogik-bowire-sdk-python-8"></a>✅ Done · [Kuestenlogik/Bowire.Sdk.Python#8](https://github.com/Kuestenlogik/Bowire.Sdk.Python/issues/8) e2e: the HTTP/SSE transport against the real host
-
-Bowire speaks the sidecar contract over two transports: stdio, where the host spawns the plugin, and HTTP/SSE (`"transport": "http"`, `"url"`), where JSON-RPC requests are POSTed to the sidecar and notifications such as `$/stream/data` and `$/channel/data` come back over one long-lived SSE GET on th … [[more]](https://github.com/Kuestenlogik/Bowire.Sdk.Python/issues/8)
-
-### Sdk.Rust v0.3 — HTTP transport proven against the host
-
-#### <a id="issue-kuestenlogik-bowire-sdk-rust-12"></a>✅ Done · [Kuestenlogik/Bowire.Sdk.Rust#12](https://github.com/Kuestenlogik/Bowire.Sdk.Rust/issues/12) e2e: the HTTP/SSE transport against the real host
-
-Bowire speaks the sidecar contract over two transports: stdio, where the host spawns the plugin, and HTTP/SSE (`"transport": "http"`, `"url"`), where JSON-RPC requests are POSTed to the sidecar and notifications such as `$/stream/data` and `$/channel/data` come back over one long-lived SSE GET on th … [[more]](https://github.com/Kuestenlogik/Bowire.Sdk.Rust/issues/12)
-
-#### <a id="issue-kuestenlogik-bowire-sdk-rust-13"></a>✅ Done · [Kuestenlogik/Bowire.Sdk.Rust#13](https://github.com/Kuestenlogik/Bowire.Sdk.Rust/issues/13) capabilities.invokeStream is true for every plugin: invoke_stream has a default
-
-`BowirePlugin::invoke_stream` has a default implementation that emits one "not implemented" error frame, and `Capabilities::default()` reports `invoke_stream: true`. A plugin that does not stream therefore tells the host it does, and the host offers its server-streaming calls. … [[more]](https://github.com/Kuestenlogik/Bowire.Sdk.Rust/issues/13)
 
 ### Templates v1.1.17 — No warning suppressions *(due 2026-11-14)*
 
