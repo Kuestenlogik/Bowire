@@ -40,6 +40,12 @@ An embedded Bowire used to map the host's gRPC reflection service and read the h
 
 `AddBowireGrpc` names what the mapped services do not cover: `Descriptors` for generated code whose service is not mapped here, and `DescriptorSet` / `DescriptorSetFile` for a contract that lives in another process.
 
+### An embedded workbench reads the host's OpenAPI document (#993)
+
+Embedded REST discovery used to walk ApiExplorer and reflect over the body types, which gives the shape the CLR types have. A host that registers an OpenAPI generator (`AddOpenApi()`, Swashbuckle, NSwag) is now discovered from the document it generates, read in-process: property names after the host's JSON naming policy, schemas after its transformers, examples and descriptions. The host does not have to publish the document for this.
+
+It needs the OpenAPI adapter package that matches the generator (`Kuestenlogik.Bowire.Protocol.Rest.OpenApi2` for ASP.NET Core's `AddOpenApi()`). A host without a generator or without an adapter is discovered from ApiExplorer as before. With the document as the source, an untagged endpoint is listed under the generator's default tag instead of `Default`, and an operation without an `operationId` is named from its verb and path.
+
 ## Fixes along the way
 
 ### A host that leaves a shared http sidecar takes only its own channels (#1014)

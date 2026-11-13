@@ -12,6 +12,11 @@
     <!-- Embedded Bowire + the REST plugin (auto-registers on load). -->
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
     <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Protocol.Rest\Kuestenlogik.Bowire.Protocol.Rest.csproj" />
+    <!-- The OpenAPI adapter for the Microsoft.OpenApi 2.x line, which is what
+         ASP.NET Core's AddOpenApi() generates with. With it the embedded
+         workbench reads this host's own document in-process (#993); without
+         it the REST plugin falls back to ApiExplorer. -->
+    <ProjectReference Include="..\..\src\Kuestenlogik.Bowire.Protocol.Rest.OpenApi2\Kuestenlogik.Bowire.Protocol.Rest.OpenApi2.csproj" />
   </ItemGroup>
 
   <ItemGroup>

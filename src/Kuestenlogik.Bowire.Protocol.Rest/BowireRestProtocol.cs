@@ -119,14 +119,9 @@ public sealed class BowireRestProtocol
         // a local schema file. Multiple uploads are merged.
         var uploadedServices = await DiscoverFromUploadsAsync(ct).ConfigureAwait(false);
 
-        // Embedded discovery — when we have a service provider with API
-        // descriptions, that's the in-process source of truth (no HTTP).
-        List<BowireServiceInfo> embeddedServices = [];
-        if (EmbeddedDiscovery.TryDiscover(_serviceProvider, out var embedded))
-        {
-            CacheEmbeddedSchemas(embedded);
-            embeddedServices = embedded;
-        }
+        // Embedded discovery — the host's own API, read in-process (no HTTP).
+        var embeddedServices = await DiscoverEmbeddedAsync(ct).ConfigureAwait(false);
+        if (embeddedServices.Count > 0) CacheEmbeddedSchemas(embeddedServices);
 
         // URL discovery — only fires when a serverUrl is supplied (standalone).
         List<BowireServiceInfo> urlServices = [];
@@ -186,6 +181,71 @@ public sealed class BowireRestProtocol
 
             all.AddRange(services);
         }
+        return all;
+    }
+
+    /// <summary>
+    /// The host's own HTTP API: from the OpenAPI document it generates when
+    /// it registers one (#993), from ApiExplorer otherwise.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The document wins because it is what the host publishes. ApiExplorer
+    /// plus reflection over the body types yields the shapes the CLR types
+    /// have, which is not the same thing once a schema transformer, a
+    /// converter or a naming policy has had its say, and it carries no
+    /// examples or descriptions at all.
+    /// </para>
+    /// <para>
+    /// The fallback covers three hosts: one without OpenAPI, one whose
+    /// generator fails, and one that has a generator but no OpenAPI adapter
+    /// package for this plugin to parse the document with. A generator that
+    /// throws is the host's bug, but it is not a reason for the workbench to
+    /// show nothing when ApiExplorer can still list the routes.
+    /// </para>
+    /// </remarks>
+    private async Task<List<BowireServiceInfo>> DiscoverEmbeddedAsync(CancellationToken ct)
+    {
+        var fromDocument = await DiscoverFromHostDocumentsAsync(ct).ConfigureAwait(false);
+        if (fromDocument.Count > 0) return fromDocument;
+
+        return EmbeddedDiscovery.TryDiscover(_serviceProvider, out var fromApiExplorer) ? fromApiExplorer : [];
+    }
+
+    private async Task<List<BowireServiceInfo>> DiscoverFromHostDocumentsAsync(CancellationToken ct)
+    {
+        if (_serviceProvider is null) return [];
+        var adapter = BowireOpenApiAdapterRegistry.TryGet();
+        if (adapter is null) return [];
+
+        IReadOnlyList<(string Name, string Json)> documents;
+        try
+        {
+            documents = await EmbeddedOpenApiDocument.ReadAllAsync(_serviceProvider, ct).ConfigureAwait(false);
+        }
+#pragma warning disable CA1031 // The generator is the host's code and its transformers': any failure there falls back to ApiExplorer, per the remarks above.
+        catch (Exception ex) when (ex is not OperationCanceledException)
+#pragma warning restore CA1031
+        {
+            RestProbeLog.Info($"The host's OpenAPI document could not be generated ({ex.GetBaseException().Message}); using ApiExplorer.");
+            return [];
+        }
+
+        var all = new List<BowireServiceInfo>();
+        var taken = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var (name, json) in documents)
+        {
+            var parsed = await adapter.ParseAndDiscoverAsync(json, "host:" + name, ct).ConfigureAwait(false);
+            if (parsed is null) continue;
+
+            // Two documents of one host can both list a tag (a public and an
+            // internal document, say). The first one keeps the name.
+            foreach (var svc in parsed.Services)
+            {
+                if (taken.Add(svc.Name)) all.Add(svc);
+            }
+        }
+
         return all;
     }
 
@@ -573,10 +633,10 @@ public sealed class BowireRestProtocol
         // Embedded path: when running in-process, prime the embedded cache on
         // the fly if Discover hasn't been called yet. Lookup by (service, method)
         // hits the empty-key cache that EmbeddedDiscovery populates.
-        if (!_cache.ContainsKey(string.Empty)
-            && EmbeddedDiscovery.TryDiscover(_serviceProvider, out var embeddedServices))
+        if (!_cache.ContainsKey(string.Empty))
         {
-            CacheEmbeddedSchemas(embeddedServices);
+            var embeddedServices = await DiscoverEmbeddedAsync(ct).ConfigureAwait(false);
+            if (embeddedServices.Count > 0) CacheEmbeddedSchemas(embeddedServices);
         }
 
         if (_cache.TryGetValue(string.Empty, out var embeddedCache)

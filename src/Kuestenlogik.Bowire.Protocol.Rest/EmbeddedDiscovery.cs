@@ -17,6 +17,13 @@ namespace Kuestenlogik.Bowire.Protocol.Rest;
 /// the plugin reads the same metadata that Microsoft.AspNetCore.OpenApi uses to generate
 /// its document, so discovery is instant and there's no risk of stale schemas.
 /// </summary>
+/// <remarks>
+/// The fallback since #993. A host that generates an OpenAPI document is
+/// discovered from that document (<see cref="EmbeddedOpenApiDocument"/>),
+/// which is what it publishes; this walk yields what the CLR types look
+/// like, and serves the hosts that have no generator or no adapter to read
+/// its document with.
+/// </remarks>
 internal static class EmbeddedDiscovery
 {
     /// <summary>

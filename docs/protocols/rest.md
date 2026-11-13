@@ -13,10 +13,25 @@ The REST plugin discovers endpoints in **two completely different ways** dependi
 
 | Mode | How | Cost |
 |------|-----|------|
-| **Embedded** | Reads `IApiDescriptionGroupCollectionProvider` from the host's service provider | No HTTP, no parsing -- instant |
+| **Embedded** | Reads the OpenAPI document the host generates, in-process; without one, the host's `IApiDescriptionGroupCollectionProvider` | No HTTP |
 | **URL** | Fetches the **exact** OpenAPI 3 / Swagger 2.0 document the user provides | One HTTP GET + one parse |
 
-When the plugin is loaded inside an ASP.NET Core process via `app.MapBowire()`, embedded discovery wins automatically. The plugin reads exactly the same metadata that `Microsoft.AspNetCore.OpenApi` uses to generate its document, so there's no risk of stale schemas. URL discovery is only used when no service provider is available -- typically the standalone `bowire` CLI tool pointed at a remote server.
+When the plugin is loaded inside an ASP.NET Core process via `app.MapBowire()`, embedded discovery wins automatically. URL discovery is only used when no service provider is available -- typically the standalone `bowire` CLI tool pointed at a remote server.
+
+### What embedded discovery reads
+
+1. **The host's OpenAPI document**, when the host registers a generator (`AddOpenApi()`, Swashbuckle, NSwag) and references an OpenAPI adapter package. Bowire asks the generator for the document in-process and reads it the way it reads an uploaded one. The host does not have to publish the document: `MapOpenApi()` is not needed for this. What you see is what the host publishes: property names after the JSON naming policy, schemas after your transformers, examples and descriptions.
+2. **ApiExplorer plus the CLR types**, otherwise. Bowire walks the endpoint metadata and reflects over the body types. That yields the shape the types have, which is close to the document and not the same: no examples, no schema transformers, property names camel-cased from the CLR names whatever the host serialises.
+
+The adapter is the package that parses OpenAPI for the REST plugin. For ASP.NET Core's own `AddOpenApi()`, which is built on Microsoft.OpenApi 2.x, that is `Kuestenlogik.Bowire.Protocol.Rest.OpenApi2`:
+
+```bash
+dotnet add package Kuestenlogik.Bowire.Protocol.Rest.OpenApi2
+```
+
+Without an adapter, or if the generator throws, discovery falls back to ApiExplorer.
+
+Two things look different when the document is the source. An endpoint without a tag is listed under the tag the generator gives it (ASP.NET Core uses the application name) where ApiExplorer discovery says `Default`. An operation without an `operationId` is named from its verb and path; give it one with `.WithName("GetTodo")`.
 
 ## Embedded discovery
 
@@ -26,7 +41,7 @@ Drop the REST plugin into a Minimal API or controller-based host and you're done
 using Kuestenlogik.Bowire;
 
 var builder = WebApplication.CreateBuilder(args);
-builder.Services.AddOpenApi();   // any OpenAPI generator works
+builder.Services.AddOpenApi();   // optional: with it and an adapter package, the document is the source
 
 var app = builder.Build();
 
