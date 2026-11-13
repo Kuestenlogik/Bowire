@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**12/33 done** · 21 backlog
+**13/33 done** · 20 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -36,7 +36,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [992](https://github.com/Kuestenlogik/Bowire/issues/992) | Bowire | [gRPC embedded: discover from the host's compiled descriptors instead of mapping a reflection service](#issue-kuestenlogik-bowire-992) | ⬜ Backlog | `area:workbench` |
 | [993](https://github.com/Kuestenlogik/Bowire/issues/993) | Bowire | [REST embedded: discover from the host's OpenAPI document instead of reflecting over its types](#issue-kuestenlogik-bowire-993) | ⬜ Backlog | `area:workbench` |
 | [994](https://github.com/Kuestenlogik/Bowire/issues/994) | Bowire | [Schema imports per plugin: GraphQL SDL, AsyncAPI, WSDL, EDMX and OpenRPC](#issue-kuestenlogik-bowire-994) | ⬜ Backlog | `area:workbench` |
-| [1014](https://github.com/Kuestenlogik/Bowire/issues/1014) | Bowire | [Sidecar contract: what shutdown means for an http sidecar that several hosts share](#issue-kuestenlogik-bowire-1014) | ⬜ Backlog |  |
 | [673](https://github.com/Kuestenlogik/Bowire/issues/673) | Bowire | [Export requests as .http — Copy as .http, and bowire export http for a whole collection](#issue-kuestenlogik-bowire-673) | ✅ Done | `area:workbench` |
 | [986](https://github.com/Kuestenlogik/Bowire/issues/986) | Bowire | [The .NET plugin loader scans sidecar folders and logs ManifestMissing for every sidecar](#issue-kuestenlogik-bowire-986) | ✅ Done | `area:plugin-sdk` |
 | [987](https://github.com/Kuestenlogik/Bowire/issues/987) | Bowire | [sidecar-plugins.md: no SDK sends select options, and python3 as the manifest example fails on Windows](#issue-kuestenlogik-bowire-987) | ✅ Done | `area:docs` |
@@ -49,6 +48,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [1001](https://github.com/Kuestenlogik/Bowire/issues/1001) | Bowire | [NATS: a discovered request runs as a publish, and three methods share one name](#issue-kuestenlogik-bowire-1001) | ✅ Done |  |
 | [1002](https://github.com/Kuestenlogik/Bowire/issues/1002) | Bowire | [SignalR: a channel to a method the host does not list is always opened as duplex](#issue-kuestenlogik-bowire-1002) | ✅ Done |  |
 | [1003](https://github.com/Kuestenlogik/Bowire/issues/1003) | Bowire | [Sidecar plugins describe their hand-entry form in the initialize reply](#issue-kuestenlogik-bowire-1003) | ✅ Done |  |
+| [1014](https://github.com/Kuestenlogik/Bowire/issues/1014) | Bowire | [Sidecar contract: what shutdown means for an http sidecar that several hosts share](#issue-kuestenlogik-bowire-1014) | ✅ Done |  |
 
 ### v2.12 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
 
@@ -147,14 +147,14 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### Protocol.Surgewave v0.2 — Typed produce through the Schema Registry
 
-**1/4 done** · 3 backlog
+**2/4 done** · 2 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [85](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/85) | Protocol.Surgewave | [Typed produce through the Schema Registry: field shapes and Avro / Protobuf encoding](#issue-kuestenlogik-bowire-protocol-surgewave-85) | ⬜ Backlog | `area:plugin-sdk` |
 | [87](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/87) | Protocol.Surgewave | [Describe the hand-entry form: produce and consume, topic, key and partition](#issue-kuestenlogik-bowire-protocol-surgewave-87) | ⬜ Backlog |  |
-| [88](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/88) | Protocol.Surgewave | [?protocol=kafka fails: the plugin does not ship the Kafka wire transport](#issue-kuestenlogik-bowire-protocol-surgewave-88) | ⬜ Backlog |  |
 | [86](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/86) | Protocol.Surgewave | [Produce sends none of the call's metadata as record headers, although the code says it does](#issue-kuestenlogik-bowire-protocol-surgewave-86) | ✅ Done |  |
+| [88](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/88) | Protocol.Surgewave | [?protocol=kafka fails: the plugin does not ship the Kafka wire transport](#issue-kuestenlogik-bowire-protocol-surgewave-88) | ✅ Done |  |
 
 ### Sdk.Go v0.2 — Windows in CI, against Bowire 2.11
 
@@ -297,10 +297,6 @@ Embedded REST discovery walks ApiExplorer and reflects over the body types with 
 
 The workbench upload knows two kinds: `.proto` goes to the proto endpoint, everything else to the OpenAPI endpoint (`src/Kuestenlogik.Bowire/wwwroot/js/helpers.js:179-181`), and the picker accepts only `.proto,.json,.yaml,.yml` (`render-sidebar.js:722`). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/994)
 
-#### <a id="issue-kuestenlogik-bowire-1014"></a>⬜ Backlog · [#1014](https://github.com/Kuestenlogik/Bowire/issues/1014) Sidecar contract: what shutdown means for an http sidecar that several hosts share
-
-An http sidecar is not its host's. The docs say so (docs/architecture/sidecar-plugins.md, "Transports"): Bowire does not own the process. On dispose, the host sends a best-effort `shutdown` that "the service may ignore", and the transport suits deployments where one sidecar serves many hosts. [[more]](https://github.com/Kuestenlogik/Bowire/issues/1014)
-
 #### <a id="issue-kuestenlogik-bowire-673"></a>✅ Done · [#673](https://github.com/Kuestenlogik/Bowire/issues/673) Export requests as .http — Copy as .http, and bowire export http for a whole collection
 
 > `area:workbench`
@@ -360,6 +356,10 @@ NATS discovery gives the subscribe, publish and request method of a subject the 
 #### <a id="issue-kuestenlogik-bowire-1003"></a>✅ Done · [#1003](https://github.com/Kuestenlogik/Bowire/issues/1003) Sidecar plugins describe their hand-entry form in the initialize reply
 
 A .NET plugin describes how a call to it is entered by hand through `IBowireManualEntry` (#995). A sidecar plugin cannot implement a .NET interface; `SidecarBowireProtocol` speaks for it. Until a sidecar can describe itself, its freeform form offers all four method types and Compose has no form for it. [[more]](https://github.com/Kuestenlogik/Bowire/issues/1003)
+
+#### <a id="issue-kuestenlogik-bowire-1014"></a>✅ Done · [#1014](https://github.com/Kuestenlogik/Bowire/issues/1014) Sidecar contract: what shutdown means for an http sidecar that several hosts share
+
+An http sidecar is not its host's. The docs say so (docs/architecture/sidecar-plugins.md, "Transports"): Bowire does not own the process. On dispose, the host sends a best-effort `shutdown` that "the service may ignore", and the transport suits deployments where one sidecar serves many hosts. [[more]](https://github.com/Kuestenlogik/Bowire/issues/1014)
 
 ### v2.12 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
 
@@ -641,13 +641,13 @@ Same gap as the Kafka plugin: produce sends the value as UTF-8 only, and the Sch
 
 Bowire 2.11 lets a protocol plugin describe how a call to it is entered by hand (Kuestenlogik/Bowire#995): `IBowireManualEntry` returns the call kinds (each with a method type and its `service` / `method` as templates over the fields) and the fields (each going into the templates or into the metadat … [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/87)
 
-#### <a id="issue-kuestenlogik-bowire-protocol-surgewave-88"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Surgewave#88](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/88) ?protocol=kafka fails: the plugin does not ship the Kafka wire transport
-
-README and `docs/protocol.md` offer `surgewave://broker:9092?protocol=kafka` (the interoperable wire, with Confluent Schema Registry decode). `BuildSurgewaveClientAsync` then calls `UseKafkaProtocol()`, and every call fails with: [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/88)
-
 #### <a id="issue-kuestenlogik-bowire-protocol-surgewave-86"></a>✅ Done · [Kuestenlogik/Bowire.Protocol.Surgewave#86](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/86) Produce sends none of the call's metadata as record headers, although the code says it does
 
 Same as the Kafka plugin: the security config and `BowireSurgewaveProtocol.cs:212,221` say the remaining metadata goes out as Kafka headers, but produce sets no headers on the message; only `key` and `partition` are read (`:264,274`). [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/86)
+
+#### <a id="issue-kuestenlogik-bowire-protocol-surgewave-88"></a>✅ Done · [Kuestenlogik/Bowire.Protocol.Surgewave#88](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/88) ?protocol=kafka fails: the plugin does not ship the Kafka wire transport
+
+README and `docs/protocol.md` offer `surgewave://broker:9092?protocol=kafka` (the interoperable wire, with Confluent Schema Registry decode). `BuildSurgewaveClientAsync` then calls `UseKafkaProtocol()`, and every call fails with: [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/88)
 
 ### Sdk.Go v0.2 — Windows in CI, against Bowire 2.11
 
