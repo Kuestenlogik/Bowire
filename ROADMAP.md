@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**16/34 done** · 18 backlog
+**17/34 done** · 17 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -33,7 +33,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [946](https://github.com/Kuestenlogik/Bowire/issues/946) | Bowire | [Data sets for flow runs and bowire test --workspace](#issue-kuestenlogik-bowire-946) | ⬜ Backlog |  |
 | [963](https://github.com/Kuestenlogik/Bowire/issues/963) | Bowire | [WebSocketAuthProbe: forged JWT (alg:none, tampered signature) on the upgrade](#issue-kuestenlogik-bowire-963) | ⬜ Backlog | `area:security` |
 | [994](https://github.com/Kuestenlogik/Bowire/issues/994) | Bowire | [Schema imports per plugin: GraphQL SDL, AsyncAPI, WSDL, EDMX and OpenRPC](#issue-kuestenlogik-bowire-994) | ⬜ Backlog | `area:workbench` |
-| [1016](https://github.com/Kuestenlogik/Bowire/issues/1016) | Bowire | [bowire scan: accept --schema like the other commands](#issue-kuestenlogik-bowire-1016) | ⬜ Backlog | `area:cli` |
 | [673](https://github.com/Kuestenlogik/Bowire/issues/673) | Bowire | [Export requests as .http — Copy as .http, and bowire export http for a whole collection](#issue-kuestenlogik-bowire-673) | ✅ Done | `area:workbench` |
 | [986](https://github.com/Kuestenlogik/Bowire/issues/986) | Bowire | [The .NET plugin loader scans sidecar folders and logs ManifestMissing for every sidecar](#issue-kuestenlogik-bowire-986) | ✅ Done | `area:plugin-sdk` |
 | [987](https://github.com/Kuestenlogik/Bowire/issues/987) | Bowire | [sidecar-plugins.md: no SDK sends select options, and python3 as the manifest example fails on Windows](#issue-kuestenlogik-bowire-987) | ✅ Done | `area:docs` |
@@ -50,6 +49,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [1002](https://github.com/Kuestenlogik/Bowire/issues/1002) | Bowire | [SignalR: a channel to a method the host does not list is always opened as duplex](#issue-kuestenlogik-bowire-1002) | ✅ Done |  |
 | [1003](https://github.com/Kuestenlogik/Bowire/issues/1003) | Bowire | [Sidecar plugins describe their hand-entry form in the initialize reply](#issue-kuestenlogik-bowire-1003) | ✅ Done |  |
 | [1014](https://github.com/Kuestenlogik/Bowire/issues/1014) | Bowire | [Sidecar contract: what shutdown means for an http sidecar that several hosts share](#issue-kuestenlogik-bowire-1014) | ✅ Done |  |
+| [1016](https://github.com/Kuestenlogik/Bowire/issues/1016) | Bowire | [bowire scan: accept --schema like the other commands](#issue-kuestenlogik-bowire-1016) | ✅ Done | `area:cli` |
 
 ### v2.12 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
 
@@ -296,12 +296,6 @@ Kuestenlogik/Bowire.VulnDb#51 (CVE-2026-113620, Eclipse ioFog Controller): the W
 
 The workbench upload knows two kinds: `.proto` goes to the proto endpoint, everything else to the OpenAPI endpoint (`src/Kuestenlogik.Bowire/wwwroot/js/helpers.js:179-181`), and the picker accepts only `.proto,.json,.yaml,.yml` (`render-sidebar.js:722`). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/994)
 
-#### <a id="issue-kuestenlogik-bowire-1016"></a>⬜ Backlog · [#1016](https://github.com/Kuestenlogik/Bowire/issues/1016) bowire scan: accept --schema like the other commands
-
-> `area:cli`
-
-Since #991, `--schema api.protoset` names a compiled gRPC descriptor set for `discover`, `list`, `describe`, `call` and `test`. `bowire scan` does not take `--schema`: it only has `--grpc-descriptor-set`, which hands the set to the gRPC checks as the sole descriptor source. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/1016)
-
 #### <a id="issue-kuestenlogik-bowire-673"></a>✅ Done · [#673](https://github.com/Kuestenlogik/Bowire/issues/673) Export requests as .http — Copy as .http, and bowire export http for a whole collection
 
 > `area:workbench`
@@ -383,6 +377,12 @@ A .NET plugin describes how a call to it is entered by hand through `IBowireManu
 #### <a id="issue-kuestenlogik-bowire-1014"></a>✅ Done · [#1014](https://github.com/Kuestenlogik/Bowire/issues/1014) Sidecar contract: what shutdown means for an http sidecar that several hosts share
 
 An http sidecar is not its host's. The docs say so (docs/architecture/sidecar-plugins.md, "Transports"): Bowire does not own the process. On dispose, the host sends a best-effort `shutdown` that "the service may ignore", and the transport suits deployments where one sidecar serves many hosts. [[more]](https://github.com/Kuestenlogik/Bowire/issues/1014)
+
+#### <a id="issue-kuestenlogik-bowire-1016"></a>✅ Done · [#1016](https://github.com/Kuestenlogik/Bowire/issues/1016) bowire scan: accept --schema like the other commands
+
+> `area:cli`
+
+Since #991, `--schema api.protoset` names a compiled gRPC descriptor set for `discover`, `list`, `describe`, `call` and `test`. `bowire scan` does not take `--schema`: it only has `--grpc-descriptor-set`, which hands the set to the gRPC checks as the sole descriptor source. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/1016)
 
 ### v2.12 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
 
