@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**14/34 done** · 20 backlog
+**15/34 done** · 19 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -32,7 +32,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [940](https://github.com/Kuestenlogik/Bowire/issues/940) | Bowire | [Verify the collection importers against real Insomnia and Bruno exports](#issue-kuestenlogik-bowire-940) | ⬜ Backlog |  |
 | [946](https://github.com/Kuestenlogik/Bowire/issues/946) | Bowire | [Data sets for flow runs and bowire test --workspace](#issue-kuestenlogik-bowire-946) | ⬜ Backlog |  |
 | [963](https://github.com/Kuestenlogik/Bowire/issues/963) | Bowire | [WebSocketAuthProbe: forged JWT (alg:none, tampered signature) on the upgrade](#issue-kuestenlogik-bowire-963) | ⬜ Backlog | `area:security` |
-| [992](https://github.com/Kuestenlogik/Bowire/issues/992) | Bowire | [gRPC embedded: discover from the host's compiled descriptors instead of mapping a reflection service](#issue-kuestenlogik-bowire-992) | ⬜ Backlog | `area:workbench` |
 | [993](https://github.com/Kuestenlogik/Bowire/issues/993) | Bowire | [REST embedded: discover from the host's OpenAPI document instead of reflecting over its types](#issue-kuestenlogik-bowire-993) | ⬜ Backlog | `area:workbench` |
 | [994](https://github.com/Kuestenlogik/Bowire/issues/994) | Bowire | [Schema imports per plugin: GraphQL SDL, AsyncAPI, WSDL, EDMX and OpenRPC](#issue-kuestenlogik-bowire-994) | ⬜ Backlog | `area:workbench` |
 | [1016](https://github.com/Kuestenlogik/Bowire/issues/1016) | Bowire | [bowire scan: accept --schema like the other commands](#issue-kuestenlogik-bowire-1016) | ⬜ Backlog | `area:cli` |
@@ -42,6 +41,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [989](https://github.com/Kuestenlogik/Bowire/issues/989) | Bowire | [PluginUpdateCheckService keeps an IHttpClientFactory client, so a disposed host is never collected](#issue-kuestenlogik-bowire-989) | ✅ Done |  |
 | [990](https://github.com/Kuestenlogik/Bowire/issues/990) | Bowire | [Sidecar executable: a bare name in the plugin directory ignores PATHEXT on Windows](#issue-kuestenlogik-bowire-990) | ✅ Done | `area:plugin-sdk` |
 | [991](https://github.com/Kuestenlogik/Bowire/issues/991) | Bowire | [gRPC without server reflection: upload a descriptor set and call through it from the workbench](#issue-kuestenlogik-bowire-991) | ✅ Done | `area:workbench` |
+| [992](https://github.com/Kuestenlogik/Bowire/issues/992) | Bowire | [gRPC embedded: discover from the host's compiled descriptors instead of mapping a reflection service](#issue-kuestenlogik-bowire-992) | ✅ Done | `area:workbench` |
 | [995](https://github.com/Kuestenlogik/Bowire/issues/995) | Bowire | [Manual entry for every protocol: freeform metadata and streaming, Compose layouts for the protocols without one](#issue-kuestenlogik-bowire-995) | ✅ Done | `area:workbench` |
 | [996](https://github.com/Kuestenlogik/Bowire/issues/996) | Bowire | [SOAP by hand: the freeform form drops the metadata that carries soap_action and target_namespace](#issue-kuestenlogik-bowire-996) | ✅ Done | `area:workbench` |
 | [998](https://github.com/Kuestenlogik/Bowire/issues/998) | Bowire | [Release announcements on Discussions are titled with the bare version since 2.8.0](#issue-kuestenlogik-bowire-998) | ✅ Done |  |
@@ -156,6 +156,14 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [87](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/87) | Protocol.Surgewave | [Describe the hand-entry form: produce and consume, topic, key and partition](#issue-kuestenlogik-bowire-protocol-surgewave-87) | ⬜ Backlog |  |
 | [86](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/86) | Protocol.Surgewave | [Produce sends none of the call's metadata as record headers, although the code says it does](#issue-kuestenlogik-bowire-protocol-surgewave-86) | ✅ Done |  |
 | [88](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/88) | Protocol.Surgewave | [?protocol=kafka fails: the plugin does not ship the Kafka wire transport](#issue-kuestenlogik-bowire-protocol-surgewave-88) | ✅ Done |  |
+
+### Samples v0.1.21 — Against Bowire 2.11
+
+**0/1 done** · 1 backlog
+
+| # | Project | Title | Status | Tags |
+|---|---|---|---|---|
+| [157](https://github.com/Kuestenlogik/Bowire.Samples/issues/157) | Samples | [harbor-demo: gRPC hosts that are discovered by URL must map reflection themselves from Bowire 2.11](#issue-kuestenlogik-bowire-samples-157) | ⬜ Backlog |  |
 
 ### Sdk.Go v0.2 — Windows in CI, against Bowire 2.11
 
@@ -282,12 +290,6 @@ Follow-up of #675. `--data` drives a test collection. A flow file, or a `--works
 
 Kuestenlogik/Bowire.VulnDb#51 (CVE-2026-113620, Eclipse ioFog Controller): the WebSocket upgrades on the exec and log routes decode the bearer JWT without verifying it, so a self-minted token whose groups contain `admin` is accepted. The HTTP routes of the same server verify the token. [[more]](https://github.com/Kuestenlogik/Bowire/issues/963)
 
-#### <a id="issue-kuestenlogik-bowire-992"></a>⬜ Backlog · [#992](https://github.com/Kuestenlogik/Bowire/issues/992) gRPC embedded: discover from the host's compiled descriptors instead of mapping a reflection service
-
-> `area:workbench`
-
-Embedded, `AddBowire` / `MapBowire` register and map the host's gRPC reflection service (`src/Kuestenlogik.Bowire.Protocol.Grpc/BowireGrpcProtocol.cs:207-220`, `BowireApiEndpoints.cs:74`), and Bowire then reads the host's own services back over the wire. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/992)
-
 #### <a id="issue-kuestenlogik-bowire-993"></a>⬜ Backlog · [#993](https://github.com/Kuestenlogik/Bowire/issues/993) REST embedded: discover from the host's OpenAPI document instead of reflecting over its types
 
 > `area:workbench`
@@ -339,6 +341,12 @@ A sidecar manifest that names its own binary as a bare name — `"executable": "
 > `area:workbench`
 
 Without server reflection a gRPC method cannot be called from the workbench. An uploaded `.proto` fills the sidebar but is not invokable: `ProtoFileParser` is regex-based and yields names, not descriptors (`src/Kuestenlogik.Bowire.Protocol.Grpc/GrpcDescriptorSet.cs:18-24`). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/991)
+
+#### <a id="issue-kuestenlogik-bowire-992"></a>✅ Done · [#992](https://github.com/Kuestenlogik/Bowire/issues/992) gRPC embedded: discover from the host's compiled descriptors instead of mapping a reflection service
+
+> `area:workbench`
+
+Embedded, `AddBowire` / `MapBowire` register and map the host's gRPC reflection service (`src/Kuestenlogik.Bowire.Protocol.Grpc/BowireGrpcProtocol.cs:207-220`, `BowireApiEndpoints.cs:74`), and Bowire then reads the host's own services back over the wire. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/992)
 
 #### <a id="issue-kuestenlogik-bowire-995"></a>✅ Done · [#995](https://github.com/Kuestenlogik/Bowire/issues/995) Manual entry for every protocol: freeform metadata and streaming, Compose layouts for the protocols without one
 
@@ -663,6 +671,12 @@ Same as the Kafka plugin: the security config and `BowireSurgewaveProtocol.cs:21
 #### <a id="issue-kuestenlogik-bowire-protocol-surgewave-88"></a>✅ Done · [Kuestenlogik/Bowire.Protocol.Surgewave#88](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/88) ?protocol=kafka fails: the plugin does not ship the Kafka wire transport
 
 README and `docs/protocol.md` offer `surgewave://broker:9092?protocol=kafka` (the interoperable wire, with Confluent Schema Registry decode). `BuildSurgewaveClientAsync` then calls `UseKafkaProtocol()`, and every call fails with: [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Surgewave/issues/88)
+
+### Samples v0.1.21 — Against Bowire 2.11
+
+#### <a id="issue-kuestenlogik-bowire-samples-157"></a>⬜ Backlog · [Kuestenlogik/Bowire.Samples#157](https://github.com/Kuestenlogik/Bowire.Samples/issues/157) harbor-demo: gRPC hosts that are discovered by URL must map reflection themselves from Bowire 2.11
+
+From Bowire 2.11, `MapBowire()` no longer maps the gRPC reflection endpoints (Kuestenlogik/Bowire#992). An embedded workbench reads the host's compiled descriptors instead, so each sample's own workbench keeps working. … [[more]](https://github.com/Kuestenlogik/Bowire.Samples/issues/157)
 
 ### Sdk.Go v0.2 — Windows in CI, against Bowire 2.11
 
