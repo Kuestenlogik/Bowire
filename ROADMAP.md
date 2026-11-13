@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**15/34 done** · 19 backlog
+**16/34 done** · 18 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -32,7 +32,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [940](https://github.com/Kuestenlogik/Bowire/issues/940) | Bowire | [Verify the collection importers against real Insomnia and Bruno exports](#issue-kuestenlogik-bowire-940) | ⬜ Backlog |  |
 | [946](https://github.com/Kuestenlogik/Bowire/issues/946) | Bowire | [Data sets for flow runs and bowire test --workspace](#issue-kuestenlogik-bowire-946) | ⬜ Backlog |  |
 | [963](https://github.com/Kuestenlogik/Bowire/issues/963) | Bowire | [WebSocketAuthProbe: forged JWT (alg:none, tampered signature) on the upgrade](#issue-kuestenlogik-bowire-963) | ⬜ Backlog | `area:security` |
-| [993](https://github.com/Kuestenlogik/Bowire/issues/993) | Bowire | [REST embedded: discover from the host's OpenAPI document instead of reflecting over its types](#issue-kuestenlogik-bowire-993) | ⬜ Backlog | `area:workbench` |
 | [994](https://github.com/Kuestenlogik/Bowire/issues/994) | Bowire | [Schema imports per plugin: GraphQL SDL, AsyncAPI, WSDL, EDMX and OpenRPC](#issue-kuestenlogik-bowire-994) | ⬜ Backlog | `area:workbench` |
 | [1016](https://github.com/Kuestenlogik/Bowire/issues/1016) | Bowire | [bowire scan: accept --schema like the other commands](#issue-kuestenlogik-bowire-1016) | ⬜ Backlog | `area:cli` |
 | [673](https://github.com/Kuestenlogik/Bowire/issues/673) | Bowire | [Export requests as .http — Copy as .http, and bowire export http for a whole collection](#issue-kuestenlogik-bowire-673) | ✅ Done | `area:workbench` |
@@ -42,6 +41,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [990](https://github.com/Kuestenlogik/Bowire/issues/990) | Bowire | [Sidecar executable: a bare name in the plugin directory ignores PATHEXT on Windows](#issue-kuestenlogik-bowire-990) | ✅ Done | `area:plugin-sdk` |
 | [991](https://github.com/Kuestenlogik/Bowire/issues/991) | Bowire | [gRPC without server reflection: upload a descriptor set and call through it from the workbench](#issue-kuestenlogik-bowire-991) | ✅ Done | `area:workbench` |
 | [992](https://github.com/Kuestenlogik/Bowire/issues/992) | Bowire | [gRPC embedded: discover from the host's compiled descriptors instead of mapping a reflection service](#issue-kuestenlogik-bowire-992) | ✅ Done | `area:workbench` |
+| [993](https://github.com/Kuestenlogik/Bowire/issues/993) | Bowire | [REST embedded: discover from the host's OpenAPI document instead of reflecting over its types](#issue-kuestenlogik-bowire-993) | ✅ Done | `area:workbench` |
 | [995](https://github.com/Kuestenlogik/Bowire/issues/995) | Bowire | [Manual entry for every protocol: freeform metadata and streaming, Compose layouts for the protocols without one](#issue-kuestenlogik-bowire-995) | ✅ Done | `area:workbench` |
 | [996](https://github.com/Kuestenlogik/Bowire/issues/996) | Bowire | [SOAP by hand: the freeform form drops the metadata that carries soap_action and target_namespace](#issue-kuestenlogik-bowire-996) | ✅ Done | `area:workbench` |
 | [998](https://github.com/Kuestenlogik/Bowire/issues/998) | Bowire | [Release announcements on Discussions are titled with the bare version since 2.8.0](#issue-kuestenlogik-bowire-998) | ✅ Done |  |
@@ -290,12 +290,6 @@ Follow-up of #675. `--data` drives a test collection. A flow file, or a `--works
 
 Kuestenlogik/Bowire.VulnDb#51 (CVE-2026-113620, Eclipse ioFog Controller): the WebSocket upgrades on the exec and log routes decode the bearer JWT without verifying it, so a self-minted token whose groups contain `admin` is accepted. The HTTP routes of the same server verify the token. [[more]](https://github.com/Kuestenlogik/Bowire/issues/963)
 
-#### <a id="issue-kuestenlogik-bowire-993"></a>⬜ Backlog · [#993](https://github.com/Kuestenlogik/Bowire/issues/993) REST embedded: discover from the host's OpenAPI document instead of reflecting over its types
-
-> `area:workbench`
-
-Embedded REST discovery walks ApiExplorer and reflects over the body types with `GetProperties` (`src/Kuestenlogik.Bowire.Protocol.Rest/EmbeddedDiscovery.cs:31, 107, 352, 418`). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/993)
-
 #### <a id="issue-kuestenlogik-bowire-994"></a>⬜ Backlog · [#994](https://github.com/Kuestenlogik/Bowire/issues/994) Schema imports per plugin: GraphQL SDL, AsyncAPI, WSDL, EDMX and OpenRPC
 
 > `area:workbench`
@@ -347,6 +341,12 @@ Without server reflection a gRPC method cannot be called from the workbench. An 
 > `area:workbench`
 
 Embedded, `AddBowire` / `MapBowire` register and map the host's gRPC reflection service (`src/Kuestenlogik.Bowire.Protocol.Grpc/BowireGrpcProtocol.cs:207-220`, `BowireApiEndpoints.cs:74`), and Bowire then reads the host's own services back over the wire. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/992)
+
+#### <a id="issue-kuestenlogik-bowire-993"></a>✅ Done · [#993](https://github.com/Kuestenlogik/Bowire/issues/993) REST embedded: discover from the host's OpenAPI document instead of reflecting over its types
+
+> `area:workbench`
+
+Embedded REST discovery walks ApiExplorer and reflects over the body types with `GetProperties` (`src/Kuestenlogik.Bowire.Protocol.Rest/EmbeddedDiscovery.cs:31, 107, 352, 418`). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/993)
 
 #### <a id="issue-kuestenlogik-bowire-995"></a>✅ Done · [#995](https://github.com/Kuestenlogik/Bowire/issues/995) Manual entry for every protocol: freeform metadata and streaming, Compose layouts for the protocols without one
 
