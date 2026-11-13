@@ -188,9 +188,9 @@ The same contract rides over two wires (like MCP's stdio + streamable-HTTP):
   response body carries the JSON-RPC reply); server-initiated
   notifications (`$/stream/data`, `$/channel/data`, …) stream back over
   one long-lived **SSE** `GET` on the same endpoint. Bowire does *not*
-  own the process — disposing just closes the SSE stream and sends a
-  best-effort `shutdown` the service may ignore. Suits hosted /
-  multi-tenant deployments where one sidecar serves many hosts.
+  own the process, and the sidecar may serve several hosts at once. Suits
+  hosted / multi-tenant deployments where one sidecar serves many hosts.
+  What keeps those hosts apart is the [session](#sessions-over-http).
 
 ```json
 { "packageId": "Acme.Bowire.Protocol.Remote",
@@ -200,6 +200,50 @@ The same contract rides over two wires (like MCP's stdio + streamable-HTTP):
 ```
 
 The method surface below is identical on both transports.
+
+### Sessions over http
+
+Over stdio the pipe is the host: one process, one host, and everything the
+sidecar holds belongs to it. Over http nothing on the wire used to tell two
+hosts apart, so the first host to leave could end the second host's channels.
+
+A host therefore names itself. It mints a session id when it opens the
+transport and sends it as the `Bowire-Session` request header on every POST
+and on the SSE `GET`:
+
+```http
+POST /rpc HTTP/1.1
+Content-Type: application/json
+Bowire-Session: 6f1c0d9e3b7a4c52a1d0e8f4b2c7a913
+```
+
+The id is opaque to the sidecar: compare it, do not parse it. The rules a
+sidecar follows:
+
+- **Ownership.** A stream started by `invokeStream` and a channel opened by
+  `openChannel` belong to the session of the request that started them.
+- **Delivery.** A notification for a stream or channel goes to the SSE
+  streams of the session that owns it, not to every connected host. One host
+  never reads another host's frames.
+- **A session ends** when its host sends `shutdown`, or when its last SSE
+  stream closes. The second covers a host that crashed or lost the network
+  before it could say anything. Either way the sidecar closes the session's
+  channels (the plugin's close handlers run), stops its streams, and keeps
+  serving every other session. Ending a session twice is harmless.
+- **`channel.send` and `channel.close`** reach only a channel of the
+  caller's own session. For any other id the answer is the same "channel is
+  closed" error as for an id that never existed.
+- **The plugin's `shutdown` hook is not a session event.** It runs once,
+  when the sidecar process itself stops, in every SDK and on both transports.
+
+A host that reconnects after its SSE stream dropped mints a new id: the old
+session's streams and channels are already gone.
+
+A request without the header comes from a host older than this rule, or from
+a hand-written client. The sidecar treats all such requests as one unnamed
+session and still delivers their notifications to every SSE stream that also
+sent no header. A `shutdown` without the header is acknowledged and ends
+nothing, since the sidecar cannot know whose streams it would be ending.
 
 ## JSON-RPC method surface
 
@@ -357,8 +401,18 @@ unhealthy and surfaces the error in `bowire plugin list --verbose`.
 
 ### `shutdown` (host → sidecar, request)
 
-Asks the sidecar to clean up + exit. The host waits up to
-`shutdownTimeoutMs` for the process to exit on its own, then kills it.
+What it means depends on who owns the process.
+
+- **stdio:** the host owns the sidecar and is stopping it. The sidecar closes
+  every channel, runs the plugin's `shutdown` hook, replies and exits. The
+  host waits up to `shutdownTimeoutMs` for the process to exit on its own,
+  then kills it.
+- **http:** the host is leaving; the sidecar stays. The sidecar ends the
+  [session](#sessions-over-http) named by the request's `Bowire-Session`
+  header, replies, and keeps serving. It does not run the plugin's `shutdown`
+  hook and does not touch another session's streams or channels. The request
+  is best-effort from the host's side, which is why a closed SSE stream ends
+  the session as well.
 
 ### `ping` (host → sidecar, request)
 
@@ -456,7 +510,9 @@ are duplex by nature.
    `invokeStream` / `openChannel` as the workbench drives them.
 4. **Shutdown** — host sends `shutdown` on graceful host exit; gives
    the sidecar `shutdownTimeoutMs` to terminate; SIGKILLs (or
-   `Process.Kill()` on Windows) on timeout.
+   `Process.Kill()` on Windows) on timeout. An http sidecar is not
+   spawned and not stopped: `shutdown` ends the host's
+   [session](#sessions-over-http) there, nothing more.
 5. **Crash recovery** — if the sidecar exits unexpectedly, the host
    treats the next `invoke` as a transport error (`Status` = the exit
    reason), and the **next** call respawns the process. No automatic

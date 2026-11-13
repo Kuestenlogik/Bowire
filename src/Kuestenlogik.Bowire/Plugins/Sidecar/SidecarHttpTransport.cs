@@ -18,14 +18,28 @@ namespace Kuestenlogik.Bowire.Plugins.Sidecar;
 /// and route through the shared <see cref="SidecarSubscriptionHub"/>.
 /// </summary>
 /// <remarks>
+/// <para>
 /// Unlike the stdio transport, the sidecar here is a (possibly remote)
 /// service Bowire does <em>not</em> own — there's no process to spawn or
-/// kill. Disposing just closes the SSE stream + sends a best-effort
-/// <c>shutdown</c> POST the service may ignore. Suits hosted / shared
-/// deployments where a sidecar runs once and serves many hosts.
+/// kill, and it may serve other hosts at the same time. Suits hosted /
+/// shared deployments where a sidecar runs once and serves many hosts.
+/// </para>
+/// <para>
+/// What tells this host apart from the others is its session: an id minted
+/// per transport and sent as the <see cref="SessionHeader"/> header on every
+/// POST and on the SSE GET (#1014). The streams and channels opened under it
+/// are this host's. Disposing sends a best-effort <c>shutdown</c>, which over
+/// http means "this session is leaving", and closes the SSE stream; the
+/// sidecar ends what belongs to the session and keeps serving the rest.
+/// </para>
 /// </remarks>
 internal sealed class SidecarHttpTransport : ISidecarTransport
 {
+    /// <summary>
+    /// The request header that carries the host's session id over http.
+    /// </summary>
+    internal const string SessionHeader = "Bowire-Session";
+
     private readonly HttpClient _http;
     private readonly Uri _endpoint;
     private readonly SidecarSubscriptionHub _hub = new();
@@ -64,6 +78,10 @@ internal sealed class SidecarHttpTransport : ISidecarTransport
             throw new InvalidOperationException($"http sidecar url '{manifest.Url}' is not an absolute URI.");
 
         var http = new HttpClient { Timeout = Timeout.InfiniteTimeSpan };
+        // One session per transport: a host that reconnects after its SSE
+        // stream dropped is a new session, since the sidecar ended the old
+        // one's streams and channels when the stream went away.
+        http.DefaultRequestHeaders.Add(SessionHeader, Guid.NewGuid().ToString("N"));
         var transport = new SidecarHttpTransport(http, endpoint);
         await transport.OpenSseAsync(ct).ConfigureAwait(false);
         return transport;
@@ -180,9 +198,10 @@ internal sealed class SidecarHttpTransport : ISidecarTransport
 
     public async ValueTask DisposeAsync()
     {
-        // Best-effort tell the service we're leaving — it may ignore
-        // this (a shared service keeps running for other hosts). The
-        // sidecar shutdown is a best-effort hint; any failure (network
+        // Best-effort tell the service this session is leaving. It ends
+        // the session's streams and channels and keeps running for the
+        // other hosts; closing the SSE stream below says the same thing
+        // to a sidecar the POST did not reach. Any failure (network
         // error, timeout, refusal) is irrelevant during DisposeAsync.
 #pragma warning disable CA1031 // Do not catch general exception types
         try

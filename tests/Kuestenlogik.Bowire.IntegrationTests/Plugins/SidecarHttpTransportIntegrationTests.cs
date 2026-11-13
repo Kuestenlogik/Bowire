@@ -1,6 +1,7 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Collections.Concurrent;
 using System.Text.Json;
 using System.Threading.Channels;
 using Kuestenlogik.Bowire.Plugins.Sidecar;
@@ -30,6 +31,17 @@ public sealed class SidecarHttpTransportIntegrationTests : IAsyncLifetime
     private readonly Channel<string> _sse =
         Channel.CreateUnbounded<string>(new UnboundedChannelOptions { SingleReader = true });
 
+    // What each request said about its session (#1014): the JSON-RPC method
+    // (or "GET" for the SSE stream) and the Bowire-Session header it carried.
+    private readonly ConcurrentQueue<(string What, string? Session)> _sessions = new();
+
+    // Completed once an SSE stream is being served, so a test reads the
+    // recorded GET after it happened rather than hoping it has.
+    private readonly Channel<string?> _sseOpened = Channel.CreateUnbounded<string?>();
+
+    private static string? SessionOf(HttpContext ctx) =>
+        ctx.Request.Headers.TryGetValue("Bowire-Session", out var v) ? v.ToString() : null;
+
     public async ValueTask InitializeAsync()
     {
         var builder = WebApplication.CreateBuilder();
@@ -40,6 +52,8 @@ public sealed class SidecarHttpTransportIntegrationTests : IAsyncLifetime
         // SSE notification stream — held open, flushes each enqueued event.
         _app.MapGet("/rpc", async (HttpContext ctx) =>
         {
+            _sessions.Enqueue(("GET", SessionOf(ctx)));
+            await _sseOpened.Writer.WriteAsync(SessionOf(ctx), ctx.RequestAborted);
             ctx.Response.Headers.ContentType = "text/event-stream";
             ctx.Response.Headers.CacheControl = "no-cache";
             await ctx.Response.Body.FlushAsync(ctx.RequestAborted);
@@ -62,6 +76,7 @@ public sealed class SidecarHttpTransportIntegrationTests : IAsyncLifetime
             var method = root.GetProperty("method").GetString();
             var id = root.TryGetProperty("id", out var idEl) ? idEl.Clone() : default;
             var p = root.TryGetProperty("params", out var pEl) ? pEl : default;
+            _sessions.Enqueue((method ?? "", SessionOf(ctx)));
 
             object result;
             switch (method)
@@ -188,6 +203,45 @@ public sealed class SidecarHttpTransportIntegrationTests : IAsyncLifetime
         Assert.Equal("Http Echo", plugin.Name);
         Assert.Equal("<svg/>", plugin.IconSvg);
         await DisposeTransport(plugin);
+    }
+
+    [Fact]
+    public async Task Http_Every_Request_And_The_Sse_Stream_Carry_One_Session()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var plugin = BuildPlugin();
+        _ = await plugin.DiscoverAsync("httpecho://demo", false, ct);
+        _ = await plugin.InvokeAsync("httpecho://demo", "Echo", "Echo/echo", ["hi"], false, null, ct);
+        var transport = await plugin.EnsureStartedAsync(ct);
+        // Disposing sends the shutdown: the request that most needs to say
+        // whose session it ends.
+        await transport.DisposeAsync();
+
+        var seen = _sessions.ToArray();
+        Assert.Equal(
+            ["GET", "initialize", "discover", "invoke", "shutdown"],
+            seen.Select(s => s.What));
+        var session = Assert.Single(seen.Select(s => s.Session).Distinct());
+        Assert.False(string.IsNullOrEmpty(session));
+    }
+
+    [Fact]
+    public async Task Http_Two_Hosts_On_One_Sidecar_Are_Two_Sessions()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var first = BuildPlugin();
+        var second = BuildPlugin();
+        var firstTransport = await first.EnsureStartedAsync(ct);
+        var firstSession = await _sseOpened.Reader.ReadAsync(ct);
+        var secondTransport = await second.EnsureStartedAsync(ct);
+        var secondSession = await _sseOpened.Reader.ReadAsync(ct);
+
+        Assert.False(string.IsNullOrEmpty(firstSession));
+        Assert.False(string.IsNullOrEmpty(secondSession));
+        Assert.NotEqual(firstSession, secondSession);
+
+        await firstTransport.DisposeAsync();
+        await secondTransport.DisposeAsync();
     }
 
     private static async Task DisposeTransport(SidecarBowireProtocol plugin)
