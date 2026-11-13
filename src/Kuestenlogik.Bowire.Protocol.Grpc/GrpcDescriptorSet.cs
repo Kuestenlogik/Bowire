@@ -62,11 +62,21 @@ internal static class GrpcDescriptorSet
 
         try
         {
-            var bytes = ReadBytes(raw);
-            if (bytes is null || bytes.Length == 0) return null;
+            // Several sets become one list, a file name counted once: two
+            // sets compiled from one tree both carry the shared imports, and
+            // the builder refuses a file it is handed twice.
+            var files = new List<FileDescriptorProto>();
+            var names = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var bytes in ReadSets(raw))
+            {
+                if (bytes.Length == 0) continue;
+                foreach (var file in FileDescriptorSet.Parser.ParseFrom(bytes).File)
+                {
+                    if (names.Add(file.Name)) files.Add(file);
+                }
+            }
 
-            var set = FileDescriptorSet.Parser.ParseFrom(bytes);
-            return set.File.Count > 0 ? set.File.ToList() : null;
+            return files.Count > 0 ? files : null;
         }
         catch (Exception ex) when (ex is JsonException or InvalidProtocolBufferException
             or IOException or UnauthorizedAccessException or FormatException or NotSupportedException)
@@ -94,7 +104,7 @@ internal static class GrpcDescriptorSet
         => JsonSerializer.Serialize(new DescriptorMarker { Path = path });
 
     /// <summary>
-    /// The marker is JSON with either a path or inline bytes.
+    /// The marker is JSON with a path, a list of paths, or inline bytes.
     /// </summary>
     /// <remarks>
     /// Both, because the two callers differ: a CLI or CI run names a file it
@@ -102,22 +112,28 @@ internal static class GrpcDescriptorSet
     /// the server could open. Supporting only one would have made the other
     /// caller invent a temporary file.
     /// </remarks>
-    private static byte[]? ReadBytes(string raw)
+    private static IEnumerable<byte[]> ReadSets(string raw)
     {
         var trimmed = raw.TrimStart();
         if (!trimmed.StartsWith('{'))
         {
             // A bare value is a path — the shape a hand-written scan invocation
             // produces, and not worth demanding JSON for.
-            return File.Exists(raw) ? File.ReadAllBytes(raw) : null;
+            if (File.Exists(raw)) yield return File.ReadAllBytes(raw);
+            yield break;
         }
 
         var marker = JsonSerializer.Deserialize<DescriptorMarker>(raw, s_markerJson);
-        if (marker is null) return null;
+        if (marker is null) yield break;
 
-        if (!string.IsNullOrWhiteSpace(marker.Base64)) return Convert.FromBase64String(marker.Base64);
-        if (!string.IsNullOrWhiteSpace(marker.Path) && File.Exists(marker.Path)) return File.ReadAllBytes(marker.Path);
-        return null;
+        if (!string.IsNullOrWhiteSpace(marker.Base64)) yield return Convert.FromBase64String(marker.Base64);
+        if (!string.IsNullOrWhiteSpace(marker.Path) && File.Exists(marker.Path)) yield return File.ReadAllBytes(marker.Path);
+
+        // Several files (#1016): a scan given more than one --schema.
+        foreach (var path in marker.Paths ?? [])
+        {
+            if (!string.IsNullOrWhiteSpace(path) && File.Exists(path)) yield return File.ReadAllBytes(path);
+        }
     }
 
     /// <summary>
@@ -319,6 +335,7 @@ internal static class GrpcDescriptorSet
     {
         public string? Path { get; set; }
         public string? Base64 { get; set; }
+        public List<string>? Paths { get; set; }
     }
 }
 

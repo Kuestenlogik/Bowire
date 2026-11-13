@@ -26,6 +26,10 @@
   </ItemGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="Kuestenlogik.Bowire.Cli.Tests" />
+    <!-- CliSchemaInputs: the commands that take `schema` files live in
+         these two assemblies (#1016). -->
+    <InternalsVisibleTo Include="bowire" />
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.Security.Scanner" />
     <InternalsVisibleTo Include="Kuestenlogik.Bowire.Tests" />
   </ItemGroup>
 </Project>

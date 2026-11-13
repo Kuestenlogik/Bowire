@@ -3,6 +3,7 @@
 
 using System.CommandLine;
 using Kuestenlogik.Bowire.App.Cli;
+using Kuestenlogik.Bowire.Cli;
 using Kuestenlogik.Bowire.Auth;
 using Microsoft.Extensions.Configuration;
 
@@ -230,7 +231,7 @@ public sealed class CliSchemaInputsTests : IDisposable
     {
         using var stderr = new StringWriter();
         var (schemas, code) = await CliSchemaInputs.ReadAsync(
-            [File_("api.pb", "syntax = \"proto3\";")], stderr);
+            [File_("api.pb", "syntax = \"proto3\";")], stderr, descriptorSets: Reader);
 
         Assert.Null(schemas);
         Assert.Equal(2, code);
@@ -245,12 +246,42 @@ public sealed class CliSchemaInputsTests : IDisposable
         // that uses an imported type, far from the protoc line that caused it.
         using var stderr = new StringWriter();
         var (schemas, code) = await CliSchemaInputs.ReadAsync(
-            [Binary("api.protoset", DescriptorSet("shop/money.proto"))], stderr);
+            [Binary("api.protoset", DescriptorSet("shop/money.proto"))], stderr, descriptorSets: Reader);
 
         Assert.Null(schemas);
         Assert.Equal(2, code);
         Assert.Contains("shop/money.proto", stderr.ToString(), StringComparison.Ordinal);
         Assert.Contains("--include_imports", stderr.ToString(), StringComparison.Ordinal);
+    }
+
+    // The gRPC plugin, as the tool passes it: what reads a set before the run.
+    private static readonly IBowireUploadedSchemaReader Reader =
+        new Kuestenlogik.Bowire.Protocol.Grpc.BowireGrpcProtocol();
+
+    [Fact]
+    public async Task Without_A_Reader_A_Descriptor_Set_Is_Passed_On_Unread()
+    {
+        // A host with no gRPC plugin has nothing to read the set with, and
+        // nothing that would use it either: the bytes go through as given.
+        using var stderr = new StringWriter();
+        var (schemas, code) = await CliSchemaInputs.ReadAsync(
+            [File_("api.pb", "not a set")], stderr);
+
+        Assert.Equal(0, code);
+        Assert.Equal(SchemaUploadStore.ProtoSetKind, Assert.Single(schemas!).Kind);
+    }
+
+    [Fact]
+    public async Task An_OpenApi_Document_Is_Refused_By_A_Command_That_Reads_None()
+    {
+        using var stderr = new StringWriter();
+        var (schemas, code) = await CliSchemaInputs.ReadAsync(
+            [File_("petstore.json", "{\"openapi\":\"3.0.0\"}")], stderr, allowOpenApi: false);
+
+        Assert.Null(schemas);
+        Assert.Equal(2, code);
+        Assert.Contains("petstore.json", stderr.ToString(), StringComparison.Ordinal);
+        Assert.Contains("descriptor set", stderr.ToString(), StringComparison.Ordinal);
     }
 
     [Fact]

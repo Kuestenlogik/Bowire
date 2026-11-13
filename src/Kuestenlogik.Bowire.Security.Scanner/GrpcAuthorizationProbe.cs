@@ -44,7 +44,7 @@ namespace Kuestenlogik.Bowire.Security.Scanner;
 /// </para>
 /// <para>
 /// On a server with reflection disabled the method list comes from
-/// <c>--grpc-descriptor-set</c> (#653). Without either, the probe says so
+/// <c>--schema</c> (#653). Without either, the probe says so
 /// rather than reporting a hardened server as clean.
 /// </para>
 /// </remarks>
@@ -140,7 +140,7 @@ internal sealed class GrpcAuthorizationProbe : IOwaspProtocolProbe
             return [Marker(ScanFindingStatus.Skipped, "API5-GRPC-NO-METHODS",
                 "gRPC authorization check skipped",
                 "No gRPC services could be enumerated: the target is not a gRPC endpoint, or Server Reflection is disabled (the desired production state). "
-                + "Re-run with --grpc-descriptor-set <api.protoset> so the check can learn which methods to test.")];
+                + "Re-run with --schema <api.protoset> so the check can learn which methods to test.")];
         }
 
         var candidates = FindPrivilegedReadOnlyMethods(services);

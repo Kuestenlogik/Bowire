@@ -896,6 +896,11 @@ internal static class BowireCli
     /// which stores it; a CLI run names it instead, so a pipeline does not
     /// depend on what somebody uploaded on another machine.
     /// </remarks>
+    // What reads a descriptor set named with --schema before the command
+    // runs: the gRPC plugin, which the tool always carries.
+    private static readonly IBowireUploadedSchemaReader s_descriptorSets =
+        new Kuestenlogik.Bowire.Protocol.Grpc.BowireGrpcProtocol();
+
     private static Option<string[]> SchemaOption() => new("--schema")
     {
         Description = "Read a schema file instead of (or as well as) asking the server: "
@@ -919,7 +924,8 @@ internal static class BowireCli
         cmd.SetAction(async (pr, _) =>
         {
             var (given, code) = await CliSchemaInputs.ReadAsync(
-                pr.GetValue(schemaFiles), pr.InvocationConfiguration.Error).ConfigureAwait(false);
+                pr.GetValue(schemaFiles), pr.InvocationConfiguration.Error,
+                descriptorSets: s_descriptorSets).ConfigureAwait(false);
             if (code != 0) return code;
             // Opened here, not in the helper: an AsyncLocal set inside an
             // async method does not survive its return (#654).
@@ -947,7 +953,8 @@ internal static class BowireCli
         cmd.SetAction(async (pr, _) =>
         {
             var (given, code) = await CliSchemaInputs.ReadAsync(
-                pr.GetValue(schemaFiles), pr.InvocationConfiguration.Error, allowProto: false).ConfigureAwait(false);
+                pr.GetValue(schemaFiles), pr.InvocationConfiguration.Error, allowProto: false,
+                descriptorSets: s_descriptorSets).ConfigureAwait(false);
             if (code != 0) return code;
             // Opened here, not in the helper: an AsyncLocal set inside an
             // async method does not survive its return (#654).
@@ -975,7 +982,8 @@ internal static class BowireCli
         cmd.SetAction(async (pr, _) =>
         {
             var (given, code) = await CliSchemaInputs.ReadAsync(
-                pr.GetValue(schemaFiles), pr.InvocationConfiguration.Error, allowProto: false).ConfigureAwait(false);
+                pr.GetValue(schemaFiles), pr.InvocationConfiguration.Error, allowProto: false,
+                descriptorSets: s_descriptorSets).ConfigureAwait(false);
             if (code != 0) return code;
             // Opened here, not in the helper: an AsyncLocal set inside an
             // async method does not survive its return (#654).
@@ -1064,7 +1072,8 @@ internal static class BowireCli
         cmd.SetAction(async (pr, ct) =>
         {
             var (given, code) = await CliSchemaInputs.ReadAsync(
-                pr.GetValue(schemaFiles), pr.InvocationConfiguration.Error, allowProto: false).ConfigureAwait(false);
+                pr.GetValue(schemaFiles), pr.InvocationConfiguration.Error, allowProto: false,
+                descriptorSets: s_descriptorSets).ConfigureAwait(false);
             if (code != 0) return code;
             // Opened here, not in the helper: an AsyncLocal set inside an
             // async method does not survive its return (#654).
@@ -1671,7 +1680,8 @@ internal static class BowireCli
         cmd.SetAction(async (pr, _) =>
         {
             var (given, code) = await CliSchemaInputs.ReadAsync(
-                pr.GetValue(schemaFiles), pr.InvocationConfiguration.Error, allowProto: false).ConfigureAwait(false);
+                pr.GetValue(schemaFiles), pr.InvocationConfiguration.Error, allowProto: false,
+                descriptorSets: s_descriptorSets).ConfigureAwait(false);
             if (code != 0) return code;
             // Opened here, not in the helper: an AsyncLocal set inside an
             // async method does not survive its return (#654).

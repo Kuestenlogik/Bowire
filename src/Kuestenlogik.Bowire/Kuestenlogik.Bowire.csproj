@@ -48,6 +48,12 @@
     <InternalsVisibleTo Include="Kuestenlogik.Bowire.Recordings" />
     <InternalsVisibleTo Include="Kuestenlogik.Bowire.Recordings.Tests" />
     <InternalsVisibleTo Include="bowire" />
+    <!-- CliSchemaInputs reads `schema` files into SchemaUploadStore's
+         explicit scope for every assembly that contributes commands. -->
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.Cli" />
+    <!-- `bowire scan` reads its schema files through that same reader, whose
+         result is typed with SchemaUploadStore's explicit schema (#1016). -->
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.Security.Scanner" />
     <InternalsVisibleTo Include="Kuestenlogik.Bowire.ManualEntry" />
     <InternalsVisibleTo Include="Kuestenlogik.Bowire.Tests" />
     <InternalsVisibleTo Include="Kuestenlogik.Bowire.Protocol.Grpc.Tests" />

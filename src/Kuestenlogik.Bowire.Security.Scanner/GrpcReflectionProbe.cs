@@ -89,7 +89,7 @@ internal sealed class GrpcReflectionProbe : IOwaspProtocolProbe
                 $"Anonymous gRPC Server Reflection could not be attempted ({ex.GetType().Name}).")];
         }
 
-        // A descriptor set the operator supplied (--grpc-descriptor-set), if
+        // A descriptor set the operator supplied (--schema), if
         // any. Kept strictly apart from what reflection disclosed: this list is
         // what we may *call*, never evidence of what the server *exposes*.
         var supplied = await TrySuppliedServicesAsync(context, ct).ConfigureAwait(false);
@@ -106,7 +106,7 @@ internal sealed class GrpcReflectionProbe : IOwaspProtocolProbe
             return [Marker(Entry, ScanFindingStatus.Skipped, "API9-GRPC-NO-REFLECTION", "gRPC reflection not exposed — and the auth check could not run",
                 "Anonymous gRPC Server Reflection returned no services: the target is not a gRPC endpoint, or reflection is disabled (the desired production state). "
                 + "Either way the transport-authentication check did NOT run — it needs a method to call, and it had no other way to learn of one. "
-                + "Re-run with --grpc-descriptor-set <api.protoset> to name the methods yourself and let the check proceed.")];
+                + "Re-run with --schema <api.protoset> to name the methods yourself and let the check proceed.")];
         }
 
         if (reflected.Count > 0)
@@ -124,7 +124,7 @@ internal sealed class GrpcReflectionProbe : IOwaspProtocolProbe
             // The case #652 was filed for, now answered rather than reported:
             // reflection is off *and* the auth check can still run.
             findings.Add(Marker(Entry, ScanFindingStatus.Safe, "API9-GRPC-NO-REFLECTION", "gRPC reflection not exposed",
-                $"Anonymous gRPC Server Reflection returned no services — the desired production state. The {supplied.Count} service(s) named by --grpc-descriptor-set are used below to test authentication; they are the operator's own declaration and say nothing about what this server discloses."));
+                $"Anonymous gRPC Server Reflection returned no services — the desired production state. The {supplied.Count} service(s) named by --schema are used below to test authentication; they are the operator's own declaration and say nothing about what this server discloses."));
         }
 
         // Prefer what the server admitted to: it is ground truth about this
@@ -208,7 +208,7 @@ internal sealed class GrpcReflectionProbe : IOwaspProtocolProbe
         string target, IBowireProtocol protocol, List<BowireServiceInfo> services,
         IReadOnlyDictionary<string, string>? protocolMetadata, bool fromSuppliedSet, CancellationToken ct)
     {
-        var source = fromSuppliedSet ? "--grpc-descriptor-set" : "Reflection";
+        var source = fromSuppliedSet ? "--schema" : "Reflection";
         var candidates = FindReadOnlyUnaryMethods(services);
         if (candidates.Count == 0)
         {

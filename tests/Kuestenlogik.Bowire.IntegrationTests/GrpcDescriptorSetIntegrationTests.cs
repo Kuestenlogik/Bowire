@@ -57,6 +57,40 @@ public sealed class GrpcDescriptorSetIntegrationTests
     }
 
     [Fact]
+    public async Task SeveralSetsNamedInOneMarkerAreMergedAndSharedFilesCountOnce()
+    {
+        // #1016 — a scan given more than one --schema. Two sets compiled from
+        // one tree both carry the shared imports; handed to the builder twice
+        // they would be refused, so the same file here is the hard case.
+        var ct = TestContext.Current.CancellationToken;
+        await using var host = await StartGreeterWithoutReflectionAsync();
+        var dir = Directory.CreateTempSubdirectory("bowire-sets-");
+        try
+        {
+            var first = Path.Combine(dir.FullName, "a.protoset");
+            var second = Path.Combine(dir.FullName, "b.protoset");
+            await File.WriteAllBytesAsync(first, GreeterDescriptorSet(), ct);
+            await File.WriteAllBytesAsync(second, GreeterDescriptorSet(), ct);
+
+            var metadata = new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                [GrpcDescriptorSetMarkerKey] = JsonSerializer.Serialize(new { paths = new[] { first, second } }),
+            };
+
+            var result = await new BowireGrpcProtocol().InvokeAsync(
+                host.Url, "test.Greeter", "SayHello",
+                ["""{"name":"two sets","count":1}"""],
+                showInternalServices: false, metadata: metadata, ct);
+
+            Assert.Contains("two sets", result.Response ?? "", StringComparison.Ordinal);
+        }
+        finally
+        {
+            dir.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task WithoutOneTheSameCallFailsAndSaysWhatToSupply()
     {
         // The baseline this feature exists to change. The message matters as

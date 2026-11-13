@@ -73,9 +73,15 @@ by these four with a pointer at the descriptor set rather than accepted and
 quietly ignored. A set that is not one, or that was compiled without its
 imports, stops the command with exit code 2 and the reason.
 
-`--grpc-descriptor-set <path>` remains on `discover`, `list`, `describe`,
-`call` and `scan`. It hands one set to the gRPC plugin as the only source for
-that run: nothing is asked of the server, whatever service is named.
+`--grpc-descriptor-set <path>` remains on `discover`, `list`, `describe` and
+`call`. It hands one set to the gRPC plugin as the only source for that run:
+nothing is asked of the server, whatever service is named.
+
+`bowire scan` takes `--schema` as well, for descriptor sets only. There the
+set names what the gRPC checks may call and is never treated as evidence of
+what the server exposes: the reflection check still asks the server with
+nothing in hand. A `.proto` or an OpenAPI document is refused, since the scan
+would do nothing with it.
 
 ### List Services
 
@@ -335,8 +341,8 @@ cannot quietly stop being runnable.
 | `--offline` | `send http` | Print the request, variables resolved, and send nothing |
 | `--negotiate`, `--ntlm`, `--digest` | `call`, `send http` | Challenge-response authentication |
 | `-plaintext` | all | Use plaintext (no TLS) |
-| `--schema <path>` | `discover`, `list`, `describe`, `call`, `test` | A schema file to read instead of, or as well as, asking the server: a compiled gRPC descriptor set (`.protoset` / `.pb` / `.desc` / `.binpb`), an OpenAPI `.json` / `.yaml` / `.yml`, or for `discover` a `.proto` (names only). Repeatable. |
-| `--grpc-descriptor-set <path>` | `discover`, `list`, `describe`, `call`, `scan` | Compiled protobuf `FileDescriptorSet` used as the only descriptor source for the run; the server is not asked. |
+| `--schema <path>` | `discover`, `list`, `describe`, `call`, `test`, `scan` | A schema file to read instead of, or as well as, asking the server: a compiled gRPC descriptor set (`.protoset` / `.pb` / `.desc` / `.binpb`), an OpenAPI `.json` / `.yaml` / `.yml`, or for `discover` a `.proto` (names only). Repeatable. `scan` takes descriptor sets only. |
+| `--grpc-descriptor-set <path>` | `discover`, `list`, `describe`, `call` | Compiled protobuf `FileDescriptorSet` used as the only descriptor source for the run; the server is not asked. |
 | `-v, --verbose` | `list`, `discover` | Verbose output |
 
 ## Exit Codes

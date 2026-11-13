@@ -1,9 +1,7 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
-using Kuestenlogik.Bowire;
-
-namespace Kuestenlogik.Bowire.App.Cli;
+namespace Kuestenlogik.Bowire.Cli;
 
 /// <summary>
 /// <c>--schema</c> — the documents a command was handed, instead of the ones
@@ -22,6 +20,12 @@ namespace Kuestenlogik.Bowire.App.Cli;
 /// the alternative, and it is worse in the way that matters for CI: it makes
 /// a run depend on state another process wrote, on a machine the pipeline
 /// does not control, to find something the caller could simply have said.
+/// </para>
+/// <para>
+/// Here, in the CLI contract assembly, because more than one assembly
+/// contributes commands that take <c>--schema</c>: the tool's own, and
+/// <c>bowire scan</c> from the scanner (#1016). One reader means one answer
+/// to what an extension is and one wording for a refusal.
 /// </para>
 /// </remarks>
 internal static class CliSchemaInputs
@@ -71,8 +75,20 @@ internal static class CliSchemaInputs
     /// can, and they take that through this same option. Refused with a
     /// pointer rather than accepted and quietly ignored.
     /// </param>
+    /// <param name="allowOpenApi">
+    /// False for a command that reads no OpenAPI document. Refused for the
+    /// same reason: a file the command accepts and then does nothing with
+    /// lets a pipeline believe it was used.
+    /// </param>
+    /// <param name="descriptorSets">
+    /// Reads a descriptor set once, so that a file which is not one, or one
+    /// compiled without its imports, stops the command with its path instead
+    /// of surfacing as a marshalling error mid-run. The gRPC plugin is the
+    /// reader; with none available the bytes are passed on unread.
+    /// </param>
     internal static async Task<(IReadOnlyList<SchemaUploadStore.ExplicitSchema>? Schemas, int ExitCode)> ReadAsync(
-        string[]? paths, TextWriter stderr, bool allowProto = true)
+        string[]? paths, TextWriter stderr, bool allowProto = true, bool allowOpenApi = true,
+        IBowireUploadedSchemaReader? descriptorSets = null)
     {
         ArgumentNullException.ThrowIfNull(stderr);
         if (paths is null || paths.Length == 0) return (null, 0);
@@ -85,9 +101,12 @@ internal static class CliSchemaInputs
             var kind = KindOf(path);
             if (kind is null)
             {
-                await stderr.WriteLineAsync(
-                    $"bowire: --schema {path}: expected a .proto, a descriptor set "
-                    + "(.protoset, .pb, .desc, .binpb), or an OpenAPI .json, .yaml or .yml.")
+                // Only the kinds this command takes: naming one it would
+                // refuse a moment later sends the caller round twice.
+                var expected = (allowProto ? "a .proto, " : "")
+                    + "a descriptor set (.protoset, .pb, .desc, .binpb)"
+                    + (allowOpenApi ? ", or an OpenAPI .json, .yaml or .yml" : "");
+                await stderr.WriteLineAsync($"bowire: --schema {path}: expected {expected}.")
                     .ConfigureAwait(false);
                 return (null, 2);
             }
@@ -127,14 +146,20 @@ internal static class CliSchemaInputs
                 return (null, 2);
             }
 
-            if (bytes is not null)
+            if (!allowOpenApi && string.Equals(kind, SchemaUploadStore.OpenApiKind, StringComparison.Ordinal))
             {
-                // Read once here, so a file that is not a descriptor set, or
-                // one compiled without its imports, is refused with its path
-                // instead of surfacing as a marshalling error mid-run.
+                await stderr.WriteLineAsync(
+                    $"bowire: --schema {path}: this command reads no OpenAPI document; it probes the target itself. "
+                    + "It takes a gRPC descriptor set (.protoset, .pb, .desc, .binpb).")
+                    .ConfigureAwait(false);
+                return (null, 2);
+            }
+
+            if (bytes is not null && descriptorSets is not null)
+            {
                 try
                 {
-                    Kuestenlogik.Bowire.Protocol.Grpc.GrpcDescriptorSet.Parse(bytes);
+                    descriptorSets.ReadUploadedSchema(bytes);
                 }
                 catch (FormatException ex)
                 {

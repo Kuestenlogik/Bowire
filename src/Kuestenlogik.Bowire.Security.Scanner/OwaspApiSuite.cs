@@ -268,7 +268,7 @@ internal static class OwaspApiSuite
 
     /// <summary>
     /// Same, with plugin configuration for this scan —
-    /// <c>--grpc-descriptor-set</c> and anything else that travels in the
+    /// <c>--schema</c> and anything else that travels in the
     /// metadata bag rather than as a header.
     /// </summary>
     public static async Task<IReadOnlyList<ScanFinding>> RunProtocolProbesAsync(

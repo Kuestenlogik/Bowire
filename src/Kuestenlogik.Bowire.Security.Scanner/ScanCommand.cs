@@ -700,11 +700,16 @@ public static class ScanCommand
     internal static IReadOnlyDictionary<string, string>? ProtocolMetadataFor(ScanOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
-        if (string.IsNullOrWhiteSpace(options.GrpcDescriptorSetPath)) return null;
+        var paths = options.GrpcDescriptorSetPaths;
+        if (paths.Count == 0) return null;
 
+        // One set is the bare path the marker has always taken; several
+        // travel as the marker's `paths` list and are merged by the plugin.
         return new Dictionary<string, string>(StringComparer.Ordinal)
         {
-            [BowireMetadataKeys.GrpcDescriptorSet] = options.GrpcDescriptorSetPath,
+            [BowireMetadataKeys.GrpcDescriptorSet] = paths.Count == 1
+                ? paths[0]
+                : System.Text.Json.JsonSerializer.Serialize(new { paths }),
         };
     }
 
@@ -1611,14 +1616,14 @@ public sealed class ScanOptions
     public IList<string> AuthHeadersB { get; init; } = new List<string>();
 
     /// <summary>
-    /// Path to a compiled gRPC descriptor set (<c>--grpc-descriptor-set</c>).
+    /// Paths to the compiled gRPC descriptor sets named with <c>--schema</c>.
     /// </summary>
     /// <remarks>
-    /// Deliberately a path on the scan, not a workspace lookup. A scan runs in
+    /// Deliberately paths on the scan, not a workspace lookup. A scan runs in
     /// CI against a URL with no workspace anywhere near it, and requiring one
-    /// would have made the flag unusable exactly where hardened servers live.
+    /// would have made the option unusable exactly where hardened servers live.
     /// </remarks>
-    public string? GrpcDescriptorSetPath { get; init; }
+    public IReadOnlyList<string> GrpcDescriptorSetPaths { get; init; } = [];
 }
 
 /// <summary>One scan-result row — what happened when the template was run against the target.</summary>

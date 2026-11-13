@@ -32,7 +32,7 @@ A gRPC server with reflection switched off could be listed in the workbench from
 
 The set answers for the services it describes. A call to any other service still asks its server, so one workspace can hold servers with and without reflection. A set compiled without `--include_imports` is refused at upload with the name of the missing file. Uploading a `.proto` now says that it gives names only and points at the descriptor set.
 
-On the command line, `--schema api.protoset` does the same for `discover`, `list`, `describe` and `call`, and `bowire test` gains `--schema`, so a test run can reach a server without reflection.
+On the command line, `--schema api.protoset` does the same for `discover`, `list`, `describe` and `call`, and `bowire test` gains `--schema`, so a test run can reach a server without reflection. `bowire scan` takes `--schema` for descriptor sets too, more than one if needed (#1016).
 
 ### An embedded workbench reads the host's gRPC contract in-process (#992)
 
@@ -89,6 +89,10 @@ the migration path. -->
 Up to 2.10 every host that embedded Bowire with the gRPC plugin exposed `grpc.reflection.v1` and `grpc.reflection.v1alpha` as a side effect. They are no longer mapped. The embedded workbench does not need them.
 
 If clients outside the process (grpcurl, a standalone Bowire pointed at the host) rely on them, opt in: `builder.Services.AddBowireGrpc(grpc => grpc.MapReflectionService = true)`, or call `app.MapGrpcReflectionService()` yourself. Do one, not both.
+
+### `bowire scan --grpc-descriptor-set` is now `--schema` (#1016)
+
+The scan named its descriptor set with an option of its own. It takes `--schema <file>` like the other commands, and `--grpc-descriptor-set` is removed from `scan`. Replace the option name; the file and what the scan does with it are unchanged.
 
 ### `BowireOptions.ProtoSources` and `ProtoSource` are removed (#992)
 
