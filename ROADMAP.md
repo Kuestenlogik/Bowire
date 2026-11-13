@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**13/33 done** · 20 backlog
+**13/34 done** · 21 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -36,6 +36,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [992](https://github.com/Kuestenlogik/Bowire/issues/992) | Bowire | [gRPC embedded: discover from the host's compiled descriptors instead of mapping a reflection service](#issue-kuestenlogik-bowire-992) | ⬜ Backlog | `area:workbench` |
 | [993](https://github.com/Kuestenlogik/Bowire/issues/993) | Bowire | [REST embedded: discover from the host's OpenAPI document instead of reflecting over its types](#issue-kuestenlogik-bowire-993) | ⬜ Backlog | `area:workbench` |
 | [994](https://github.com/Kuestenlogik/Bowire/issues/994) | Bowire | [Schema imports per plugin: GraphQL SDL, AsyncAPI, WSDL, EDMX and OpenRPC](#issue-kuestenlogik-bowire-994) | ⬜ Backlog | `area:workbench` |
+| [1016](https://github.com/Kuestenlogik/Bowire/issues/1016) | Bowire | [bowire scan: accept --schema like the other commands](#issue-kuestenlogik-bowire-1016) | ⬜ Backlog |  |
 | [673](https://github.com/Kuestenlogik/Bowire/issues/673) | Bowire | [Export requests as .http — Copy as .http, and bowire export http for a whole collection](#issue-kuestenlogik-bowire-673) | ✅ Done | `area:workbench` |
 | [986](https://github.com/Kuestenlogik/Bowire/issues/986) | Bowire | [The .NET plugin loader scans sidecar folders and logs ManifestMissing for every sidecar](#issue-kuestenlogik-bowire-986) | ✅ Done | `area:plugin-sdk` |
 | [987](https://github.com/Kuestenlogik/Bowire/issues/987) | Bowire | [sidecar-plugins.md: no SDK sends select options, and python3 as the manifest example fails on Windows](#issue-kuestenlogik-bowire-987) | ✅ Done | `area:docs` |
@@ -163,6 +164,14 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [7](https://github.com/Kuestenlogik/Bowire.Sdk.Go/issues/7) | Sdk.Go | [e2e on Windows in CI, once Bowire 2.11 is released](#issue-kuestenlogik-bowire-sdk-go-7) | ⬜ Backlog |  |
+
+### Sdk.Python v0.5 — Duplex channels
+
+**0/1 done** · 1 backlog
+
+| # | Project | Title | Status | Tags |
+|---|---|---|---|---|
+| [11](https://github.com/Kuestenlogik/Bowire.Sdk.Python/issues/11) | Sdk.Python | [Duplex channels: open_channel, channel.send and channel.close, owned by the session that opened them](#issue-kuestenlogik-bowire-sdk-python-11) | ⬜ Backlog | `area:plugin-sdk` |
 
 ### Templates v1.1.17 — No warning suppressions *(due 2026-11-14)*
 
@@ -296,6 +305,10 @@ Embedded REST discovery walks ApiExplorer and reflects over the body types with 
 > `area:workbench`
 
 The workbench upload knows two kinds: `.proto` goes to the proto endpoint, everything else to the OpenAPI endpoint (`src/Kuestenlogik.Bowire/wwwroot/js/helpers.js:179-181`), and the picker accepts only `.proto,.json,.yaml,.yml` (`render-sidebar.js:722`). … [[more]](https://github.com/Kuestenlogik/Bowire/issues/994)
+
+#### <a id="issue-kuestenlogik-bowire-1016"></a>⬜ Backlog · [#1016](https://github.com/Kuestenlogik/Bowire/issues/1016) bowire scan: accept --schema like the other commands
+
+Since #991, `--schema api.protoset` names a compiled gRPC descriptor set for `discover`, `list`, `describe`, `call` and `test`. `bowire scan` does not take `--schema`: it only has `--grpc-descriptor-set`, which hands the set to the gRPC checks as the sole descriptor source. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/1016)
 
 #### <a id="issue-kuestenlogik-bowire-673"></a>✅ Done · [#673](https://github.com/Kuestenlogik/Bowire/issues/673) Export requests as .http — Copy as .http, and bowire export http for a whole collection
 
@@ -654,6 +667,14 @@ README and `docs/protocol.md` offer `surgewave://broker:9092?protocol=kafka` (th
 #### <a id="issue-kuestenlogik-bowire-sdk-go-7"></a>⬜ Backlog · [Kuestenlogik/Bowire.Sdk.Go#7](https://github.com/Kuestenlogik/Bowire.Sdk.Go/issues/7) e2e on Windows in CI, once Bowire 2.11 is released
 
 The e2e job runs on Linux only. The example's manifest names its binary as a bare `echo`, and on Windows the host used to miss the shipped `echo.exe` and start the first `echo.exe` on PATH instead (Git's). … [[more]](https://github.com/Kuestenlogik/Bowire.Sdk.Go/issues/7)
+
+### Sdk.Python v0.5 — Duplex channels
+
+#### <a id="issue-kuestenlogik-bowire-sdk-python-11"></a>⬜ Backlog · [Kuestenlogik/Bowire.Sdk.Python#11](https://github.com/Kuestenlogik/Bowire.Sdk.Python/issues/11) Duplex channels: open_channel, channel.send and channel.close, owned by the session that opened them
+
+> `area:plugin-sdk`
+
+The Python SDK has no duplex channels. A plugin cannot implement `open_channel`, the runtime answers `openChannel` / `channel.send` / `channel.close` with "method not found", and `initialize` reports `capabilities.channels: false` for every plugin. … [[more]](https://github.com/Kuestenlogik/Bowire.Sdk.Python/issues/11)
 
 ### Templates v1.1.17 — No warning suppressions *(due 2026-11-14)*
 
