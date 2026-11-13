@@ -19,61 +19,6 @@ namespace Kuestenlogik.Bowire.Tests;
 /// </summary>
 public class BowireEndpointHelpersTests
 {
-    [Fact]
-    public void MergeServices_Preserves_Proto_Order_And_Appends_Protocol_Services()
-    {
-        var protoServices = new List<BowireServiceInfo>
-        {
-            new("Alpha", "demo", new List<BowireMethodInfo>()),
-            new("Beta",  "demo", new List<BowireMethodInfo>()),
-        };
-        var protocolServices = new List<BowireServiceInfo>
-        {
-            new("Gamma", "demo", new List<BowireMethodInfo>()),
-        };
-
-        var merged = BowireEndpointHelpers.MergeServices(protoServices, protocolServices);
-
-        Assert.Collection(merged,
-            s => Assert.Equal("Alpha", s.Name),
-            s => Assert.Equal("Beta", s.Name),
-            s => Assert.Equal("Gamma", s.Name));
-    }
-
-    [Fact]
-    public void MergeServices_Drops_Protocol_Service_When_Name_Already_Present_In_Proto()
-    {
-        // The proto-sourced service is authoritative — when both sides surface
-        // the same service name, the proto version wins. This is the contract
-        // the discovery endpoint depends on so user uploads don't get
-        // shadowed by a stale reflection-discovered shape.
-        var protoServices = new List<BowireServiceInfo>
-        {
-            new("Greeter", "demo", new List<BowireMethodInfo>()) { Source = "proto" },
-        };
-        var protocolServices = new List<BowireServiceInfo>
-        {
-            new("Greeter", "demo", new List<BowireMethodInfo>()) { Source = "grpc" },
-            new("Other", "demo", new List<BowireMethodInfo>()) { Source = "grpc" },
-        };
-
-        var merged = BowireEndpointHelpers.MergeServices(protoServices, protocolServices);
-
-        Assert.Equal(2, merged.Count);
-        Assert.Equal("proto", merged[0].Source);
-        Assert.Equal("Other", merged[1].Name);
-    }
-
-    [Fact]
-    public void MergeServices_Empty_Inputs_Return_Empty_List()
-    {
-        var merged = BowireEndpointHelpers.MergeServices(
-            new List<BowireServiceInfo>(),
-            new List<BowireServiceInfo>());
-
-        Assert.Empty(merged);
-    }
-
     [Theory]
     [InlineData(null, "")]
     [InlineData("", "")]

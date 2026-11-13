@@ -36,8 +36,7 @@
 // Hardened shape — the one production is supposed to look like:
 //   dotnet run --project samples/Kuestenlogik.Bowire.Sample.Grpc -- --hardened
 //
-// That drops the embedded workbench and, with it, Server Reflection: the
-// plugin's MapBowire() hook is what maps the reflection endpoint here.
+// That drops the embedded workbench and Server Reflection.
 // What is left is a bare gRPC server that will not tell a caller what it
 // hosts — so a client needs a descriptor set built from greeter.proto:
 //
@@ -65,10 +64,12 @@ builder.WebHost.ConfigureKestrel(options =>
     options.ListenLocalhost(5183, listen => listen.Protocols = HttpProtocols.Http2);
 });
 
-// The gRPC server surface. Reflection lets Bowire's gRPC plugin discover
-// the service without a .proto upload. AddGrpcReflection() is idempotent
-// and AddBowire() calls it too — spelled out here so the server half
-// stands on its own if you lift it out of the sample.
+// The gRPC server surface. Reflection is what lets a client outside this
+// process (a standalone Bowire, grpcurl) ask the server what it hosts. The
+// embedded workbench does not need it: it reads Greeter's compiled
+// descriptor in-process. AddGrpcReflection() is idempotent and AddBowire()
+// calls it too — spelled out here so the server half stands on its own if
+// you lift it out of the sample.
 builder.Services.AddGrpc();
 if (!hardened) builder.Services.AddGrpcReflection();
 
@@ -100,14 +101,14 @@ if (!hardened) app.UseGrpcWeb(new GrpcWebOptions { DefaultEnabled = true });
 
 app.MapGrpcService<GreeterService>();
 
-// Workbench mounted at /bowire — embedded-mode convention. This also
-// maps gRPC reflection: in embedded mode MapBowire() runs the gRPC
-// plugin's IBowireProtocolServices hook, which calls
-// MapGrpcReflectionService() for us. Mapping it here as well makes the
-// route ambiguous and every reflection call 500s, so the sample leaves
-// it to the plugin.
+// Workbench mounted at /bowire — embedded-mode convention. MapBowire()
+// maps no reflection endpoint: the workbench discovers Greeter from the
+// descriptor compiled into this process. The reflection service is mapped
+// here, by the sample itself, because the sample is also a target for
+// clients outside the process; a host that is not can leave the line out.
 if (!hardened)
 {
+    app.MapGrpcReflectionService();
     app.MapBowire("/bowire");
     app.MapGet("/", () => Results.Redirect("/bowire"));
 }

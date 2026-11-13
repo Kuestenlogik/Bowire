@@ -148,18 +148,51 @@ internal static class GrpcDescriptorSet
         bool showInternalServices,
         Kuestenlogik.Bowire.Auth.MtlsConfig? mtlsConfig,
         Microsoft.Extensions.Configuration.IConfiguration? configuration,
-        GrpcTransportMode transportMode = GrpcTransportMode.Native)
+        GrpcTransportMode transportMode = GrpcTransportMode.Native,
+        IReadOnlyList<FileDescriptorProto>? hostFiles = null)
     {
         var supplied = TryLoadFromMetadata(metadata);
         if (supplied is not null) return new GrpcDescriptorSetSource(supplied, showInternalServices);
 
-        var uploaded = LoadUploaded();
-        return uploaded.Count == 0
+        var known = Merge(hostFiles, LoadUploaded());
+        return known.Count == 0
             ? new GrpcReflectionClient(serverUrl, showInternalServices, mtlsConfig, configuration, transportMode)
             : new GrpcUploadedDescriptorSource(
-                uploaded, showInternalServices,
+                known, showInternalServices,
                 () => new GrpcReflectionClient(serverUrl, showInternalServices, mtlsConfig, configuration, transportMode));
     }
+
+    /// <summary>
+    /// The embedding host's own descriptors (#992) before the uploaded ones,
+    /// a file name counted once.
+    /// </summary>
+    /// <remarks>
+    /// The host's come first because they are compiled into the process that
+    /// serves the calls: where an uploaded set names the same file, the
+    /// host's copy is the one the server actually runs.
+    /// </remarks>
+    private static IReadOnlyList<FileDescriptorProto> Merge(
+        IReadOnlyList<FileDescriptorProto>? hostFiles, IReadOnlyList<FileDescriptorProto> uploaded)
+    {
+        if (hostFiles is null || hostFiles.Count == 0) return uploaded;
+        if (uploaded.Count == 0) return hostFiles;
+
+        var names = hostFiles.Select(f => f.Name).ToHashSet(StringComparer.Ordinal);
+        return [.. hostFiles, .. uploaded.Where(f => names.Add(f.Name))];
+    }
+
+    /// <summary>
+    /// One serialized <c>FileDescriptorProto</c>, read with the extension
+    /// registry reflection uses so its google.api.http annotations survive.
+    /// </summary>
+    public static FileDescriptorProto ParseFile(ByteString serialized)
+        => s_fileParser.ParseFrom(serialized);
+
+    private static readonly MessageParser<FileDescriptorProto> s_fileParser =
+        FileDescriptorProto.Parser.WithExtensionRegistry(new ExtensionRegistry
+        {
+            Google.Api.AnnotationsExtensions.Http,
+        });
 
     /// <summary>
     /// Parse one descriptor set as it was uploaded or named on a command line.
@@ -357,16 +390,18 @@ internal sealed class GrpcDescriptorSetSource(
 }
 
 /// <summary>
-/// The uploaded descriptor sets for the services they describe, the server
-/// for the rest (#991).
+/// The descriptors Bowire already holds for the services they describe, the
+/// server for the rest: the uploaded descriptor sets (#991) and, embedded,
+/// the host's own compiled descriptors (#992).
 /// </summary>
 /// <remarks>
 /// <para>
 /// An uploaded set is stored for a workspace, not for one server, and a
-/// workspace can hold a server with reflection beside one without. So the
-/// set answers for the services it names and nothing else: a call to any
-/// other service still asks its server, as it did before anything was
-/// uploaded.
+/// workspace can hold a server with reflection beside one without. An
+/// embedding host's descriptors describe that host, and its workbench can
+/// still be pointed at another server. So the held descriptors answer for the
+/// services they name and nothing else: a call to any other service still
+/// asks its server, as it did before.
 /// </para>
 /// <para>
 /// For a service it does name, the set wins without asking, for the reason
@@ -402,9 +437,11 @@ internal sealed class GrpcUploadedDescriptorSource(
     /// </summary>
     /// <remarks>
     /// A server that does not answer reflection is the expected case here,
-    /// not a failure: the uploaded services are the answer, and reporting the
-    /// refusal instead would hide them behind the very error the upload was
-    /// made to get past. Cancellation is still cancellation.
+    /// not a failure: the held services are the answer, and reporting the
+    /// refusal instead would hide them behind the very error they exist to
+    /// get past. That includes an embedding host, which no longer maps a
+    /// reflection endpoint unless asked to. Cancellation is still
+    /// cancellation.
     /// </remarks>
     public async Task<List<BowireServiceInfo>> ListServicesAsync(CancellationToken ct = default)
     {

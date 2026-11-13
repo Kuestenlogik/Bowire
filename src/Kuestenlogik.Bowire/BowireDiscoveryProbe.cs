@@ -268,11 +268,6 @@ public static class BowireDiscoveryProbe
     /// rule and worth keeping: uploading one is an operator saying "describe
     /// it this way", and that outranks what reflection volunteered.
     /// </para>
-    /// <para>
-    /// The endpoint still merges <c>BowireOptions.ProtoSources</c> itself —
-    /// those are the host's own schemas, configured in code, and nothing
-    /// outside that process knows they exist.
-    /// </para>
     /// </remarks>
     private static List<BowireServiceInfo> WithUploadedSchemas(
         List<BowireServiceInfo> probed, string serverUrl, BowireProtocolRegistry registry)

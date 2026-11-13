@@ -65,7 +65,6 @@ public static class BowireServiceCollectionExtensions
     /// builder.Services.AddGrpcReflection();
     /// // ... and every other protocol's own setup ...
     /// var app = builder.Build();
-    /// app.MapGrpcReflectionService();
     /// app.MapBowire();
     /// </code>
     ///

@@ -5,7 +5,7 @@ summary: 'The gRPC plugin discovers services via gRPC Server Reflection and supp
 
 # gRPC Protocol
 
-The gRPC plugin discovers services via gRPC Server Reflection and supports all four gRPC call types.
+The gRPC plugin discovers services from the host's compiled descriptors when embedded, via gRPC Server Reflection otherwise, and supports all four gRPC call types.
 
 **Package:** `Kuestenlogik.Bowire.Protocol.Grpc` (included with `Kuestenlogik.Bowire`)
 
@@ -13,16 +13,17 @@ The gRPC plugin discovers services via gRPC Server Reflection and supports all f
 
 ```csharp
 builder.Services.AddGrpc();
-builder.Services.AddGrpcReflection();
+builder.Services.AddBowire();
 
 var app = builder.Build();
 
 app.MapGrpcService<GreeterService>();
-app.MapGrpcReflectionService();       // Required for discovery
 app.MapBowire();
 ```
 
-Bowire asks the target server for its contract through [gRPC Server Reflection](https://learn.microsoft.com/aspnet/core/grpc/reflection). A server with reflection switched off, which is the usual production setting, is called through an uploaded descriptor set instead: see [Servers without reflection](#servers-without-reflection).
+Embedded like this, Bowire reads the contract of every gRPC service the host maps from the descriptors protoc compiled into it. No reflection endpoint is mapped and none is needed. See [Embedded hosts](#embedded-hosts) for the options.
+
+Standalone, Bowire asks the target server for its contract through [gRPC Server Reflection](https://learn.microsoft.com/aspnet/core/grpc/reflection). A server with reflection switched off, which is the usual production setting, is called through an uploaded descriptor set instead: see [Servers without reflection](#servers-without-reflection).
 
 ## Discovery
 
@@ -170,6 +171,47 @@ Queue multiple messages in the UI, then send them all at once. The server respon
 ### Duplex (Bidirectional)
 
 Open an interactive channel to send and receive messages simultaneously. Both directions operate independently. See [Duplex Channels](../features/duplex-channels.md).
+
+## Embedded hosts
+
+An embedded Bowire shows the host's own gRPC services without Server Reflection. protoc-generated code carries a descriptor for each `.proto`, and the plugin reads it for every service mapped with `MapGrpcService<T>()`, whether that happens before or after `MapBowire()`. Discovery makes no network call to the host; calls go to the host as gRPC.
+
+`AddBowireGrpc` covers what that cannot see:
+
+```csharp
+builder.Services.AddBowireGrpc(grpc =>
+{
+    // A contract whose generated code is in this process but whose
+    // service is not mapped here.
+    grpc.Descriptors.Add(WeatherReflection.Descriptor);
+
+    // A contract that lives in another process: a compiled descriptor set
+    // (protoc --descriptor_set_out=api.protoset --include_imports).
+    grpc.DescriptorSetFile = "contracts/api.protoset";
+});
+```
+
+| Option | Default | Meaning |
+|---|---|---|
+| `Descriptors` | empty | `FileDescriptor`s to show in addition to the mapped services. Their imports come along. |
+| `DescriptorSet` | empty | A compiled `FileDescriptorSet` as bytes. |
+| `DescriptorSetFile` | none | The same, read from a file. A relative path is resolved against the content root. A file that is missing or is not a descriptor set fails discovery with the path in the message. |
+| `UseMappedServices` | `true` | Read the descriptors of the gRPC services the host maps. Off: show only what the other options name. |
+| `MapReflectionService` | `false` | Also map the gRPC Server Reflection endpoints. |
+
+A service without generated code (a code-first contract) has no descriptor to read. Name its descriptor set, or map reflection.
+
+### The reflection endpoints are opt-in
+
+Up to 2.10, `MapBowire()` mapped `grpc.reflection.v1` and `grpc.reflection.v1alpha` on every embedding host. Those endpoints hand the full contract to any client that can reach the port, and a host that classifies or audits its endpoints had two more to account for. `MapBowire()` no longer maps them.
+
+Map them when clients outside the process (grpcurl, a standalone Bowire) should be able to ask this host. Either set the option or map the service yourself, not both: mapping it twice makes the route ambiguous and every reflection call fails.
+
+```csharp
+builder.Services.AddBowireGrpc(grpc => grpc.MapReflectionService = true);
+// or
+app.MapGrpcReflectionService();
+```
 
 ## Servers without reflection
 

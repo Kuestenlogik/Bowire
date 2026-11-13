@@ -225,26 +225,6 @@ internal static class BowireEndpointHelpers
 
         return (sb.ToString(), sanitized);
     }
-
-    /// <summary>
-    /// Merge proto-sourced services with protocol-discovered services.
-    /// Proto sources take precedence (they appear first); protocol services
-    /// are added for any names not already present.
-    /// </summary>
-    public static List<BowireServiceInfo> MergeServices(
-        List<BowireServiceInfo> protoServices, List<BowireServiceInfo> protocolServices)
-    {
-        var merged = new List<BowireServiceInfo>(protoServices);
-        var knownNames = new HashSet<string>(protoServices.Select(s => s.Name));
-
-        foreach (var svc in protocolServices)
-        {
-            if (!knownNames.Contains(svc.Name))
-                merged.Add(svc);
-        }
-
-        return merged;
-    }
     /// <summary>
     /// Names the protocols that ARE loaded, for the message a caller reads
     /// when the one they asked for is not (#751).

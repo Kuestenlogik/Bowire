@@ -307,24 +307,6 @@ UI operating mode. Two values:
 Defaults to `Embedded` because `app.MapBowire()` implies an in-process
 host — leave it alone unless you are writing the standalone Tool.
 
-### `ProtoSources` (`List<ProtoSource>`, default empty)
-
-Proto file sources used when a gRPC server does not expose Server
-Reflection. When both reflection and proto sources are available,
-proto sources take precedence (they are considered the authoritative
-schema).
-
-```csharp
-options.ProtoSources.Add(ProtoSource.FromFile("protos/weather.proto"));
-options.ProtoSources.Add(ProtoSource.FromContent(@"
-    syntax = ""proto3"";
-    // ...
-"));
-```
-
-`ProtoSource` ships two factory methods today: `FromFile(string path)`
-and `FromContent(string protoContent)`.
-
 ### `SchemaHintsPath` (`string?`, default `null`)
 
 Override for the user-local schema-hints file path. When `null` (the
@@ -438,9 +420,9 @@ any code-side wiring in `MapBowire`:
 - **Use `AddBowire(options => { options.SchemaHintsPath = ... })`**
   for `SchemaHintsPath`, not the `MapBowire` callback. `SchemaHintsPath`
   is the only AddServices-time option.
-- **For per-plugin options** (gRPC proto sources are on
-  `BowireOptions.ProtoSources`; everything else lives on the plugin's
-  own options class) follow the per-plugin doc page in
+- **For per-plugin options** (they live on the plugin's own options
+  class, e.g. `AddBowireGrpc` for the gRPC descriptors) follow the
+  per-plugin doc page in
   [Protocol Guides](../protocols/index.md).
 
 ## Cross-links

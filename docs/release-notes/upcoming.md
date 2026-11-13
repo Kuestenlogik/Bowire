@@ -34,6 +34,12 @@ The set answers for the services it describes. A call to any other service still
 
 On the command line, `--schema api.protoset` does the same for `discover`, `list`, `describe` and `call`, and `bowire test` gains `--schema`, so a test run can reach a server without reflection.
 
+### An embedded workbench reads the host's gRPC contract in-process (#992)
+
+An embedded Bowire used to map the host's gRPC reflection service and read the host's own services back over the wire. It now reads the descriptors compiled into the host for every service mapped with `MapGrpcService<T>()`: discovery makes no network call to the host, and unary calls, streams and channels are marshalled from the same descriptors. A host that only calls `AddBowire()` and `MapBowire()` needs nothing else.
+
+`AddBowireGrpc` names what the mapped services do not cover: `Descriptors` for generated code whose service is not mapped here, and `DescriptorSet` / `DescriptorSetFile` for a contract that lives in another process.
+
 ## Fixes along the way
 
 ### A host that leaves a shared http sidecar takes only its own channels (#1014)
@@ -71,6 +77,16 @@ The plugin update check kept the `HttpClient` that `AddHttpClient` registers for
 <!-- Each change has been on a back-compat ramp through the prior minor
 and is removed in this release. Add a section per breaking change, with
 the migration path. -->
+
+### `MapBowire()` no longer maps the gRPC reflection endpoints (#992)
+
+Up to 2.10 every host that embedded Bowire with the gRPC plugin exposed `grpc.reflection.v1` and `grpc.reflection.v1alpha` as a side effect. They are no longer mapped. The embedded workbench does not need them.
+
+If clients outside the process (grpcurl, a standalone Bowire pointed at the host) rely on them, opt in: `builder.Services.AddBowireGrpc(grpc => grpc.MapReflectionService = true)`, or call `app.MapGrpcReflectionService()` yourself. Do one, not both.
+
+### `BowireOptions.ProtoSources` and `ProtoSource` are removed (#992)
+
+They fed a `.proto` through a name-only parser: the services were listed and could not be called. Replace them with the descriptors: nothing at all when the host maps the service, otherwise `AddBowireGrpc(grpc => grpc.Descriptors.Add(WeatherReflection.Descriptor))` or `grpc.DescriptorSetFile = "api.protoset"`.
 
 ## Acknowledgements
 

@@ -17,8 +17,8 @@ namespace Kuestenlogik.Bowire;
 /// </para>
 /// <para>
 /// This eliminates the need for protocol-specific boilerplate.  For example, the
-/// gRPC plugin uses this to call <c>AddGrpcReflection()</c> and
-/// <c>MapGrpcReflectionService()</c> automatically — but only when the gRPC
+/// gRPC plugin uses this to call <c>AddGrpcReflection()</c> and, when the
+/// host opted in, <c>MapGrpcReflectionService()</c> — but only when the gRPC
 /// protocol package is actually referenced.
 /// </para>
 /// </summary>
@@ -39,7 +39,8 @@ public interface IBowireProtocolServices
     /// Map any endpoints this protocol needs for auto-discovery.
     /// Called during <c>app.MapBowire()</c>.
     /// <para>
-    /// For example, the gRPC plugin maps <c>MapGrpcReflectionService()</c> here.
+    /// For example, the gRPC plugin maps <c>MapGrpcReflectionService()</c> here
+    /// for a host that asked for it.
     /// Return without mapping anything if the protocol doesn't need its own endpoints.
     /// </para>
     /// </summary>

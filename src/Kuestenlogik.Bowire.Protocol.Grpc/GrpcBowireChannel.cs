@@ -150,7 +150,8 @@ internal sealed class GrpcBowireChannel : IBowireChannel
         bool showInternalServices,
         Dictionary<string, string>? metadata,
         CancellationToken ct,
-        IConfiguration? configuration = null)
+        IConfiguration? configuration = null,
+        IReadOnlyList<FileDescriptorProto>? hostFiles = null)
     {
         var transportMode = GrpcChannelBuilder.ResolveMode(metadata);
         if (transportMode == GrpcTransportMode.Web)
@@ -166,7 +167,8 @@ internal sealed class GrpcBowireChannel : IBowireChannel
         var afterDescriptors = GrpcDescriptorSet.StripMarker(metadata);
         var sanitisedMetadata = GrpcChannelBuilder.StripTransportMarker(afterDescriptors);
         using var reflectionClient = GrpcDescriptorSet.CreateSource(
-            metadata, serverUrl, showInternalServices, mtlsConfig: null, configuration: configuration);
+            metadata, serverUrl, showInternalServices, mtlsConfig: null, configuration: configuration,
+            hostFiles: hostFiles);
 
         // Same translation as the unary path: Unimplemented here means the
         // server has no reflection service, not that the service being called

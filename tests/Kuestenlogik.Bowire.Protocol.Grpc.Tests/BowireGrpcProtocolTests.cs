@@ -63,7 +63,23 @@ public sealed class BowireGrpcProtocolTests
     }
 
     [Fact]
-    public async Task MapDiscoveryEndpoints_Maps_Reflection_Service()
+    public async Task MapDiscoveryEndpoints_Maps_Nothing_Unless_The_Host_Asks()
+    {
+        // #992 — the reflection endpoints are the host's decision. Without
+        // the option this is a no-op, and it must stay one even on a host
+        // that never called AddGrpc(): there is nothing to validate.
+        var protocol = new BowireGrpcProtocol();
+        await using var app = CreateMinimalWebApp(_ => { });
+
+        protocol.MapDiscoveryEndpoints(app);
+
+        Assert.DoesNotContain(
+            ((Microsoft.AspNetCore.Routing.IEndpointRouteBuilder)app).DataSources.SelectMany(d => d.Endpoints),
+            e => (e.DisplayName ?? "").Contains("reflection", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public async Task MapDiscoveryEndpoints_Maps_Reflection_When_The_Host_Asks()
     {
         var protocol = new BowireGrpcProtocol();
         // The plugin's ConfigureServices is half the contract — at
@@ -75,11 +91,14 @@ public sealed class BowireGrpcProtocolTests
         {
             b.Services.AddGrpc();
             protocol.ConfigureServices(b.Services);
+            b.Services.AddBowireGrpc(o => o.MapReflectionService = true);
         });
 
         protocol.MapDiscoveryEndpoints(app);
 
-        Assert.NotNull(app);
+        Assert.Contains(
+            ((Microsoft.AspNetCore.Routing.IEndpointRouteBuilder)app).DataSources.SelectMany(d => d.Endpoints),
+            e => (e.DisplayName ?? "").Contains("reflection", StringComparison.OrdinalIgnoreCase));
     }
 
     // Build a WebApplication with a stable ContentRootPath. Bare

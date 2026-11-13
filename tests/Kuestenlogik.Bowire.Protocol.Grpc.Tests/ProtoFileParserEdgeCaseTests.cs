@@ -5,8 +5,7 @@ namespace Kuestenlogik.Bowire.Protocol.Grpc.Tests;
 
 /// <summary>
 /// Edge-case tests for <see cref="ProtoFileParser"/> — covers the
-/// branches the main parser test file leaves uncovered: file-backed
-/// <see cref="ProtoSource"/>, enum parsing, MapProtoType numeric
+/// branches the main parser test file leaves uncovered: enum parsing, MapProtoType numeric
 /// variants, message reference resolution against current message vs
 /// package prefix, service-type resolution stubs for unresolved types,
 /// keyword-skip in the field regex, and the brace-mismatch fallback.
@@ -25,47 +24,6 @@ public sealed class ProtoFileParserEdgeCaseTests : IDisposable
     {
         try { Directory.Delete(_tempDir, recursive: true); } catch { /* best-effort */ }
         GC.SuppressFinalize(this);
-    }
-
-    [Fact]
-    public void ParseAll_Reads_FilePath_When_Content_Is_Empty()
-    {
-        // ResolveContent prefers Content but falls back to FilePath +
-        // File.ReadAllText. This guards the file-backed branch the
-        // existing Content-only tests don't reach.
-        var path = Path.Combine(_tempDir, "service.proto");
-        File.WriteAllText(path, """
-            syntax = "proto3";
-            package edge.test;
-            message Probe { int32 value = 1; }
-            service ProbeService {
-              rpc Ping(Probe) returns (Probe);
-            }
-            """);
-
-        var services = ProtoFileParser.ParseAll([ProtoSource.FromFile(path)]);
-
-        var svc = Assert.Single(services);
-        Assert.Equal("edge.test.ProbeService", svc.Name);
-        Assert.Single(svc.Methods);
-    }
-
-    [Fact]
-    public void ParseAll_Returns_Empty_When_FilePath_Missing_And_No_Content()
-    {
-        // Both Content + FilePath empty → ResolveContent returns ""
-        // → no services parsed. Defensive — the UI hands us whatever
-        // BowireOptions.ProtoSources contained.
-        var services = ProtoFileParser.ParseAll([new ProtoSource { Content = null, FilePath = null }]);
-        Assert.Empty(services);
-    }
-
-    [Fact]
-    public void ParseAll_Returns_Empty_When_FilePath_Points_At_Nonexistent_File()
-    {
-        var nope = Path.Combine(_tempDir, "does-not-exist.proto");
-        var services = ProtoFileParser.ParseAll([ProtoSource.FromFile(nope)]);
-        Assert.Empty(services);
     }
 
     [Fact]
@@ -236,35 +194,5 @@ public sealed class ProtoFileParserEdgeCaseTests : IDisposable
             """;
 
         Assert.Empty(ProtoFileParser.Parse(Proto));
-    }
-
-    [Fact]
-    public void ParseAll_Combines_Inline_And_File_Sources()
-    {
-        // Mixed-source scenario — covers the loop in ParseAll over
-        // multiple ProtoSource values with different resolution paths.
-        var path = Path.Combine(_tempDir, "first.proto");
-        File.WriteAllText(path, """
-            syntax = "proto3";
-            package mix.a;
-            message A { int32 v = 1; }
-            service ServiceA { rpc Get(A) returns (A); }
-            """);
-
-        var sources = new List<ProtoSource>
-        {
-            ProtoSource.FromFile(path),
-            ProtoSource.FromContent("""
-                syntax = "proto3";
-                package mix.b;
-                message B { string v = 1; }
-                service ServiceB { rpc Get(B) returns (B); }
-                """),
-        };
-
-        var services = ProtoFileParser.ParseAll(sources);
-        Assert.Equal(2, services.Count);
-        Assert.Contains(services, s => s.Name == "mix.a.ServiceA");
-        Assert.Contains(services, s => s.Name == "mix.b.ServiceB");
     }
 }

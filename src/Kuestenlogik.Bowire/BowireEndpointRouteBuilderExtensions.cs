@@ -55,14 +55,6 @@ public static class BowireEndpointRouteBuilderExtensions
     /// app.MapBowire();           // UI + API at /bowire
     /// </code>
     ///
-    /// With proto import (no reflection needed):
-    /// <code>
-    /// app.MapBowire(options =>
-    /// {
-    ///     options.ProtoSources.Add(ProtoSource.FromFile("protos/weather.proto"));
-    /// });
-    /// </code>
-    ///
     /// Custom route, title and theme:
     /// <code>
     /// app.MapBowire("/tools/api", options =>

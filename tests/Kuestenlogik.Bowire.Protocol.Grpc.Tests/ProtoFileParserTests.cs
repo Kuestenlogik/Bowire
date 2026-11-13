@@ -315,56 +315,6 @@ public class ProtoFileParserTests
     }
 
     [Fact]
-    public void ParseAll_CombinesMultipleSources()
-    {
-        var sources = new List<ProtoSource>
-        {
-            ProtoSource.FromContent("""
-                syntax = "proto3";
-                package svc1;
-                service One { rpc Call (Req) returns (Res); }
-                message Req { string id = 1; }
-                message Res { string data = 1; }
-                """),
-            ProtoSource.FromContent("""
-                syntax = "proto3";
-                package svc2;
-                service Two { rpc Call (Req) returns (Res); }
-                message Req { string id = 1; }
-                message Res { string data = 1; }
-                """)
-        };
-
-        var services = ProtoFileParser.ParseAll(sources);
-
-        Assert.Equal(2, services.Count);
-        Assert.Equal("svc1.One", services[0].Name);
-        Assert.Equal("svc2.Two", services[1].Name);
-    }
-
-    [Fact]
-    public void ParseAll_SkipsEmptySources()
-    {
-        var sources = new List<ProtoSource>
-        {
-            ProtoSource.FromContent(""),
-            ProtoSource.FromContent("""
-                syntax = "proto3";
-                package ok;
-                service Valid { rpc Call (Req) returns (Res); }
-                message Req { string id = 1; }
-                message Res { string data = 1; }
-                """),
-            ProtoSource.FromFile("nonexistent/path.proto")
-        };
-
-        var services = ProtoFileParser.ParseAll(sources);
-
-        Assert.Single(services);
-        Assert.Equal("ok.Valid", services[0].Name);
-    }
-
-    [Fact]
     public void Parse_NumericFieldTypes()
     {
         const string proto = """
@@ -443,24 +393,6 @@ public class ProtoFileParserTests
         Assert.Equal("TYPE_MESSAGE", innerField.Type);
         Assert.NotNull(innerField.MessageType);
         Assert.Equal("InnerMsg", innerField.MessageType.Name);
-    }
-
-    [Fact]
-    public void ProtoSource_FromContent_SetsContent()
-    {
-        var source = ProtoSource.FromContent("test content");
-
-        Assert.Equal("test content", source.Content);
-        Assert.Null(source.FilePath);
-    }
-
-    [Fact]
-    public void ProtoSource_FromFile_SetsFilePath()
-    {
-        var source = ProtoSource.FromFile("/path/to/file.proto");
-
-        Assert.Equal("/path/to/file.proto", source.FilePath);
-        Assert.Null(source.Content);
     }
 
     [Fact]

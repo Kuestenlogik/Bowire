@@ -35,21 +35,23 @@ dotnet add package Kuestenlogik.Bowire.Protocol.Grpc
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddGrpc();
-builder.Services.AddGrpcReflection();
+builder.Services.AddBowire();
 
 var app = builder.Build();
 
 app.MapGrpcService<GreeterService>();
-app.MapGrpcReflectionService();
 app.MapBowire();
 
 app.Run();
 ```
 
-Requirements:
+Notes:
 
-- `AddGrpcReflection()` and `MapGrpcReflectionService()` must be
-  configured — this is what Bowire talks to during discovery
+- No reflection service is needed. Bowire reads the contract of each
+  mapped gRPC service from the descriptors compiled into the host, and
+  `MapBowire()` maps no reflection endpoint. See
+  [Embedded hosts](../protocols/grpc.md#embedded-hosts) for services that
+  live in another process and for opting in to reflection.
 - The gRPC plugin reads `google.api.http` annotations on your
   proto methods and exposes the HTTP-transcoded endpoints alongside
   the native gRPC ones, so users can pick "via gRPC" or "via HTTP"
@@ -190,13 +192,12 @@ dotnet add package Kuestenlogik.Bowire.Protocol.Mcp
 ```csharp
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddGrpc();
-builder.Services.AddGrpcReflection();
+builder.Services.AddBowire();
 builder.Services.AddSignalR();
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
 app.MapGrpcService<GreeterService>();
-app.MapGrpcReflectionService();
 app.MapHub<ChatHub>("/chathub");
 app.MapOpenApi();
 app.MapGraphQL("/graphql");
@@ -213,7 +214,6 @@ Restrict Bowire to development environments:
 ```csharp
 if (app.Environment.IsDevelopment())
 {
-    app.MapGrpcReflectionService();
     app.MapBowire();
 }
 ```

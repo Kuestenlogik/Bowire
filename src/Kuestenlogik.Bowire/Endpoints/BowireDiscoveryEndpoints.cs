@@ -56,7 +56,6 @@ internal static class BowireDiscoveryEndpoints
 
         return options.Mode == BowireMode.Standalone
             && options.ServerUrls.Count == 0
-            && options.ProtoSources.Count == 0
             && !ProtoUploadStore.HasUploads
             && !ProtoSetUploadStore.HasUploads
             && !OpenApiUploadStore.HasUploads
@@ -189,17 +188,6 @@ internal static class BowireDiscoveryEndpoints
                     : Results.Json(Array.Empty<BowireServiceInfo>(), BowireEndpointHelpers.JsonOptions);
             }
 
-            // The host's own schemas, configured in code. Uploaded ones are
-            // not here any more: BowireDiscoveryProbe folds those in, so the
-            // CLI and the MCP tool get them too — only this endpoint used to,
-            // and the three surfaces disagreed about what a URL offered.
-            // ProtoSources stays, because nothing outside this process knows
-            // these exist.
-            var protoServices = new List<BowireServiceInfo>();
-
-            if (options.ProtoSources.Count > 0)
-                protoServices.AddRange(ProtoFileParser.ParseAll(options.ProtoSources));
-
             // Try protocol plugins. The fanout itself lives in
             // BowireDiscoveryProbe so this endpoint, `bowire discover`
             // and the bowire.discover MCP tool all report the same
@@ -220,23 +208,12 @@ internal static class BowireDiscoveryEndpoints
                 BowireEndpointHelpers.GetLogger(ctx),
                 ctx.RequestAborted);
 
-            // Same for proto-sourced services
-            foreach (var svc in protoServices)
-                svc.OriginUrl ??= serverUrl;
-
-            // One payload variable, three sources — so the success shape
-            // (bare array vs. { services, attempts }) is decided in exactly
-            // one place instead of three.
-            List<BowireServiceInfo>? payload = null;
-            if (protoServices.Count > 0 && probe.Services.Count > 0)
-                payload = BowireEndpointHelpers.MergeServices(protoServices, probe.Services);
-            else if (protoServices.Count > 0)
-                payload = protoServices;
-            else if (probe.Services.Count > 0)
-                payload = probe.Services;
-
-            if (payload is not null)
+            // The probe is the one source: plugins, with the uploaded schemas
+            // folded in. The host's own gRPC contract arrives through the
+            // gRPC plugin, which reads the host's compiled descriptors (#992).
+            if (probe.Services.Count > 0)
             {
+                var payload = probe.Services;
                 return includeAttempts
                     ? Results.Json(new BowireDiscoveryEnvelope(payload, probe.Attempts), BowireEndpointHelpers.JsonOptions)
                     : Results.Json(payload, BowireEndpointHelpers.JsonOptions);

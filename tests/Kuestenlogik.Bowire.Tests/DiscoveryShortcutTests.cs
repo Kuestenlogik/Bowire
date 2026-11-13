@@ -138,15 +138,6 @@ public sealed class DiscoveryShortcutTests : IDisposable
     }
 
     [Fact]
-    public void A_Hosts_Own_Proto_Sources_Do_Too()
-    {
-        var options = Standalone();
-        options.ProtoSources.Add(ProtoSource.FromContent(Proto));
-
-        Assert.False(BowireDiscoveryEndpoints.NothingToDiscover(options, serverUrl: ""));
-    }
-
-    [Fact]
     public void An_Embedded_Host_Never_Takes_The_Shortcut()
     {
         // Embedded means the host's own API is the subject, so there is always

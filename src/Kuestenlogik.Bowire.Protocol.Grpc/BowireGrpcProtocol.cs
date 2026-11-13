@@ -7,7 +7,9 @@ using Kuestenlogik.Bowire.Models;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
+using Google.Protobuf.Reflection;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 namespace Kuestenlogik.Bowire.Protocol.Grpc;
 
@@ -17,8 +19,10 @@ namespace Kuestenlogik.Bowire.Protocol.Grpc;
 /// <para>
 /// Implements <see cref="IBowireProtocolServices"/> so that
 /// <c>builder.Services.AddBowire()</c> automatically registers
-/// <c>AddGrpcReflection()</c> and <c>app.MapBowire()</c> maps
-/// <c>MapGrpcReflectionService()</c> — no manual setup required.
+/// <c>AddGrpcReflection()</c>. Embedded, the host's own services are read
+/// from its compiled descriptors (<see cref="BowireGrpcOptions"/>);
+/// <c>app.MapBowire()</c> maps the reflection endpoints only when the host
+/// asks for them.
 /// </para>
 /// </summary>
 public sealed class BowireGrpcProtocol : IBowireProtocol, IBowireManualEntry, Kuestenlogik.Bowire.Net.IBowireProxySupport, IBowireProtocolServices, IBowireStreamingWithWireBytes, IBowireUploadedSchemaReader
@@ -83,7 +87,24 @@ public sealed class BowireGrpcProtocol : IBowireProtocol, IBowireManualEntry, Ku
     public void Initialize(IServiceProvider? serviceProvider)
     {
         _configuration = serviceProvider?.GetService<IConfiguration>();
+        // Only an embedding host has services of its own to describe (#992).
+        // The standalone tool's provider maps no gRPC service, so this finds
+        // nothing there and every call goes on as before.
+        _host = serviceProvider is null ? null : new GrpcHostDescriptors(serviceProvider);
     }
+
+    private GrpcHostDescriptors? _host;
+
+    /// <summary>The embedding host's own descriptors, or null standalone.</summary>
+    private IReadOnlyList<FileDescriptorProto>? HostFiles() => _host?.Files();
+
+    /// <summary>
+    /// Whether discovery of <paramref name="url"/> is the host describing
+    /// itself, with nothing to ask over the wire: its own address, and no
+    /// reflection service that could know of services the descriptors do not.
+    /// </summary>
+    private bool AnswersForItself(string url)
+        => _host is { } host && !host.Options.MapReflectionService && host.IsOwnAddress(url);
 
     // Community single-path gRPC mark (vectorlogo.zone). Matches the
     // protocol card on the marketing site.
@@ -104,6 +125,23 @@ public sealed class BowireGrpcProtocol : IBowireProtocol, IBowireManualEntry, Ku
         // endpoint stitches __bowireGrpcTransport=web onto URLs that came in
         // via the `grpcweb@` hint because DiscoverAsync has no metadata bag.
         var (cleanUrl, transportMode) = GrpcChannelBuilder.ExtractTransportFromUrl(serverUrl);
+
+        // Embedded, the host's own descriptors answer first (#992).
+        if (HostFiles() is { Count: > 0 } hostFiles)
+        {
+            if (AnswersForItself(cleanUrl))
+            {
+                using var own = new GrpcDescriptorSetSource(hostFiles, showInternalServices);
+                return await own.ListServicesAsync(ct);
+            }
+
+            // Another server, reached from an embedded workbench: reflection
+            // is asked for what the held descriptors do not cover.
+            using var source = GrpcDescriptorSet.CreateSource(
+                metadata: null, cleanUrl, showInternalServices, mtlsConfig: null,
+                _configuration, transportMode, hostFiles);
+            return await source.ListServicesAsync(ct);
+        }
 
         using var client = new GrpcReflectionClient(
             cleanUrl, showInternalServices, mtlsConfig: null,
@@ -135,8 +173,17 @@ public sealed class BowireGrpcProtocol : IBowireProtocol, IBowireManualEntry, Ku
         var metadataTransport = GrpcChannelBuilder.ResolveMode(asDictionary);
         var transportMode = metadataTransport != GrpcTransportMode.Native ? metadataTransport : urlTransport;
 
+        var hostFiles = HostFiles();
+        if (hostFiles is { Count: > 0 }
+            && GrpcDescriptorSet.TryLoadFromMetadata(metadata) is null
+            && AnswersForItself(cleanUrl))
+        {
+            using var own = new GrpcDescriptorSetSource(hostFiles, showInternalServices);
+            return await own.ListServicesAsync(ct);
+        }
+
         using var source = GrpcDescriptorSet.CreateSource(
-            metadata, cleanUrl, showInternalServices, mtlsConfig, _configuration, transportMode);
+            metadata, cleanUrl, showInternalServices, mtlsConfig, _configuration, transportMode, hostFiles);
         return await source.ListServicesAsync(ct);
     }
 
@@ -153,7 +200,7 @@ public sealed class BowireGrpcProtocol : IBowireProtocol, IBowireManualEntry, Ku
         var afterDescriptors = GrpcDescriptorSet.StripMarker(afterMtls);
         var sanitisedMetadata = GrpcChannelBuilder.StripTransportMarker(afterDescriptors);
         using var reflectionClient = GrpcDescriptorSet.CreateSource(
-            metadata, serverUrl, showInternalServices, mtlsConfig, _configuration, transportMode);
+            metadata, serverUrl, showInternalServices, mtlsConfig, _configuration, transportMode, HostFiles());
         using var invoker = new GrpcInvoker(
             serverUrl, reflectionClient, mtlsConfig, _configuration, transportMode);
         return await invoker.InvokeUnaryAsync(service, method, jsonMessages, sanitisedMetadata, ct);
@@ -173,7 +220,7 @@ public sealed class BowireGrpcProtocol : IBowireProtocol, IBowireManualEntry, Ku
         var afterDescriptors = GrpcDescriptorSet.StripMarker(afterMtls);
         var sanitisedMetadata = GrpcChannelBuilder.StripTransportMarker(afterDescriptors);
         using var reflectionClient = GrpcDescriptorSet.CreateSource(
-            metadata, serverUrl, showInternalServices, mtlsConfig, _configuration, transportMode);
+            metadata, serverUrl, showInternalServices, mtlsConfig, _configuration, transportMode, HostFiles());
         using var invoker = new GrpcInvoker(
             serverUrl, reflectionClient, mtlsConfig, _configuration, transportMode);
         await foreach (var frame in invoker.InvokeStreamingWithFramesAsync(service, method, jsonMessages, sanitisedMetadata, ct))
@@ -201,7 +248,7 @@ public sealed class BowireGrpcProtocol : IBowireProtocol, IBowireManualEntry, Ku
         var afterDescriptors = GrpcDescriptorSet.StripMarker(afterMtls);
         var sanitisedMetadata = GrpcChannelBuilder.StripTransportMarker(afterDescriptors);
         using var reflectionClient = GrpcDescriptorSet.CreateSource(
-            metadata, serverUrl, showInternalServices, mtlsConfig, _configuration, transportMode);
+            metadata, serverUrl, showInternalServices, mtlsConfig, _configuration, transportMode, HostFiles());
         using var invoker = new GrpcInvoker(
             serverUrl, reflectionClient, mtlsConfig, _configuration, transportMode);
         await foreach (var frame in invoker.InvokeStreamingWithFramesAsync(service, method, jsonMessages, sanitisedMetadata, ct))
@@ -213,28 +260,42 @@ public sealed class BowireGrpcProtocol : IBowireProtocol, IBowireManualEntry, Ku
         bool showInternalServices, Dictionary<string, string>? metadata, CancellationToken ct)
     {
         return await GrpcBowireChannel.CreateAsync(
-            serverUrl, service, method, showInternalServices, metadata, ct, _configuration);
+            serverUrl, service, method, showInternalServices, metadata, ct, _configuration, HostFiles());
     }
 
     // ---- IBowireProtocolServices ----
 
     /// <summary>
-    /// Registers gRPC Reflection services so Bowire can discover gRPC services
-    /// automatically. Called by <c>builder.Services.AddBowire()</c>.
+    /// Registers the gRPC Reflection services, so a host that opts in with
+    /// <see cref="BowireGrpcOptions.MapReflectionService"/> needs no further
+    /// registration. Called by <c>builder.Services.AddBowire()</c>.
     /// Idempotent — safe to call even if the host already called <c>AddGrpcReflection()</c>.
     /// </summary>
+    /// <remarks>
+    /// Registering exposes nothing: the endpoint exists only once it is
+    /// mapped, and that is the opt-in.
+    /// </remarks>
     public void ConfigureServices(IServiceCollection services)
     {
         services.AddGrpcReflection();
     }
 
     /// <summary>
-    /// Maps the gRPC Reflection endpoint so clients (including Bowire's own
-    /// discovery) can query the server's service descriptors at runtime.
-    /// Called by <c>app.MapBowire()</c>.
+    /// Maps the gRPC Reflection endpoints when the host asked for them with
+    /// <see cref="BowireGrpcOptions.MapReflectionService"/>, and nothing
+    /// otherwise (#992). Called by <c>app.MapBowire()</c>.
     /// </summary>
+    /// <remarks>
+    /// This used to map them unconditionally, so that Bowire could read the
+    /// host's own services back over the wire. Every embedding host thereby
+    /// published its whole contract on two endpoints it never asked for.
+    /// Bowire reads the host's compiled descriptors in-process now, and the
+    /// endpoints are the host's decision.
+    /// </remarks>
     public void MapDiscoveryEndpoints(IEndpointRouteBuilder endpoints)
     {
-        endpoints.MapGrpcReflectionService();
+        ArgumentNullException.ThrowIfNull(endpoints);
+        var options = endpoints.ServiceProvider.GetService<IOptions<BowireGrpcOptions>>()?.Value;
+        if (options is { MapReflectionService: true }) endpoints.MapGrpcReflectionService();
     }
 }

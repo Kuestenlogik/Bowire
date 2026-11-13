@@ -15,25 +15,6 @@ namespace Kuestenlogik.Bowire;
 internal static partial class ProtoFileParser
 {
     /// <summary>
-    /// Parse all configured <see cref="ProtoSource"/> entries and return service info.
-    /// </summary>
-    public static List<BowireServiceInfo> ParseAll(List<ProtoSource> sources)
-    {
-        var services = new List<BowireServiceInfo>();
-
-        foreach (var source in sources)
-        {
-            var content = ResolveContent(source);
-            if (string.IsNullOrWhiteSpace(content))
-                continue;
-
-            services.AddRange(Parse(content));
-        }
-
-        return services;
-    }
-
-    /// <summary>
     /// Parse a single .proto file content string into service info models.
     /// </summary>
     public static List<BowireServiceInfo> Parse(string protoContent)
@@ -45,17 +26,6 @@ internal static partial class ProtoFileParser
         var services = ParseServices(stripped, package, messages, enums);
 
         return services;
-    }
-
-    private static string ResolveContent(ProtoSource source)
-    {
-        if (!string.IsNullOrWhiteSpace(source.Content))
-            return source.Content;
-
-        if (!string.IsNullOrWhiteSpace(source.FilePath) && File.Exists(source.FilePath))
-            return File.ReadAllText(source.FilePath);
-
-        return string.Empty;
     }
 
     /// <summary>

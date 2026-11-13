@@ -220,18 +220,6 @@ public sealed class BowireOptions
     public BowireMode Mode { get; set; } = BowireMode.Embedded;
 
     /// <summary>
-    /// Proto file sources used when a gRPC server does not expose
-    /// <a href="https://grpc.io/docs/guides/reflection/">Server Reflection</a>.
-    /// Each <see cref="ProtoSource"/> points at a file, embedded resource,
-    /// or inline proto string.
-    /// </summary>
-    /// <remarks>
-    /// When both reflection and proto sources are available, proto sources
-    /// take precedence (they are considered the authoritative schema).
-    /// </remarks>
-    public List<ProtoSource> ProtoSources { get; } = [];
-
-    /// <summary>
     /// Override for the user-local schema-hints file path. When
     /// <c>null</c> (the default), Bowire resolves to
     /// <c>~/.bowire/schema-hints.json</c> — the canonical location

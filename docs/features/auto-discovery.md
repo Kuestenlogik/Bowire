@@ -89,7 +89,7 @@ what happened.
 
 ## Requirements
 
-- **gRPC**: `AddGrpcReflection()` and `MapGrpcReflectionService()` must be configured
+- **gRPC**: embedded, the services mapped with `MapGrpcService<T>()` are read from their compiled descriptors; a server reached by URL must answer Server Reflection, or its descriptor set is uploaded
 - **SignalR**: hubs must be mapped with `MapHub<T>()` before `MapBowire()`
 - **SSE**: endpoints must be annotated or registered before `MapBowire()`
 
