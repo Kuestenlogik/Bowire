@@ -205,6 +205,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [999](https://github.com/Kuestenlogik/Bowire/issues/999) | Bowire | [roadmap-release-field publish is failing](#issue-kuestenlogik-bowire-999) | ⬜ Backlog |  |
+| [1017](https://github.com/Kuestenlogik/Bowire/issues/1017) | Bowire | [bowire discover refuses the grpcweb@ hint that list and the workbench accept](#issue-kuestenlogik-bowire-1017) | ⬜ Backlog |  |
 
 ## Details
 
@@ -727,6 +728,10 @@ Owner rule from 2026-10-14: warnings are fixed at the cause instead of suppresse
 #### <a id="issue-kuestenlogik-bowire-999"></a>⬜ Backlog · [#999](https://github.com/Kuestenlogik/Bowire/issues/999) roadmap-release-field publish is failing
 
 <!-- publish-failure:roadmap-release-field --> The **roadmap-release-field** publish failed. - Run: https://github.com/Kuestenlogik/Bowire/actions/runs/42047737460 - Workflow: `Roadmap field guard` - Commit: a097880038191e58036fa9b35819b42c802013b4 [[more]](https://github.com/Kuestenlogik/Bowire/issues/999)
+
+#### <a id="issue-kuestenlogik-bowire-1017"></a>⬜ Backlog · [#1017](https://github.com/Kuestenlogik/Bowire/issues/1017) bowire discover refuses the grpcweb@ hint that list and the workbench accept
+
+`bowire discover` refuses the `grpcweb@` hint, while `bowire list` and the workbench accept it. [[more]](https://github.com/Kuestenlogik/Bowire/issues/1017)
 
 ---
 
