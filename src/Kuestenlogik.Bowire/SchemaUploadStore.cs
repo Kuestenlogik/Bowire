@@ -67,6 +67,12 @@ internal static partial class SchemaUploadStore
     /// <summary>An OpenAPI / Swagger document, parsed by the REST plugin.</summary>
     internal const string OpenApiKind = "openapi";
 
+    /// <summary>
+    /// A compiled protobuf <c>FileDescriptorSet</c>, read by the gRPC plugin
+    /// (#991). Binary, unlike the other two kinds.
+    /// </summary>
+    internal const string ProtoSetKind = "protoset";
+
     private const string SchemasDirectory = "schemas";
     private const string IndexFile = "index.json";
     private const int MaxFileNameLength = 80;
@@ -94,8 +100,16 @@ internal static partial class SchemaUploadStore
     /// <summary>One stored document, as its callers want it.</summary>
     internal sealed record StoredSchema(string Id, string Content, string SourceName);
 
+    /// <summary>One stored binary document.</summary>
+    internal sealed record StoredBinarySchema(string Id, byte[] Bytes, string SourceName);
+
     /// <summary>A document the caller handed over instead of storing.</summary>
-    internal sealed record ExplicitSchema(string Kind, string Content, string SourceName);
+    /// <remarks>
+    /// <paramref name="Bytes"/> is set for a binary kind
+    /// (<see cref="ProtoSetKind"/>) and <paramref name="Content"/> is then
+    /// empty; a text kind is the other way round.
+    /// </remarks>
+    internal sealed record ExplicitSchema(string Kind, string Content, string SourceName, byte[]? Bytes = null);
 
     private static readonly AsyncLocal<IReadOnlyList<ExplicitSchema>?> s_explicit = new();
 
@@ -113,7 +127,7 @@ internal static partial class SchemaUploadStore
     /// process's state to find something the caller could simply have named.
     /// </para>
     /// <para>
-    /// Reads only. <see cref="Add"/> and <see cref="Clear"/> ignore this and
+    /// Reads only. <see cref="Add(string, string, string?)"/> and <see cref="Clear"/> ignore this and
     /// go to disk, because a command that was handed its schemas has nothing
     /// to store and no business clearing what somebody else uploaded.
     /// </para>
@@ -173,8 +187,27 @@ internal static partial class SchemaUploadStore
     /// <summary>Store a document and return the id the caller can name it by.</summary>
     internal static string Add(string kind, string content, string? sourceName)
     {
-        ArgumentException.ThrowIfNullOrEmpty(kind);
         ArgumentNullException.ThrowIfNull(content);
+        return Add(kind, sourceName, path => File.WriteAllText(path, content));
+    }
+
+    /// <summary>
+    /// Store a binary document as the bytes it arrived as.
+    /// </summary>
+    /// <remarks>
+    /// Its own entry point rather than base64 through <see cref="Add(string, string, string?)"/>:
+    /// the file in <c>schemas/</c> is then the file <c>protoc</c> wrote, which
+    /// <c>grpcurl -protoset</c> and <c>bowire --schema</c> read as it lies.
+    /// </remarks>
+    internal static string AddBytes(string kind, byte[] bytes, string? sourceName)
+    {
+        ArgumentNullException.ThrowIfNull(bytes);
+        return Add(kind, sourceName, path => File.WriteAllBytes(path, bytes));
+    }
+
+    private static string Add(string kind, string? sourceName, Action<string> write)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(kind);
 
         var root = RootPath();
         var id = "upload_" + DateTime.UtcNow.Ticks.ToString("x", System.Globalization.CultureInfo.InvariantCulture);
@@ -186,7 +219,7 @@ internal static partial class SchemaUploadStore
             var fileName = FileNameFor(kind, sourceName, id, taken);
 
             Directory.CreateDirectory(root);
-            File.WriteAllText(Path.Combine(root, fileName), content);
+            write(Path.Combine(root, fileName));
 
             index.Schemas.Add(new IndexEntry(id, fileName, sourceName ?? "uploaded", kind));
             WriteIndex(root, index);
@@ -236,8 +269,50 @@ internal static partial class SchemaUploadStore
         }
     }
 
+    /// <summary>
+    /// Every binary document of one kind, from the same two places
+    /// <see cref="GetAll"/> reads.
+    /// </summary>
+    internal static IReadOnlyList<StoredBinarySchema> GetAllBytes(string kind)
+    {
+        if (s_explicit.Value is { } given)
+        {
+            return given
+                .Where(s => s.Bytes is not null && string.Equals(s.Kind, kind, StringComparison.OrdinalIgnoreCase))
+                .Select(s => new StoredBinarySchema(ExplicitId(s), s.Bytes!, s.SourceName))
+                .ToArray();
+        }
+
+        var root = RootPath();
+
+        lock (DiskLock)
+        {
+            var result = new List<StoredBinarySchema>();
+            foreach (var entry in ReadIndex(root).Schemas)
+            {
+                if (!string.Equals(entry.Kind, kind, StringComparison.OrdinalIgnoreCase)) continue;
+                if (!SafeFileNamePattern().IsMatch(entry.File)) continue;
+
+                var path = Path.Combine(root, entry.File);
+                try
+                {
+                    if (!File.Exists(path)) continue;
+                    result.Add(new StoredBinarySchema(entry.Id, File.ReadAllBytes(path), entry.SourceName));
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    // As in GetAll: one missing schema, not a broken workbench.
+                }
+            }
+            return result;
+        }
+    }
+
     /// <summary>True when at least one document of this kind is stored.</summary>
-    internal static bool Has(string kind) => GetAll(kind).Count > 0;
+    internal static bool Has(string kind)
+        => string.Equals(kind, ProtoSetKind, StringComparison.OrdinalIgnoreCase)
+            ? GetAllBytes(kind).Count > 0
+            : GetAll(kind).Count > 0;
 
     /// <summary>
     /// Remove every document of one kind, leaving the other kind alone —
@@ -329,7 +404,10 @@ internal static partial class SchemaUploadStore
     }
 
     private static string DefaultExtension(string kind)
-        => string.Equals(kind, ProtoKind, StringComparison.OrdinalIgnoreCase) ? ".proto" : ".json";
+    {
+        if (string.Equals(kind, ProtoKind, StringComparison.OrdinalIgnoreCase)) return ".proto";
+        return string.Equals(kind, ProtoSetKind, StringComparison.OrdinalIgnoreCase) ? ".protoset" : ".json";
+    }
 
     /// <summary>
     /// An id for a handed-over document, derived from its name and content.
@@ -342,8 +420,9 @@ internal static partial class SchemaUploadStore
     /// </remarks>
     private static string ExplicitId(ExplicitSchema schema)
     {
+        var text = System.Text.Encoding.UTF8.GetBytes(schema.SourceName + "\u0000" + schema.Content);
         var digest = System.Security.Cryptography.SHA256.HashData(
-            System.Text.Encoding.UTF8.GetBytes(schema.SourceName + "\u0000" + schema.Content));
+            schema.Bytes is null ? text : [.. text, .. schema.Bytes]);
         // Upper-case hex: the id is compared, never lower-cased for display,
         // and CA1308 prefers the direction that cannot lose a character.
         return "schema_" + Convert.ToHexString(digest, 0, 8);

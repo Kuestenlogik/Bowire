@@ -29,5 +29,6 @@
 *.snupkg binary
 *.dll  binary
 *.pdb  binary
+*.protoset binary
 *.woff binary
 *.woff2 binary

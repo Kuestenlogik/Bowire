@@ -26,6 +26,14 @@ Compose gains a form for every protocol plugin that describes one. SOAP, SignalR
 
 A sidecar plugin describes its form the same way, as a `manualEntry` object in its `initialize` reply (#1003).
 
+### gRPC servers without reflection, from the workbench (#991)
+
+A gRPC server with reflection switched off could be listed in the workbench from a `.proto` and not called: a `.proto` gives names, and a call needs the compiled message layouts. The schema drop zone now takes the compiled descriptor set (`protoc --descriptor_set_out=api.protoset --include_imports`; `.protoset`, `.pb`, `.desc` or `.binpb`). Its services appear under the server's URL, and unary calls, streams and channels go through it. The set is stored per workspace beside the other schema files.
+
+The set answers for the services it describes. A call to any other service still asks its server, so one workspace can hold servers with and without reflection. A set compiled without `--include_imports` is refused at upload with the name of the missing file. Uploading a `.proto` now says that it gives names only and points at the descriptor set.
+
+On the command line, `--schema api.protoset` does the same for `discover`, `list`, `describe` and `call`, and `bowire test` gains `--schema`, so a test run can reach a server without reflection.
+
 ## Fixes along the way
 
 ### A host that leaves a shared http sidecar takes only its own channels (#1014)

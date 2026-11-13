@@ -43,6 +43,62 @@ public sealed class SchemaUploadStoreTests : IDisposable
         service Greeter { rpc Hello (Req) returns (Res); }
         """;
 
+    // ---- binary documents (#991) ----
+
+    [Fact]
+    public void A_Descriptor_Set_Lands_As_The_Bytes_It_Arrived_As()
+    {
+        // Not base64 in a text file: the stored file is the one protoc wrote,
+        // which grpcurl -protoset and bowire --schema read as it lies.
+        byte[] bytes = [0x0a, 0x03, 0xff, 0x00, 0x80];
+        SchemaUploadStore.AddBytes(SchemaUploadStore.ProtoSetKind, bytes, "api.protoset");
+
+        var file = Path.Combine(SchemaUploadStore.RootPath(), "api.protoset");
+        Assert.Equal(bytes, File.ReadAllBytes(file));
+        var stored = Assert.Single(SchemaUploadStore.GetAllBytes(SchemaUploadStore.ProtoSetKind));
+        Assert.Equal(bytes, stored.Bytes);
+        Assert.Equal("api.protoset", stored.SourceName);
+        Assert.True(SchemaUploadStore.Has(SchemaUploadStore.ProtoSetKind));
+    }
+
+    [Fact]
+    public void A_Descriptor_Set_Without_A_Name_Gets_The_Extension_Of_Its_Kind()
+    {
+        SchemaUploadStore.AddBytes(SchemaUploadStore.ProtoSetKind, [1, 2, 3], null);
+
+        Assert.True(File.Exists(Path.Combine(SchemaUploadStore.RootPath(), "schema.protoset")));
+    }
+
+    [Fact]
+    public void Clearing_Descriptor_Sets_Leaves_The_Protos_In_Place()
+    {
+        SchemaUploadStore.AddBytes(SchemaUploadStore.ProtoSetKind, [1, 2, 3], "api.protoset");
+        SchemaUploadStore.Add(SchemaUploadStore.ProtoKind, Proto, "greeter.proto");
+
+        SchemaUploadStore.Clear(SchemaUploadStore.ProtoSetKind);
+
+        Assert.False(SchemaUploadStore.Has(SchemaUploadStore.ProtoSetKind));
+        Assert.Single(SchemaUploadStore.GetAll(SchemaUploadStore.ProtoKind));
+    }
+
+    [Fact]
+    public void A_Handed_Over_Descriptor_Set_Is_Read_Instead_Of_The_Stored_Ones()
+    {
+        SchemaUploadStore.AddBytes(SchemaUploadStore.ProtoSetKind, [1, 2, 3], "stored.protoset");
+
+        using (SchemaUploadStore.EnterExplicit([
+            new SchemaUploadStore.ExplicitSchema(SchemaUploadStore.ProtoSetKind, "", "given.protoset", [9, 9]),
+        ]))
+        {
+            var given = Assert.Single(SchemaUploadStore.GetAllBytes(SchemaUploadStore.ProtoSetKind));
+            Assert.Equal("given.protoset", given.SourceName);
+            Assert.Equal(new byte[] { 9, 9 }, given.Bytes);
+        }
+
+        Assert.Equal("stored.protoset",
+            Assert.Single(SchemaUploadStore.GetAllBytes(SchemaUploadStore.ProtoSetKind)).SourceName);
+    }
+
     // ---- it is a file, and that is the point ----
 
     [Fact]

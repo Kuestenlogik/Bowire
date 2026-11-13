@@ -58,6 +58,10 @@ public sealed class CliSchemaInputsTests : IDisposable
     [InlineData("petstore.json", SchemaUploadStore.OpenApiKind)]
     [InlineData("petstore.yaml", SchemaUploadStore.OpenApiKind)]
     [InlineData("petstore.YML", SchemaUploadStore.OpenApiKind)]
+    [InlineData("api.protoset", SchemaUploadStore.ProtoSetKind)]
+    [InlineData("api.PB", SchemaUploadStore.ProtoSetKind)]
+    [InlineData("api.desc", SchemaUploadStore.ProtoSetKind)]
+    [InlineData("api.binpb", SchemaUploadStore.ProtoSetKind)]
     public void The_Extension_Decides_What_A_File_Is(string name, string expected)
         => Assert.Equal(expected, CliSchemaInputs.KindOf(name));
 
@@ -110,7 +114,7 @@ public sealed class CliSchemaInputsTests : IDisposable
     }
 
     [Theory]
-    [InlineData("notes.txt", "expected .proto")]
+    [InlineData("notes.txt", "expected a .proto")]
     [InlineData("missing.json", "")]
     public async Task A_Path_That_Cannot_Be_Used_Names_Itself_And_Stops_The_Command(
         string name, string expectedFragment)
@@ -141,19 +145,121 @@ public sealed class CliSchemaInputsTests : IDisposable
     }
 
     [Fact]
-    public async Task A_Proto_Is_Sent_To_Descriptor_Set_Where_That_Is_The_Right_Flag()
+    public async Task A_Proto_Is_Sent_To_Its_Descriptor_Set_Where_Messages_Are_Marshalled()
     {
-        // list / describe / call already take a compiled FileDescriptorSet,
-        // which carries more than a .proto does. Two ways in one place is a
-        // choice with a wrong answer, so this one is refused with a pointer
-        // rather than accepted and quietly ignored.
+        // list / describe / call / test marshal messages, and a .proto gives
+        // names without layouts. Refused with a pointer at the compiled set,
+        // which the same option takes, rather than accepted and quietly
+        // ignored.
         using var stderr = new StringWriter();
         var (schemas, code) = await CliSchemaInputs.ReadAsync(
             [File_("a.proto", "syntax = \"proto3\";")], stderr, allowProto: false);
 
         Assert.Null(schemas);
         Assert.Equal(2, code);
-        Assert.Contains("--descriptor-set", stderr.ToString(), StringComparison.Ordinal);
+        Assert.Contains("--schema api.protoset", stderr.ToString(), StringComparison.Ordinal);
+        Assert.Contains("descriptor_set_out", stderr.ToString(), StringComparison.Ordinal);
+    }
+
+    // ---- descriptor sets (#991) ----
+
+    private static byte[] DescriptorSet(params string[] imports)
+    {
+        var file = new Google.Protobuf.Reflection.FileDescriptorProto
+        {
+            Name = "ping.proto",
+            Package = "demo",
+            Syntax = "proto3",
+            MessageType = { new Google.Protobuf.Reflection.DescriptorProto { Name = "Ping" } },
+            Service =
+            {
+                new Google.Protobuf.Reflection.ServiceDescriptorProto
+                {
+                    Name = "Pinger",
+                    Method =
+                    {
+                        new Google.Protobuf.Reflection.MethodDescriptorProto
+                        {
+                            Name = "Send", InputType = ".demo.Ping", OutputType = ".demo.Ping",
+                        },
+                    },
+                },
+            },
+        };
+        // An import that is used: a field of a type only the import defines.
+        // One that is merely named resolves without it and is harmless.
+        file.Dependency.AddRange(imports);
+        if (imports.Length > 0)
+        {
+            file.MessageType[0].Field.Add(new Google.Protobuf.Reflection.FieldDescriptorProto
+            {
+                Name = "amount", Number = 1,
+                Label = Google.Protobuf.Reflection.FieldDescriptorProto.Types.Label.Optional,
+                Type = Google.Protobuf.Reflection.FieldDescriptorProto.Types.Type.Message,
+                TypeName = ".shop.Money",
+            });
+        }
+        return Google.Protobuf.MessageExtensions.ToByteArray(
+            new Google.Protobuf.Reflection.FileDescriptorSet { File = { file } });
+    }
+
+    private string Binary(string name, byte[] bytes)
+    {
+        var path = Path.Combine(_dir, name);
+        File.WriteAllBytes(path, bytes);
+        return path;
+    }
+
+    [Fact]
+    public async Task A_Descriptor_Set_Is_Read_As_Bytes_Where_A_Proto_Is_Refused()
+    {
+        using var stderr = new StringWriter();
+        var bytes = DescriptorSet();
+        var (schemas, code) = await CliSchemaInputs.ReadAsync(
+            [Binary("api.protoset", bytes)], stderr, allowProto: false);
+
+        Assert.Equal(0, code);
+        var one = Assert.Single(schemas!);
+        Assert.Equal(SchemaUploadStore.ProtoSetKind, one.Kind);
+        Assert.Equal(bytes, one.Bytes);
+        Assert.Empty(stderr.ToString());
+    }
+
+    [Fact]
+    public async Task A_File_Named_Like_A_Descriptor_Set_That_Is_Not_One_Stops_The_Command()
+    {
+        using var stderr = new StringWriter();
+        var (schemas, code) = await CliSchemaInputs.ReadAsync(
+            [File_("api.pb", "syntax = \"proto3\";")], stderr);
+
+        Assert.Null(schemas);
+        Assert.Equal(2, code);
+        Assert.Contains("api.pb", stderr.ToString(), StringComparison.Ordinal);
+        Assert.Contains("descriptor_set_out", stderr.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_Descriptor_Set_Without_Its_Imports_Is_Refused_Before_The_Run()
+    {
+        // Otherwise it lists its services and fails on the first message
+        // that uses an imported type, far from the protoc line that caused it.
+        using var stderr = new StringWriter();
+        var (schemas, code) = await CliSchemaInputs.ReadAsync(
+            [Binary("api.protoset", DescriptorSet("shop/money.proto"))], stderr);
+
+        Assert.Null(schemas);
+        Assert.Equal(2, code);
+        Assert.Contains("shop/money.proto", stderr.ToString(), StringComparison.Ordinal);
+        Assert.Contains("--include_imports", stderr.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Test_Takes_Schema_Files_Like_The_Other_Commands()
+    {
+        var cmd = BowireCli.BuildTestCommand(new ConfigurationBuilder().Build());
+        var parsed = cmd.Parse(["flow.json", "--schema", "api.protoset", "--schema", "other.pb"]);
+
+        Assert.Empty(parsed.Errors);
     }
 
     [Fact]

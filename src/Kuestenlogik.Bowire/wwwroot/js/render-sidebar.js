@@ -708,9 +708,11 @@
     function renderProtoUploadPanel() {
         var panel = el('div', { className: 'bowire-proto-panel' });
 
-        // Count both proto and rest schemas — both flow through this drop zone now.
+        // Count every uploaded schema — .proto, descriptor set and OpenAPI all
+        // flow through this drop zone.
         var schemaCount = services.filter(function (s) {
-            return s.source === 'proto' || s.source === 'rest';
+            return s.source === 'proto' || s.source === 'rest'
+                || (s.source === 'grpc' && s.isUploaded === true);
         }).length;
 
         var dropZone = el('div', {
@@ -719,7 +721,7 @@
             onClick: function () {
                 var input = document.createElement('input');
                 input.type = 'file';
-                input.accept = '.proto,.json,.yaml,.yml';
+                input.accept = SCHEMA_UPLOAD_ACCEPT;
                 input.multiple = true;
                 input.onchange = async function () {
                     if (!input.files || input.files.length === 0) return;
@@ -750,6 +752,7 @@
                     onClick: async function () {
                         await Promise.all([
                             fetch(config.prefix + '/api/proto/upload' + workspaceParam(false), { method: 'DELETE' }),
+                            fetch(config.prefix + '/api/protoset/upload' + workspaceParam(false), { method: 'DELETE' }),
                             fetch(config.prefix + '/api/openapi/upload' + workspaceParam(false), { method: 'DELETE' })
                         ]);
                         toast(t('sidebar.upload.cleared'), 'success');
@@ -3725,7 +3728,7 @@
         if (w && w.id !== activeWorkspaceId) switchWorkspace(w.id);
         var input = document.createElement('input');
         input.type = 'file';
-        input.accept = '.proto,.json,.yaml,.yml';
+        input.accept = SCHEMA_UPLOAD_ACCEPT;
         input.multiple = true;
         input.onchange = async function () {
             if (!input.files || input.files.length === 0) return;

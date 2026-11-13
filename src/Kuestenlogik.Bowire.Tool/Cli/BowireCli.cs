@@ -898,8 +898,10 @@ internal static class BowireCli
     /// </remarks>
     private static Option<string[]> SchemaOption() => new("--schema")
     {
-        Description = "Discover from a schema file instead of (or as well as) the server: "
-            + "a .proto, or an OpenAPI / Swagger .json / .yaml / .yml. Repeatable. "
+        Description = "Read a schema file instead of (or as well as) asking the server: "
+            + "a compiled gRPC descriptor set (.protoset / .pb / .desc / .binpb, from "
+            + "`protoc --descriptor_set_out=api.protoset --include_imports`), a .proto (names only, "
+            + "for `discover`), or an OpenAPI / Swagger .json / .yaml / .yml. Repeatable. "
             + "The workbench's uploaded schemas are not read by the CLI — name the file here.",
         AllowMultipleArgumentsPerToken = true,
     };
@@ -1662,7 +1664,25 @@ internal static class BowireCli
         cmd.Add(failOn); cmd.Add(workspaceDir); cmd.Add(workspaceId); cmd.Add(suite); cmd.Add(lintBaseline);
         cmd.Add(baseUrl); cmd.Add(env); cmd.Add(envFile); cmd.Add(keyring); cmd.Add(aiSeed);
         cmd.Add(secret); cmd.Add(secretFile); cmd.Add(data); cmd.Add(failFast);
+        // #991 — the steps of a run are calls, and a gRPC call to a server
+        // without reflection needs the descriptor set named here.
+        var schemaFiles = SchemaOption();
+        cmd.Add(schemaFiles);
         cmd.SetAction(async (pr, _) =>
+        {
+            var (given, code) = await CliSchemaInputs.ReadAsync(
+                pr.GetValue(schemaFiles), pr.InvocationConfiguration.Error, allowProto: false).ConfigureAwait(false);
+            if (code != 0) return code;
+            // Opened here, not in the helper: an AsyncLocal set inside an
+            // async method does not survive its return (#654).
+            using (given is null ? null : SchemaUploadStore.EnterExplicit(given))
+            {
+                return await RunTestAsync(pr).ConfigureAwait(false);
+            }
+        });
+        return cmd;
+
+        async Task<int> RunTestAsync(ParseResult pr)
         {
             var options = new TestCliOptions
             {
@@ -1781,7 +1801,6 @@ internal static class BowireCli
             }
 
             return await TestRunner.RunAsync(options, stdout, stderr).ConfigureAwait(false);
-        });
-        return cmd;
+        }
     }
 }

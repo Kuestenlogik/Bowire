@@ -141,6 +141,17 @@ export default defineConfig({
             reuseExistingServer: !process.env.CI,
             env: serverEnv
         },
+        // descriptor-set-upload.spec.ts needs a gRPC server that does not
+        // answer reflection (#991). `--hardened` is the sample without its
+        // workbench and without the reflection service: only h2c on :5183, so
+        // there is no page to wait for and the port is the readiness signal.
+        {
+            command: 'dotnet run --project samples/Kuestenlogik.Bowire.Sample.Grpc -c Release -- --hardened',
+            port: 5183,
+            timeout: 180_000,
+            reuseExistingServer: !process.env.CI,
+            env: serverEnv
+        },
         {
             command: 'dotnet run --project src/Kuestenlogik.Bowire.Tool -c Release -- '
                 + '--port 5191 --no-browser --url soap@http://localhost:5195/Calculator.asmx?wsdl',

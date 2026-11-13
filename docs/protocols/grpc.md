@@ -22,7 +22,7 @@ app.MapGrpcReflectionService();       // Required for discovery
 app.MapBowire();
 ```
 
-The target server must have [gRPC Server Reflection](https://learn.microsoft.com/aspnet/core/grpc/reflection) enabled. Without it, Bowire cannot discover services.
+Bowire asks the target server for its contract through [gRPC Server Reflection](https://learn.microsoft.com/aspnet/core/grpc/reflection). A server with reflection switched off, which is the usual production setting, is called through an uploaded descriptor set instead: see [Servers without reflection](#servers-without-reflection).
 
 ## Discovery
 
@@ -171,9 +171,28 @@ Queue multiple messages in the UI, then send them all at once. The server respon
 
 Open an interactive channel to send and receive messages simultaneously. Both directions operate independently. See [Duplex Channels](../features/duplex-channels.md).
 
-## Proto File Import
+## Servers without reflection
 
-As an alternative to server reflection, you can import `.proto` files directly. This is useful when connecting to services that do not have reflection enabled.
+A server that does not answer reflection is called through a **descriptor set**: the server's `.proto` files, compiled.
+
+```bash
+protoc --descriptor_set_out=api.protoset --include_imports -I protos api.proto
+```
+
+Drop `api.protoset` on the schema drop zone (a workspace's Sources, or the sidebar). `.pb`, `.desc` and `.binpb` are taken as the same thing. The services it describes appear under the server's URL, and unary calls, streams and channels go through it with no further setting. On the command line, name the file with `--schema api.protoset`.
+
+- **`--include_imports` is required.** Without it the set lacks the files your `.proto` imports. Bowire refuses such a set at upload and names the missing file.
+- **The set answers for the services it describes, and only those.** It is stored for the workspace, not for one server. A call to a service it does not describe still asks its server by reflection, so a workspace can hold a server with reflection beside one without.
+- **For a service it describes, the set wins.** Bowire does not ask the server first. If the set is older than the server, calls fail with marshalling errors until you upload the current one.
+- **Sets are stored per workspace**, beside the other schema files, as the file you uploaded. Clearing the uploaded schemas removes them.
+
+A descriptor set can also travel with one call instead of being stored: `--grpc-descriptor-set api.protoset` on the command line, or the `grpcDescriptorSet` query parameter on `/api/services`.
+
+### `.proto` files give names only
+
+You can also drop a `.proto` file. Bowire reads the service and method names from it and lists them, which is enough to browse a contract. It is not enough to call one: Bowire does not compile `.proto` source, so it has no message layouts to marshal a request with. A method from a `.proto` is callable only if the server answers reflection. The workbench says so when you upload one and on each such method.
+
+When a descriptor set and a `.proto` describe the same service, the descriptor set's entry is the one listed.
 
 ## gRPC-Web transport
 

@@ -151,9 +151,118 @@ internal static class GrpcDescriptorSet
         GrpcTransportMode transportMode = GrpcTransportMode.Native)
     {
         var supplied = TryLoadFromMetadata(metadata);
-        return supplied is not null
-            ? new GrpcDescriptorSetSource(supplied, showInternalServices)
-            : new GrpcReflectionClient(serverUrl, showInternalServices, mtlsConfig, configuration, transportMode);
+        if (supplied is not null) return new GrpcDescriptorSetSource(supplied, showInternalServices);
+
+        var uploaded = LoadUploaded();
+        return uploaded.Count == 0
+            ? new GrpcReflectionClient(serverUrl, showInternalServices, mtlsConfig, configuration, transportMode)
+            : new GrpcUploadedDescriptorSource(
+                uploaded, showInternalServices,
+                () => new GrpcReflectionClient(serverUrl, showInternalServices, mtlsConfig, configuration, transportMode));
+    }
+
+    /// <summary>
+    /// Parse one descriptor set as it was uploaded or named on a command line.
+    /// </summary>
+    /// <exception cref="FormatException">
+    /// The bytes are not a <c>FileDescriptorSet</c>, the set is empty, or it
+    /// lacks an import one of its files names.
+    /// </exception>
+    /// <remarks>
+    /// The import check is here because the failure it prevents is far from
+    /// its cause: a set compiled without <c>--include_imports</c> parses, lists
+    /// its services, and then cannot marshal the first message that uses an
+    /// imported type. Refusing it at the door says which file is missing while
+    /// the person still has the <c>protoc</c> line in front of them.
+    /// </remarks>
+    public static List<FileDescriptorProto> Parse(ReadOnlySpan<byte> bytes)
+    {
+        FileDescriptorSet set;
+        try
+        {
+            set = s_setParser.ParseFrom(bytes);
+        }
+        catch (InvalidProtocolBufferException ex)
+        {
+            throw new FormatException(
+                "Not a compiled descriptor set. Build one with "
+                + "`protoc --descriptor_set_out=api.protoset --include_imports`; a .proto source file gives names only.",
+                ex);
+        }
+
+        if (set.File.Count == 0)
+            throw new FormatException(
+                "The descriptor set holds no files. Build one with "
+                + "`protoc --descriptor_set_out=api.protoset --include_imports`.");
+
+        var files = set.File.ToList();
+        if (GrpcInvoker.BuildFileDescriptors(files).Count != files.Count)
+        {
+            var present = files.Select(f => f.Name).ToHashSet(StringComparer.Ordinal);
+            var missing = files.SelectMany(f => f.Dependency).Where(d => !present.Contains(d))
+                .Distinct(StringComparer.Ordinal).ToList();
+            throw new FormatException(missing.Count > 0
+                ? $"The descriptor set lacks {string.Join(", ", missing)}. Compile it with `--include_imports`."
+                : "The descriptor set does not resolve: its files refer to types none of them defines.");
+        }
+
+        return files;
+    }
+
+    // The extension registry reflection uses, so an uploaded set keeps its
+    // google.api.http annotations the same way.
+    private static readonly MessageParser<FileDescriptorSet> s_setParser =
+        FileDescriptorSet.Parser.WithExtensionRegistry(new ExtensionRegistry
+        {
+            Google.Api.AnnotationsExtensions.Http,
+        });
+
+    private static readonly Lock s_uploadedLock = new();
+    private static string? s_uploadedFor;
+    private static IReadOnlyList<FileDescriptorProto> s_uploaded = [];
+
+    /// <summary>
+    /// The files of every descriptor set stored for this call's workspace, or
+    /// handed to this command with <c>--schema</c> (#991).
+    /// </summary>
+    /// <remarks>
+    /// One list across all sets, a file name counted once: two sets compiled
+    /// from one tree both carry the shared imports, and the builder refuses a
+    /// file it is given twice. The first upload of a name wins. Cached on the
+    /// directory plus the ids, the way core caches its parse of the .proto
+    /// uploads; a set that no longer reads is skipped.
+    /// </remarks>
+    internal static IReadOnlyList<FileDescriptorProto> LoadUploaded()
+    {
+        var docs = SchemaUploadStore.GetAllBytes(SchemaUploadStore.ProtoSetKind);
+        if (docs.Count == 0) return [];
+        var key = SchemaUploadStore.RootPath() + "|" + string.Join(",", docs.Select(d => d.Id));
+
+        lock (s_uploadedLock)
+        {
+            if (string.Equals(s_uploadedFor, key, StringComparison.Ordinal)) return s_uploaded;
+
+            var files = new List<FileDescriptorProto>();
+            var names = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var doc in docs)
+            {
+                try
+                {
+                    foreach (var file in Parse(doc.Bytes))
+                    {
+                        if (names.Add(file.Name)) files.Add(file);
+                    }
+                }
+                catch (FormatException)
+                {
+                    // Skipped, per the remarks.
+                }
+            }
+
+            s_uploadedFor = key;
+            s_uploaded = files;
+            return files;
+        }
     }
 
     /// <summary>
@@ -244,5 +353,82 @@ internal sealed class GrpcDescriptorSetSource(
     /// <summary>Nothing to release — the bytes were read before this existed.</summary>
     public void Dispose()
     {
+    }
+}
+
+/// <summary>
+/// The uploaded descriptor sets for the services they describe, the server
+/// for the rest (#991).
+/// </summary>
+/// <remarks>
+/// <para>
+/// An uploaded set is stored for a workspace, not for one server, and a
+/// workspace can hold a server with reflection beside one without. So the
+/// set answers for the services it names and nothing else: a call to any
+/// other service still asks its server, as it did before anything was
+/// uploaded.
+/// </para>
+/// <para>
+/// For a service it does name, the set wins without asking, for the reason
+/// given on <see cref="GrpcDescriptorSet.CreateSource"/>: the servers this
+/// exists for have reflection off, and asking first would cost every call a
+/// round trip that cannot succeed.
+/// </para>
+/// </remarks>
+internal sealed class GrpcUploadedDescriptorSource(
+    IReadOnlyList<FileDescriptorProto> uploaded,
+    bool showInternalServices,
+    Func<IGrpcDescriptorSource> createReflection) : IGrpcDescriptorSource
+{
+    private readonly GrpcDescriptorSetSource _uploaded = new(uploaded, showInternalServices);
+    private readonly HashSet<string> _described = uploaded
+        .SelectMany(f => f.Service.Select(s => string.IsNullOrEmpty(f.Package) ? s.Name : $"{f.Package}.{s.Name}"))
+        .ToHashSet(StringComparer.Ordinal);
+    private IGrpcDescriptorSource? _reflection;
+
+    // Created on first use: a call the set answers never opens a channel
+    // for reflection.
+    private IGrpcDescriptorSource Reflection => _reflection ??= createReflection();
+
+    public Task<List<FileDescriptorProto>> ResolveAllDescriptorsAsync(
+        string serviceName, CancellationToken ct = default)
+        => _described.Contains(serviceName)
+            ? _uploaded.ResolveAllDescriptorsAsync(serviceName, ct)
+            : Reflection.ResolveAllDescriptorsAsync(serviceName, ct);
+
+    /// <summary>
+    /// The services of the uploaded sets, then whatever else the server
+    /// admits to.
+    /// </summary>
+    /// <remarks>
+    /// A server that does not answer reflection is the expected case here,
+    /// not a failure: the uploaded services are the answer, and reporting the
+    /// refusal instead would hide them behind the very error the upload was
+    /// made to get past. Cancellation is still cancellation.
+    /// </remarks>
+    public async Task<List<BowireServiceInfo>> ListServicesAsync(CancellationToken ct = default)
+    {
+        var services = await _uploaded.ListServicesAsync(ct);
+        try
+        {
+            var taken = services.Select(s => s.Name).ToHashSet(StringComparer.Ordinal);
+            foreach (var svc in await Reflection.ListServicesAsync(ct))
+            {
+                if (taken.Add(svc.Name)) services.Add(svc);
+            }
+        }
+        catch (Exception ex) when (ex is global::Grpc.Core.RpcException or HttpRequestException
+            or InvalidOperationException or IOException)
+        {
+            ct.ThrowIfCancellationRequested();
+        }
+
+        return services;
+    }
+
+    public void Dispose()
+    {
+        _reflection?.Dispose();
+        _uploaded.Dispose();
     }
 }

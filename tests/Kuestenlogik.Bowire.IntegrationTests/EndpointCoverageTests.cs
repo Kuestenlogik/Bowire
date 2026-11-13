@@ -330,6 +330,61 @@ public sealed class EndpointCoverageTests : IClassFixture<BowireTestFixture>, ID
     }
 
     [Fact]
+    public async Task ProtoSetUpload_Stores_The_Set_And_Reports_Its_Services()
+    {
+        using var content = new ByteArrayContent(GrpcDescriptorSetIntegrationTests.GreeterDescriptorSet());
+
+        var resp = await _client.PostAsync(
+            new Uri("/bowire/api/protoset/upload?name=greeter.protoset", UriKind.Relative),
+            content, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+        var json = await resp.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        using var doc = JsonDocument.Parse(json);
+        Assert.True(doc.RootElement.GetProperty("imported").GetInt32() >= 1);
+        Assert.Contains("test.Greeter", json, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ProtoSetUpload_Of_Proto_Source_Returns400_And_Says_What_To_Send()
+    {
+        // The mistake this endpoint will see most: the .proto itself, sent
+        // where its compiled form belongs.
+        using var content = new StringContent("syntax = \"proto3\"; service X {}", Encoding.UTF8, "text/plain");
+
+        var resp = await _client.PostAsync(
+            new Uri("/bowire/api/protoset/upload?name=x.protoset", UriKind.Relative),
+            content, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
+        var json = await resp.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        Assert.Contains("descriptor_set_out", json, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ProtoSetUpload_EmptyBody_Returns400()
+    {
+        using var content = new ByteArrayContent([]);
+
+        var resp = await _client.PostAsync(
+            new Uri("/bowire/api/protoset/upload", UriKind.Relative),
+            content, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
+    }
+
+    [Fact]
+    public async Task ProtoSetUpload_Delete_ClearsStore()
+    {
+        using var req = new HttpRequestMessage(HttpMethod.Delete,
+            new Uri("/bowire/api/protoset/upload", UriKind.Relative));
+
+        var resp = await _client.SendAsync(req, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+    }
+
+    [Fact]
     public async Task OpenApiUpload_EmptyBody_Returns400()
     {
         using var content = new StringContent("", Encoding.UTF8, "application/json");

@@ -21,8 +21,24 @@ namespace Kuestenlogik.Bowire.Protocol.Grpc;
 /// <c>MapGrpcReflectionService()</c> — no manual setup required.
 /// </para>
 /// </summary>
-public sealed class BowireGrpcProtocol : IBowireProtocol, IBowireManualEntry, Kuestenlogik.Bowire.Net.IBowireProxySupport, IBowireProtocolServices, IBowireStreamingWithWireBytes
+public sealed class BowireGrpcProtocol : IBowireProtocol, IBowireManualEntry, Kuestenlogik.Bowire.Net.IBowireProxySupport, IBowireProtocolServices, IBowireStreamingWithWireBytes, IBowireUploadedSchemaReader
 {
+    /// <inheritdoc />
+    public string UploadedSchemaKind => SchemaUploadStore.ProtoSetKind;
+
+    /// <summary>
+    /// The services an uploaded descriptor set describes (#991), in the shape
+    /// reflection reports them, so a call through the set looks no different
+    /// in the workbench from one through the server's own answer.
+    /// </summary>
+    public IReadOnlyList<BowireServiceInfo> ReadUploadedSchema(ReadOnlyMemory<byte> document)
+    {
+        var files = GrpcDescriptorSet.Parse(document.Span);
+        using var source = new GrpcDescriptorSetSource(files);
+        // Completes synchronously: the source walks descriptors in memory.
+        return source.ListServicesAsync().GetAwaiter().GetResult();
+    }
+
     /// <summary>The method types the freeform form offers (#995); the workbench has its own form for this protocol.</summary>
     public BowireManualEntryForm DescribeManualEntry() => BowireManualEntryForm.ForMethodTypes("Unary", "ServerStreaming", "ClientStreaming", "Duplex");
 

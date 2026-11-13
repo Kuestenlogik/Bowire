@@ -180,8 +180,8 @@ internal sealed class GrpcBowireChannel : IBowireChannel
         {
             throw new InvalidOperationException(
                 $"No descriptors for '{serviceName}'. The server does not offer gRPC Server Reflection "
-                + "(commonly disabled in production), and no descriptor set was supplied. "
-                + "Pass one built with `protoc --descriptor_set_out=api.protoset --include_imports`.", ex);
+                + "(commonly disabled in production), and no descriptor set describes the service. "
+                + "Upload or pass one built with `protoc --descriptor_set_out=api.protoset --include_imports`.", ex);
         }
         if (fileDescProtos.Count == 0)
         {
@@ -189,8 +189,8 @@ internal sealed class GrpcBowireChannel : IBowireChannel
             // identical message: what is missing, and the two ways to supply it.
             throw new InvalidOperationException(
                 $"No descriptors for '{serviceName}'. The server did not answer gRPC Server Reflection "
-                + "(commonly disabled in production), and no descriptor set was supplied. "
-                + "Pass one built with `protoc --descriptor_set_out=api.protoset --include_imports`.");
+                + "(commonly disabled in production), and no descriptor set describes the service. "
+                + "Upload or pass one built with `protoc --descriptor_set_out=api.protoset --include_imports`.");
         }
 
         var fileDescriptors = GrpcInvoker.BuildFileDescriptorsPublic(fileDescProtos);

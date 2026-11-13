@@ -26,7 +26,7 @@
 
   "landing.noServices.title": "No services discovered yet",
   "landing.noServices.body": "Bowire is configured but none of your servers responded with discoverable services. Verify each connection below or upload a schema as a fallback.",
-  "landing.noServices.uploadHint": "Or upload a schema file (.proto, OpenAPI, GraphQL SDL) to discover services without a live server connection.",
+  "landing.noServices.uploadHint": "Or upload a schema file (gRPC descriptor set or .proto, OpenAPI, GraphQL SDL) to discover services without a live server connection.",
   "landing.noServices.uploadAction": "Upload schema",
 
   "landing.wrongProtocol.title": "No {protocol} services found",
@@ -943,6 +943,9 @@
   "sidebar.upload.imported": "{files} imported — {services} service(s)",
   "sidebar.upload.noServices": "{names} was read, but describes no service",
   "sidebar.upload.failed": "Could not import {names}",
+  "sidebar.upload.failedWhy": "Could not import {names}: {reason}",
+  "sidebar.upload.descriptorSets": "{count} descriptor set(s)",
+  "sidebar.upload.protoNamesOnly": "A .proto gives names only: to call its methods, upload the compiled descriptor set (protoc --descriptor_set_out=api.protoset --include_imports).",
   "sidebar.favorites.empty": "No favorites yet",
   "sidebar.favorites.remove": "Remove from favorites",
   "sidebar.envs.title": "Environments",
@@ -1044,7 +1047,7 @@
   "sidebar.deleteCount": "Delete {count}",
   "sidebar.trash.title": "Recently deleted",
   "sidebar.trash.deletedAt": "deleted {when}",
-  "sidebar.upload.hint": ".proto for gRPC  ·  .json / .yaml for OpenAPI / Swagger",
+  "sidebar.upload.hint": ".protoset for gRPC, callable  ·  .proto for gRPC names only  ·  .json / .yaml for OpenAPI / Swagger",
 
   // render-sidebar.js, second pass: the per-rail context menus
   "sidebar.ws.settings": "Workspace settings",
@@ -1676,7 +1679,7 @@
   "main.src.actions": "Actions",
   "main.src.refreshDiscovery": "Refresh discovery",
   "main.openInDiscover": "Open in Discover",
-  "main.src.dropHint": ".proto for gRPC  ·  .json / .yaml for OpenAPI / Swagger  ·  drop or click",
+  "main.src.dropHint": ".protoset for gRPC, callable  ·  .proto for gRPC names only  ·  .json / .yaml for OpenAPI / Swagger  ·  drop or click",
   "main.src.headerValuePlaceholder": "Value (supports {{vars}})",
   "main.src.removeHeader": "Remove header",
   "main.src.noHeaders": "No headers configured. Add one to send it with every request to this URL.",
@@ -1717,7 +1720,7 @@
   "main.panes.stack": "Stack the panes",
   "main.panes.sideBySide": "Put the panes side by side",
   "main.panes.resize": "Drag to resize the panes — double-click to share evenly",
-  "main.protoOnlyNote": "Schema loaded from .proto file. Invocation requires gRPC Server Reflection enabled on the target server.",
+  "main.protoOnlyNote": "Schema loaded from a .proto file, which gives names only. To call this method, upload the compiled descriptor set (protoc --descriptor_set_out=api.protoset --include_imports) or enable gRPC Server Reflection on the server.",
   "main.tab.schema": "Schema",
   "main.tab.history": "History",
   "main.tab.code": "Code",

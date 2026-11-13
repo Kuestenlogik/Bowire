@@ -46,7 +46,8 @@ for the outcome vocabulary.
 
 #### Discovering from a file
 
-`--schema` points discovery at a document on disk — a `.proto`, or an OpenAPI /
+`--schema` points discovery at a document on disk — a compiled gRPC descriptor
+set (`.protoset`, `.pb`, `.desc`, `.binpb`), a `.proto`, or an OpenAPI /
 Swagger `.json` / `.yaml` / `.yml`. Repeatable, and it works with or without a
 `--url`: a schema and a live server merge, with the server winning a name
 clash because it describes itself more currently than a saved file does.
@@ -63,10 +64,18 @@ given — `bowire discover` reads what the calling identity has uploaded
 without a workspace selected. A schema uploaded *into a workspace* is not
 read; name the file.
 
-For gRPC, `list`, `describe` and `call` take **`--descriptor-set <file.pb>`**
-instead — the compiled `FileDescriptorSet` carries more than a `.proto` does.
-Passing `--schema x.proto` to one of those is refused with that pointer rather
-than accepted and quietly ignored.
+`list`, `describe`, `call` and `test` take `--schema` too, for a gRPC server
+without reflection: name the compiled descriptor set
+(`protoc --descriptor_set_out=api.protoset --include_imports`). The set answers
+for the services it describes; any other service still asks its server. A
+`.proto` gives names without message layouts, so `--schema x.proto` is refused
+by these four with a pointer at the descriptor set rather than accepted and
+quietly ignored. A set that is not one, or that was compiled without its
+imports, stops the command with exit code 2 and the reason.
+
+`--grpc-descriptor-set <path>` remains on `discover`, `list`, `describe`,
+`call` and `scan`. It hands one set to the gRPC plugin as the only source for
+that run: nothing is asked of the server, whatever service is named.
 
 ### List Services
 
@@ -326,8 +335,8 @@ cannot quietly stop being runnable.
 | `--offline` | `send http` | Print the request, variables resolved, and send nothing |
 | `--negotiate`, `--ntlm`, `--digest` | `call`, `send http` | Challenge-response authentication |
 | `-plaintext` | all | Use plaintext (no TLS) |
-| `--schema <path>` | `discover` | Discover from a schema file: `.proto`, or OpenAPI `.json` / `.yaml` / `.yml`. Repeatable; works with or without `--url`. Accepted on `list` / `describe` / `call` for OpenAPI only — use `--descriptor-set` for protobuf there |
-| `--descriptor-set <path>` | `list`, `describe`, `call` | Compiled protobuf `FileDescriptorSet` (`.pb`) for gRPC without server reflection |
+| `--schema <path>` | `discover`, `list`, `describe`, `call`, `test` | A schema file to read instead of, or as well as, asking the server: a compiled gRPC descriptor set (`.protoset` / `.pb` / `.desc` / `.binpb`), an OpenAPI `.json` / `.yaml` / `.yml`, or for `discover` a `.proto` (names only). Repeatable. |
+| `--grpc-descriptor-set <path>` | `discover`, `list`, `describe`, `call`, `scan` | Compiled protobuf `FileDescriptorSet` used as the only descriptor source for the run; the server is not asked. |
 | `-v, --verbose` | `list`, `discover` | Verbose output |
 
 ## Exit Codes

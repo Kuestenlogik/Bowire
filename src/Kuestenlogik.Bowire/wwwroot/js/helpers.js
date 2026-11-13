@@ -116,9 +116,16 @@
      * did a server error. The one case the operator most needs to hear about
      * was the one dressed up as success.
      *
-     * `results` are `{ name, kind, ok, status, imported }` — `imported` is the
-     * service count the proto endpoint returns, and null for OpenAPI, which is
-     * stored raw and only parsed later during discovery.
+     * `results` are `{ name, kind, ok, status, imported, reason }` —
+     * `imported` is the service count the proto and descriptor-set endpoints
+     * return, and null for OpenAPI, which is stored raw and only parsed later
+     * during discovery. `reason` is the server's own sentence for a refusal.
+     *
+     * A `.proto` gives names only (#991): its services fill the sidebar and
+     * cannot be called without the server's reflection. The summary says so
+     * whenever a `.proto` was among the files, because the import itself
+     * succeeded and nothing else would tell the operator before the first
+     * call fails.
      */
     function summariseSchemaUpload(results) {
         var rows = results || [];
@@ -126,11 +133,16 @@
 
         var failed = rows.filter(function (r) { return !r.ok; });
         if (failed.length > 0) {
+            var names = failed.map(function (r) { return r.name; }).join(', ');
+            // One refusal with a reason: the reason is the useful part. A
+            // descriptor set compiled without its imports is refused with the
+            // name of the missing file, and "could not import" would hide it.
+            var why = failed.length === 1 ? failed[0].reason : null;
             return {
                 level: 'error',
-                text: t('sidebar.upload.failed', {
-                    names: failed.map(function (r) { return r.name; }).join(', '),
-                }),
+                text: why
+                    ? t('sidebar.upload.failedWhy', { names: names, reason: why })
+                    : t('sidebar.upload.failed', { names: names }),
             };
         }
 
@@ -139,14 +151,16 @@
         // same lie in a quieter voice.
         var empty = rows.filter(function (r) { return r.kind === 'proto' && r.imported === 0; });
         var protos = rows.filter(function (r) { return r.kind === 'proto'; }).length;
-        var openapis = rows.length - protos;
+        var sets = rows.filter(function (r) { return r.kind === 'protoset'; }).length;
+        var openapis = rows.length - protos - sets;
         var services = rows.reduce(function (sum, r) { return sum + (r.imported || 0); }, 0);
 
         var parts = [];
+        if (sets > 0) parts.push(t('sidebar.upload.descriptorSets', { count: String(sets) }));
         if (protos > 0) parts.push(protos + ' .proto');
         if (openapis > 0) parts.push(openapis + ' OpenAPI');
 
-        if (empty.length === protos && protos > 0 && openapis === 0) {
+        if (empty.length === protos && protos > 0 && openapis === 0 && sets === 0) {
             return {
                 level: 'warning',
                 text: t('sidebar.upload.noServices', {
@@ -155,13 +169,34 @@
             };
         }
 
+        var imported = t('sidebar.upload.imported', {
+            files: parts.join(' + '),
+            services: String(services),
+        });
         return {
             level: 'success',
-            text: t('sidebar.upload.imported', {
-                files: parts.join(' + '),
-                services: String(services),
-            }),
+            text: protos > 0 ? imported + ' ' + t('sidebar.upload.protoNamesOnly') : imported,
         };
+    }
+
+    /**
+     * The extensions a compiled descriptor set arrives under. `.protoset` is
+     * what grpcurl calls it, `.pb` and `.desc` are what build scripts write,
+     * `.binpb` is what buf writes.
+     */
+    var DESCRIPTOR_SET_EXTENSIONS = ['.protoset', '.pb', '.desc', '.binpb'];
+
+    /** The file picker's filter, for every surface that opens one. */
+    var SCHEMA_UPLOAD_ACCEPT = ['.proto'].concat(DESCRIPTOR_SET_EXTENSIONS, ['.json', '.yaml', '.yml']).join(',');
+
+    /** Which endpoint a dropped file belongs to, by its name. */
+    function schemaUploadKind(fileName) {
+        var lower = String(fileName || '').toLowerCase();
+        if (lower.endsWith('.proto')) return 'proto';
+        for (var i = 0; i < DESCRIPTOR_SET_EXTENSIONS.length; i++) {
+            if (lower.endsWith(DESCRIPTOR_SET_EXTENSIONS[i])) return 'protoset';
+        }
+        return 'openapi';
     }
 
     /**
@@ -175,27 +210,30 @@
         };
         var results = [];
         for (var file of files) {
-            var content = await file.text();
-            var isProto = file.name.toLowerCase().endsWith('.proto');
-            var kind = isProto ? 'proto' : 'openapi';
-            var endpoint = (isProto ? '/api/proto/upload?name=' : '/api/openapi/upload?name=')
+            var kind = schemaUploadKind(file.name);
+            // A descriptor set is binary: read as text it would be re-encoded
+            // on the way out and arrive as something else.
+            var content = kind === 'protoset' ? await file.arrayBuffer() : await file.text();
+            var endpoint = '/api/' + kind + '/upload?name='
                 + encodeURIComponent(file.name) + workspaceParam(true);
 
-            var ok = false, status = 0, imported = null;
+            var ok = false, status = 0, imported = null, reason = null;
             try {
                 var resp = await send(config.prefix + endpoint, content);
                 status = resp.status;
                 ok = resp.ok;
+                var body = await resp.json().catch(function () { return null; });
                 if (ok) {
-                    var body = await resp.json().catch(function () { return null; });
                     if (body && typeof body.imported === 'number') imported = body.imported;
+                } else if (body && typeof body.detail === 'string') {
+                    reason = body.detail;
                 }
             } catch {
                 // A network failure is a failure to import, and the operator
                 // has to hear it in the same breath as the successes.
                 ok = false;
             }
-            results.push({ name: file.name, kind: kind, ok: ok, status: status, imported: imported });
+            results.push({ name: file.name, kind: kind, ok: ok, status: status, imported: imported, reason: reason });
         }
         return results;
     }

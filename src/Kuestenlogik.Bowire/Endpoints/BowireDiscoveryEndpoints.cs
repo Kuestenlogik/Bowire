@@ -58,6 +58,7 @@ internal static class BowireDiscoveryEndpoints
             && options.ServerUrls.Count == 0
             && options.ProtoSources.Count == 0
             && !ProtoUploadStore.HasUploads
+            && !ProtoSetUploadStore.HasUploads
             && !OpenApiUploadStore.HasUploads
             && string.IsNullOrEmpty(serverUrl);
     }

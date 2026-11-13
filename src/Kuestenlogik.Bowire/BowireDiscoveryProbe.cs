@@ -107,7 +107,7 @@ public static class BowireDiscoveryProbe
             // none loaded, or a hint that names one that is not installed,
             // would otherwise answer "nothing here" about a schema the
             // operator had just handed over.
-            return new BowireDiscoveryProbeResult(WithUploadedSchemas(services, serverUrl), attempts);
+            return new BowireDiscoveryProbeResult(WithUploadedSchemas(services, serverUrl, registry), attempts);
         }
 
         using var probeCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
@@ -246,7 +246,7 @@ public static class BowireDiscoveryProbe
             attempts.Add(attempt);
         }
 
-        return new BowireDiscoveryProbeResult(WithUploadedSchemas(services, serverUrl), attempts);
+        return new BowireDiscoveryProbeResult(WithUploadedSchemas(services, serverUrl, registry), attempts);
     }
 
     /// <summary>
@@ -275,11 +275,15 @@ public static class BowireDiscoveryProbe
     /// </para>
     /// </remarks>
     private static List<BowireServiceInfo> WithUploadedSchemas(
-        List<BowireServiceInfo> probed, string serverUrl)
+        List<BowireServiceInfo> probed, string serverUrl, BowireProtocolRegistry registry)
     {
-        if (!ProtoUploadStore.HasUploads) return probed;
-
-        var cached = ProtoUploadStore.GetServices();
+        // A descriptor set before a .proto (#991). Both can describe the same
+        // service, and the set is the one a call can be made through: the
+        // .proto's entry would shadow it with names only.
+        var fromSets = ProtoSetUploadStore.GetServices(registry);
+        var cached = fromSets.Count == 0
+            ? ProtoUploadStore.GetServices()
+            : [.. fromSets, .. ProtoUploadStore.GetServices().Where(p => fromSets.TrueForAll(s => s.Name != p.Name))];
         if (cached.Count == 0) return probed;
 
         // Copies, because that list is the store's parse cache and every

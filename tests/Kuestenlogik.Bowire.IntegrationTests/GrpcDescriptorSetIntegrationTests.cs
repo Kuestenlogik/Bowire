@@ -117,6 +117,10 @@ public sealed class GrpcDescriptorSetIntegrationTests
     /// need the same set for the same server, and a second copy would drift.
     /// </remarks>
     internal static string InlineMarker()
+        => JsonSerializer.Serialize(new { base64 = Convert.ToBase64String(GreeterDescriptorSet()) });
+
+    /// <summary>The same set as the bytes a <c>.protoset</c> file holds.</summary>
+    internal static byte[] GreeterDescriptorSet()
     {
         var set = new FileDescriptorSet();
         var seen = new HashSet<string>(StringComparer.Ordinal);
@@ -132,12 +136,10 @@ public sealed class GrpcDescriptorSetIntegrationTests
         }
 
         Add(GreeterReflection.Descriptor);
-
-        var json = JsonSerializer.Serialize(new { base64 = Convert.ToBase64String(set.ToByteArray()) });
-        return json;
+        return set.ToByteArray();
     }
 
-    private static async Task<GreeterHost> StartGreeterWithoutReflectionAsync()
+    internal static async Task<GreeterHost> StartGreeterWithoutReflectionAsync()
     {
         var builder = WebApplication.CreateBuilder();
         builder.WebHost.UseUrls(LoopbackHost.AnyPort);
@@ -155,7 +157,7 @@ public sealed class GrpcDescriptorSetIntegrationTests
     }
 
 
-    private sealed class GreeterHost(WebApplication app, string url) : IAsyncDisposable
+    internal sealed class GreeterHost(WebApplication app, string url) : IAsyncDisposable
     {
         public string Url { get; } = url;
 

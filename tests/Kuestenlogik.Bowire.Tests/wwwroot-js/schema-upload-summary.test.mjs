@@ -171,3 +171,71 @@ test('a network failure is a failure, not a silent success', async () => {
 
     assert.equal(results[0].ok, false);
 });
+
+// ---- descriptor sets (#991) ----
+
+const protoset = (name, imported, ok = true, status = 200, reason = null) =>
+    ({ name, kind: 'protoset', ok, status, imported, reason });
+
+test('a descriptor set is sent as bytes to its own endpoint', async () => {
+    // Read as text, a binary set is re-encoded on the way out and arrives as
+    // something that no longer parses.
+    const { uploadSchemaFiles } = harness();
+    const sent = [];
+    const bytes = new Uint8Array([0x0a, 0x00, 0xff]).buffer;
+    const file = (name) => ({
+        name,
+        arrayBuffer: () => Promise.resolve(bytes),
+        text: () => Promise.reject(new Error('a descriptor set must not be read as text')),
+    });
+
+    const results = await uploadSchemaFiles(
+        [file('api.protoset'), file('api.PB'), file('api.desc'), file('api.binpb')],
+        (url, body) => {
+            sent.push({ url, body });
+            return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({ imported: 2 }) });
+        });
+
+    for (const s of sent) {
+        assert.match(s.url, /\/api\/protoset\/upload\?name=api\./);
+        assert.equal(s.body, bytes);
+    }
+    assert.equal(sent.length, 4);
+    assert.equal(results[0].kind, 'protoset');
+    assert.equal(results[0].imported, 2);
+});
+
+test('a descriptor set is reported as one, with its service count', () => {
+    const { summariseSchemaUpload } = harness();
+    const r = summariseSchemaUpload([protoset('api.protoset', 3)]);
+
+    assert.equal(r.level, 'success');
+    assert.match(r.text, /sidebar\.upload\.descriptorSets/);
+    assert.match(r.text, /"services":"3"/);
+    assert.doesNotMatch(r.text, /protoNamesOnly/);
+});
+
+test('a .proto import says it gives names only and points at the descriptor set', () => {
+    // The import succeeded, so nothing else would tell the operator before
+    // the first call fails.
+    const { summariseSchemaUpload } = harness();
+    const r = summariseSchemaUpload([proto('routeguide.proto', 2)]);
+
+    assert.equal(r.level, 'success');
+    assert.match(r.text, /sidebar\.upload\.protoNamesOnly/);
+});
+
+test('a refused descriptor set is reported with the reason the server gave', async () => {
+    const { uploadSchemaFiles, summariseSchemaUpload } = harness();
+    const results = await uploadSchemaFiles(
+        [{ name: 'api.protoset', arrayBuffer: () => Promise.resolve(new ArrayBuffer(1)) }],
+        () => Promise.resolve({
+            ok: false, status: 400,
+            json: () => Promise.resolve({ detail: 'The descriptor set lacks shop/money.proto.' }),
+        }));
+
+    const r = summariseSchemaUpload(results);
+    assert.equal(r.level, 'error');
+    assert.match(r.text, /sidebar\.upload\.failedWhy/);
+    assert.match(r.text, /shop\/money\.proto/);
+});

@@ -3987,7 +3987,7 @@
     // #152 follow-up — schema upload helper shared by the Sources-
     // detail drop-zone (drag-drop + click→file-picker). Mirrors the
     // Discover sidebar's renderProtoUploadPanel upload loop so
-    // /api/proto/upload + /api/openapi/upload stay the single backend
+    // /api/proto/upload, /api/protoset/upload + /api/openapi/upload stay the single backend
     // seam for every schema source — the difference is which surface
     // the operator triggers it from.
     async function _uploadSourcesSchemaFiles(files) {
@@ -4254,7 +4254,8 @@
         // still surface in the Discover sidebar.
         var matchingSchemas = (typeof services === 'object' && Array.isArray(services))
             ? services.filter(function (s) {
-                return (s.source === 'proto' || s.source === 'rest')
+                return (s.source === 'proto' || s.source === 'rest'
+                        || (s.source === 'grpc' && s.isUploaded === true))
                     && s.originUrl === u;
             })
             : [];
@@ -4273,7 +4274,7 @@
             onClick: function () {
                 var input = document.createElement('input');
                 input.type = 'file';
-                input.accept = '.proto,.json,.yaml,.yml';
+                input.accept = SCHEMA_UPLOAD_ACCEPT;
                 input.multiple = true;
                 input.onchange = async function () {
                     if (!input.files || input.files.length === 0) return;
@@ -4302,7 +4303,9 @@
                     }),
                     el('span', {
                         className: 'bowire-sources-schema-kind',
-                        textContent: svc.source === 'proto' ? 'gRPC (.proto)' : 'OpenAPI'  // i18n-exempt: the schema format the source was read from
+                        textContent: svc.source === 'proto' ? 'gRPC (.proto)'  // i18n-exempt: the schema format the source was read from
+                            : svc.source === 'grpc' ? 'gRPC (descriptor set)'  // i18n-exempt: the schema format the source was read from
+                            : 'OpenAPI'  // i18n-exempt: the schema format the source was read from
                     })
                 ));
             });
