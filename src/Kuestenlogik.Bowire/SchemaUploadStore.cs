@@ -199,13 +199,20 @@ internal static partial class SchemaUploadStore
     /// the file in <c>schemas/</c> is then the file <c>protoc</c> wrote, which
     /// <c>grpcurl -protoset</c> and <c>bowire --schema</c> read as it lies.
     /// </remarks>
-    internal static string AddBytes(string kind, byte[] bytes, string? sourceName)
+    /// <param name="kind">The stored kind.</param>
+    /// <param name="bytes">The document.</param>
+    /// <param name="sourceName">The name it was uploaded under.</param>
+    /// <param name="defaultExtension">
+    /// The extension for a document uploaded without one, for a kind a plugin
+    /// declares (#994); null for the kinds this store knows itself.
+    /// </param>
+    internal static string AddBytes(string kind, byte[] bytes, string? sourceName, string? defaultExtension = null)
     {
         ArgumentNullException.ThrowIfNull(bytes);
-        return Add(kind, sourceName, path => File.WriteAllBytes(path, bytes));
+        return Add(kind, sourceName, path => File.WriteAllBytes(path, bytes), defaultExtension);
     }
 
-    private static string Add(string kind, string? sourceName, Action<string> write)
+    private static string Add(string kind, string? sourceName, Action<string> write, string? defaultExtension = null)
     {
         ArgumentException.ThrowIfNullOrEmpty(kind);
 
@@ -216,7 +223,7 @@ internal static partial class SchemaUploadStore
         {
             var index = ReadIndex(root);
             var taken = index.Schemas.Select(e => e.File).ToHashSet(StringComparer.OrdinalIgnoreCase);
-            var fileName = FileNameFor(kind, sourceName, id, taken);
+            var fileName = FileNameFor(kind, sourceName, id, taken, defaultExtension);
 
             Directory.CreateDirectory(root);
             write(Path.Combine(root, fileName));
@@ -277,9 +284,12 @@ internal static partial class SchemaUploadStore
     {
         if (s_explicit.Value is { } given)
         {
+            // A document handed over as text reads back as its UTF-8 bytes:
+            // a plugin kind (#994) is read as bytes whatever it holds.
             return given
-                .Where(s => s.Bytes is not null && string.Equals(s.Kind, kind, StringComparison.OrdinalIgnoreCase))
-                .Select(s => new StoredBinarySchema(ExplicitId(s), s.Bytes!, s.SourceName))
+                .Where(s => string.Equals(s.Kind, kind, StringComparison.OrdinalIgnoreCase))
+                .Select(s => new StoredBinarySchema(
+                    ExplicitId(s), s.Bytes ?? System.Text.Encoding.UTF8.GetBytes(s.Content), s.SourceName))
                 .ToArray();
         }
 
@@ -309,10 +319,33 @@ internal static partial class SchemaUploadStore
     }
 
     /// <summary>True when at least one document of this kind is stored.</summary>
-    internal static bool Has(string kind)
-        => string.Equals(kind, ProtoSetKind, StringComparison.OrdinalIgnoreCase)
-            ? GetAllBytes(kind).Count > 0
-            : GetAll(kind).Count > 0;
+    internal static bool Has(string kind) => GetAllBytes(kind).Count > 0;
+
+    /// <summary>True when at least one document of any kind is stored.</summary>
+    internal static bool HasAny()
+    {
+        if (s_explicit.Value is { } given) return given.Count > 0;
+
+        var root = RootPath();
+        lock (DiskLock)
+        {
+            return ReadIndex(root).Schemas.Count > 0;
+        }
+    }
+
+    /// <summary>
+    /// Remove every stored document of every kind: the drop zone's "Clear".
+    /// </summary>
+    internal static void ClearAll()
+    {
+        var root = RootPath();
+        string[] kinds;
+        lock (DiskLock)
+        {
+            kinds = [.. ReadIndex(root).Schemas.Select(e => e.Kind).Distinct(StringComparer.OrdinalIgnoreCase)];
+        }
+        foreach (var kind in kinds) Clear(kind);
+    }
 
     /// <summary>
     /// Remove every document of one kind, leaving the other kind alone —
@@ -384,20 +417,25 @@ internal static partial class SchemaUploadStore
     /// because "I replaced the bad characters" is exactly the reasoning that
     /// produces a traversal when one case was missed.
     /// </remarks>
-    private static string FileNameFor(string kind, string? sourceName, string id, HashSet<string> taken)
+    private static string FileNameFor(
+        string kind, string? sourceName, string id, HashSet<string> taken, string? defaultExtension)
     {
+        var fallback = defaultExtension is not null && SafeFileNamePattern().IsMatch(defaultExtension)
+            ? defaultExtension
+            : DefaultExtension(kind);
+
         var raw = Path.GetFileName(sourceName ?? string.Empty);
         var cleaned = new string(raw.Select(
             c => char.IsAsciiLetterOrDigit(c) || c is '.' or '_' or '-' ? c : '-').ToArray()).Trim('.', '-');
 
         if (cleaned.Length > MaxFileNameLength) cleaned = cleaned[^MaxFileNameLength..].Trim('.', '-');
         if (cleaned.Length == 0 || !SafeFileNamePattern().IsMatch(cleaned)) cleaned = "schema";
-        if (!Path.HasExtension(cleaned)) cleaned += DefaultExtension(kind);
+        if (!Path.HasExtension(cleaned)) cleaned += fallback;
 
         if (taken.Contains(cleaned))
         {
             cleaned = Path.GetFileNameWithoutExtension(cleaned) + "-" + id + Path.GetExtension(cleaned);
-            if (!SafeFileNamePattern().IsMatch(cleaned)) cleaned = "schema-" + id + DefaultExtension(kind);
+            if (!SafeFileNamePattern().IsMatch(cleaned)) cleaned = "schema-" + id + fallback;
         }
 
         return cleaned;

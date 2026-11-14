@@ -272,13 +272,14 @@ public static class BowireDiscoveryProbe
     private static List<BowireServiceInfo> WithUploadedSchemas(
         List<BowireServiceInfo> probed, string serverUrl, BowireProtocolRegistry registry)
     {
-        // A descriptor set before a .proto (#991). Both can describe the same
-        // service, and the set is the one a call can be made through: the
-        // .proto's entry would shadow it with names only.
-        var fromSets = ProtoSetUploadStore.GetServices(registry);
-        var cached = fromSets.Count == 0
+        // What the plugins read from stored documents (#994) before a
+        // .proto. A descriptor set and a .proto can describe the same
+        // service (#991), and the set is the one a call can be made through:
+        // the .proto's entry would shadow it with names only.
+        var fromPlugins = UploadedSchemaImports.GetServices(registry);
+        var cached = fromPlugins.Count == 0
             ? ProtoUploadStore.GetServices()
-            : [.. fromSets, .. ProtoUploadStore.GetServices().Where(p => fromSets.TrueForAll(s => s.Name != p.Name))];
+            : [.. fromPlugins, .. ProtoUploadStore.GetServices().Where(p => fromPlugins.TrueForAll(s => s.Name != p.Name))];
         if (cached.Count == 0) return probed;
 
         // Copies, because that list is the store's parse cache and every

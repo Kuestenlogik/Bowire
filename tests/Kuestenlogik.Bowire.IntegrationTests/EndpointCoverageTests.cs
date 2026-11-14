@@ -384,6 +384,145 @@ public sealed class EndpointCoverageTests : IClassFixture<BowireTestFixture>, ID
         Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
     }
 
+    // ---------- /api/schema/upload: one route, routed by kind (#994) ----------
+
+    private async Task<(HttpStatusCode Status, string Json)> PostSchemaAsync(string name, string content)
+    {
+        using var body = new ByteArrayContent(Encoding.UTF8.GetBytes(content));
+        var resp = await _client.PostAsync(
+            new Uri("/bowire/api/schema/upload?name=" + Uri.EscapeDataString(name), UriKind.Relative),
+            body, TestContext.Current.CancellationToken);
+        return (resp.StatusCode, await resp.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task SchemaKinds_Lists_What_The_Loaded_Plugins_Import()
+    {
+        var json = await _client.GetStringAsync(
+            new Uri("/bowire/api/schema/kinds", UriKind.Relative), TestContext.Current.CancellationToken);
+
+        using var doc = JsonDocument.Parse(json);
+        var kinds = doc.RootElement.GetProperty("kinds").EnumerateArray()
+            .ToDictionary(k => k.GetProperty("kind").GetString()!, k => k);
+
+        Assert.Equal("proto", kinds["proto"].GetProperty("plugin").GetString());
+        Assert.Equal("grpc", kinds["protoset"].GetProperty("plugin").GetString());
+        Assert.Equal("graphql", kinds["graphql-sdl"].GetProperty("plugin").GetString());
+        Assert.Equal("rest", kinds["openapi"].GetProperty("plugin").GetString());
+        Assert.Contains(".graphql",
+            kinds["graphql-sdl"].GetProperty("extensions").EnumerateArray().Select(e => e.GetString()));
+    }
+
+    [Fact]
+    public async Task SchemaUpload_Routes_Sdl_To_The_GraphQL_Plugin_And_Reports_Its_Services()
+    {
+        var (status, json) = await PostSchemaAsync(
+            "harbor.graphql", "type Ship { id: ID! } type Query { ship(id: ID!): Ship }");
+
+        Assert.Equal(HttpStatusCode.OK, status);
+        using var doc = JsonDocument.Parse(json);
+        Assert.Equal("graphql-sdl", doc.RootElement.GetProperty("kind").GetString());
+        Assert.Equal("graphql", doc.RootElement.GetProperty("plugin").GetString());
+        Assert.Equal(1, doc.RootElement.GetProperty("imported").GetInt32());
+        Assert.Equal("Query", doc.RootElement.GetProperty("services")[0].GetString());
+        Assert.True(SchemaUploadStore.Has("graphql-sdl"));
+    }
+
+    [Fact]
+    public async Task SchemaUpload_Refuses_Broken_Sdl_With_The_Parsers_Reason_And_Stores_Nothing()
+    {
+        var (status, json) = await PostSchemaAsync("harbor.graphql", "type Query { ship(: Ship }");
+
+        Assert.Equal(HttpStatusCode.BadRequest, status);
+        Assert.Contains("Not GraphQL SDL", json, StringComparison.Ordinal);
+        Assert.False(SchemaUploadStore.Has("graphql-sdl"));
+    }
+
+    [Fact]
+    public async Task SchemaUpload_Routes_A_Descriptor_Set_By_Its_Extension()
+    {
+        using var content = new ByteArrayContent(GrpcDescriptorSetIntegrationTests.GreeterDescriptorSet());
+
+        var resp = await _client.PostAsync(
+            new Uri("/bowire/api/schema/upload?name=greeter.binpb", UriKind.Relative),
+            content, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+        var json = await resp.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        using var doc = JsonDocument.Parse(json);
+        Assert.Equal("protoset", doc.RootElement.GetProperty("kind").GetString());
+        Assert.Contains("test.Greeter", json, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task SchemaUpload_Routes_A_Proto_To_Cores_Parser()
+    {
+        var (status, json) = await PostSchemaAsync(
+            "beacon.proto", "syntax = \"proto3\"; service Beacon { rpc Ping (P) returns (P); } message P {}");
+
+        Assert.Equal(HttpStatusCode.OK, status);
+        using var doc = JsonDocument.Parse(json);
+        Assert.Equal("proto", doc.RootElement.GetProperty("kind").GetString());
+        Assert.True(doc.RootElement.GetProperty("imported").GetInt32() >= 1);
+    }
+
+    [Fact]
+    public async Task SchemaUpload_Stores_Json_Nobody_Claims_As_OpenApi()
+    {
+        var (status, json) = await PostSchemaAsync(
+            "demo.json", """{"openapi":"3.0.0","info":{"title":"x","version":"1"}}""");
+
+        Assert.Equal(HttpStatusCode.OK, status);
+        using var doc = JsonDocument.Parse(json);
+        Assert.Equal("openapi", doc.RootElement.GetProperty("kind").GetString());
+        Assert.True(doc.RootElement.GetProperty("uploaded").GetBoolean());
+        Assert.True(OpenApiUploadStore.HasUploads);
+    }
+
+    [Fact]
+    public async Task SchemaUpload_Finds_The_Reader_For_Sdl_Saved_Under_Another_Extension()
+    {
+        var (status, json) = await PostSchemaAsync("schema.txt", "type Query { ping: String }");
+
+        Assert.Equal(HttpStatusCode.OK, status);
+        Assert.Contains("graphql-sdl", json, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task SchemaUpload_Refuses_A_File_Nobody_Reads_And_Names_What_Can_Be_Uploaded()
+    {
+        var (status, json) = await PostSchemaAsync("notes.txt", "nothing a plugin would read");
+
+        Assert.Equal(HttpStatusCode.BadRequest, status);
+        Assert.Contains("notes.txt", json, StringComparison.Ordinal);
+        Assert.Contains("GraphQL SDL", json, StringComparison.Ordinal);
+        Assert.Contains(".protoset", json, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task SchemaUpload_EmptyBody_Returns400()
+    {
+        var (status, json) = await PostSchemaAsync("empty.graphql", "   ");
+
+        Assert.Equal(HttpStatusCode.BadRequest, status);
+        Assert.Contains("Empty schema file", json, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task SchemaUpload_Delete_Clears_Every_Kind()
+    {
+        await PostSchemaAsync("harbor.graphql", "type Query { ping: String }");
+        await PostSchemaAsync("demo.json", """{"openapi":"3.0.0","info":{"title":"x","version":"1"}}""");
+        await PostSchemaAsync("beacon.proto", "syntax = \"proto3\"; service Beacon { rpc Ping (P) returns (P); } message P {}");
+
+        using var req = new HttpRequestMessage(HttpMethod.Delete,
+            new Uri("/bowire/api/schema/upload", UriKind.Relative));
+        var resp = await _client.SendAsync(req, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+        Assert.False(SchemaUploadStore.HasAny());
+    }
+
     [Fact]
     public async Task OpenApiUpload_EmptyBody_Returns400()
     {

@@ -30,7 +30,7 @@ public sealed class GrpcUploadedDescriptorSetIntegrationTests : IDisposable
     }
 
     private static void UploadGreeterSet()
-        => ProtoSetUploadStore.Add(GrpcDescriptorSetIntegrationTests.GreeterDescriptorSet(), "greeter.protoset");
+        => SchemaUploadStore.AddBytes(SchemaUploadStore.ProtoSetKind, GrpcDescriptorSetIntegrationTests.GreeterDescriptorSet(), "greeter.protoset");
 
     [Fact]
     public async Task Discovery_Lists_The_Uploaded_Services_Of_A_Server_Without_Reflection()
@@ -144,7 +144,7 @@ public sealed class GrpcUploadedDescriptorSetIntegrationTests : IDisposable
             Assert.Contains("Hello named!", result.Response ?? "", StringComparison.Ordinal);
         }
 
-        Assert.False(ProtoSetUploadStore.HasUploads);
+        Assert.False(SchemaUploadStore.Has(SchemaUploadStore.ProtoSetKind));
     }
 
     [Fact]
@@ -175,7 +175,7 @@ public sealed class GrpcUploadedDescriptorSetIntegrationTests : IDisposable
     public void Bytes_That_Are_Not_A_Descriptor_Set_Are_Refused()
     {
         var ex = Assert.Throws<FormatException>(() =>
-            new BowireGrpcProtocol().ReadUploadedSchema("syntax = \"proto3\";"u8.ToArray()));
+            new BowireGrpcProtocol().ReadUploadedSchema("protoset", "syntax = \"proto3\";"u8.ToArray(), "api.protoset"));
 
         Assert.Contains("descriptor_set_out", ex.Message, StringComparison.Ordinal);
     }
@@ -212,7 +212,7 @@ public sealed class GrpcUploadedDescriptorSetIntegrationTests : IDisposable
         var set = new FileDescriptorSet { File = { orphan } };
 
         var ex = Assert.Throws<FormatException>(() =>
-            new BowireGrpcProtocol().ReadUploadedSchema(set.ToByteArray()));
+            new BowireGrpcProtocol().ReadUploadedSchema("protoset", set.ToByteArray(), "api.protoset"));
 
         Assert.Contains("shop/money.proto", ex.Message, StringComparison.Ordinal);
         Assert.Contains("--include_imports", ex.Message, StringComparison.Ordinal);

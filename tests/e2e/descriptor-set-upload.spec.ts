@@ -94,7 +94,7 @@ async function drop(page: Page, path: string): Promise<void> {
  */
 async function dropFixture(page: Page): Promise<string> {
     const upload = page.waitForRequest(
-        r => r.method() === 'POST' && r.url().includes('/api/protoset/upload'), { timeout: 20_000 });
+        r => r.method() === 'POST' && r.url().includes('/api/schema/upload'), { timeout: 20_000 });
     await drop(page, FIXTURE);
     const params = new URL((await upload).url()).searchParams;
     params.delete('name');
@@ -110,7 +110,7 @@ test.describe('A descriptor set in the drop zone', () => {
         // count is the proof that it did.
         const posted: string[] = [];
         page.on('request', r => {
-            if (r.method() === 'POST' && r.url().includes('/api/protoset/upload')) posted.push(r.url());
+            if (r.method() === 'POST' && r.url().includes('/api/schema/upload')) posted.push(r.url());
         });
 
         await openDropZone(page);
@@ -185,6 +185,6 @@ test.describe('A descriptor set in the drop zone', () => {
         await drop(page, path);
 
         await expect(page.locator('.bowire-toast').last()).toContainText(/1 (service|Dienst)/, { timeout: 20_000 });
-        expect(posted).toEqual(['/api/protoset/upload']);
+        expect(posted).toEqual(['/api/schema/upload']);
     });
 });

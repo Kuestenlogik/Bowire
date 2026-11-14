@@ -116,10 +116,12 @@
      * did a server error. The one case the operator most needs to hear about
      * was the one dressed up as success.
      *
-     * `results` are `{ name, kind, ok, status, imported, reason }` —
-     * `imported` is the service count the proto and descriptor-set endpoints
-     * return, and null for OpenAPI, which is stored raw and only parsed later
-     * during discovery. `reason` is the server's own sentence for a refusal.
+     * `results` are `{ name, kind, displayName, ok, status, imported, reason }`.
+     * `kind` and `displayName` are what the server decided the file is
+     * (#994) and null for a refused one. `imported` is the service count the
+     * importing plugin returns, and null for OpenAPI, which is stored raw
+     * and only parsed later during discovery. `reason` is the server's own
+     * sentence for a refusal.
      *
      * A `.proto` gives names only (#991): its services fill the sidebar and
      * cannot be called without the server's reflection. The summary says so
@@ -146,21 +148,11 @@
             };
         }
 
-        // A proto the server read but found no service in. Not an error — the
-        // file arrived and is stored — but calling it an import would be the
+        // Files the server read but found no service in. Not an error: they
+        // arrived and are stored. But calling that an import would be the
         // same lie in a quieter voice.
-        var empty = rows.filter(function (r) { return r.kind === 'proto' && r.imported === 0; });
-        var protos = rows.filter(function (r) { return r.kind === 'proto'; }).length;
-        var sets = rows.filter(function (r) { return r.kind === 'protoset'; }).length;
-        var openapis = rows.length - protos - sets;
-        var services = rows.reduce(function (sum, r) { return sum + (r.imported || 0); }, 0);
-
-        var parts = [];
-        if (sets > 0) parts.push(t('sidebar.upload.descriptorSets', { count: String(sets) }));
-        if (protos > 0) parts.push(protos + ' .proto');
-        if (openapis > 0) parts.push(openapis + ' OpenAPI');
-
-        if (empty.length === protos && protos > 0 && openapis === 0 && sets === 0) {
+        var empty = rows.filter(function (r) { return r.imported === 0; });
+        if (empty.length === rows.length) {
             return {
                 level: 'warning',
                 text: t('sidebar.upload.noServices', {
@@ -169,40 +161,95 @@
             };
         }
 
+        // One part per kind, in the order the kinds first appear.
+        var order = [], counts = {}, labels = {};
+        rows.forEach(function (r) {
+            var kind = r.kind || 'openapi';
+            if (!counts[kind]) { counts[kind] = 0; order.push(kind); }
+            counts[kind]++;
+            labels[kind] = r.displayName || kind;
+        });
+        var parts = order.map(function (kind) {
+            if (kind === 'protoset') return t('sidebar.upload.descriptorSets', { count: String(counts[kind]) });
+            if (kind === 'proto') return counts[kind] + ' .proto';
+            if (kind === 'openapi') return counts[kind] + ' OpenAPI';
+            return counts[kind] + ' ' + labels[kind];
+        });
+        var services = rows.reduce(function (sum, r) { return sum + (r.imported || 0); }, 0);
+
         var imported = t('sidebar.upload.imported', {
             files: parts.join(' + '),
             services: String(services),
         });
         return {
             level: 'success',
-            text: protos > 0 ? imported + ' ' + t('sidebar.upload.protoNamesOnly') : imported,
+            text: counts.proto > 0 ? imported + ' ' + t('sidebar.upload.protoNamesOnly') : imported,
         };
     }
 
     /**
-     * The extensions a compiled descriptor set arrives under. `.protoset` is
-     * what grpcurl calls it, `.pb` and `.desc` are what build scripts write,
-     * `.binpb` is what buf writes.
+     * The schema kinds this host imports (#994), as `/api/schema/kinds`
+     * lists them: `{ kind, displayName, extensions, plugin }`. Which plugins
+     * are loaded decides it, so the file picker and the drop zone's hint are
+     * built from this rather than from a list written here.
+     *
+     * Until the host has answered, the one kind every host reads.
      */
-    var DESCRIPTOR_SET_EXTENSIONS = ['.protoset', '.pb', '.desc', '.binpb'];
+    var schemaImportKinds = [
+        { kind: 'proto', displayName: 'Protobuf source (names only)', extensions: ['.proto'], plugin: 'proto' },
+    ];
+
+    /**
+     * Ask the host what it imports. Not awaited by its callers: the drop
+     * zone shows what is known and is drawn again when the answer differs.
+     * `get` is injectable so this can be exercised without a browser.
+     */
+    async function loadSchemaImportKinds(get) {
+        var fetchKinds = get || function (url) { return fetch(url); };
+        try {
+            var resp = await fetchKinds(config.prefix + '/api/schema/kinds');
+            if (!resp || !resp.ok) return;
+            var body = await resp.json();
+            if (!body || !Array.isArray(body.kinds) || body.kinds.length === 0) return;
+            var changed = JSON.stringify(body.kinds) !== JSON.stringify(schemaImportKinds);
+            schemaImportKinds = body.kinds;
+            if (changed && typeof render === 'function') render();
+        } catch {
+            // The picker then offers what it offered before; an upload still
+            // reaches the server, which decides the kind either way.
+        }
+    }
 
     /** The file picker's filter, for every surface that opens one. */
-    var SCHEMA_UPLOAD_ACCEPT = ['.proto'].concat(DESCRIPTOR_SET_EXTENSIONS, ['.json', '.yaml', '.yml']).join(',');
-
-    /** Which endpoint a dropped file belongs to, by its name. */
-    function schemaUploadKind(fileName) {
-        var lower = String(fileName || '').toLowerCase();
-        if (lower.endsWith('.proto')) return 'proto';
-        for (var i = 0; i < DESCRIPTOR_SET_EXTENSIONS.length; i++) {
-            if (lower.endsWith(DESCRIPTOR_SET_EXTENSIONS[i])) return 'protoset';
-        }
-        return 'openapi';
+    function schemaUploadAccept() {
+        var seen = {}, extensions = [];
+        schemaImportKinds.forEach(function (k) {
+            (k.extensions || []).forEach(function (e) {
+                if (!seen[e]) { seen[e] = true; extensions.push(e); }
+            });
+        });
+        return extensions.join(',');
     }
 
     /**
-     * Post each file to the endpoint its extension implies and report what
-     * came back. `post` is injectable so the summary above can be exercised
-     * without a browser.
+     * What can be dropped here, as one line: each kind with the extensions
+     * it arrives under. A kind's name is the format's own and is not
+     * translated, except where the catalogue has an entry for it.
+     */
+    function schemaUploadHint() {
+        return schemaImportKinds.map(function (k) {
+            // t() hands back the key itself for one the catalogue lacks.
+            var name = t('sidebar.upload.kind.' + k.kind);
+            if (name === 'sidebar.upload.kind.' + k.kind) name = k.displayName;
+            return name + ' (' + (k.extensions || []).join(', ') + ')';
+        }).join('  ·  ');
+    }
+
+    /**
+     * Post each file to the upload route and report what came back. The
+     * server decides what a file is, from its name and, where the name does
+     * not settle it, its content. `post` is injectable so the summary above
+     * can be exercised without a browser.
      */
     async function uploadSchemaFiles(files, post) {
         var send = post || function (url, body) {
@@ -210,14 +257,14 @@
         };
         var results = [];
         for (var file of files) {
-            var kind = schemaUploadKind(file.name);
-            // A descriptor set is binary: read as text it would be re-encoded
-            // on the way out and arrive as something else.
-            var content = kind === 'protoset' ? await file.arrayBuffer() : await file.text();
-            var endpoint = '/api/' + kind + '/upload?name='
+            // As bytes, whatever the file holds: a descriptor set read as
+            // text would be re-encoded on the way out and arrive as
+            // something else, and the browser cannot tell which kind it is.
+            var content = await file.arrayBuffer();
+            var endpoint = '/api/schema/upload?name='
                 + encodeURIComponent(file.name) + workspaceParam(true);
 
-            var ok = false, status = 0, imported = null, reason = null;
+            var ok = false, status = 0, imported = null, reason = null, kind = null, displayName = null;
             try {
                 var resp = await send(config.prefix + endpoint, content);
                 status = resp.status;
@@ -225,6 +272,8 @@
                 var body = await resp.json().catch(function () { return null; });
                 if (ok) {
                     if (body && typeof body.imported === 'number') imported = body.imported;
+                    if (body && typeof body.kind === 'string') kind = body.kind;
+                    if (body && typeof body.displayName === 'string') displayName = body.displayName;
                 } else if (body && typeof body.detail === 'string') {
                     reason = body.detail;
                 }
@@ -233,7 +282,10 @@
                 // has to hear it in the same breath as the successes.
                 ok = false;
             }
-            results.push({ name: file.name, kind: kind, ok: ok, status: status, imported: imported, reason: reason });
+            results.push({
+                name: file.name, kind: kind, displayName: displayName,
+                ok: ok, status: status, imported: imported, reason: reason,
+            });
         }
         return results;
     }

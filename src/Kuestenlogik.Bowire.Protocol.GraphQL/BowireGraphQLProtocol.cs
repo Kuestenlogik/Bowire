@@ -19,8 +19,23 @@ namespace Kuestenlogik.Bowire.Protocol.GraphQL;
 /// invokes them by building a parameterised operation string with
 /// <see cref="GraphQLQueryBuilder"/>.
 /// </summary>
-public sealed class BowireGraphQLProtocol : IBowireProtocol, IBowireManualEntry, Kuestenlogik.Bowire.Net.IBowireProxySupport, IDisposable
+public sealed class BowireGraphQLProtocol : IBowireProtocol, IBowireManualEntry, Kuestenlogik.Bowire.Net.IBowireProxySupport, IBowireUploadedSchemaReader, IDisposable
 {
+    /// <summary>The schema in SDL, for a server that refuses introspection (#994).</summary>
+    public IReadOnlyList<BowireUploadedSchemaKind> UploadedSchemaKinds { get; } = [GraphQLSdlImport.Kind];
+
+    /// <inheritdoc />
+    public bool LooksLikeUploadedSchema(string kind, ReadOnlyMemory<byte> document)
+        => GraphQLSdlImport.LooksLikeSdl(document);
+
+    /// <summary>
+    /// The root operations an uploaded SDL document declares, in the shape
+    /// introspection reports them.
+    /// </summary>
+    public IReadOnlyList<BowireServiceInfo> ReadUploadedSchema(
+        string kind, ReadOnlyMemory<byte> document, string sourceName)
+        => GraphQLSdlImport.Read(document);
+
     /// <summary>The method types the freeform form offers (#995); the workbench has its own form for this protocol.</summary>
     public BowireManualEntryForm DescribeManualEntry() => BowireManualEntryForm.ForMethodTypes("Unary", "ServerStreaming");
 
@@ -860,6 +875,12 @@ public sealed class BowireGraphQLProtocol : IBowireProtocol, IBowireManualEntry,
         string? endpoint, bool mayIntrospect, CancellationToken ct)
     {
         var variablesJson = jsonMessages.Count > 0 ? jsonMessages[0] : "{}";
+
+        // #994 - an uploaded schema first. It is how the workbench listed
+        // the operation being called, and the server it describes is usually
+        // the one that refuses the introspection tried below.
+        if (FindMethod(GraphQLSdlImport.Stored(), service, method) is { } uploaded)
+            return GraphQLQueryBuilder.Build(operationKind, uploaded, variablesJson);
 
         // #710 - the discovered method carries the real argument types and
         // the real output type, so the generated operation both types its

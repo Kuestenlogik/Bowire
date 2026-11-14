@@ -56,9 +56,7 @@ internal static class BowireDiscoveryEndpoints
 
         return options.Mode == BowireMode.Standalone
             && options.ServerUrls.Count == 0
-            && !ProtoUploadStore.HasUploads
-            && !ProtoSetUploadStore.HasUploads
-            && !OpenApiUploadStore.HasUploads
+            && !SchemaUploadStore.HasAny()
             && string.IsNullOrEmpty(serverUrl);
     }
 
@@ -268,7 +266,11 @@ internal static class BowireDiscoveryEndpoints
                     type: "urn:bowire:discovery:no-plugins",
                     title: "No protocol plugins are loaded",
                     status: 502,
-                    detail: "Bowire has no protocol plugins available to probe this URL. Upload .proto / OpenAPI / GraphQL SDL files via the Schema Files tab, or configure ProtoSources on the host.",
+                    // #994 - names only what this host can actually take. It used
+                    // to offer OpenAPI and GraphQL SDL here, which no plugin
+                    // was loaded to read, and a host option removed in #992.
+                    detail: "Bowire has no protocol plugins available to probe this URL. Install the plugin for its protocol (`bowire plugin install`). "
+                        + "Without one, the Schema Files tab reads: " + UploadedSchemaImports.Describe(UploadedSchemaImports.Kinds(registry)) + ".",
                     instance: "/api/services",
                     // Empty, but present — every no-services body carries an
                     // `attempts` array so clients can render one code path.

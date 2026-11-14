@@ -27,15 +27,23 @@ namespace Kuestenlogik.Bowire.Protocol.Grpc;
 /// </summary>
 public sealed class BowireGrpcProtocol : IBowireProtocol, IBowireManualEntry, Kuestenlogik.Bowire.Net.IBowireProxySupport, IBowireProtocolServices, IBowireStreamingWithWireBytes, IBowireUploadedSchemaReader
 {
-    /// <inheritdoc />
-    public string UploadedSchemaKind => SchemaUploadStore.ProtoSetKind;
+    /// <summary>
+    /// The compiled descriptor set, under the names it is written with:
+    /// <c>.protoset</c> is what grpcurl calls it, <c>.pb</c> and
+    /// <c>.desc</c> are what build scripts write, <c>.binpb</c> is buf's.
+    /// </summary>
+    public IReadOnlyList<BowireUploadedSchemaKind> UploadedSchemaKinds { get; } =
+    [
+        new(SchemaUploadStore.ProtoSetKind, "gRPC descriptor set", [".protoset", ".pb", ".desc", ".binpb"]),
+    ];
 
     /// <summary>
     /// The services an uploaded descriptor set describes (#991), in the shape
     /// reflection reports them, so a call through the set looks no different
     /// in the workbench from one through the server's own answer.
     /// </summary>
-    public IReadOnlyList<BowireServiceInfo> ReadUploadedSchema(ReadOnlyMemory<byte> document)
+    public IReadOnlyList<BowireServiceInfo> ReadUploadedSchema(
+        string kind, ReadOnlyMemory<byte> document, string sourceName)
     {
         var files = GrpcDescriptorSet.Parse(document.Span);
         using var source = new GrpcDescriptorSetSource(files);

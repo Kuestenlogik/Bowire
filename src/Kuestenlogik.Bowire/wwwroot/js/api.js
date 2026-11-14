@@ -184,6 +184,9 @@
         // #995 - the hand-entry forms of the loaded plugins; not awaited, the
         // freeform form and Compose pick them up when they arrive.
         loadManualEntryForms();
+        // #994 - what this host imports as schema files, for the picker and
+        // the drop zone's hint; not awaited either.
+        loadSchemaImportKinds();
 
         // Always run embedded discovery (no URL) first — this finds
         // gRPC (via reflection), SignalR (via hub metadata), REST (via

@@ -708,11 +708,10 @@
     function renderProtoUploadPanel() {
         var panel = el('div', { className: 'bowire-proto-panel' });
 
-        // Count every uploaded schema — .proto, descriptor set and OpenAPI all
-        // flow through this drop zone.
+        // Count every uploaded schema: whatever its kind, they all flow
+        // through this drop zone (#994).
         var schemaCount = services.filter(function (s) {
-            return s.source === 'proto' || s.source === 'rest'
-                || (s.source === 'grpc' && s.isUploaded === true);
+            return s.source === 'proto' || s.source === 'rest' || s.isUploaded === true;
         }).length;
 
         var dropZone = el('div', {
@@ -721,7 +720,7 @@
             onClick: function () {
                 var input = document.createElement('input');
                 input.type = 'file';
-                input.accept = SCHEMA_UPLOAD_ACCEPT;
+                input.accept = schemaUploadAccept();
                 input.multiple = true;
                 input.onchange = async function () {
                     if (!input.files || input.files.length === 0) return;
@@ -734,7 +733,7 @@
         },
             el('div', { className: 'bowire-proto-dropzone-icon', innerHTML: svgIcon('upload') }),
             el('div', { className: 'bowire-proto-dropzone-title', textContent: t('sidebar.upload.title') }),
-            el('div', { className: 'bowire-proto-dropzone-hint', textContent: t('sidebar.upload.hint') })
+            el('div', { className: 'bowire-proto-dropzone-hint', textContent: schemaUploadHint() })
         );
         panel.appendChild(dropZone);
 
@@ -750,11 +749,7 @@
                     textContent: t('sidebar.upload.clear'),
                     title: t('sidebar.upload.clearTitle'),
                     onClick: async function () {
-                        await Promise.all([
-                            fetch(config.prefix + '/api/proto/upload' + workspaceParam(false), { method: 'DELETE' }),
-                            fetch(config.prefix + '/api/protoset/upload' + workspaceParam(false), { method: 'DELETE' }),
-                            fetch(config.prefix + '/api/openapi/upload' + workspaceParam(false), { method: 'DELETE' })
-                        ]);
+                        await fetch(config.prefix + '/api/schema/upload' + workspaceParam(false), { method: 'DELETE' });
                         toast(t('sidebar.upload.cleared'), 'success');
                         fetchServices();
                     }
@@ -3718,17 +3713,17 @@
         });
     }
 
-    // Shortcut to upload schema files (.proto / .json / .yaml / .yml)
+    // Shortcut to upload schema files (whatever kinds this host imports)
     // straight from the Sources context menu without first navigating to
-    // the Sources detail dropzone. POSTs to the same /api/proto/upload
-    // and /api/openapi/upload endpoints the dropzone uses; switches to
+    // the Sources detail dropzone. POSTs to the same /api/schema/upload
+    // route the dropzone uses; switches to
     // the owning workspace first so the uploaded schemas land in the
     // right per-workspace store.
     function _uploadSchemaFilesForWorkspace(w) {
         if (w && w.id !== activeWorkspaceId) switchWorkspace(w.id);
         var input = document.createElement('input');
         input.type = 'file';
-        input.accept = SCHEMA_UPLOAD_ACCEPT;
+        input.accept = schemaUploadAccept();
         input.multiple = true;
         input.onchange = async function () {
             if (!input.files || input.files.length === 0) return;

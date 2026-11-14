@@ -159,7 +159,7 @@ internal static class CliSchemaInputs
             {
                 try
                 {
-                    descriptorSets.ReadUploadedSchema(bytes);
+                    descriptorSets.ReadUploadedSchema(kind, bytes, Path.GetFileName(path));
                 }
                 catch (FormatException ex)
                 {

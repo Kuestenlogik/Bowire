@@ -3987,7 +3987,7 @@
     // #152 follow-up — schema upload helper shared by the Sources-
     // detail drop-zone (drag-drop + click→file-picker). Mirrors the
     // Discover sidebar's renderProtoUploadPanel upload loop so
-    // /api/proto/upload, /api/protoset/upload + /api/openapi/upload stay the single backend
+    // /api/schema/upload stays the single backend
     // seam for every schema source — the difference is which surface
     // the operator triggers it from.
     async function _uploadSourcesSchemaFiles(files) {
@@ -4274,7 +4274,7 @@
             onClick: function () {
                 var input = document.createElement('input');
                 input.type = 'file';
-                input.accept = SCHEMA_UPLOAD_ACCEPT;
+                input.accept = schemaUploadAccept();
                 input.multiple = true;
                 input.onchange = async function () {
                     if (!input.files || input.files.length === 0) return;
@@ -4289,7 +4289,7 @@
                     ? t('main.src.uploadSchemas')
                     : t('main.src.addMoreSchemas') }),
             el('div', { className: 'bowire-sources-dropzone-hint',
-                textContent: t('main.src.dropHint') })
+                textContent: t('main.src.dropHint', { kinds: schemaUploadHint() }) })
         );
         schemaSection.appendChild(schemaDrop);
 

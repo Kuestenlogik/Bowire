@@ -99,7 +99,7 @@ test.describe('The schema drop zone', () => {
         page.on('request', r => {
             // POST only: openDropZone clears the store first, and a DELETE to
             // the same route would be counted as an upload.
-            if (r.method() === 'POST' && r.url().includes('/api/proto/upload')) posted.push(r.url());
+            if (r.method() === 'POST' && r.url().includes('/api/schema/upload')) posted.push(r.url());
         });
 
         await openDropZone(page);

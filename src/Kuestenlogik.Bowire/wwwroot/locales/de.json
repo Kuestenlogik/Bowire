@@ -1046,7 +1046,7 @@
   "sidebar.deleteCount": "{count} löschen",
   "sidebar.trash.title": "Kürzlich gelöscht",
   "sidebar.trash.deletedAt": "gelöscht {when}",
-  "sidebar.upload.hint": ".protoset für gRPC, aufrufbar  ·  .proto für gRPC, nur Namen  ·  .json / .yaml für OpenAPI / Swagger",
+  "sidebar.upload.kind.proto": "Protobuf-Quelltext, nur Namen",
 
   "sidebar.ws.settings": "Einstellungen des Arbeitsbereichs",
   "sidebar.ws.settingsTitle": "Die Einstellungen des Arbeitsbereichs öffnen",
@@ -1674,7 +1674,7 @@
   "main.src.actions": "Aktionen",
   "main.src.refreshDiscovery": "Discovery aktualisieren",
   "main.openInDiscover": "In Erkunden öffnen",
-  "main.src.dropHint": ".protoset für gRPC, aufrufbar  ·  .proto für gRPC, nur Namen  ·  .json / .yaml für OpenAPI / Swagger  ·  ablegen oder klicken",
+  "main.src.dropHint": "{kinds}  ·  ablegen oder klicken",
   "main.src.headerValuePlaceholder": "Wert (versteht {{vars}})",
   "main.src.removeHeader": "Header entfernen",
   "main.src.noHeaders": "Keine Header eingetragen. Legen Sie einen an, dann geht er mit jeder Anfrage an diese URL hinaus.",
