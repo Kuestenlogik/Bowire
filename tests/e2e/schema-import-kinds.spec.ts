@@ -25,6 +25,65 @@ type Query { ship(id: ID!): Ship ships: [Ship!]! }
 type Mutation { renameShip(id: ID!, name: String!): Ship }
 `;
 
+const CALCULATOR_WSDL = `
+<definitions xmlns="http://schemas.xmlsoap.org/wsdl/"
+             xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+             xmlns:tns="http://example.com/calc/wsdl"
+             targetNamespace="http://example.com/calc/wsdl">
+  <message name="AddIn"><part name="a" type="tns:int"/></message>
+  <portType name="Calculator">
+    <operation name="Add"><input message="tns:AddIn"/></operation>
+  </portType>
+  <binding name="CalculatorSoap" type="tns:Calculator">
+    <operation name="Add"><soap:operation soapAction="http://example.com/calc/Add"/></operation>
+  </binding>
+</definitions>
+`;
+
+const PEOPLE_EDMX = `
+<edmx:Edmx xmlns:edmx="http://docs.oasis-open.org/odata/ns/edmx" Version="4.0">
+  <edmx:DataServices>
+    <Schema xmlns="http://docs.oasis-open.org/odata/ns/edm" Namespace="Demo">
+      <EntityType Name="Person">
+        <Key><PropertyRef Name="UserName"/></Key>
+        <Property Name="UserName" Type="Edm.String" Nullable="false"/>
+      </EntityType>
+      <EntityContainer Name="DemoContainer">
+        <EntitySet Name="People" EntityType="Demo.Person"/>
+      </EntityContainer>
+    </Schema>
+  </edmx:DataServices>
+</edmx:Edmx>
+`;
+
+const HARBOR_OPENRPC = JSON.stringify({
+    openrpc: '1.3.2',
+    info: { title: 'Harbor', version: '1.0.0' },
+    methods: [{ name: 'ship.get', params: [{ name: 'id', schema: { type: 'integer' } }] }],
+});
+
+const LIGHTS_ASYNCAPI = `asyncapi: 3.0.0
+info:
+  title: Lights
+  version: 1.0.0
+servers:
+  production:
+    host: 'broker.local:1883'
+    protocol: mqtt
+channels:
+  lightTurnOn:
+    address: 'light/turn/on'
+    messages:
+      turnOn:
+        payload:
+          type: object
+operations:
+  sendTurnOn:
+    action: send
+    channel:
+      $ref: '#/channels/lightTurnOn'
+`;
+
 test.setTimeout(90_000);
 
 function onDisk(name: string, content: string): string {
@@ -94,6 +153,10 @@ test.describe('Schema kinds the plugins import', () => {
         const hint = page.locator('#bowire-proto-dropzone .bowire-proto-dropzone-hint');
         await expect(hint).toContainText('GraphQL SDL (.graphql, .graphqls, .gql)', { timeout: 20_000 });
         await expect(hint).toContainText('.protoset');
+        await expect(hint).toContainText('WSDL (.wsdl)');
+        await expect(hint).toContainText('OData EDMX (.edmx, .csdl)');
+        await expect(hint).toContainText('OpenRPC (.json)');
+        await expect(hint).toContainText('AsyncAPI (.yaml, .yml, .json)');
         await expect(hint).toContainText('OpenAPI / Swagger');
     });
 
@@ -128,6 +191,44 @@ test.describe('Schema kinds the plugins import', () => {
         // `source: graphql` is what routes a call to the GraphQL plugin.
         expect(listed).toContainEqual({ name: 'Query', uploaded: true, methods: ['ship', 'ships'] });
         expect(listed).toContainEqual({ name: 'Mutation', uploaded: true, methods: ['renameShip'] });
+    });
+
+    test('WSDL, EDMX, OpenRPC and AsyncAPI each reach the plugin that reads them', async ({ page }) => {
+        // `.json` and `.yaml` are shared with OpenAPI, so for those two the
+        // server has to look inside the file; the toast names what it found.
+        const files: { name: string; content: string; label: string; plugin: string; service: string }[] = [
+            { name: 'calculator.wsdl', content: CALCULATOR_WSDL, label: 'WSDL', plugin: 'soap', service: 'Calculator' },
+            { name: 'people.edmx', content: PEOPLE_EDMX, label: 'OData EDMX', plugin: 'odata', service: 'People' },
+            { name: 'harbor.json', content: HARBOR_OPENRPC, label: 'OpenRPC', plugin: 'jsonrpc', service: 'Methods' },
+            { name: 'lights.yaml', content: LIGHTS_ASYNCAPI, label: 'AsyncAPI', plugin: 'asyncapi', service: 'lightTurnOn' },
+        ];
+
+        await openDropZone(page);
+        let ws = '';
+        for (const file of files) {
+            ws = await drop(page, onDisk(file.name, file.content));
+            const toast = page.locator('.bowire-toast').last();
+            await expect(toast).toContainText('1 ' + file.label, { timeout: 20_000 });
+            await expect(toast).toContainText(/1 (service|Dienst)/);
+        }
+
+        const listed = await page.evaluate(async (ws) => {
+            const body = await (await fetch(`/api/services?includeAttempts=1${ws}`)).json();
+            const list = Array.isArray(body) ? body : body.services ?? [];
+            return list
+                .filter((s: { isUploaded?: boolean }) => s.isUploaded === true)
+                .map((s: { name: string; source: string }) => s.source + ':' + s.name);
+        }, ws);
+
+        for (const file of files) expect(listed).toContain(file.plugin + ':' + file.service);
+    });
+
+    test('an OpenAPI document under the shared extensions is still stored as OpenAPI', async ({ page }) => {
+        await openDropZone(page);
+        await drop(page, onDisk('petstore.yaml',
+            'openapi: 3.0.0\ninfo:\n  title: Petstore\n  version: "1"\npaths: {}\n'));
+
+        await expect(page.locator('.bowire-toast').last()).toContainText('1 OpenAPI', { timeout: 20_000 });
     });
 
     test('SDL that does not parse is refused with the parser\'s reason', async ({ page }) => {

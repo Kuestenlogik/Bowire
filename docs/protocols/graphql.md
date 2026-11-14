@@ -42,6 +42,12 @@ For each operation, arguments become Bowire form fields:
 
 Field descriptions, argument descriptions, default values, and `isDeprecated` flags from the schema all propagate to the UI.
 
+### A server that refuses introspection
+
+Upload the schema in SDL (`.graphql`, `.graphqls`, `.gql`) to the workspace's [schema files](../features/schema-files.md). The same three services are listed from it, under the URL the workbench is pointed at. A call is built from the uploaded schema: its variables carry the declared types, and its selection set names the fields of the return type. Without a schema Bowire can still send an operation, but every variable is a `String` and the selection is `{ __typename }`.
+
+An `extend type` block and a `schema { query: … }` block that renames the roots are read. A schema that does not parse is refused with the parser's line and column.
+
 ## Invocation
 
 When the user clicks **Execute**, Bowire builds a parameterised operation:

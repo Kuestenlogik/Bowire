@@ -201,9 +201,11 @@ return main;
 
 ### Schema upload
 
-1. [ ] Sources editor → `Upload schema file` → pick a `.proto`, `openapi.yaml`, or `.graphql` file.
-2. [ ] Toast: file accepted, services added to Discover sidebar.
-3. [ ] **Expected**: uploaded schema's services merge into the discovered tree alongside any URL-discovered ones.
+1. [ ] Sources editor → `Upload schema files`. The hint under the title lists the formats the loaded plugins read.
+2. [ ] Pick a `.proto`, `openapi.yaml`, `.graphql`, `.wsdl`, `.edmx`, an OpenRPC `.json` or an AsyncAPI `.yaml`.
+3. [ ] Toast names the format and the service count (`1 GraphQL SDL imported — 2 service(s)`); services added to Discover sidebar.
+4. [ ] Pick a file that is not what its extension says → toast gives the reader's reason, nothing is added.
+5. [ ] **Expected**: uploaded schema's services merge into the discovered tree alongside any URL-discovered ones.
 
 ### URL editing / removal
 
@@ -510,7 +512,6 @@ When CI runs the Playwright suite, this manual walkthrough should still pass ide
 
 - [ ] Phase 1: "All workspaces" button click sometimes routes to settings instead of overview — Playwright probe sees the button but the post-click state shows no overview list. To investigate during the walkthrough.
 - [ ] Phase 2: Workspace create dialog's user-template rows lack tooltip clarification for "compose" vs "cloned-from-source" lineage.
-- [ ] Phase 4: Schema upload's accepted file-type list isn't documented in the UI — operator drops a non-schema file → silent reject?
 - [ ] Phase 7: gRPC freeform requires a `.proto` file or server reflection. UI should hint at this when method-tree stays empty.
 - [ ] Phase 11: Flows visual editor — node palette discoverability untested.
 - [ ] Phase 13: Security rail availability depends on AI package — empty-state hint shown when missing?

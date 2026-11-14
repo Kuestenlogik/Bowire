@@ -102,4 +102,97 @@ public static class BowireUploadedSchemas
             .Select(d => new BowireUploadedSchema(d.Id, d.Bytes, d.SourceName))
             .ToArray();
     }
+
+    /// <summary>
+    /// Whether a JSON or YAML document has <paramref name="key"/> at its top
+    /// level: the look <see cref="IBowireUploadedSchemaReader.LooksLikeUploadedSchema"/>
+    /// needs for the formats that name themselves there (<c>asyncapi</c>,
+    /// <c>openrpc</c>).
+    /// </summary>
+    /// <remarks>
+    /// A guess from the head of the document, not a parse: JSON is walked
+    /// property by property at depth one, YAML is searched for the key at
+    /// the start of a line. Neither reader is needed for it, and a document
+    /// that does not parse simply does not have the key.
+    /// </remarks>
+    public static bool HasTopLevelKey(ReadOnlyMemory<byte> document, string key)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(key);
+
+        var span = document.Span;
+        if (span.StartsWith("﻿"u8)) span = span[3..];
+        var start = 0;
+        while (start < span.Length && span[start] is (byte)' ' or (byte)'\t' or (byte)'\r' or (byte)'\n') start++;
+        if (start == span.Length) return false;
+
+        if (span[start] == (byte)'{') return JsonHasTopLevelKey(span[start..], key);
+        if (span[start] is (byte)'<' or (byte)'[') return false;
+
+        var text = System.Text.Encoding.UTF8.GetString(span[..Math.Min(span.Length, 256 * 1024)]);
+        foreach (var line in text.Split('\n'))
+        {
+            var entry = line.AsSpan().TrimEnd('\r');
+            // Top level: no indentation. Quoted keys are legal YAML.
+            if (entry.Length == 0 || entry[0] is ' ' or '\t' or '#' or '-') continue;
+            var colon = entry.IndexOf(':');
+            if (colon <= 0) continue;
+            var name = entry[..colon].Trim().Trim('"').Trim('\'');
+            if (name.Equals(key, StringComparison.Ordinal)) return true;
+        }
+        return false;
+    }
+
+    private static bool JsonHasTopLevelKey(ReadOnlySpan<byte> json, string key)
+    {
+        try
+        {
+            var reader = new System.Text.Json.Utf8JsonReader(json, new System.Text.Json.JsonReaderOptions
+            {
+                CommentHandling = System.Text.Json.JsonCommentHandling.Skip,
+                AllowTrailingCommas = true,
+            });
+            while (reader.Read())
+            {
+                if (reader.TokenType == System.Text.Json.JsonTokenType.PropertyName && reader.CurrentDepth == 1)
+                {
+                    if (reader.ValueTextEquals(key)) return true;
+                    // Past the value without descending into it.
+                    reader.Skip();
+                }
+            }
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            // Not JSON after all, so not a document with this key.
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// The local name and namespace of an XML document's root element, or
+    /// null when the document is not XML: the look for the formats that are
+    /// told apart there (<c>definitions</c> for WSDL, <c>Edmx</c> for an
+    /// OData model).
+    /// </summary>
+    public static (string LocalName, string Namespace)? XmlRoot(ReadOnlyMemory<byte> document)
+    {
+        try
+        {
+            using var stream = new MemoryStream(document.ToArray(), writable: false);
+            using var reader = System.Xml.XmlReader.Create(stream, new System.Xml.XmlReaderSettings
+            {
+                // A schema file is data from outside: no DTD, no external
+                // entity, nothing fetched while looking at it.
+                DtdProcessing = System.Xml.DtdProcessing.Prohibit,
+                XmlResolver = null,
+            });
+            return reader.MoveToContent() == System.Xml.XmlNodeType.Element
+                ? (reader.LocalName, reader.NamespaceURI)
+                : null;
+        }
+        catch (System.Xml.XmlException)
+        {
+            return null;
+        }
+    }
 }

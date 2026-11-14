@@ -30,6 +30,8 @@ app.MapBowire(options =>
 
 `DiscoverAsync` calls `rpc.discover` (the OpenRPC convention). When the server returns an OpenRPC document, each method maps to a Bowire method with its `params` array as the input field list. When the server returns Method-Not-Found (`-32601`), Bowire still claims the URL and shows a placeholder service so freeform invocation works.
 
+For such a server, upload its OpenRPC document (`.json`) to the workspace's [schema files](../features/schema-files.md). Its methods are listed in place of the placeholder, each with a form for its parameters.
+
 ## Invocation
 
 The first JSON message in the request becomes the JSON-RPC `params` field. Both shapes are accepted:

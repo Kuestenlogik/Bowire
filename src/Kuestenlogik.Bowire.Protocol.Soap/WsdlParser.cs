@@ -27,10 +27,13 @@ internal static class WsdlParser
     /// </summary>
     /// <param name="document">The XML document to walk.</param>
     /// <param name="originUrl">URL the WSDL was fetched from — set on
-    /// each service for round-trip routing.</param>
+    /// each service for round-trip routing. Null for an uploaded WSDL
+    /// (#994): a service is then addressed where its own
+    /// <c>soap:address</c> says, and where the workbench is pointed when
+    /// the document names no address.</param>
     /// <returns>One <see cref="BowireServiceInfo"/> per WSDL PortType
     /// that has at least one SOAP-bound operation.</returns>
-    public static List<BowireServiceInfo> Parse(XDocument document, string originUrl)
+    public static List<BowireServiceInfo> Parse(XDocument document, string? originUrl)
     {
         ArgumentNullException.ThrowIfNull(document);
         var defs = document.Root;
@@ -81,7 +84,7 @@ internal static class WsdlParser
             services.Add(new BowireServiceInfo(ptName, "soap", methods)
             {
                 Source = "soap",
-                OriginUrl = originUrl,
+                OriginUrl = originUrl ?? AbsoluteHttp(binding?.EndpointUrl),
                 Description = binding?.EndpointUrl is { Length: > 0 } ep
                     ? "SOAP endpoint: " + ep
                     : null,
@@ -90,6 +93,12 @@ internal static class WsdlParser
 
         return services;
     }
+
+    /// <summary>The address when it is one a call can be sent to, else null.</summary>
+    private static string? AbsoluteHttp(string? address)
+        => Uri.TryCreate(address, UriKind.Absolute, out var uri) && uri.Scheme is "http" or "https"
+            ? address
+            : null;
 
     /// <summary>
     /// Pull (binding, endpoint URL, SOAPAction-per-op) tuples out of the

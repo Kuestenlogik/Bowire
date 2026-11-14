@@ -30,6 +30,8 @@ app.MapBowire(options =>
 
 `DiscoverAsync` fetches the WSDL by appending `?wsdl` to the URL when it isn't already there (URLs that already carry `?wsdl` or end in `.wsdl` are taken verbatim). The parser walks every `<portType>` and matches it to its `<binding>` + `<service>/<port>` so each operation knows its SOAPAction header. Each PortType becomes a Bowire service; each operation a `Unary` method.
 
+A service that does not serve its WSDL is described by uploading the WSDL file (`.wsdl`) to the workspace's [schema files](../features/schema-files.md). Its port types are listed as above, and a call takes SOAPAction and target namespace from the file without asking the service for `?wsdl`. The service is addressed where the file's `soap:address` says; a file without a usable address is listed under the URL the workbench is pointed at. WSDL 1.1 is read, WSDL 2.0 is not.
+
 ## Invocation
 
 The first JSON message is treated as the operation body and inlined inside the namespaced operation element. Pass raw XML for full control, or plain text for simple cases:

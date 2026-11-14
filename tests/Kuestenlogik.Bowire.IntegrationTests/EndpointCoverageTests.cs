@@ -479,6 +479,47 @@ public sealed class EndpointCoverageTests : IClassFixture<BowireTestFixture>, ID
         Assert.True(OpenApiUploadStore.HasUploads);
     }
 
+    private const string EmptyWsdl = "<definitions xmlns=\"http://schemas.xmlsoap.org/wsdl/\"/>";
+
+    private const string EmptyEdmx =
+        "<edmx:Edmx xmlns:edmx=\"http://docs.oasis-open.org/odata/ns/edmx\" Version=\"4.0\"><edmx:DataServices>"
+        + "<Schema xmlns=\"http://docs.oasis-open.org/odata/ns/edm\" Namespace=\"D\"/></edmx:DataServices></edmx:Edmx>";
+
+    [Theory]
+    // Its own extension: the name settles it.
+    [InlineData("calc.wsdl", EmptyWsdl, "wsdl", "soap")]
+    [InlineData("model.edmx", EmptyEdmx, "edmx", "odata")]
+    // A shared extension: the plugins look inside, and OpenAPI is what is left.
+    [InlineData("api.json", "{\"openrpc\":\"1.3.2\",\"methods\":[]}", "openrpc", "jsonrpc")]
+    [InlineData("api.json", "{\"asyncapi\":\"3.0.0\",\"info\":{\"title\":\"x\",\"version\":\"1\"},\"channels\":{}}", "asyncapi", "asyncapi")]
+    [InlineData("api.yaml", "asyncapi: 3.0.0\ninfo:\n  title: x\n  version: '1'\nchannels: {}\n", "asyncapi", "asyncapi")]
+    [InlineData("api.yaml", "openapi: 3.0.0\ninfo:\n  title: x\n  version: '1'\npaths: {}\n", "openapi", "rest")]
+    // No extension of its own: found by what it is.
+    [InlineData("service.xml", EmptyWsdl, "wsdl", "soap")]
+    [InlineData("metadata.xml", EmptyEdmx, "edmx", "odata")]
+    public async Task SchemaUpload_Routes_Each_Format_To_The_Plugin_That_Reads_It(
+        string name, string content, string kind, string plugin)
+    {
+        var (status, json) = await PostSchemaAsync(name, content);
+
+        Assert.Equal(HttpStatusCode.OK, status);
+        using var doc = JsonDocument.Parse(json);
+        Assert.Equal(kind, doc.RootElement.GetProperty("kind").GetString());
+        Assert.Equal(plugin, doc.RootElement.GetProperty("plugin").GetString());
+        Assert.True(SchemaUploadStore.Has(kind));
+    }
+
+    [Fact]
+    public async Task SchemaUpload_Refuses_A_Wsdl_That_Is_Not_One_With_What_It_Found()
+    {
+        var (status, json) = await PostSchemaAsync("calc.wsdl", "<description xmlns=\"http://www.w3.org/ns/wsdl\"/>");
+
+        Assert.Equal(HttpStatusCode.BadRequest, status);
+        Assert.Contains("Not WSDL", json, StringComparison.Ordinal);
+        Assert.Contains("WSDL 2.0 is not read", json, StringComparison.Ordinal);
+        Assert.False(SchemaUploadStore.Has("wsdl"));
+    }
+
     [Fact]
     public async Task SchemaUpload_Finds_The_Reader_For_Sdl_Saved_Under_Another_Extension()
     {

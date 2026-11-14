@@ -26,6 +26,14 @@ Compose gains a form for every protocol plugin that describes one. SOAP, SignalR
 
 A sidecar plugin describes its form the same way, as a `manualEntry` object in its `initialize` reply (#1003).
 
+### Schema files for every protocol that has one (#994)
+
+The schema drop zone knew two formats: a `.proto`, and everything else as OpenAPI. It now takes the description of any server that does not hand one out itself. GraphQL SDL (`.graphql`, `.graphqls`, `.gql`) lists the operations of a server that refuses introspection, and a call is built from it with typed variables and a real selection set. A WSDL gives a SOAP call its SOAPAction and namespace without `?wsdl`. An OData EDMX model, an OpenRPC document and an AsyncAPI document list a service that serves no `$metadata`, answers no `rpc.discover`, or whose AsyncAPI document is not reachable under a URL.
+
+One route, `POST /api/schema/upload`, takes any of them and decides the format: by extension where one format declares it, by content for `.json` and `.yaml`, which OpenAPI, AsyncAPI and OpenRPC share, and for a file saved under another extension. The drop zone lists what the loaded plugins read, and a file none of them reads is refused with that list. `GET /api/schema/kinds` returns it.
+
+A plugin imports a format by implementing `IBowireUploadedSchemaReader`: it declares the format and its extensions and reads a document into services. The Schema files page in the documentation describes it.
+
 ### gRPC servers without reflection, from the workbench (#991)
 
 A gRPC server with reflection switched off could be listed in the workbench from a `.proto` and not called: a `.proto` gives names, and a call needs the compiled message layouts. The schema drop zone now takes the compiled descriptor set (`protoc --descriptor_set_out=api.protoset --include_imports`; `.protoset`, `.pb`, `.desc` or `.binpb`). Its services appear under the server's URL, and unary calls, streams and channels go through it. The set is stored per workspace beside the other schema files.

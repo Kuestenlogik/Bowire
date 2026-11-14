@@ -31,8 +31,84 @@ namespace Kuestenlogik.Bowire.AsyncApi;
 /// subscribe shape for the binding — comes back as an error result or an
 /// error frame that names it.
 /// </summary>
-public sealed class BowireAsyncApiProtocol : IBowireProtocol, Kuestenlogik.Bowire.Net.IBowireProxySupport
+public sealed class BowireAsyncApiProtocol : IBowireProtocol, Kuestenlogik.Bowire.Net.IBowireProxySupport, IBowireUploadedSchemaReader
 {
+    /// <summary>The stored kind of an uploaded AsyncAPI document (#994).</summary>
+    internal const string AsyncApiKind = "asyncapi";
+
+    /// <summary>
+    /// The AsyncAPI document as a file, where until now it had to be
+    /// reachable under a URL or a path on the machine Bowire runs on (#994).
+    /// </summary>
+    public IReadOnlyList<BowireUploadedSchemaKind> UploadedSchemaKinds { get; } =
+        [new(AsyncApiKind, "AsyncAPI", [".yaml", ".yml", ".json"])];
+
+    /// <summary>
+    /// An AsyncAPI document names itself with a top-level <c>asyncapi</c>
+    /// version, which is what tells it from an OpenAPI document under the
+    /// same extensions.
+    /// </summary>
+    public bool LooksLikeUploadedSchema(string kind, ReadOnlyMemory<byte> document)
+        => BowireUploadedSchemas.HasTopLevelKey(document, "asyncapi");
+
+    /// <summary>
+    /// The channels an uploaded AsyncAPI document declares, as discovery
+    /// reports them for a document behind a URL.
+    /// </summary>
+    /// <remarks>
+    /// The document is remembered under the name it was uploaded as, and
+    /// that name is the origin of its services: a call names it where a
+    /// discovered document's call names its URL. Where the call then goes is
+    /// decided by the document's own servers and bindings, as before.
+    /// </remarks>
+    public IReadOnlyList<BowireServiceInfo> ReadUploadedSchema(
+        string kind, ReadOnlyMemory<byte> document, string sourceName)
+    {
+        if (!BowireUploadedSchemas.HasTopLevelKey(document, "asyncapi"))
+            throw new FormatException(
+                "Not an AsyncAPI document: it has no top-level \"asyncapi\" version.");
+
+        AsyncApiDocumentLoader.LoadResult load;
+        try
+        {
+            var text = System.Text.Encoding.UTF8.GetString(document.Span).TrimStart('\uFEFF');
+            // Completes synchronously: the reader works on a stream over
+            // text that is already in memory.
+            load = Loader.ParseAsync(text, sourceName, CancellationToken.None).GetAwaiter().GetResult();
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            throw new FormatException("Not an AsyncAPI document: " + ex.Message, ex);
+        }
+
+        return Remember(sourceName, load);
+    }
+
+    /// <summary>
+    /// Bring the uploaded document a call names back into the caches, when
+    /// nothing listed it in this process first: a flow, a recording, the
+    /// command line.
+    /// </summary>
+    private void RecallUploaded(string serverUrl)
+    {
+        if (_documents.ContainsKey(serverUrl) || _v2Documents.ContainsKey(serverUrl)) return;
+
+        foreach (var doc in BowireUploadedSchemas.GetAll(AsyncApiKind))
+        {
+            if (!string.Equals(doc.SourceName, serverUrl, StringComparison.Ordinal)) continue;
+            try
+            {
+                ReadUploadedSchema(AsyncApiKind, doc.Document, doc.SourceName);
+            }
+            catch (FormatException)
+            {
+                // Refused at upload if it never read; the call then says
+                // the document has not been discovered.
+            }
+            return;
+        }
+    }
+
     /// <inheritdoc />
     public Kuestenlogik.Bowire.Net.BowireProxySupport ProxySupport => Kuestenlogik.Bowire.Net.BowireProxySupport.Partial;
 
@@ -180,6 +256,20 @@ public sealed class BowireAsyncApiProtocol : IBowireProtocol, Kuestenlogik.Bowir
         catch (DirectoryNotFoundException) { return []; }
         catch (HttpRequestException) { return []; }
 
+        return Remember(serverUrl, load);
+    }
+
+    /// <summary>
+    /// Cache a loaded document under the name calls will use for it and
+    /// return its channels as services.
+    /// </summary>
+    /// <param name="serverUrl">
+    /// The URL or path the document was loaded from, or the file name it was
+    /// uploaded under (#994).
+    /// </param>
+    /// <param name="load">The parsed document and its text.</param>
+    private List<BowireServiceInfo> Remember(string serverUrl, AsyncApiDocumentLoader.LoadResult load)
+    {
         // Workbench-Schema-Capture: stash the verbatim AsyncAPI YAML so
         // a recording made against this URL can be auto-stamped with
         // SourceSchema by the recording-save endpoint. Keyed by both
@@ -560,6 +650,8 @@ public sealed class BowireAsyncApiProtocol : IBowireProtocol, Kuestenlogik.Bowir
     private (IAsyncApiBindingResolver? Resolver, AsyncApiChannelContext? Context, string? Error) ResolveInvocation(
         string serverUrl, string service, string method)
     {
+        RecallUploaded(serverUrl);
+
         if (_v2Documents.TryGetValue(serverUrl, out var v2Document))
         {
             return ResolveV2(serverUrl, v2Document, service, method);

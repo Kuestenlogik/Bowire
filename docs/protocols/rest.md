@@ -156,18 +156,20 @@ The URL list is persisted in browser `localStorage` so user-added URLs survive r
 
 ## Local schema upload
 
-Don't have a running server but you do have an OpenAPI doc on disk? Use the **Schema Files** tab in the sidebar — the drop zone accepts `.proto`, `.json`, `.yaml`, and `.yml`. Bowire routes uploads by file extension: `.proto` goes through the proto parser, JSON/YAML through `Microsoft.OpenApi.Readers`. Uploaded services appear under "Schema Files" mode in the sidebar (separate from URL-discovered services), with the file name shown as their origin.
+Don't have a running server but you do have an OpenAPI doc on disk? Drop it on **Upload schema files** in a workspace's **Sources**. A `.json`, `.yaml` or `.yml` file that is neither AsyncAPI nor OpenRPC is stored as OpenAPI and read by this plugin during discovery, through `Microsoft.OpenApi.Readers`. Its services are listed with the file name as their origin. [Schema files](../features/schema-files.md) lists every format the drop zone takes and how a file's format is decided.
 
 Upload also works programmatically:
 
 ```bash
 # Standalone CLI — endpoints land at the root (empty prefix).
-curl -X POST "http://localhost:5080/api/openapi/upload?name=customers.yaml" \
+curl -X POST "http://localhost:5080/api/schema/upload?name=customers.yaml" \
      --data-binary @./customers.yaml
 
 # Embedded mode — prefix the host's MapBowire mount-point (default `/bowire`).
-# curl -X POST "http://localhost:5001/bowire/api/openapi/upload?name=customers.yaml" …
+# curl -X POST "http://localhost:5001/bowire/api/schema/upload?name=customers.yaml" …
 ```
+
+`/api/openapi/upload` takes the same body and skips the format check: what it is sent is stored as OpenAPI.
 
 ## Schema-aware nested body editing
 

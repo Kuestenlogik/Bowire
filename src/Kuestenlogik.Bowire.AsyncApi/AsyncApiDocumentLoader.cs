@@ -66,8 +66,20 @@ internal sealed class AsyncApiDocumentLoader
     /// </remarks>
     public async Task<LoadResult> LoadAsync(string urlOrPath, CancellationToken ct)
     {
-        var reader = _services.GetRequiredService<IAsyncApiDocumentReader>();
         var raw = await ReadRawAsync(urlOrPath, ct).ConfigureAwait(false);
+        return await ParseAsync(raw, urlOrPath, ct).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Read a document that is already in hand: one uploaded to the
+    /// workspace (#994), where there is no URL or path to resolve.
+    /// </summary>
+    /// <param name="raw">The document text, YAML or JSON.</param>
+    /// <param name="urlOrPath">What to call the document in an error.</param>
+    /// <param name="ct">Cancels the read.</param>
+    public async Task<LoadResult> ParseAsync(string raw, string urlOrPath, CancellationToken ct)
+    {
+        var reader = _services.GetRequiredService<IAsyncApiDocumentReader>();
 
         // YAML pre-normaliser: quote scalars on enum-typed properties that
         // the SDK reader otherwise mis-deserialises (asyncapi/net-sdk#76,

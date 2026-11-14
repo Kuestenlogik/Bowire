@@ -24,7 +24,7 @@ namespace Kuestenlogik.Bowire.Protocol.OData;
 ///
 /// Auto-discovered by <see cref="BowireProtocolRegistry"/>.
 /// </summary>
-public sealed class BowireODataProtocol : IBowireProtocol, IBowireManualEntry, Kuestenlogik.Bowire.Net.IBowireProxySupport, IDisposable
+public sealed class BowireODataProtocol : IBowireProtocol, IBowireManualEntry, Kuestenlogik.Bowire.Net.IBowireProxySupport, IBowireUploadedSchemaReader, IDisposable
 {
     /// <summary>The method types the freeform form offers (#995); the workbench has its own form for this protocol.</summary>
     public BowireManualEntryForm DescribeManualEntry() => BowireManualEntryForm.ForMethodTypes("Unary");
@@ -108,6 +108,32 @@ public sealed class BowireODataProtocol : IBowireProtocol, IBowireManualEntry, K
             if (!CsdlReader.TryParse(reader, out var model, out var errors))
                 return [];
 
+            // Strip /$metadata from the origin URL so invocations
+            // route to the OData base (e.g. /odata/Products, not
+            // /odata/$metadata/Products).
+            var odataBase = baseUrl.EndsWith("/$metadata", StringComparison.OrdinalIgnoreCase)
+                ? baseUrl[..^10]
+                : baseUrl;
+            return ServicesOf(model, odataBase);
+        }
+        catch
+        {
+            return [];
+        }
+    }
+
+    /// <summary>
+    /// One service per entity set of <paramref name="model"/>, with the
+    /// CRUD methods OData gives every set.
+    /// </summary>
+    /// <param name="model">The parsed EDMX.</param>
+    /// <param name="odataBase">
+    /// The service root the model was fetched from, or null for an uploaded
+    /// model (#994), which names no server: the URL the workbench is pointed
+    /// at then decides where a call goes.
+    /// </param>
+    private List<BowireServiceInfo> ServicesOf(IEdmModel model, string? odataBase)
+    {
             var services = new List<BowireServiceInfo>();
             var container = model.EntityContainer;
             if (container is null) return [];
@@ -160,12 +186,6 @@ public sealed class BowireODataProtocol : IBowireProtocol, IBowireManualEntry, K
                     Summary = $"Delete a {entitySet.Name} entity"
                 });
 
-                // Strip /$metadata from the origin URL so invocations
-                // route to the OData base (e.g. /odata/Products, not
-                // /odata/$metadata/Products).
-                var odataBase = baseUrl.EndsWith("/$metadata", StringComparison.OrdinalIgnoreCase)
-                    ? baseUrl[..^10]
-                    : baseUrl;
                 var svc = new BowireServiceInfo(entitySet.Name, "odata", methods)
                 {
                     Source = "odata",
@@ -176,12 +196,90 @@ public sealed class BowireODataProtocol : IBowireProtocol, IBowireManualEntry, K
             }
 
             return services;
-        }
-        catch
+    }
+
+    /// <summary>The stored kind of an uploaded EDMX document (#994).</summary>
+    internal const string EdmxKind = "edmx";
+
+    /// <summary>
+    /// The service's <c>$metadata</c> document saved to a file, for a
+    /// service that does not serve it (#994).
+    /// </summary>
+    public IReadOnlyList<BowireUploadedSchemaKind> UploadedSchemaKinds { get; } =
+        [new(EdmxKind, "OData EDMX", [".edmx", ".csdl"])];
+
+    /// <summary>
+    /// An EDMX document's root element is <c>Edmx</c>, which is what tells
+    /// one saved as <c>.xml</c> from a WSDL.
+    /// </summary>
+    public bool LooksLikeUploadedSchema(string kind, ReadOnlyMemory<byte> document)
+        => BowireUploadedSchemas.XmlRoot(document) is { LocalName: "Edmx" };
+
+    /// <summary>
+    /// The entity sets an uploaded EDMX document declares, as discovery
+    /// reports them from <c>$metadata</c>.
+    /// </summary>
+    public IReadOnlyList<BowireServiceInfo> ReadUploadedSchema(
+        string kind, ReadOnlyMemory<byte> document, string sourceName)
+        => ServicesOf(ParseEdmx(document), odataBase: null);
+
+    /// <exception cref="FormatException">The document is not an EDMX model.</exception>
+    private static IEdmModel ParseEdmx(ReadOnlyMemory<byte> document)
+    {
+        try
         {
-            return [];
+            using var stream = new MemoryStream(document.ToArray(), writable: false);
+            using var reader = XmlReader.Create(stream, new XmlReaderSettings
+            {
+                // A schema file is data from outside: no DTD, no external
+                // entity, nothing fetched while reading it.
+                DtdProcessing = DtdProcessing.Prohibit,
+                XmlResolver = null,
+            });
+            if (CsdlReader.TryParse(reader, out var model, out var errors)) return model;
+
+            throw new FormatException(
+                "Not an OData EDMX document: " + string.Join("; ", errors.Select(e => e.ErrorMessage)));
+        }
+        catch (XmlException ex)
+        {
+            throw new FormatException("Not an OData EDMX document: it is not XML. " + ex.Message, ex);
         }
     }
+
+    /// <summary>
+    /// Learn the entity keys of the uploaded models, for a call to an entity
+    /// set that was never listed in this process: a flow, a recording, the
+    /// command line.
+    /// </summary>
+    /// <remarks>
+    /// Listing fills <see cref="_entitySetKeys"/> as a side effect, and a
+    /// call that arrives first would address an entity without knowing its
+    /// key is a string. Read once per set of stored documents.
+    /// </remarks>
+    private void LearnUploadedKeys()
+    {
+        var docs = BowireUploadedSchemas.GetAll(EdmxKind);
+        if (docs.Count == 0) return;
+        var stored = string.Join(",", docs.Select(d => d.Id));
+        if (string.Equals(Volatile.Read(ref _uploadedKeysFor), stored, StringComparison.Ordinal)) return;
+
+        foreach (var doc in docs)
+        {
+            try
+            {
+                ServicesOf(ParseEdmx(doc.Document), odataBase: null);
+            }
+            catch (FormatException)
+            {
+                // Refused at upload if it never read; skipped if it stopped
+                // reading since.
+            }
+        }
+        Volatile.Write(ref _uploadedKeysFor, stored);
+    }
+
+    private string? _uploadedKeysFor;
 
     public async Task<InvokeResult> InvokeAsync(
         string serverUrl, string service, string method,
@@ -192,6 +290,10 @@ public sealed class BowireODataProtocol : IBowireProtocol, IBowireManualEntry, K
         // Remove /$metadata suffix if present
         if (baseUrl.EndsWith("/$metadata", StringComparison.OrdinalIgnoreCase))
             baseUrl = baseUrl[..^10];
+
+        // #994 - the keys an uploaded model declares, when nothing listed it
+        // in this process first.
+        LearnUploadedKeys();
 
         var payload = jsonMessages.FirstOrDefault() ?? "{}";
         var sw = System.Diagnostics.Stopwatch.StartNew();

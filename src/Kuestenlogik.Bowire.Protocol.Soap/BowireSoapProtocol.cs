@@ -32,8 +32,105 @@ namespace Kuestenlogik.Bowire.Protocol.Soap;
 /// streams + null channels accordingly.
 /// </para>
 /// </remarks>
-public sealed class BowireSoapProtocol : IBowireProtocol, IBowireManualEntry, Kuestenlogik.Bowire.Net.IBowireProxySupport, IDisposable
+public sealed class BowireSoapProtocol : IBowireProtocol, IBowireManualEntry, Kuestenlogik.Bowire.Net.IBowireProxySupport, IBowireUploadedSchemaReader, IDisposable
 {
+    /// <summary>The stored kind of an uploaded WSDL (#994).</summary>
+    internal const string WsdlKind = "wsdl";
+
+    private static readonly XNamespace Wsdl11 = "http://schemas.xmlsoap.org/wsdl/";
+
+    /// <summary>
+    /// The service's WSDL saved to a file, for a service that does not
+    /// serve it at <c>?wsdl</c> (#994).
+    /// </summary>
+    public IReadOnlyList<BowireUploadedSchemaKind> UploadedSchemaKinds { get; } =
+        [new(WsdlKind, "WSDL", [".wsdl"])];
+
+    /// <summary>
+    /// A WSDL 1.1 document's root element is <c>definitions</c> in the WSDL
+    /// namespace, which is what tells one saved as <c>.xml</c> from an EDMX
+    /// model.
+    /// </summary>
+    public bool LooksLikeUploadedSchema(string kind, ReadOnlyMemory<byte> document)
+        => BowireUploadedSchemas.XmlRoot(document) is { LocalName: "definitions" } root
+            && root.Namespace == Wsdl11.NamespaceName;
+
+    /// <summary>
+    /// The port types an uploaded WSDL declares, as discovery reports them
+    /// from <c>?wsdl</c>.
+    /// </summary>
+    public IReadOnlyList<BowireServiceInfo> ReadUploadedSchema(
+        string kind, ReadOnlyMemory<byte> document, string sourceName)
+        => WsdlParser.Parse(ParseWsdl(document), originUrl: null);
+
+    /// <exception cref="FormatException">The document is not a WSDL 1.1 document.</exception>
+    private static XDocument ParseWsdl(ReadOnlyMemory<byte> document)
+    {
+        XDocument parsed;
+        try
+        {
+            using var stream = new MemoryStream(document.ToArray(), writable: false);
+            using var reader = System.Xml.XmlReader.Create(stream, new System.Xml.XmlReaderSettings
+            {
+                // A schema file is data from outside: no DTD, no external
+                // entity, nothing fetched while reading it.
+                DtdProcessing = System.Xml.DtdProcessing.Prohibit,
+                XmlResolver = null,
+            });
+            parsed = XDocument.Load(reader);
+        }
+        catch (System.Xml.XmlException ex)
+        {
+            throw new FormatException("Not a WSDL document: it is not XML. " + ex.Message, ex);
+        }
+
+        if (parsed.Root is null || parsed.Root.Name != Wsdl11 + "definitions")
+        {
+            throw new FormatException(
+                "Not a WSDL 1.1 document: its root element is "
+                + (parsed.Root is null ? "missing" : "<" + parsed.Root.Name.LocalName + ">")
+                + ", not <definitions> in " + Wsdl11.NamespaceName + ". WSDL 2.0 is not read.");
+        }
+        return parsed;
+    }
+
+    // #994 - the SOAPAction and target namespace of each operation in the
+    // uploaded WSDLs, keyed on what is stored.
+    private readonly Lock _uploadedLock = new();
+    private string? _uploadedFor;
+    private IReadOnlyDictionary<string, SoapOperationAddress> _uploadedAddresses =
+        new Dictionary<string, SoapOperationAddress>();
+
+    private IReadOnlyDictionary<string, SoapOperationAddress> UploadedAddresses()
+    {
+        var docs = BowireUploadedSchemas.GetAll(WsdlKind);
+        var stored = string.Join(",", docs.Select(d => d.Id));
+
+        lock (_uploadedLock)
+        {
+            if (string.Equals(_uploadedFor, stored, StringComparison.Ordinal)) return _uploadedAddresses;
+
+            var all = new Dictionary<string, SoapOperationAddress>(StringComparer.Ordinal);
+            foreach (var doc in docs)
+            {
+                try
+                {
+                    foreach (var (key, address) in SoapOperationAddresses.Parse(ParseWsdl(doc.Document)))
+                        all.TryAdd(key, address);
+                }
+                catch (FormatException)
+                {
+                    // Refused at upload if it never read; skipped if it
+                    // stopped reading since.
+                }
+            }
+
+            _uploadedFor = stored;
+            _uploadedAddresses = all;
+            return all;
+        }
+    }
+
     /// <inheritdoc />
     public BowireManualEntryForm DescribeManualEntry() => SoapManualEntry.Form;
 
@@ -127,6 +224,11 @@ public sealed class BowireSoapProtocol : IBowireProtocol, IBowireManualEntry, Ku
     /// </summary>
     private async Task<SoapOperationAddress?> FindAddressAsync(string serverUrl, string service, string operation)
     {
+        // #994 - an uploaded WSDL first: it is how the workbench listed the
+        // operation, and it spares a service without ?wsdl the request.
+        if (SoapOperationAddresses.Find(UploadedAddresses(), service, operation) is { } uploaded)
+            return uploaded;
+
         if (!TryResolveWsdlUri(serverUrl, out var wsdlUri)) return null;
         var addresses = await _addresses.GetOrAdd(wsdlUri.AbsoluteUri, _ => LoadAddressesAsync(wsdlUri)).ConfigureAwait(false);
         return SoapOperationAddresses.Find(addresses, service, operation);

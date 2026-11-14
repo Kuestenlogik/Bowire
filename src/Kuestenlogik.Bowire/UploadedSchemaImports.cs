@@ -142,9 +142,8 @@ internal static class UploadedSchemaImports
         {
             return reader.LooksLikeUploadedSchema(kind, document);
         }
-#pragma warning disable CA1031 // A sniff is a guess, and one that throws has guessed no.
+        // A sniff is a guess, and one that throws has guessed no.
         catch (Exception)
-#pragma warning restore CA1031
         {
             return false;
         }

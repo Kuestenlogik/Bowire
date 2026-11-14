@@ -33,6 +33,10 @@ bowire --url https://api.example.com/asyncapi.yaml
 
 The sidebar now shows every channel as a service, every operation as a method, every message as a typed input. Hit Send — the call routes through whichever wire plugin the doc's `bindings:` block declares.
 
+## Uploading the document
+
+The document does not have to be reachable under a URL or a path on the machine Bowire runs on. Drop it on **Upload schema files** in a workspace's **Sources** (`.yaml`, `.yml` or `.json`; see [schema files](schema-files.md)). A file with a top-level `asyncapi` key is read by this plugin, whatever else shares its extension. Its channels are listed under the file's name, and calls go to the servers and bindings the document declares.
+
 ## Supported bindings
 
 Every binding key below resolves to a resolver that maps the AsyncAPI channel and its `bindings.*` fields onto a wire plugin's call. What each can do differs by direction: a `send` operation is a unary publish, a `receive` operation is a subscription that streams into the response pane. Nothing here throws at you: a binding without a subscribe shape yet answers a `receive` with one `{"error": …}` frame that says so, and a binding whose wire plugin is not loaded says which package to add.

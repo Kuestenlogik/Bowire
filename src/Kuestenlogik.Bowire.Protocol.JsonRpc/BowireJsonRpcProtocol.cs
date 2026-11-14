@@ -36,8 +36,73 @@ namespace Kuestenlogik.Bowire.Protocol.JsonRpc;
 ///   freeform request form.</item>
 /// </list>
 /// </remarks>
-public sealed class BowireJsonRpcProtocol : IBowireProtocol, IBowireManualEntry, Kuestenlogik.Bowire.Net.IBowireProxySupport, IDisposable
+public sealed class BowireJsonRpcProtocol : IBowireProtocol, IBowireManualEntry, Kuestenlogik.Bowire.Net.IBowireProxySupport, IBowireUploadedSchemaReader, IDisposable
 {
+    /// <summary>The stored kind of an uploaded OpenRPC document (#994).</summary>
+    internal const string OpenRpcKind = "openrpc";
+
+    /// <summary>
+    /// The OpenRPC document, for a server that does not answer
+    /// <c>rpc.discover</c> (#994).
+    /// </summary>
+    public IReadOnlyList<BowireUploadedSchemaKind> UploadedSchemaKinds { get; } =
+        [new(OpenRpcKind, "OpenRPC", [".json"])];
+
+    /// <summary>
+    /// An OpenRPC document names itself with a top-level <c>openrpc</c>
+    /// version, which is what tells it from the other formats that arrive
+    /// as <c>.json</c>.
+    /// </summary>
+    public bool LooksLikeUploadedSchema(string kind, ReadOnlyMemory<byte> document)
+        => BowireUploadedSchemas.HasTopLevelKey(document, "openrpc");
+
+    /// <summary>
+    /// The methods an uploaded OpenRPC document describes, as the one
+    /// <c>Methods</c> service <c>rpc.discover</c> would have produced.
+    /// </summary>
+    /// <remarks>
+    /// A call needs nothing from the document beyond the method's name, so
+    /// the upload only has to be listed: the form comes from it, and the
+    /// request is the same one a discovered method sends.
+    /// </remarks>
+    public IReadOnlyList<BowireServiceInfo> ReadUploadedSchema(
+        string kind, ReadOnlyMemory<byte> document, string sourceName)
+    {
+        JsonElement root;
+        try
+        {
+            using var parsed = JsonDocument.Parse(document, new JsonDocumentOptions
+            {
+                CommentHandling = JsonCommentHandling.Skip,
+                AllowTrailingCommas = true,
+            });
+            root = parsed.RootElement.Clone();
+        }
+        catch (JsonException ex)
+        {
+            throw new FormatException("Not an OpenRPC document: it is not JSON. " + ex.Message, ex);
+        }
+
+        if (root.ValueKind != JsonValueKind.Object || StringOf(root, "openrpc") is null)
+            throw new FormatException(
+                "Not an OpenRPC document: it has no top-level \"openrpc\" version.");
+        if (!root.TryGetProperty("methods", out var declared) || declared.ValueKind != JsonValueKind.Array)
+            throw new FormatException(
+                "Not an OpenRPC document: it has no \"methods\" array.");
+
+        var methods = ExtractMethodsFromOpenRpc(root);
+        if (methods.Count == 0) return [];
+
+        return
+        [
+            new BowireServiceInfo("Methods", "jsonrpc", methods)
+            {
+                Source = "jsonrpc",
+                Description = "JSON-RPC 2.0 methods from the uploaded OpenRPC document " + sourceName + ".",
+            }
+        ];
+    }
+
     /// <summary>The method types the freeform form offers (#995); the workbench has its own form for this protocol.</summary>
     public BowireManualEntryForm DescribeManualEntry() => BowireManualEntryForm.ForMethodTypes("Unary", "ServerStreaming");
 

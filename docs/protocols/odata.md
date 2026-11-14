@@ -31,6 +31,8 @@ Each entity set in the EDM model becomes a service with five methods:
 | PATCH | PATCH | `/{EntitySet}({key})` | Update entity |
 | DELETE | DELETE | `/{EntitySet}({key})` | Delete entity |
 
+A service that does not serve `$metadata` is described by uploading the model (`.edmx`, `.csdl`: the `$metadata` response saved to a file) to the workspace's [schema files](../features/schema-files.md). The entity sets are listed from it under the URL the workbench is pointed at, and a call learns each set's key from it, so a string key is quoted as `People('ada')`.
+
 ## Input Fields
 
 Entity type properties are reflected as input fields with their EDM types mapped to Bowire field types (string, int64, double, bool).
