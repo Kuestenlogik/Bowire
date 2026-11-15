@@ -36,8 +36,6 @@ A plugin imports a format by implementing `IBowireUploadedSchemaReader`: it decl
 
 The command line follows (#1018). `--schema` on `bowire discover`, `call` and `test` takes every format a loaded plugin imports and decides it the way the upload route does, so `--schema events.yaml` with an AsyncAPI document is no longer read as OpenAPI and `--schema schema.graphql` is no longer an unknown extension. A call that names a schema of another protocol goes to the plugin that reads it without `--protocol`. A file no plugin reads, or one its plugin cannot read, stops the command with exit code 2 and the reason.
 
-**Breaking:** `bowire list` and `bowire describe` are gRPC commands and now refuse an OpenAPI document named with `--schema`, which they accepted and did not use. A descriptor set named with `--schema` on a host without the gRPC plugin is refused instead of passed on unread.
-
 ### gRPC servers without reflection, from the workbench (#991)
 
 A gRPC server with reflection switched off could be listed in the workbench from a `.proto` and not called: a `.proto` gives names, and a call needs the compiled message layouts. The schema drop zone now takes the compiled descriptor set (`protoc --descriptor_set_out=api.protoset --include_imports`; `.protoset`, `.pb`, `.desc` or `.binpb`). Its services appear under the server's URL, and unary calls, streams and channels go through it. The set is stored per workspace beside the other schema files.
@@ -105,6 +103,10 @@ If clients outside the process (grpcurl, a standalone Bowire pointed at the host
 ### `bowire scan --grpc-descriptor-set` is now `--schema` (#1016)
 
 The scan named its descriptor set with an option of its own. It takes `--schema <file>` like the other commands, and `--grpc-descriptor-set` is removed from `scan`. Replace the option name; the file and what the scan does with it are unchanged.
+
+### `bowire list` and `bowire describe` take descriptor sets only with `--schema` (#1018)
+
+Both are gRPC commands. They accepted an OpenAPI document named with `--schema` and did not use it; they now refuse every format but a descriptor set, with exit code 2. `bowire discover --schema` lists the others. A descriptor set named with `--schema` on a host without the gRPC plugin is refused instead of passed on unread.
 
 ### `BowireOptions.ProtoSources` and `ProtoSource` are removed (#992)
 
