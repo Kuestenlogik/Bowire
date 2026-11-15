@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**18/35 done** · 17 backlog
+**19/35 done** · 16 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -32,7 +32,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [940](https://github.com/Kuestenlogik/Bowire/issues/940) | Bowire | [Verify the collection importers against real Insomnia and Bruno exports](#issue-kuestenlogik-bowire-940) | ⬜ Backlog |  |
 | [946](https://github.com/Kuestenlogik/Bowire/issues/946) | Bowire | [Data sets for flow runs and bowire test --workspace](#issue-kuestenlogik-bowire-946) | ⬜ Backlog |  |
 | [963](https://github.com/Kuestenlogik/Bowire/issues/963) | Bowire | [WebSocketAuthProbe: forged JWT (alg:none, tampered signature) on the upgrade](#issue-kuestenlogik-bowire-963) | ⬜ Backlog | `area:security` |
-| [1018](https://github.com/Kuestenlogik/Bowire/issues/1018) | Bowire | [--schema on the command line takes the schema kinds the plugins import](#issue-kuestenlogik-bowire-1018) | ⬜ Backlog |  |
 | [673](https://github.com/Kuestenlogik/Bowire/issues/673) | Bowire | [Export requests as .http — Copy as .http, and bowire export http for a whole collection](#issue-kuestenlogik-bowire-673) | ✅ Done | `area:workbench` |
 | [986](https://github.com/Kuestenlogik/Bowire/issues/986) | Bowire | [The .NET plugin loader scans sidecar folders and logs ManifestMissing for every sidecar](#issue-kuestenlogik-bowire-986) | ✅ Done | `area:plugin-sdk` |
 | [987](https://github.com/Kuestenlogik/Bowire/issues/987) | Bowire | [sidecar-plugins.md: no SDK sends select options, and python3 as the manifest example fails on Windows](#issue-kuestenlogik-bowire-987) | ✅ Done | `area:docs` |
@@ -51,6 +50,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [1003](https://github.com/Kuestenlogik/Bowire/issues/1003) | Bowire | [Sidecar plugins describe their hand-entry form in the initialize reply](#issue-kuestenlogik-bowire-1003) | ✅ Done |  |
 | [1014](https://github.com/Kuestenlogik/Bowire/issues/1014) | Bowire | [Sidecar contract: what shutdown means for an http sidecar that several hosts share](#issue-kuestenlogik-bowire-1014) | ✅ Done |  |
 | [1016](https://github.com/Kuestenlogik/Bowire/issues/1016) | Bowire | [bowire scan: accept --schema like the other commands](#issue-kuestenlogik-bowire-1016) | ✅ Done | `area:cli` |
+| [1018](https://github.com/Kuestenlogik/Bowire/issues/1018) | Bowire | [--schema on the command line takes the schema kinds the plugins import](#issue-kuestenlogik-bowire-1018) | ✅ Done |  |
 
 ### v2.12 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
 
@@ -292,10 +292,6 @@ Follow-up of #675. `--data` drives a test collection. A flow file, or a `--works
 
 Kuestenlogik/Bowire.VulnDb#51 (CVE-2026-113620, Eclipse ioFog Controller): the WebSocket upgrades on the exec and log routes decode the bearer JWT without verifying it, so a self-minted token whose groups contain `admin` is accepted. The HTTP routes of the same server verify the token. [[more]](https://github.com/Kuestenlogik/Bowire/issues/963)
 
-#### <a id="issue-kuestenlogik-bowire-1018"></a>⬜ Backlog · [#1018](https://github.com/Kuestenlogik/Bowire/issues/1018) --schema on the command line takes the schema kinds the plugins import
-
-Since #994 the workbench imports GraphQL SDL, WSDL, EDMX, OpenRPC and AsyncAPI through `IBowireUploadedSchemaReader`, and discovery lists every stored document through its plugin. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/1018)
-
 #### <a id="issue-kuestenlogik-bowire-673"></a>✅ Done · [#673](https://github.com/Kuestenlogik/Bowire/issues/673) Export requests as .http — Copy as .http, and bowire export http for a whole collection
 
 > `area:workbench`
@@ -389,6 +385,10 @@ An http sidecar is not its host's. The docs say so (docs/architecture/sidecar-pl
 > `area:cli`
 
 Since #991, `--schema api.protoset` names a compiled gRPC descriptor set for `discover`, `list`, `describe`, `call` and `test`. `bowire scan` does not take `--schema`: it only has `--grpc-descriptor-set`, which hands the set to the gRPC checks as the sole descriptor source. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/1016)
+
+#### <a id="issue-kuestenlogik-bowire-1018"></a>✅ Done · [#1018](https://github.com/Kuestenlogik/Bowire/issues/1018) --schema on the command line takes the schema kinds the plugins import
+
+Since #994 the workbench imports GraphQL SDL, WSDL, EDMX, OpenRPC and AsyncAPI through `IBowireUploadedSchemaReader`, and discovery lists every stored document through its plugin. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/1018)
 
 ### v2.12 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
 
