@@ -35,7 +35,11 @@ public static class InteropRpc
     public static ImportCollectionResponse ImportCollection(ImportCollectionRequest request)
     {
         ArgumentNullException.ThrowIfNull(request);
-        var files = request.Files.Where(f => !string.IsNullOrEmpty(f.Content)).ToList();
+        // By path, not in the order they arrived: that order is the file
+        // system's or the browser's, so the same folder gave its environments
+        // and requests in one order on Windows and another on Linux (#940).
+        var files = request.Files.Where(f => !string.IsNullOrEmpty(f.Content))
+            .OrderBy(f => f.Path, StringComparer.Ordinal).ToList();
         if (files.Count == 0) throw Invalid("No file to import.");
 
         IInteropImporter importer;

@@ -131,6 +131,25 @@ public sealed class ExportedCollectionsTests
     }
 
     [Fact]
+    public async Task A_Folder_Imports_The_Same_Whatever_Order_Its_Files_Arrive_In()
+    {
+        // The order a directory is listed in is the file system's. Linux
+        // listed Prod.bru before Local.bru, and the environments came out in
+        // that order there and in the other on Windows.
+        var files = await InteropSources.ReadAsync(Exported("bruno-bru"), TestContext.Current.CancellationToken);
+        var forwards = new ImportCollectionRequest();
+        forwards.Files.Add(files);
+        var backwards = new ImportCollectionRequest();
+        backwards.Files.Add(Enumerable.Reverse(files));
+
+        var a = InteropRpc.ImportCollection(forwards);
+        var b = InteropRpc.ImportCollection(backwards);
+
+        Assert.Equal(a.Environments.Select(e => e.Name), b.Environments.Select(e => e.Name));
+        Assert.Equal(a.Collections[0].Items.Select(i => i.Name), b.Collections[0].Items.Select(i => i.Name));
+    }
+
+    [Fact]
     public async Task Bruno_Annotations_Are_Not_Read_As_Headers_Or_Variables()
     {
         // collection.bru as the app writes it: @description('''…''') above a
