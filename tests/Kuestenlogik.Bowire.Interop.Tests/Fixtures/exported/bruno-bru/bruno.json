@@ -1,0 +1,37 @@
+{
+  "version": "1",
+  "name": "bruno-testbench",
+  "type": "collection",
+  "proxy": {
+    "inherit": true,
+    "config": {
+      "protocol": "http",
+      "hostname": "{{proxyHostname}}",
+      "port": 4000,
+      "auth": {
+        "username": "anoop",
+        "password": "password",
+        "disabled": true
+      },
+      "bypassProxy": ""
+    }
+  },
+  "scripts": {
+    "moduleWhitelist": [
+      "crypto",
+      "buffer",
+      "form-data"
+    ],
+    "additionalContextRoots": [
+      "../additional-context-root-lib"
+    ]
+  },
+  "clientCertificates": {
+    "enabled": true,
+    "certs": []
+  },
+  "presets": {
+    "requestType": "http",
+    "requestUrl": "http://localhost:6000"
+  }
+}

@@ -1,0 +1,62 @@
+headers {
+  @description('''asd''')
+  check: again
+  @description('''
+    asd
+    asd
+    asd
+  ''')
+  token: {{collection_pre_var_token}}
+  @description('''asd''')
+  collection-header: collection-header-value
+}
+
+auth {
+  mode: bearer
+}
+
+auth:bearer {
+  token: {{bearer_auth_token}}
+}
+
+vars:pre-request {
+  collection_pre_var: collection_pre_var_value
+  collection_pre_var_token: {{request_pre_var_token}}
+  collection-var: collection-var-value
+  coll_str: collection_string
+  @number
+  coll_num: 100
+  @boolean
+  coll_bool: false
+  @object
+  coll_obj: '''
+    {"scope":"collection"}
+  '''
+}
+
+script:pre-request {
+  // used by `scripting/js/folder-collection script-tests`
+  const shouldTestCollectionScripts = bru.getVar('should-test-collection-scripts');
+  if(shouldTestCollectionScripts) {
+   bru.setVar('collection-var-set-by-collection-script', 'collection-var-value-set-by-collection-script');
+  }
+}
+
+tests {
+  // used by `scripting/js/folder-collection script-tests`
+  const shouldTestCollectionScripts = bru.getVar('should-test-collection-scripts');
+  const collectionVar = bru.getVar("collection-var-set-by-collection-script");
+  if (shouldTestCollectionScripts && collectionVar) {
+    test("collection level test - should get the var that was set by the collection script", function() {
+      expect(collectionVar).to.equal("collection-var-value-set-by-collection-script");
+    }); 
+    bru.setVar('collection-var-set-by-collection-script', null); 
+    bru.setVar('should-test-collection-scripts', null);
+  }
+}
+
+docs {
+  # bruno-testbench 🐶
+  
+  This is a test collection that I am using to test various functionalities around bruno
+}

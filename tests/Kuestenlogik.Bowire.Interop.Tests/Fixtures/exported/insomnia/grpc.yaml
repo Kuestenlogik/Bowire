@@ -1,0 +1,140 @@
+type: collection.insomnia.rest/5.0
+schema_version: "5.1"
+name: PreRelease gRPC
+meta:
+  id: wrk_fa7f579cf7064595b89ff01f9c1846a7
+  created: 1736278634829
+  modified: 1736278634829
+collection:
+  - name: Route Guide Example
+    meta:
+      id: fld_36dabb32ef974700a40840e030ac68e0
+      created: 1638201347079
+      modified: 1638201347079
+      sortKey: -1638201347079
+    children:
+      - url: localhost:50051
+        name: Unary
+        meta:
+          id: greq_08841c5e470441a0aabb7e4d31e0b8b9
+          created: 1638200268776
+          modified: 1669986544274
+          isPrivate: false
+          sortKey: -1638200268776
+        body:
+          text: |-
+            {
+            	"latitude":"409146138",
+            	"longitude":"-746188906"
+            }
+        protoFileId: pf_5ec276c683544562935672a39ed2abe7
+        protoMethodName: /routeguide.RouteGuide/GetFeature
+        reflectionApi:
+          enabled: false
+          url: https://buf.build
+          apiKey: ""
+          module: buf.build/connectrpc/eliza
+      - url: localhost:50051
+        name: UnaryWithOutProtoFile
+        meta:
+          id: greq_825ee0360547402fa96801b6d7b34613
+          created: 1638200268776
+          modified: 1669986544274
+          isPrivate: false
+          sortKey: -1638200268776
+        body:
+          text: |-
+            {
+            	"latitude":"409146138",
+            	"longitude":"-746188906"
+            }
+        reflectionApi:
+          enabled: false
+          url: https://buf.build
+          apiKey: ""
+          module: buf.build/connectrpc/eliza
+      - url: localhost:50051
+        name: Server Stream
+        meta:
+          id: greq_2cd9f4745735417998cfb0de94b1dfe9
+          created: 1638200430327
+          modified: 1669986550033
+          isPrivate: false
+          sortKey: -1638200268751
+        body:
+          text: |-
+            {
+            	"lo":{
+            		"latitude":"400000000",
+            		"longitude":"-750000000"
+            	},
+            	"hi":{
+            		"latitude":"420000000",
+            		"longitude":"-730000000"
+            	}
+            }
+        protoFileId: pf_5ec276c683544562935672a39ed2abe7
+        protoMethodName: /routeguide.RouteGuide/ListFeatures
+        reflectionApi:
+          enabled: false
+          url: https://buf.build
+          apiKey: ""
+          module: buf.build/connectrpc/eliza
+      - url: localhost:50051
+        name: Client Stream
+        meta:
+          id: greq_5cc9e680978c47a5a132954b6697bbaf
+          created: 1638200871429
+          modified: 1669986557908
+          isPrivate: false
+          sortKey: -1638200268726
+        body:
+          text: |-
+            {
+            	"latitude":"415301720",
+            	"longitude":"-748416257"
+            }
+        protoFileId: pf_5ec276c683544562935672a39ed2abe7
+        protoMethodName: /routeguide.RouteGuide/RecordRoute
+        reflectionApi:
+          enabled: false
+          url: https://buf.build
+          apiKey: ""
+          module: buf.build/connectrpc/eliza
+      - url: localhost:50051
+        name: Bidirectional Stream
+        meta:
+          id: greq_85d23a4f6a50465cac85791fd8652046
+          created: 1638201149312
+          modified: 1669986566981
+          isPrivate: false
+          sortKey: -1638200268676
+        body:
+          text: |-
+            {
+            	"message": "test 5",
+            	"location": {
+            		"latitude":"415301720",
+            		"longitude":"-748416257"
+            	}
+            }
+        protoFileId: pf_5ec276c683544562935672a39ed2abe7
+        protoMethodName: /routeguide.RouteGuide/RouteChat
+        reflectionApi:
+          enabled: false
+          url: https://buf.build
+          apiKey: ""
+          module: buf.build/connectrpc/eliza
+cookieJar:
+  name: Default Jar
+  meta:
+    id: jar_32c1c14d067b4c1b85b52124c6c7a14f
+    created: 1635959595050
+    modified: 1635959595050
+environments:
+  name: Base Environment
+  meta:
+    id: env_f7c114d8c1094fa2b2203d46b6fef1c9
+    created: 1635959595049
+    modified: 1635959595049
+    isPrivate: false

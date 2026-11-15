@@ -58,6 +58,10 @@ It needs the OpenAPI adapter package that matches the generator (`Kuestenlogik.B
 
 ## Fixes along the way
 
+### Insomnia imports, checked against collections Insomnia wrote (#940)
+
+The importers were tested with files written from the formats' specifications. Run against the collections of Insomnia's and Bruno's own end-to-end tests, the Bruno importers held, and the Insomnia importer did not in three places. A Socket.IO request was imported as an HTTP GET to the Socket.IO server; it is now left out and named in the report, as gRPC and WebSocket requests are. A collection of only such requests was refused with "no request collection found"; the refusal now says what the collection holds and to add the server as a source. A global environment or a mock server export was called a design document. The report line for a `{% response %}` tag reads as a sentence.
+
 ### A host that leaves a shared http sidecar takes only its own channels (#1014)
 
 One http sidecar can serve several Bowire hosts, but nothing on the wire told them apart, and the contract did not say what a host's `shutdown` meant there. With the Node and Go SDKs the first host to leave closed every other host's channels and tore down the plugin under them. A host now names itself with a `Bowire-Session` header on every request and on its SSE stream. Over http, `shutdown` ends that session: its channels and streams, nothing else. A session also ends when its SSE stream closes, so a host that crashed leaves nothing open. Notifications go only to the session that owns the stream or channel, and the plugin's `shutdown` hook runs when the sidecar process stops, not when a host leaves. The four SDKs follow the rule from their next release.

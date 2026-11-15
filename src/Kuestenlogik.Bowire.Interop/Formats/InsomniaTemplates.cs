@@ -49,7 +49,7 @@ internal static partial class InsomniaTemplates
                     unmapped.Add("{% now " + args.Trim() + " %}");
                     return m.Value;
                 case "response":
-                    unmapped.Add("{% response %} (rewrite as {{response.path}} chaining in Bowire)");
+                    unmapped.Add(ResponseTag);
                     return m.Value;
                 default:
                     unmapped.Add("{% " + tag + " %}");
@@ -57,6 +57,15 @@ internal static partial class InsomniaTemplates
             }
         });
     }
+
+    private const string ResponseTag = "{% response %}";
+
+    /// <summary>The report line for a template named in <c>unmapped</c>.</summary>
+    public static string Unmapped(string template) => template == ResponseTag
+        // The one tag with a counterpart that cannot be written for the
+        // caller: which response and which path is in the tag's arguments.
+        ? "{% response %} stays as written; rewrite it as {{response.path}} chaining in Bowire"
+        : $"{template} has no Bowire equivalent and stays as written";
 
     [GeneratedRegex(@"\{\{\s*(?<name>[^{}%]+?)\s*\}\}")]
     private static partial Regex Variable();

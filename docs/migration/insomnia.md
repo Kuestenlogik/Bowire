@@ -46,5 +46,5 @@ Each of these is named in the import report:
 - Faker, prompt and file tags stay as written.
 - Pre-request and after-response scripts: Bowire scripts use their own `ctx.*` API. Port them by hand, or write the checks as assertions.
 - OAuth 2, AWS IAM, Digest and NTLM auth: set them on the Bowire environment, which supports all four.
-- gRPC and WebSocket requests: point Bowire at the service; it discovers them.
+- gRPC, WebSocket and Socket.IO requests: point Bowire at the service; it discovers them. A collection that holds nothing else is refused, with the number of requests it found.
 - Multipart and file bodies, cookie jars, API specs (add the spec as a schema source instead), unit tests.

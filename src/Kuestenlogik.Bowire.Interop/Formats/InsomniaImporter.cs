@@ -28,6 +28,7 @@ internal sealed class InsomniaImporter : IInteropImporter
     public ImportCollectionResponse Read(IReadOnlyList<SourceFile> files, string? name, ReportBuilder report)
     {
         var response = new ImportCollectionResponse { Format = Id };
+        var notHttp = 0;
         foreach (var file in files)
         {
             var doc = StructuredDocument.TryLoad(file.Content);
@@ -37,12 +38,32 @@ internal sealed class InsomniaImporter : IInteropImporter
             if (doc["__export_format"] is not null) workspaces = ReadV4(doc, report);
             else if (type.StartsWith("collection.insomnia.rest/", StringComparison.Ordinal)) workspaces = [ReadV5(doc, report)];
             else if (type.Contains("insomnia", StringComparison.Ordinal))
-                throw new InteropFormatException($"{type} is not a request collection; add a design document's spec to Bowire as a source instead");
+                throw new InteropFormatException($"{type} is not a request collection; {WhatElse(type)}");
             else continue;
-            foreach (var workspace in workspaces) Emit(workspace, files.Count == 1 && workspaces.Count == 1 ? name : null, response, report);
+            foreach (var workspace in workspaces)
+                notHttp += Emit(workspace, files.Count == 1 && workspaces.Count == 1 ? name : null, response, report);
         }
-        if (response.Collections.Count == 0) throw new InteropFormatException("no request collection found in the export");
+        if (response.Collections.Count == 0)
+        {
+            // Said apart from "nothing in here": the export was read, and
+            // what it holds is what Bowire lists from a server rather than
+            // keeps as saved requests.
+            throw new InteropFormatException(notHttp > 0
+                ? $"the export holds no HTTP request, only gRPC, WebSocket or Socket.IO requests ({notHttp}). "
+                    + "Bowire lists those from the server: add its URL as a source"
+                : "no request collection found in the export");
+        }
         return response;
+    }
+
+    // What to do with an Insomnia file that is not a collection, by its type.
+    private static string WhatElse(string type)
+    {
+        if (type.StartsWith("environment.", StringComparison.Ordinal))
+            return "it is a global environment; import the collection that uses it, or enter its values in a Bowire environment";
+        if (type.StartsWith("mock.", StringComparison.Ordinal))
+            return "it is a mock server; Bowire builds mocks from recordings and schemas";
+        return "add a design document's spec to Bowire as a source instead";
     }
 
     // ---- the common tree ----
@@ -142,6 +163,7 @@ internal sealed class InsomniaImporter : IInteropImporter
                     case "request":
                     case "grpc_request":
                     case "websocket_request":
+                    case "socketio_request":
                         folder.Children.Add(new Request { Name = StructuredDocument.Text(child["name"]) ?? "Request", Kind = Type(child)!, Source = child });
                         break;
                 }
@@ -188,7 +210,11 @@ internal sealed class InsomniaImporter : IInteropImporter
                     continue;
                 }
                 var id = StructuredDocument.Text((item["meta"] as JsonObject)?["id"]) ?? "";
+                // v5 has no type field on a request: the id's prefix says
+                // what it is, and a Socket.IO request looks like an HTTP one
+                // otherwise (a URL, headers, no method).
                 var kind = id.StartsWith("ws-req", StringComparison.Ordinal) ? "websocket_request"
+                    : id.StartsWith("socketio-req", StringComparison.Ordinal) || item["eventListeners"] is not null ? "socketio_request"
                     : id.StartsWith("greq", StringComparison.Ordinal) || item["protoMethodName"] is not null ? "grpc_request"
                     : "request";
                 folder.Children.Add(new Request { Name = itemName, Kind = kind, Source = item });
@@ -198,15 +224,17 @@ internal sealed class InsomniaImporter : IInteropImporter
 
     // ---- the mapping to Bowire ----
 
-    private static void Emit(Workspace workspace, string? name, ImportCollectionResponse response, ReportBuilder report)
+    /// <returns>How many requests of the workspace are not HTTP and were left out.</returns>
+    private static int Emit(Workspace workspace, string? name, ImportCollectionResponse response, ReportBuilder report)
     {
         var collection = new Collection { Name = name ?? workspace.Root.Name };
         var folderVars = new JsonObject();
+        var notHttp = 0;
         Walk(workspace.Root, [], null);
         if (collection.Items.Count == 0)
         {
             report.Skipped(collection.Name, "no HTTP request in this workspace");
-            return;
+            return notHttp;
         }
         response.Collections.Add(collection);
 
@@ -220,7 +248,7 @@ internal sealed class InsomniaImporter : IInteropImporter
             {
                 foreach (var key in env.Vars.Keys) report.Credential(envName, $"private variable {key}");
             }
-            foreach (var u in unmapped.Distinct(StringComparer.Ordinal)) report.Approximated(envName, $"{u} has no Bowire equivalent and stays as written");
+            foreach (var u in unmapped.Distinct(StringComparer.Ordinal)) report.Approximated(envName, InsomniaTemplates.Unmapped(u));
             response.Environments.Add(env);
             report.Mapped(envName, "environment");
         }
@@ -235,6 +263,7 @@ internal sealed class InsomniaImporter : IInteropImporter
             }
             report.Approximated(collection.Name, "folder variables were merged into the environments: Bowire has no per-folder variables");
         }
+        return notHttp;
 
         void Walk(Folder folder, List<string> path, JsonObject? inheritedAuth)
         {
@@ -251,6 +280,7 @@ internal sealed class InsomniaImporter : IInteropImporter
                         Walk(sub, [.. path, sub.Name], auth);
                         break;
                     case Request request:
+                        if (request.Kind != "request") notHttp++;
                         ReadRequest(request, path, auth, collection, report);
                         break;
                 }
@@ -268,6 +298,9 @@ internal sealed class InsomniaImporter : IInteropImporter
                 return;
             case "websocket_request":
                 report.Skipped(subject, "WebSocket request: Bowire discovers WebSocket endpoints from the server; add that instead");
+                return;
+            case "socketio_request":
+                report.Skipped(subject, "Socket.IO request: Bowire discovers Socket.IO endpoints from the server; add that instead");
                 return;
         }
 
@@ -324,7 +357,7 @@ internal sealed class InsomniaImporter : IInteropImporter
         if (!string.IsNullOrWhiteSpace(StructuredDocument.Text(src["afterResponseScript"]) ?? StructuredDocument.Text(scripts?["afterResponse"])))
             report.Skipped(subject, "after-response script: write it as Bowire assertions or a post-script");
         foreach (var u in unmapped.Distinct(StringComparer.Ordinal))
-            report.Approximated(subject, $"{u} has no Bowire equivalent and stays as written");
+            report.Approximated(subject, InsomniaTemplates.Unmapped(u));
 
         if (!approximatedBody) report.Mapped(subject);
         collection.Items.Add(item);

@@ -1,0 +1,109 @@
+type: collection.insomnia.rest/5.0
+schema_version: "5.1"
+name: WebSockets
+meta:
+  id: wrk_de19497fcefa48c0a8d131f4d05bb19a
+  created: 1736280122525
+  modified: 1736280122525
+collection:
+  - url: ws://localhost:4010
+    name: localhost:4010
+    meta:
+      id: ws-req_89505c5538ea4130b3075b5cfa379f0a
+      created: 1661942202873
+      modified: 1661942223227
+    settings:
+      encodeUrl: true
+      followRedirects: global
+      cookies:
+        send: true
+        store: true
+  - url: ws://localhost:4010/basic-auth
+    name: basic-auth
+    meta:
+      id: ws-req_c61fce1d29574e289048354a01b37dea
+      created: 1662451239058
+      modified: 1662451274029
+    settings:
+      encodeUrl: true
+      followRedirects: global
+      cookies:
+        send: true
+        store: true
+    authentication:
+      type: basic
+      useISO88591: false
+      disabled: false
+      username: user
+      password: password
+  - url: ws://localhost:4010/bearer
+    name: bearer
+    meta:
+      id: ws-req_c178f6aafc55429d932d4b12d9b6b42e
+      created: 1662451318293
+      modified: 1662451369688
+    settings:
+      encodeUrl: true
+      followRedirects: global
+      cookies:
+        send: true
+        store: true
+    authentication:
+      type: bearer
+      token: insomnia-cool-token-!!!1112113243111
+      disabled: false
+  - url: ws://localhost:4010/redirect
+    name: redirect
+    meta:
+      id: ws-req_233dcecb9b7344dd86c7821dfb686c20
+      created: 1662451430343
+      modified: 1662451456879
+    settings:
+      encodeUrl: true
+      followRedirects: global
+      cookies:
+        send: true
+        store: true
+  - url: ws://localhost:4010/delay
+    name: delay
+    meta:
+      id: ws-req_68ee79e9c4044c0481b928ee3ddeaf83
+      created: 1666695713692
+      modified: 1666696265531
+    settings:
+      encodeUrl: true
+      followRedirects: global
+      cookies:
+        send: true
+        store: true
+    headers:
+      - name: duration
+        value: "5"
+  - url: ws://localhost:4010/chat/:id
+    name: path-param
+    meta:
+      id: ws-req_path_param_test
+      created: 1666695713693
+      modified: 1666696265532
+    pathParameters:
+      - name: id
+        value: "1234"
+    settings:
+      encodeUrl: true
+      followRedirects: global
+      cookies:
+        send: true
+        store: true
+cookieJar:
+  name: Default Jar
+  meta:
+    id: jar_a907e0109d0847f792cd7c5fc3f52d5f
+    created: 1661942194378
+    modified: 1661942194378
+environments:
+  name: Base Environment
+  meta:
+    id: env_f06c6d12aa17400bbb1d16b4e20f7449
+    created: 1661942194375
+    modified: 1661942194375
+    isPrivate: false
