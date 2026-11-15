@@ -5,6 +5,11 @@ using System.CommandLine;
 using Kuestenlogik.Bowire.App.Cli;
 using Kuestenlogik.Bowire.Cli;
 using Kuestenlogik.Bowire.Auth;
+using Kuestenlogik.Bowire.Testing;
+using Kuestenlogik.Bowire.Tests.Plugins;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 
 namespace Kuestenlogik.Bowire.Tests.Cli;
@@ -51,30 +56,196 @@ public sealed class CliSchemaInputsTests : IDisposable
         return path;
     }
 
-    // ---- what an extension says ----
+    // The plugins the tool carries, as a command gets them: they declare the
+    // kinds and read the files (#1018).
+    private static readonly BowireProtocolRegistry Plugins = BowireProtocolRegistry.Discover();
 
-    [Theory]
-    [InlineData("a.proto", SchemaUploadStore.ProtoKind)]
-    [InlineData("A.PROTO", SchemaUploadStore.ProtoKind)]
-    [InlineData("petstore.json", SchemaUploadStore.OpenApiKind)]
-    [InlineData("petstore.yaml", SchemaUploadStore.OpenApiKind)]
-    [InlineData("petstore.YML", SchemaUploadStore.OpenApiKind)]
-    [InlineData("api.protoset", SchemaUploadStore.ProtoSetKind)]
-    [InlineData("api.PB", SchemaUploadStore.ProtoSetKind)]
-    [InlineData("api.desc", SchemaUploadStore.ProtoSetKind)]
-    [InlineData("api.binpb", SchemaUploadStore.ProtoSetKind)]
-    public void The_Extension_Decides_What_A_File_Is(string name, string expected)
-        => Assert.Equal(expected, CliSchemaInputs.KindOf(name));
-
-    [Theory]
-    [InlineData("notes.txt")]
-    [InlineData("schema")]
-    [InlineData("schema.graphql")]
-    public void Anything_Else_Is_Refused_Rather_Than_Guessed(string name)
+    private static BowireProtocolRegistry Only(params IBowireProtocol[] protocols)
     {
-        // The workbench's drop zone can fall back to "probably OpenAPI"
-        // because a person is watching the result. A pipeline is not.
-        Assert.Null(CliSchemaInputs.KindOf(name));
+        var registry = new BowireProtocolRegistry();
+        foreach (var protocol in protocols) registry.Register(protocol);
+        return registry;
+    }
+
+    private const string HarborSdl = """
+        type Ship { id: ID! name: String! flag: String }
+        type Query { ship(id: ID!): Ship }
+        """;
+
+    private const string CalculatorWsdl = """
+        <definitions xmlns="http://schemas.xmlsoap.org/wsdl/"
+                     xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+                     xmlns:tns="http://example.com/calc/wsdl"
+                     targetNamespace="http://example.com/calc/wsdl">
+          <message name="AddIn"><part name="a" type="tns:int"/></message>
+          <portType name="Calculator">
+            <operation name="Add"><input message="tns:AddIn"/></operation>
+          </portType>
+          <binding name="CalculatorSoap" type="tns:Calculator">
+            <operation name="Add"><soap:operation soapAction="http://example.com/calc/Add"/></operation>
+          </binding>
+        </definitions>
+        """;
+
+    private const string PeopleEdmx = """
+        <edmx:Edmx xmlns:edmx="http://docs.oasis-open.org/odata/ns/edmx" Version="4.0">
+          <edmx:DataServices>
+            <Schema xmlns="http://docs.oasis-open.org/odata/ns/edm" Namespace="Demo">
+              <EntityType Name="Person">
+                <Key><PropertyRef Name="UserName"/></Key>
+                <Property Name="UserName" Type="Edm.String" Nullable="false"/>
+              </EntityType>
+              <EntityContainer Name="DemoContainer">
+                <EntitySet Name="People" EntityType="Demo.Person"/>
+              </EntityContainer>
+            </Schema>
+          </edmx:DataServices>
+        </edmx:Edmx>
+        """;
+
+    private const string HarborOpenRpc = """
+        {"openrpc":"1.3.2","info":{"title":"Harbor","version":"1.0.0"},
+         "methods":[{"name":"ship.get","params":[{"name":"id","schema":{"type":"integer"}}]}]}
+        """;
+
+    private const string LightsAsyncApi = """
+        asyncapi: 3.0.0
+        info:
+          title: Lights
+          version: 1.0.0
+        servers:
+          production:
+            host: 'broker.local:1883'
+            protocol: mqtt
+        channels:
+          lightTurnOn:
+            address: 'light/turn/on'
+            messages:
+              turnOn:
+                payload:
+                  type: object
+        operations:
+          sendTurnOn:
+            action: send
+            channel:
+              $ref: '#/channels/lightTurnOn'
+        """;
+
+    private const string PetstoreOpenApi = """
+        openapi: 3.0.0
+        info:
+          title: Petstore
+          version: "1"
+        paths: {}
+        """;
+
+    // ---- what a file is ----
+
+    public static TheoryData<string, string, string> Files => new()
+    {
+        // The extension settles it.
+        { "harbor.graphql", HarborSdl, "graphql-sdl" },
+        { "calculator.wsdl", CalculatorWsdl, "wsdl" },
+        { "people.edmx", PeopleEdmx, "edmx" },
+        { "a.proto", "syntax = \"proto3\";", SchemaUploadStore.ProtoKind },
+        // Several kinds share the extension: the content decides.
+        { "harbor.json", HarborOpenRpc, "openrpc" },
+        { "lights.yaml", LightsAsyncApi, "asyncapi" },
+        { "petstore.yaml", PetstoreOpenApi, SchemaUploadStore.OpenApiKind },
+        { "petstore.json", """{"openapi":"3.0.0"}""", SchemaUploadStore.OpenApiKind },
+        // No kind declares the extension: the content decides there too.
+        { "service.xml", CalculatorWsdl, "wsdl" },
+        { "schema.txt", HarborSdl, "graphql-sdl" },
+    };
+
+    [Theory]
+    [MemberData(nameof(Files))]
+    public async Task A_File_Is_The_Kind_The_Upload_Route_Would_Make_It(string name, string content, string expected)
+    {
+        // The table --schema read a kind from knew three of these and called
+        // every .yaml OpenAPI, so an AsyncAPI document went to the REST
+        // plugin and SDL was an unknown extension.
+        using var stderr = new StringWriter();
+        var (schemas, code) = await CliSchemaInputs.ReadAsync([File_(name, content)], stderr, Plugins);
+
+        Assert.Equal("", stderr.ToString());
+        Assert.Equal(0, code);
+        var one = Assert.Single(schemas!);
+        Assert.Equal(expected, one.Kind);
+        Assert.Equal(name, one.SourceName);
+    }
+
+    [Fact]
+    public async Task A_File_Nobody_Reads_Is_Refused_With_What_The_Loaded_Plugins_Read()
+    {
+        using var stderr = new StringWriter();
+        var (schemas, code) = await CliSchemaInputs.ReadAsync([File_("notes.txt", "just notes")], stderr, Plugins);
+
+        Assert.Null(schemas);
+        Assert.Equal(2, code);
+        Assert.Contains("notes.txt", stderr.ToString(), StringComparison.Ordinal);
+        Assert.Contains("GraphQL SDL (.graphql", stderr.ToString(), StringComparison.Ordinal);
+        Assert.Contains("gRPC descriptor set (.protoset", stderr.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task The_Refusal_Names_Only_What_Is_Loaded()
+    {
+        // With the gRPC plugin alone there is nobody to read SDL, and the
+        // sentence does not offer it.
+        using var stderr = new StringWriter();
+        var (schemas, code) = await CliSchemaInputs.ReadAsync(
+            [File_("harbor.graphql", HarborSdl)], stderr, Only(new Kuestenlogik.Bowire.Protocol.Grpc.BowireGrpcProtocol()));
+
+        Assert.Null(schemas);
+        Assert.Equal(2, code);
+        Assert.Contains("gRPC descriptor set", stderr.ToString(), StringComparison.Ordinal);
+        Assert.DoesNotContain("GraphQL", stderr.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_File_Its_Plugin_Cannot_Read_Stops_The_Command_With_The_Readers_Reason()
+    {
+        using var stderr = new StringWriter();
+        var (schemas, code) = await CliSchemaInputs.ReadAsync(
+            [File_("broken.graphql", "type Query { ship(: Ship }")], stderr, Plugins);
+
+        Assert.Null(schemas);
+        Assert.Equal(2, code);
+        Assert.Contains("broken.graphql", stderr.ToString(), StringComparison.Ordinal);
+        Assert.Contains("Not GraphQL SDL", stderr.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_Kind_The_Command_Does_Not_Use_Is_Refused_Rather_Than_Accepted_And_Ignored()
+    {
+        // `list` and `describe` are gRPC-only; taking SDL there and doing
+        // nothing with it would let a pipeline believe it had been used.
+        using var stderr = new StringWriter();
+        var (schemas, code) = await CliSchemaInputs.ReadAsync(
+            [File_("harbor.graphql", HarborSdl)], stderr, Plugins,
+            CliSchemaInputs.Taken.Only(SchemaUploadStore.ProtoSetKind));
+
+        Assert.Null(schemas);
+        Assert.Equal(2, code);
+        Assert.Contains("does not use GraphQL SDL", stderr.ToString(), StringComparison.Ordinal);
+        Assert.Contains("It takes: gRPC descriptor set", stderr.ToString(), StringComparison.Ordinal);
+        Assert.DoesNotContain("OpenAPI", stderr.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task What_A_Plugin_Reads_Is_Listed_Through_It_Once_The_Scope_Is_Open()
+    {
+        using var stderr = new StringWriter();
+        var (schemas, _) = await CliSchemaInputs.ReadAsync(
+            [File_("harbor.graphql", HarborSdl), File_("lights.yaml", LightsAsyncApi)], stderr, Plugins);
+
+        using (SchemaUploadStore.EnterExplicit(schemas!))
+        {
+            var listed = UploadedSchemaImports.GetServices(Plugins).Select(s => s.Source + ":" + s.Name).ToList();
+            Assert.Contains("graphql:Query", listed);
+            Assert.Contains("asyncapi:lightTurnOn", listed);
+        }
     }
 
     // ---- reading ----
@@ -84,9 +255,9 @@ public sealed class CliSchemaInputsTests : IDisposable
     {
         using var stderr = new StringWriter();
 
-        Assert.Null((await CliSchemaInputs.ReadAsync(null, stderr)).Schemas);
-        Assert.Null((await CliSchemaInputs.ReadAsync([], stderr)).Schemas);
-        Assert.Equal(0, (await CliSchemaInputs.ReadAsync([], stderr)).ExitCode);
+        Assert.Null((await CliSchemaInputs.ReadAsync(null, stderr, Plugins)).Schemas);
+        Assert.Null((await CliSchemaInputs.ReadAsync([], stderr, Plugins)).Schemas);
+        Assert.Equal(0, (await CliSchemaInputs.ReadAsync([], stderr, Plugins)).ExitCode);
         Assert.Empty(stderr.ToString());
     }
 
@@ -95,7 +266,7 @@ public sealed class CliSchemaInputsTests : IDisposable
     {
         using var stderr = new StringWriter();
         var (schemas, code) = await CliSchemaInputs.ReadAsync(
-            [File_("petstore.json", """{"openapi":"3.0.0"}""")], stderr);
+            [File_("petstore.json", """{"openapi":"3.0.0"}""")], stderr, Plugins);
 
         Assert.Equal(0, code);
         var one = Assert.Single(schemas!);
@@ -109,13 +280,13 @@ public sealed class CliSchemaInputsTests : IDisposable
     {
         using var stderr = new StringWriter();
         var (schemas, _) = await CliSchemaInputs.ReadAsync(
-            [File_("a.json"), File_("b.yaml", "openapi: 3.0.0")], stderr);
+            [File_("a.json"), File_("b.yaml", "openapi: 3.0.0")], stderr, Plugins);
 
         Assert.Equal(["a.json", "b.yaml"], schemas!.Select(s => s.SourceName));
     }
 
     [Theory]
-    [InlineData("notes.txt", "expected a .proto")]
+    [InlineData("notes.txt", "It takes: ")]
     [InlineData("missing.json", "")]
     public async Task A_Path_That_Cannot_Be_Used_Names_Itself_And_Stops_The_Command(
         string name, string expectedFragment)
@@ -124,7 +295,7 @@ public sealed class CliSchemaInputsTests : IDisposable
         using var stderr = new StringWriter();
         var path = name == "notes.txt" ? File_(name, "hello") : Path.Combine(_dir, name);
 
-        var (schemas, code) = await CliSchemaInputs.ReadAsync([path], stderr);
+        var (schemas, code) = await CliSchemaInputs.ReadAsync([path], stderr, Plugins);
 
         Assert.Null(schemas);
         Assert.Equal(2, code);
@@ -138,7 +309,7 @@ public sealed class CliSchemaInputsTests : IDisposable
     {
         // Silently finding nothing is the failure this whole ticket was about.
         using var stderr = new StringWriter();
-        var (schemas, code) = await CliSchemaInputs.ReadAsync([File_("empty.json", "   ")], stderr);
+        var (schemas, code) = await CliSchemaInputs.ReadAsync([File_("empty.json", "   ")], stderr, Plugins);
 
         Assert.Null(schemas);
         Assert.Equal(2, code);
@@ -154,7 +325,7 @@ public sealed class CliSchemaInputsTests : IDisposable
         // ignored.
         using var stderr = new StringWriter();
         var (schemas, code) = await CliSchemaInputs.ReadAsync(
-            [File_("a.proto", "syntax = \"proto3\";")], stderr, allowProto: false);
+            [File_("a.proto", "syntax = \"proto3\";")], stderr, Plugins, CliSchemaInputs.Taken.ForCalls);
 
         Assert.Null(schemas);
         Assert.Equal(2, code);
@@ -217,7 +388,7 @@ public sealed class CliSchemaInputsTests : IDisposable
         using var stderr = new StringWriter();
         var bytes = DescriptorSet();
         var (schemas, code) = await CliSchemaInputs.ReadAsync(
-            [Binary("api.protoset", bytes)], stderr, allowProto: false);
+            [Binary("api.protoset", bytes)], stderr, Plugins, CliSchemaInputs.Taken.ForCalls);
 
         Assert.Equal(0, code);
         var one = Assert.Single(schemas!);
@@ -231,7 +402,7 @@ public sealed class CliSchemaInputsTests : IDisposable
     {
         using var stderr = new StringWriter();
         var (schemas, code) = await CliSchemaInputs.ReadAsync(
-            [File_("api.pb", "syntax = \"proto3\";")], stderr, descriptorSets: Reader);
+            [File_("api.pb", "syntax = \"proto3\";")], stderr, Plugins);
 
         Assert.Null(schemas);
         Assert.Equal(2, code);
@@ -246,7 +417,7 @@ public sealed class CliSchemaInputsTests : IDisposable
         // that uses an imported type, far from the protoc line that caused it.
         using var stderr = new StringWriter();
         var (schemas, code) = await CliSchemaInputs.ReadAsync(
-            [Binary("api.protoset", DescriptorSet("shop/money.proto"))], stderr, descriptorSets: Reader);
+            [Binary("api.protoset", DescriptorSet("shop/money.proto"))], stderr, Plugins);
 
         Assert.Null(schemas);
         Assert.Equal(2, code);
@@ -254,21 +425,19 @@ public sealed class CliSchemaInputsTests : IDisposable
         Assert.Contains("--include_imports", stderr.ToString(), StringComparison.Ordinal);
     }
 
-    // The gRPC plugin, as the tool passes it: what reads a set before the run.
-    private static readonly IBowireUploadedSchemaReader Reader =
-        new Kuestenlogik.Bowire.Protocol.Grpc.BowireGrpcProtocol();
-
     [Fact]
-    public async Task Without_A_Reader_A_Descriptor_Set_Is_Passed_On_Unread()
+    public async Task Without_Its_Plugin_A_Descriptor_Set_Is_Not_Something_The_Command_Reads()
     {
-        // A host with no gRPC plugin has nothing to read the set with, and
-        // nothing that would use it either: the bytes go through as given.
+        // A host with no gRPC plugin has nothing that would use the set.
+        // Passing the bytes on unread, as this did before the kinds came
+        // from the plugins, accepted a file and did nothing with it.
         using var stderr = new StringWriter();
         var (schemas, code) = await CliSchemaInputs.ReadAsync(
-            [File_("api.pb", "not a set")], stderr);
+            [Binary("api.pb", DescriptorSet())], stderr, Only());
 
-        Assert.Equal(0, code);
-        Assert.Equal(SchemaUploadStore.ProtoSetKind, Assert.Single(schemas!).Kind);
+        Assert.Null(schemas);
+        Assert.Equal(2, code);
+        Assert.Contains("api.pb", stderr.ToString(), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -276,11 +445,12 @@ public sealed class CliSchemaInputsTests : IDisposable
     {
         using var stderr = new StringWriter();
         var (schemas, code) = await CliSchemaInputs.ReadAsync(
-            [File_("petstore.json", "{\"openapi\":\"3.0.0\"}")], stderr, allowOpenApi: false);
+            [File_("petstore.json", "{\"openapi\":\"3.0.0\"}")], stderr, Plugins, CliSchemaInputs.Taken.Only(SchemaUploadStore.ProtoSetKind));
 
         Assert.Null(schemas);
         Assert.Equal(2, code);
         Assert.Contains("petstore.json", stderr.ToString(), StringComparison.Ordinal);
+        Assert.Contains("does not use OpenAPI", stderr.ToString(), StringComparison.Ordinal);
         Assert.Contains("descriptor set", stderr.ToString(), StringComparison.Ordinal);
     }
 
@@ -298,7 +468,7 @@ public sealed class CliSchemaInputsTests : IDisposable
     {
         using var stderr = new StringWriter();
         var (schemas, code) = await CliSchemaInputs.ReadAsync(
-            [File_("a.proto", "syntax = \"proto3\";")], stderr);
+            [File_("a.proto", "syntax = \"proto3\";")], stderr, Plugins);
 
         Assert.Equal(0, code);
         Assert.Equal(SchemaUploadStore.ProtoKind, Assert.Single(schemas!).Kind);
@@ -320,7 +490,7 @@ public sealed class CliSchemaInputsTests : IDisposable
         // scope in the method that goes on to do the work.
         using var stderr = new StringWriter();
         var (schemas, _) = await CliSchemaInputs.ReadAsync(
-            [File_("petstore.json", """{"openapi":"3.0.0"}""")], stderr);
+            [File_("petstore.json", """{"openapi":"3.0.0"}""")], stderr, Plugins);
 
         Assert.NotNull(schemas);
         Assert.Empty(SchemaUploadStore.GetAll(SchemaUploadStore.OpenApiKind));
@@ -331,6 +501,74 @@ public sealed class CliSchemaInputsTests : IDisposable
         }
 
         Assert.Empty(SchemaUploadStore.GetAll(SchemaUploadStore.OpenApiKind));
+    }
+
+    // ---- through the commands ----
+
+    private static async Task<(int Code, string Stdout, string Stderr)> BowireAsync(params string[] args)
+    {
+        using var stdout = new StringWriter();
+        using var stderr = new StringWriter();
+        var code = await BowireCli.RunAsync(
+            args, new ConfigurationBuilder().Build(), TestPluginLoaders.None(), stdout, stderr,
+            TestContext.Current.CancellationToken);
+        return (code, stdout.ToString(), stderr.ToString());
+    }
+
+    [Fact]
+    public async Task A_Call_With_A_Schema_Of_Another_Plugin_Goes_To_That_Plugin()
+    {
+        // No --protocol: SDL says the call is GraphQL. Before, the call
+        // stayed on the gRPC path and failed to connect as gRPC.
+        var sent = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var builder = WebApplication.CreateSlimBuilder();
+        builder.WebHost.UseUrls(LoopbackHost.AnyPort);
+        await using var app = builder.Build();
+        app.MapPost("/graphql", async (HttpContext ctx) =>
+        {
+            using var reader = new StreamReader(ctx.Request.Body);
+            var body = await reader.ReadToEndAsync(ctx.RequestAborted);
+            ctx.Response.ContentType = "application/json";
+            // Refuses introspection the way a production server does.
+            if (body.Contains("__schema", StringComparison.Ordinal))
+            {
+                await ctx.Response.WriteAsync("""{ "errors": [{ "message": "introspection disabled" }] }""");
+                return;
+            }
+            // Every plugin probes the URL before the call; the operation is
+            // the one request that names the field.
+            if (body.Contains("ship", StringComparison.Ordinal)) sent.TrySetResult(body);
+            await ctx.Response.WriteAsync("""{ "data": { "ship": { "id": "101", "name": "Aurora", "flag": "DE" } } }""");
+        });
+        await app.StartAsync(TestContext.Current.CancellationToken);
+        var url = LoopbackHost.BaseAddress(app.Services) + "/graphql";
+
+        var (code, stdout, stderr) = await BowireAsync(
+            "call", "Query/ship", "--url", url, "--schema", File_("harbor.graphql", HarborSdl),
+            "-d", """{"id":"101"}""");
+
+        Assert.True(code == 0, stderr);
+        Assert.Contains("Aurora", stdout, StringComparison.Ordinal);
+        var operation = await sent.Task.WaitAsync(TestContext.Current.CancellationToken);
+        // Built from the file: the declared variable type and the fields of
+        // the return type, where no schema gives String and __typename.
+        Assert.Contains("$id: ID!", operation, StringComparison.Ordinal);
+        Assert.Contains("flag", operation, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("list")]
+    [InlineData("describe")]
+    public async Task The_Grpc_Only_Commands_Refuse_A_Schema_They_Would_Not_Use(string command)
+    {
+        string[] args = command == "describe"
+            ? ["describe", "Query", "--schema", File_("harbor.graphql", HarborSdl)]
+            : ["list", "--schema", File_("harbor.graphql", HarborSdl)];
+
+        var (code, _, stderr) = await BowireAsync(args);
+
+        Assert.Equal(2, code);
+        Assert.Contains("does not use GraphQL SDL", stderr, StringComparison.Ordinal);
     }
 
     // ---- the grammar ----

@@ -140,6 +140,15 @@ internal static partial class SchemaUploadStore
         return new RestoreExplicit(previous);
     }
 
+    /// <summary>
+    /// The kinds of the documents the caller handed over; empty when no
+    /// scope from <see cref="EnterExplicit"/> is open.
+    /// </summary>
+    internal static IReadOnlyList<string> ExplicitKinds()
+        => s_explicit.Value is { } given
+            ? [.. given.Select(s => s.Kind).Distinct(StringComparer.OrdinalIgnoreCase)]
+            : [];
+
     private sealed class RestoreExplicit(IReadOnlyList<ExplicitSchema>? previous) : IDisposable
     {
         private bool _done;

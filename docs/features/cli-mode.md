@@ -17,6 +17,7 @@ bowire discover --url https://api.example.com -v      # verbose: list methods to
 bowire discover --url rest@https://api.example.com    # pin one plugin, skip the rest
 bowire discover --schema ./openapi.yaml               # from a file, no server needed
 bowire discover --schema ./routeguide.proto --schema ./openapi.yaml
+bowire discover --schema ./schema.graphql             # any format a loaded plugin imports
 ```
 
 Probes the URL with **every** loaded protocol plugin in parallel and prints
@@ -46,11 +47,18 @@ for the outcome vocabulary.
 
 #### Discovering from a file
 
-`--schema` points discovery at a document on disk — a compiled gRPC descriptor
-set (`.protoset`, `.pb`, `.desc`, `.binpb`), a `.proto`, or an OpenAPI /
-Swagger `.json` / `.yaml` / `.yml`. Repeatable, and it works with or without a
-`--url`: a schema and a live server merge, with the server winning a name
-clash because it describes itself more currently than a saved file does.
+`--schema` points discovery at a document on disk, in any format a loaded
+plugin imports: a compiled gRPC descriptor set (`.protoset`, `.pb`, `.desc`,
+`.binpb`), a `.proto`, GraphQL SDL, a WSDL, an OData EDMX model, or an OpenAPI,
+AsyncAPI or OpenRPC document. [Schema files](schema-files.md) lists the formats
+and their extensions. Repeatable, and it works with or without a `--url`.
+
+A file's format is decided the way the workbench's upload decides it: by
+extension where one format declares it, by content where several share it
+(`.json`, `.yaml`) or none does (a WSDL saved as `.xml`). A file no loaded
+plugin reads is refused with the list of what the command takes, and a file
+its plugin cannot read is refused with the reader's reason. Both exit with
+code 2 before anything is probed.
 
 The workbench's equivalent is dropping the file on the sidebar, which
 **stores** it under your identity — you come back to it tomorrow. The CLI
@@ -64,14 +72,32 @@ given — `bowire discover` reads what the calling identity has uploaded
 without a workspace selected. A schema uploaded *into a workspace* is not
 read; name the file.
 
-`list`, `describe`, `call` and `test` take `--schema` too, for a gRPC server
-without reflection: name the compiled descriptor set
+`call` and `test` take `--schema` too, in the same formats. For a gRPC server
+without reflection, name the compiled descriptor set
 (`protoc --descriptor_set_out=api.protoset --include_imports`). The set answers
-for the services it describes; any other service still asks its server. A
-`.proto` gives names without message layouts, so `--schema x.proto` is refused
-by these four with a pointer at the descriptor set rather than accepted and
-quietly ignored. A set that is not one, or that was compiled without its
-imports, stops the command with exit code 2 and the reason.
+for the services it describes; any other service still asks its server. A set
+that is not one, or that was compiled without its imports, stops the command
+with exit code 2 and the reason.
+
+A schema of another protocol sends `call` to the plugin that reads it, with
+no `--protocol` needed:
+
+```bash
+bowire call Query/ship --url https://api.example.com/graphql \
+    --schema ./schema.graphql -d '{"id":"101"}'
+```
+
+The operation is built from the file, as it is in the workbench: typed
+variables and the fields of the return type for GraphQL, SOAPAction and
+namespace for SOAP, the key of an entity set for OData.
+
+`list` and `describe` are gRPC commands and take descriptor sets only. Any
+other format is refused there rather than accepted and not used; `discover`
+lists it.
+
+A `.proto` gives names without message layouts, so `--schema x.proto` is
+refused by `list`, `describe`, `call` and `test` with a pointer at the
+descriptor set.
 
 `--grpc-descriptor-set <path>` remains on `discover`, `list`, `describe` and
 `call`. It hands one set to the gRPC plugin as the only source for that run:
@@ -80,8 +106,8 @@ nothing is asked of the server, whatever service is named.
 `bowire scan` takes `--schema` as well, for descriptor sets only. There the
 set names what the gRPC checks may call and is never treated as evidence of
 what the server exposes: the reflection check still asks the server with
-nothing in hand. A `.proto` or an OpenAPI document is refused, since the scan
-would do nothing with it.
+nothing in hand. Every other format is refused, since the scan would do
+nothing with it.
 
 ### List Services
 
@@ -341,7 +367,7 @@ cannot quietly stop being runnable.
 | `--offline` | `send http` | Print the request, variables resolved, and send nothing |
 | `--negotiate`, `--ntlm`, `--digest` | `call`, `send http` | Challenge-response authentication |
 | `-plaintext` | all | Use plaintext (no TLS) |
-| `--schema <path>` | `discover`, `list`, `describe`, `call`, `test`, `scan` | A schema file to read instead of, or as well as, asking the server: a compiled gRPC descriptor set (`.protoset` / `.pb` / `.desc` / `.binpb`), an OpenAPI `.json` / `.yaml` / `.yml`, or for `discover` a `.proto` (names only). Repeatable. `scan` takes descriptor sets only. |
+| `--schema <path>` | `discover`, `list`, `describe`, `call`, `test`, `scan` | A schema file to read instead of, or as well as, asking the server, in any format a loaded plugin imports (see [Schema files](schema-files.md)): a compiled gRPC descriptor set, GraphQL SDL, a WSDL, an OData EDMX model, an OpenAPI, AsyncAPI or OpenRPC document, or for `discover` a `.proto` (names only). Repeatable. `list`, `describe` and `scan` take descriptor sets only. |
 | `--grpc-descriptor-set <path>` | `discover`, `list`, `describe`, `call` | Compiled protobuf `FileDescriptorSet` used as the only descriptor source for the run; the server is not asked. |
 | `-v, --verbose` | `list`, `discover` | Verbose output |
 

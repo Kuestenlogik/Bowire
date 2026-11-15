@@ -25,29 +25,40 @@ namespace Kuestenlogik.Bowire.Cli;
 /// Here, in the CLI contract assembly, because more than one assembly
 /// contributes commands that take <c>--schema</c>: the tool's own, and
 /// <c>bowire scan</c> from the scanner (#1016). One reader means one answer
-/// to what an extension is and one wording for a refusal.
+/// to what a file is and one wording for a refusal.
 /// </para>
 /// </remarks>
 internal static class CliSchemaInputs
 {
-    /// <summary>What a path's extension says it is.</summary>
+    /// <summary>Which schema kinds a command takes.</summary>
     /// <remarks>
-    /// The same split the workbench's drop zone makes: <c>.proto</c> is
-    /// protobuf source, <c>.protoset</c> / <c>.pb</c> / <c>.desc</c> /
-    /// <c>.binpb</c> its compiled descriptor set (#991), JSON and YAML are
-    /// OpenAPI. Anything else is refused rather than guessed — the drop zone
-    /// can fall back to "probably OpenAPI" because a person is watching the
-    /// result, and a pipeline is not.
+    /// A statement per command rather than a flag per kind: the kinds come
+    /// from the loaded plugins (#994, #1018), so a command says which of
+    /// them it would use, and a file of any other kind is refused instead of
+    /// accepted and quietly ignored.
     /// </remarks>
-    internal static string? KindOf(string path)
+    internal sealed class Taken
     {
-        return Path.GetExtension(path).ToUpperInvariant() switch
-        {
-            ".PROTO" => SchemaUploadStore.ProtoKind,
-            ".PROTOSET" or ".PB" or ".DESC" or ".BINPB" => SchemaUploadStore.ProtoSetKind,
-            ".JSON" or ".YAML" or ".YML" => SchemaUploadStore.OpenApiKind,
-            _ => null,
-        };
+        private readonly Func<string, bool> _takes;
+
+        private Taken(Func<string, bool> takes) => _takes = takes;
+
+        /// <summary>Every kind a loaded plugin imports: <c>discover</c>.</summary>
+        internal static Taken Any { get; } = new(_ => true);
+
+        /// <summary>
+        /// Every kind but a <c>.proto</c>: the commands that marshal
+        /// messages. A .proto gives names and no layouts, so it cannot serve
+        /// them; its compiled descriptor set can.
+        /// </summary>
+        internal static Taken ForCalls { get; } =
+            new(kind => !string.Equals(kind, SchemaUploadStore.ProtoKind, StringComparison.OrdinalIgnoreCase));
+
+        /// <summary>The named kinds and no others.</summary>
+        internal static Taken Only(params string[] kinds)
+            => new(kind => kinds.Contains(kind, StringComparer.OrdinalIgnoreCase));
+
+        internal bool Takes(string kind) => _takes(kind);
     }
 
     /// <summary>
@@ -60,64 +71,51 @@ internal static class CliSchemaInputs
     /// <c>--schema</c> was given and the command reads what is stored.
     /// </returns>
     /// <remarks>
+    /// <para>
+    /// A file's kind is decided the way the workbench's upload decides it
+    /// (<see cref="UploadedSchemaImports.Route"/>): by extension where one
+    /// kind declares it, by content where several share it or none does. So
+    /// the command line takes what the drop zone takes, and an AsyncAPI
+    /// document under <c>.yaml</c> is not handed to the REST plugin as
+    /// OpenAPI. A file of a plugin's kind is read once here, so that one
+    /// which does not read stops the command with its path instead of
+    /// surfacing mid-run.
+    /// </para>
+    /// <para>
     /// This reads and hands back; it deliberately does not open the scope
     /// itself. <see cref="SchemaUploadStore.EnterExplicit"/> sets an
     /// <see cref="AsyncLocal{T}"/>, and a value set inside an <c>async</c>
     /// method is discarded when that method returns — the caller gets the
     /// disposable and none of the effect. It has to be opened in the method
     /// that goes on to do the work, which is the command's own action.
+    /// </para>
     /// </remarks>
     /// <param name="paths">The <c>--schema</c> values, in the order given.</param>
     /// <param name="stderr">Where a path that cannot be used is reported.</param>
-    /// <param name="allowProto">
-    /// False for the commands that marshal messages. A .proto gives names
-    /// and no layouts, so it cannot serve them; its compiled descriptor set
-    /// can, and they take that through this same option. Refused with a
-    /// pointer rather than accepted and quietly ignored.
-    /// </param>
-    /// <param name="allowOpenApi">
-    /// False for a command that reads no OpenAPI document. Refused for the
-    /// same reason: a file the command accepts and then does nothing with
-    /// lets a pipeline believe it was used.
-    /// </param>
-    /// <param name="descriptorSets">
-    /// Reads a descriptor set once, so that a file which is not one, or one
-    /// compiled without its imports, stops the command with its path instead
-    /// of surfacing as a marshalling error mid-run. The gRPC plugin is the
-    /// reader; with none available the bytes are passed on unread.
-    /// </param>
+    /// <param name="registry">The loaded plugins: they declare and read the kinds.</param>
+    /// <param name="taken">The kinds this command uses; every kind when null.</param>
     internal static async Task<(IReadOnlyList<SchemaUploadStore.ExplicitSchema>? Schemas, int ExitCode)> ReadAsync(
-        string[]? paths, TextWriter stderr, bool allowProto = true, bool allowOpenApi = true,
-        IBowireUploadedSchemaReader? descriptorSets = null)
+        string[]? paths, TextWriter stderr, BowireProtocolRegistry registry, Taken? taken = null)
     {
         ArgumentNullException.ThrowIfNull(stderr);
+        ArgumentNullException.ThrowIfNull(registry);
         if (paths is null || paths.Length == 0) return (null, 0);
+        taken ??= Taken.Any;
+
+        // Only the kinds this command takes are named in a refusal: naming
+        // one it would refuse a moment later sends the caller round twice.
+        var takenHere = UploadedSchemaImports.Describe(
+            [.. UploadedSchemaImports.Kinds(registry).Where(k => taken.Takes(k.Kind.Kind))]);
 
         var schemas = new List<SchemaUploadStore.ExplicitSchema>();
         foreach (var path in paths)
         {
             if (string.IsNullOrWhiteSpace(path)) continue;
 
-            var kind = KindOf(path);
-            if (kind is null)
-            {
-                // Only the kinds this command takes: naming one it would
-                // refuse a moment later sends the caller round twice.
-                var expected = (allowProto ? "a .proto, " : "")
-                    + "a descriptor set (.protoset, .pb, .desc, .binpb)"
-                    + (allowOpenApi ? ", or an OpenAPI .json, .yaml or .yml" : "");
-                await stderr.WriteLineAsync($"bowire: --schema {path}: expected {expected}.")
-                    .ConfigureAwait(false);
-                return (null, 2);
-            }
-
-            var isDescriptorSet = string.Equals(kind, SchemaUploadStore.ProtoSetKind, StringComparison.Ordinal);
-            string content = "";
-            byte[]? bytes = null;
+            byte[] bytes;
             try
             {
-                if (isDescriptorSet) bytes = await File.ReadAllBytesAsync(path).ConfigureAwait(false);
-                else content = await File.ReadAllTextAsync(path).ConfigureAwait(false);
+                bytes = await File.ReadAllBytesAsync(path).ConfigureAwait(false);
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException)
             {
@@ -127,49 +125,58 @@ internal static class CliSchemaInputs
                 return (null, 2);
             }
 
-            if (bytes is { Length: 0 } || (bytes is null && string.IsNullOrWhiteSpace(content)))
+            if (Array.TrueForAll(bytes, b => b is (byte)' ' or (byte)'\t' or (byte)'\r' or (byte)'\n'))
             {
                 // An empty file discovers nothing, and silently finding
-                // nothing is the outcome this whole ticket was about.
+                // nothing is the outcome --schema exists to prevent.
                 await stderr.WriteLineAsync($"bowire: --schema {path}: the file is empty.").ConfigureAwait(false);
                 return (null, 2);
             }
 
-            if (!allowProto && string.Equals(kind, SchemaUploadStore.ProtoKind, StringComparison.Ordinal))
+            var fileName = Path.GetFileName(path);
+            var importable = UploadedSchemaImports.Route(registry, fileName, bytes, out _);
+            if (importable is null)
             {
                 await stderr.WriteLineAsync(
-                    $"bowire: --schema {path}: a .proto gives names only, and this command marshals messages. "
-                    + "Name its compiled descriptor set instead: --schema api.protoset "
-                    + "(`protoc --descriptor_set_out=api.protoset --include_imports`). "
-                    + "`bowire discover --schema` reads a .proto directly.")
+                    $"bowire: --schema {path}: not a schema this command reads. It takes: {takenHere}.")
                     .ConfigureAwait(false);
                 return (null, 2);
             }
 
-            if (!allowOpenApi && string.Equals(kind, SchemaUploadStore.OpenApiKind, StringComparison.Ordinal))
+            var kind = importable.Kind.Kind;
+            if (!taken.Takes(kind))
             {
-                await stderr.WriteLineAsync(
-                    $"bowire: --schema {path}: this command reads no OpenAPI document; it probes the target itself. "
-                    + "It takes a gRPC descriptor set (.protoset, .pb, .desc, .binpb).")
-                    .ConfigureAwait(false);
+                var reason = string.Equals(kind, SchemaUploadStore.ProtoKind, StringComparison.OrdinalIgnoreCase)
+                    ? "a .proto gives names only, and this command marshals messages. "
+                        + "Name its compiled descriptor set instead: --schema api.protoset "
+                        + "(`protoc --descriptor_set_out=api.protoset --include_imports`). "
+                        + "`bowire discover --schema` reads a .proto directly."
+                    : $"this command does not use {importable.Kind.DisplayName}. It takes: {takenHere}.";
+                await stderr.WriteLineAsync($"bowire: --schema {path}: {reason}").ConfigureAwait(false);
                 return (null, 2);
             }
 
-            if (bytes is not null && descriptorSets is not null)
+            if (importable.Reader is { } reader)
             {
                 try
                 {
-                    descriptorSets.ReadUploadedSchema(kind, bytes, Path.GetFileName(path));
+                    reader.ReadUploadedSchema(kind, bytes, fileName);
                 }
                 catch (FormatException ex)
                 {
                     await stderr.WriteLineAsync($"bowire: --schema {path}: {ex.Message}").ConfigureAwait(false);
                     return (null, 2);
                 }
+
+                schemas.Add(new SchemaUploadStore.ExplicitSchema(kind, "", fileName, bytes));
+                continue;
             }
 
+            // Core's two kinds are read as text; the reader honours a byte
+            // order mark, which the bytes still carry.
+            using var text = new StreamReader(new MemoryStream(bytes), detectEncodingFromByteOrderMarks: true);
             schemas.Add(new SchemaUploadStore.ExplicitSchema(
-                kind, content, Path.GetFileName(path), bytes));
+                kind, await text.ReadToEndAsync().ConfigureAwait(false), fileName));
         }
 
         return schemas.Count == 0 ? (null, 0) : (schemas, 0);

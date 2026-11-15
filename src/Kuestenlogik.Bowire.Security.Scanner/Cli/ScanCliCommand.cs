@@ -126,10 +126,7 @@ public sealed class ScanCliCommand : IBowireCliCommand
             // that quietly ran without it.
             var (schemas, schemaCode) = await CliSchemaInputs.ReadAsync(
                 pr.GetValue(schemaOpt), pr.InvocationConfiguration.Error,
-                allowProto: false, allowOpenApi: false,
-                descriptorSets: BowireProtocolRegistry.Discover().Protocols
-                    .OfType<IBowireUploadedSchemaReader>()
-                    .FirstOrDefault(r => r.UploadedSchemaKinds.Any(k => k.Kind == "protoset"))).ConfigureAwait(false);
+                BowireProtocolRegistry.Discover(), CliSchemaInputs.Taken.Only("protoset")).ConfigureAwait(false);
             if (schemaCode != 0) return schemaCode;
 
             var options = new ScanOptions

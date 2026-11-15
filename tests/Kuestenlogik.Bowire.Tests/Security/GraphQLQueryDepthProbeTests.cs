@@ -172,9 +172,14 @@ public sealed class GraphQLQueryDepthProbeTests
     // Routes InvokeAsync by the method-label arg the probe passes for each stage
     // (__typename / introspectionProbe / deepQuery) to a per-label InvokeResult,
     // records whether the deepQuery stage ran, and captures its raw request body.
-    private sealed class DepthFakeProtocol : IBowireProtocol
+    //
+    // The id is a constructor argument so that the type has no parameterless
+    // constructor: BowireProtocolRegistry.Discover() instantiates every
+    // IBowireProtocol that has one, and this would then answer as the GraphQL
+    // plugin in any test of this assembly that discovers the real ones.
+    private sealed class DepthFakeProtocol(string id = "graphql") : IBowireProtocol
     {
-        public string Id => "graphql";
+        public string Id => id;
         public string Name => "graphql";
         public string IconSvg => "";
 

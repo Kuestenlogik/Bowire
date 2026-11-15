@@ -377,9 +377,15 @@ internal static class CliHandler
         // Anything the gRPC invoker can't express routes through the
         // plugin registry. `--protocol grpc` without --stream stays on the
         // fast path: it means the same thing, it just says so out loud.
+        // So does a call that named a schema file of another plugin's kind
+        // with --schema (#1018): GraphQL SDL says the call is GraphQL as
+        // plainly as --protocol would, and the plugin that lists the service
+        // from the file is the one that is asked to invoke it.
         var wantsRegistry = cli.Stream
             || (cli.Protocol is not null
-                && !string.Equals(cli.Protocol, "grpc", StringComparison.OrdinalIgnoreCase));
+                && !string.Equals(cli.Protocol, "grpc", StringComparison.OrdinalIgnoreCase))
+            || SchemaUploadStore.ExplicitKinds().Any(kind =>
+                !string.Equals(kind, SchemaUploadStore.ProtoSetKind, StringComparison.OrdinalIgnoreCase));
         if (wantsRegistry)
             return await InvokeViaRegistryAsync(cli, io, serviceName, methodName, messages, metadata, ct);
 

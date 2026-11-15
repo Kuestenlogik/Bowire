@@ -65,7 +65,14 @@ curl -X POST "http://localhost:5001/bowire/api/schema/upload?name=harbor.graphql
 
 `GET /api/schema/kinds` lists what the host imports. `DELETE /api/schema/upload` removes every uploaded file of the workspace.
 
-`bowire discover`, `list`, `describe`, `call` and `test` take a descriptor set, a `.proto` or an OpenAPI document with `--schema` instead of reading the workspace; see [CLI mode](cli-mode.md).
+`bowire discover`, `call` and `test` take a file of any of these formats with `--schema` instead of reading the workspace, and decide its format the same way:
+
+```bash
+bowire discover --schema ./harbor.graphql
+bowire call Query/ship --url https://api.example.com/graphql --schema ./harbor.graphql -d '{"id":"101"}'
+```
+
+`list`, `describe` and `scan` are gRPC commands and take descriptor sets only; see [CLI mode](cli-mode.md).
 
 ## For plugin authors
 
