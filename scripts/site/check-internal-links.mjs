@@ -13,7 +13,7 @@
 // (.github/workflows/docs.yml); they count as present:
 //   * docs/protocols/<slug>.md of a protocol plugin — fetched from the plugin's
 //     own repository (scripts/docs/fetch-plugin-docs.mjs). The plugins are the
-//     `Bowire.Protocol.*` products of scripts/ci/release-plan.mjs.
+//     `Bowire.Protocol.*` products of scripts/ci/release.config.json.
 //   * /bootcamp/ — the Bowire.Bootcamp site, mounted into the combined build.
 //   * docs/api/Kuestenlogik.*.html — the API reference DocFX generates.
 //   * /feed.xml and /sitemap.xml — written by the jekyll-feed and

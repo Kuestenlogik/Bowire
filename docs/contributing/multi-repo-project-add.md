@@ -7,7 +7,7 @@ title: Linking sibling Bowire.* repos to the Project board
 
 The [Bowire Project board](https://github.com/orgs/Kuestenlogik/projects/2) is org-level and can hold issues from any repo in the `Kuestenlogik` org. Every issue of every product repository belongs on it — `Bowire.Bootcamp`, `Bowire.Templates`, `Bowire.VulnDb`, `Bowire.Protocol.*`, `Bowire.Sdk.*`, …; there is no opt-in label (the `roadmap` label was retired on 2026-09-30).
 
-**Nothing has to be wired for that.** The daily [field guard](../../.github/workflows/roadmap-field-guard.yml) sweeps every repository listed in [`release-plan.mjs`](../../scripts/ci/release-plan.mjs) (`PRODUCT_OF_REPO`) and adds any open issue that is missing, with its repository's product. A new product repository is one line in that map. The options below only make the add immediate instead of daily.
+**Nothing has to be wired for that.** The daily [field guard](../../.github/workflows/roadmap-field-guard.yml) sweeps every repository listed in [`release.config.json`](../../scripts/ci/release.config.json) (`products`, read by `release-plan.mjs` as `PRODUCT_OF_REPO`) and adds any open issue that is missing, with its repository's product. A new product repository is one line in that map. The options below only make the add immediate instead of daily.
 
 ## Option A — Project workflow "Auto-add to project"
 

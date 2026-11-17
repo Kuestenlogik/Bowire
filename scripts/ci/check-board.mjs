@@ -14,9 +14,9 @@
 // Usage: node scripts/ci/check-board.mjs [--add] [--markdown]
 // Exit 1 when anything is off; the list goes to stdout (Markdown with --markdown).
 import { execFileSync } from 'node:child_process';
-import { PRODUCT_OF_REPO, isFailureTracker, productOfRepo, problems, view } from './release-plan.mjs';
+import { CONFIG, PRODUCT_OF_REPO, isIgnored, productOfRepo, problems, view } from './release-plan.mjs';
 
-const ORG = 'Kuestenlogik', PROJECT = 2;
+const { owner: ORG, project: PROJECT } = CONFIG.board;
 const gh = (...a) => execFileSync('gh', a, { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
 const markdown = process.argv.includes('--markdown');
 const add = process.argv.includes('--add');
@@ -56,7 +56,7 @@ for (const name of Object.keys(PRODUCT_OF_REPO)) {
   try { open = JSON.parse(gh('issue', 'list', '-R', `${ORG}/${name}`, '--state', 'open', '--limit', '1000', '--json', 'number,title,url,milestone,body')); }
   catch { continue; }   // a repository without issues enabled
   for (const i of open) {
-    if (onBoard.has(`${ORG}/${name}#${i.number}`) || isFailureTracker(i.body)) continue;
+    if (onBoard.has(`${ORG}/${name}#${i.number}`) || isIgnored(i.body)) continue;
     if (!add) { offenders.push({ ref: `${name}#${i.number}`, url: i.url, title: i.title, why: ['not on the board'] }); continue; }
     putOnBoard(name, i);
     // Now on the board with its product; release and milestone are for triage.

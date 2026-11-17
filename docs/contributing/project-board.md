@@ -50,10 +50,10 @@ Concrete values live on the [Project board's field configuration](https://github
 
 Since 2026-09-29 a release is **planned**, not reconstructed after the fact.
 
-- **Every ticket names three things, and they agree:** its `Product` (the artifact that ships it), the `Release` it is planned for in that product's count (`2.8`), and the milestone of that release (`v2.8 — <theme>`). The rules are code: [`scripts/ci/release-plan.mjs`](../../scripts/ci/release-plan.mjs).
+- **Every ticket names three things, and they agree:** its `Product` (the artifact that ships it), the `Release` it is planned for in that product's count (`2.8`), and the milestone of that release (`v2.8 — <theme>`). The rules are code: [`scripts/ci/release-plan.mjs`](../../scripts/ci/release-plan.mjs), with this repository's values (the products, the board) in [`scripts/ci/release.config.json`](../../scripts/ci/release.config.json).
 - **Each product counts on its own.** Bowire is at 2.x, the VS Code extension at 1.x, Protocol.Akka at 1.1, the SDKs at 0.x. A plugin repository's milestones are that plugin's releases (`v1.2 — …` in Bowire.Protocol.Akka); the main repository's milestones are Bowire's, plus a prefixed milestone for a second product it ships (`VS Code v1.1 — …`). The site and the docs have no version of their own and travel with Bowire.
 - **One release, one milestone.** The theme is in its title and becomes the heading of the release notes' story; the due date is on it. A ticket that does not fit the release it would land in moves to the next one.
-- **A release is due** when its milestone has nothing open. `node scripts/ci/release.mjs status` shows each open release of the repository's product, lowest first, and says which one is due.
+- **Releases ship in order.** A release is **due** when its milestone has nothing open, something of it is done, and every release of the product before it has shipped; a later release with nothing open waits. `node scripts/ci/release.mjs status` shows each open release of the repository's product, lowest first, and says which one is due or what the lowest one still waits for.
 - **Patch releases** are planned like any other: a milestone `v2.8.1 — <theme>` and `Release = 2.8.1` on the tickets it fixes.
 - **Triage** is the one milestone without a version: `Triage — <theme>`, at most one per repository. It holds tickets that arrive by themselves until someone decides whether they become work. Bowire.VulnDb's `nvd-sync` files every new CVE ticket into `Triage — new CVEs`. A ticket there names its `Product` and no `Release`. Triage ends by closing the ticket or by moving it into the milestone of a release, with its `Release` set; a `Release` while still in triage is a disagreement the guard reports. The roadmap lists triage tickets under *Backlog*.
 
@@ -66,12 +66,14 @@ The daily [field guard](../../.github/workflows/roadmap-field-guard.yml) runs [`
 ```bash
 node scripts/ci/release.mjs status          # which release is due
 node scripts/ci/release.mjs notes 2.8.0     # drafts docs/release-notes/v2.8.0.md from the plan
-# write the notes: a title that says what this release is, prose per ### section
+# write the notes: a title that says what this release is, prose per ### section; delete the draft comment
 node scripts/ci/release.mjs cut 2.8.0 --dry-run
 node scripts/ci/release.mjs cut 2.8.0
 ```
 
-`notes` lists the tickets planned for the release and done, grouped by area, and the ones that closed since the last tag without a plan. `cut` refuses while a planned ticket is open or the notes are still a draft; it gives the unplanned-but-shipped tickets this release, tags with a message naming the milestone, and closes the milestone. The [release pipeline](../../.github/workflows/release.yml) publishes on the tag with the notes as the body, and [`check-release-plan.mjs`](../../scripts/ci/check-release-plan.mjs) checks the board against the tag once more.
+`notes` lists the tickets planned for the release and done, grouped by area, and the ones that closed since the last release without a plan, and a section *Upgrading* that links `docs/release-notes/upgrading-from-<previous tag>.md` where that file exists; `--out <file>` drafts elsewhere, `--highlights` prints the grouped list alone. `cut` fetches first, then refuses while `HEAD` is not `origin/main`, while a pull request is open (Dependabot's included), while a release of the product before it is open, while a ticket planned for it or an issue in its milestone is open, and while the notes (`docs/release-notes/v<version>.md`, or `upcoming.md`) are missing, uncommitted or still a draft; it gives the unplanned-but-shipped tickets this release and, in this repository, its milestone, tags with a message naming the milestone, and closes the milestone. The [release pipeline](../../.github/workflows/release.yml) publishes on the tag with the notes as the body, and [`check-release-plan.mjs`](../../scripts/ci/check-release-plan.mjs) checks the board against the tag once more.
+
+**The release tool is shared.** `scripts/ci/release.mjs`, `release-plan.mjs`, `release-board.mjs`, `release-body.mjs`, `resolve-milestone.mjs`, `check-release-plan.mjs` and the test `tests/Kuestenlogik.Bowire.Tests/ci/release-tool.test.mjs` are the same files in Terracle, Modelzero, Surgewave and Wakeforge (Kuestenlogik/Modelzero#146): change them in every repository at once, never here alone. What is Bowire's own is in `scripts/ci/release.config.json`.
 
 ## Labels
 

@@ -1,0 +1,35 @@
+{
+  "$comment": "The values of this repository for the shared release tool (scripts/ci/release*.mjs, resolve-milestone.mjs, check-release-plan.mjs), whose files are the same in every Kuestenlogik repository that carries it. Every key is required; release-plan.mjs validateConfig says what each holds.",
+  "repository": "Kuestenlogik/Bowire",
+  "board": { "owner": "Kuestenlogik", "project": 2, "release": "Release", "product": "Product", "area": "Area", "status": "Status" },
+  "products": {
+    "Bowire": "Bowire",
+    "Bowire.Protocol.Akka": "Protocol.Akka",
+    "Bowire.Protocol.Amqp": "Protocol.Amqp",
+    "Bowire.Protocol.Dis": "Protocol.Dis",
+    "Bowire.Protocol.Kafka": "Protocol.Kafka",
+    "Bowire.Protocol.Surgewave": "Protocol.Surgewave",
+    "Bowire.Protocol.TacticalApi": "Protocol.TacticalApi",
+    "Bowire.Protocol.Udp": "Protocol.Udp",
+    "Bowire.Sdk.Go": "Sdk.Go",
+    "Bowire.Sdk.Node": "Sdk.Node",
+    "Bowire.Sdk.Python": "Sdk.Python",
+    "Bowire.Sdk.Rust": "Sdk.Rust",
+    "Bowire.Templates": "Templates",
+    "Bowire.Samples": "Samples",
+    "Bowire.Bootcamp": "Bootcamp",
+    "bowire-action": "bowire-action",
+    "Bowire.VulnDb": "VulnDb",
+    "Surgewave.Diagnostics.Bowire": "Surgewave.Diagnostics"
+  },
+  "milestonePrefixes": ["VS Code"],
+  "required": [],
+  "ignore": ["<!-- publish-failure:"],
+  "version": null,
+  "notes": {
+    "also": ["docs/release-notes/upcoming.md"],
+    "upgrading": "Coming from {previous}: see [Upgrading from {previous}]({file})."
+  },
+  "pipeline": ".github/workflows/release.yml",
+  "afterCut": "set version in docs/release-notes/upcoming.md to the next release, and plan it: every ticket names Product, Release and milestone."
+}
