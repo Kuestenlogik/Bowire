@@ -49,6 +49,6 @@ Documentation:
   - DocumentLabel: Documentation
     DocumentUrl: https://bowire.io/docs/
   - DocumentLabel: Quick Start
-    DocumentUrl: https://bowire.io/docs/quickstart.html
+    DocumentUrl: https://bowire.io/docs/setup/standalone.html
 ManifestType: defaultLocale
 ManifestVersion: 1.10.0
