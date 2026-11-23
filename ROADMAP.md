@@ -207,6 +207,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 |---|---|---|---|---|
 | [999](https://github.com/Kuestenlogik/Bowire/issues/999) | Bowire | [roadmap-release-field publish is failing](#issue-kuestenlogik-bowire-999) | ⬜ Backlog |  |
 | [1017](https://github.com/Kuestenlogik/Bowire/issues/1017) | Bowire | [bowire discover refuses the grpcweb@ hint that list and the workbench accept](#issue-kuestenlogik-bowire-1017) | ⬜ Backlog |  |
+| [1047](https://github.com/Kuestenlogik/Bowire/issues/1047) | Bowire | [Winget: notice when a submitted PR is refused by validation](#issue-kuestenlogik-bowire-1047) | ⬜ Backlog |  |
 
 ## Details
 
@@ -737,6 +738,10 @@ Owner rule from 2026-10-14: warnings are fixed at the cause instead of suppresse
 #### <a id="issue-kuestenlogik-bowire-1017"></a>⬜ Backlog · [#1017](https://github.com/Kuestenlogik/Bowire/issues/1017) bowire discover refuses the grpcweb@ hint that list and the workbench accept
 
 `bowire discover` refuses the `grpcweb@` hint, while `bowire list` and the workbench accept it. [[more]](https://github.com/Kuestenlogik/Bowire/issues/1017)
+
+#### <a id="issue-kuestenlogik-bowire-1047"></a>⬜ Backlog · [#1047](https://github.com/Kuestenlogik/Bowire/issues/1047) Winget: notice when a submitted PR is refused by validation
+
+The winget workflow ends when `wingetcreate submit` has opened the PR against microsoft/winget-pkgs, and reports green. Whether Microsoft's validation accepts that PR is never looked at. [[more]](https://github.com/Kuestenlogik/Bowire/issues/1047)
 
 ---
 
