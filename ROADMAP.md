@@ -745,4 +745,4 @@ The winget workflow ends when `wingetcreate submit` has opened the PR against mi
 
 ---
 
-*Generated 2026-11-24 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
+*Generated 2026-11-25 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
