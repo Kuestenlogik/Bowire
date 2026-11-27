@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**23/41 done** · 2 in progress · 16 backlog
+**23/42 done** · 2 in progress · 17 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -34,6 +34,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [1054](https://github.com/Kuestenlogik/Bowire/issues/1054) | Bowire | [Every workbench start logs a 404 for /api/project when there is no project manifest](#issue-kuestenlogik-bowire-1054) | ⬜ Backlog | `area:workbench` |
 | [1056](https://github.com/Kuestenlogik/Bowire/issues/1056) | Bowire | [Importer fixtures from collections built and exported by hand in Insomnia and Bruno](#issue-kuestenlogik-bowire-1056) | ⬜ Backlog | `area:workbench` |
 | [1060](https://github.com/Kuestenlogik/Bowire/issues/1060) | Bowire | [The workbench's collection runner skips the scripts a saved item carries](#issue-kuestenlogik-bowire-1060) | ⬜ Backlog | `area:workbench` |
+| [1062](https://github.com/Kuestenlogik/Bowire/issues/1062) | Bowire | [No script runs in the workbench: the CSP refuses the eval scripts.js needs](#issue-kuestenlogik-bowire-1062) | ⬜ Backlog | `area:workbench` |
 | [673](https://github.com/Kuestenlogik/Bowire/issues/673) | Bowire | [Export requests as .http — Copy as .http, and bowire export http for a whole collection](#issue-kuestenlogik-bowire-673) | ✅ Done | `area:workbench` |
 | [939](https://github.com/Kuestenlogik/Bowire/issues/939) | Bowire | [Import Yaak exports](#issue-kuestenlogik-bowire-939) | ✅ Done |  |
 | [946](https://github.com/Kuestenlogik/Bowire/issues/946) | Bowire | [Data sets for flow runs and bowire test --workspace](#issue-kuestenlogik-bowire-946) | ✅ Done |  |
@@ -340,6 +341,12 @@ Follow-up of #940, split out because it needs the apps installed and clicked thr
 > `area:workbench`
 
 Follow-up of #672. [[more]](https://github.com/Kuestenlogik/Bowire/issues/1060)
+
+#### <a id="issue-kuestenlogik-bowire-1062"></a>⬜ Backlog · [#1062](https://github.com/Kuestenlogik/Bowire/issues/1062) No script runs in the workbench: the CSP refuses the eval scripts.js needs
+
+> `area:workbench`
+
+No pre-request or post-response script runs in the workbench. Every script fails before its first statement with: [[more]](https://github.com/Kuestenlogik/Bowire/issues/1062)
 
 #### <a id="issue-kuestenlogik-bowire-673"></a>✅ Done · [#673](https://github.com/Kuestenlogik/Bowire/issues/673) Export requests as .http — Copy as .http, and bowire export http for a whole collection
 
