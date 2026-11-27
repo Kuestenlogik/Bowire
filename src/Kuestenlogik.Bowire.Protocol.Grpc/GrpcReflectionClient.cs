@@ -119,12 +119,10 @@ internal sealed class GrpcReflectionClient : IGrpcDescriptorSource
         {
             using var call = _client.ServerReflectionInfo(cancellationToken: ct);
 
-            await call.RequestStream.WriteAsync(new ServerReflectionRequest
+            await SendAsync(call, new ServerReflectionRequest
             {
                 ListServices = ""
             }, ct);
-
-            await call.RequestStream.CompleteAsync();
 
             await foreach (var response in call.ResponseStream.ReadAllAsync(ct))
             {
@@ -157,12 +155,10 @@ internal sealed class GrpcReflectionClient : IGrpcDescriptorSource
     {
         using var call = _client.ServerReflectionInfo(cancellationToken: ct);
 
-        await call.RequestStream.WriteAsync(new ServerReflectionRequest
+        await SendAsync(call, new ServerReflectionRequest
         {
             FileContainingSymbol = serviceName
         }, ct);
-
-        await call.RequestStream.CompleteAsync();
 
         var fileDescriptors = new List<FileDescriptorProto>();
 
@@ -187,12 +183,10 @@ internal sealed class GrpcReflectionClient : IGrpcDescriptorSource
     {
         using var call = _client.ServerReflectionInfo(cancellationToken: ct);
 
-        await call.RequestStream.WriteAsync(new ServerReflectionRequest
+        await SendAsync(call, new ServerReflectionRequest
         {
             FileContainingSymbol = serviceName
         }, ct);
-
-        await call.RequestStream.CompleteAsync();
 
         var fileDescriptors = new List<FileDescriptorProto>();
 
@@ -207,6 +201,37 @@ internal sealed class GrpcReflectionClient : IGrpcDescriptorSource
         }
 
         return fileDescriptors;
+    }
+
+    /// <summary>
+    /// Writes the one request a reflection call carries and closes the
+    /// request stream.
+    /// </summary>
+    /// <remarks>
+    /// A server without the reflection service answers <c>Unimplemented</c>
+    /// at once, and it can do so while the request is still being written.
+    /// The write then fails with <c>Cancelled</c> from the HTTP/2 stream the
+    /// server already closed, and that status says nothing true: the caller
+    /// cancelled nothing, and the server's answer was a clear one. So when
+    /// sending fails and the caller has not cancelled, the response is read:
+    /// it carries the server's own status, and that is what is thrown. Seen
+    /// in 2 of 400 calls under load.
+    /// </remarks>
+    internal static async Task SendAsync(
+        AsyncDuplexStreamingCall<ServerReflectionRequest, ServerReflectionResponse> call,
+        ServerReflectionRequest request, CancellationToken ct)
+    {
+        try
+        {
+            await call.RequestStream.WriteAsync(request, ct);
+            await call.RequestStream.CompleteAsync();
+        }
+        catch (RpcException ex) when (ex.StatusCode == StatusCode.Cancelled && !ct.IsCancellationRequested)
+        {
+            // Throws the server's status when it has answered with one.
+            await call.ResponseStream.MoveNext(ct);
+            throw;
+        }
     }
 
     /// <summary>
@@ -252,12 +277,10 @@ internal sealed class GrpcReflectionClient : IGrpcDescriptorSource
     {
         using var call = _client.ServerReflectionInfo(cancellationToken: ct);
 
-        await call.RequestStream.WriteAsync(new ServerReflectionRequest
+        await SendAsync(call, new ServerReflectionRequest
         {
             FileByFilename = fileName
         }, ct);
-
-        await call.RequestStream.CompleteAsync();
 
         var result = new List<FileDescriptorProto>();
         await foreach (var response in call.ResponseStream.ReadAllAsync(ct))
