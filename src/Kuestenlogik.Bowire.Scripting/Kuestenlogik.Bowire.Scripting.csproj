@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Runs Bowire's pre-request and post-response scripts outside the browser (bowire test and other server-side calls), with the same ctx surface and the same outcome as the workbench, in a sandboxed JavaScript engine (Jint). Optional: the bowire tool ships it through Bundle.Workbench; an embedded host that does not reference it gains no JavaScript engine.</Description>
+    <PackageId>Kuestenlogik.Bowire.Scripting</PackageId>
+    <PackageTags>bowire;scripting;javascript;jint;developer-tools</PackageTags>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.Tests" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+    <PackageReference Include="Jint" />
+  </ItemGroup>
+  <!-- The workbench's own script runtime, the file the browser runs, so the
+       server side cannot drift from it (#672). -->
+  <ItemGroup>
+    <EmbeddedResource Include="..\Kuestenlogik.Bowire\wwwroot\js\scripts.js"
+                      LogicalName="Kuestenlogik.Bowire.Scripting.scripts.js"
+                      Link="wwwroot\scripts.js" />
+  </ItemGroup>
+</Project>

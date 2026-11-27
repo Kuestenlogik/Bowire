@@ -195,6 +195,11 @@
             var editor = focusedSurfaceEl().querySelector('.bowire-editor') || focusedSurfaceEl().querySelector('.bowire-message-editor');
             bodyTemplate = editor ? editor.value || '{}' : '{}';
         }
+        // #672 — the method's pre/post-request scripts travel with the
+        // collection, so `bowire test` sends the request this tab sends.
+        var scripts = (typeof getMethodScripts === 'function')
+            ? getMethodScripts(service.name, method.name)
+            : { preScript: '', postScript: '' };
         return {
             name: service.name + '/' + method.name + ' tests',
             serverUrl: primaryUrl,
@@ -206,6 +211,8 @@
                     method: method.name,
                     messages: [bodyTemplate],
                     metadata: {},
+                    preScript: scripts.preScript || undefined,
+                    postScript: scripts.postScript || undefined,
                     assert: tests.map(function (assertion) {
                         return {
                             path: assertion.path,
@@ -240,6 +247,11 @@
             };
         });
         setTestsFor(service.name, method.name, imported);
+        // #672 — and its scripts, when the collection carries them.
+        if (typeof setMethodScript === 'function') {
+            if (typeof firstTest.preScript === 'string') setMethodScript(service.name, method.name, 'preScript', firstTest.preScript);
+            if (typeof firstTest.postScript === 'string') setMethodScript(service.name, method.name, 'postScript', firstTest.postScript);
+        }
         lastAssertionResults = {};
     }
 

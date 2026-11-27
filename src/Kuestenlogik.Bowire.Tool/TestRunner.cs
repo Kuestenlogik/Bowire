@@ -227,6 +227,7 @@ internal static class TestRunner
             AiSeed = cli.AiSeed,
             Secrets = cli.Secrets,
             SecretFile = cli.SecretFile,
+            Configuration = cli.Configuration,
             // #946 — a workspace run with a data set runs every flow once
             // per row.
             DataPath = cli.DataPath,
@@ -376,6 +377,8 @@ internal static class TestRunner
         // Initialize the protocol registry once and reuse for every test
         var registry = BowireProtocolRegistry.Discover();
         var discovery = new RunDiscovery();
+        // #672 — the pre/post-request scripts of the run, one captured bag for all its tests.
+        var scripts = TestScripts.FromConfiguration(cli.Configuration);
         // Don't initialize protocols with a service provider — standalone mode
 
         await stdout.WriteLineAsync().ConfigureAwait(false);
@@ -422,7 +425,7 @@ internal static class TestRunner
                     await cli.Progress($"step {step}/{totalSteps} · {test.Name ?? (test.Service + "/" + test.Method)}"
                         + (dataSet is null ? "" : $" (iteration {row.Iteration}/{rows.Count})")).ConfigureAwait(false);
                 }
-                var result = await RunTestAsync(test, collection, registry, discovery, iterationVars);
+                var result = await RunTestAsync(test, collection, registry, discovery, scripts, iterationVars);
                 if (dataSet is not null)
                 {
                     result.Iteration = row.Iteration;
@@ -561,7 +564,7 @@ internal static class TestRunner
 
     private static async Task<TestResult> RunTestAsync(
         TestEntry test, TestCollection collection, BowireProtocolRegistry registry, RunDiscovery discovery,
-        IReadOnlyDictionary<string, string> iterationVars)
+        TestScripts scripts, IReadOnlyDictionary<string, string> iterationVars)
     {
         var result = new TestResult
         {
@@ -612,6 +615,31 @@ internal static class TestRunner
             return result;
         }
 
+        // #672 — the pre-request script sees the request as it would go out
+        // and may change it, exactly as in the workbench.
+        var scriptRequest = new Kuestenlogik.Bowire.Scripting.BowireScriptRequest
+        {
+            Url = serverUrl,
+            Method = test.Method,
+            Body = messages.Count > 0 ? messages[0] : "{}",
+            Headers = metadata is null ? new Dictionary<string, string>(StringComparer.Ordinal) : new Dictionary<string, string>(metadata, StringComparer.Ordinal),
+        };
+        var sharedEnvironment = collection.Environment ??= new Dictionary<string, string>(StringComparer.Ordinal);
+        if (!string.IsNullOrWhiteSpace(test.PreScript))
+        {
+            var failure = scripts.RunPre(test.PreScript, protocol.Id, test.Service, test.Method, scriptRequest, environment, result.ScriptLog);
+            WriteBack(environment, sharedEnvironment, test.Environment);
+            if (failure is not null)
+            {
+                result.Error = failure;
+                return result;
+            }
+            serverUrl = AppendQuery(scriptRequest.Url, scriptRequest.Query);
+            if (messages.Count > 0) messages[0] = scriptRequest.Body;
+            else messages.Add(scriptRequest.Body);
+            metadata = new Dictionary<string, string>(scriptRequest.Headers, StringComparer.Ordinal);
+        }
+
         // Invoke
         var sw = Stopwatch.StartNew();
         InvokeResult? invocation;
@@ -638,6 +666,29 @@ internal static class TestRunner
         {
             try { parsed = JsonNode.Parse(invocation.Response); }
             catch { /* ignore — assertions on a non-JSON body fall through to string compare */ }
+        }
+
+        // #672 — the post-response script reads the response; a failure in
+        // it fails the test like a failed assertion.
+        if (!string.IsNullOrWhiteSpace(test.PostScript))
+        {
+            var response = new Kuestenlogik.Bowire.Scripting.BowireScriptResponse
+            {
+                Body = invocation.Response,
+                Status = invocation.Status,
+                DurationMs = result.DurationMs,
+                Headers = invocation.Metadata ?? new Dictionary<string, string>(),
+            };
+            var failure = scripts.RunPost(test.PostScript, protocol.Id, test.Service, test.Method, scriptRequest, response, environment, result.ScriptLog);
+            WriteBack(environment, sharedEnvironment, test.Environment);
+            result.Assertions.Add(new AssertionResult
+            {
+                Path = "post-response script",
+                Op = "passes",
+                Expected = "",
+                Passed = failure is null,
+                Error = failure,
+            });
         }
 
         if (test.Assert is not null)
@@ -888,11 +939,33 @@ internal static class TestRunner
 
     // ---- Console output ----
 
+    // ctx.env.set in a script: the test's own environment is the one it
+    // ran with; the collection's carries the value on to the tests after it,
+    // unless the test overrides that key itself.
+    private static void WriteBack(Dictionary<string, string> environment, Dictionary<string, string> shared, Dictionary<string, string>? own)
+    {
+        foreach (var (key, value) in environment)
+        {
+            if (own is not null && own.ContainsKey(key)) continue;
+            shared[key] = value;
+        }
+    }
+
+    private static string AppendQuery(string url, IDictionary<string, string> query)
+    {
+        if (query.Count == 0) return url;
+        var pairs = query.Select(p => Uri.EscapeDataString(p.Key) + "=" + Uri.EscapeDataString(p.Value));
+        return url + (url.Contains('?', StringComparison.Ordinal) ? "&" : "?") + string.Join("&", pairs);
+    }
+
     private static async Task PrintTestResultAsync(TextWriter stdout, TestResult result, SecretRedactor redactor)
     {
         var useColor = UseColor(stdout);
         var status = result.Error is null && result.Assertions.All(a => a.Passed) ? Green("PASS", useColor) : Red("FAIL", useColor);
         await stdout.WriteLineAsync($"  {status}  {Bold(redactor.Redact(result.Name), useColor)}   {Dim(result.Status + " · " + result.DurationMs + "ms", useColor)}").ConfigureAwait(false);
+
+        foreach (var line in result.ScriptLog)
+            await stdout.WriteLineAsync($"        {Dim("log: " + redactor.Redact(line), useColor)}").ConfigureAwait(false);
 
         if (result.Error is not null)
         {
@@ -977,6 +1050,12 @@ internal sealed class TestEntry
     public Dictionary<string, string>? Metadata { get; set; }
     public Dictionary<string, string>? Environment { get; set; }
     public List<Assertion>? Assert { get; set; }
+
+    /// <summary>#672: the script that runs before the call, written against the workbench's ctx.</summary>
+    public string? PreScript { get; set; }
+
+    /// <summary>#672: the script that runs against the response.</summary>
+    public string? PostScript { get; set; }
 }
 
 internal sealed class Assertion
@@ -1016,6 +1095,9 @@ internal sealed class TestResult
     public string? Response { get; set; }
     public string? Error { get; set; }
     public List<AssertionResult> Assertions { get; } = [];
+
+    /// <summary>#672: what the test's scripts wrote with ctx.log.</summary>
+    public List<string> ScriptLog { get; } = [];
 
     /// <summary>#675: the iteration this result belongs to; 0 without a data set.</summary>
     public int Iteration { get; set; }

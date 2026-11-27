@@ -1,0 +1,101 @@
+{
+  "_comment": "One fixture set, two engines (#672): wwwroot-js/script-conformance.test.mjs runs every case through scripts.js in Node, as the browser does; ScriptConformanceTests runs it through Kuestenlogik.Bowire.Scripting. Both must reach the expected outcome. 'errorContains' is for messages the JavaScript engine words itself; 'error' for messages the runtime words.",
+  "cases": [
+    {
+      "name": "a pre-request script signs the request",
+      "phase": "pre",
+      "shape": "rest",
+      "source": "ctx.request.headers.set('X-Sig', ctx.env.get('key') + ':' + ctx.request.method); ctx.request.query.set('ts', '1700000000'); ctx.request.url = ctx.request.url + '/v2'; ctx.request.body = JSON.stringify({ wrapped: JSON.parse(ctx.request.body) });",
+      "request": { "url": "http://api.local/orders", "method": "POST", "body": "{\"id\":7}", "headers": { "Accept": "application/json" }, "query": {} },
+      "env": { "key": "k1" },
+      "expect": {
+        "ok": true,
+        "request": { "url": "http://api.local/orders/v2", "method": "POST", "body": "{\"wrapped\":{\"id\":7}}", "headers": { "Accept": "application/json", "X-Sig": "k1:POST" }, "query": { "ts": "1700000000" } }
+      }
+    },
+    {
+      "name": "env.set and captured values survive the script",
+      "phase": "pre",
+      "shape": "rest",
+      "source": "ctx.env.set('token', 'abc'); ctx.vars.captured.count = (ctx.vars.captured.count || 0) + 1; ctx.log('count', ctx.vars.captured.count, { a: 1 });",
+      "request": { "url": "http://api.local", "method": "GET", "body": "{}", "headers": {}, "query": {} },
+      "env": { "base": "x" },
+      "captured": { "count": 1 },
+      "expect": {
+        "ok": true,
+        "env": { "base": "x", "token": "abc" },
+        "captured": { "count": 2 },
+        "log": ["count 2 {\"a\":1}"]
+      }
+    },
+    {
+      "name": "headers can be deleted and listed",
+      "phase": "pre",
+      "shape": "rest",
+      "source": "ctx.request.headers.delete('X-Drop'); ctx.log(ctx.request.headers.keys().join(','), ctx.request.headers.has('X-Drop'));",
+      "request": { "url": "http://api.local", "method": "GET", "body": "{}", "headers": { "X-Keep": "1", "X-Drop": "2" }, "query": {} },
+      "expect": { "ok": true, "log": ["X-Keep false"], "request": { "headers": { "X-Keep": "1" } } }
+    },
+    {
+      "name": "a failed assertion in a pre-request script stops the call",
+      "phase": "pre",
+      "shape": "rest",
+      "source": "ctx.assert.ok(ctx.env.get('token'), 'a token is needed');",
+      "request": { "url": "http://api.local", "method": "GET", "body": "{}", "headers": {}, "query": {} },
+      "expect": { "ok": false, "assertFail": true, "error": "assert.ok failed: a token is needed" }
+    },
+    {
+      "name": "a script that throws reports the error",
+      "phase": "pre",
+      "shape": "rest",
+      "source": "throw new Error('no signing key');",
+      "request": { "url": "http://api.local", "method": "GET", "body": "{}", "headers": {}, "query": {} },
+      "expect": { "ok": false, "assertFail": false, "error": "no signing key" }
+    },
+    {
+      "name": "a gRPC script sets metadata and a deadline",
+      "phase": "pre",
+      "shape": "grpc",
+      "source": "ctx.metadata.set('authorization', 'Bearer ' + ctx.env.get('token')); ctx.deadline.setSeconds(3.7); ctx.log(ctx.deadline.getSeconds());",
+      "request": { "url": "http://grpc.local", "method": "", "body": "{}", "headers": {}, "query": {} },
+      "env": { "token": "t1" },
+      "expect": { "ok": true, "log": ["3.7"], "request": { "headers": { "authorization": "Bearer t1", "grpc-timeout": "3S" } } }
+    },
+    {
+      "name": "a post-response script reads the response and passes",
+      "phase": "post",
+      "shape": "rest",
+      "source": "var body = ctx.response.json(); ctx.assert.equal(ctx.response.status, 'OK'); ctx.assert.deepEqual(body.tags, ['a', 'b']); ctx.vars.captured.orderId = body.id; ctx.log(ctx.response.headers['content-type'], ctx.request.url);",
+      "request": { "url": "http://api.local/orders", "method": "GET", "body": "{}", "headers": {}, "query": {} },
+      "response": { "body": "{\"id\":42,\"tags\":[\"a\",\"b\"]}", "status": "OK", "durationMs": 12, "headers": { "content-type": "application/json" } },
+      "expect": { "ok": true, "captured": { "orderId": 42 }, "log": ["application/json http://api.local/orders"] }
+    },
+    {
+      "name": "a failed equality names both values",
+      "phase": "post",
+      "shape": "rest",
+      "source": "ctx.assert.equal(ctx.response.json().id, 43, 'id');",
+      "request": { "url": "http://api.local", "method": "GET", "body": "{}", "headers": {}, "query": {} },
+      "response": { "body": "{\"id\":42}", "status": "OK", "durationMs": 1, "headers": {} },
+      "expect": { "ok": false, "assertFail": true, "error": "assert.equal failed: id (actual=42, expected=43)" }
+    },
+    {
+      "name": "the request is read-only after it was sent",
+      "phase": "post",
+      "shape": "rest",
+      "source": "ctx.request.url = 'http://elsewhere';",
+      "request": { "url": "http://api.local", "method": "GET", "body": "{}", "headers": {}, "query": {} },
+      "response": { "body": "{}", "status": "OK", "durationMs": 1, "headers": {} },
+      "expect": { "ok": false, "assertFail": false, "errorContains": "url" }
+    },
+    {
+      "name": "a script reaches no host API",
+      "phase": "pre",
+      "shape": "rest",
+      "source": "ctx.log(typeof require, typeof process, typeof fetch, typeof XMLHttpRequest);",
+      "request": { "url": "http://api.local", "method": "GET", "body": "{}", "headers": {}, "query": {} },
+      "expect": { "ok": true, "log": ["undefined undefined undefined undefined"] },
+      "serverOnly": true
+    }
+  ]
+}

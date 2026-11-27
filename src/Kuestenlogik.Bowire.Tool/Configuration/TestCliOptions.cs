@@ -29,6 +29,12 @@ internal sealed class TestCliOptions
     public string? CollectionPath { get; set; }
 
     /// <summary>
+    /// #672 — the host's configuration, for the script sandbox's limits
+    /// (<c>Bowire:Scripting:TimeoutMs</c>, <c>MemoryMb</c>, <c>MaxStatements</c>).
+    /// </summary>
+    public Microsoft.Extensions.Configuration.IConfiguration? Configuration { get; set; }
+
+    /// <summary>
     /// Which flow inside a workbench <c>flows.json</c> envelope to run.
     /// Set by the workspace runner, which expands an envelope into one
     /// run per flow; null everywhere else.

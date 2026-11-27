@@ -20,6 +20,11 @@
     <Content Include="Paths\json-path-golden.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <!-- #672 - the script conformance fixtures, run by Scripting/ScriptConformanceTests.cs
+         and wwwroot-js/script-conformance.test.mjs. -->
+    <Content Include="Fixtures\scripts\conformance.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" />

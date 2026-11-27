@@ -62,6 +62,8 @@
       href: mock-server.md
     - name: Test assertions
       href: test-assertions.md
+    - name: Pre-request and post-response scripts
+      href: scripts.md
     - name: Design-time lint
       href: lint.md
     - name: Contract testing

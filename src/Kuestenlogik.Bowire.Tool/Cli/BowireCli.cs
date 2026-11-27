@@ -1705,6 +1705,7 @@ internal static class BowireCli
             var options = new TestCliOptions
             {
                 CollectionPath = pr.GetValue(collectionPath),
+                Configuration = cfg,
                 ReportPath = pr.GetValue(report),
                 JUnitPath = pr.GetValue(junit),
                 SarifPath = pr.GetValue(sarif),

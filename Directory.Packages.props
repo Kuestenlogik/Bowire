@@ -244,6 +244,10 @@
          noise before tokenising. The on-the-wire body stays raw
          markdown so the client renderer keeps full control. -->
     <PackageVersion Include="Markdig" Version="1.6.0" />
+    <!-- Jint runs the workbench's pre/post-request scripts outside the browser
+         (#672), in Kuestenlogik.Bowire.Scripting only: managed, no native
+         dependency, sandboxable. BSD-2-Clause. -->
+    <PackageVersion Include="Jint" Version="4.18.1" />
     <!-- YARP — direct-forwarding mode (IHttpForwarder.SendAsync) for
          the standalone reverse-proxy host shipped by the Interceptor
          package (#323, follow-up to #153 / #307). Replaces the

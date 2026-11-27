@@ -50,6 +50,7 @@
     <Project Path="tests/Kuestenlogik.Bowire.Workspace.Git.Tests/Kuestenlogik.Bowire.Workspace.Git.Tests.csproj" />
     <Project Path="tests/Kuestenlogik.Bowire.SidecarFake/Kuestenlogik.Bowire.SidecarFake.csproj" />
     <Project Path="src/Kuestenlogik.Bowire.Help/Kuestenlogik.Bowire.Help.csproj" />
+    <Project Path="src/Kuestenlogik.Bowire.Scripting/Kuestenlogik.Bowire.Scripting.csproj" />
     <Project Path="src/Kuestenlogik.Bowire.Security.Scanner/Kuestenlogik.Bowire.Security.Scanner.csproj" />
     <Project Path="src/Kuestenlogik.Bowire.Security.Templates.Nuclei/Kuestenlogik.Bowire.Security.Templates.Nuclei.csproj" />
     <Project Path="src/Kuestenlogik.Bowire.Mock/Kuestenlogik.Bowire.Mock.csproj" />

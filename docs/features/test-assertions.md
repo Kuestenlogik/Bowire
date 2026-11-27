@@ -144,6 +144,7 @@ The **Export collection** button in the Tests tab downloads a portable JSON file
       "method": "GetTodo",
       "messages": ["{\"id\": ${todoId}}"],
       "metadata": {},
+      "preScript": "ctx.request.headers.set('X-Trace', ctx.env.get('traceId'));",
       "assert": [
         { "path": "status", "op": "eq", "expected": "OK" },
         { "path": "response.id", "op": "eq", "expected": "1" },
@@ -261,11 +262,9 @@ bowire test api-smoke.json \
 
 The exit code is `0` only when every test passed, so CI gates work the same way they do for any unit-test runner.
 
-## What's missing
+## Scripts
 
-Tracked on the [roadmap](https://github.com/Kuestenlogik/Bowire/blob/main/ROADMAP.md):
-
-- **Pre-request scripts** for dynamic setup (currently use the chaining feature instead)
+A method's pre-request and post-response scripts are exported with its assertions (`preScript`, `postScript`), and `bowire test` runs them the way the workbench does. See [Pre-request and post-response scripts](scripts.md#in-bowire-test).
 
 ## Tips
 

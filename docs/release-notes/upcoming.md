@@ -72,6 +72,10 @@ A Yaak export (*Export Data* in the app, `yaak export` on the CLI) imports throu
 
 The translation layer only substituted `{name}` placeholders, so a sentence whose form depends on a number read wrong at one ("1 certificate(s)") and could not be written at all in a language with more than two forms. Catalogue strings can now use ICU `plural` and `select` blocks: `{count, plural, one {# certificate} other {# certificates}}`. The workbench picks the branch by the locale's own plural rules, `#` is the number, and a string without such a block works as before. The locale-parity test and `bowire docs translations --check` hold every translation to its language's categories, and `--check` now also compares placeholders. The first strings use it: the certificate and descriptor-set counts, the import summary and the remove-all-assertions confirmation.
 
+### Pre-request and post-response scripts run in `bowire test` (#672)
+
+A method's scripts ran in the workbench only: an exported test collection left them out, and `bowire test` had no engine to run them, so CI sent a different request than the one tested. The export now carries `preScript` and `postScript`, and `bowire test` runs them with the same `ctx`: the pre-request script changes the request before it goes out, the post-response script checks the response, `ctx.env.set` and `ctx.vars.captured` carry values through the run, and a failing script fails its test with its message. The server side runs the workbench's own script runtime in a sandboxed JavaScript engine (Jint) with limits on time, memory and statements from `Bowire:Scripting:*`, so a runaway script fails its test instead of the run. The engine is the new optional package `Kuestenlogik.Bowire.Scripting`, which the `bowire` tool ships and core does not reference. See [Pre-request and post-response scripts](../features/scripts.md).
+
 ## Fixes along the way
 
 ### Imported requests run (#1055)

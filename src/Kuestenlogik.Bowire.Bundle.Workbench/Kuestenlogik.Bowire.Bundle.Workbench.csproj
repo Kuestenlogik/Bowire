@@ -59,6 +59,9 @@
     <ProjectReference Include="..\Kuestenlogik.Bowire.Scaffold\Kuestenlogik.Bowire.Scaffold.csproj" />
     <!-- #673 / #674 - import Insomnia, Bruno, .http; export .http (gRPC + JSON transcoding). -->
     <ProjectReference Include="..\Kuestenlogik.Bowire.Interop\Kuestenlogik.Bowire.Interop.csproj" />
+    <!-- #672: pre/post-request scripts in bowire test. Workbench bundle only,
+         never core or Bundle.Minimal: an embedded host gains no JS engine. -->
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Scripting\Kuestenlogik.Bowire.Scripting.csproj" />
     <!-- #995 - the hand-entry forms the protocol plugins describe (gRPC + JSON transcoding). -->
     <ProjectReference Include="..\Kuestenlogik.Bowire.ManualEntry\Kuestenlogik.Bowire.ManualEntry.csproj" />
     <!-- #675 - data sets for data-driven runs (bowire test with a data file, the workbench runner). -->

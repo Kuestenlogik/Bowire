@@ -57,3 +57,43 @@ test('a malformed path fails the assertion with its position', () => {
     assert.equal(r.pass, false);
     assert.match(r.message, /^Invalid JSONPath at position 19:/);
 });
+
+// #672 — the method's scripts travel with an exported test collection, so
+// `bowire test` sends the request the tab sends, and come back on import.
+test('export carries the pre/post scripts, import restores them', () => {
+    const stored = {};
+    const tests = {};
+    const io = compileFragment(
+        '../../../src/Kuestenlogik.Bowire/wwwroot/js/test-assertions.js',
+        [],
+        JSON_PATH_SRC + `
+            var localStorage = { getItem: function () { return null; }, setItem: function () {} };
+            var selectedProtocol = 'rest';
+            var lastAssertionResults = {};
+            function activeState() { return { requestInputMode: 'raw' }; }
+            function focusedSurfaceEl() { return { querySelector: function () { return { value: '{"id":1}' }; } }; }
+            function getPrimaryServerUrl() { return 'http://api.local'; }
+            function getMethodScripts() { return { preScript: 'ctx.log(1)', postScript: '' }; }
+            function setMethodScript(svc, m, field, value) { STORED[svc + '::' + m + '::' + field] = value; }
+            function setTestsFor(svc, m, list) { TESTS[svc + '::' + m] = list; }
+            function nextTestId() { return 't1'; }
+            return { buildTestCollection: buildTestCollection, importTestCollection: importTestCollection };`
+            .replace('STORED', '__stored').replace('TESTS', '__tests'),
+    );
+    globalThis.__stored = stored;
+    globalThis.__tests = tests;
+    const api2 = io();
+    const service = { name: 'Orders', source: 'rest' };
+    const method = { name: 'Create' };
+
+    const exported = api2.buildTestCollection(service, method, [{ path: 'status', op: 'eq', expected: 'OK' }]);
+    assert.equal(exported.tests[0].preScript, 'ctx.log(1)');
+    assert.equal('postScript' in exported.tests[0] && exported.tests[0].postScript !== undefined, false,
+        'an empty script is left out');
+
+    exported.tests[0].postScript = 'ctx.assert.ok(true)';
+    api2.importTestCollection(exported, service, method);
+    assert.equal(stored['Orders::Create::preScript'], 'ctx.log(1)');
+    assert.equal(stored['Orders::Create::postScript'], 'ctx.assert.ok(true)');
+    assert.equal(tests['Orders::Create'].length, 1);
+});
