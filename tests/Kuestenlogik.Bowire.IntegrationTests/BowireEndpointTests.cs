@@ -73,6 +73,54 @@ public sealed class BowireEndpointTests : IClassFixture<BowireTestFixture>
     }
 
     [Fact]
+    public async Task ScriptSrcAllowsWasmButNotEval_SoScriptsRunInTheirSandboxOnly()
+    {
+        // #1062 — the same shape of failure again: the policy refused eval,
+        // scripts.js compiled every pre/post script with new Function, and no
+        // script ran in the workbench, the error visible only in the script
+        // console. Scripts now run in QuickJS compiled to WebAssembly; the
+        // page may compile that module and still may not evaluate a string.
+        var response = await _client.GetAsync(new Uri("/bowire", UriKind.Relative), TestContext.Current.CancellationToken);
+        var policy = response.Headers.GetValues("Content-Security-Policy").Single();
+
+        var scriptSrc = policy.Split(';')
+            .Select(part => part.Trim())
+            .Single(part => part.StartsWith("script-src", StringComparison.Ordinal));
+        var sources = scriptSrc.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+        Assert.Contains("'wasm-unsafe-eval'", sources);
+        Assert.DoesNotContain("'unsafe-eval'", sources);
+    }
+
+    [Theory]
+    [InlineData("quickjs.js", "text/javascript")]
+    [InlineData("quickjs.wasm", "application/wasm")]
+    [InlineData("scripts.js", "text/javascript")]
+    [InlineData("LICENSE", "text/plain")]
+    public async Task TheScriptSandboxFilesAreServed(string name, string contentType)
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var response = await _client.GetAsync(new Uri("/bowire/api/ui/script-sandbox/" + name + "?v=1", UriKind.Relative), ct);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(contentType, response.Content.Headers.ContentType?.MediaType);
+        Assert.True((await response.Content.ReadAsByteArrayAsync(ct)).Length > 0);
+        // Versioned in the URL, so it is cached for as long as it can be.
+        Assert.Contains("immutable", response.Headers.CacheControl?.ToString() ?? "", StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task TheScriptSandboxServesNothingElse()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        foreach (var name in new[] { "bowire.js", "..%2Fbowire.css", "prologue.js" })
+        {
+            var response = await _client.GetAsync(new Uri("/bowire/api/ui/script-sandbox/" + name, UriKind.Relative), ct);
+            Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        }
+    }
+
+    [Fact]
     public async Task WorkerSrcAllowsBlob_SoTheMapWidgetReachesItsLoadEvent()
     {
         // The same failure as ScriptSrcAllowsSelf..., one step further in.

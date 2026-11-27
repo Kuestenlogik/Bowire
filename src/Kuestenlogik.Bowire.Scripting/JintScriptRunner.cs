@@ -36,34 +36,9 @@ public sealed class JintScriptRunner : IBowireScriptRunner
         return Engine.PrepareScript(source, "scripts.js");
     });
 
-    // The bridge between the JSON this runner hands in and the runtime's
-    // own entry points; the result comes back as JSON as well.
-    private const string Bridge = """
-        (function (inputJson) {
-            var input = JSON.parse(inputJson);
-            var api = window.__bowireScripts;
-            var opts = {
-                source: input.source,
-                protocolShape: input.shape,
-                service: input.service,
-                method: input.method,
-                request: input.request,
-                response: input.response,
-                env: input.env,
-                captured: input.captured
-            };
-            var result = input.phase === 'pre' ? api.runPreScript(opts) : api.runPostScript(opts);
-            return JSON.stringify({
-                ok: !!result.ok,
-                error: result.error || null,
-                assertFail: !!result.assertFail,
-                request: input.request,
-                env: input.env,
-                captured: input.captured,
-                log: api.getScriptConsole(input.service, input.method).map(function (e) { return e.message; })
-            });
-        })
-        """;
+    // The runtime's own entry for an engine of its own: JSON in, JSON out.
+    // QuickJS in the workbench calls the same function (#1062).
+    private const string Bridge = "(function (inputJson) { return window.__bowireScripts.runJson(inputJson); })";
 
     public BowireScriptResult RunPreRequest(BowireScriptCall script) => Run(script, "pre");
 
@@ -169,7 +144,7 @@ public sealed class JintScriptRunner : IBowireScriptRunner
         Replace(call.Environment, result["env"] as JsonObject);
         call.CapturedJson = result["captured"]?.ToJsonString() ?? "{}";
 
-        var log = (result["log"] as JsonArray ?? []).Select(e => Text(e) ?? "").ToList();
+        var log = (result["log"] as JsonArray ?? []).Select(e => Text(e?["message"]) ?? "").ToList();
         return new BowireScriptResult(
             result["ok"]?.GetValue<bool>() ?? false,
             Text(result["error"]),

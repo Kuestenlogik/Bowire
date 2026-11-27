@@ -77,6 +77,13 @@ The scripts run in a sandbox: no file system, no process, no network, and limits
 
 The script engine is the package `Kuestenlogik.Bowire.Scripting`, which the `bowire` tool ships. A host that embeds Bowire without it gains no JavaScript engine; there, a test with a script fails, saying the package is not installed, rather than running without its script.
 
-## One runtime, two places
+## Where a script runs
 
-The server side runs the workbench's own script runtime (`wwwroot/js/scripts.js`) in an embedded JavaScript engine, so `ctx` cannot drift between the two. A conformance suite runs the same fixtures through both and holds them to the same outcome.
+A script never runs in the workbench page itself. The page's Content-Security-Policy refuses to evaluate strings (`'unsafe-eval'`), and a script with the page's reach could read everything the workbench holds. Instead:
+
+- **In the workbench**, a script runs in [QuickJS](https://github.com/justjake/quickjs-emscripten) compiled to WebAssembly: a heap of its own, with no DOM, no storage and no network. The page loads it the first time a script runs (about 550 KB, cached after that); the policy allows only compiling that module (`'wasm-unsafe-eval'`). Each script gets a fresh interpreter with the time and memory limits above.
+- **In `bowire test`**, a script runs in Jint, from the `Kuestenlogik.Bowire.Scripting` package.
+
+Both run the same file, the workbench's script runtime (`wwwroot/js/scripts.js`), through the same entry point, so `ctx` cannot drift between them. A conformance suite runs the same fixtures through Node, QuickJS and Jint and holds all three to the same outcome.
+
+The limits for the workbench come from the same `Bowire:Scripting:TimeoutMs` and `Bowire:Scripting:MemoryMb` settings. A host that sets its own policy (`Bowire:ContentSecurityPolicy`, or `BowireOptions.ContentSecurityPolicy` when embedding) has to allow `'wasm-unsafe-eval'` in `script-src` for scripts to run; without it, a script fails and says the sandbox could not be loaded.

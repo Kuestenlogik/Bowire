@@ -42,6 +42,17 @@ public static class BowireResponseHeaders
     /// nonce is actually defending.
     /// </para>
     /// <para>
+    /// <b>Why <c>script-src</c> carries <c>'wasm-unsafe-eval'</c> and not
+    /// <c>'unsafe-eval'</c>.</b> Pre-request and post-response scripts are
+    /// strings, and the page must not evaluate strings: an injected one would
+    /// run with everything the page holds. So a script runs in QuickJS,
+    /// compiled to WebAssembly (#1062), in a heap of its own with no reach
+    /// into the page. Compiling that WebAssembly module is all
+    /// <c>'wasm-unsafe-eval'</c> permits; <c>eval</c> and
+    /// <c>new Function</c> in the page stay refused. Without it no script ran
+    /// at all, and the failure only showed in the script console.
+    /// </para>
+    /// <para>
     /// <b>Why <c>worker-src</c> is spelled out.</b> MapLibre runs its tile
     /// parsing in a web worker that it constructs from a <c>blob:</c> URL it
     /// builds at runtime. <c>worker-src</c> has no default of its own: when it
@@ -72,7 +83,7 @@ public static class BowireResponseHeaders
     /// </remarks>
     public const string DefaultContentSecurityPolicyFormat =
         "default-src 'self'; "
-        + "script-src 'self' 'nonce-{0}'; "
+        + "script-src 'self' 'nonce-{0}' 'wasm-unsafe-eval'; "
         + "worker-src 'self' blob:; "
         + "style-src 'self' 'unsafe-inline'; "
         + "img-src 'self' data: blob: https: http:; "

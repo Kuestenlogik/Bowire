@@ -78,6 +78,8 @@ A method's scripts ran in the workbench only: an exported test collection left t
 
 ## Fixes along the way
 
+- **Scripts run in the workbench again (#1062).** Since the Content-Security-Policy of #625, no pre-request or post-response script ran in the workbench: the runtime compiled each script with `new Function`, the policy refused it, and the error showed only in the script console. Scripts now run in QuickJS compiled to WebAssembly, in a heap of their own with no reach into the page, its storage or the network, under the `Bowire:Scripting:*` time and memory limits. The page's policy gains `'wasm-unsafe-eval'` and still refuses `'unsafe-eval'`. The tab, the collection runner and recording replay all run through it. `Bowire:ContentSecurityPolicy` now reaches the `bowire` tool's workbench as well; a custom policy must allow `'wasm-unsafe-eval'` for scripts to run.
+
 - **The workbench's collection runner runs an item's scripts (#1060).** A request saved to a collection with a pre-request or post-response script ran them from its tab but not as part of its collection. The runner now runs both through the same runtime: the pre-request script changes the request before it goes out (headers, body, query), a failing one stops the item before the call, and a failing post-response script fails the item.
 - **A gRPC server without reflection is reported as such (#1063).** A server that answers `Unimplemented` while the reflection request is still being written made the call fail, now and then, with a bare `Cancelled`. The server's own answer is now read and reported.
 

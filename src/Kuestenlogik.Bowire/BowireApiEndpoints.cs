@@ -171,6 +171,7 @@ internal static class BowireApiEndpoints
             // /api/recording/session/* (Recordings). Their stores stay in
             // core, where the CLI and the replay pipeline reach them.
             .MapBowireCollectionEndpoints(options, basePath)
+            .MapBowireScriptSandboxEndpoints(basePath)
             .MapBowireParallelEndpoints(basePath, options)
             .MapBowirePresetEndpoints(basePath)
             .MapBowireMockConfigEndpoints(basePath, options)

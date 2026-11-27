@@ -852,6 +852,12 @@ internal static class BrowserUiHost
             // first workspace" CTA. Passing it through is what makes the
             // documented flag actually do something.
             options.AutoCreateInitialWorkspace = ui.AutoCreateInitialWorkspace;
+            // #1062 — Bowire:ContentSecurityPolicy reached nothing here: the
+            // option existed for embedded hosts only. Unset keeps the
+            // default; an empty value sends no policy, as documented.
+            if (app.Configuration["Bowire:ContentSecurityPolicy"] is { } csp)
+                options.ContentSecurityPolicy = csp;
+            options.ScriptLimits = Kuestenlogik.Bowire.Scripting.BowireScriptLimits.FromConfiguration(app.Configuration);
         });
 
         if (ui.EnableMcpAdapter)

@@ -1445,6 +1445,12 @@
         // stops the item before the call.
         var preSource = item.preScript && String(item.preScript).trim() ? item.preScript : '';
         var postSource = item.postScript && String(item.postScript).trim() ? item.postScript : '';
+        // #1062 — an item with a script waits for the sandbox once, then runs.
+        if ((preSource || postSource) && !_scriptSandbox && !(opts && opts.__sandboxAwaited)) {
+            return ensureScriptSandbox().then(function () {
+                return runCollectionItem(item, Object.assign({}, opts || {}, { capturedBag: capturedBag, __sandboxAwaited: true }));
+            });
+        }
         var shape = (preSource || postSource) ? detectScriptProtocolShape(item.protocol, item.protocol) : 'rest';
         var scriptRequest = {
             body: substituted[0] || '{}',
@@ -1454,7 +1460,7 @@
             url: sentUrl || ''
         };
         if (preSource) {
-            var pre = runPreRequestScript({
+            var pre = runSandboxedPreScript({
                 source: preSource,
                 protocolShape: shape,
                 service: item.service,
@@ -1504,7 +1510,7 @@
                 if (ok && postSource) {
                     var parsed = json.response;
                     try { parsed = JSON.parse(json.response); } catch (_) { /* not JSON: the script gets the text */ }
-                    var post = runPostResponseScriptTyped({
+                    var post = runSandboxedPostScript({
                         source: postSource,
                         protocolShape: shape,
                         service: item.service,

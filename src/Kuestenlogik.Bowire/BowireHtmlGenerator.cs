@@ -167,6 +167,10 @@ internal static class BowireHtmlGenerator
         // the operator hasn't configured one — the widget's
         // bowireMapBasemapSpec() picks its built-in demotiles default
         // when the field is null/absent, so this is the right empty-state.
+        // #1062 — the script sandbox's limits, as whole numbers the page
+        // hands QuickJS directly.
+        var scriptLimits = string.Create(System.Globalization.CultureInfo.InvariantCulture,
+            $"{{ timeoutMs: {(long)options.ScriptLimits.Timeout.TotalMilliseconds}, memoryBytes: {options.ScriptLimits.MemoryBytes} }}");
         var mapBasemap = string.IsNullOrEmpty(options.MapBasemap)
             ? "null"
             : "\"" + EscapeJs(options.MapBasemap) + "\"";
@@ -246,6 +250,7 @@ internal static class BowireHtmlGenerator
                            // Names the workspace an embedded first run seeds.
                            hostName: "{{hostName}}",
                            mapBasemap: {{mapBasemap}},
+                           scriptLimits: {{scriptLimits}},
                            logoIcon: "{{FaviconDataUrl.Value}}",
                            logoIconMono: "{{FaviconMonoDataUrl.Value}}",
                            logoEmblem: "{{EmblemDataUrl.Value}}",

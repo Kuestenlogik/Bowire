@@ -82,6 +82,25 @@ public sealed record BowireScriptLimits
 
     /// <summary>Statements the script may execute.</summary>
     public int MaxStatements { get; init; } = 10_000_000;
+
+    /// <summary>
+    /// The limits <c>Bowire:Scripting:TimeoutMs</c>, <c>MemoryMb</c> and
+    /// <c>MaxStatements</c> set, the defaults for any left out. One reader for
+    /// <c>bowire test</c> and the workbench (#1062), so a limit means the same
+    /// in both.
+    /// </summary>
+    public static BowireScriptLimits FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration? cfg)
+    {
+        var limits = new BowireScriptLimits();
+        if (cfg is null) return limits;
+        if (int.TryParse(cfg["Bowire:Scripting:TimeoutMs"], System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var ms) && ms > 0)
+            limits = limits with { Timeout = TimeSpan.FromMilliseconds(ms) };
+        if (long.TryParse(cfg["Bowire:Scripting:MemoryMb"], System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var mb) && mb > 0)
+            limits = limits with { MemoryBytes = mb * 1024 * 1024 };
+        if (int.TryParse(cfg["Bowire:Scripting:MaxStatements"], System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var max) && max > 0)
+            limits = limits with { MaxStatements = max };
+        return limits;
+    }
 }
 
 /// <summary>The request a script sees and, before it is sent, may change.</summary>

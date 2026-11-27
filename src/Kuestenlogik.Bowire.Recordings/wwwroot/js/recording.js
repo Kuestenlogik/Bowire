@@ -725,6 +725,17 @@
         // global bag to preserve the existing cross-step capture
         // chain (token captured in step 1, used in step 2).
         var sessionCapturedBag = opts && opts.capturedBag ? opts.capturedBag : null;
+        // #1062 — a step with a script waits for the script sandbox once
+        // (QuickJS; the page itself may not evaluate strings), then runs.
+        var stepHasScript = step.scripts && (
+            (step.scripts.preScript && step.scripts.preScript.trim())
+            || (step.scripts.postScript && step.scripts.postScript.trim()));
+        if (stepHasScript && typeof ensureScriptSandbox === 'function'
+            && !_scriptSandbox && !(opts && opts.__sandboxAwaited)) {
+            return ensureScriptSandbox().then(function () {
+                return replaySingleStep(step, Object.assign({}, opts || {}, { __sandboxAwaited: true }));
+            });
+        }
         // We only know how to replay unary calls server-side via /api/invoke.
         // Streaming and channel methods need their own dispatch and aren't
         // worth the wire complexity for a Postman-parity feature.
@@ -767,7 +778,7 @@
                 ? window.__bowire_captured
                 : (window.__bowire_captured = {}));
         if (step.scripts && step.scripts.preScript && step.scripts.preScript.trim()
-            && typeof runPreRequestScript === 'function') {
+            && typeof runSandboxedPreScript === 'function') {
             var shape = (typeof detectScriptProtocolShape === 'function')
                 ? detectScriptProtocolShape(step.protocol, step.protocol)
                 : 'rest';
@@ -779,7 +790,7 @@
                 url: step.serverUrl || ''
             };
             var envSnapshot = (typeof getMergedVars === 'function') ? getMergedVars() : {};
-            var preResult = runPreRequestScript({
+            var preResult = runSandboxedPreScript({
                 source: step.scripts.preScript,
                 protocolShape: shape,
                 service: step.service,
@@ -832,7 +843,7 @@
                 // replay, matching the original recording's
                 // intent (capture token in step 1, use in step 2).
                 if (step.scripts && step.scripts.postScript && step.scripts.postScript.trim()
-                    && typeof runPostResponseScriptTyped === 'function') {
+                    && typeof runSandboxedPostScript === 'function') {
                     var shape = (typeof detectScriptProtocolShape === 'function')
                         ? detectScriptProtocolShape(step.protocol, step.protocol)
                         : 'rest';
@@ -849,7 +860,7 @@
                             ? window.__bowire_captured
                             : (window.__bowire_captured = {}));
                     var postEnv = (typeof getMergedVars === 'function') ? getMergedVars() : {};
-                    var postResult = runPostResponseScriptTyped({
+                    var postResult = runSandboxedPostScript({
                         source: step.scripts.postScript,
                         protocolShape: shape,
                         service: step.service,

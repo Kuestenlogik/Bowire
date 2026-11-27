@@ -86,6 +86,14 @@ public sealed class BowireOptions
     public string? ContentSecurityPolicy { get; set; }
 
     /// <summary>
+    /// #1062 — the limits a pre-request or post-response script runs under in
+    /// the workbench: time and memory (QuickJS has no statement count; time
+    /// covers a runaway loop there). The <c>bowire</c> tool sets them from
+    /// <c>Bowire:Scripting:*</c>, the same keys <c>bowire test</c> reads.
+    /// </summary>
+    public Kuestenlogik.Bowire.Scripting.BowireScriptLimits ScriptLimits { get; set; } = new();
+
+    /// <summary>
     /// Single discovery URL. Kept for backwards compatibility; when set, the
     /// value is merged into <see cref="ServerUrls"/> automatically.
     /// </summary>

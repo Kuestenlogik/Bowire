@@ -150,6 +150,8 @@
         window.__bowire_captured = window.__bowire_captured || {};
         var capturedBag = window.__bowire_captured;
         if (scripts.preScript && scripts.preScript.trim()) {
+            // #1062 — the sandbox loads once; every later run is synchronous.
+            await ensureScriptSandbox();
             var shape = (typeof detectScriptProtocolShape === 'function')
                 ? detectScriptProtocolShape(selectedService.source, selectedProtocol)
                 : 'rest';
@@ -171,7 +173,7 @@
             // beyond this request.
             var envSnapshot = (typeof getMergedVars === 'function') ? getMergedVars() : {};
             var onEnvSet = writeScriptEnvVar;
-            var preResult = runPreRequestScript({
+            var preResult = runSandboxedPreScript({
                 source: scripts.preScript,
                 protocolShape: shape,
                 service: selectedService.name,
@@ -240,6 +242,15 @@
     function runPostResponseScript(service, method, parsedResponse, extraResponseInfo) {
         var scripts = getMethodScripts(service, method);
         if (!scripts.postScript || !scripts.postScript.trim()) return;
+        // #1062 — a method with only a post-response script may be the first
+        // to need the sandbox; wait for it, then run as before.
+        if (!_scriptSandbox && !(extraResponseInfo && extraResponseInfo.__sandboxAwaited)) {
+            ensureScriptSandbox().then(function () {
+                runPostResponseScript(service, method, parsedResponse,
+                    Object.assign({}, extraResponseInfo || {}, { __sandboxAwaited: true }));
+            });
+            return;
+        }
         var snapshot = window.__bowire_request_snapshot || null;
         var shape = (snapshot && snapshot.protocolShape)
             ? snapshot.protocolShape
@@ -260,7 +271,7 @@
             durationMs: (extraResponseInfo && extraResponseInfo.durationMs) || 0,
             headers: (extraResponseInfo && extraResponseInfo.headers) || {}
         };
-        var postResult = runPostResponseScriptTyped({
+        var postResult = runSandboxedPostScript({
             source: scripts.postScript,
             protocolShape: shape,
             service: service,

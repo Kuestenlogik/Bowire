@@ -96,6 +96,13 @@
     <EmbeddedResource Include="wwwroot\bowire_emblem_colored.svg" LogicalName="Kuestenlogik.Bowire.wwwroot.bowire_emblem_colored.svg" />
     <EmbeddedResource Include="wwwroot\bowire_emblem_white.svg" LogicalName="Kuestenlogik.Bowire.wwwroot.bowire_emblem_white.svg" />
     <EmbeddedResource Include="wwwroot\kuestenlogik_lockup.svg" LogicalName="Kuestenlogik.Bowire.wwwroot.kuestenlogik_lockup.svg" />
+    <!-- #1062 - the script sandbox: QuickJS (scripts/vendor/quickjs.mjs) and the
+         script runtime it runs, as text. Served by BowireScriptSandboxEndpoints
+         and loaded by the workbench on demand, never inlined into the page. -->
+    <EmbeddedResource Include="wwwroot\vendor\quickjs\quickjs.js" LogicalName="Kuestenlogik.Bowire.wwwroot.vendor.quickjs.quickjs.js" />
+    <EmbeddedResource Include="wwwroot\vendor\quickjs\quickjs.wasm" LogicalName="Kuestenlogik.Bowire.wwwroot.vendor.quickjs.quickjs.wasm" />
+    <EmbeddedResource Include="wwwroot\vendor\quickjs\LICENSE" LogicalName="Kuestenlogik.Bowire.wwwroot.vendor.quickjs.LICENSE" />
+    <EmbeddedResource Include="wwwroot\js\scripts.js" LogicalName="Kuestenlogik.Bowire.wwwroot.js.scripts.js" />
     <!--
       Phase 3-R — the MapLibre map widget moved to a separate package
       (Kuestenlogik.Bowire.Map). Its JS bundle + vendor
@@ -218,6 +225,10 @@
          runPostResponseScriptTyped) and render-main.js (which
          renders the Scripts tab + console output). -->
     <BowireJsFragment Include="wwwroot\js\scripts.js" />
+    <!-- #1062 - runs scripts.js's runtime in QuickJS (WebAssembly), never in
+         the page, whose policy refuses eval. After scripts.js: it logs through
+         pushScriptLog. -->
+    <BowireJsFragment Include="wwwroot\js\script-sandbox.js" />
     <BowireJsFragment Include="wwwroot\js\execute.js" />
     <!-- #251 — the Shelf: a holding area for fragments carried between
          surfaces, parallel to the OS clipboard. Must come BEFORE

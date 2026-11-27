@@ -4,8 +4,9 @@
 // Two collapsible script editors per request tab: pre-request runs
 // BEFORE the wire request leaves; post-response runs AFTER the
 // response lands. Both are JavaScript-compatible, evaluated via
-// `new Function(...)` so the host page's CSP applies (no eval'd
-// network call dependency).
+// `new Function(...)` — inside an interpreter of its own, never in the
+// page: QuickJS in the workbench (script-sandbox.js, #1062), Jint on the
+// server (#672). Both enter through runScriptJson below.
 //
 // What's available inside the script is shaped by the request's
 // protocol — REST scripts can mutate `ctx.request.headers` +
@@ -411,6 +412,39 @@
         return warnings;
     }
 
+    // ---- One entry for an engine of its own (#1062, #672) ----
+    // The workbench runs this file in QuickJS (script-sandbox.js), the
+    // server in Jint (Kuestenlogik.Bowire.Scripting): each in a fresh
+    // context of its own, never in the page. Both call this function, so
+    // what goes in and what comes back is one shape for both. The request,
+    // environment and captured values come back as the script left them;
+    // the log is this run's lines only, since the context is new.
+    function runScriptJson(inputJson) {
+        var input = JSON.parse(inputJson);
+        var opts = {
+            source: input.source,
+            protocolShape: input.shape,
+            service: input.service,
+            method: input.method,
+            request: input.request,
+            response: input.response,
+            env: input.env,
+            captured: input.captured
+        };
+        var result = input.phase === 'pre' ? runPreRequestScript(opts) : runPostResponseScriptTyped(opts);
+        return JSON.stringify({
+            ok: !!result.ok,
+            error: result.error || null,
+            assertFail: !!result.assertFail,
+            request: input.request,
+            env: input.env,
+            captured: input.captured,
+            log: getScriptConsole(input.service, input.method).map(function (e) {
+                return { level: e.level, message: e.message };
+            })
+        });
+    }
+
     // ---- Test harness export ----
     // The Node-side test harness loads the fragment outside the IIFE,
     // re-using the same source text. Exporting the runtime under
@@ -422,6 +456,7 @@
                 detectProtocolShape: detectScriptProtocolShape,
                 runPreScript: runPreRequestScript,
                 runPostScript: runPostResponseScriptTyped,
+                runJson: runScriptJson,
                 lintScriptForShape: lintScriptForShape,
                 getScriptConsole: getScriptConsole,
                 pushScriptLog: pushScriptLog,

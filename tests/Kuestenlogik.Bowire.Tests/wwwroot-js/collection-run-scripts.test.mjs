@@ -7,11 +7,17 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { compileFragment, readFragment } from './_load-fragment.mjs';
+import { loadBowireQuickJS, sandboxFetch } from './_quickjs.mjs';
 
+// #1062 — the scripts run where the workbench runs them: in QuickJS, through
+// script-sandbox.js, with scripts.js beside it as in the bundle.
 const SCRIPTS_SRC = readFragment('../../../src/Kuestenlogik.Bowire/wwwroot/js/scripts.js');
+const SANDBOX_SRC = readFragment('../../../src/Kuestenlogik.Bowire/wwwroot/js/script-sandbox.js');
+const BowireQuickJS = loadBowireQuickJS();
 
-const _host = SCRIPTS_SRC + `
-        var config = { prefix: '' };
+const _host = SCRIPTS_SRC + SANDBOX_SRC + `
+        var config = { prefix: '', version: 'test' };
+        var document = {};
         var serverUrls = [];
         function substituteVars(s) { return s; }
         function resolveSourceUrl(u) { return u; }
@@ -19,14 +25,15 @@ const _host = SCRIPTS_SRC + `
         function getMergedVars() { return { apiKey: 'k-1' }; }
         function writeScriptEnvVar(key, value) { __harness.envWrites[key] = value; }
         var localStorage = { getItem: function () { return null; }, setItem: function () {} };
-        var fetch = function (url, init) {
+        var fetch = __sandboxFetch(function (url, init) {
             __harness.calls.push({ url: url, body: JSON.parse(init.body) });
             return Promise.resolve({ ok: true, json: function () { return Promise.resolve(__harness.body); } });
-        };
+        });
         return { run: runCollectionItem };
 `;
 
-const load = compileFragment('../../../src/Kuestenlogik.Bowire/wwwroot/js/collections.js', ['__harness', 'window'], _host);
+const compiled = compileFragment('../../../src/Kuestenlogik.Bowire/wwwroot/js/collections.js', ['__harness', 'window', '__sandboxFetch'], _host);
+const load = (host) => compiled(Object.assign({ __sandboxFetch: sandboxFetch, window: { BowireQuickJS } }, host, { window: { BowireQuickJS } }));
 
 function harness(body) {
     return { calls: [], envWrites: {}, body: body || { status: 'OK', duration_ms: 2, response: '{"id":"o-7","state":"open"}', metadata: {} } };

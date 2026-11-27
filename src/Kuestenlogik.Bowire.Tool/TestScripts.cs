@@ -16,19 +16,7 @@ internal sealed class TestScripts(BowireScriptLimits limits, IBowireScriptRunner
 
     /// <summary>The installed runner, with limits read from <c>Bowire:Scripting:*</c>.</summary>
     public static TestScripts FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration? cfg)
-    {
-        var limits = new BowireScriptLimits();
-        if (cfg is not null)
-        {
-            if (int.TryParse(cfg["Bowire:Scripting:TimeoutMs"], out var ms) && ms > 0)
-                limits = limits with { Timeout = TimeSpan.FromMilliseconds(ms) };
-            if (long.TryParse(cfg["Bowire:Scripting:MemoryMb"], out var mb) && mb > 0)
-                limits = limits with { MemoryBytes = mb * 1024 * 1024 };
-            if (int.TryParse(cfg["Bowire:Scripting:MaxStatements"], out var max) && max > 0)
-                limits = limits with { MaxStatements = max };
-        }
-        return new TestScripts(limits, BowireScriptRunners.Find());
-    }
+        => new(BowireScriptLimits.FromConfiguration(cfg), BowireScriptRunners.Find());
 
     /// <summary>
     /// Run <paramref name="source"/> before the call. Returns the failure to
