@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**22/37 done** · 15 backlog
+**23/37 done** · 14 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -28,10 +28,10 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [810](https://github.com/Kuestenlogik/Bowire/issues/810) | Bowire | [MCP Apps, host side: render and debug MCP Apps of the servers Bowire talks to](#issue-kuestenlogik-bowire-810) | ⬜ Backlog |  |
 | [811](https://github.com/Kuestenlogik/Bowire/issues/811) | Bowire | [MCP Apps, server side: Bowire's MCP tools answer with apps (test run first)](#issue-kuestenlogik-bowire-811) | ⬜ Backlog |  |
 | [812](https://github.com/Kuestenlogik/Bowire/issues/812) | Bowire | [MCP Apps in testing and security: assert on apps, record their traffic, scan their CSP](#issue-kuestenlogik-bowire-812) | ⬜ Backlog |  |
-| [939](https://github.com/Kuestenlogik/Bowire/issues/939) | Bowire | [Import Yaak exports](#issue-kuestenlogik-bowire-939) | ⬜ Backlog |  |
 | [940](https://github.com/Kuestenlogik/Bowire/issues/940) | Bowire | [Verify the collection importers against real Insomnia and Bruno exports](#issue-kuestenlogik-bowire-940) | ⬜ Backlog |  |
 | [1054](https://github.com/Kuestenlogik/Bowire/issues/1054) | Bowire | [Every workbench start logs a 404 for /api/project when there is no project manifest](#issue-kuestenlogik-bowire-1054) | ⬜ Backlog | `area:workbench` |
 | [673](https://github.com/Kuestenlogik/Bowire/issues/673) | Bowire | [Export requests as .http — Copy as .http, and bowire export http for a whole collection](#issue-kuestenlogik-bowire-673) | ✅ Done | `area:workbench` |
+| [939](https://github.com/Kuestenlogik/Bowire/issues/939) | Bowire | [Import Yaak exports](#issue-kuestenlogik-bowire-939) | ✅ Done |  |
 | [946](https://github.com/Kuestenlogik/Bowire/issues/946) | Bowire | [Data sets for flow runs and bowire test --workspace](#issue-kuestenlogik-bowire-946) | ✅ Done |  |
 | [963](https://github.com/Kuestenlogik/Bowire/issues/963) | Bowire | [WebSocketAuthProbe: forged JWT (alg:none, tampered signature) on the upgrade](#issue-kuestenlogik-bowire-963) | ✅ Done | `area:security` |
 | [986](https://github.com/Kuestenlogik/Bowire/issues/986) | Bowire | [The .NET plugin loader scans sidecar folders and logs ManifestMissing for every sidecar](#issue-kuestenlogik-bowire-986) | ✅ Done | `area:plugin-sdk` |
@@ -302,10 +302,6 @@ Bowire's own MCP server (`bowire mcp serve`) answers agents with JSON. Some of w
 
 Once Bowire hosts MCP Apps (#810), the people building them need what Bowire offers for every other protocol: does the UI resource load, does the app behave, and is it safe? An app is third-party HTML running next to a model with tool access, so its CSP and permissions are a security surface that no … [[more]](https://github.com/Kuestenlogik/Bowire/issues/812)
 
-#### <a id="issue-kuestenlogik-bowire-939"></a>⬜ Backlog · [#939](https://github.com/Kuestenlogik/Bowire/issues/939) Import Yaak exports
-
-Follow-up of #674, which shipped the Insomnia, Bruno and `.http` importers. Yaak was left out there because it did not fit the "only if small" bar. [[more]](https://github.com/Kuestenlogik/Bowire/issues/939)
-
 #### <a id="issue-kuestenlogik-bowire-940"></a>⬜ Backlog · [#940](https://github.com/Kuestenlogik/Bowire/issues/940) Verify the collection importers against real Insomnia and Bruno exports
 
 Follow-up of #674. The importers were tested with fixtures written from the formats' specifications and schemas (Insomnia v4/v5, Bru, OpenCollection v1.0.0), not with files exported from the apps. [[more]](https://github.com/Kuestenlogik/Bowire/issues/940)
@@ -321,6 +317,10 @@ Every time the workbench loads without a `.bowire/project.json` above the host's
 > `area:workbench`
 
 For "I am testing my own REST endpoint while developing it", a `.http` file is **better** than Bowire. The file sits next to the code, it is in the repo, there is no second window and no second process. Visual Studio 2022, Rider and the VS Code REST Client all run them natively. Competing with that is a losing framing. [[more]](https://github.com/Kuestenlogik/Bowire/issues/673)
+
+#### <a id="issue-kuestenlogik-bowire-939"></a>✅ Done · [#939](https://github.com/Kuestenlogik/Bowire/issues/939) Import Yaak exports
+
+Follow-up of #674, which shipped the Insomnia, Bruno and `.http` importers. Yaak was left out there because it did not fit the "only if small" bar. [[more]](https://github.com/Kuestenlogik/Bowire/issues/939)
 
 #### <a id="issue-kuestenlogik-bowire-946"></a>✅ Done · [#946](https://github.com/Kuestenlogik/Bowire/issues/946) Data sets for flow runs and bowire test --workspace
 
