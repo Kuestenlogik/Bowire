@@ -42,15 +42,15 @@ public sealed class MessageShapeTests
     {
         const string english = "{n, plural, =0 {nothing} one {# left} other {# left}}";
         Assert.NotEmpty(MessageShape.Problems(english, "{n, plural, one {# übrig} other {# übrig}}", "de"));
-        Assert.Empty(MessageShape.Problems(english, "{n, plural, =0 {nichts} one {# übrig} other {# übrig}}", "de"));
+        Assert.Empty(MessageShape.Problems(english, "{n, plural, =0 {nichts} one {# übrig} other {# übrig}}", "de")); // lang-exempt: a German translation is the data under test
     }
 
     [Fact]
     public void A_Select_Keeps_Its_Values_And_A_Placeholder_Its_Name()
     {
         const string english = "Delete {kind, select, file {the file} other {it}} in {place}?";
-        Assert.Empty(MessageShape.Problems(english, "{kind, select, file {Die Datei} other {Es}} in {place} löschen?", "de"));
-        Assert.Equal(2, MessageShape.Problems(english, "{kind, select, folder {Den Ordner} other {Es}} in {ort} löschen?", "de").Count);
+        Assert.Empty(MessageShape.Problems(english, "{kind, select, file {Die Datei} other {Es}} in {place} löschen?", "de")); // lang-exempt: a German translation is the data under test
+        Assert.Equal(2, MessageShape.Problems(english, "{kind, select, folder {Den Ordner} other {Es}} in {ort} löschen?", "de").Count); // lang-exempt: a German translation is the data under test
     }
 
     [Fact]
