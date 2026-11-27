@@ -12,12 +12,13 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**23/42 done** · 2 in progress · 17 backlog
+**23/43 done** · 3 in progress · 17 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [1055](https://github.com/Kuestenlogik/Bowire/issues/1055) | Bowire | [Imported REST requests cannot be run: the REST plugin looks the URL up as an OpenAPI operation](#issue-kuestenlogik-bowire-1055) | 🟡 In progress | `area:workbench` |
 | [1057](https://github.com/Kuestenlogik/Bowire/issues/1057) | Bowire | [Flaky: the embedded gRPC no-wire discovery test asserts on wall-clock time](#issue-kuestenlogik-bowire-1057) | 🟡 In progress |  |
+| [1063](https://github.com/Kuestenlogik/Bowire/issues/1063) | Bowire | [gRPC: a server without reflection is sometimes reported as Cancelled](#issue-kuestenlogik-bowire-1063) | 🟡 In progress |  |
 | [639](https://github.com/Kuestenlogik/Bowire/issues/639) | Bowire | [SCIM: live Okta and Entra ID provisioning round-trips](#issue-kuestenlogik-bowire-639) | ⬜ Backlog | `area:workbench` |
 | [670](https://github.com/Kuestenlogik/Bowire/issues/670) | Bowire | [Get listed where developers and models actually look](#issue-kuestenlogik-bowire-670) | ⬜ Backlog | `area:site` |
 | [672](https://github.com/Kuestenlogik/Bowire/issues/672) | Bowire | [Server-side script engine so pre/post scripts run in bowire test, not only in the browser](#issue-kuestenlogik-bowire-672) | ⬜ Backlog | `area:cli` |
@@ -257,6 +258,10 @@ A REST request imported from Postman, Insomnia, Bruno, Yaak or a `.http` file ca
 #### <a id="issue-kuestenlogik-bowire-1057"></a>🟡 In progress · [#1057](https://github.com/Kuestenlogik/Bowire/issues/1057) Flaky: the embedded gRPC no-wire discovery test asserts on wall-clock time
 
 `GrpcEmbeddedDescriptorsIntegrationTests.Discovering_Itself_The_Host_Asks_Nothing_Over_The_Wire` fails now and then on a loaded machine (once in eight runs of the integration suite while other builds ran): [[more]](https://github.com/Kuestenlogik/Bowire/issues/1057)
+
+#### <a id="issue-kuestenlogik-bowire-1063"></a>🟡 In progress · [#1063](https://github.com/Kuestenlogik/Bowire/issues/1063) gRPC: a server without reflection is sometimes reported as Cancelled
+
+A call to a server without the gRPC reflection service now and then fails with [[more]](https://github.com/Kuestenlogik/Bowire/issues/1063)
 
 #### <a id="issue-kuestenlogik-bowire-639"></a>⬜ Backlog · [#639](https://github.com/Kuestenlogik/Bowire/issues/639) SCIM: live Okta and Entra ID provisioning round-trips
 
