@@ -77,7 +77,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v3.0 — Cleanups + breaking-change cuts *(due 2027-07-27)*
 
-**1/28 done** · 27 backlog
+**2/28 done** · 26 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -102,13 +102,13 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [487](https://github.com/Kuestenlogik/Bowire/issues/487) | Bowire | [v3.0: rename Kuestenlogik.Bowire.Security.Scanner → …Security — the package is the Security rail, not just a scanner](#issue-kuestenlogik-bowire-487) | ⬜ Backlog | `area:security` |
 | [488](https://github.com/Kuestenlogik/Bowire/issues/488) | Bowire | [RFC (draft): OAST multi-instance model — manage several interaction servers (spawn local + connect remote) from the workbench](#issue-kuestenlogik-bowire-488) | ⬜ Backlog | `area:security` |
 | [489](https://github.com/Kuestenlogik/Bowire/issues/489) | Bowire | [RFC (draft): OAST server as a standalone / headless deployable (container, daemon, config)](#issue-kuestenlogik-bowire-489) | ⬜ Backlog | `area:security` |
-| [529](https://github.com/Kuestenlogik/Bowire/issues/529) | Bowire | [OData plugin: EDM functions and actions are never discovered (class doc claims they are)](#issue-kuestenlogik-bowire-529) | ⬜ Backlog | `area:plugin-sdk` |
 | [584](https://github.com/Kuestenlogik/Bowire/issues/584) | Bowire | [Secrets redaction: extend to HTML report, snapshot files, and recordings](#issue-kuestenlogik-bowire-584) | ⬜ Backlog |  |
 | [611](https://github.com/Kuestenlogik/Bowire/issues/611) | Bowire | [Sidecar: add gRPC as a third transport alongside stdio and HTTP](#issue-kuestenlogik-bowire-611) | ⬜ Backlog |  |
 | [709](https://github.com/Kuestenlogik/Bowire/issues/709) | Bowire | [UnaryReplayer: eight protocol paths, each with its own copy of the shared rules](#issue-kuestenlogik-bowire-709) | ⬜ Backlog |  |
 | [782](https://github.com/Kuestenlogik/Bowire/issues/782) | Bowire | [Document the public API and drop the CS1591 suppression](#issue-kuestenlogik-bowire-782) | ⬜ Backlog |  |
 | [997](https://github.com/Kuestenlogik/Bowire/issues/997) | Bowire | [AOT and trimming readiness: explicit plugin registration, annotated reflection paths](#issue-kuestenlogik-bowire-997) | ⬜ Backlog | `area:plugin-sdk` |
 | [215](https://github.com/Kuestenlogik/Bowire/issues/215) | Bowire | [Test infra: IProcessLauncher seam in PluginManager to cover dotnet-shell-out paths](#issue-kuestenlogik-bowire-215) | ✅ Done | `area:plugin-sdk` |
+| [529](https://github.com/Kuestenlogik/Bowire/issues/529) | Bowire | [OData plugin: EDM functions and actions are never discovered (class doc claims they are)](#issue-kuestenlogik-bowire-529) | ✅ Done | `area:plugin-sdk` |
 
 ### Protocol.Akka v1.2 — Tell in trimmed and AOT hosts
 
@@ -603,12 +603,6 @@ The `.Scanner` suffix under-describes what the package has become. It started as
 
 > **Status: DRAFT / RFC — needs refinement before implementation.** Direction from the #486 discussion; specifics below are starting points. [[more]](https://github.com/Kuestenlogik/Bowire/issues/489)
 
-#### <a id="issue-kuestenlogik-bowire-529"></a>⬜ Backlog · [#529](https://github.com/Kuestenlogik/Bowire/issues/529) OData plugin: EDM functions and actions are never discovered (class doc claims they are)
-
-> `area:plugin-sdk`
-
-`BowireODataProtocol.DiscoverAsync` emits exactly five methods per entity set — GET, GET_BY_KEY, POST, PATCH, DELETE. EDM **functions and actions** are parsed into the model but never surfaced, so they cannot be invoked from the workbench. [[more]](https://github.com/Kuestenlogik/Bowire/issues/529)
-
 #### <a id="issue-kuestenlogik-bowire-584"></a>⬜ Backlog · [#584](https://github.com/Kuestenlogik/Bowire/issues/584) Secrets redaction: extend to HTML report, snapshot files, and recordings
 
 #361 shipped run-scoped secrets redaction (`--secret`/`--secret-file` + `SecretRedactor`, `***`+last-4 masking) applied at the **primary CI-artifact sinks**: TTY step output, JUnit failure texts (v2.1 `JUnitReport` + v2.2 `FlowJUnitReport`), SARIF messages (`TestSarifReport`), and GitHub `::error` a … [[more]](https://github.com/Kuestenlogik/Bowire/issues/584)
@@ -636,6 +630,12 @@ No project is marked trimmable or AOT-compatible, and nothing carries trimming a
 > `area:plugin-sdk`
 
 > **Status:** obsolete, not done. The premise no longer holds — the body below records why; the original proposal is in the issue history. [[more]](https://github.com/Kuestenlogik/Bowire/issues/215)
+
+#### <a id="issue-kuestenlogik-bowire-529"></a>✅ Done · [#529](https://github.com/Kuestenlogik/Bowire/issues/529) OData plugin: EDM functions and actions are never discovered (class doc claims they are)
+
+> `area:plugin-sdk`
+
+`BowireODataProtocol.DiscoverAsync` emits exactly five methods per entity set — GET, GET_BY_KEY, POST, PATCH, DELETE. EDM **functions and actions** are parsed into the model but never surfaced, so they cannot be invoked from the workbench. [[more]](https://github.com/Kuestenlogik/Bowire/issues/529)
 
 ### Protocol.Akka v1.2 — Tell in trimmed and AOT hosts
 
