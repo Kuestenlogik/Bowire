@@ -12,11 +12,10 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**31/43 done** · 1 in progress · 11 backlog
+**32/43 done** · 11 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
-| [1062](https://github.com/Kuestenlogik/Bowire/issues/1062) | Bowire | [No script runs in the workbench: the CSP refuses the eval scripts.js needs](#issue-kuestenlogik-bowire-1062) | 🟡 In progress | `area:workbench` |
 | [639](https://github.com/Kuestenlogik/Bowire/issues/639) | Bowire | [SCIM: live Okta and Entra ID provisioning round-trips](#issue-kuestenlogik-bowire-639) | ⬜ Backlog | `area:workbench` |
 | [670](https://github.com/Kuestenlogik/Bowire/issues/670) | Bowire | [Get listed where developers and models actually look](#issue-kuestenlogik-bowire-670) | ⬜ Backlog | `area:site` |
 | [677](https://github.com/Kuestenlogik/Bowire/issues/677) | Bowire | [Broader code export, and snippets for the protocols no snippet library covers](#issue-kuestenlogik-bowire-677) | ⬜ Backlog | `area:workbench` |
@@ -58,6 +57,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [1055](https://github.com/Kuestenlogik/Bowire/issues/1055) | Bowire | [Imported REST requests cannot be run: the REST plugin looks the URL up as an OpenAPI operation](#issue-kuestenlogik-bowire-1055) | ✅ Done | `area:workbench` |
 | [1057](https://github.com/Kuestenlogik/Bowire/issues/1057) | Bowire | [Flaky: the embedded gRPC no-wire discovery test asserts on wall-clock time](#issue-kuestenlogik-bowire-1057) | ✅ Done |  |
 | [1060](https://github.com/Kuestenlogik/Bowire/issues/1060) | Bowire | [The workbench's collection runner skips the scripts a saved item carries](#issue-kuestenlogik-bowire-1060) | ✅ Done | `area:workbench` |
+| [1062](https://github.com/Kuestenlogik/Bowire/issues/1062) | Bowire | [No script runs in the workbench: the CSP refuses the eval scripts.js needs](#issue-kuestenlogik-bowire-1062) | ✅ Done | `area:workbench` |
 | [1063](https://github.com/Kuestenlogik/Bowire/issues/1063) | Bowire | [gRPC: a server without reflection is sometimes reported as Cancelled](#issue-kuestenlogik-bowire-1063) | ✅ Done |  |
 
 ### v2.12 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
@@ -248,12 +248,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 ## Details
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
-
-#### <a id="issue-kuestenlogik-bowire-1062"></a>🟡 In progress · [#1062](https://github.com/Kuestenlogik/Bowire/issues/1062) No script runs in the workbench: the CSP refuses the eval scripts.js needs
-
-> `area:workbench`
-
-No pre-request or post-response script runs in the workbench. Every script fails before its first statement with: [[more]](https://github.com/Kuestenlogik/Bowire/issues/1062)
 
 #### <a id="issue-kuestenlogik-bowire-639"></a>⬜ Backlog · [#639](https://github.com/Kuestenlogik/Bowire/issues/639) SCIM: live Okta and Entra ID provisioning round-trips
 
@@ -466,6 +460,12 @@ A REST request imported from Postman, Insomnia, Bruno, Yaak or a `.http` file ca
 > `area:workbench`
 
 Follow-up of #672. [[more]](https://github.com/Kuestenlogik/Bowire/issues/1060)
+
+#### <a id="issue-kuestenlogik-bowire-1062"></a>✅ Done · [#1062](https://github.com/Kuestenlogik/Bowire/issues/1062) No script runs in the workbench: the CSP refuses the eval scripts.js needs
+
+> `area:workbench`
+
+No pre-request or post-response script runs in the workbench. Every script fails before its first statement with: [[more]](https://github.com/Kuestenlogik/Bowire/issues/1062)
 
 #### <a id="issue-kuestenlogik-bowire-1063"></a>✅ Done · [#1063](https://github.com/Kuestenlogik/Bowire/issues/1063) gRPC: a server without reflection is sometimes reported as Cancelled
 
