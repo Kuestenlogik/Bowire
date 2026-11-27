@@ -20,9 +20,10 @@ namespace Kuestenlogik.Bowire.Endpoints;
 /// <c>?path=</c> folder when the caller names one.
 /// <para>
 /// "No project" is the common case, not an error: the walk returns nothing and
-/// the endpoint answers <c>404</c> with <c>{ "found": false }</c> so the JS
-/// probe's <c>r.ok</c> gate degrades to a no-op exactly like the other
-/// capability probes at boot. It never throws on not-found; a malformed
+/// the endpoint answers <c>200</c> with <c>{ "found": false }</c> and the JS
+/// probe's <c>data.found</c> gate makes it a no-op. Not <c>404</c>: the browser
+/// logs every 4xx as a failed request, so a clean start showed an error in the
+/// console (#1054). It never throws on not-found; a malformed
 /// manifest that is present but unparseable answers <c>400</c> so the mistake
 /// is visible rather than silently swallowed.
 /// </para>
@@ -44,8 +45,10 @@ internal static class BowireProjectEndpoints
             var location = BowireProjectLoader.Discover(startDir);
             if (location is null)
             {
-                return Results.Json(new { found = false },
-                    BowireEndpointHelpers.JsonOptions, statusCode: 404);
+                // "No manifest here" is an answer, not a missing resource: a
+                // 404 made the browser log a failed request on every clean
+                // start (#1054).
+                return Results.Json(new { found = false }, BowireEndpointHelpers.JsonOptions);
             }
 
             BowireProjectFile project;

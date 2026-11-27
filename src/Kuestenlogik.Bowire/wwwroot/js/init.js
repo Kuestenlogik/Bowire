@@ -905,8 +905,8 @@
         // and returns the declared sources / suites / security. We surface
         // a single non-blocking toast naming the project + its source
         // count so the operator knows the repo's own API config was
-        // picked up. No manifest → 404 → r.ok is false → silent no-op,
-        // exactly like the sibling capability probes above.
+        // picked up. No manifest → 200 {found:false} → silent no-op
+        // (#1054: a 404 logged a failed request on every clean start).
         fetch(config.prefix + '/api/project')
             .then(function (r) { return r.ok ? r.json() : null; })
             .then(function (data) {

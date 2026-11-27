@@ -83,7 +83,7 @@ public sealed class BowireProjectEndpointTests : IDisposable
     }
 
     [Fact]
-    public async Task GET_returns_404_found_false_when_no_manifest()
+    public async Task GET_returns_200_found_false_when_no_manifest()
     {
         // The temp folder has no .bowire/project.json anywhere up the chain
         // (system temp has no Bowire ancestor).
@@ -94,7 +94,9 @@ public sealed class BowireProjectEndpointTests : IDisposable
             new Uri("/api/project?path=" + Uri.EscapeDataString(_tempRoot), UriKind.Relative),
             TestContext.Current.CancellationToken);
 
-        Assert.Equal(HttpStatusCode.NotFound, resp.StatusCode);
+        // #1054 - an answer, not a missing resource: a 404 logged a failed
+        // request in the browser console on every clean start.
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
         var body = await resp.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
         using var doc = JsonDocument.Parse(body);
         Assert.False(doc.RootElement.GetProperty("found").GetBoolean());

@@ -70,6 +70,10 @@ A Yaak export (*Export Data* in the app, `yaak export` on the CLI) imports throu
 
 ## Fixes along the way
 
+### A clean start leaves the browser console clean (#1054)
+
+Without a `.bowire/project.json` above the host's working directory, the workbench's boot probe got a `404` from `/api/project`, and the browser logged it as a failed request on every start. "No project manifest" now answers `200 {"found": false}`; a malformed manifest still answers `400`.
+
 ### OData functions and actions can be called (#529)
 
 Discovery listed five CRUD methods per entity set and nothing else, although the plugin's description promised functions and actions. Every function and action bound to an entity type or its collection is now a method of the entity set, and unbound function and action imports form one more service named after the container. A function is called as a GET with its parameters in the URL segment, quoted by their EDM type; an action as a POST with its parameters as the body; an entity-bound one behind the entity's key.
