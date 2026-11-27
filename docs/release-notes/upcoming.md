@@ -64,6 +64,10 @@ The scan's API2 checks sent a JWT re-headed to `alg:none`, and one with a corrup
 
 `bowire test --data rows.csv` ran a test collection once per row; a flow file or a `--workspace` run refused the flag. A flow now runs once per row as well, the row's columns over its environment and `{{iteration}}` / `{{iterationCount}}` bound, and every step result names its iteration and the row's source line, so a failing row says which row it was in the console and in the HTML, JUnit and SARIF reports. With `--workspace` or `--workspace-id` every flow runs once per row. `--fail-fast` stops after the first failing iteration.
 
+### Yaak exports import like Insomnia and Bruno collections (#939)
+
+A Yaak export (*Export Data* in the app, `yaak export` on the CLI) imports through the same entry point as the other formats: the workbench's **Import files…**, `bowire import` and the `bowire.import` MCP tool. Each workspace becomes a collection with its folders; a request carries the headers and the authentication it inherits from its folders and its workspace, as Yaak sends it; `${[ variable ]}` becomes `{{variable}}`, and the UUID and timestamp functions their Bowire counterparts. Sub-environments are laid over their parents and the base environment. gRPC and WebSocket requests, multipart and file bodies and response-chaining functions are named in the import report. The importer is tested against exports the Yaak CLI wrote. See [Migrating from Yaak](../migration/yaak.md).
+
 ## Fixes along the way
 
 ### OData functions and actions can be called (#529)

@@ -1,12 +1,13 @@
 # Collections written by the apps
 
-The other fixtures in this folder were written by hand from the formats' specifications. These were written by the apps themselves: they are the collections Insomnia and Bruno keep in their own repositories for their end-to-end tests, copied unchanged. They hold test values only, no credentials of a real service.
+The other fixtures in this folder were written by hand from the formats' specifications. These were written by the apps themselves: the collections Insomnia and Bruno keep in their own repositories for their end-to-end tests, copied unchanged, and exports the Yaak CLI wrote. They hold test values only, no credentials of a real service.
 
 | Folder | Origin | Revision | Licence |
 |---|---|---|---|
 | `insomnia/` | `packages/insomnia-smoke-test/fixtures/` in [Kong/insomnia](https://github.com/Kong/insomnia) | `a38d7c32b330dc394a6cbebb0db3abb179dd9f80` | Apache-2.0 |
 | `bruno-bru/` | `packages/bruno-tests/collection/` in [usebruno/bruno](https://github.com/usebruno/bruno): `bruno.json`, `collection.bru`, `environments/`, `auth/`, `graphql/` | `09625f67c9957b8eb8b04fb73756c6b3c7aa7679` | MIT |
 | `bruno-opencollection/` | `packages/bruno-tests/yml-collection/` in usebruno/bruno | same | MIT |
+| `yaak/` | Written by the official Yaak CLI, `@yaakapp/cli` 2026.9.1 (`yaak export`): `harbor.json` from a workspace built with `yaak workspace/folder/environment/request create` (test values only, exported with `--include-private-environments`); `grpc-websocket.json` from importing `insomnia/grpc.yaml` and `insomnia/websockets.yaml` into Yaak; `from-bruno.json` from importing `bruno-bru/` into Yaak | — | MIT (Yaak) |
 
 Insomnia is licensed under the Apache License, Version 2.0; a copy is in the `LICENSE` file at the root of this repository.
 

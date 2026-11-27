@@ -2,6 +2,8 @@
   href: index.md
 - name: From Insomnia
   href: insomnia.md
+- name: From Yaak
+  href: yaak.md
 - name: From Bruno
   href: bruno.md
 - name: From .http files

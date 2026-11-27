@@ -21,7 +21,7 @@ internal static class InteropCommands
     {
         var pathArg = new Argument<string?>("path")
         {
-            Description = "An Insomnia export (v4 JSON/YAML or v5 YAML), a Bruno collection directory (.bru files or OpenCollection YAML) or a bundled OpenCollection file, "
+            Description = "An Insomnia export (v4 JSON/YAML or v5 YAML), a Yaak export (JSON), a Bruno collection directory (.bru files or OpenCollection YAML) or a bundled OpenCollection file, "
                 + "or a .http file or a directory of them with http-client.env.json.",
             Arity = ArgumentArity.ZeroOrOne,
         };

@@ -1,6 +1,6 @@
 ---
 title: Migrating to Bowire
-summary: 'Bring a collection over from Insomnia, Bruno or .http files, and what changes on the way.'
+summary: 'Bring a collection over from Insomnia, Yaak, Bruno or .http files, and what changes on the way.'
 ---
 
 # Migrating to Bowire
@@ -22,6 +22,7 @@ Nothing is dropped without an entry in the report.
 | Source | Guide |
 |--------|-------|
 | Insomnia (v4 export, v5 collection) | [From Insomnia](insomnia.md) |
+| Yaak (JSON export) | [From Yaak](yaak.md) |
 | Bruno (`.bru` and OpenCollection YAML) | [From Bruno](bruno.md) |
 | `.http` files (Rider, IntelliJ, Visual Studio, VS Code REST Client) | [From .http files](http-files.md) |
 | Postman Collection v2.1 | [Collections: Postman import](../features/collections.md#postman-collection-v21-import) |

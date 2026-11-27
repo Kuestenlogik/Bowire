@@ -1,0 +1,477 @@
+{
+  "yaakVersion": "0.1.0",
+  "yaakSchema": 4,
+  "timestamp": "2026-11-27T19:12:56.170308400",
+  "resources": {
+    "workspaces": [
+      {
+        "model": "workspace",
+        "id": "wk_TAQaJC6eeN",
+        "createdAt": "2025-01-07T20:02:02.525",
+        "updatedAt": "2025-01-07T20:02:02.525",
+        "authentication": {},
+        "authenticationType": null,
+        "description": "",
+        "headers": [],
+        "name": "WebSockets",
+        "encryptionKeyChallenge": null,
+        "settingValidateCertificates": true,
+        "settingFollowRedirects": true,
+        "settingRequestTimeout": 0,
+        "settingRequestMessageSize": 67108864,
+        "settingDnsOverrides": [],
+        "settingSendCookies": true,
+        "settingStoreCookies": true,
+        "settingHttpVersion": "auto"
+      },
+      {
+        "model": "workspace",
+        "id": "wk_uUmLgS7YGd",
+        "createdAt": "2025-01-07T19:37:14.829",
+        "updatedAt": "2025-01-07T19:37:14.829",
+        "authentication": {},
+        "authenticationType": null,
+        "description": "",
+        "headers": [],
+        "name": "PreRelease gRPC",
+        "encryptionKeyChallenge": null,
+        "settingValidateCertificates": true,
+        "settingFollowRedirects": true,
+        "settingRequestTimeout": 0,
+        "settingRequestMessageSize": 67108864,
+        "settingDnsOverrides": [],
+        "settingSendCookies": true,
+        "settingStoreCookies": true,
+        "settingHttpVersion": "auto"
+      }
+    ],
+    "environments": [
+      {
+        "model": "environment",
+        "id": "ev_uiPHJRg4kH",
+        "workspaceId": "wk_TAQaJC6eeN",
+        "createdAt": "2022-08-31T10:36:34.375",
+        "updatedAt": "2022-08-31T10:36:34.375",
+        "name": "Base Environment",
+        "public": true,
+        "base": true,
+        "parentModel": "workspace",
+        "parentId": null,
+        "variables": [],
+        "color": null,
+        "sortPriority": 0.0
+      },
+      {
+        "model": "environment",
+        "id": "ev_ZpvJgmetX2",
+        "workspaceId": "wk_uUmLgS7YGd",
+        "createdAt": "2021-11-03T17:13:15.049",
+        "updatedAt": "2021-11-03T17:13:15.049",
+        "name": "Base Environment",
+        "public": true,
+        "base": true,
+        "parentModel": "workspace",
+        "parentId": null,
+        "variables": [],
+        "color": null,
+        "sortPriority": 0.0
+      }
+    ],
+    "folders": [
+      {
+        "model": "folder",
+        "id": "fl_mzqo34UKo5",
+        "createdAt": "2021-11-29T15:55:47.079",
+        "updatedAt": "2021-11-29T15:55:47.079",
+        "workspaceId": "wk_uUmLgS7YGd",
+        "folderId": null,
+        "authentication": {},
+        "authenticationType": null,
+        "description": "",
+        "headers": [],
+        "name": "Route Guide Example",
+        "sortPriority": -1638201347079.0,
+        "settingSendCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingStoreCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingValidateCertificates": {
+          "enabled": false,
+          "value": true
+        },
+        "settingFollowRedirects": {
+          "enabled": false,
+          "value": true
+        },
+        "settingRequestTimeout": {
+          "enabled": false,
+          "value": 0
+        },
+        "settingRequestMessageSize": {
+          "enabled": false,
+          "value": 67108864
+        },
+        "settingHttpVersion": {
+          "enabled": false,
+          "value": "auto"
+        }
+      }
+    ],
+    "httpRequests": [],
+    "grpcRequests": [
+      {
+        "model": "grpc_request",
+        "id": "gr_kimvSf8sF7",
+        "createdAt": "2021-11-29T15:52:29.312",
+        "updatedAt": "2022-12-02T13:09:26.981",
+        "workspaceId": "wk_uUmLgS7YGd",
+        "folderId": "fl_mzqo34UKo5",
+        "authenticationType": null,
+        "authentication": {},
+        "description": "",
+        "message": "{\n\t\"message\": \"test 5\",\n\t\"location\": {\n\t\t\"latitude\":\"415301720\",\n\t\t\"longitude\":\"-748416257\"\n\t}\n}",
+        "metadata": [],
+        "method": "RouteChat",
+        "name": "Bidirectional Stream",
+        "service": "routeguide.RouteGuide",
+        "sortPriority": -1638200268676.0,
+        "url": "localhost:50051",
+        "settingValidateCertificates": {
+          "enabled": false,
+          "value": true
+        },
+        "settingRequestMessageSize": {
+          "enabled": false,
+          "value": 67108864
+        }
+      },
+      {
+        "model": "grpc_request",
+        "id": "gr_cNoeB9MVNK",
+        "createdAt": "2021-11-29T15:47:51.429",
+        "updatedAt": "2022-12-02T13:09:17.908",
+        "workspaceId": "wk_uUmLgS7YGd",
+        "folderId": "fl_mzqo34UKo5",
+        "authenticationType": null,
+        "authentication": {},
+        "description": "",
+        "message": "{\n\t\"latitude\":\"415301720\",\n\t\"longitude\":\"-748416257\"\n}",
+        "metadata": [],
+        "method": "RecordRoute",
+        "name": "Client Stream",
+        "service": "routeguide.RouteGuide",
+        "sortPriority": -1638200268726.0,
+        "url": "localhost:50051",
+        "settingValidateCertificates": {
+          "enabled": false,
+          "value": true
+        },
+        "settingRequestMessageSize": {
+          "enabled": false,
+          "value": 67108864
+        }
+      },
+      {
+        "model": "grpc_request",
+        "id": "gr_Znssr7YrV9",
+        "createdAt": "2021-11-29T15:40:30.327",
+        "updatedAt": "2022-12-02T13:09:10.033",
+        "workspaceId": "wk_uUmLgS7YGd",
+        "folderId": "fl_mzqo34UKo5",
+        "authenticationType": null,
+        "authentication": {},
+        "description": "",
+        "message": "{\n\t\"lo\":{\n\t\t\"latitude\":\"400000000\",\n\t\t\"longitude\":\"-750000000\"\n\t},\n\t\"hi\":{\n\t\t\"latitude\":\"420000000\",\n\t\t\"longitude\":\"-730000000\"\n\t}\n}",
+        "metadata": [],
+        "method": "ListFeatures",
+        "name": "Server Stream",
+        "service": "routeguide.RouteGuide",
+        "sortPriority": -1638200268751.0,
+        "url": "localhost:50051",
+        "settingValidateCertificates": {
+          "enabled": false,
+          "value": true
+        },
+        "settingRequestMessageSize": {
+          "enabled": false,
+          "value": 67108864
+        }
+      },
+      {
+        "model": "grpc_request",
+        "id": "gr_NckXtT3hEN",
+        "createdAt": "2021-11-29T15:37:48.776",
+        "updatedAt": "2022-12-02T13:09:04.274",
+        "workspaceId": "wk_uUmLgS7YGd",
+        "folderId": "fl_mzqo34UKo5",
+        "authenticationType": null,
+        "authentication": {},
+        "description": "",
+        "message": "{\n\t\"latitude\":\"409146138\",\n\t\"longitude\":\"-746188906\"\n}",
+        "metadata": [],
+        "method": "GetFeature",
+        "name": "Unary",
+        "service": "routeguide.RouteGuide",
+        "sortPriority": -1638200268776.0,
+        "url": "localhost:50051",
+        "settingValidateCertificates": {
+          "enabled": false,
+          "value": true
+        },
+        "settingRequestMessageSize": {
+          "enabled": false,
+          "value": 67108864
+        }
+      }
+    ],
+    "websocketRequests": [
+      {
+        "model": "websocket_request",
+        "id": "wr_CxaPB3fb9G",
+        "createdAt": "2022-10-25T11:01:53.693",
+        "updatedAt": "2022-10-25T11:11:05.532",
+        "workspaceId": "wk_TAQaJC6eeN",
+        "folderId": null,
+        "authentication": {},
+        "authenticationType": null,
+        "description": "",
+        "headers": [],
+        "message": "",
+        "name": "path-param",
+        "sortPriority": 0.0,
+        "url": "ws://localhost:4010/chat/:id",
+        "urlParameters": [],
+        "settingSendCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingStoreCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingValidateCertificates": {
+          "enabled": false,
+          "value": true
+        },
+        "settingRequestMessageSize": {
+          "enabled": false,
+          "value": 67108864
+        }
+      },
+      {
+        "model": "websocket_request",
+        "id": "wr_wRtS8pWA8F",
+        "createdAt": "2022-10-25T11:01:53.692",
+        "updatedAt": "2022-10-25T11:11:05.531",
+        "workspaceId": "wk_TAQaJC6eeN",
+        "folderId": null,
+        "authentication": {},
+        "authenticationType": null,
+        "description": "",
+        "headers": [
+          {
+            "enabled": true,
+            "name": "duration",
+            "value": "5",
+            "id": null
+          }
+        ],
+        "message": "",
+        "name": "delay",
+        "sortPriority": 0.0,
+        "url": "ws://localhost:4010/delay",
+        "urlParameters": [],
+        "settingSendCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingStoreCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingValidateCertificates": {
+          "enabled": false,
+          "value": true
+        },
+        "settingRequestMessageSize": {
+          "enabled": false,
+          "value": 67108864
+        }
+      },
+      {
+        "model": "websocket_request",
+        "id": "wr_ZDFJmaGTQc",
+        "createdAt": "2022-09-06T08:03:50.343",
+        "updatedAt": "2022-09-06T08:04:16.879",
+        "workspaceId": "wk_TAQaJC6eeN",
+        "folderId": null,
+        "authentication": {},
+        "authenticationType": null,
+        "description": "",
+        "headers": [],
+        "message": "",
+        "name": "redirect",
+        "sortPriority": 0.0,
+        "url": "ws://localhost:4010/redirect",
+        "urlParameters": [],
+        "settingSendCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingStoreCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingValidateCertificates": {
+          "enabled": false,
+          "value": true
+        },
+        "settingRequestMessageSize": {
+          "enabled": false,
+          "value": 67108864
+        }
+      },
+      {
+        "model": "websocket_request",
+        "id": "wr_tZNVyKLq5f",
+        "createdAt": "2022-09-06T08:01:58.293",
+        "updatedAt": "2022-09-06T08:02:49.688",
+        "workspaceId": "wk_TAQaJC6eeN",
+        "folderId": null,
+        "authentication": {
+          "token": "insomnia-cool-token-!!!1112113243111"
+        },
+        "authenticationType": "bearer",
+        "description": "",
+        "headers": [],
+        "message": "",
+        "name": "bearer",
+        "sortPriority": 0.0,
+        "url": "ws://localhost:4010/bearer",
+        "urlParameters": [],
+        "settingSendCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingStoreCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingValidateCertificates": {
+          "enabled": false,
+          "value": true
+        },
+        "settingRequestMessageSize": {
+          "enabled": false,
+          "value": 67108864
+        }
+      },
+      {
+        "model": "websocket_request",
+        "id": "wr_DzcuaBsDLa",
+        "createdAt": "2022-09-06T08:00:39.058",
+        "updatedAt": "2022-09-06T08:01:14.029",
+        "workspaceId": "wk_TAQaJC6eeN",
+        "folderId": null,
+        "authentication": {
+          "password": "password",
+          "username": "user"
+        },
+        "authenticationType": "basic",
+        "description": "",
+        "headers": [],
+        "message": "",
+        "name": "basic-auth",
+        "sortPriority": 0.0,
+        "url": "ws://localhost:4010/basic-auth",
+        "urlParameters": [],
+        "settingSendCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingStoreCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingValidateCertificates": {
+          "enabled": false,
+          "value": true
+        },
+        "settingRequestMessageSize": {
+          "enabled": false,
+          "value": 67108864
+        }
+      },
+      {
+        "model": "websocket_request",
+        "id": "wr_rU97aC59g4",
+        "createdAt": "2022-08-31T10:36:42.873",
+        "updatedAt": "2022-08-31T10:37:03.227",
+        "workspaceId": "wk_TAQaJC6eeN",
+        "folderId": null,
+        "authentication": {},
+        "authenticationType": null,
+        "description": "",
+        "headers": [],
+        "message": "",
+        "name": "localhost:4010",
+        "sortPriority": 0.0,
+        "url": "ws://localhost:4010",
+        "urlParameters": [],
+        "settingSendCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingStoreCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingValidateCertificates": {
+          "enabled": false,
+          "value": true
+        },
+        "settingRequestMessageSize": {
+          "enabled": false,
+          "value": 67108864
+        }
+      },
+      {
+        "model": "websocket_request",
+        "id": "wr_koB4WsEGiG",
+        "createdAt": "2021-11-29T15:37:48.776",
+        "updatedAt": "2022-12-02T13:09:04.274",
+        "workspaceId": "wk_uUmLgS7YGd",
+        "folderId": "fl_mzqo34UKo5",
+        "authentication": {},
+        "authenticationType": null,
+        "description": "",
+        "headers": [],
+        "message": "{\n\t\"latitude\":\"409146138\",\n\t\"longitude\":\"-746188906\"\n}",
+        "name": "UnaryWithOutProtoFile",
+        "sortPriority": -1638200268776.0,
+        "url": "localhost:50051",
+        "urlParameters": [],
+        "settingSendCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingStoreCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingValidateCertificates": {
+          "enabled": false,
+          "value": true
+        },
+        "settingRequestMessageSize": {
+          "enabled": false,
+          "value": 67108864
+        }
+      }
+    ]
+  }
+}

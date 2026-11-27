@@ -1,0 +1,559 @@
+{
+  "yaakVersion": "0.1.0",
+  "yaakSchema": 4,
+  "timestamp": "2026-11-27T19:12:45.312137100",
+  "resources": {
+    "workspaces": [
+      {
+        "model": "workspace",
+        "id": "wk_HYsaWaiJUk",
+        "createdAt": "2026-11-27T19:12:43.489765600",
+        "updatedAt": "2026-11-27T19:12:43.489765800",
+        "authentication": {
+          "token": "${[ token ]}"
+        },
+        "authenticationType": "bearer",
+        "description": "Yaak fixture for the Bowire importer",
+        "headers": [
+          {
+            "enabled": true,
+            "name": "X-Client",
+            "value": "bowire-fixture",
+            "id": null
+          }
+        ],
+        "name": "Harbor API",
+        "encryptionKeyChallenge": null,
+        "settingValidateCertificates": true,
+        "settingFollowRedirects": true,
+        "settingRequestTimeout": 0,
+        "settingRequestMessageSize": 67108864,
+        "settingDnsOverrides": [],
+        "settingSendCookies": true,
+        "settingStoreCookies": true,
+        "settingHttpVersion": "auto"
+      }
+    ],
+    "environments": [
+      {
+        "model": "environment",
+        "id": "ev_HRDUZitJnV",
+        "workspaceId": "wk_HYsaWaiJUk",
+        "createdAt": "2026-11-27T19:12:43.734106700",
+        "updatedAt": "2026-11-27T19:12:43.734107100",
+        "name": "Staging",
+        "public": false,
+        "base": false,
+        "parentModel": "environment",
+        "parentId": "ev_UBtUkJ4cNz",
+        "variables": [
+          {
+            "enabled": true,
+            "name": "baseUrl",
+            "value": "https://staging.harbor.example.com/api",
+            "id": null
+          }
+        ],
+        "color": null,
+        "sortPriority": 0.0
+      },
+      {
+        "model": "environment",
+        "id": "ev_UBtUkJ4cNz",
+        "workspaceId": "wk_HYsaWaiJUk",
+        "createdAt": "2026-11-27T19:12:43.610422800",
+        "updatedAt": "2026-11-27T19:12:43.610423200",
+        "name": "Global",
+        "public": false,
+        "base": false,
+        "parentModel": "environment",
+        "parentId": null,
+        "variables": [
+          {
+            "enabled": true,
+            "name": "baseUrl",
+            "value": "https://harbor.example.com/api",
+            "id": null
+          },
+          {
+            "enabled": true,
+            "name": "token",
+            "value": "dev-token",
+            "id": null
+          },
+          {
+            "enabled": false,
+            "name": "disabledVar",
+            "value": "off",
+            "id": null
+          }
+        ],
+        "color": null,
+        "sortPriority": 0.0
+      }
+    ],
+    "folders": [
+      {
+        "model": "folder",
+        "id": "fl_9WxPN7htTE",
+        "createdAt": "2026-11-27T19:12:43.983499800",
+        "updatedAt": "2026-11-27T19:12:43.983500200",
+        "workspaceId": "wk_HYsaWaiJUk",
+        "folderId": "fl_8asAhgw8d6",
+        "authentication": {},
+        "authenticationType": null,
+        "description": "",
+        "headers": [],
+        "name": "Berths",
+        "sortPriority": 0.0,
+        "settingSendCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingStoreCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingValidateCertificates": {
+          "enabled": false,
+          "value": true
+        },
+        "settingFollowRedirects": {
+          "enabled": false,
+          "value": true
+        },
+        "settingRequestTimeout": {
+          "enabled": false,
+          "value": 0
+        },
+        "settingRequestMessageSize": {
+          "enabled": false,
+          "value": 67108864
+        },
+        "settingHttpVersion": {
+          "enabled": false,
+          "value": "auto"
+        }
+      },
+      {
+        "model": "folder",
+        "id": "fl_8asAhgw8d6",
+        "createdAt": "2026-11-27T19:12:43.859460700",
+        "updatedAt": "2026-11-27T19:12:43.859461100",
+        "workspaceId": "wk_HYsaWaiJUk",
+        "folderId": null,
+        "authentication": {},
+        "authenticationType": null,
+        "description": "Vessel endpoints",
+        "headers": [
+          {
+            "enabled": true,
+            "name": "X-Folder",
+            "value": "ships",
+            "id": null
+          }
+        ],
+        "name": "Ships",
+        "sortPriority": 0.0,
+        "settingSendCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingStoreCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingValidateCertificates": {
+          "enabled": false,
+          "value": true
+        },
+        "settingFollowRedirects": {
+          "enabled": false,
+          "value": true
+        },
+        "settingRequestTimeout": {
+          "enabled": false,
+          "value": 0
+        },
+        "settingRequestMessageSize": {
+          "enabled": false,
+          "value": 67108864
+        },
+        "settingHttpVersion": {
+          "enabled": false,
+          "value": "auto"
+        }
+      }
+    ],
+    "httpRequests": [
+      {
+        "model": "http_request",
+        "id": "rq_ukUAUDR2Ad",
+        "createdAt": "2026-11-27T19:12:44.827698500",
+        "updatedAt": "2026-11-27T19:12:44.827699",
+        "workspaceId": "wk_HYsaWaiJUk",
+        "folderId": null,
+        "authentication": {
+          "key": "X-Api-Key",
+          "location": "header",
+          "value": "${[ apiKey ]}"
+        },
+        "authenticationType": "apikey",
+        "body": {},
+        "bodyType": null,
+        "description": "",
+        "headers": [],
+        "method": "DELETE",
+        "name": "Delete ship",
+        "sortPriority": 0.0,
+        "url": "${[ baseUrl ]}/ships/7",
+        "urlParameters": [],
+        "settingSendCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingStoreCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingValidateCertificates": {
+          "enabled": false,
+          "value": true
+        },
+        "settingFollowRedirects": {
+          "enabled": false,
+          "value": true
+        },
+        "settingRequestTimeout": {
+          "enabled": false,
+          "value": 0
+        },
+        "settingHttpVersion": {
+          "enabled": false,
+          "value": "auto"
+        }
+      },
+      {
+        "model": "http_request",
+        "id": "rq_eWzTc9cvhm",
+        "createdAt": "2026-11-27T19:12:44.704080800",
+        "updatedAt": "2026-11-27T19:12:44.704081200",
+        "workspaceId": "wk_HYsaWaiJUk",
+        "folderId": null,
+        "authentication": {},
+        "authenticationType": null,
+        "body": {
+          "query": "query { ships { name } }",
+          "variables": "{\"limit\": 5}"
+        },
+        "bodyType": "graphql",
+        "description": "",
+        "headers": [],
+        "method": "POST",
+        "name": "GraphQL ships",
+        "sortPriority": 0.0,
+        "url": "${[ baseUrl ]}/graphql",
+        "urlParameters": [],
+        "settingSendCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingStoreCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingValidateCertificates": {
+          "enabled": false,
+          "value": true
+        },
+        "settingFollowRedirects": {
+          "enabled": false,
+          "value": true
+        },
+        "settingRequestTimeout": {
+          "enabled": false,
+          "value": 0
+        },
+        "settingHttpVersion": {
+          "enabled": false,
+          "value": "auto"
+        }
+      },
+      {
+        "model": "http_request",
+        "id": "rq_xBCaF53LxV",
+        "createdAt": "2026-11-27T19:12:44.579270900",
+        "updatedAt": "2026-11-27T19:12:44.579271300",
+        "workspaceId": "wk_HYsaWaiJUk",
+        "folderId": null,
+        "authentication": {},
+        "authenticationType": null,
+        "body": {},
+        "bodyType": null,
+        "description": "",
+        "headers": [
+          {
+            "enabled": true,
+            "name": "X-Trace",
+            "value": "${[ uuid.v4() ]}",
+            "id": null
+          }
+        ],
+        "method": "GET",
+        "name": "Ship by id (chained)",
+        "sortPriority": 0.0,
+        "url": "${[ baseUrl ]}/ships/${[ response.body.path(request='rq_x', path='$.id') ]}",
+        "urlParameters": [],
+        "settingSendCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingStoreCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingValidateCertificates": {
+          "enabled": false,
+          "value": true
+        },
+        "settingFollowRedirects": {
+          "enabled": false,
+          "value": true
+        },
+        "settingRequestTimeout": {
+          "enabled": false,
+          "value": 0
+        },
+        "settingHttpVersion": {
+          "enabled": false,
+          "value": "auto"
+        }
+      },
+      {
+        "model": "http_request",
+        "id": "rq_UxieYynTi7",
+        "createdAt": "2026-11-27T19:12:44.453561900",
+        "updatedAt": "2026-11-27T19:12:44.453562400",
+        "workspaceId": "wk_HYsaWaiJUk",
+        "folderId": "fl_9WxPN7htTE",
+        "authentication": {},
+        "authenticationType": null,
+        "body": {
+          "form": [
+            {
+              "name": "note",
+              "value": "cargo",
+              "enabled": true
+            },
+            {
+              "name": "file",
+              "file": "C:/manifests/m1.pdf",
+              "enabled": true
+            }
+          ]
+        },
+        "bodyType": "multipart/form-data",
+        "description": "",
+        "headers": [],
+        "method": "POST",
+        "name": "Upload manifest",
+        "sortPriority": 0.0,
+        "url": "${[ baseUrl ]}/manifests",
+        "urlParameters": [],
+        "settingSendCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingStoreCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingValidateCertificates": {
+          "enabled": false,
+          "value": true
+        },
+        "settingFollowRedirects": {
+          "enabled": false,
+          "value": true
+        },
+        "settingRequestTimeout": {
+          "enabled": false,
+          "value": 0
+        },
+        "settingHttpVersion": {
+          "enabled": false,
+          "value": "auto"
+        }
+      },
+      {
+        "model": "http_request",
+        "id": "rq_x4LArMU33c",
+        "createdAt": "2026-11-27T19:12:44.328391100",
+        "updatedAt": "2026-11-27T19:12:44.328391500",
+        "workspaceId": "wk_HYsaWaiJUk",
+        "folderId": "fl_9WxPN7htTE",
+        "authentication": {
+          "password": "${[ password ]}",
+          "username": "harbor"
+        },
+        "authenticationType": "basic",
+        "body": {
+          "form": [
+            {
+              "name": "ship",
+              "value": "101",
+              "enabled": true
+            },
+            {
+              "name": "from",
+              "value": "2026-12-01",
+              "enabled": true
+            }
+          ]
+        },
+        "bodyType": "application/x-www-form-urlencoded",
+        "description": "",
+        "headers": [],
+        "method": "PUT",
+        "name": "Book berth",
+        "sortPriority": 0.0,
+        "url": "${[ baseUrl ]}/berths/${[ berthId ]}",
+        "urlParameters": [],
+        "settingSendCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingStoreCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingValidateCertificates": {
+          "enabled": false,
+          "value": true
+        },
+        "settingFollowRedirects": {
+          "enabled": false,
+          "value": true
+        },
+        "settingRequestTimeout": {
+          "enabled": false,
+          "value": 0
+        },
+        "settingHttpVersion": {
+          "enabled": false,
+          "value": "auto"
+        }
+      },
+      {
+        "model": "http_request",
+        "id": "rq_QGMHn8uatC",
+        "createdAt": "2026-11-27T19:12:44.204276",
+        "updatedAt": "2026-11-27T19:12:44.204276400",
+        "workspaceId": "wk_HYsaWaiJUk",
+        "folderId": "fl_8asAhgw8d6",
+        "authentication": {},
+        "authenticationType": null,
+        "body": {
+          "text": "{\n  \"name\": \"Nordstern\",\n  \"imo\": 9876543\n}"
+        },
+        "bodyType": "application/json",
+        "description": "",
+        "headers": [
+          {
+            "enabled": true,
+            "name": "Content-Type",
+            "value": "application/json",
+            "id": null
+          }
+        ],
+        "method": "POST",
+        "name": "Create ship",
+        "sortPriority": 0.0,
+        "url": "${[ baseUrl ]}/ships",
+        "urlParameters": [],
+        "settingSendCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingStoreCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingValidateCertificates": {
+          "enabled": false,
+          "value": true
+        },
+        "settingFollowRedirects": {
+          "enabled": false,
+          "value": true
+        },
+        "settingRequestTimeout": {
+          "enabled": false,
+          "value": 0
+        },
+        "settingHttpVersion": {
+          "enabled": false,
+          "value": "auto"
+        }
+      },
+      {
+        "model": "http_request",
+        "id": "rq_U8cLyDUQVM",
+        "createdAt": "2026-11-27T19:12:44.094758",
+        "updatedAt": "2026-11-27T19:12:44.094758400",
+        "workspaceId": "wk_HYsaWaiJUk",
+        "folderId": "fl_8asAhgw8d6",
+        "authentication": {},
+        "authenticationType": null,
+        "body": {},
+        "bodyType": null,
+        "description": "",
+        "headers": [],
+        "method": "GET",
+        "name": "List ships",
+        "sortPriority": 0.0,
+        "url": "${[ baseUrl ]}/ships",
+        "urlParameters": [
+          {
+            "enabled": true,
+            "name": "limit",
+            "value": "20",
+            "id": null
+          },
+          {
+            "enabled": false,
+            "name": "draft",
+            "value": "x",
+            "id": null
+          }
+        ],
+        "settingSendCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingStoreCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingValidateCertificates": {
+          "enabled": false,
+          "value": true
+        },
+        "settingFollowRedirects": {
+          "enabled": false,
+          "value": true
+        },
+        "settingRequestTimeout": {
+          "enabled": false,
+          "value": 0
+        },
+        "settingHttpVersion": {
+          "enabled": false,
+          "value": "auto"
+        }
+      }
+    ],
+    "grpcRequests": [],
+    "websocketRequests": []
+  }
+}

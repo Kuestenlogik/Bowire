@@ -1,0 +1,1650 @@
+{
+  "yaakVersion": "0.1.0",
+  "yaakSchema": 4,
+  "timestamp": "2026-11-27T19:16:44.646588600",
+  "resources": {
+    "workspaces": [
+      {
+        "model": "workspace",
+        "id": "wk_9WWPLViCEi",
+        "createdAt": "2026-11-27T19:16:44.409838300",
+        "updatedAt": "2026-11-27T19:16:44.409838900",
+        "authentication": {
+          "token": "${[ bearer_auth_token ]}"
+        },
+        "authenticationType": "bearer",
+        "description": "# bruno-testbench 🐶\n\nThis is a test collection that I am using to test various functionalities around bruno\n\nBruno source fields for manual review (scripts are not executed):\n\n```yaml\nscripts:\n  - type: before-request\n    code: >-\n      // used by `scripting/js/folder-collection script-tests`\n\n      const shouldTestCollectionScripts =\n      bru.getVar('should-test-collection-scripts');\n\n      if(shouldTestCollectionScripts) {\n       bru.setVar('collection-var-set-by-collection-script', 'collection-var-value-set-by-collection-script');\n      }\n  - type: tests\n    code: >-\n      // used by `scripting/js/folder-collection script-tests`\n\n      const shouldTestCollectionScripts =\n      bru.getVar('should-test-collection-scripts');\n\n      const collectionVar =\n      bru.getVar(\"collection-var-set-by-collection-script\");\n\n      if (shouldTestCollectionScripts && collectionVar) {\n        test(\"collection level test - should get the var that was set by the collection script\", function() {\n          expect(collectionVar).to.equal(\"collection-var-value-set-by-collection-script\");\n        }); \n        bru.setVar('collection-var-set-by-collection-script', null); \n        bru.setVar('should-test-collection-scripts', null);\n      }\nproxy:\n  inherit: true\n  config:\n    protocol: http\n    hostname: \"{{proxyHostname}}\"\n    port: 4000\n    auth:\n      username: anoop\n      password: password\n      disabled: true\n    bypassProxy: \"\"\n```",
+        "headers": [
+          {
+            "enabled": true,
+            "name": "check",
+            "value": "again",
+            "id": null
+          },
+          {
+            "enabled": true,
+            "name": "token",
+            "value": "${[ collection_pre_var_token ]}",
+            "id": null
+          },
+          {
+            "enabled": true,
+            "name": "collection-header",
+            "value": "collection-header-value",
+            "id": null
+          }
+        ],
+        "name": "bruno-testbench",
+        "encryptionKeyChallenge": null,
+        "settingValidateCertificates": true,
+        "settingFollowRedirects": true,
+        "settingRequestTimeout": 0,
+        "settingRequestMessageSize": 67108864,
+        "settingDnsOverrides": [],
+        "settingSendCookies": true,
+        "settingStoreCookies": true,
+        "settingHttpVersion": "auto"
+      }
+    ],
+    "environments": [
+      {
+        "model": "environment",
+        "id": "ev_5wZNu95WzZ",
+        "workspaceId": "wk_9WWPLViCEi",
+        "createdAt": "2026-11-27T19:16:44.417454",
+        "updatedAt": "2026-11-27T19:16:44.417454100",
+        "name": "Prod",
+        "public": false,
+        "base": false,
+        "parentModel": "environment",
+        "parentId": null,
+        "variables": [
+          {
+            "enabled": true,
+            "name": "host",
+            "value": "https://testbench-sanity.usebruno.com",
+            "id": null
+          },
+          {
+            "enabled": true,
+            "name": "localhost",
+            "value": "http://localhost:8081",
+            "id": null
+          },
+          {
+            "enabled": true,
+            "name": "httpfaker",
+            "value": "https://www.httpfaker.org",
+            "id": null
+          },
+          {
+            "enabled": true,
+            "name": "bearer_auth_token",
+            "value": "your_secret_token",
+            "id": null
+          },
+          {
+            "enabled": true,
+            "name": "basic_auth_password",
+            "value": "della",
+            "id": null
+          },
+          {
+            "enabled": true,
+            "name": "env.var1",
+            "value": "envVar1",
+            "id": null
+          },
+          {
+            "enabled": true,
+            "name": "env-var2",
+            "value": "envVar2",
+            "id": null
+          },
+          {
+            "enabled": true,
+            "name": "bark",
+            "value": "{{process.env.PROC_ENV_VAR}}",
+            "id": null
+          },
+          {
+            "enabled": true,
+            "name": "foo",
+            "value": "bar",
+            "id": null
+          },
+          {
+            "enabled": true,
+            "name": "testSetEnvVar",
+            "value": "bruno-29653",
+            "id": null
+          },
+          {
+            "enabled": true,
+            "name": "echo-host",
+            "value": "https://echo.usebruno.com",
+            "id": null
+          },
+          {
+            "enabled": true,
+            "name": "typed_env_num",
+            "value": "300",
+            "id": null
+          },
+          {
+            "enabled": true,
+            "name": "typed_env_bool",
+            "value": "true",
+            "id": null
+          },
+          {
+            "enabled": true,
+            "name": "typed_env_obj",
+            "value": "{\n  \"scope\": \"env\"\n}",
+            "id": null
+          }
+        ],
+        "color": null,
+        "sortPriority": 1.0
+      },
+      {
+        "model": "environment",
+        "id": "ev_uPM9Gu9YHA",
+        "workspaceId": "wk_9WWPLViCEi",
+        "createdAt": "2026-11-27T19:16:44.417233600",
+        "updatedAt": "2026-11-27T19:16:44.417233800",
+        "name": "Local",
+        "public": false,
+        "base": false,
+        "parentModel": "environment",
+        "parentId": null,
+        "variables": [
+          {
+            "enabled": true,
+            "name": "host",
+            "value": "http://localhost:8080",
+            "id": null
+          },
+          {
+            "enabled": true,
+            "name": "localhost",
+            "value": "http://localhost:8081",
+            "id": null
+          },
+          {
+            "enabled": true,
+            "name": "httpfaker",
+            "value": "https://www.httpfaker.org",
+            "id": null
+          },
+          {
+            "enabled": true,
+            "name": "bearer_auth_token",
+            "value": "your_secret_token",
+            "id": null
+          },
+          {
+            "enabled": true,
+            "name": "basic_auth_password",
+            "value": "della",
+            "id": null
+          },
+          {
+            "enabled": true,
+            "name": "env.var1",
+            "value": "envVar1",
+            "id": null
+          },
+          {
+            "enabled": true,
+            "name": "env-var2",
+            "value": "envVar2",
+            "id": null
+          },
+          {
+            "enabled": true,
+            "name": "bark",
+            "value": "{{process.env.PROC_ENV_VAR}}",
+            "id": null
+          },
+          {
+            "enabled": true,
+            "name": "foo",
+            "value": "bar",
+            "id": null
+          },
+          {
+            "enabled": true,
+            "name": "testSetEnvVar",
+            "value": "bruno-29653",
+            "id": null
+          },
+          {
+            "enabled": true,
+            "name": "echo-host",
+            "value": "https://echo.usebruno.com",
+            "id": null
+          },
+          {
+            "enabled": true,
+            "name": "client_id",
+            "value": "client_id_1",
+            "id": null
+          },
+          {
+            "enabled": true,
+            "name": "client_secret",
+            "value": "client_secret_1",
+            "id": null
+          },
+          {
+            "enabled": true,
+            "name": "auth_url",
+            "value": "http://localhost:8080/api/auth/oauth2/authorization_code/authorize",
+            "id": null
+          },
+          {
+            "enabled": true,
+            "name": "callback_url",
+            "value": "http://localhost:8080/api/auth/oauth2/authorization_code/callback",
+            "id": null
+          },
+          {
+            "enabled": true,
+            "name": "access_token_url",
+            "value": "http://localhost:8080/api/auth/oauth2/authorization_code/token",
+            "id": null
+          },
+          {
+            "enabled": true,
+            "name": "passwordCredentials_username",
+            "value": "foo",
+            "id": null
+          },
+          {
+            "enabled": true,
+            "name": "passwordCredentials_password",
+            "value": "bar",
+            "id": null
+          },
+          {
+            "enabled": true,
+            "name": "github_authorize_url",
+            "value": "https://github.com/login/oauth/authorize",
+            "id": null
+          },
+          {
+            "enabled": true,
+            "name": "github_access_token_url",
+            "value": "https://github.com/login/oauth/access_token",
+            "id": null
+          },
+          {
+            "enabled": true,
+            "name": "google_auth_url",
+            "value": "https://accounts.google.com/o/oauth2/auth",
+            "id": null
+          },
+          {
+            "enabled": true,
+            "name": "google_access_token_url",
+            "value": "https://accounts.google.com/o/oauth2/token",
+            "id": null
+          },
+          {
+            "enabled": true,
+            "name": "google_scope",
+            "value": "https://www.googleapis.com/auth/userinfo.email",
+            "id": null
+          },
+          {
+            "enabled": true,
+            "name": "typed_env_num",
+            "value": "300",
+            "id": null
+          },
+          {
+            "enabled": true,
+            "name": "typed_env_bool",
+            "value": "true",
+            "id": null
+          },
+          {
+            "enabled": true,
+            "name": "typed_env_obj",
+            "value": "{\n  \"scope\": \"env\"\n}",
+            "id": null
+          },
+          {
+            "enabled": true,
+            "name": "github_client_secret",
+            "value": "",
+            "id": null
+          },
+          {
+            "enabled": true,
+            "name": "github_client_id",
+            "value": "",
+            "id": null
+          },
+          {
+            "enabled": true,
+            "name": "google_client_id",
+            "value": "",
+            "id": null
+          },
+          {
+            "enabled": true,
+            "name": "google_client_secret",
+            "value": "",
+            "id": null
+          },
+          {
+            "enabled": true,
+            "name": "github_authorization_code",
+            "value": "",
+            "id": null
+          },
+          {
+            "enabled": true,
+            "name": "passwordCredentials_access_token",
+            "value": "",
+            "id": null
+          },
+          {
+            "enabled": true,
+            "name": "client_credentials_access_token",
+            "value": "",
+            "id": null
+          },
+          {
+            "enabled": true,
+            "name": "authorization_code_access_token",
+            "value": "",
+            "id": null
+          },
+          {
+            "enabled": true,
+            "name": "github_access_token",
+            "value": "",
+            "id": null
+          }
+        ],
+        "color": null,
+        "sortPriority": 0.0
+      },
+      {
+        "model": "environment",
+        "id": "ev_HsksT3sUFL",
+        "workspaceId": "wk_9WWPLViCEi",
+        "createdAt": "2026-11-27T19:16:44.417044100",
+        "updatedAt": "2026-11-27T19:16:44.417044300",
+        "name": "Base Environment",
+        "public": false,
+        "base": true,
+        "parentModel": "workspace",
+        "parentId": null,
+        "variables": [
+          {
+            "enabled": true,
+            "name": "collection_pre_var",
+            "value": "collection_pre_var_value",
+            "id": null
+          },
+          {
+            "enabled": true,
+            "name": "collection_pre_var_token",
+            "value": "${[ request_pre_var_token ]}",
+            "id": null
+          },
+          {
+            "enabled": true,
+            "name": "collection-var",
+            "value": "collection-var-value",
+            "id": null
+          },
+          {
+            "enabled": true,
+            "name": "coll_str",
+            "value": "collection_string",
+            "id": null
+          },
+          {
+            "enabled": true,
+            "name": "coll_num",
+            "value": "100",
+            "id": null
+          },
+          {
+            "enabled": true,
+            "name": "coll_bool",
+            "value": "false",
+            "id": null
+          },
+          {
+            "enabled": true,
+            "name": "coll_obj",
+            "value": "{\n  \"scope\": \"collection\"\n}",
+            "id": null
+          }
+        ],
+        "color": null,
+        "sortPriority": 0.0
+      }
+    ],
+    "folders": [
+      {
+        "model": "folder",
+        "id": "fl_Bq6jmEvH3w",
+        "createdAt": "2026-11-27T19:16:44.416815100",
+        "updatedAt": "2026-11-27T19:16:44.416815300",
+        "workspaceId": "wk_9WWPLViCEi",
+        "folderId": null,
+        "authentication": {},
+        "authenticationType": null,
+        "description": "",
+        "headers": [],
+        "name": "graphql",
+        "sortPriority": 1.0,
+        "settingSendCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingStoreCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingValidateCertificates": {
+          "enabled": false,
+          "value": true
+        },
+        "settingFollowRedirects": {
+          "enabled": false,
+          "value": true
+        },
+        "settingRequestTimeout": {
+          "enabled": false,
+          "value": 0
+        },
+        "settingRequestMessageSize": {
+          "enabled": false,
+          "value": 67108864
+        },
+        "settingHttpVersion": {
+          "enabled": false,
+          "value": "auto"
+        }
+      },
+      {
+        "model": "folder",
+        "id": "fl_TNJUUcnWhw",
+        "createdAt": "2026-11-27T19:16:44.416593200",
+        "updatedAt": "2026-11-27T19:16:44.416593400",
+        "workspaceId": "wk_9WWPLViCEi",
+        "folderId": "fl_FhJR49o5Vm",
+        "authentication": {},
+        "authenticationType": null,
+        "description": "",
+        "headers": [],
+        "name": "inherit auth",
+        "sortPriority": 4.0,
+        "settingSendCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingStoreCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingValidateCertificates": {
+          "enabled": false,
+          "value": true
+        },
+        "settingFollowRedirects": {
+          "enabled": false,
+          "value": true
+        },
+        "settingRequestTimeout": {
+          "enabled": false,
+          "value": 0
+        },
+        "settingRequestMessageSize": {
+          "enabled": false,
+          "value": 67108864
+        },
+        "settingHttpVersion": {
+          "enabled": false,
+          "value": "auto"
+        }
+      },
+      {
+        "model": "folder",
+        "id": "fl_LMNCmanxS3",
+        "createdAt": "2026-11-27T19:16:44.416376200",
+        "updatedAt": "2026-11-27T19:16:44.416376300",
+        "workspaceId": "wk_9WWPLViCEi",
+        "folderId": "fl_FhJR49o5Vm",
+        "authentication": {},
+        "authenticationType": "none",
+        "description": "",
+        "headers": [],
+        "name": "digest",
+        "sortPriority": 3.0,
+        "settingSendCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingStoreCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingValidateCertificates": {
+          "enabled": false,
+          "value": true
+        },
+        "settingFollowRedirects": {
+          "enabled": false,
+          "value": true
+        },
+        "settingRequestTimeout": {
+          "enabled": false,
+          "value": 0
+        },
+        "settingRequestMessageSize": {
+          "enabled": false,
+          "value": 67108864
+        },
+        "settingHttpVersion": {
+          "enabled": false,
+          "value": "auto"
+        }
+      },
+      {
+        "model": "folder",
+        "id": "fl_6ZKpizMHNM",
+        "createdAt": "2026-11-27T19:16:44.416165900",
+        "updatedAt": "2026-11-27T19:16:44.416166100",
+        "workspaceId": "wk_9WWPLViCEi",
+        "folderId": "fl_FhJR49o5Vm",
+        "authentication": {},
+        "authenticationType": null,
+        "description": "",
+        "headers": [],
+        "name": "cookie",
+        "sortPriority": 2.0,
+        "settingSendCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingStoreCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingValidateCertificates": {
+          "enabled": false,
+          "value": true
+        },
+        "settingFollowRedirects": {
+          "enabled": false,
+          "value": true
+        },
+        "settingRequestTimeout": {
+          "enabled": false,
+          "value": 0
+        },
+        "settingRequestMessageSize": {
+          "enabled": false,
+          "value": 67108864
+        },
+        "settingHttpVersion": {
+          "enabled": false,
+          "value": "auto"
+        }
+      },
+      {
+        "model": "folder",
+        "id": "fl_MgeUpDMC8S",
+        "createdAt": "2026-11-27T19:16:44.415933200",
+        "updatedAt": "2026-11-27T19:16:44.415933300",
+        "workspaceId": "wk_9WWPLViCEi",
+        "folderId": "fl_nDzzeJaFzQ",
+        "authentication": {},
+        "authenticationType": null,
+        "description": "",
+        "headers": [],
+        "name": "via headers",
+        "sortPriority": 1.0,
+        "settingSendCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingStoreCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingValidateCertificates": {
+          "enabled": false,
+          "value": true
+        },
+        "settingFollowRedirects": {
+          "enabled": false,
+          "value": true
+        },
+        "settingRequestTimeout": {
+          "enabled": false,
+          "value": 0
+        },
+        "settingRequestMessageSize": {
+          "enabled": false,
+          "value": 67108864
+        },
+        "settingHttpVersion": {
+          "enabled": false,
+          "value": "auto"
+        }
+      },
+      {
+        "model": "folder",
+        "id": "fl_qg3ekPq3FP",
+        "createdAt": "2026-11-27T19:16:44.415719300",
+        "updatedAt": "2026-11-27T19:16:44.415719400",
+        "workspaceId": "wk_9WWPLViCEi",
+        "folderId": "fl_nDzzeJaFzQ",
+        "authentication": {},
+        "authenticationType": null,
+        "description": "",
+        "headers": [],
+        "name": "via auth",
+        "sortPriority": 0.0,
+        "settingSendCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingStoreCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingValidateCertificates": {
+          "enabled": false,
+          "value": true
+        },
+        "settingFollowRedirects": {
+          "enabled": false,
+          "value": true
+        },
+        "settingRequestTimeout": {
+          "enabled": false,
+          "value": 0
+        },
+        "settingRequestMessageSize": {
+          "enabled": false,
+          "value": 67108864
+        },
+        "settingHttpVersion": {
+          "enabled": false,
+          "value": "auto"
+        }
+      },
+      {
+        "model": "folder",
+        "id": "fl_nDzzeJaFzQ",
+        "createdAt": "2026-11-27T19:16:44.415504600",
+        "updatedAt": "2026-11-27T19:16:44.415504800",
+        "workspaceId": "wk_9WWPLViCEi",
+        "folderId": "fl_FhJR49o5Vm",
+        "authentication": {},
+        "authenticationType": null,
+        "description": "",
+        "headers": [],
+        "name": "bearer",
+        "sortPriority": 1.0,
+        "settingSendCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingStoreCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingValidateCertificates": {
+          "enabled": false,
+          "value": true
+        },
+        "settingFollowRedirects": {
+          "enabled": false,
+          "value": true
+        },
+        "settingRequestTimeout": {
+          "enabled": false,
+          "value": 0
+        },
+        "settingRequestMessageSize": {
+          "enabled": false,
+          "value": 67108864
+        },
+        "settingHttpVersion": {
+          "enabled": false,
+          "value": "auto"
+        }
+      },
+      {
+        "model": "folder",
+        "id": "fl_3NuMssFaab",
+        "createdAt": "2026-11-27T19:16:44.415290900",
+        "updatedAt": "2026-11-27T19:16:44.415291100",
+        "workspaceId": "wk_9WWPLViCEi",
+        "folderId": "fl_ySYbTQaeDY",
+        "authentication": {},
+        "authenticationType": null,
+        "description": "",
+        "headers": [],
+        "name": "via script",
+        "sortPriority": 1.0,
+        "settingSendCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingStoreCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingValidateCertificates": {
+          "enabled": false,
+          "value": true
+        },
+        "settingFollowRedirects": {
+          "enabled": false,
+          "value": true
+        },
+        "settingRequestTimeout": {
+          "enabled": false,
+          "value": 0
+        },
+        "settingRequestMessageSize": {
+          "enabled": false,
+          "value": 67108864
+        },
+        "settingHttpVersion": {
+          "enabled": false,
+          "value": "auto"
+        }
+      },
+      {
+        "model": "folder",
+        "id": "fl_2xS62MneAc",
+        "createdAt": "2026-11-27T19:16:44.415075100",
+        "updatedAt": "2026-11-27T19:16:44.415075300",
+        "workspaceId": "wk_9WWPLViCEi",
+        "folderId": "fl_ySYbTQaeDY",
+        "authentication": {},
+        "authenticationType": null,
+        "description": "",
+        "headers": [],
+        "name": "via auth",
+        "sortPriority": 0.0,
+        "settingSendCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingStoreCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingValidateCertificates": {
+          "enabled": false,
+          "value": true
+        },
+        "settingFollowRedirects": {
+          "enabled": false,
+          "value": true
+        },
+        "settingRequestTimeout": {
+          "enabled": false,
+          "value": 0
+        },
+        "settingRequestMessageSize": {
+          "enabled": false,
+          "value": 67108864
+        },
+        "settingHttpVersion": {
+          "enabled": false,
+          "value": "auto"
+        }
+      },
+      {
+        "model": "folder",
+        "id": "fl_ySYbTQaeDY",
+        "createdAt": "2026-11-27T19:16:44.414857800",
+        "updatedAt": "2026-11-27T19:16:44.414858",
+        "workspaceId": "wk_9WWPLViCEi",
+        "folderId": "fl_FhJR49o5Vm",
+        "authentication": {},
+        "authenticationType": null,
+        "description": "",
+        "headers": [],
+        "name": "basic",
+        "sortPriority": 0.0,
+        "settingSendCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingStoreCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingValidateCertificates": {
+          "enabled": false,
+          "value": true
+        },
+        "settingFollowRedirects": {
+          "enabled": false,
+          "value": true
+        },
+        "settingRequestTimeout": {
+          "enabled": false,
+          "value": 0
+        },
+        "settingRequestMessageSize": {
+          "enabled": false,
+          "value": 67108864
+        },
+        "settingHttpVersion": {
+          "enabled": false,
+          "value": "auto"
+        }
+      },
+      {
+        "model": "folder",
+        "id": "fl_FhJR49o5Vm",
+        "createdAt": "2026-11-27T19:16:44.414614100",
+        "updatedAt": "2026-11-27T19:16:44.414614300",
+        "workspaceId": "wk_9WWPLViCEi",
+        "folderId": null,
+        "authentication": {},
+        "authenticationType": null,
+        "description": "",
+        "headers": [],
+        "name": "auth",
+        "sortPriority": 0.0,
+        "settingSendCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingStoreCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingValidateCertificates": {
+          "enabled": false,
+          "value": true
+        },
+        "settingFollowRedirects": {
+          "enabled": false,
+          "value": true
+        },
+        "settingRequestTimeout": {
+          "enabled": false,
+          "value": 0
+        },
+        "settingRequestMessageSize": {
+          "enabled": false,
+          "value": 67108864
+        },
+        "settingHttpVersion": {
+          "enabled": false,
+          "value": "auto"
+        }
+      }
+    ],
+    "httpRequests": [
+      {
+        "model": "http_request",
+        "id": "rq_Cy3tNXpwY9",
+        "createdAt": "2026-11-27T19:16:44.414317300",
+        "updatedAt": "2026-11-27T19:16:44.414317500",
+        "workspaceId": "wk_9WWPLViCEi",
+        "folderId": "fl_Bq6jmEvH3w",
+        "authentication": {},
+        "authenticationType": "none",
+        "body": {
+          "query": "query { __typename }",
+          "variables": "{\n  \"my_json\": \"${[ my_json ]}\"\n}"
+        },
+        "bodyType": "graphql",
+        "description": "Bruno source fields for manual review (scripts are not executed):\n\n```yaml\nruntime:\n  scripts:\n    - type: before-request\n      code: |-\n        const testData = {\n          a: [1,2,3],\n          b: {\n            c: \"test\",\n            d: \"another value\"\n          }\n        };\n\n        // Single escaping\n        let cv = JSON.stringify(testData).replace(/\"/g, '\\\\\"');\n\n        bru.setVar(\"my_json\", cv)\n    - type: after-response\n      code: bru.deleteVar(\"my_json\")\n    - type: tests\n      code: >-\n        test(\"GraphQL variables with nested object and array are interpolated\n        then sent as parsed object\", function() {\n          const body = res.getBody();\n          expect(body).to.have.property(\"variables\");\n          expect(body.variables).to.be.an(\"object\");\n          expect(body.variables).to.have.property(\"my_json\");\n          expect(body.variables.my_json).to.eql(\"{\\\"a\\\":[1,2,3],\\\"b\\\":{\\\"c\\\":\\\"test\\\",\\\"d\\\":\\\"another value\\\"}}\");\n        });\n  assertions:\n    - expression: res.status\n      operator: eq\n      value: \"200\"\nsettings:\n  encodeUrl: true\n  timeout: 0\n  followRedirects: true\n  maxRedirects: 5\n  forwardAuthorizationHeader: true\n```",
+        "headers": [
+          {
+            "enabled": true,
+            "name": "Content-Type",
+            "value": "application/json",
+            "id": null
+          }
+        ],
+        "method": "POST",
+        "name": "variables interpolation",
+        "sortPriority": 3.0,
+        "url": "${[ host ]}/api/echo/json",
+        "urlParameters": [],
+        "settingSendCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingStoreCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingValidateCertificates": {
+          "enabled": false,
+          "value": true
+        },
+        "settingFollowRedirects": {
+          "enabled": true,
+          "value": true
+        },
+        "settingRequestTimeout": {
+          "enabled": true,
+          "value": 0
+        },
+        "settingHttpVersion": {
+          "enabled": false,
+          "value": "auto"
+        }
+      },
+      {
+        "model": "http_request",
+        "id": "rq_Mj3nJWAPUX",
+        "createdAt": "2026-11-27T19:16:44.414034700",
+        "updatedAt": "2026-11-27T19:16:44.414034900",
+        "workspaceId": "wk_9WWPLViCEi",
+        "folderId": "fl_Bq6jmEvH3w",
+        "authentication": {},
+        "authenticationType": "none",
+        "body": {
+          "query": "{\n  company {\n    ceo\n  }\n}\n",
+          "variables": ""
+        },
+        "bodyType": "graphql",
+        "description": "Bruno source fields for manual review (scripts are not executed):\n\n```yaml\nruntime:\n  assertions:\n    - expression: res.status\n      operator: eq\n      value: \"200\"\n    - expression: res.body.data.company.ceo\n      operator: eq\n      value: Elon Musk\nsettings:\n  encodeUrl: true\n  timeout: 0\n  followRedirects: true\n  maxRedirects: 5\n  forwardAuthorizationHeader: true\n```",
+        "headers": [
+          {
+            "enabled": true,
+            "name": "Content-Type",
+            "value": "application/json",
+            "id": null
+          }
+        ],
+        "method": "POST",
+        "name": "spacex",
+        "sortPriority": 1.0,
+        "url": "${[ localhost ]}/api/graphql",
+        "urlParameters": [],
+        "settingSendCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingStoreCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingValidateCertificates": {
+          "enabled": false,
+          "value": true
+        },
+        "settingFollowRedirects": {
+          "enabled": true,
+          "value": true
+        },
+        "settingRequestTimeout": {
+          "enabled": true,
+          "value": 0
+        },
+        "settingHttpVersion": {
+          "enabled": false,
+          "value": "auto"
+        }
+      },
+      {
+        "model": "http_request",
+        "id": "rq_PBMqkBGvD8",
+        "createdAt": "2026-11-27T19:16:44.413756300",
+        "updatedAt": "2026-11-27T19:16:44.413756500",
+        "workspaceId": "wk_9WWPLViCEi",
+        "folderId": "fl_Bq6jmEvH3w",
+        "authentication": {},
+        "authenticationType": null,
+        "body": {
+          "query": "mutation create($id: String!) {\n  create(payload: { id: $id }) {\n    success\n  }\n}\n",
+          "variables": "{\n  \"id\":\"1\"\n}"
+        },
+        "bodyType": "graphql",
+        "description": "Bruno source fields for manual review (scripts are not executed):\n\n```yaml\nruntime:\n  assertions:\n    - expression: res.status\n      operator: eq\n      value: \"200\"\n    - expression: res.body.data.create.success\n      operator: eq\n      value: \"true\"\nsettings:\n  encodeUrl: true\n  timeout: 0\n  followRedirects: true\n  maxRedirects: 5\n  forwardAuthorizationHeader: true\n```",
+        "headers": [
+          {
+            "enabled": true,
+            "name": "Content-Type",
+            "value": "application/json",
+            "id": null
+          }
+        ],
+        "method": "POST",
+        "name": "mutation",
+        "sortPriority": 3.0,
+        "url": "${[ localhost ]}/api/graphql",
+        "urlParameters": [],
+        "settingSendCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingStoreCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingValidateCertificates": {
+          "enabled": false,
+          "value": true
+        },
+        "settingFollowRedirects": {
+          "enabled": true,
+          "value": true
+        },
+        "settingRequestTimeout": {
+          "enabled": true,
+          "value": 0
+        },
+        "settingHttpVersion": {
+          "enabled": false,
+          "value": "auto"
+        }
+      },
+      {
+        "model": "http_request",
+        "id": "rq_CGKUTtKJNE",
+        "createdAt": "2026-11-27T19:16:44.413485300",
+        "updatedAt": "2026-11-27T19:16:44.413485500",
+        "workspaceId": "wk_9WWPLViCEi",
+        "folderId": "fl_TNJUUcnWhw",
+        "authentication": {},
+        "authenticationType": null,
+        "body": {},
+        "bodyType": null,
+        "description": "Bruno source fields for manual review (scripts are not executed):\n\n```yaml\nruntime:\n  scripts:\n    - type: after-response\n      code: bru.setEnvVar(\"foo\", \"bar\");\n  assertions:\n    - expression: res.status\n      operator: eq\n      value: \"200\"\n    - expression: res.body.message\n      operator: eq\n      value: Authentication successful\nsettings:\n  encodeUrl: true\n  timeout: 0\n  followRedirects: true\n  maxRedirects: 5\n  forwardAuthorizationHeader: true\n```",
+        "headers": [],
+        "method": "GET",
+        "name": "inherit Bearer Auth 200",
+        "sortPriority": 2.0,
+        "url": "${[ host ]}/api/auth/bearer/protected",
+        "urlParameters": [],
+        "settingSendCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingStoreCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingValidateCertificates": {
+          "enabled": false,
+          "value": true
+        },
+        "settingFollowRedirects": {
+          "enabled": true,
+          "value": true
+        },
+        "settingRequestTimeout": {
+          "enabled": true,
+          "value": 0
+        },
+        "settingHttpVersion": {
+          "enabled": false,
+          "value": "auto"
+        }
+      },
+      {
+        "model": "http_request",
+        "id": "rq_xTGXddFgkB",
+        "createdAt": "2026-11-27T19:16:44.413216200",
+        "updatedAt": "2026-11-27T19:16:44.413216400",
+        "workspaceId": "wk_9WWPLViCEi",
+        "folderId": "fl_LMNCmanxS3",
+        "authentication": {
+          "password": "passwd",
+          "username": "foo"
+        },
+        "authenticationType": "digest",
+        "body": {},
+        "bodyType": null,
+        "description": "Bruno source fields for manual review (scripts are not executed):\n\n```yaml\nruntime:\n  assertions:\n    - expression: res.status\n      operator: eq\n      value: \"401\"\nsettings:\n  encodeUrl: true\n  timeout: 0\n  followRedirects: true\n  maxRedirects: 5\n  forwardAuthorizationHeader: true\n```",
+        "headers": [],
+        "method": "GET",
+        "name": "Digest Auth 401",
+        "sortPriority": 2.0,
+        "url": "https://www.httpfaker.org/api/auth/digest/auth/admin/badpassword",
+        "urlParameters": [],
+        "settingSendCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingStoreCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingValidateCertificates": {
+          "enabled": false,
+          "value": true
+        },
+        "settingFollowRedirects": {
+          "enabled": true,
+          "value": true
+        },
+        "settingRequestTimeout": {
+          "enabled": true,
+          "value": 0
+        },
+        "settingHttpVersion": {
+          "enabled": false,
+          "value": "auto"
+        }
+      },
+      {
+        "model": "http_request",
+        "id": "rq_FLb4QQp8yK",
+        "createdAt": "2026-11-27T19:16:44.412930900",
+        "updatedAt": "2026-11-27T19:16:44.412931100",
+        "workspaceId": "wk_9WWPLViCEi",
+        "folderId": "fl_LMNCmanxS3",
+        "authentication": {
+          "password": "password",
+          "username": "admin"
+        },
+        "authenticationType": "digest",
+        "body": {},
+        "bodyType": null,
+        "description": "Bruno source fields for manual review (scripts are not executed):\n\n```yaml\nruntime:\n  assertions:\n    - expression: res.status\n      operator: eq\n      value: \"200\"\n    - expression: res.body.authenticated\n      operator: isTruthy\nsettings:\n  encodeUrl: true\n  timeout: 0\n  followRedirects: true\n  maxRedirects: 5\n  forwardAuthorizationHeader: true\n```",
+        "headers": [],
+        "method": "GET",
+        "name": "Digest Auth 200",
+        "sortPriority": 1.0,
+        "url": "https://www.httpfaker.org/api/auth/digest/auth/admin/password",
+        "urlParameters": [],
+        "settingSendCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingStoreCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingValidateCertificates": {
+          "enabled": false,
+          "value": true
+        },
+        "settingFollowRedirects": {
+          "enabled": true,
+          "value": true
+        },
+        "settingRequestTimeout": {
+          "enabled": true,
+          "value": 0
+        },
+        "settingHttpVersion": {
+          "enabled": false,
+          "value": "auto"
+        }
+      },
+      {
+        "model": "http_request",
+        "id": "rq_KrQ24Ashus",
+        "createdAt": "2026-11-27T19:16:44.412658600",
+        "updatedAt": "2026-11-27T19:16:44.412658700",
+        "workspaceId": "wk_9WWPLViCEi",
+        "folderId": "fl_6ZKpizMHNM",
+        "authentication": {},
+        "authenticationType": "none",
+        "body": {},
+        "bodyType": null,
+        "description": "Bruno source fields for manual review (scripts are not executed):\n\n```yaml\nsettings:\n  encodeUrl: true\n  timeout: 0\n  followRedirects: true\n  maxRedirects: 5\n  forwardAuthorizationHeader: true\n```",
+        "headers": [],
+        "method": "POST",
+        "name": "Login",
+        "sortPriority": 1.0,
+        "url": "${[ host ]}/api/auth/cookie/login",
+        "urlParameters": [],
+        "settingSendCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingStoreCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingValidateCertificates": {
+          "enabled": false,
+          "value": true
+        },
+        "settingFollowRedirects": {
+          "enabled": true,
+          "value": true
+        },
+        "settingRequestTimeout": {
+          "enabled": true,
+          "value": 0
+        },
+        "settingHttpVersion": {
+          "enabled": false,
+          "value": "auto"
+        }
+      },
+      {
+        "model": "http_request",
+        "id": "rq_LqHqyFXX2r",
+        "createdAt": "2026-11-27T19:16:44.412395100",
+        "updatedAt": "2026-11-27T19:16:44.412395300",
+        "workspaceId": "wk_9WWPLViCEi",
+        "folderId": "fl_6ZKpizMHNM",
+        "authentication": {},
+        "authenticationType": "none",
+        "body": {},
+        "bodyType": null,
+        "description": "Bruno source fields for manual review (scripts are not executed):\n\n```yaml\nsettings:\n  encodeUrl: true\n  timeout: 0\n  followRedirects: true\n  maxRedirects: 5\n  forwardAuthorizationHeader: true\n```",
+        "headers": [],
+        "method": "GET",
+        "name": "Check",
+        "sortPriority": 2.0,
+        "url": "${[ host ]}/api/auth/cookie/protected",
+        "urlParameters": [],
+        "settingSendCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingStoreCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingValidateCertificates": {
+          "enabled": false,
+          "value": true
+        },
+        "settingFollowRedirects": {
+          "enabled": true,
+          "value": true
+        },
+        "settingRequestTimeout": {
+          "enabled": true,
+          "value": 0
+        },
+        "settingHttpVersion": {
+          "enabled": false,
+          "value": "auto"
+        }
+      },
+      {
+        "model": "http_request",
+        "id": "rq_EdtDVDPhUc",
+        "createdAt": "2026-11-27T19:16:44.412102100",
+        "updatedAt": "2026-11-27T19:16:44.412102300",
+        "workspaceId": "wk_9WWPLViCEi",
+        "folderId": "fl_MgeUpDMC8S",
+        "authentication": {},
+        "authenticationType": "none",
+        "body": {
+          "text": ""
+        },
+        "bodyType": "application/json",
+        "description": "Bruno source fields for manual review (scripts are not executed):\n\n```yaml\nruntime:\n  variables:\n    - name: a-c\n      value: foo\n  scripts:\n    - type: after-response\n      code: bru.setEnvVar(\"foo\", \"bar\");\n  assertions:\n    - expression: res.status\n      operator: eq\n      value: \"200\"\n    - expression: res.body.message\n      operator: eq\n      value: Authentication successful\nsettings:\n  encodeUrl: true\n  timeout: 0\n  followRedirects: true\n  maxRedirects: 5\n  forwardAuthorizationHeader: true\n```",
+        "headers": [
+          {
+            "enabled": true,
+            "name": "Authorization",
+            "value": "Bearer ${[ bearer_auth_token ]}",
+            "id": null
+          },
+          {
+            "enabled": true,
+            "name": "Content-Type",
+            "value": "application/json",
+            "id": null
+          }
+        ],
+        "method": "GET",
+        "name": "Bearer Auth 200",
+        "sortPriority": 1.0,
+        "url": "${[ host ]}/api/auth/bearer/protected",
+        "urlParameters": [],
+        "settingSendCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingStoreCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingValidateCertificates": {
+          "enabled": false,
+          "value": true
+        },
+        "settingFollowRedirects": {
+          "enabled": true,
+          "value": true
+        },
+        "settingRequestTimeout": {
+          "enabled": true,
+          "value": 0
+        },
+        "settingHttpVersion": {
+          "enabled": false,
+          "value": "auto"
+        }
+      },
+      {
+        "model": "http_request",
+        "id": "rq_fRVfyd7bb8",
+        "createdAt": "2026-11-27T19:16:44.411807300",
+        "updatedAt": "2026-11-27T19:16:44.411807400",
+        "workspaceId": "wk_9WWPLViCEi",
+        "folderId": "fl_qg3ekPq3FP",
+        "authentication": {
+          "token": ""
+        },
+        "authenticationType": "bearer",
+        "body": {},
+        "bodyType": null,
+        "description": "Bruno source fields for manual review (scripts are not executed):\n\n```yaml\nruntime:\n  scripts:\n    - type: tests\n      code: |-\n        test(\"selected auth overrides Authorization header always\", function() {\n          const authHeader =  req.getHeader(\"Authorization\")\n          expect(authHeader).to.eql(\"Bearer \")\n        })\n  assertions:\n    - expression: res.body.message\n      operator: eq\n      value: Unauthorized\n    - expression: res.status\n      operator: eq\n      value: \"401\"\nsettings:\n  encodeUrl: true\n  timeout: 0\n  followRedirects: true\n  maxRedirects: 5\n  forwardAuthorizationHeader: true\n```",
+        "headers": [
+          {
+            "enabled": true,
+            "name": "Authorization",
+            "value": "Bearer ${[ bearer_auth_token ]}",
+            "id": null
+          }
+        ],
+        "method": "GET",
+        "name": "Bearer Auth undefined",
+        "sortPriority": 2.0,
+        "url": "${[ host ]}/api/auth/bearer/protected",
+        "urlParameters": [],
+        "settingSendCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingStoreCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingValidateCertificates": {
+          "enabled": false,
+          "value": true
+        },
+        "settingFollowRedirects": {
+          "enabled": true,
+          "value": true
+        },
+        "settingRequestTimeout": {
+          "enabled": true,
+          "value": 0
+        },
+        "settingHttpVersion": {
+          "enabled": false,
+          "value": "auto"
+        }
+      },
+      {
+        "model": "http_request",
+        "id": "rq_owS7drrBwT",
+        "createdAt": "2026-11-27T19:16:44.411547500",
+        "updatedAt": "2026-11-27T19:16:44.411547700",
+        "workspaceId": "wk_9WWPLViCEi",
+        "folderId": "fl_qg3ekPq3FP",
+        "authentication": {
+          "token": "${[ bearer_auth_token ]}"
+        },
+        "authenticationType": "bearer",
+        "body": {},
+        "bodyType": null,
+        "description": "Bruno source fields for manual review (scripts are not executed):\n\n```yaml\nruntime:\n  scripts:\n    - type: after-response\n      code: bru.setEnvVar(\"foo\", \"bar\");\n  assertions:\n    - expression: res.status\n      operator: eq\n      value: \"200\"\n    - expression: res.body.message\n      operator: eq\n      value: Authentication successful\nsettings:\n  encodeUrl: true\n  timeout: 0\n  followRedirects: true\n  maxRedirects: 5\n  forwardAuthorizationHeader: true\n```",
+        "headers": [],
+        "method": "GET",
+        "name": "Bearer Auth 200",
+        "sortPriority": 1.0,
+        "url": "${[ host ]}/api/auth/bearer/protected",
+        "urlParameters": [],
+        "settingSendCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingStoreCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingValidateCertificates": {
+          "enabled": false,
+          "value": true
+        },
+        "settingFollowRedirects": {
+          "enabled": true,
+          "value": true
+        },
+        "settingRequestTimeout": {
+          "enabled": true,
+          "value": 0
+        },
+        "settingHttpVersion": {
+          "enabled": false,
+          "value": "auto"
+        }
+      },
+      {
+        "model": "http_request",
+        "id": "rq_v6QAEBpWpN",
+        "createdAt": "2026-11-27T19:16:44.411262800",
+        "updatedAt": "2026-11-27T19:16:44.411263",
+        "workspaceId": "wk_9WWPLViCEi",
+        "folderId": "fl_3NuMssFaab",
+        "authentication": {},
+        "authenticationType": "none",
+        "body": {
+          "text": ""
+        },
+        "bodyType": "application/json",
+        "description": "Bruno source fields for manual review (scripts are not executed):\n\n```yaml\nruntime:\n  scripts:\n    - type: before-request\n      code: |-\n        const username = \"bruno\";\n        const password = \"invalid\";\n\n        const authString = `${username}:${password}`;\n        const encodedAuthString = require('btoa')(authString);\n\n        req.setHeader(\"Authorization\", `Basic ${encodedAuthString}`);\n  assertions:\n    - expression: res.status\n      operator: eq\n      value: \"401\"\n    - expression: res.body\n      operator: eq\n      value: Unauthorized\nsettings:\n  encodeUrl: true\n  timeout: 0\n  followRedirects: true\n  maxRedirects: 5\n  forwardAuthorizationHeader: true\n```",
+        "headers": [
+          {
+            "enabled": true,
+            "name": "Content-Type",
+            "value": "application/json",
+            "id": null
+          }
+        ],
+        "method": "POST",
+        "name": "Basic Auth 401",
+        "sortPriority": 2.0,
+        "url": "${[ host ]}/api/auth/basic/protected",
+        "urlParameters": [],
+        "settingSendCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingStoreCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingValidateCertificates": {
+          "enabled": false,
+          "value": true
+        },
+        "settingFollowRedirects": {
+          "enabled": true,
+          "value": true
+        },
+        "settingRequestTimeout": {
+          "enabled": true,
+          "value": 0
+        },
+        "settingHttpVersion": {
+          "enabled": false,
+          "value": "auto"
+        }
+      },
+      {
+        "model": "http_request",
+        "id": "rq_xexwuXYGgt",
+        "createdAt": "2026-11-27T19:16:44.410984300",
+        "updatedAt": "2026-11-27T19:16:44.410984500",
+        "workspaceId": "wk_9WWPLViCEi",
+        "folderId": "fl_3NuMssFaab",
+        "authentication": {},
+        "authenticationType": "none",
+        "body": {
+          "text": ""
+        },
+        "bodyType": "application/json",
+        "description": "Bruno source fields for manual review (scripts are not executed):\n\n```yaml\nruntime:\n  scripts:\n    - type: before-request\n      code: |-\n        const username = \"bruno\";\n        const password = \"della\";\n\n        const authString = `${username}:${password}`;\n        const encodedAuthString = require('btoa')(authString);\n\n        req.setHeader(\"Authorization\", `Basic ${encodedAuthString}`);\n  assertions:\n    - expression: res.status\n      operator: eq\n      value: \"200\"\n    - expression: res.body.message\n      operator: eq\n      value: Authentication successful\nsettings:\n  encodeUrl: true\n  timeout: 0\n  followRedirects: true\n  maxRedirects: 5\n  forwardAuthorizationHeader: true\n```",
+        "headers": [
+          {
+            "enabled": true,
+            "name": "Content-Type",
+            "value": "application/json",
+            "id": null
+          }
+        ],
+        "method": "POST",
+        "name": "Basic Auth 200",
+        "sortPriority": 1.0,
+        "url": "${[ host ]}/api/auth/basic/protected",
+        "urlParameters": [],
+        "settingSendCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingStoreCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingValidateCertificates": {
+          "enabled": false,
+          "value": true
+        },
+        "settingFollowRedirects": {
+          "enabled": true,
+          "value": true
+        },
+        "settingRequestTimeout": {
+          "enabled": true,
+          "value": 0
+        },
+        "settingHttpVersion": {
+          "enabled": false,
+          "value": "auto"
+        }
+      },
+      {
+        "model": "http_request",
+        "id": "rq_8XBEfzBEKx",
+        "createdAt": "2026-11-27T19:16:44.410697400",
+        "updatedAt": "2026-11-27T19:16:44.410697500",
+        "workspaceId": "wk_9WWPLViCEi",
+        "folderId": "fl_2xS62MneAc",
+        "authentication": {},
+        "authenticationType": "none",
+        "body": {
+          "text": ""
+        },
+        "bodyType": "application/json",
+        "description": "Bruno source fields for manual review (scripts are not executed):\n\n```yaml\nruntime:\n  assertions:\n    - expression: res.status\n      operator: eq\n      value: \"401\"\n    - expression: res.body\n      operator: eq\n      value: Unauthorized\nsettings:\n  encodeUrl: true\n  timeout: 0\n  followRedirects: true\n  maxRedirects: 5\n  forwardAuthorizationHeader: true\n```",
+        "headers": [
+          {
+            "enabled": true,
+            "name": "Content-Type",
+            "value": "application/json",
+            "id": null
+          }
+        ],
+        "method": "POST",
+        "name": "Basic Auth 400",
+        "sortPriority": 2.0,
+        "url": "${[ host ]}/api/auth/basic/protected",
+        "urlParameters": [],
+        "settingSendCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingStoreCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingValidateCertificates": {
+          "enabled": false,
+          "value": true
+        },
+        "settingFollowRedirects": {
+          "enabled": true,
+          "value": true
+        },
+        "settingRequestTimeout": {
+          "enabled": true,
+          "value": 0
+        },
+        "settingHttpVersion": {
+          "enabled": false,
+          "value": "auto"
+        }
+      },
+      {
+        "model": "http_request",
+        "id": "rq_tn8fuVWAgd",
+        "createdAt": "2026-11-27T19:16:44.410360500",
+        "updatedAt": "2026-11-27T19:16:44.410360700",
+        "workspaceId": "wk_9WWPLViCEi",
+        "folderId": "fl_2xS62MneAc",
+        "authentication": {
+          "password": "${[ basic_auth_password ]}",
+          "username": "bruno"
+        },
+        "authenticationType": "basic",
+        "body": {
+          "text": ""
+        },
+        "bodyType": "application/json",
+        "description": "Bruno source fields for manual review (scripts are not executed):\n\n```yaml\nruntime:\n  assertions:\n    - expression: res.status\n      operator: eq\n      value: \"200\"\n    - expression: res.body.message\n      operator: eq\n      value: Authentication successful\nsettings:\n  encodeUrl: true\n  timeout: 0\n  followRedirects: true\n  maxRedirects: 5\n  forwardAuthorizationHeader: true\n```",
+        "headers": [
+          {
+            "enabled": true,
+            "name": "Content-Type",
+            "value": "application/json",
+            "id": null
+          }
+        ],
+        "method": "POST",
+        "name": "Basic Auth 200",
+        "sortPriority": 1.0,
+        "url": "${[ host ]}/api/auth/basic/protected",
+        "urlParameters": [],
+        "settingSendCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingStoreCookies": {
+          "enabled": false,
+          "value": true
+        },
+        "settingValidateCertificates": {
+          "enabled": false,
+          "value": true
+        },
+        "settingFollowRedirects": {
+          "enabled": true,
+          "value": true
+        },
+        "settingRequestTimeout": {
+          "enabled": true,
+          "value": 0
+        },
+        "settingHttpVersion": {
+          "enabled": false,
+          "value": "auto"
+        }
+      }
+    ],
+    "grpcRequests": [],
+    "websocketRequests": []
+  }
+}
