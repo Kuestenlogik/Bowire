@@ -1,9 +1,6 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
-using System.Text;
-using System.Text.Json;
-
 namespace Kuestenlogik.Bowire.Security.Scanner;
 
 /// <summary>
@@ -62,11 +59,11 @@ internal sealed class Api2AuthProbe : IOwaspApiProbe
                 "medium", 5.3));
         }
 
-        var authorization = FindBearer(authHeaders);
-        if (authorization is { } bearer && LooksLikeJwt(bearer.Token))
+        var authorization = JwtForgery.FindBearer(authHeaders);
+        if (authorization is { } bearer && JwtForgery.LooksLikeJwt(bearer.Token))
         {
             // Token lifetime (properties of the token itself).
-            var (hasExp, exp) = ReadExp(bearer.Token);
+            var (hasExp, exp) = JwtForgery.ReadExp(bearer.Token);
             if (hasExp && exp < DateTimeOffset.UtcNow.ToUnixTimeSeconds() && authEnforced)
             {
                 findings.Add(Finding("BWR-OWASP-API2-EXPIRED", "Expired token still accepted",
@@ -85,7 +82,7 @@ internal sealed class Api2AuthProbe : IOwaspApiProbe
             // Signature forgery — only meaningful when anonymous access is blocked.
             if (authEnforced)
             {
-                var noneStatus = await SafeStatusAsync(http, target, WithBearer(authHeaders, bearer.HeaderName, ForgeNone(bearer.Token)), ct).ConfigureAwait(false);
+                var noneStatus = await SafeStatusAsync(http, target, JwtForgery.WithBearer(authHeaders, bearer.HeaderName, JwtForgery.ForgeNone(bearer.Token)), ct).ConfigureAwait(false);
                 if (noneStatus is >= 200 and < 300)
                 {
                     findings.Add(Finding("BWR-OWASP-API2-ALG-NONE", "Unsigned JWT (alg:none) accepted",
@@ -94,7 +91,7 @@ internal sealed class Api2AuthProbe : IOwaspApiProbe
                         "critical", 9.8));
                 }
 
-                var tamperStatus = await SafeStatusAsync(http, target, WithBearer(authHeaders, bearer.HeaderName, TamperSignature(bearer.Token)), ct).ConfigureAwait(false);
+                var tamperStatus = await SafeStatusAsync(http, target, JwtForgery.WithBearer(authHeaders, bearer.HeaderName, JwtForgery.TamperSignature(bearer.Token)), ct).ConfigureAwait(false);
                 if (tamperStatus is >= 200 and < 300)
                 {
                     findings.Add(Finding("BWR-OWASP-API2-SIG", "JWT signature not verified",
@@ -112,87 +109,6 @@ internal sealed class Api2AuthProbe : IOwaspApiProbe
         }
         return findings;
     }
-
-    // ---- JWT helpers ----
-
-    private static (string HeaderName, string Token)? FindBearer(IList<string> authHeaders)
-    {
-        foreach (var raw in authHeaders.Where(h => !string.IsNullOrWhiteSpace(h)))
-        {
-            var colon = raw.IndexOf(':', StringComparison.Ordinal);
-            if (colon <= 0) continue;
-            var name = raw[..colon].Trim();
-            var value = raw[(colon + 1)..].Trim();
-            if (name.Equals("Authorization", StringComparison.OrdinalIgnoreCase)
-                && value.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
-            {
-                return (name, value["Bearer ".Length..].Trim());
-            }
-        }
-        return null;
-    }
-
-    private static bool LooksLikeJwt(string token)
-    {
-        var parts = token.Split('.');
-        return parts.Length == 3 && parts[0].Length > 0 && parts[1].Length > 0;
-    }
-
-    private static (bool HasExp, long Exp) ReadExp(string token)
-    {
-        try
-        {
-            var payload = Base64UrlDecode(token.Split('.')[1]);
-            using var doc = JsonDocument.Parse(payload);
-            if (doc.RootElement.TryGetProperty("exp", out var el) && el.ValueKind == JsonValueKind.Number && el.TryGetInt64(out var exp))
-                return (true, exp);
-        }
-        catch (Exception ex) when (ex is FormatException or JsonException or IndexOutOfRangeException)
-        {
-            // malformed token — treat as no readable exp
-        }
-        return (false, 0);
-    }
-
-    private static string ForgeNone(string token)
-    {
-        var parts = token.Split('.');
-        var header = Base64UrlEncode(Encoding.UTF8.GetBytes("{\"alg\":\"none\",\"typ\":\"JWT\"}"));
-        // header . payload . (empty signature)
-        return header + "." + parts[1] + ".";
-    }
-
-    private static string TamperSignature(string token)
-    {
-        var parts = token.Split('.');
-        // Keep header + payload, swap the signature for a valid-charset but wrong value.
-        return parts[0] + "." + parts[1] + ".bowireTamperedSignature";
-    }
-
-    private static List<string> WithBearer(IList<string> authHeaders, string headerName, string newToken)
-    {
-        var result = new List<string>(authHeaders.Count);
-        foreach (var raw in authHeaders)
-        {
-            var colon = raw.IndexOf(':', StringComparison.Ordinal);
-            var name = colon > 0 ? raw[..colon].Trim() : raw;
-            if (name.Equals(headerName, StringComparison.OrdinalIgnoreCase))
-                result.Add($"{headerName}: Bearer {newToken}");
-            else
-                result.Add(raw);
-        }
-        return result;
-    }
-
-    private static byte[] Base64UrlDecode(string value)
-    {
-        var s = value.Replace('-', '+').Replace('_', '/');
-        s += (s.Length % 4) switch { 2 => "==", 3 => "=", _ => "" };
-        return Convert.FromBase64String(s);
-    }
-
-    private static string Base64UrlEncode(byte[] bytes)
-        => Convert.ToBase64String(bytes).TrimEnd('=').Replace('+', '-').Replace('/', '_');
 
     // ---- http ----
 

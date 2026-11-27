@@ -65,7 +65,7 @@ internal sealed class WebSocketAuthorizationProbe : IOwaspProtocolProbe
         //    everyone and WebSocketAuthProbe reports that — this probe staying
         //    quiet avoids two findings for one hole, and a "B got in" claim
         //    that would be true of any caller at all.
-        var anonymous = await TryHandshakeAsync(target, protocol, metadata: null, ct).ConfigureAwait(false);
+        var anonymous = await WebSocketHandshake.TryAsync(target, protocol, authHeaders: null, ct).ConfigureAwait(false);
         if (anonymous.Connected)
         {
             return [Marker(ScanFindingStatus.Skipped, "API5-WS-PUBLIC",
@@ -76,7 +76,7 @@ internal sealed class WebSocketAuthorizationProbe : IOwaspProtocolProbe
         // 2. Identity A must be accepted, or the comparison has no baseline —
         //    B being refused would say nothing about authorization if A is
         //    refused too.
-        var asA = await TryHandshakeAsync(target, protocol, ToMetadata(authHeaders), ct).ConfigureAwait(false);
+        var asA = await WebSocketHandshake.TryAsync(target, protocol, authHeaders, ct).ConfigureAwait(false);
         if (!asA.Connected)
         {
             return [Marker(ScanFindingStatus.Skipped, "API5-WS-NO-BASELINE",
@@ -86,7 +86,7 @@ internal sealed class WebSocketAuthorizationProbe : IOwaspProtocolProbe
 
         // 3. B in the same place. Accepted means the handler checked that a
         //    credential exists and never checked whose it was.
-        var asB = await TryHandshakeAsync(target, protocol, ToMetadata(authHeadersB), ct).ConfigureAwait(false);
+        var asB = await WebSocketHandshake.TryAsync(target, protocol, authHeadersB, ct).ConfigureAwait(false);
         if (!asB.Connected)
         {
             return [Marker(ScanFindingStatus.Safe, "API5-WS-AUTHZ-ENFORCED",
@@ -104,60 +104,10 @@ internal sealed class WebSocketAuthorizationProbe : IOwaspProtocolProbe
             "high", 8.1)];
     }
 
-    // ---- handshake ----
-
-    private readonly record struct Attempt(bool Connected, string Reason);
-
-    private static async Task<Attempt> TryHandshakeAsync(
-        string target, IBowireProtocol protocol, Dictionary<string, string>? metadata, CancellationToken ct)
-    {
-        IBowireChannel? channel = null;
-        try
-        {
-            channel = await protocol.OpenChannelAsync(target, service: "", method: "",
-                showInternalServices: false, metadata: metadata, ct).ConfigureAwait(false);
-        }
-        catch (OperationCanceledException)
-        {
-            throw;
-        }
-        catch (Exception ex)
-        {
-            return new Attempt(false, (ex.Message ?? ex.GetType().Name).Trim());
-        }
-
-        if (channel is null) return new Attempt(false, "no channel was returned");
-
-        // Connect and close. The probe never sends a frame, so it cannot drive
-        // any application behaviour on a channel it may not be entitled to —
-        // which matters more here than in the auth probe, because this one
-        // deliberately connects as somebody.
-        try { await channel.CloseAsync(ct).ConfigureAwait(false); }
-        catch (Exception ex) when (ex is not OperationCanceledException) { /* best-effort close */ }
-        finally { await channel.DisposeAsync().ConfigureAwait(false); }
-
-        return new Attempt(true, "connected");
-    }
-
     private static bool SameIdentity(IList<string> a, IList<string> b)
         => a.Count == b.Count
             && a.OrderBy(x => x, StringComparer.Ordinal)
                 .SequenceEqual(b.OrderBy(x => x, StringComparer.Ordinal), StringComparer.Ordinal);
-
-    private static Dictionary<string, string>? ToMetadata(IList<string> authHeaders)
-    {
-        if (authHeaders is null || authHeaders.Count == 0) return null;
-        var md = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var raw in authHeaders.Where(h => !string.IsNullOrWhiteSpace(h)))
-        {
-            var colon = raw.IndexOf(':', StringComparison.Ordinal);
-            if (colon <= 0) continue;
-            var name = raw[..colon].Trim();
-            var value = raw[(colon + 1)..].TrimStart();
-            if (name.Length > 0) md[name] = value;
-        }
-        return md.Count > 0 ? md : null;
-    }
 
     // ---- finding factories ----
 

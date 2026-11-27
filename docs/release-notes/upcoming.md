@@ -56,6 +56,10 @@ Embedded REST discovery used to walk ApiExplorer and reflect over the body types
 
 It needs the OpenAPI adapter package that matches the generator (`Kuestenlogik.Bowire.Protocol.Rest.OpenApi2` for ASP.NET Core's `AddOpenApi()`). A host without a generator or without an adapter is discovered from ApiExplorer as before. With the document as the source, an untagged endpoint is listed under the generator's default tag instead of `Default`, and an operation without an `operationId` is named from its verb and path.
 
+### The security scan sends forged tokens on the WebSocket upgrade (#963)
+
+The scan's API2 checks sent a JWT re-headed to `alg:none`, and one with a corrupted signature, to HTTP endpoints only; on a WebSocket it tried a handshake without any credential, never with a forged one. A socket that decodes the bearer token without verifying it passed, while the HTTP routes of the same server were reported. With `--auth-header` carrying a JWT and the anonymous upgrade refused, the WebSocket check now opens the upgrade with both forgeries, and either one getting through is a finding (`BWR-OWASP-API2-WS-ALG-NONE`, `BWR-OWASP-API2-WS-SIG`). It still connects and closes without sending a frame.
+
 ## Fixes along the way
 
 ### Insomnia imports, checked against collections Insomnia wrote (#940)
