@@ -24,6 +24,7 @@ public interface IBowireProtocol
 
     Task<List<BowireServiceInfo>> DiscoverAsync(
         string serverUrl, bool showInternalServices, CancellationToken ct = default);
+    bool InvokeNeedsDiscovery => true;
 
     Task<InvokeResult> InvokeAsync(
         string serverUrl, string service, string method,
@@ -51,6 +52,7 @@ What each member does:
 - **`Initialize`** — called after registration, before any discovery / invoke call. The embedded-mode service provider rides through this so plugins can read `IConfiguration`, register their own services, and capture an `IHttpClientFactory` if needed. The default is a no-op so simple plugins can ignore it.
 - **`Settings`** — schema for the per-plugin settings panel (toggles / inputs); empty by default.
 - **`DiscoverAsync`** — given a server URL, return the catalogue of services + methods. The default implementation isn't optional: every protocol must produce something here, even if "discovery" just means "introspect a static config file" or "probe a well-known URL."
+- **`InvokeNeedsDiscovery`** — whether `InvokeAsync` depends on `DiscoverAsync` having run for the server URL first. `bowire test` discovers only for a plugin that says `true` (the default), and then once per server URL for the run. Return `false` when your invoke needs no discovery or discovers on demand by itself, as REST does: the runner then sends no discovery traffic of its own ahead of a call.
 - **`InvokeAsync`** — unary or client-streaming dispatch. `jsonMessages` carries the request envelope(s); the return value (`InvokeResult` in `Kuestenlogik.Bowire.Models`) lifts response status + body + headers.
 - **`InvokeStreamAsync`** — server-streaming or duplex; returns an `IAsyncEnumerable<string>` of response payloads.
 - **`OpenChannelAsync`** — returns an `IBowireChannel` for fully interactive duplex traffic (the workbench's "Open channel" affordance binds to this). Return `null` for protocols that don't support interactive channels.

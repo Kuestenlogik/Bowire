@@ -66,6 +66,10 @@ The scan's API2 checks sent a JWT re-headed to `alg:none`, and one with a corrup
 
 ## Fixes along the way
 
+### A REST step in `bowire test` reaches the server once (#1053)
+
+`bowire test` discovered before every call, and REST's discovery tries the URL as an OpenAPI document. Every REST step therefore sent a GET to its own URL ahead of the call, a `POST /orders` step included, and a data-driven run did so for every row. A plugin now says whether its invoke needs discovery first (`IBowireProtocol.InvokeNeedsDiscovery`, default yes); REST does not, and a plugin that does is discovered once per server URL for the run.
+
 ### Insomnia imports, checked against collections Insomnia wrote (#940)
 
 The importers were tested with files written from the formats' specifications. Run against the collections of Insomnia's and Bruno's own end-to-end tests, the Bruno importers held, and the Insomnia importer did not in three places. A Socket.IO request was imported as an HTTP GET to the Socket.IO server; it is now left out and named in the report, as gRPC and WebSocket requests are. A collection of only such requests was refused with "no request collection found"; the refusal now says what the collection holds and to add the server as a source. A global environment or a mock server export was called a design document. The report line for a `{% response %}` tag reads as a sentence.

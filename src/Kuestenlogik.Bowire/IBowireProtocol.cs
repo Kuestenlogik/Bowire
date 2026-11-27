@@ -51,6 +51,22 @@ public interface IBowireProtocol
     Task<List<BowireServiceInfo>> DiscoverAsync(string serverUrl, bool showInternalServices, CancellationToken ct = default);
 
     /// <summary>
+    /// Whether <see cref="InvokeAsync"/> needs <see cref="DiscoverAsync(string, bool, CancellationToken)"/>
+    /// to have run for the server URL first. A runner that calls without
+    /// showing a service tree (<c>bowire test</c>) discovers only for a plugin
+    /// that says yes, and once per server URL (#1053).
+    /// </summary>
+    /// <remarks>
+    /// The default is <c>true</c>, so a plugin that primes a cache in
+    /// discovery keeps working unchanged. A plugin that discovers on demand
+    /// inside its invoke, or needs no discovery to call at all, returns
+    /// <c>false</c> and is spared the extra traffic: REST's discovery tries a
+    /// URL as an OpenAPI document, so discovering before every call sent a GET
+    /// to the call's own URL ahead of it.
+    /// </remarks>
+    bool InvokeNeedsDiscovery => true;
+
+    /// <summary>
     /// Same, with the per-call metadata <see cref="InvokeAsync"/> already
     /// receives.
     /// </summary>

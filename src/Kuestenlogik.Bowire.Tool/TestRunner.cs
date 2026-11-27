@@ -375,6 +375,7 @@ internal static class TestRunner
 
         // Initialize the protocol registry once and reuse for every test
         var registry = BowireProtocolRegistry.Discover();
+        var discovery = new RunDiscovery();
         // Don't initialize protocols with a service provider — standalone mode
 
         await stdout.WriteLineAsync().ConfigureAwait(false);
@@ -421,7 +422,7 @@ internal static class TestRunner
                     await cli.Progress($"step {step}/{totalSteps} · {test.Name ?? (test.Service + "/" + test.Method)}"
                         + (dataSet is null ? "" : $" (iteration {row.Iteration}/{rows.Count})")).ConfigureAwait(false);
                 }
-                var result = await RunTestAsync(test, collection, registry, iterationVars);
+                var result = await RunTestAsync(test, collection, registry, discovery, iterationVars);
                 if (dataSet is not null)
                 {
                     result.Iteration = row.Iteration;
@@ -559,7 +560,8 @@ internal static class TestRunner
     }
 
     private static async Task<TestResult> RunTestAsync(
-        TestEntry test, TestCollection collection, BowireProtocolRegistry registry, IReadOnlyDictionary<string, string> iterationVars)
+        TestEntry test, TestCollection collection, BowireProtocolRegistry registry, RunDiscovery discovery,
+        IReadOnlyDictionary<string, string> iterationVars)
     {
         var result = new TestResult
         {
@@ -601,16 +603,12 @@ internal static class TestRunner
             return result;
         }
 
-        // Discover services so the plugin's internal cache is primed
-        // Plugin DiscoverAsync: 3rd-party transport; report failure +
-        // continue to next test rather than aborting the run.
-        try
+        // #1053 — discover only where the plugin's invoke needs it, once per
+        // server URL for the run. A failure is reported on the test and the
+        // run goes on to the next one.
+        if (await discovery.EnsureAsync(protocol, serverUrl, CancellationToken.None).ConfigureAwait(false) is { } discoveryError)
         {
-            await protocol.DiscoverAsync(serverUrl, showInternalServices: false);
-        }
-        catch (Exception ex) when (PluginBoundary.NonFatal(ex))
-        {
-            result.Error = $"Discovery failed: {ex.Message}";
+            result.Error = $"Discovery failed: {discoveryError}";
             return result;
         }
 

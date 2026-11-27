@@ -501,6 +501,40 @@ public sealed class FlowTestRunnerTests : IDisposable
         Assert.Contains("--env-file", stderr.ToString(), StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task RunAsync_RestStep_ReachesTheServerOnce_WithItsOwnVerb()
+    {
+        // #1053 — discovery used to run before every step, and REST's tries
+        // the URL as an OpenAPI document: a POST step sent a GET first.
+        var seen = new System.Collections.Concurrent.ConcurrentQueue<string>();
+        using var server = new LoopbackJsonServer(req =>
+        {
+            seen.Enqueue(req.HttpMethod + " " + req.Url!.AbsolutePath);
+            return (201, "application/json", "{\"id\":7}");
+        });
+        var flow = $$"""
+        {
+          "id":"flow_post", "name":"Post",
+          "nodes":[
+            { "id":"create", "type":"request", "protocol":"rest",
+              "serverUrl":"{{server.Url}}/orders", "service":"", "method":"POST", "body":"{\"item\":\"x\"}",
+              "expectations":[ { "id":"e1","kind":"body-path","operator":"exists","target":"$.id" } ] },
+            { "id":"again", "type":"request", "protocol":"rest",
+              "serverUrl":"{{server.Url}}/orders", "service":"", "method":"POST", "body":"{\"item\":\"y\"}",
+              "expectations":[ { "id":"e2","kind":"body-path","operator":"exists","target":"$.id" } ] }
+          ]
+        }
+        """;
+        var ct = TestContext.Current.CancellationToken;
+        var flowPath = SafePath.Combine(_tempDir, "post.json");
+        await File.WriteAllTextAsync(flowPath, flow, ct);
+
+        var rc = await FlowTestRunner.RunAsync(new FlowTestCliOptions { FlowPath = flowPath }, TextWriter.Null, TextWriter.Null, ct);
+
+        Assert.Equal(0, rc);
+        Assert.Equal("POST /orders | POST /orders", string.Join(" | ", seen));
+    }
+
     // ---- Data sets over the whole flow (#946) — one flow run per row ----
 
     // Two steps; the server answers {"ok":true} unless the id is "bad".
@@ -524,28 +558,14 @@ public sealed class FlowTestRunnerTests : IDisposable
     private static LoopbackJsonServer DataSetServer(System.Collections.Concurrent.ConcurrentQueue<string> seen)
         => new(req =>
         {
-            // Only the flow's own calls: the REST plugin also asks the
-            // server for an OpenAPI document of its own accord.
+            // Every request the server gets: a run sends the steps' calls and
+            // nothing else (#1053).
             var path = req.Url!.AbsolutePath;
-            if (path.StartsWith("/items/", StringComparison.Ordinal) || path.StartsWith("/again/", StringComparison.Ordinal))
-                seen.Enqueue(req.HttpMethod + " " + req.Url.PathAndQuery);
+            seen.Enqueue(req.HttpMethod + " " + req.Url.PathAndQuery);
             return path.EndsWith("/bad", StringComparison.Ordinal)
                 ? (200, "application/json", "{\"other\":1}")
                 : (200, "application/json", "{\"ok\":true}");
         });
-
-    // The calls the steps made. Each REST step is preceded today by a
-    // discovery GET to its own URL (#1053); folding a request into the one
-    // right before it when they are the same drops exactly that probe.
-    private static List<string> Calls(IEnumerable<string> seen)
-    {
-        var calls = new List<string>();
-        foreach (var request in seen)
-        {
-            if (calls.Count == 0 || calls[^1] != request) calls.Add(request);
-        }
-        return calls;
-    }
 
     [Fact]
     public async Task RunAsync_DataSet_RunsTheWholeFlowPerRow_AndAFailureNamesItsRow()
@@ -581,7 +601,7 @@ public sealed class FlowTestRunnerTests : IDisposable
         // iteration bound.
         Assert.Equal(
             "GET /items/1?i=1-3 | GET /again/1 | GET /items/bad?i=2-3 | GET /again/bad | GET /items/3?i=3-3 | GET /again/3",
-            string.Join(" | ", Calls(seen)));
+            string.Join(" | ", seen));
 
         // The reports name the iteration and the row's source line.
         var junit = await File.ReadAllTextAsync(junitPath, ct);
@@ -652,7 +672,7 @@ public sealed class FlowTestRunnerTests : IDisposable
 
         Assert.Equal(0, rc);
         // Two flows × two rows × two steps.
-        var calls = Calls(seen);
+        var calls = seen.ToList();
         Assert.Equal(8, calls.Count);
         Assert.Equal(2, calls.Count(p => p == "GET /items/2?i=2-2"));
     }

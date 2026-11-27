@@ -237,6 +237,7 @@ internal static class FlowTestRunner
         // ride along through the same IBowireProtocol contract without
         // any special-casing here.
         var registry = BowireProtocolRegistry.Discover();
+        var discovery = new RunDiscovery();
 
         var report = new FlowRunReport
         {
@@ -366,7 +367,7 @@ internal static class FlowTestRunner
             if (cli.Progress is not null)
                 await cli.Progress($"step {stepNumber}/{totalSteps} · {(string.IsNullOrEmpty(step.Method) ? step.Id : step.Service + "/" + step.Method)}" + (label is null ? "" : $" ({label})")).ConfigureAwait(false);
 
-            var stepResult = await RunStepAsync(step, stepEnv, registry, cli.BaseUrl, label, ct).ConfigureAwait(false);
+            var stepResult = await RunStepAsync(step, stepEnv, registry, discovery, cli.BaseUrl, label, ct).ConfigureAwait(false);
             if (dataSet is not null)
             {
                 stepResult.Iteration = currentRow.Iteration;
@@ -539,7 +540,7 @@ internal static class FlowTestRunner
     }
 
     private static async Task<FlowStepRunResult> RunStepAsync(
-        FlowStep step, Dictionary<string, string> env, BowireProtocolRegistry registry,
+        FlowStep step, Dictionary<string, string> env, BowireProtocolRegistry registry, RunDiscovery discovery,
         string? baseUrl, string? rowLabel, CancellationToken ct)
     {
         var baseId = string.IsNullOrEmpty(step.Id) ? "(unnamed)" : step.Id;
@@ -594,14 +595,11 @@ internal static class FlowTestRunner
             return result;
         }
 
-        try
+        // #1053 — discover only where the plugin's invoke needs it, once per
+        // server URL for the run; a failure fails this step only.
+        if (await discovery.EnsureAsync(protocol, serverUrl, ct).ConfigureAwait(false) is { } discoveryError)
         {
-            await protocol.DiscoverAsync(serverUrl, showInternalServices: false, ct).ConfigureAwait(false);
-        }
-        // 3rd-party transport surface — soft-fail per step.
-        catch (Exception ex) when (PluginBoundary.NonFatal(ex))
-        {
-            result.Error = $"discovery failed: {ex.Message}";
+            result.Error = $"discovery failed: {discoveryError}";
             return result;
         }
 
