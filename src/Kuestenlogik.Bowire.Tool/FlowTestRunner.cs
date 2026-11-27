@@ -10,6 +10,7 @@ using Kuestenlogik.Bowire.App.Configuration;
 using Kuestenlogik.Bowire.Flows;
 using Kuestenlogik.Bowire.Flows.Expectations;
 using Kuestenlogik.Bowire.Keyring;
+using Kuestenlogik.Bowire.DataSets.V1;
 using Kuestenlogik.Bowire.Models;
 
 namespace Kuestenlogik.Bowire.App;
@@ -308,7 +309,32 @@ internal static class FlowTestRunner
                 return 2;
             }
         }
-        var redactor = SecretRedactor.FromNames(secretNames, env);
+        // #946 — a data set drives the whole flow, once per row. Read in
+        // full before the first request, so a malformed file fails here.
+        var (dataSet, dataError) = await TestRunner.ReadDataSetAsync(cli.DataPath).ConfigureAwait(false);
+        if (dataError is not null)
+        {
+            await stderr.WriteLineAsync("error: " + dataError).ConfigureAwait(false);
+            return 2;
+        }
+        var dataSetName = dataSet is null ? null : Path.GetFileName(cli.DataPath);
+        var rows = dataSet?.Rows.ToList() ?? [new DataRow { Iteration = 1 }];
+        report.DataSetName = dataSetName;
+        report.IterationCount = rows.Count;
+
+        // A secret may be a column of the data set: its value differs per
+        // row, and every row's value is masked.
+        var secretValues = new List<string>();
+        foreach (var row in rows)
+        {
+            var rowScope = new Dictionary<string, string>(env, StringComparer.Ordinal);
+            foreach (var (key, value) in row.Values) rowScope[key] = value;
+            foreach (var name in secretNames.Where(n => !string.IsNullOrWhiteSpace(n)))
+            {
+                if (rowScope.TryGetValue(name.Trim(), out var v)) secretValues.Add(v);
+            }
+        }
+        var redactor = secretValues.Count == 0 ? SecretRedactor.Empty : new SecretRedactor(secretValues);
 
         var sw = Stopwatch.StartNew();
         var anyError = false;
@@ -321,70 +347,117 @@ internal static class FlowTestRunner
         // whole step when it carries no data source), evaluates its
         // snapshot, and folds the result into the report + console.
         var stepNumber = 0;
+        var totalSteps = flow.Nodes.Count * rows.Count;
+        // The iteration being run (#946): its number, where its row came
+        // from, and whether any of its steps failed.
+        DataRow currentRow = rows[0];
+        string? iterationLabel = null;
+        var iterationFailed = false;
         async Task ExecuteAsync(FlowStep step, Dictionary<string, string> stepEnv, string? rowLabel)
         {
             // #802 — cooperative cancel and progress, before the step runs.
             ct.ThrowIfCancellationRequested();
             stepNumber++;
+            // A step of a data-set iteration is named after the iteration and
+            // its row, so a failing one says which row it was; a step-level
+            // data row (#174) adds its own label after that.
+            var label = iterationLabel is null ? rowLabel
+                : rowLabel is null ? iterationLabel : $"{iterationLabel} · {rowLabel}";
             if (cli.Progress is not null)
-                await cli.Progress($"step {stepNumber}/{flow.Nodes.Count} · {(string.IsNullOrEmpty(step.Method) ? step.Id : step.Service + "/" + step.Method)}" + (rowLabel is null ? "" : $" ({rowLabel})")).ConfigureAwait(false);
+                await cli.Progress($"step {stepNumber}/{totalSteps} · {(string.IsNullOrEmpty(step.Method) ? step.Id : step.Service + "/" + step.Method)}" + (label is null ? "" : $" ({label})")).ConfigureAwait(false);
 
-            var stepResult = await RunStepAsync(step, stepEnv, registry, cli.BaseUrl, rowLabel, ct).ConfigureAwait(false);
+            var stepResult = await RunStepAsync(step, stepEnv, registry, cli.BaseUrl, label, ct).ConfigureAwait(false);
+            if (dataSet is not null)
+            {
+                stepResult.Iteration = currentRow.Iteration;
+                stepResult.Source = $"{dataSetName} {TestRunner.SourceLabel(dataSet, currentRow)}";
+            }
             if (step.Snapshot is { Enabled: true } && !stepResult.Skipped && string.IsNullOrEmpty(stepResult.Error))
             {
                 await EvaluateSnapshotAsync(step, stepResult, snapshotDir, cli.UpdateSnapshots, ct).ConfigureAwait(false);
             }
             report.Steps.Add(stepResult);
 
-            if (!string.IsNullOrEmpty(stepResult.Error)) anyError = true;
-            if (stepResult.Expectations.Any(e => !e.Passed)) anyExpectationFailed = true;
+            if (!string.IsNullOrEmpty(stepResult.Error)) { anyError = true; iterationFailed = true; }
+            if (stepResult.Expectations.Any(e => !e.Passed)) { anyExpectationFailed = true; iterationFailed = true; }
 
             await PrintStepAsync(stdout, stepResult, redactor).ConfigureAwait(false);
         }
 
-        foreach (var step in flow.Nodes)
+        foreach (var row in rows)
         {
-            // Data-driven expansion (#174): a step with a data source runs
-            // once per row, the row's columns overriding the --env scope,
-            // and reports as `stepId[label]` so JUnit / SARIF group the
-            // parameterisation under one step family.
-            if (step.Data is not null
-                && string.Equals(step.Type, "request", StringComparison.OrdinalIgnoreCase))
+            currentRow = row;
+            iterationFailed = false;
+            // #946 — the row's columns over the environment, and the
+            // iteration's number and count, as a collection run binds them.
+            var iterationEnv = new Dictionary<string, string>(env, StringComparer.Ordinal);
+            foreach (var (key, value) in row.Values) iterationEnv[key] = value;
+            iterationEnv["iteration"] = row.Iteration.ToString(CultureInfo.InvariantCulture);
+            iterationEnv["iterationCount"] = rows.Count.ToString(CultureInfo.InvariantCulture);
+            if (dataSet is not null)
             {
-                IReadOnlyList<FlowDataRow> rows;
-                try
+                var source = TestRunner.SourceLabel(dataSet, row);
+                iterationLabel = $"iteration {row.Iteration}, {dataSetName} {source}";
+                await stdout.WriteLineAsync($"  iteration {row.Iteration}/{rows.Count} · {dataSetName} {source}").ConfigureAwait(false);
+            }
+
+            await RunNodesAsync(iterationEnv).ConfigureAwait(false);
+            report.Iterations++;
+
+            if (iterationFailed && cli.FailFast && row.Iteration < rows.Count)
+            {
+                await stdout.WriteLineAsync($"  stopped after iteration {row.Iteration} of {rows.Count} (--fail-fast)").ConfigureAwait(false);
+                break;
+            }
+        }
+
+        async Task RunNodesAsync(Dictionary<string, string> env)
+        {
+            foreach (var step in flow.Nodes)
+            {
+                // Data-driven expansion (#174): a step with a data source runs
+                // once per row, the row's columns overriding the --env scope,
+                // and reports as `stepId[label]` so JUnit / SARIF group the
+                // parameterisation under one step family.
+                if (step.Data is not null
+                    && string.Equals(step.Type, "request", StringComparison.OrdinalIgnoreCase))
                 {
-                    rows = FlowDataSourceExpander.Expand(step.Data, flowDir);
-                }
-                catch (Exception ex) when (ex is InvalidDataException or IOException or UnauthorizedAccessException or NotSupportedException)
-                {
-                    var invalid = new FlowStepRunResult
+                    IReadOnlyList<FlowDataRow> rows;
+                    try
                     {
-                        StepId = string.IsNullOrEmpty(step.Id) ? "(unnamed)" : step.Id,
-                        StepType = step.Type ?? "request",
-                        Service = step.Service ?? string.Empty,
-                        Method = step.Method ?? string.Empty,
-                        Error = $"data source invalid: {ex.Message}",
-                    };
-                    report.Steps.Add(invalid);
-                    anyError = true;
-                    await PrintStepAsync(stdout, invalid, redactor).ConfigureAwait(false);
+                        rows = FlowDataSourceExpander.Expand(step.Data, flowDir);
+                    }
+                    catch (Exception ex) when (ex is InvalidDataException or IOException or UnauthorizedAccessException or NotSupportedException)
+                    {
+                        var invalid = new FlowStepRunResult
+                        {
+                            StepId = (string.IsNullOrEmpty(step.Id) ? "(unnamed)" : step.Id)
+                                + (iterationLabel is null ? "" : $"[{iterationLabel}]"),
+                            StepType = step.Type ?? "request",
+                            Service = step.Service ?? string.Empty,
+                            Method = step.Method ?? string.Empty,
+                            Error = $"data source invalid: {ex.Message}",
+                        };
+                        report.Steps.Add(invalid);
+                        anyError = true;
+                        await PrintStepAsync(stdout, invalid, redactor).ConfigureAwait(false);
+                        continue;
+                    }
+
+                    foreach (var row in rows)
+                    {
+                        var rowEnv = new Dictionary<string, string>(env, StringComparer.Ordinal);
+                        foreach (var col in row.Values)
+                        {
+                            rowEnv[col.Key] = col.Value;
+                        }
+                        await ExecuteAsync(step, rowEnv, row.Label).ConfigureAwait(false);
+                    }
                     continue;
                 }
 
-                foreach (var row in rows)
-                {
-                    var rowEnv = new Dictionary<string, string>(env, StringComparer.Ordinal);
-                    foreach (var col in row.Values)
-                    {
-                        rowEnv[col.Key] = col.Value;
-                    }
-                    await ExecuteAsync(step, rowEnv, row.Label).ConfigureAwait(false);
-                }
-                continue;
+                await ExecuteAsync(step, env, rowLabel: null).ConfigureAwait(false);
             }
-
-            await ExecuteAsync(step, env, rowLabel: null).ConfigureAwait(false);
         }
 
         sw.Stop();
@@ -397,6 +470,7 @@ internal static class FlowTestRunner
         await stdout.WriteLineAsync().ConfigureAwait(false);
         var summary = $"  {report.PassedExpectations}/{report.TotalExpectations} expectations passed   "
             + $"{report.Steps.Count - report.StepErrors}/{report.Steps.Count} steps invoked   "
+            + (dataSet is null ? "" : $"{report.Iterations}/{rows.Count} iterations   ")
             + $"in {sw.ElapsedMilliseconds} ms";
         await stdout.WriteLineAsync(summary).ConfigureAwait(false);
         await stdout.WriteLineAsync().ConfigureAwait(false);
@@ -908,6 +982,17 @@ internal sealed class FlowTestCliOptions
     /// line (blank lines / <c>#</c> comments ignored).
     /// </summary>
     public string? SecretFile { get; set; }
+
+    /// <summary>
+    /// #946 — a CSV or JSON data set: the whole flow runs once per row, the
+    /// row's columns bound over the environment, with <c>{{iteration}}</c>
+    /// and <c>{{iterationCount}}</c>. Each step result names its iteration
+    /// and the row's source line.
+    /// </summary>
+    public string? DataPath { get; set; }
+
+    /// <summary>With <see cref="DataPath"/>: stop after the first iteration that has a failure.</summary>
+    public bool FailFast { get; set; }
 }
 
 // ---- Run-report record types — consumed by FlowJUnitReport + FlowHtmlReport ----
@@ -924,6 +1009,12 @@ internal sealed class FlowRunReport
     public int FailedExpectations { get; set; }
     public int StepErrors { get; set; }
     public int ExitCode { get; set; }
+    /// <summary>#946: the data set's file name, or <c>null</c> for a run without one.</summary>
+    public string? DataSetName { get; set; }
+    /// <summary>#946: iterations run (1 without a data set; fewer than the rows after --fail-fast).</summary>
+    public int Iterations { get; set; }
+    /// <summary>#946: rows in the data set (1 without one).</summary>
+    public int IterationCount { get; set; }
     public List<FlowStepRunResult> Steps { get; } = new();
 }
 
@@ -942,4 +1033,8 @@ internal sealed class FlowStepRunResult
     /// <summary>True when the step was a control-flow / variable node that T2 v0 skips.</summary>
     public bool Skipped { get; set; }
     public List<FlowExpectationResult> Expectations { get; } = new();
+    /// <summary>#946: the data-set iteration this result belongs to; 0 without a data set.</summary>
+    public int Iteration { get; set; }
+    /// <summary>#946: where the iteration's row came from (<c>rows.csv line 3</c>); <c>null</c> without a data set.</summary>
+    public string? Source { get; set; }
 }

@@ -1662,7 +1662,7 @@ internal static class BowireCli
         };
         var data = new Option<string?>("--data")
         {
-            Description = "A CSV (header row names the columns) or JSON (array of objects) data set: the collection runs once per row, the row's columns bound as variables over the environment. {{iteration}} and {{iterationCount}} are set in every run. Test collections only.",
+            Description = "A CSV (header row names the columns) or JSON (array of objects) data set: the collection or flow runs once per row, the row's columns bound as variables over the environment. {{iteration}} and {{iterationCount}} are set in every run. With --workspace or --workspace-id every flow runs once per row.",
             DefaultValueFactory = _ => cfg["Bowire:Test:Data"],
         };
         var failFast = new Option<bool>("--fail-fast")
@@ -1782,14 +1782,6 @@ internal static class BowireCli
                 return 2;
             }
 
-            if (!string.IsNullOrEmpty(options.DataPath) && (!string.IsNullOrEmpty(wsDir) || !string.IsNullOrEmpty(wsId)))
-            {
-                // A workspace is a set of flows; a data set drives one test collection.
-                await stderr.WriteLineAsync(
-                    "bowire test: --data drives a test collection, not a workspace; name the collection file instead.")
-                    .ConfigureAwait(false);
-                return 2;
-            }
             if (options.FailFast && string.IsNullOrEmpty(options.DataPath))
             {
                 await stderr.WriteLineAsync("bowire test: --fail-fast stops between iterations; it needs --data.").ConfigureAwait(false);

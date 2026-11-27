@@ -60,6 +60,10 @@ It needs the OpenAPI adapter package that matches the generator (`Kuestenlogik.B
 
 The scan's API2 checks sent a JWT re-headed to `alg:none`, and one with a corrupted signature, to HTTP endpoints only; on a WebSocket it tried a handshake without any credential, never with a forged one. A socket that decodes the bearer token without verifying it passed, while the HTTP routes of the same server were reported. With `--auth-header` carrying a JWT and the anonymous upgrade refused, the WebSocket check now opens the upgrade with both forgeries, and either one getting through is a finding (`BWR-OWASP-API2-WS-ALG-NONE`, `BWR-OWASP-API2-WS-SIG`). It still connects and closes without sending a frame.
 
+### Data sets drive flows and workspace runs (#946)
+
+`bowire test --data rows.csv` ran a test collection once per row; a flow file or a `--workspace` run refused the flag. A flow now runs once per row as well, the row's columns over its environment and `{{iteration}}` / `{{iterationCount}}` bound, and every step result names its iteration and the row's source line, so a failing row says which row it was in the console and in the HTML, JUnit and SARIF reports. With `--workspace` or `--workspace-id` every flow runs once per row. `--fail-fast` stops after the first failing iteration.
+
 ## Fixes along the way
 
 ### Insomnia imports, checked against collections Insomnia wrote (#940)

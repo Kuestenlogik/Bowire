@@ -238,7 +238,9 @@ A test then sends `{"id": "{{userId}}"}` and asserts `response.name eq {{expecte
 - **`--fail-fast`** stops after the first iteration that has a failure. It is off by default, so a run reports every failing row.
 - **A bad data file stops the run before the first request.** An empty file, a header without rows, a row with the wrong number of values, an unclosed quote or a JSON item that is not an object each fail with exit code 2 and name the line or item.
 
-`--data` drives a test collection. A flow or a `--workspace` run does not take a data set yet.
+**Flows.** `--data` drives a flow file the same way: the whole flow runs once per row, the row's columns over the environment (`--env-file`, `--env`), with `{{iteration}}` and `{{iterationCount}}` bound. A step's result is named after its iteration and row, for example `create-order[iteration 2, orders.csv line 3]`, on the console and in the HTML, JUnit and SARIF reports, and a snapshot is kept per row. A step with a data source of its own (`data` on the step) still runs once per row of that source inside each iteration, and its label follows the iteration's. `--fail-fast` stops after the first iteration in which a step failed or errored.
+
+**Workspaces.** With `--workspace` or `--workspace-id`, every flow in the workspace runs once per row of the data set, each flow with its own report files as without `--data`.
 
 ### CI report formats
 

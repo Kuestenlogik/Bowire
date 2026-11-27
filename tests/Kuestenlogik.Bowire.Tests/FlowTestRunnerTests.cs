@@ -501,6 +501,162 @@ public sealed class FlowTestRunnerTests : IDisposable
         Assert.Contains("--env-file", stderr.ToString(), StringComparison.Ordinal);
     }
 
+    // ---- Data sets over the whole flow (#946) — one flow run per row ----
+
+    // Two steps; the server answers {"ok":true} unless the id is "bad".
+    private static string DataSetFlow(string url) => $$"""
+    {
+      "id":"flow_ds",
+      "name":"DataSet",
+      "nodes":[
+        { "id":"first", "type":"request", "protocol":"rest",
+          "serverUrl":"{{url}}/items/${id}?i=${iteration}-${iterationCount}",
+          "service":"", "method":"GET", "body":"{}",
+          "expectations":[ { "id":"e1","kind":"body-path","operator":"exists","target":"$.ok" } ] },
+        { "id":"second", "type":"request", "protocol":"rest",
+          "serverUrl":"{{url}}/again/${id}",
+          "service":"", "method":"GET", "body":"{}",
+          "expectations":[ { "id":"e2","kind":"body-path","operator":"exists","target":"$.ok" } ] }
+      ]
+    }
+    """;
+
+    private static LoopbackJsonServer DataSetServer(System.Collections.Concurrent.ConcurrentQueue<string> seen)
+        => new(req =>
+        {
+            // Only the flow's own calls: the REST plugin also asks the
+            // server for an OpenAPI document of its own accord.
+            var path = req.Url!.AbsolutePath;
+            if (path.StartsWith("/items/", StringComparison.Ordinal) || path.StartsWith("/again/", StringComparison.Ordinal))
+                seen.Enqueue(req.HttpMethod + " " + req.Url.PathAndQuery);
+            return path.EndsWith("/bad", StringComparison.Ordinal)
+                ? (200, "application/json", "{\"other\":1}")
+                : (200, "application/json", "{\"ok\":true}");
+        });
+
+    // The calls the steps made. Each REST step is preceded today by a
+    // discovery GET to its own URL (#1053); folding a request into the one
+    // right before it when they are the same drops exactly that probe.
+    private static List<string> Calls(IEnumerable<string> seen)
+    {
+        var calls = new List<string>();
+        foreach (var request in seen)
+        {
+            if (calls.Count == 0 || calls[^1] != request) calls.Add(request);
+        }
+        return calls;
+    }
+
+    [Fact]
+    public async Task RunAsync_DataSet_RunsTheWholeFlowPerRow_AndAFailureNamesItsRow()
+    {
+        var seen = new System.Collections.Concurrent.ConcurrentQueue<string>();
+        using var server = DataSetServer(seen);
+        var ct = TestContext.Current.CancellationToken;
+        var flowPath = SafePath.Combine(_tempDir, "ds.json");
+        await File.WriteAllTextAsync(flowPath, DataSetFlow(server.Url), ct);
+        var dataPath = SafePath.Combine(_tempDir, "rows.csv");
+        // The row shadows --env for the same key.
+        await File.WriteAllTextAsync(dataPath, "id\n1\nbad\n3\n", ct);
+        var junitPath = SafePath.Combine(_tempDir, "ds.junit.xml");
+        var sarifPath = SafePath.Combine(_tempDir, "ds.sarif");
+        var htmlPath = SafePath.Combine(_tempDir, "ds.html");
+
+        using var stdout = new StringWriter();
+        var rc = await FlowTestRunner.RunAsync(
+            new FlowTestCliOptions
+            {
+                FlowPath = flowPath, DataPath = dataPath, EnvOverrides = ["id=99"],
+                JUnitPath = junitPath, SarifPath = sarifPath, ReportPath = htmlPath,
+            },
+            stdout, TextWriter.Null, ct);
+
+        Assert.Equal(1, rc);
+        var text = stdout.ToString();
+        Assert.Contains("iteration 2/3 · rows.csv line 3", text, StringComparison.Ordinal);
+        Assert.Contains("3/3 iterations", text, StringComparison.Ordinal);
+        Assert.Contains("4/6 expectations passed", text, StringComparison.Ordinal);
+
+        // Every step of every iteration ran, in order, with the row and the
+        // iteration bound.
+        Assert.Equal(
+            "GET /items/1?i=1-3 | GET /again/1 | GET /items/bad?i=2-3 | GET /again/bad | GET /items/3?i=3-3 | GET /again/3",
+            string.Join(" | ", Calls(seen)));
+
+        // The reports name the iteration and the row's source line.
+        var junit = await File.ReadAllTextAsync(junitPath, ct);
+        Assert.Contains("first[iteration 2, rows.csv line 3]", junit, StringComparison.Ordinal);
+        Assert.Contains("second[iteration 3, rows.csv line 4]", junit, StringComparison.Ordinal);
+        Assert.Contains("first[iteration 2, rows.csv line 3]", await File.ReadAllTextAsync(sarifPath, ct), StringComparison.Ordinal);
+        Assert.Contains("first[iteration 2, rows.csv line 3]", await File.ReadAllTextAsync(htmlPath, ct), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task RunAsync_DataSet_FailFast_StopsAfterTheFailingIteration()
+    {
+        var seen = new System.Collections.Concurrent.ConcurrentQueue<string>();
+        using var server = DataSetServer(seen);
+        var ct = TestContext.Current.CancellationToken;
+        var flowPath = SafePath.Combine(_tempDir, "ds-ff.json");
+        await File.WriteAllTextAsync(flowPath, DataSetFlow(server.Url), ct);
+        var dataPath = SafePath.Combine(_tempDir, "rows.json");
+        await File.WriteAllTextAsync(dataPath, """[{"id":"bad"},{"id":"2"}]""", ct);
+
+        using var stdout = new StringWriter();
+        var rc = await FlowTestRunner.RunAsync(
+            new FlowTestCliOptions { FlowPath = flowPath, DataPath = dataPath, FailFast = true },
+            stdout, TextWriter.Null, ct);
+
+        Assert.Equal(1, rc);
+        var text = stdout.ToString();
+        Assert.Contains("stopped after iteration 1 of 2 (--fail-fast)", text, StringComparison.Ordinal);
+        Assert.Contains("first[iteration 1, rows.json item 1]", text, StringComparison.Ordinal);
+        Assert.DoesNotContain(seen, p => p.Contains("/2", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task RunAsync_DataSet_Malformed_FailsBeforeAnyRequest()
+    {
+        var seen = new System.Collections.Concurrent.ConcurrentQueue<string>();
+        using var server = DataSetServer(seen);
+        var ct = TestContext.Current.CancellationToken;
+        var flowPath = SafePath.Combine(_tempDir, "ds-bad.json");
+        await File.WriteAllTextAsync(flowPath, DataSetFlow(server.Url), ct);
+        var dataPath = SafePath.Combine(_tempDir, "broken.csv");
+        await File.WriteAllTextAsync(dataPath, "id,other\n1\n", ct);
+
+        using var stderr = new StringWriter();
+        var rc = await FlowTestRunner.RunAsync(
+            new FlowTestCliOptions { FlowPath = flowPath, DataPath = dataPath },
+            TextWriter.Null, stderr, ct);
+
+        Assert.Equal(2, rc);
+        Assert.Contains("broken.csv line 2", stderr.ToString(), StringComparison.Ordinal);
+        Assert.Empty(seen);
+    }
+
+    [Fact]
+    public async Task RunWorkspace_WithADataSet_RunsEveryFlowPerRow()
+    {
+        var seen = new System.Collections.Concurrent.ConcurrentQueue<string>();
+        using var server = DataSetServer(seen);
+        var ct = TestContext.Current.CancellationToken;
+        var workspace = SafePath.Combine(_tempDir, "ws");
+        Directory.CreateDirectory(workspace);
+        await File.WriteAllTextAsync(SafePath.Combine(workspace, "a.json"), DataSetFlow(server.Url), ct);
+        await File.WriteAllTextAsync(SafePath.Combine(workspace, "b.json"), DataSetFlow(server.Url).Replace("flow_ds", "flow_ds_b", StringComparison.Ordinal), ct);
+        var dataPath = SafePath.Combine(_tempDir, "ws-rows.csv");
+        await File.WriteAllTextAsync(dataPath, "id\n1\n2\n", ct);
+
+        var rc = await TestRunner.RunWorkspaceAsync(workspace, new TestCliOptions { DataPath = dataPath }, TextWriter.Null, TextWriter.Null);
+
+        Assert.Equal(0, rc);
+        // Two flows × two rows × two steps.
+        var calls = Calls(seen);
+        Assert.Equal(8, calls.Count);
+        Assert.Equal(2, calls.Count(p => p == "GET /items/2?i=2-2"));
+    }
+
     // ---- Data-driven steps (#174) — one execution per row ----
 
     [Fact]

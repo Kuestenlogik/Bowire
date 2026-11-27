@@ -227,6 +227,10 @@ internal static class TestRunner
             AiSeed = cli.AiSeed,
             Secrets = cli.Secrets,
             SecretFile = cli.SecretFile,
+            // #946 — a workspace run with a data set runs every flow once
+            // per row.
+            DataPath = cli.DataPath,
+            FailFast = cli.FailFast,
         };
 
     /// <summary>
@@ -291,12 +295,6 @@ internal static class TestRunner
         }
         if (FlowTestRunner.LooksLikeFlow(rawJson))
         {
-            if (!string.IsNullOrEmpty(cli.DataPath))
-            {
-                // Silently running the flow once would report a pass the data never saw.
-                await WriteErrorAsync(stderr, "--data drives a test collection; a flow does not take a data set (yet).").ConfigureAwait(false);
-                return 2;
-            }
             var flowCli = new FlowTestCliOptions
             {
                 FlowPath = cli.CollectionPath,
@@ -315,6 +313,8 @@ internal static class TestRunner
                 Secrets = cli.Secrets,
                 SecretFile = cli.SecretFile,
                 Progress = cli.Progress,
+                DataPath = cli.DataPath,
+                FailFast = cli.FailFast,
             };
             return await FlowTestRunner.RunAsync(flowCli, stdout, stderr, ct).ConfigureAwait(false);
         }
@@ -366,28 +366,11 @@ internal static class TestRunner
 
         // #675 — the data set is read in full before the first request: an
         // empty or malformed file fails here, naming the line or item.
-        ParseDataSetResponse? dataSet = null;
-        if (!string.IsNullOrEmpty(cli.DataPath))
+        var (dataSet, dataError) = await ReadDataSetAsync(cli.DataPath).ConfigureAwait(false);
+        if (dataError is not null)
         {
-            string dataText;
-            try
-            {
-                dataText = await File.ReadAllTextAsync(cli.DataPath).ConfigureAwait(false);
-            }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException)
-            {
-                await WriteErrorAsync(stderr, $"Failed to read --data '{cli.DataPath}': {ex.Message}").ConfigureAwait(false);
-                return 2;
-            }
-            try
-            {
-                dataSet = DataSetRpc.ParseDataSet(new ParseDataSetRequest { FileName = Path.GetFileName(cli.DataPath), Content = dataText });
-            }
-            catch (Grpc.Core.RpcException ex)
-            {
-                await WriteErrorAsync(stderr, ex.Status.Detail).ConfigureAwait(false);
-                return 2;
-            }
+            await WriteErrorAsync(stderr, dataError).ConfigureAwait(false);
+            return 2;
         }
 
         // Initialize the protocol registry once and reuse for every test
@@ -543,8 +526,37 @@ internal static class TestRunner
     }
 
     // "line 4" for a CSV row, "item 4" for a JSON one: where to look in the file.
-    private static string SourceLabel(ParseDataSetResponse dataSet, DataRow row) =>
+    /// <summary>Where a row came from: <c>line N</c> of a CSV, <c>item N</c> of a JSON array.</summary>
+    internal static string SourceLabel(ParseDataSetResponse dataSet, DataRow row) =>
         (dataSet.Format == "json" ? "item " : "line ") + row.SourceLine.ToString(CultureInfo.InvariantCulture);
+
+    /// <summary>
+    /// Read and parse the <c>--data</c> file (#675), for a collection run and
+    /// a flow run alike (#946). No path: no data set and no error. A file
+    /// that cannot be read or parsed comes back as the error to print, naming
+    /// the line or item.
+    /// </summary>
+    internal static async Task<(ParseDataSetResponse? DataSet, string? Error)> ReadDataSetAsync(string? path)
+    {
+        if (string.IsNullOrEmpty(path)) return (null, null);
+        string text;
+        try
+        {
+            text = await File.ReadAllTextAsync(path).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException)
+        {
+            return (null, $"Failed to read --data '{path}': {ex.Message}");
+        }
+        try
+        {
+            return (DataSetRpc.ParseDataSet(new ParseDataSetRequest { FileName = Path.GetFileName(path), Content = text }), null);
+        }
+        catch (Grpc.Core.RpcException ex)
+        {
+            return (null, ex.Status.Detail);
+        }
+    }
 
     private static async Task<TestResult> RunTestAsync(
         TestEntry test, TestCollection collection, BowireProtocolRegistry registry, IReadOnlyDictionary<string, string> iterationVars)
