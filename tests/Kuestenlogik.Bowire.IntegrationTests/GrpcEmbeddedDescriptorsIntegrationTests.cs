@@ -58,7 +58,20 @@ public sealed class GrpcEmbeddedDescriptorsIntegrationTests : IDisposable
     {
         var builder = WebApplication.CreateBuilder();
         builder.WebHost.UseUrls(LoopbackHost.AnyPort);
-        builder.WebHost.ConfigureKestrel(o => o.ConfigureEndpointDefaults(l => l.Protocols = protocols));
+        // Every connection the host accepts is counted, below the HTTP layer:
+        // a call that never makes it to a request (an h2c handshake against
+        // an HTTP/1.1 port) still opens one.
+        var connections = new ConnectionCounter();
+        builder.Services.AddSingleton(connections);
+        builder.WebHost.ConfigureKestrel(o => o.ConfigureEndpointDefaults(l =>
+        {
+            l.Protocols = protocols;
+            l.Use(next => context =>
+            {
+                connections.Opened();
+                return next(context);
+            });
+        }));
         builder.Logging.ClearProviders();
         builder.Services.AddGrpc();
         builder.Services.AddBowire();
@@ -71,6 +84,13 @@ public sealed class GrpcEmbeddedDescriptorsIntegrationTests : IDisposable
 
         await app.StartAsync(TestContext.Current.CancellationToken);
         return app;
+    }
+
+    private sealed class ConnectionCounter
+    {
+        private int _count;
+        public int Count => Volatile.Read(ref _count);
+        public void Opened() => Interlocked.Increment(ref _count);
     }
 
     private static BowireGrpcProtocol PluginOf(WebApplication app)
@@ -134,6 +154,8 @@ public sealed class GrpcEmbeddedDescriptorsIntegrationTests : IDisposable
             url, "test.Greeter", "SayHello", ["""{"name":"embedded","count":1}"""],
             showInternalServices: false, metadata: null, ct);
         Assert.Contains("Hello embedded!", unary.Response ?? "", StringComparison.Ordinal);
+        // The counter the no-wire test relies on does see a real call.
+        Assert.True(app.Services.GetRequiredService<ConnectionCounter>().Count > 0);
 
         var frames = new List<string>();
         await foreach (var frame in plugin.InvokeStreamAsync(
@@ -155,13 +177,14 @@ public sealed class GrpcEmbeddedDescriptorsIntegrationTests : IDisposable
         // The workbench is usually served from an HTTP/1.1 port. A reflection
         // call to one neither succeeds nor fails promptly: it sits until the
         // discovery ceiling cancels it, and the plugin's whole answer goes
-        // with it. Cancelling up front shows that no call is made: listing
-        // descriptors in memory has nothing to wait for.
+        // with it. Listing the host's descriptors in memory opens no
+        // connection at all, which is what is asserted. (A bound on the
+        // elapsed time stood here and failed on a loaded machine: it measured
+        // the machine, not the call.)
         await using var app = await StartAsync(HttpProtocols.Http1);
         var plugin = PluginOf(app);
         var url = LoopbackHost.BaseAddress(app.Services);
 
-        var started = System.Diagnostics.Stopwatch.GetTimestamp();
         var services = await plugin.DiscoverAsync(
             url, showInternalServices: false, TestContext.Current.CancellationToken);
         var withMetadata = await plugin.DiscoverAsync(
@@ -169,9 +192,7 @@ public sealed class GrpcEmbeddedDescriptorsIntegrationTests : IDisposable
 
         Assert.Single(services, s => s.Name == "test.Greeter");
         Assert.Single(withMetadata, s => s.Name == "test.Greeter");
-        // No assertion on the clock beyond this: an h2c handshake against an
-        // HTTP/1.1 port took seconds, reading descriptors takes none.
-        Assert.True(System.Diagnostics.Stopwatch.GetElapsedTime(started) < TimeSpan.FromSeconds(2));
+        Assert.Equal(0, app.Services.GetRequiredService<ConnectionCounter>().Count);
     }
 
     [Fact]
