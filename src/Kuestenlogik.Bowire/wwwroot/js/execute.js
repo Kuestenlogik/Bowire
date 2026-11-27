@@ -170,19 +170,7 @@
             // if no env is selected) so a captured token survives
             // beyond this request.
             var envSnapshot = (typeof getMergedVars === 'function') ? getMergedVars() : {};
-            var onEnvSet = function (key, value) {
-                try {
-                    if (typeof getActiveEnv !== 'function') return;
-                    var env = getActiveEnv();
-                    if (env) {
-                        env.vars = env.vars || {};
-                        env.vars[key] = String(value == null ? '' : value);
-                        var envs = getEnvironments();
-                        var idx = envs.findIndex(function (e) { return e.id === env.id; });
-                        if (idx >= 0) { envs[idx] = env; saveEnvironments(envs); }
-                    }
-                } catch (_) { /* persistence is best-effort */ }
-            };
+            var onEnvSet = writeScriptEnvVar;
             var preResult = runPreRequestScript({
                 source: scripts.preScript,
                 protocolShape: shape,
@@ -225,6 +213,23 @@
         }
     }
 
+    // ctx.env.set in any script: updates the active environment (or
+    // nothing, without one) so the value survives beyond this request.
+    // Shared by the tab's invoke and the collection runner (#1060).
+    function writeScriptEnvVar(key, value) {
+        try {
+            if (typeof getActiveEnv !== 'function') return;
+            var env = getActiveEnv();
+            if (env) {
+                env.vars = env.vars || {};
+                env.vars[key] = String(value == null ? '' : value);
+                var envs = getEnvironments();
+                var idx = envs.findIndex(function (e) { return e.id === env.id; });
+                if (idx >= 0) { envs[idx] = env; saveEnvironments(envs); }
+            }
+        } catch (_) { /* persistence is best-effort */ }
+    }
+
     // ---- Post-response Script Runner (#126) ----
     // Called from invokeUnary (after assertions) and invokeStreaming (on
     // 'done'). Runs the user's postScript through the typed sandbox so
@@ -247,19 +252,7 @@
         window.__bowire_captured = window.__bowire_captured || {};
         var capturedBag = window.__bowire_captured;
         var envSnapshot = (typeof getMergedVars === 'function') ? getMergedVars() : {};
-        var onEnvSet = function (key, value) {
-            try {
-                if (typeof getActiveEnv !== 'function') return;
-                var env = getActiveEnv();
-                if (env) {
-                    env.vars = env.vars || {};
-                    env.vars[key] = String(value == null ? '' : value);
-                    var envs = getEnvironments();
-                    var idx = envs.findIndex(function (e) { return e.id === env.id; });
-                    if (idx >= 0) { envs[idx] = env; saveEnvironments(envs); }
-                }
-            } catch (_) { /* best-effort */ }
-        };
+        var onEnvSet = writeScriptEnvVar;
         var requestRefForPost = snapshot || { headers: {}, query: {} };
         var responseRef = {
             body: parsedResponse,

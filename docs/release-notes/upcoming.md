@@ -78,6 +78,9 @@ A method's scripts ran in the workbench only: an exported test collection left t
 
 ## Fixes along the way
 
+- **The workbench's collection runner runs an item's scripts (#1060).** A request saved to a collection with a pre-request or post-response script ran them from its tab but not as part of its collection. The runner now runs both through the same runtime: the pre-request script changes the request before it goes out (headers, body, query), a failing one stops the item before the call, and a failing post-response script fails the item.
+- **A gRPC server without reflection is reported as such (#1063).** A server that answers `Unimplemented` while the reflection request is still being written made the call fail, now and then, with a bare `Cancelled`. The server's own answer is now read and reported.
+
 ### Imported requests run (#1055)
 
 A request imported from Postman, Insomnia, Bruno, Yaak or a `.http` file is saved with its URL as the service, and the REST plugin looked that URL up as an OpenAPI operation: running the collection failed with "No OpenAPI document found" for every request. An item whose service is a URL and whose method is an HTTP verb is now sent as it was imported, with its headers and body, to the URL with the environment's variables filled in.

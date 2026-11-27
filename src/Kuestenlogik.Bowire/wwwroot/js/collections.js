@@ -1382,13 +1382,14 @@
 
     function runCollectionItem(item, opts) {
         // Optional opts.capturedBag — per-session captured-vars bag
-        // forwarded into pre/post-scripts (#132 parallel sessions).
-        // Collection items don't bind pre/post-scripts today, but the
-        // signature is forward-compatible so a future "scripts on
-        // collection items" patch can thread the bag through without
-        // touching every caller.
-        // eslint-disable-next-line no-unused-vars
+        // the item's pre/post-scripts share (#132 parallel sessions);
+        // without one, the workbench's own bag, as a tab uses (#1060).
         var capturedBag = opts && opts.capturedBag ? opts.capturedBag : null;
+        if (!capturedBag && typeof window !== 'undefined') {
+            window.__bowire_captured = window.__bowire_captured || {};
+            capturedBag = window.__bowire_captured;
+        }
+        capturedBag = capturedBag || {};
         // Only unary items can be replayed — streaming would need
         // the SSE endpoint and is skipped (same as recording replay).
         if (item.methodType && item.methodType !== 'Unary') {
@@ -1438,6 +1439,45 @@
         // Source URL containing {{baseUrl}} replays against the real host,
         // not the literal template.
         var sentUrl = (serverUrl && typeof substituteVars === 'function') ? substituteVars(serverUrl) : serverUrl;
+
+        // #1060 — the item's pre-request script, as its tab runs it: it
+        // sees the request about to go out and may change it; a failure
+        // stops the item before the call.
+        var preSource = item.preScript && String(item.preScript).trim() ? item.preScript : '';
+        var postSource = item.postScript && String(item.postScript).trim() ? item.postScript : '';
+        var shape = (preSource || postSource) ? detectScriptProtocolShape(item.protocol, item.protocol) : 'rest';
+        var scriptRequest = {
+            body: substituted[0] || '{}',
+            headers: Object.assign({}, meta || {}),
+            query: {},
+            method: item.httpMethod || item.method || '',
+            url: sentUrl || ''
+        };
+        if (preSource) {
+            var pre = runPreRequestScript({
+                source: preSource,
+                protocolShape: shape,
+                service: item.service,
+                method: item.method,
+                request: scriptRequest,
+                env: (typeof getMergedVars === 'function') ? getMergedVars() : {},
+                captured: capturedBag,
+                onEnvSet: writeScriptEnvVar
+            });
+            if (!pre.ok) {
+                return Promise.resolve({
+                    pass: false,
+                    status: 'ScriptError',  // i18n-exempt: status label, carried on the console entry and the run summary
+                    durationMs: 0,
+                    error: t('execute.script.preError', { reason: pre.error })
+                });
+            }
+            substituted[0] = scriptRequest.body;
+            body.messages = substituted;
+            body.metadata = scriptRequest.headers;
+            sentUrl = _withQuery(scriptRequest.url, scriptRequest.query);
+        }
+
         var url = config.prefix + '/api/invoke'
             + (sentUrl ? '?serverUrl=' + encodeURIComponent(sentUrl) : '');
 
@@ -1452,15 +1492,51 @@
                 // and the reason in metadata.error; that is a failure too.
                 var invokeError = (json.metadata && json.metadata.error) || null;
                 var ok = resp.ok && !json.title && json.status !== 'Error' && !invokeError;  // i18n-exempt: the status value /api/invoke reports, not prose
-                return {
+                var result = {
                     pass: ok,
                     status: json.status || (ok ? 'OK' : 'Error'),  // i18n-exempt: status label, carried on the console entry and the run summary
                     durationMs: json.duration_ms || 0,
                     response: json.response,
                     error: json.title || invokeError || null
                 };
+                // #1060 — the post-response script reads what came back;
+                // its failure fails the item, as a failed assertion would.
+                if (ok && postSource) {
+                    var parsed = json.response;
+                    try { parsed = JSON.parse(json.response); } catch (_) { /* not JSON: the script gets the text */ }
+                    var post = runPostResponseScriptTyped({
+                        source: postSource,
+                        protocolShape: shape,
+                        service: item.service,
+                        method: item.method,
+                        request: scriptRequest,
+                        response: {
+                            body: parsed,
+                            status: json.status || null,
+                            durationMs: json.duration_ms || 0,
+                            headers: json.metadata || {}
+                        },
+                        env: (typeof getMergedVars === 'function') ? getMergedVars() : {},
+                        captured: capturedBag,
+                        onEnvSet: writeScriptEnvVar
+                    });
+                    if (!post.ok) {
+                        result.pass = false;
+                        result.error = t('execute.script.postError', { reason: post.error });
+                    }
+                }
+                return result;
             });
         });
+    }
+
+    // A pre-request script's ctx.request.query entries, on the URL the
+    // call goes to.
+    function _withQuery(url, query) {
+        var keys = Object.keys(query || {});
+        if (!url || keys.length === 0) return url;
+        var pairs = keys.map(function (k) { return encodeURIComponent(k) + '=' + encodeURIComponent(query[k]); });
+        return url + (url.indexOf('?') >= 0 ? '&' : '?') + pairs.join('&');
     }
 
     // ---- Collection Manager ----
