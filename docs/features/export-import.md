@@ -13,16 +13,34 @@ The request pane's **Code** tab renders the current request — body, metadata h
 
 | Protocol | Offered |
 |----------|---------|
-| REST | curl, JS fetch, Python (requests), C# (HttpClient), Bowire CLI |
-| GraphQL | curl, JS fetch, Python (requests), Bowire CLI |
-| MCP | curl, Python (requests), JS fetch, Bowire CLI |
-| SSE | curl, JS EventSource, Bowire CLI |
-| gRPC | grpcurl, C# (Grpc.Net.Client), Bowire CLI |
-| WebSocket | wscat, JS WebSocket, Bowire CLI |
-| SignalR | C# (HubConnection), JS (@microsoft/signalr), Bowire CLI |
-| MQTT / NATS / Socket.IO | Bowire CLI |
+| REST, OData, GraphQL, JSON-RPC, MCP | curl, JS fetch, JS axios, Python (requests), Python (httpx), C# (HttpClient), C# (RestSharp), Go (net/http), Java (HttpClient), Java (OkHttp), Kotlin (OkHttp), PHP (cURL), Ruby (net/http), Rust (reqwest), Swift (URLSession), PowerShell, HTTPie, wget, .http (not MCP), Bowire CLI |
+| SSE | curl, JS EventSource, Python (httpx), C# (HttpClient), Bowire CLI |
+| gRPC | grpcurl, C# (Grpc.Net.Client), Go (grpc-go), Python (grpcio), Node (@grpc/grpc-js), Java (grpc-java), Bowire CLI |
+| WebSocket | wscat, JS WebSocket, Python (websockets), C# (ClientWebSocket), Bowire CLI |
+| SignalR | C# (HubConnection), JS (@microsoft/signalr), Java (signalr), Bowire CLI |
+| MQTT | mosquitto_pub / _sub, Python (paho-mqtt), Node (mqtt), C# (MQTTnet), Bowire CLI |
+| NATS | nats CLI, Python (nats-py), Node (nats), Go (nats.go), C# (NATS.Net), Bowire CLI |
+| Socket.IO | Node (socket.io-client), Python (python-socketio), C# (SocketIOClient), Bowire CLI |
+| Pulsar | pulsar-client CLI, Python (pulsar-client), Java (pulsar-client), Bowire CLI |
+| any other protocol | Bowire CLI |
 
-The three broker protocols at the bottom used to fall through to the REST list and be offered a curl command that could never work against a broker; they now offer the one export that can.
+Every snippet keeps the same rules:
+
+- **The request the workbench sends.** JSON-RPC and MCP snippets carry the envelope their plugin builds (`{"jsonrpc":"2.0","method":…}`, `tools/call` / `resources/read` / `prompts/get`); a broker snippet publishes to the topic or subject the method names, with its QoS, retain flag or JetStream publish; a gRPC snippet uses the call shape (unary, server-, client- or bidirectional streaming) of the method.
+- **Secrets stay references.** `{{secret.*}}` and `{{keyring.*}}` are left as they are, and a comment above the snippet says so; a credential never lands in copied text.
+- **What it cannot carry, it says.** A token the environment fetches at request time (OAuth, session, custom token, JWT), AWS SigV4 and client certificates are a comment, never a made-up header; so are the parts a library cannot express (a browser `EventSource` or `WebSocket` cannot send headers) and what a snippet expects from you (the client generated from your `.proto`, MCP's `initialize` handshake).
+- **Only what fits the protocol.** A broker is never offered a curl command. SOAP (whose envelope is built from the WSDL) and OTLP (where Bowire receives, it does not send) offer the Bowire CLI.
+
+A protocol plugin adds snippets of its own from its UI extension bundle, without a change to Bowire:
+
+```js
+window.bowireCodeExport.register({
+  id: 'kafka-kcat', label: 'kcat', protocols: ['kafka'], comment: '#', rank: 10,
+  generate: (ctx) => `kcat -b ${ctx.serverUrl} -t ${ctx.method} -P`,
+});
+```
+
+`ctx` carries the server URL, service, method and its full name, the body (`bodyJson`) and headers (`metadata`) with variables resolved and secrets held back, the streaming flags and the input type; anything the generator cannot express goes into `ctx.notes`, which the workbench prints as comments above the snippet. A golden file holds every snippet of every built-in target, and the JavaScript, Python and Go snippets are parsed on each test run.
 
 Example — the gRPC entry:
 
@@ -56,7 +74,7 @@ Above the command, a `#` comment block names anything the CLI cannot reproduce:
 - **Runtime-fetched tokens.** Session login, OAuth client-credentials / authorization-code, custom-token and signed-JWT auth all exchange a token in the browser at request time. No static header can stand in for that, so the note tells you to export the token and add `-H 'Authorization: Bearer $TOKEN'` yourself.
 - **API keys sent as a query parameter**, which belong on `--url` rather than on `-H`.
 - **Client-streaming and duplex methods**, where `bowire call` sends each `-d` as one frame and then closes the send side; an interactive duplex session needs the workbench.
-- **Secrets.** `{{secret.*}}` and `{{keyring.*}}` references are deliberately *not* resolved into the copied text — they stay as references, so a command pasted into a ticket or a shell history carries no credential. (The curl / fetch / Python generators still substitute everything, including secrets. Treat those as clipboard-only.)
+- **Secrets.** `{{secret.*}}` and `{{keyring.*}}` references are deliberately *not* resolved into the copied text — they stay as references, so a command pasted into a ticket or a shell history carries no credential. The same holds for every other snippet.
 
 A golden fixture parses every command shape this generator can emit through the real `bowire call` grammar on each build, so a renamed or removed flag fails CI rather than quietly producing a line that no longer runs.
 

@@ -7361,9 +7361,7 @@
                             title: t('main.copyAsCommand', { language: cmdLang.label }),
                             onClick: function () {
                                 if (!svc || !method) return;
-                                var gen = CODE_EXPORT_GENERATORS[cmdLang.id];
-                                if (!gen) return;
-                                var cmd = gen(buildCodeExportContext());
+                                var cmd = generateCodeSnippet(cmdLang.id);
                                 navigator.clipboard.writeText(cmd).then(function () {
                         toast(t('main.copiedCommand', { language: cmdLang.label }), 'success');
                     });

@@ -5415,7 +5415,7 @@
 
     // ---- Code Export State ----
     // Per-method preference for the export language. The set of available
-    // languages depends on the protocol — see CODE_EXPORT_LANGUAGES below.
+    // languages depends on the protocol — see codeExportTargetsFor in code-export.js.
     let codeExportLang = null;
 
     // #538 — the two knobs the "Bowire CLI" export adds to the Code tab.

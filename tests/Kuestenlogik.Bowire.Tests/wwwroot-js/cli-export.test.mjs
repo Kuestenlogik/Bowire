@@ -29,7 +29,9 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 // for #367); code-export.js genuinely provides escapeShellSingleQuote, so
 // it is appended after — covered by its own path and dropped beyond EOF.
 const _RELPATH = (name) => '../../../src/Kuestenlogik.Bowire/wwwroot/js/' + name;
-const CODE_EXPORT_SRC = readFragment(_RELPATH('code-export.js'));
+// #677 — the registry and the targets it holds, as in the bundle.
+const CODE_EXPORT_SRC = ['code-export.js', 'code-export-http.js', 'code-export-messaging.js']
+    .map((f) => readFragment(_RELPATH(f))).join('\n');
 
 const GOLDEN = JSON.parse(readFileSync(
     resolve(__dirname, '../Cli/cli-export-golden.json'), 'utf8'));
@@ -76,8 +78,8 @@ function loadCliExport(state) {
             cliVarRefs: cliVarRefs,
             cliUrlCarriesHint: cliUrlCarriesHint,
             generateCliCommand: generateCliCommand,
-            CODE_EXPORT_LANGUAGES: CODE_EXPORT_LANGUAGES,
-            CODE_EXPORT_GENERATORS: CODE_EXPORT_GENERATORS
+            codeExportTargetsFor: codeExportTargetsFor,
+            codeExportTarget: codeExportTarget
         };
     `;
     // Target fragment first (line-aligned); code-export.js + stubs appended
@@ -305,12 +307,14 @@ test('a context missing every optional field still produces a runnable line', ()
 
 // ---- registration in the shared code-export tables ----
 
-test('every protocol offers the Bowire CLI language, and never as the default', () => {
+const PROTOCOLS = ['rest', 'odata', 'graphql', 'jsonrpc', 'mcp', 'sse', 'grpc', 'websocket', 'signalr',
+    'mqtt', 'nats', 'socketio', 'pulsar', 'soap', 'otlp', 'some-plugin'];
+
+test('every protocol offers the Bowire CLI language, last, and never as the default', () => {
     const sb = loadCliExport({});
-    const langs = sb.CODE_EXPORT_LANGUAGES;
-    for (const key of Object.keys(langs)) {
-        const ids = langs[key].map((l) => l.id);
-        assert.ok(ids.includes('bowire-cli'), `${key} is missing bowire-cli`);
+    for (const key of PROTOCOLS) {
+        const ids = sb.codeExportTargetsFor(key).map((l) => l.id);
+        assert.equal(ids[ids.length - 1], 'bowire-cli', `${key} should end with bowire-cli: ${ids}`);
         if (ids.length > 1) {
             assert.notEqual(ids[0], 'bowire-cli',
                 `${key} would relabel the request-pane header button, which reads cmdLangs[0]`);
@@ -318,17 +322,20 @@ test('every protocol offers the Bowire CLI language, and never as the default', 
     }
 });
 
-test('broker protocols no longer fall through to the REST curl generator', () => {
+test('broker protocols are never offered a curl command', () => {
     const sb = loadCliExport({});
-    for (const key of ['mqtt', 'nats', 'socketio']) {
-        assert.deepEqual(sb.CODE_EXPORT_LANGUAGES[key].map((l) => l.id), ['bowire-cli']);
+    for (const key of ['mqtt', 'nats', 'socketio', 'pulsar', 'grpc', 'signalr', 'websocket']) {
+        const ids = sb.codeExportTargetsFor(key).map((l) => l.id);
+        assert.ok(!ids.includes('curl'), `${key} offers curl: ${ids}`);
     }
+    // A protocol no target names gets the CLI alone, not the REST set.
+    assert.deepEqual(sb.codeExportTargetsFor('some-plugin').map((l) => l.id), ['bowire-cli']);
 });
 
 test('the bowire-cli generator is registered and guarded', () => {
     const sb = loadCliExport({});
-    assert.equal(typeof sb.CODE_EXPORT_GENERATORS['bowire-cli'], 'function');
-    const out = sb.CODE_EXPORT_GENERATORS['bowire-cli']({
+    assert.equal(typeof sb.codeExportTarget('bowire-cli').generate, 'function');
+    const out = sb.codeExportTarget('bowire-cli').generate({
         serverUrl: 'http://h:1', service: 'S', method: 'M', protocolId: 'grpc',
         bodyJsonRaw: '{}', metadata: {}, messages: []
     });

@@ -18,7 +18,8 @@ import { compileFragment, readFragment } from './_load-fragment.mjs';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const _RELPATH = (name) => '../../../src/Kuestenlogik.Bowire/wwwroot/js/' + name;
 // cliResolveVars and its secret masking genuinely live in cli-export.js.
-const SUPPORT_SRC = readFragment(_RELPATH('cli-export.js')) + '\n' + readFragment(_RELPATH('code-export.js'));
+const SUPPORT_SRC = ['cli-export.js', 'code-export.js', 'code-export-http.js', 'code-export-messaging.js']
+    .map((f) => readFragment(_RELPATH(f))).join('\n');
 
 const GOLDEN = JSON.parse(readFileSync(
     resolve(__dirname, '../../Kuestenlogik.Bowire.Interop.Tests/Fixtures/http-snippet-golden.json'), 'utf8'));
@@ -50,8 +51,8 @@ function loadHttpExport(state) {
     const postlude = `
         return {
             generateHttpFileSnippet: generateHttpFileSnippet,
-            CODE_EXPORT_LANGUAGES: CODE_EXPORT_LANGUAGES,
-            CODE_EXPORT_GENERATORS: CODE_EXPORT_GENERATORS
+            codeExportTargetsFor: codeExportTargetsFor,
+            codeExportTarget: codeExportTarget
         };
     `;
     return compileFragment(
@@ -88,9 +89,9 @@ test('a secret value never reaches the text, with or without keepVars', () => {
 
 test('.http is offered for REST and GraphQL, and the generator map routes it', () => {
     const sb = loadHttpExport({});
-    assert.ok(sb.CODE_EXPORT_LANGUAGES.rest.some((l) => l.id === 'http-file'));
-    assert.ok(sb.CODE_EXPORT_LANGUAGES.graphql.some((l) => l.id === 'http-file'));
-    const out = sb.CODE_EXPORT_GENERATORS['http-file']({
+    assert.ok(sb.codeExportTargetsFor('rest').some((l) => l.id === 'http-file'));
+    assert.ok(sb.codeExportTargetsFor('graphql').some((l) => l.id === 'http-file'));
+    const out = sb.codeExportTarget('http-file').generate({
         serverUrl: 'https://x.test', method: 'Ping', httpMethod: 'GET', httpPath: '/ping', source: 'rest', bodyJsonRaw: '{}', metadataRaw: {}
     });
     assert.ok(out.includes('GET https://x.test/ping'), out);
@@ -101,14 +102,14 @@ test('the Code tab keeps {{variables}} by default, and the pill turns it off', (
         serverUrl: '{{base}}', method: 'Ping', httpMethod: 'GET', httpPath: '/ping', source: 'rest', bodyJsonRaw: '{}', metadataRaw: {}
     };
     const byDefault = loadHttpExport({ vars: { base: 'https://x.test' } });
-    assert.ok(byDefault.CODE_EXPORT_GENERATORS['http-file'](ctx).includes('GET {{base}}/ping'));
+    assert.ok(byDefault.codeExportTarget('http-file').generate(ctx).includes('GET {{base}}/ping'));
     const resolved = compileFragment(
         '../../../src/Kuestenlogik.Bowire/wwwroot/js/http-file-export.js', ['state'],
         SUPPORT_SRC + `
         var _vars = state.vars, httpExportKeepVars = false, cliExportKeepVars = false, cliExportShell = null, uiMode = 'standalone';
         function getMergedVars() { return _vars; }
         function substituteVars(input) { return typeof input === 'string' ? input.split('{{base}}').join(_vars.base) : input; }
-        return { CODE_EXPORT_GENERATORS: CODE_EXPORT_GENERATORS };`
+        return { codeExportTarget: codeExportTarget };`
     )({ state: { vars: { base: 'https://x.test' } } });
-    assert.ok(resolved.CODE_EXPORT_GENERATORS['http-file'](ctx).includes('GET https://x.test/ping'));
+    assert.ok(resolved.codeExportTarget('http-file').generate(ctx).includes('GET https://x.test/ping'));
 });

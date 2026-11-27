@@ -328,7 +328,7 @@
         return 'posix';
     }
 
-    // The single entry point CODE_EXPORT_GENERATORS['bowire-cli'] calls.
+    // The single entry point the 'bowire-cli' code export target calls.
     function generateCliCommand(ctx) {
         var keepVars = (typeof cliExportKeepVars !== 'undefined') && !!cliExportKeepVars;
         var spec = buildCliCommandSpec(ctx, { keepVars: keepVars });

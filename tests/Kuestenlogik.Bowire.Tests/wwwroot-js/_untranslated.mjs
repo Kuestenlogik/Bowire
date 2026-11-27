@@ -219,6 +219,14 @@ const VOCABULARY = new Set([
 // it, which a central allow-list never lets them do.
 const EXEMPT = /\/\/\s*i18n-exempt\b/;
 
+// #677 — the same, for a whole file, written once in its head with the
+// reason: a fragment that is nothing but source code another language's
+// snippet is made of (the code export targets) has no Bowire prose in it, and
+// marking each of its lines would bury the few real exemptions elsewhere.
+// Only the first lines count, so the marker cannot hide below a file's code.
+const FILE_EXEMPT = /^[ \t]*\/\/[ \t]*i18n-exempt-file:[ \t]*\S/m;
+const FILE_EXEMPT_LINES = 12;
+
 /**
  * Is this literal prose a translator should own?
  *
@@ -415,6 +423,7 @@ function concatSites(text) {
  * finds it; the line number comes from the match offset.
  */
 function scan({ file, text }) {
+    if (FILE_EXEMPT.test(text.split('\n').slice(0, FILE_EXEMPT_LINES).join('\n'))) return [];
     const lineStarts = [0];
     for (let i = 0; i < text.length; i++) {
         if (text[i] === '\n') lineStarts.push(i + 1);

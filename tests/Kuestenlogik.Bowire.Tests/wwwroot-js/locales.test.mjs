@@ -14,6 +14,7 @@ import { compileFragment } from './_load-fragment.mjs';
 import {
     backendDeclaredKeys, fragmentSources, frozenTranslations, looksLikeProse,
     untranslatedCounts,
+    untranslatedSites,
 } from './_untranslated.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -590,6 +591,17 @@ test('no fragment gains an untranslated string, and the count only falls', () =>
 
     assert.deepEqual(problems, [], `untranslated-baseline.json is out of date:\n  ${
         problems.join('\n  ')}`);
+});
+
+test('a file exempt in its head is skipped whole; the marker counts only there', () => {
+    const prose = "        var label = el('div', { textContent: 'Save the request' });\n";
+    const head = '    // Snippet targets.\n    // i18n-exempt-file: source code of the generated snippets\n';
+    assert.equal(untranslatedSites([{ file: 'a.js', text: prose }]).length, 1);
+    assert.equal(untranslatedSites([{ file: 'b.js', text: head + prose }]).length, 0);
+    // Without a reason it is no marker, and below the head it does nothing.
+    assert.equal(untranslatedSites([{ file: 'c.js', text: '    // i18n-exempt-file:\n' + prose }]).length, 1);
+    const deep = '\n'.repeat(20) + '    // i18n-exempt-file: too late\n';
+    assert.equal(untranslatedSites([{ file: 'd.js', text: prose + deep }]).length, 1);
 });
 
 test('the detector reads prose and skips the vocabulary around it', () => {

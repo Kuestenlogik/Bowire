@@ -1,37 +1,82 @@
     // ---- Code Export ----
-    // Per-protocol list of available export languages. The order matters:
-    // the first entry is the default — resolveCodeExportLang falls back to
-    // available[0], and the request-pane header button labels itself from
-    // cmdLangs[0]. Each entry's `id` keys into the CODE_EXPORT_GENERATORS
-    // map below.
+    // #677 — one registry of snippet targets. A target names the protocols
+    // it serves, its label, the comment syntax of its language (for the notes
+    // a snippet carries) and a generate(ctx) function. Core registers its own
+    // targets in the code-export-*.js fragments; a plugin registers more
+    // through window.bowireCodeExport.register from its UI-extension bundle,
+    // without touching core.
     //
-    // #538 — every protocol ends with 'bowire-cli'. LAST, deliberately:
-    // curl / grpcurl / wscat stay the primary offer for the protocols that
-    // have a well-known third-party tool. The three keys at the bottom
-    // (mqtt / nats / socketio) are new: they used to fall through
-    // getCodeExportLanguages' `|| CODE_EXPORT_LANGUAGES.rest` and be
-    // offered a curl command that could never work against a broker.
-    const CODE_EXPORT_LANGUAGES = {
-        rest:      [{ id: 'curl', label: 'curl' }, { id: 'fetch', label: 'JS fetch' }, { id: 'python', label: 'Python (requests)' }, { id: 'csharp-http', label: 'C# (HttpClient)' }, { id: 'http-file', label: '.http' }, { id: 'bowire-cli', label: 'Bowire CLI' }],  // i18n-exempt: the name of the tool or library the snippet is generated for
-        graphql:   [{ id: 'curl', label: 'curl' }, { id: 'fetch', label: 'JS fetch' }, { id: 'python', label: 'Python (requests)' }, { id: 'http-file', label: '.http' }, { id: 'bowire-cli', label: 'Bowire CLI' }],  // i18n-exempt: the name of the tool or library the snippet is generated for
-        mcp:       [{ id: 'curl', label: 'curl' }, { id: 'python', label: 'Python (requests)' }, { id: 'fetch', label: 'JS fetch' }, { id: 'bowire-cli', label: 'Bowire CLI' }],  // i18n-exempt: the name of the tool or library the snippet is generated for
-        sse:       [{ id: 'curl-sse', label: 'curl' }, { id: 'js-eventsource', label: 'JS EventSource' }, { id: 'bowire-cli', label: 'Bowire CLI' }],  // i18n-exempt: the name of the tool or library the snippet is generated for
-        grpc:      [{ id: 'grpcurl', label: 'grpcurl' }, { id: 'csharp-grpc', label: 'C# (Grpc.Net.Client)' }, { id: 'bowire-cli', label: 'Bowire CLI' }],  // i18n-exempt: the name of the tool or library the snippet is generated for
-        websocket: [{ id: 'wscat', label: 'wscat' }, { id: 'js-ws', label: 'JS WebSocket' }, { id: 'bowire-cli', label: 'Bowire CLI' }],  // i18n-exempt: the name of the tool or library the snippet is generated for
-        signalr:   [{ id: 'csharp-signalr', label: 'C# (HubConnection)' }, { id: 'js-signalr', label: 'JS (@microsoft/signalr)' }, { id: 'bowire-cli', label: 'Bowire CLI' }],  // i18n-exempt: the name of the tool or library the snippet is generated for
-        mqtt:      [{ id: 'bowire-cli', label: 'Bowire CLI' }],  // i18n-exempt: the name of the tool or library the snippet is generated for
-        nats:      [{ id: 'bowire-cli', label: 'Bowire CLI' }],  // i18n-exempt: the name of the tool or library the snippet is generated for
-        socketio:  [{ id: 'bowire-cli', label: 'Bowire CLI' }]  // i18n-exempt: the name of the tool or library the snippet is generated for
-    };
+    // Rules every target keeps:
+    // - Secrets stay references. ctx.bodyJson and ctx.metadata are resolved
+    //   with {{secret.*}} / {{keyring.*}} held back (cliResolveVars), and a
+    //   note says so; a resolved credential never lands in a snippet.
+    // - A token the environment fetches at request time (OAuth, session,
+    //   JWT, …) is a note, never a made-up header.
+    // - What a target cannot express is stated in a note, not dropped.
+    // - A target is offered only for the protocols it names: a broker is
+    //   never offered a curl command. A protocol no target names gets the
+    //   Bowire CLI, which speaks every protocol.
+
+    var _codeExportTargets = [];
+
+    // target: { id, label, protocols: [...] | '*', comment: '#' | '//' | null,
+    //           rank?: number, ownNotes?: bool, rawContext?: bool, generate(ctx) }
+    // ownNotes: the target writes its own notes. rawContext: it gets the
+    // server URL as written ({{vars}} and all) and resolves it itself.
+    // Lower rank sorts first; the first target of a protocol is the default
+    // and labels the request pane's "copy as" button. A later registration
+    // with the same id replaces the earlier one.
+    function registerCodeExportTarget(target) {
+        if (!target || typeof target.id !== 'string' || typeof target.generate !== 'function') {
+            throw new Error('a code export target needs an id and a generate function');
+        }
+        var entry = {
+            id: target.id,
+            label: String(target.label || target.id),
+            protocols: target.protocols === '*' ? '*' : (target.protocols || []).slice(),
+            comment: target.comment === undefined ? '//' : target.comment,
+            rank: typeof target.rank === 'number' ? target.rank : 100,
+            ownNotes: !!target.ownNotes,
+            rawContext: !!target.rawContext,
+            generate: target.generate,
+            order: _codeExportTargets.length
+        };
+        _codeExportTargets = _codeExportTargets.filter(function (t) { return t.id !== entry.id; });
+        _codeExportTargets.push(entry);
+        return entry;
+    }
+
+    function codeExportTarget(id) {
+        for (var i = 0; i < _codeExportTargets.length; i++) {
+            if (_codeExportTargets[i].id === id) return _codeExportTargets[i];
+        }
+        return null;
+    }
+
+    // The targets for one protocol id, default first. Targets registered for
+    // every protocol ('*', the Bowire CLI) come with the rest by rank.
+    function codeExportTargetsFor(protocolId) {
+        var src = protocolId || 'rest';
+        return _codeExportTargets
+            .filter(function (t) { return t.protocols === '*' || t.protocols.indexOf(src) >= 0; })
+            .sort(function (a, b) { return (a.rank - b.rank) || (a.order - b.order); })
+            .map(function (t) { return { id: t.id, label: t.label }; });
+    }
+
+    try {
+        if (typeof window !== 'undefined') {
+            window.bowireCodeExport = {
+                register: registerCodeExportTarget,
+                targetsFor: codeExportTargetsFor
+            };
+        }
+    } catch (_) { /* no window in the Node tests */ }
 
     // Returns the list of language entries available for the currently
-    // selected method, or an empty array when no method is selected. Falls
-    // back to the REST set when the source is unknown — that gives users at
-    // least curl/fetch/python/csharp for any HTTP-shaped plugin.
+    // selected method, or an empty array when no method is selected.
     function getCodeExportLanguages() {
         if (!selectedService) return [];
-        var src = selectedService.source || 'rest';
-        return CODE_EXPORT_LANGUAGES[src] || CODE_EXPORT_LANGUAGES.rest;
+        return codeExportTargetsFor(selectedService.source || 'rest');
     }
 
     // Pick a snippet language: explicit user choice if it's still valid for
@@ -47,7 +92,7 @@
 
     // Build a snapshot of the current request for codegen — body / metadata
     // / server URL / etc. — substituting environment vars so the generated
-    // snippet matches what Execute would actually send.
+    // snippet matches what Execute would actually send, secrets excepted.
     //
     // CRITICAL: this runs INSIDE renderRequestPane, which means it executes
     // BEFORE morphdom syncs the new form values into the live DOM. Calling
@@ -58,7 +103,6 @@
     function buildCodeExportContext() {
         var S = activeState();
         var bodyJson = '{}';
-        var bodyJsonRaw = '{}';
         if (selectedMethod && selectedMethod.inputType && S.requestInputMode === 'form') {
             // Read-only snapshot: prefer formValues for the current schema,
             // fall back to requestMessages[0] if formValues isn't initialised
@@ -79,62 +123,76 @@
             var ed = $('.bowire-editor', focusedSurfaceEl()) || $('.bowire-message-editor', focusedSurfaceEl());
             bodyJson = ed ? ed.value || '{}' : '{}';
         }
-        // #538 — keep the UNSUBSTITUTED body alongside the substituted one.
-        // The curl / fetch / python generators want a ready-to-paste string
-        // and have always resolved everything, secrets included. The Bowire
-        // CLI generator resolves it itself so it can hold {{secret.*}} /
-        // {{keyring.*}} back (cli-export.js), and so "keep variables" can
-        // emit --var pairs instead of baked values.
-        bodyJsonRaw = bodyJson;
-        bodyJson = substituteVars(bodyJson);
 
-        var meta = {};
         var metaRaw = {};
         var rows = $$('.bowire-metadata-row', focusedSurfaceEl());
         for (var i = 0; i < rows.length; i++) {
             var inputs = rows[i].querySelectorAll('.bowire-metadata-input');
             if (inputs.length === 2 && inputs[0].value.trim()) {
-                meta[inputs[0].value.trim()] = substituteVars(inputs[1].value);
                 metaRaw[inputs[0].value.trim()] = inputs[1].value;
             }
         }
 
-        var serverUrl = serverUrlForService(selectedService) || '';
-
-        return {
-            serverUrl: serverUrl,
+        var env = (typeof getActiveEnv === 'function') ? getActiveEnv() : null;
+        return codeExportContextFrom({
+            serverUrl: serverUrlForService(selectedService) || '',
             service: selectedService.name,
             method: selectedMethod.name,
+            methodFullName: selectedMethod.fullName || '',
             httpMethod: selectedMethod.httpMethod || 'POST',
             httpPath: selectedMethod.httpPath || '',
-            bodyJson: bodyJson,
-            metadata: meta,
-            source: selectedService.source || 'rest',
-            // ---- #538 additions. Every one of these is a pure read; see
-            // the CRITICAL note above this function. ----
-            bodyJsonRaw: bodyJsonRaw,
+            bodyJsonRaw: bodyJson,
             metadataRaw: metaRaw,
             // selectedService.source IS the IBowireProtocol.Id — api.js
-            // sends it verbatim as /api/invoke's `protocol` field — so the
-            // CLI's --protocol / protocol@url needs no mapping table.
-            protocolId: selectedService.source || 'rest',
-            serverStreaming: !!(selectedMethod && selectedMethod.serverStreaming),
-            clientStreaming: !!(selectedMethod && selectedMethod.clientStreaming),
+            // sends it verbatim as /api/invoke's `protocol` field.
+            source: selectedService.source || 'rest',
+            serverStreaming: !!selectedMethod.serverStreaming,
+            clientStreaming: !!selectedMethod.clientStreaming,
+            inputTypeName: (selectedMethod.inputType && selectedMethod.inputType.name) || '',
+            inputFieldNames: ((selectedMethod.inputType && selectedMethod.inputType.fields) || [])
+                .map(function (f) { return f.name; }),
+            outputTypeName: (selectedMethod.outputType && selectedMethod.outputType.name) || '',
             messages: (typeof S.requestMessages !== 'undefined' && S.requestMessages)
                 ? S.requestMessages.slice() : [],
             // The auth TYPE only. applyAuth is async and performs fetches
             // (session login, OAuth token endpoints, JWT signing), so no
-            // exporter can call it from the render path — the CLI generator
-            // emits a note for the types whose header it cannot reproduce.
-            authKind: (function () {
-                var e = (typeof getActiveEnv === 'function') ? getActiveEnv() : null;
-                return (e && e.auth && e.auth.type) || 'none';
-            })(),
-            authLocation: (function () {
-                var e = (typeof getActiveEnv === 'function') ? getActiveEnv() : null;
-                return (e && e.auth && e.auth.location) || '';
-            })()
-        };
+            // exporter can call it from the render path.
+            authKind: (env && env.auth && env.auth.type) || 'none',
+            authLocation: (env && env.auth && env.auth.location) || ''
+        });
+    }
+
+    // The context every target reads, from the raw request. Pure, so the
+    // tests build it the same way. bodyJson / metadata carry variables
+    // resolved and secrets held back; bodyJsonRaw / metadataRaw keep the
+    // template for the Bowire CLI and .http targets, which resolve it
+    // themselves.
+    function codeExportContextFrom(raw) {
+        var resolve = (typeof cliResolveVars === 'function') ? cliResolveVars : function (s) { return s; };
+        var metadata = {};
+        var metaRaw = raw.metadataRaw || {};
+        Object.keys(metaRaw).forEach(function (k) { metadata[k] = resolve(String(metaRaw[k])); });
+        var bodyRaw = raw.bodyJsonRaw == null ? '{}' : String(raw.bodyJsonRaw);
+        var ctx = Object.assign({}, raw, {
+            bodyJsonRaw: bodyRaw,
+            metadataRaw: metaRaw,
+            bodyJson: resolve(bodyRaw),
+            metadata: metadata,
+            serverUrlRaw: raw.serverUrl || '',
+            serverUrlResolved: resolve(raw.serverUrl || ''),
+            protocolId: raw.protocolId || raw.source || 'rest',
+            source: raw.source || 'rest',
+            httpMethod: raw.httpMethod || 'POST',
+            httpPath: raw.httpPath || '',
+            methodFullName: raw.methodFullName || '',
+            messages: raw.messages || [],
+            authKind: raw.authKind || 'none',
+            authLocation: raw.authLocation || ''
+        });
+        var secretRef = /\{\{\s*(?:secret|keyring)\.[^}]*\}\}|\$\{\s*(?:secret|keyring)\.[^}]*\}/;
+        ctx.secretRefs = secretRef.test(bodyRaw)
+            || Object.keys(metaRaw).some(function (k) { return secretRef.test(String(metaRaw[k])); });
+        return ctx;
     }
 
     // Look up the origin URL the service was discovered from. Falls back to
@@ -145,250 +203,116 @@
         return '';
     }
 
-    function generateCodeSnippet(langId) {
-        var ctx = buildCodeExportContext();
-        var gen = CODE_EXPORT_GENERATORS[langId];
-        if (!gen) return '// language not supported for this protocol';
+    // What a snippet cannot carry, as plain sentences. A target's own notes
+    // (ctx.notes, pushed by generate) come after these.
+    function codeExportNotes(ctx) {
+        var notes = [];
+        var auth = ctx.authKind || 'none';
+        if (auth === 'session' || auth === 'oauth2_cc' || auth === 'oauth2_ac'
+            || auth === 'custom_token' || auth === 'jwt') {
+            notes.push('The active environment fetches its token at request time (' + auth + '); '
+                + 'it is not in this snippet. Add it as an Authorization: Bearer header.');
+        } else if (auth === 'aws_sigv4') {
+            notes.push('AWS SigV4 signs each request over its body and time; no fixed header stands in for it. '
+                + 'Sign the call with an AWS SDK.');
+        } else if (auth === 'mtls') {
+            notes.push('The active environment presents a client certificate; configure it in the client.');
+        } else if (auth !== 'none' && auth) {
+            notes.push('The active environment adds ' + auth + ' credentials that are not in this snippet.');
+        }
+        if (ctx.secretRefs) {
+            notes.push('{{secret.*}} / {{keyring.*}} references are left as they are; put the values in before running.');
+        }
+        return notes;
+    }
+
+    function generateCodeSnippetFor(langId, ctx) {
+        var target = codeExportTarget(langId);
+        if (!target) return '// language not supported for this protocol';
         try {
-            return gen(ctx);
+            ctx = target.rawContext ? ctx : Object.assign({}, ctx, { serverUrl: ctx.serverUrlResolved });
+            ctx.notes = [];
+            var body = target.generate(ctx);
+            if (target.ownNotes || !target.comment) return body;
+            var notes = codeExportNotes(ctx).concat(ctx.notes);
+            if (notes.length === 0) return body;
+            return notes.map(function (n) { return target.comment + ' ' + n; }).join('\n') + '\n\n' + body;
         } catch (e) {
-            return '// codegen error: ' + e.message;
+            return (target.comment || '//') + ' codegen error: ' + e.message;
         }
     }
 
-    // Helpers for the language templates
+    function generateCodeSnippet(langId) {
+        return generateCodeSnippetFor(langId, buildCodeExportContext());
+    }
+
+    // ---- Helpers for the language templates ----
     function escapeShellSingleQuote(s) {
         return String(s).replace(/'/g, "'\\''");
     }
     function indentLines(s, prefix) {
         return String(s).split('\n').map(function (line) { return prefix + line; }).join('\n');
     }
-    function formatHeadersForLang(headers, fn) {
-        var keys = Object.keys(headers);
-        if (keys.length === 0) return '';
-        return keys.map(function (k) { return fn(k, headers[k]); }).join('\n');
+
+    // A string literal in the target language. JSON's escapes are valid in
+    // JS, Python, C#, Java and Go; Kotlin also interpolates `$`; Swift and
+    // Rust spell a code point \u{…}; PHP and Ruby single quotes and the
+    // shells take their own quoting.
+    function codeLiteral(lang, s) {
+        s = String(s == null ? '' : s);
+        switch (lang) {
+            case 'kotlin': return JSON.stringify(s).replace(/\$/g, '\\$');
+            case 'swift':
+            case 'rust': return '"' + s.replace(/[\\"\x00-\x1f]/g, function (c) {
+                if (c === '\\') return '\\\\';
+                if (c === '"') return '\\"';
+                if (c === '\n') return '\\n';
+                if (c === '\r') return '\\r';
+                if (c === '\t') return '\\t';
+                return '\\u{' + c.charCodeAt(0).toString(16) + '}';
+            }) + '"';
+            case 'php':
+            case 'ruby': return "'" + s.replace(/\\/g, '\\\\').replace(/'/g, "\\'") + "'";
+            case 'sh': return "'" + escapeShellSingleQuote(s) + "'";
+            case 'ps': return "'" + s.replace(/'/g, "''") + "'";
+            default: return JSON.stringify(s);
+        }
     }
 
-    // ---- Codegen functions ----
-    const CODE_EXPORT_GENERATORS = {
-        // ---- HTTP-shaped plugins (REST / GraphQL / MCP) ----
-        'curl': function (ctx) {
-            var url = buildHttpUrl(ctx);
-            var verb = (ctx.source === 'graphql' || ctx.source === 'mcp') ? 'POST' : ctx.httpMethod;
-            var lines = ['curl -X ' + verb + " '" + escapeShellSingleQuote(url) + "' \\"];
-            lines.push("  -H 'Content-Type: application/json' \\");
-            var hdrKeys = Object.keys(ctx.metadata);
-            for (var i = 0; i < hdrKeys.length; i++) {
-                var k = hdrKeys[i];
-                lines.push("  -H '" + escapeShellSingleQuote(k + ': ' + ctx.metadata[k]) + "' \\");
-            }
-            if (verb !== 'GET' && verb !== 'DELETE' && verb !== 'HEAD') {
-                lines.push("  -d '" + escapeShellSingleQuote(buildHttpBody(ctx)) + "'");
-            } else {
-                // Trim the trailing backslash on the last header line
-                lines[lines.length - 1] = lines[lines.length - 1].replace(/ \\$/, '');
-            }
-            return lines.join('\n');
-        },
+    // A JSON body on one line, so a literal stays readable in every
+    // language; anything that is not JSON passes through as written.
+    function compactJson(text) {
+        try { return JSON.stringify(JSON.parse(text)); }
+        catch (_) { return String(text == null ? '' : text); }
+    }
 
-        'fetch': function (ctx) {
-            var url = buildHttpUrl(ctx);
-            var verb = (ctx.source === 'graphql' || ctx.source === 'mcp') ? 'POST' : ctx.httpMethod;
-            var headersObj = Object.assign({ 'Content-Type': 'application/json' }, ctx.metadata);
-            var headersJs = JSON.stringify(headersObj, null, 2);
-            var bodyArg = (verb !== 'GET' && verb !== 'DELETE' && verb !== 'HEAD')
-                ? ',\n  body: ' + JSON.stringify(buildHttpBody(ctx))  // i18n-exempt: part of the generated snippet
-                : '';
-            return 'const response = await fetch(' + JSON.stringify(url) + ', {\n' +  // i18n-exempt: the generated snippet
-                '  method: ' + JSON.stringify(verb) + ',\n' +
-                '  headers: ' + indentLines(headersJs, '  ').trimStart() + bodyArg + '\n' +
-                '});\n' +
-                'const data = await response.json();\n' +
-                'console.log(data);';
-        },
+    function parsedBody(ctx) {
+        try { return JSON.parse(ctx.bodyJson); } catch (_) { return undefined; }
+    }
 
-        'python': function (ctx) {
-            var url = buildHttpUrl(ctx);
-            var verb = ((ctx.source === 'graphql' || ctx.source === 'mcp') ? 'POST' : ctx.httpMethod).toLowerCase();
-            var headersObj = Object.assign({ 'Content-Type': 'application/json' }, ctx.metadata);
-            var headersPy = '{\n' + Object.keys(headersObj).map(function (k) {
-                return '    ' + JSON.stringify(k) + ': ' + JSON.stringify(headersObj[k]);
-            }).join(',\n') + '\n}';
-            var lines = ['import requests', ''];
-            lines.push('headers = ' + headersPy);
-            if (verb !== 'get' && verb !== 'delete' && verb !== 'head') {
-                lines.push('body = ' + buildHttpBody(ctx));  // i18n-exempt: Python source the snippet generates
-                lines.push('response = requests.' + verb + '(' + JSON.stringify(url) + ', headers=headers, json=body)');
-            } else {
-                lines.push('response = requests.' + verb + '(' + JSON.stringify(url) + ', headers=headers)');
-            }
-            lines.push('print(response.json())');
-            return lines.join('\n');
-        },
+    function isEmptyBody(text) {
+        var t = String(text == null ? '' : text).trim();
+        return t === '' || t === '{}';
+    }
 
-        'csharp-http': function (ctx) {
-            var url = buildHttpUrl(ctx);
-            var verb = ctx.httpMethod;
-            var lines = [
-                'using var client = new HttpClient();',
-                'using var request = new HttpRequestMessage(HttpMethod.' + (verb.charAt(0) + verb.slice(1).toLowerCase()) + ', ' + JSON.stringify(url) + ');'  // i18n-exempt: generated code in the snippet export
-            ];
-            var hdrKeys = Object.keys(ctx.metadata);
-            for (var i = 0; i < hdrKeys.length; i++) {
-                lines.push('request.Headers.TryAddWithoutValidation(' + JSON.stringify(hdrKeys[i]) + ', ' + JSON.stringify(ctx.metadata[hdrKeys[i]]) + ');');  // i18n-exempt: generated code in the snippet export
-            }
-            if (verb !== 'GET' && verb !== 'DELETE' && verb !== 'HEAD') {
-                lines.push('request.Content = new StringContent(' + JSON.stringify(buildHttpBody(ctx)) + ', Encoding.UTF8, "application/json");');
-            }
-            lines.push('var response = await client.SendAsync(request);');
-            lines.push('var json = await response.Content.ReadAsStringAsync();');
-            lines.push('Console.WriteLine(json);');
-            return lines.join('\n');
-        },
+    function lastSegment(name) {
+        var parts = String(name || '').split('.');
+        return parts[parts.length - 1] || name;
+    }
 
-        // ---- SSE ----
-        'curl-sse': function (ctx) {
-            var url = buildHttpUrl(ctx);
-            var lines = ["curl -N '" + escapeShellSingleQuote(url) + "' \\"];
-            lines.push("  -H 'Accept: text/event-stream'");
-            return lines.join('\n');
-        },
+    function stripScheme(url) {
+        return String(url || '').replace(/^[a-z][a-z0-9+.-]*:\/\//i, '').replace(/\/$/, '');
+    }
 
-        'js-eventsource': function (ctx) {
-            var url = buildHttpUrl(ctx);
-            return 'const source = new EventSource(' + JSON.stringify(url) + ');\n' +
-                'source.onmessage = (event) => {\n' +
-                '  console.log(event.data);\n' +
-                '};\n' +
-                'source.onerror = (err) => {\n' +
-                '  console.error(err);\n' +
-                '  source.close();\n' +
-                '};';
-        },
+    // ---- The HTTP request a protocol of the HTTP family sends ----
+    // REST and OData send the editor body to the method's path; GraphQL
+    // sends {query, variables} as edited; JSON-RPC and MCP wrap the body in
+    // the envelope their plugin builds server-side, so the snippet sends
+    // what the workbench sends.
+    var HTTP_FAMILY = ['rest', 'odata', 'graphql', 'jsonrpc', 'mcp'];
 
-        // ---- gRPC ----
-        'grpcurl': function (ctx) {
-            var host = stripScheme(ctx.serverUrl);
-            var lines = [];
-            var hdrKeys = Object.keys(ctx.metadata);
-            var bodyArg = ctx.bodyJson && ctx.bodyJson.trim() !== '{}' ? "  -d '" + escapeShellSingleQuote(ctx.bodyJson) + "' \\" : '';
-            lines.push('grpcurl \\');
-            for (var i = 0; i < hdrKeys.length; i++) {
-                lines.push("  -H '" + escapeShellSingleQuote(hdrKeys[i] + ': ' + ctx.metadata[hdrKeys[i]]) + "' \\");
-            }
-            if (bodyArg) lines.push(bodyArg);
-            lines.push('  ' + host + ' \\');
-            lines.push('  ' + ctx.service + '/' + ctx.method);
-            return lines.join('\n');
-        },
-
-        'csharp-grpc': function (ctx) {
-            return [
-                'using var channel = GrpcChannel.ForAddress(' + JSON.stringify(ctx.serverUrl) + ');',
-                '// Generated client from your .proto:',
-                'var client = new ' + lastSegment(ctx.service) + '.' + lastSegment(ctx.service) + 'Client(channel);',
-                '',
-                'var request = new ' + ctx.method + 'Request',
-                '{',
-                '    // populate from: ' + ctx.bodyJson,
-                '};',
-                '',
-                'var response = await client.' + ctx.method + 'Async(request);',
-                'Console.WriteLine(response);'
-            ].join('\n');
-        },
-
-        // ---- WebSocket ----
-        'wscat': function (ctx) {
-            var url = wsUrl(ctx);
-            return [
-                '# Install once: npm install -g wscat',
-                'wscat -c ' + "'" + escapeShellSingleQuote(url) + "'",
-                '# Then type your text frame and press Enter to send.',
-                '# Example payload:',
-                '# > ' + (ctx.bodyJson === '{}' ? 'hello' : ctx.bodyJson)
-            ].join('\n');
-        },
-
-        'js-ws': function (ctx) {
-            var url = wsUrl(ctx);
-            return [
-                'const ws = new WebSocket(' + JSON.stringify(url) + ');',
-                '',
-                "ws.addEventListener('open', () => {",
-                '  ws.send(' + JSON.stringify(ctx.bodyJson === '{}' ? 'hello' : ctx.bodyJson) + ');',
-                '});',
-                '',
-                "ws.addEventListener('message', (event) => {",
-                '  console.log(event.data);',  // i18n-exempt: generated code in the snippet export
-                '});',
-                '',
-                "ws.addEventListener('close', () => console.log('disconnected'));"
-            ].join('\n');
-        },
-
-        // ---- SignalR ----
-        'csharp-signalr': function (ctx) {
-            return [
-                'using Microsoft.AspNetCore.SignalR.Client;',
-                '',
-                'var connection = new HubConnectionBuilder()',  // i18n-exempt: generated code in the snippet export
-                '    .WithUrl(' + JSON.stringify(ctx.serverUrl) + ')',
-                '    .Build();',  // i18n-exempt: generated code in the snippet export
-                '',
-                'await connection.StartAsync();',  // i18n-exempt: generated code in the snippet export
-                '',
-                'var result = await connection.InvokeAsync<object>(' + JSON.stringify(ctx.method) + ');',
-                '// payload from: ' + ctx.bodyJson,
-                'Console.WriteLine(result);'
-            ].join('\n');
-        },
-
-        'js-signalr': function (ctx) {
-            return [
-                "import * as signalR from '@microsoft/signalr';",
-                '',
-                'const connection = new signalR.HubConnectionBuilder()',  // i18n-exempt: generated code in the snippet export
-                '  .withUrl(' + JSON.stringify(ctx.serverUrl) + ')',
-                '  .build();',  // i18n-exempt: generated code in the snippet export
-                '',
-                'await connection.start();',  // i18n-exempt: generated code in the snippet export
-                '',
-                'const result = await connection.invoke(' + JSON.stringify(ctx.method) + ');',
-                '// payload from: ' + ctx.bodyJson,
-                'console.log(result);'
-            ].join('\n');
-        },
-
-        // ---- Bowire's own CLI (#538) ----
-        // The one export that is not a translation: it emits the same
-        // request as a `bowire call …` line, which is why a golden fixture
-        // + a System.CommandLine parse test keep it honest as the CLI
-        // evolves. The body lives in cli-export.js.
-        //
-        // typeof-guarded even though both fragments are core: the response
-        // pane's copy dropdown and the request pane's header button call
-        // generators OUTSIDE generateCodeSnippet's try/catch, and render()
-        // has none of its own — a bare ReferenceError there blanks the
-        // whole workbench.
-        // #673 — a .http block (http-file-export.js), guarded like the CLI one.
-        'http-file': function (ctx) {
-            return (typeof generateHttpFileSnippet === 'function')
-                ? generateHttpFileSnippet(ctx, { keepVars: (typeof httpExportKeepVars === 'undefined') || !!httpExportKeepVars })
-                : '# .http export is unavailable in this build.';
-        },
-        'bowire-cli': function (ctx) {
-            return (typeof generateCliCommand === 'function')
-                ? generateCliCommand(ctx)
-                : '# Bowire CLI export is unavailable in this build.';
-        }
-    };
-
-    // For HTTP-shaped plugins: build the actual request URL. REST methods
-    // with httpPath get the path appended (and any {placeholders}
-    // substituted from the body); GraphQL/MCP go straight to the server URL.
     function buildHttpUrl(ctx) {
-        if (ctx.source === 'graphql' || ctx.source === 'mcp') {
+        if (ctx.source === 'graphql' || ctx.source === 'mcp' || ctx.source === 'jsonrpc') {
             return ctx.serverUrl;
         }
         if (ctx.source === 'sse') {
@@ -398,28 +322,51 @@
         }
         if (ctx.httpPath) {
             var path = ctx.httpPath;
-            try {
-                var bodyObj = JSON.parse(ctx.bodyJson);
-                path = path.replace(/\{(\w+)\}/g, function (_, key) {
-                    return bodyObj && bodyObj[key] !== undefined ? encodeURIComponent(bodyObj[key]) : '{' + key + '}';
-                });
-            } catch (e) { /* ignore */ }
+            var bodyObj = parsedBody(ctx);
+            path = path.replace(/\{(\w+)\}/g, function (_, key) {
+                return bodyObj && bodyObj[key] !== undefined ? encodeURIComponent(bodyObj[key]) : '{' + key + '}';
+            });
             return ctx.serverUrl.replace(/\/$/, '') + path;
         }
         return ctx.serverUrl;
     }
 
-    // For HTTP plugins: build the actual JSON body. REST methods strip
-    // path-bucket fields from the body so the snippet doesn't double-send
-    // them. GraphQL is already wrapped as { query, variables } from the
-    // editor pane. MCP / others pass through.
-    function buildHttpBody(ctx) {
-        if (ctx.source === 'graphql' || ctx.source === 'mcp') return ctx.bodyJson;
-        return ctx.bodyJson;
+    function mcpEnvelope(ctx) {
+        var args = parsedBody(ctx);
+        var service = String(ctx.service || '');
+        if (service === 'Resources') return { jsonrpc: '2.0', id: 1, method: 'resources/read', params: { uri: ctx.method } };
+        if (service === 'Prompts') return { jsonrpc: '2.0', id: 1, method: 'prompts/get', params: { name: ctx.method, arguments: args || {} } };
+        return { jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name: ctx.method, arguments: args || {} } };
     }
 
-    function stripScheme(url) {
-        return String(url || '').replace(/^https?:\/\//, '');
+    // { verb, url, headers, body } — body null when the verb sends none.
+    function httpRequestOf(ctx) {
+        var verb = (ctx.source === 'graphql' || ctx.source === 'mcp' || ctx.source === 'jsonrpc')
+            ? 'POST' : String(ctx.httpMethod || 'POST').toUpperCase();
+        var body = null;
+        if (verb !== 'GET' && verb !== 'HEAD' && verb !== 'DELETE') {
+            if (ctx.source === 'mcp') {
+                body = JSON.stringify(mcpEnvelope(ctx));
+            } else if (ctx.source === 'jsonrpc') {
+                var envelope = { jsonrpc: '2.0', id: 1, method: ctx.method };
+                if (!isEmptyBody(ctx.bodyJson)) {
+                    var params = parsedBody(ctx);
+                    envelope.params = params === undefined ? ctx.bodyJson : params;
+                }
+                body = JSON.stringify(envelope);
+            } else {
+                body = compactJson(ctx.bodyJson);
+            }
+        }
+        var headers = {};
+        if (body !== null) headers['Content-Type'] = 'application/json';
+        if (ctx.source === 'mcp') {
+            headers.Accept = 'application/json, text/event-stream';
+            ctx.notes.push('An MCP server expects an initialize request first and the Mcp-Session-Id it answers with on every '
+                + 'later request; this snippet shows the call itself.');
+        }
+        Object.keys(ctx.metadata || {}).forEach(function (k) { headers[k] = ctx.metadata[k]; });
+        return { verb: verb, url: buildHttpUrl(ctx), headers: headers, body: body };
     }
 
     function wsUrl(ctx) {
@@ -439,8 +386,9 @@
         return url;
     }
 
-    function lastSegment(name) {
-        var parts = String(name || '').split('.');
-        return parts[parts.length - 1] || name;
+    // host and port out of a broker URL (mqtt://, nats://, tcp://, …),
+    // with the protocol's default port when the URL has none.
+    function brokerHostPort(url, defaultPort) {
+        var m = /^(?:[a-z][a-z0-9+.-]*:\/\/)?([^/:?#]+)(?::(\d+))?/i.exec(String(url || '').trim());
+        return { host: (m && m[1]) || 'localhost', port: m && m[2] ? Number(m[2]) : defaultPort };
     }
-
