@@ -176,11 +176,11 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### Sdk.Python v0.5 — Duplex channels
 
-**0/1 done** · 1 backlog
+**1/1 done**
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
-| [11](https://github.com/Kuestenlogik/Bowire.Sdk.Python/issues/11) | Sdk.Python | [Duplex channels: open_channel, channel.send and channel.close, owned by the session that opened them](#issue-kuestenlogik-bowire-sdk-python-11) | ⬜ Backlog | `area:plugin-sdk` |
+| [11](https://github.com/Kuestenlogik/Bowire.Sdk.Python/issues/11) | Sdk.Python | [Duplex channels: open_channel, channel.send and channel.close, owned by the session that opened them](#issue-kuestenlogik-bowire-sdk-python-11) | ✅ Done | `area:plugin-sdk` |
 
 ### Templates v1.1.17 — No warning suppressions *(due 2026-11-14)*
 
@@ -205,9 +205,32 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
+| [100](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/100) | Protocol.Akka | [Actor tree: the live actor hierarchy as a workbench view the plugin ships](#issue-kuestenlogik-bowire-protocol-akka-100) | ⬜ Backlog | `area:workbench` |
+| [101](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/101) | Protocol.Akka | [Lifecycle and supervision: started, stopped, restarted, and the exception behind each restart](#issue-kuestenlogik-bowire-protocol-akka-101) | ⬜ Backlog | `area:plugin-sdk` |
+| [102](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/102) | Protocol.Akka | [Log stream: the actor system's own log events, filterable by level, path and source](#issue-kuestenlogik-bowire-protocol-akka-102) | ⬜ Backlog | `area:plugin-sdk` |
+| [103](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/103) | Protocol.Akka | [Mailbox wait and processing time per message](#issue-kuestenlogik-bowire-protocol-akka-103) | ⬜ Backlog | `area:plugin-sdk` |
+| [104](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/104) | Protocol.Akka | [Ask from the workbench: send, wait for the reply, and see request and reply paired](#issue-kuestenlogik-bowire-protocol-akka-104) | ⬜ Backlog | `area:plugin-sdk` |
+| [105](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/105) | Protocol.Akka | [Message types as schemas: a form for Tell and Ask instead of hand-written JSON](#issue-kuestenlogik-bowire-protocol-akka-105) | ⬜ Backlog | `area:workbench` |
+| [106](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/106) | Protocol.Akka | [Akka.Persistence inspector: journal, snapshots and recovery per persistenceId](#issue-kuestenlogik-bowire-protocol-akka-106) | ⬜ Backlog | `area:workbench` |
+| [107](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/107) | Protocol.Akka | [Akka.Streams: the running stages of a materialized graph, with throughput and backpressure](#issue-kuestenlogik-bowire-protocol-akka-107) | ⬜ Backlog | `area:plugin-sdk` |
+| [108](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/108) | Protocol.Akka | [Routers, dispatchers and the scheduler: routees, thread-pool load and scheduled messages](#issue-kuestenlogik-bowire-protocol-akka-108) | ⬜ Backlog | `area:plugin-sdk` |
+| [109](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/109) | Protocol.Akka | [Ask the actor system through MCP: tap, tree, lifecycle and throughput as tools](#issue-kuestenlogik-bowire-protocol-akka-109) | ⬜ Backlog | `area:plugin-sdk` |
+| [110](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/110) | Protocol.Akka | [Security checks for Akka: remoting without TLS, a wide Tell policy, an open receptionist](#issue-kuestenlogik-bowire-protocol-akka-110) | ⬜ Backlog | `area:plugin-sdk` |
+| [111](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/111) | Protocol.Akka | [Cluster membership: nodes, roles, status, leader and reachability, live](#issue-kuestenlogik-bowire-protocol-akka-111) | ⬜ Backlog | `area:workbench` |
+| [112](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/112) | Protocol.Akka | [Cluster Sharding: regions, shard distribution, entities, rebalancing, and a message to one entity](#issue-kuestenlogik-bowire-protocol-akka-112) | ⬜ Backlog | `area:workbench` |
+| [113](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/113) | Protocol.Akka | [One tap across all nodes, and a message followed from node to node](#issue-kuestenlogik-bowire-protocol-akka-113) | ⬜ Backlog | `area:plugin-sdk` |
+| [114](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/114) | Protocol.Akka | [Distributed PubSub: topics, subscribers, and publishing from the workbench](#issue-kuestenlogik-bowire-protocol-akka-114) | ⬜ Backlog | `area:plugin-sdk` |
+| [115](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/115) | Protocol.Akka | [Distributed Data: keys, CRDT values, and their changes, live](#issue-kuestenlogik-bowire-protocol-akka-115) | ⬜ Backlog | `area:plugin-sdk` |
+| [116](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/116) | Protocol.Akka | [Cluster singletons and split brain: where each singleton runs, handovers, and the resolver's decisions](#issue-kuestenlogik-bowire-protocol-akka-116) | ⬜ Backlog | `area:plugin-sdk` |
+| [117](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/117) | Protocol.Akka | [Remote parity: mailboxes, throughput, tree and lifecycle over the remote tap, and Tell / Ask with the same policy](#issue-kuestenlogik-bowire-protocol-akka-117) | ⬜ Backlog | `area:plugin-sdk` |
+| [118](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/118) | Protocol.Akka | [Serialization diagnostics: serializer per type, message sizes, and what would fail on the wire](#issue-kuestenlogik-bowire-protocol-akka-118) | ⬜ Backlog | `area:plugin-sdk` |
+| [119](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/119) | Protocol.Akka | [Akka.Management as a source: cluster state from its HTTP endpoints, without a package in the host](#issue-kuestenlogik-bowire-protocol-akka-119) | ⬜ Backlog | `area:plugin-sdk` |
 | [999](https://github.com/Kuestenlogik/Bowire/issues/999) | Bowire | [roadmap-release-field publish is failing](#issue-kuestenlogik-bowire-999) | ⬜ Backlog |  |
 | [1017](https://github.com/Kuestenlogik/Bowire/issues/1017) | Bowire | [bowire discover refuses the grpcweb@ hint that list and the workbench accept](#issue-kuestenlogik-bowire-1017) | ⬜ Backlog |  |
 | [1047](https://github.com/Kuestenlogik/Bowire/issues/1047) | Bowire | [Winget: notice when a submitted PR is refused by validation](#issue-kuestenlogik-bowire-1047) | ⬜ Backlog |  |
+| [1048](https://github.com/Kuestenlogik/Bowire/issues/1048) | Bowire | [Timeline and sequence view for streams: who sent what to whom, in time](#issue-kuestenlogik-bowire-1048) | ⬜ Backlog | `area:workbench` |
+| [1049](https://github.com/Kuestenlogik/Bowire/issues/1049) | Bowire | [Topology view: nodes and connections of a cluster, a broker or a set of sidecars](#issue-kuestenlogik-bowire-1049) | ⬜ Backlog | `area:workbench` |
+| [1050](https://github.com/Kuestenlogik/Bowire/issues/1050) | Bowire | [Flows: expect a frame on a stream within a time, after a step](#issue-kuestenlogik-bowire-1050) | ⬜ Backlog | `area:plugin-sdk` |
 
 ## Details
 
@@ -693,7 +716,7 @@ The e2e job runs on Linux only. The example's manifest names its binary as a bar
 
 ### Sdk.Python v0.5 — Duplex channels
 
-#### <a id="issue-kuestenlogik-bowire-sdk-python-11"></a>⬜ Backlog · [Kuestenlogik/Bowire.Sdk.Python#11](https://github.com/Kuestenlogik/Bowire.Sdk.Python/issues/11) Duplex channels: open_channel, channel.send and channel.close, owned by the session that opened them
+#### <a id="issue-kuestenlogik-bowire-sdk-python-11"></a>✅ Done · [Kuestenlogik/Bowire.Sdk.Python#11](https://github.com/Kuestenlogik/Bowire.Sdk.Python/issues/11) Duplex channels: open_channel, channel.send and channel.close, owned by the session that opened them
 
 > `area:plugin-sdk`
 
@@ -731,6 +754,126 @@ Owner rule from 2026-10-14: warnings are fixed at the cause instead of suppresse
 
 ### Backlog (not yet scheduled)
 
+#### <a id="issue-kuestenlogik-bowire-protocol-akka-100"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Akka#100](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/100) Actor tree: the live actor hierarchy as a workbench view the plugin ships
+
+> `area:workbench`
+
+To tap, filter or tell, a user has to know actor paths already. Nothing in the workbench shows what is running: which actors exist under `/user`, who supervises whom, which children come and go. A tree of the live hierarchy is the natural entry point to every other Akka feature, the way the map is for geodata. [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/100)
+
+#### <a id="issue-kuestenlogik-bowire-protocol-akka-101"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Akka#101](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/101) Lifecycle and supervision: started, stopped, restarted, and the exception behind each restart
+
+> `area:plugin-sdk`
+
+"Why does this actor keep restarting?" is the most common Akka debugging question, and the workbench cannot answer it: the tap sees messages, not lifecycle. Restarts and the exceptions that caused them are in the log at best. [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/101)
+
+#### <a id="issue-kuestenlogik-bowire-protocol-akka-102"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Akka#102](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/102) Log stream: the actor system's own log events, filterable by level, path and source
+
+> `area:plugin-sdk`
+
+Messages and logs of an actor system live in different tools. The workbench already streams the messages; the log events next to them would put cause and effect on one timeline. [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/102)
+
+#### <a id="issue-kuestenlogik-bowire-protocol-akka-103"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Akka#103](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/103) Mailbox wait and processing time per message
+
+> `area:plugin-sdk`
+
+The tap sees a message when it is enqueued. Whether an actor is slow because messages wait long in its mailbox or because handling each one takes long is not visible, and that is the question behind most throughput problems. [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/103)
+
+#### <a id="issue-kuestenlogik-bowire-protocol-akka-104"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Akka#104](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/104) Ask from the workbench: send, wait for the reply, and see request and reply paired
+
+> `area:plugin-sdk`
+
+`Tap/Tell` with `replyTimeoutMs` already waits for the first reply, but it is not an Ask: the reply is not tied to the request, and in the message stream nothing shows which reply answers which message. [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/104)
+
+#### <a id="issue-kuestenlogik-bowire-protocol-akka-105"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Akka#105](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/105) Message types as schemas: a form for Tell and Ask instead of hand-written JSON
+
+> `area:workbench`
+
+`Tap/Tell` takes the message as hand-written JSON for a type name the user has to know. The allowed types are known to the host, and so are their shapes. [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/105)
+
+#### <a id="issue-kuestenlogik-bowire-protocol-akka-106"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Akka#106](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/106) Akka.Persistence inspector: journal, snapshots and recovery per persistenceId
+
+> `area:workbench`
+
+Event-sourced actors are hard to debug without seeing their journal: which events a `persistenceId` holds, in which order, what the last snapshot contains, how long recovery takes. Today that means querying the journal's database by hand, in its storage format. [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/106)
+
+#### <a id="issue-kuestenlogik-bowire-protocol-akka-107"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Akka#107](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/107) Akka.Streams: the running stages of a materialized graph, with throughput and backpressure
+
+> `area:plugin-sdk`
+
+A stream that stalls shows nothing from outside: which stage is slow, where backpressure builds up, which stage failed. That is the hardest part of Akka.Streams to debug. [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/107)
+
+#### <a id="issue-kuestenlogik-bowire-protocol-akka-108"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Akka#108](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/108) Routers, dispatchers and the scheduler: routees, thread-pool load and scheduled messages
+
+> `area:plugin-sdk`
+
+Three smaller questions without an answer today: how a router spreads messages over its routees, whether a dispatcher's threads are saturated, and which messages are scheduled to be sent when. [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/108)
+
+#### <a id="issue-kuestenlogik-bowire-protocol-akka-109"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Akka#109](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/109) Ask the actor system through MCP: tap, tree, lifecycle and throughput as tools
+
+> `area:plugin-sdk`
+
+An agent investigating "why do dead letters increase?" or "which actor is the bottleneck?" needs the same views a person has in the workbench. Bowire already serves MCP; the Akka views should be reachable there as tools, with the same rights. [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/109)
+
+#### <a id="issue-kuestenlogik-bowire-protocol-akka-110"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Akka#110](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/110) Security checks for Akka: remoting without TLS, a wide Tell policy, an open receptionist
+
+> `area:plugin-sdk`
+
+Bowire's security scan covers HTTP, gRPC, WebSocket, MQTT and SSE. An Akka cluster has its own exposures: remoting that is not encrypted or authenticated, a ClusterClient receptionist anyone on the network can talk to, and in Bowire's own plugin a Tell policy wider than it needs to be. [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/110)
+
+#### <a id="issue-kuestenlogik-bowire-protocol-akka-111"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Akka#111](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/111) Cluster membership: nodes, roles, status, leader and reachability, live
+
+> `area:workbench`
+
+The first question in a cluster incident is "who is in the cluster, and who is unreachable?" The workbench cannot answer it. Listed as a candidate on this repository's roadmap. [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/111)
+
+#### <a id="issue-kuestenlogik-bowire-protocol-akka-112"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Akka#112](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/112) Cluster Sharding: regions, shard distribution, entities, rebalancing, and a message to one entity
+
+> `area:workbench`
+
+In most production Akka clusters, sharding is the core, and it is opaque: which node holds which shard, how many entities each has, when shards move, and how to reach one entity by its id. [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/112)
+
+#### <a id="issue-kuestenlogik-bowire-protocol-akka-113"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Akka#113](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/113) One tap across all nodes, and a message followed from node to node
+
+> `area:plugin-sdk`
+
+The remote tap relays the messages of the node the relay runs on, through one ClusterClient connection. In a cluster a conversation crosses nodes: the sender is on one, the recipient on another, and each connection shows only its part. [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/113)
+
+#### <a id="issue-kuestenlogik-bowire-protocol-akka-114"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Akka#114](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/114) Distributed PubSub: topics, subscribers, and publishing from the workbench
+
+> `area:plugin-sdk`
+
+Distributed PubSub is Akka's in-cluster message bus. Bowire treats MQTT and Kafka topics as first-class; Akka topics are invisible. [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/114)
+
+#### <a id="issue-kuestenlogik-bowire-protocol-akka-115"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Akka#115](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/115) Distributed Data: keys, CRDT values, and their changes, live
+
+> `area:plugin-sdk`
+
+Distributed Data holds replicated state whose current value differs per node until it converges. Seeing the keys, the value on each node and the changes as they arrive answers consistency questions that are otherwise guesswork. [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/115)
+
+#### <a id="issue-kuestenlogik-bowire-protocol-akka-116"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Akka#116](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/116) Cluster singletons and split brain: where each singleton runs, handovers, and the resolver's decisions
+
+> `area:plugin-sdk`
+
+Two classic incident questions: on which node does the singleton run right now, and why did the cluster down that node? Neither is visible in the workbench. [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/116)
+
+#### <a id="issue-kuestenlogik-bowire-protocol-akka-117"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Akka#117](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/117) Remote parity: mailboxes, throughput, tree and lifecycle over the remote tap, and Tell / Ask with the same policy
+
+> `area:plugin-sdk`
+
+The standalone CLI attached over ClusterClient sees the message stream only; `Tap/Mailboxes`, `Tap/Throughput` and `Tap/Tell` are embedded-only (listed as a candidate on this repository's roadmap). Most Akka systems run as services where embedding the workbench is not an option. [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/117)
+
+#### <a id="issue-kuestenlogik-bowire-protocol-akka-118"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Akka#118](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/118) Serialization diagnostics: serializer per type, message sizes, and what would fail on the wire
+
+> `area:plugin-sdk`
+
+Inside one process Akka never serializes, so a message type that cannot cross the network, or crosses it in a format nobody intended, is found only in a cluster. Large messages that exceed the frame size are found the same way. [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/118)
+
+#### <a id="issue-kuestenlogik-bowire-protocol-akka-119"></a>⬜ Backlog · [Kuestenlogik/Bowire.Protocol.Akka#119](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/119) Akka.Management as a source: cluster state from its HTTP endpoints, without a package in the host
+
+> `area:plugin-sdk`
+
+Attaching the CLI to a cluster today needs `Kuestenlogik.Bowire.Protocol.Akka.Remote` in the host and a reachable ClusterClient receptionist. Many clusters already run Akka.Management, whose HTTP endpoints expose members, shards and health. [[more]](https://github.com/Kuestenlogik/Bowire.Protocol.Akka/issues/119)
+
 #### <a id="issue-kuestenlogik-bowire-999"></a>⬜ Backlog · [#999](https://github.com/Kuestenlogik/Bowire/issues/999) roadmap-release-field publish is failing
 
 <!-- publish-failure:roadmap-release-field --> The **roadmap-release-field** publish failed. - Run: https://github.com/Kuestenlogik/Bowire/actions/runs/42047737460 - Workflow: `Roadmap field guard` - Commit: a097880038191e58036fa9b35819b42c802013b4 [[more]](https://github.com/Kuestenlogik/Bowire/issues/999)
@@ -742,6 +885,24 @@ Owner rule from 2026-10-14: warnings are fixed at the cause instead of suppresse
 #### <a id="issue-kuestenlogik-bowire-1047"></a>⬜ Backlog · [#1047](https://github.com/Kuestenlogik/Bowire/issues/1047) Winget: notice when a submitted PR is refused by validation
 
 The winget workflow ends when `wingetcreate submit` has opened the PR against microsoft/winget-pkgs, and reports green. Whether Microsoft's validation accepts that PR is never looked at. [[more]](https://github.com/Kuestenlogik/Bowire/issues/1047)
+
+#### <a id="issue-kuestenlogik-bowire-1048"></a>⬜ Backlog · [#1048](https://github.com/Kuestenlogik/Bowire/issues/1048) Timeline and sequence view for streams: who sent what to whom, in time
+
+> `area:workbench`
+
+A stream in the workbench is a list of frames. For conversations between parties — actors, MQTT clients and topics, Kafka producers and consumers, SignalR hubs — a list hides the shape: who talks to whom, which reply answers which request, where time goes. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/1048)
+
+#### <a id="issue-kuestenlogik-bowire-1049"></a>⬜ Backlog · [#1049](https://github.com/Kuestenlogik/Bowire/issues/1049) Topology view: nodes and connections of a cluster, a broker or a set of sidecars
+
+> `area:workbench`
+
+Several plugins describe a topology: an Akka cluster's members, a Kafka or NATS cluster's brokers, the sidecars a host talks to. The workbench has a map for geodata but no view for "what is connected to what, and what is unreachable". [[more]](https://github.com/Kuestenlogik/Bowire/issues/1049)
+
+#### <a id="issue-kuestenlogik-bowire-1050"></a>⬜ Backlog · [#1050](https://github.com/Kuestenlogik/Bowire/issues/1050) Flows: expect a frame on a stream within a time, after a step
+
+> `area:plugin-sdk`
+
+`bowire test` checks the response of the call a step makes. Many systems answer elsewhere: a Tell to one actor makes another actor receive a message, an HTTP call makes a message appear on an MQTT topic or a Kafka partition. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/1050)
 
 ---
 
