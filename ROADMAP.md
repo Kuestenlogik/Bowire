@@ -12,10 +12,11 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**23/37 done** · 14 backlog
+**23/38 done** · 1 in progress · 14 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
+| [1055](https://github.com/Kuestenlogik/Bowire/issues/1055) | Bowire | [Imported REST requests cannot be run: the REST plugin looks the URL up as an OpenAPI operation](#issue-kuestenlogik-bowire-1055) | 🟡 In progress | `area:workbench` |
 | [639](https://github.com/Kuestenlogik/Bowire/issues/639) | Bowire | [SCIM: live Okta and Entra ID provisioning round-trips](#issue-kuestenlogik-bowire-639) | ⬜ Backlog | `area:workbench` |
 | [670](https://github.com/Kuestenlogik/Bowire/issues/670) | Bowire | [Get listed where developers and models actually look](#issue-kuestenlogik-bowire-670) | ⬜ Backlog | `area:site` |
 | [672](https://github.com/Kuestenlogik/Bowire/issues/672) | Bowire | [Server-side script engine so pre/post scripts run in bowire test, not only in the browser](#issue-kuestenlogik-bowire-672) | ⬜ Backlog | `area:cli` |
@@ -239,6 +240,12 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 ## Details
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
+
+#### <a id="issue-kuestenlogik-bowire-1055"></a>🟡 In progress · [#1055](https://github.com/Kuestenlogik/Bowire/issues/1055) Imported REST requests cannot be run: the REST plugin looks the URL up as an OpenAPI operation
+
+> `area:workbench`
+
+A REST request imported from Postman, Insomnia, Bruno, Yaak or a `.http` file cannot be run. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/1055)
 
 #### <a id="issue-kuestenlogik-bowire-639"></a>⬜ Backlog · [#639](https://github.com/Kuestenlogik/Bowire/issues/639) SCIM: live Okta and Entra ID provisioning round-trips
 
