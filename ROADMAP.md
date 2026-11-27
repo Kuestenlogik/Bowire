@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**21/36 done** · 15 backlog
+**22/36 done** · 14 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -30,7 +30,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [812](https://github.com/Kuestenlogik/Bowire/issues/812) | Bowire | [MCP Apps in testing and security: assert on apps, record their traffic, scan their CSP](#issue-kuestenlogik-bowire-812) | ⬜ Backlog |  |
 | [939](https://github.com/Kuestenlogik/Bowire/issues/939) | Bowire | [Import Yaak exports](#issue-kuestenlogik-bowire-939) | ⬜ Backlog |  |
 | [940](https://github.com/Kuestenlogik/Bowire/issues/940) | Bowire | [Verify the collection importers against real Insomnia and Bruno exports](#issue-kuestenlogik-bowire-940) | ⬜ Backlog |  |
-| [1053](https://github.com/Kuestenlogik/Bowire/issues/1053) | Bowire | [bowire test on a flow: every REST step first sends a GET to its own URL](#issue-kuestenlogik-bowire-1053) | ⬜ Backlog | `area:cli` |
 | [673](https://github.com/Kuestenlogik/Bowire/issues/673) | Bowire | [Export requests as .http — Copy as .http, and bowire export http for a whole collection](#issue-kuestenlogik-bowire-673) | ✅ Done | `area:workbench` |
 | [946](https://github.com/Kuestenlogik/Bowire/issues/946) | Bowire | [Data sets for flow runs and bowire test --workspace](#issue-kuestenlogik-bowire-946) | ✅ Done |  |
 | [963](https://github.com/Kuestenlogik/Bowire/issues/963) | Bowire | [WebSocketAuthProbe: forged JWT (alg:none, tampered signature) on the upgrade](#issue-kuestenlogik-bowire-963) | ✅ Done | `area:security` |
@@ -52,6 +51,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [1014](https://github.com/Kuestenlogik/Bowire/issues/1014) | Bowire | [Sidecar contract: what shutdown means for an http sidecar that several hosts share](#issue-kuestenlogik-bowire-1014) | ✅ Done |  |
 | [1016](https://github.com/Kuestenlogik/Bowire/issues/1016) | Bowire | [bowire scan: accept --schema like the other commands](#issue-kuestenlogik-bowire-1016) | ✅ Done | `area:cli` |
 | [1018](https://github.com/Kuestenlogik/Bowire/issues/1018) | Bowire | [--schema on the command line takes the schema kinds the plugins import](#issue-kuestenlogik-bowire-1018) | ✅ Done |  |
+| [1053](https://github.com/Kuestenlogik/Bowire/issues/1053) | Bowire | [bowire test on a flow: every REST step first sends a GET to its own URL](#issue-kuestenlogik-bowire-1053) | ✅ Done | `area:cli` |
 
 ### v2.12 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
 
@@ -309,12 +309,6 @@ Follow-up of #674, which shipped the Insomnia, Bruno and `.http` importers. Yaak
 
 Follow-up of #674. The importers were tested with fixtures written from the formats' specifications and schemas (Insomnia v4/v5, Bru, OpenCollection v1.0.0), not with files exported from the apps. [[more]](https://github.com/Kuestenlogik/Bowire/issues/940)
 
-#### <a id="issue-kuestenlogik-bowire-1053"></a>⬜ Backlog · [#1053](https://github.com/Kuestenlogik/Bowire/issues/1053) bowire test on a flow: every REST step first sends a GET to its own URL
-
-> `area:cli`
-
-`FlowTestRunner.RunStepAsync` calls `protocol.DiscoverAsync(serverUrl)` before every step (`src/Kuestenlogik.Bowire.Tool/FlowTestRunner.cs`, right before `InvokeAsync`). For REST, discovery tries the step's URL itself as a candidate document, with a GET. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/1053)
-
 #### <a id="issue-kuestenlogik-bowire-673"></a>✅ Done · [#673](https://github.com/Kuestenlogik/Bowire/issues/673) Export requests as .http — Copy as .http, and bowire export http for a whole collection
 
 > `area:workbench`
@@ -422,6 +416,12 @@ Since #991, `--schema api.protoset` names a compiled gRPC descriptor set for `di
 #### <a id="issue-kuestenlogik-bowire-1018"></a>✅ Done · [#1018](https://github.com/Kuestenlogik/Bowire/issues/1018) --schema on the command line takes the schema kinds the plugins import
 
 Since #994 the workbench imports GraphQL SDL, WSDL, EDMX, OpenRPC and AsyncAPI through `IBowireUploadedSchemaReader`, and discovery lists every stored document through its plugin. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/1018)
+
+#### <a id="issue-kuestenlogik-bowire-1053"></a>✅ Done · [#1053](https://github.com/Kuestenlogik/Bowire/issues/1053) bowire test on a flow: every REST step first sends a GET to its own URL
+
+> `area:cli`
+
+`FlowTestRunner.RunStepAsync` calls `protocol.DiscoverAsync(serverUrl)` before every step (`src/Kuestenlogik.Bowire.Tool/FlowTestRunner.cs`, right before `InvokeAsync`). For REST, discovery tries the step's URL itself as a candidate document, with a GET. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/1053)
 
 ### v2.12 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
 
