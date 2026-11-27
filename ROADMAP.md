@@ -12,10 +12,11 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**31/43 done** · 12 backlog
+**31/43 done** · 1 in progress · 11 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
+| [1062](https://github.com/Kuestenlogik/Bowire/issues/1062) | Bowire | [No script runs in the workbench: the CSP refuses the eval scripts.js needs](#issue-kuestenlogik-bowire-1062) | 🟡 In progress | `area:workbench` |
 | [639](https://github.com/Kuestenlogik/Bowire/issues/639) | Bowire | [SCIM: live Okta and Entra ID provisioning round-trips](#issue-kuestenlogik-bowire-639) | ⬜ Backlog | `area:workbench` |
 | [670](https://github.com/Kuestenlogik/Bowire/issues/670) | Bowire | [Get listed where developers and models actually look](#issue-kuestenlogik-bowire-670) | ⬜ Backlog | `area:site` |
 | [677](https://github.com/Kuestenlogik/Bowire/issues/677) | Bowire | [Broader code export, and snippets for the protocols no snippet library covers](#issue-kuestenlogik-bowire-677) | ⬜ Backlog | `area:workbench` |
@@ -27,7 +28,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [811](https://github.com/Kuestenlogik/Bowire/issues/811) | Bowire | [MCP Apps, server side: Bowire's MCP tools answer with apps (test run first)](#issue-kuestenlogik-bowire-811) | ⬜ Backlog |  |
 | [812](https://github.com/Kuestenlogik/Bowire/issues/812) | Bowire | [MCP Apps in testing and security: assert on apps, record their traffic, scan their CSP](#issue-kuestenlogik-bowire-812) | ⬜ Backlog |  |
 | [1056](https://github.com/Kuestenlogik/Bowire/issues/1056) | Bowire | [Importer fixtures from collections built and exported by hand in Insomnia and Bruno](#issue-kuestenlogik-bowire-1056) | ⬜ Backlog | `area:workbench` |
-| [1062](https://github.com/Kuestenlogik/Bowire/issues/1062) | Bowire | [No script runs in the workbench: the CSP refuses the eval scripts.js needs](#issue-kuestenlogik-bowire-1062) | ⬜ Backlog | `area:workbench` |
 | [672](https://github.com/Kuestenlogik/Bowire/issues/672) | Bowire | [Server-side script engine so pre/post scripts run in bowire test, not only in the browser](#issue-kuestenlogik-bowire-672) | ✅ Done | `area:cli` |
 | [673](https://github.com/Kuestenlogik/Bowire/issues/673) | Bowire | [Export requests as .http — Copy as .http, and bowire export http for a whole collection](#issue-kuestenlogik-bowire-673) | ✅ Done | `area:workbench` |
 | [688](https://github.com/Kuestenlogik/Bowire/issues/688) | Bowire | [Plurals: the translation layer cannot express a sentence whose shape depends on a number](#issue-kuestenlogik-bowire-688) | ✅ Done | `area:workbench` |
@@ -249,6 +249,12 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
+#### <a id="issue-kuestenlogik-bowire-1062"></a>🟡 In progress · [#1062](https://github.com/Kuestenlogik/Bowire/issues/1062) No script runs in the workbench: the CSP refuses the eval scripts.js needs
+
+> `area:workbench`
+
+No pre-request or post-response script runs in the workbench. Every script fails before its first statement with: [[more]](https://github.com/Kuestenlogik/Bowire/issues/1062)
+
 #### <a id="issue-kuestenlogik-bowire-639"></a>⬜ Backlog · [#639](https://github.com/Kuestenlogik/Bowire/issues/639) SCIM: live Okta and Entra ID provisioning round-trips
 
 > `area:workbench`
@@ -304,12 +310,6 @@ Once Bowire hosts MCP Apps (#810), the people building them need what Bowire off
 > `area:workbench`
 
 Follow-up of #940, split out because it needs the apps installed and clicked through by a person. [[more]](https://github.com/Kuestenlogik/Bowire/issues/1056)
-
-#### <a id="issue-kuestenlogik-bowire-1062"></a>⬜ Backlog · [#1062](https://github.com/Kuestenlogik/Bowire/issues/1062) No script runs in the workbench: the CSP refuses the eval scripts.js needs
-
-> `area:workbench`
-
-No pre-request or post-response script runs in the workbench. Every script fails before its first statement with: [[more]](https://github.com/Kuestenlogik/Bowire/issues/1062)
 
 #### <a id="issue-kuestenlogik-bowire-672"></a>✅ Done · [#672](https://github.com/Kuestenlogik/Bowire/issues/672) Server-side script engine so pre/post scripts run in bowire test, not only in the browser
 
