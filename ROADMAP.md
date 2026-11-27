@@ -12,32 +12,27 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**23/43 done** · 3 in progress · 17 backlog
+**31/43 done** · 12 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
-| [1055](https://github.com/Kuestenlogik/Bowire/issues/1055) | Bowire | [Imported REST requests cannot be run: the REST plugin looks the URL up as an OpenAPI operation](#issue-kuestenlogik-bowire-1055) | 🟡 In progress | `area:workbench` |
-| [1057](https://github.com/Kuestenlogik/Bowire/issues/1057) | Bowire | [Flaky: the embedded gRPC no-wire discovery test asserts on wall-clock time](#issue-kuestenlogik-bowire-1057) | 🟡 In progress |  |
-| [1063](https://github.com/Kuestenlogik/Bowire/issues/1063) | Bowire | [gRPC: a server without reflection is sometimes reported as Cancelled](#issue-kuestenlogik-bowire-1063) | 🟡 In progress |  |
 | [639](https://github.com/Kuestenlogik/Bowire/issues/639) | Bowire | [SCIM: live Okta and Entra ID provisioning round-trips](#issue-kuestenlogik-bowire-639) | ⬜ Backlog | `area:workbench` |
 | [670](https://github.com/Kuestenlogik/Bowire/issues/670) | Bowire | [Get listed where developers and models actually look](#issue-kuestenlogik-bowire-670) | ⬜ Backlog | `area:site` |
-| [672](https://github.com/Kuestenlogik/Bowire/issues/672) | Bowire | [Server-side script engine so pre/post scripts run in bowire test, not only in the browser](#issue-kuestenlogik-bowire-672) | ⬜ Backlog | `area:cli` |
 | [677](https://github.com/Kuestenlogik/Bowire/issues/677) | Bowire | [Broader code export, and snippets for the protocols no snippet library covers](#issue-kuestenlogik-bowire-677) | ⬜ Backlog | `area:workbench` |
 | [687](https://github.com/Kuestenlogik/Bowire/issues/687) | Bowire | [Tray icon and no console window: give the running workbench a handle of its own](#issue-kuestenlogik-bowire-687) | ⬜ Backlog | `area:cli` |
-| [688](https://github.com/Kuestenlogik/Bowire/issues/688) | Bowire | [Plurals: the translation layer cannot express a sentence whose shape depends on a number](#issue-kuestenlogik-bowire-688) | ⬜ Backlog | `area:workbench` |
 | [690](https://github.com/Kuestenlogik/Bowire/issues/690) | Bowire | [Translate the CLI help surface, or decide not to](#issue-kuestenlogik-bowire-690) | ⬜ Backlog | `area:cli` |
 | [753](https://github.com/Kuestenlogik/Bowire/issues/753) | Bowire | [Detach a pane into a browser window of its own (pop-out)](#issue-kuestenlogik-bowire-753) | ⬜ Backlog |  |
 | [754](https://github.com/Kuestenlogik/Bowire/issues/754) | Bowire | [Scaffolding: more stub languages and protocols (follow-up to #177)](#issue-kuestenlogik-bowire-754) | ⬜ Backlog |  |
 | [810](https://github.com/Kuestenlogik/Bowire/issues/810) | Bowire | [MCP Apps, host side: render and debug MCP Apps of the servers Bowire talks to](#issue-kuestenlogik-bowire-810) | ⬜ Backlog |  |
 | [811](https://github.com/Kuestenlogik/Bowire/issues/811) | Bowire | [MCP Apps, server side: Bowire's MCP tools answer with apps (test run first)](#issue-kuestenlogik-bowire-811) | ⬜ Backlog |  |
 | [812](https://github.com/Kuestenlogik/Bowire/issues/812) | Bowire | [MCP Apps in testing and security: assert on apps, record their traffic, scan their CSP](#issue-kuestenlogik-bowire-812) | ⬜ Backlog |  |
-| [940](https://github.com/Kuestenlogik/Bowire/issues/940) | Bowire | [Verify the collection importers against real Insomnia and Bruno exports](#issue-kuestenlogik-bowire-940) | ⬜ Backlog |  |
-| [1054](https://github.com/Kuestenlogik/Bowire/issues/1054) | Bowire | [Every workbench start logs a 404 for /api/project when there is no project manifest](#issue-kuestenlogik-bowire-1054) | ⬜ Backlog | `area:workbench` |
 | [1056](https://github.com/Kuestenlogik/Bowire/issues/1056) | Bowire | [Importer fixtures from collections built and exported by hand in Insomnia and Bruno](#issue-kuestenlogik-bowire-1056) | ⬜ Backlog | `area:workbench` |
-| [1060](https://github.com/Kuestenlogik/Bowire/issues/1060) | Bowire | [The workbench's collection runner skips the scripts a saved item carries](#issue-kuestenlogik-bowire-1060) | ⬜ Backlog | `area:workbench` |
 | [1062](https://github.com/Kuestenlogik/Bowire/issues/1062) | Bowire | [No script runs in the workbench: the CSP refuses the eval scripts.js needs](#issue-kuestenlogik-bowire-1062) | ⬜ Backlog | `area:workbench` |
+| [672](https://github.com/Kuestenlogik/Bowire/issues/672) | Bowire | [Server-side script engine so pre/post scripts run in bowire test, not only in the browser](#issue-kuestenlogik-bowire-672) | ✅ Done | `area:cli` |
 | [673](https://github.com/Kuestenlogik/Bowire/issues/673) | Bowire | [Export requests as .http — Copy as .http, and bowire export http for a whole collection](#issue-kuestenlogik-bowire-673) | ✅ Done | `area:workbench` |
+| [688](https://github.com/Kuestenlogik/Bowire/issues/688) | Bowire | [Plurals: the translation layer cannot express a sentence whose shape depends on a number](#issue-kuestenlogik-bowire-688) | ✅ Done | `area:workbench` |
 | [939](https://github.com/Kuestenlogik/Bowire/issues/939) | Bowire | [Import Yaak exports](#issue-kuestenlogik-bowire-939) | ✅ Done |  |
+| [940](https://github.com/Kuestenlogik/Bowire/issues/940) | Bowire | [Verify the collection importers against real Insomnia and Bruno exports](#issue-kuestenlogik-bowire-940) | ✅ Done |  |
 | [946](https://github.com/Kuestenlogik/Bowire/issues/946) | Bowire | [Data sets for flow runs and bowire test --workspace](#issue-kuestenlogik-bowire-946) | ✅ Done |  |
 | [963](https://github.com/Kuestenlogik/Bowire/issues/963) | Bowire | [WebSocketAuthProbe: forged JWT (alg:none, tampered signature) on the upgrade](#issue-kuestenlogik-bowire-963) | ✅ Done | `area:security` |
 | [986](https://github.com/Kuestenlogik/Bowire/issues/986) | Bowire | [The .NET plugin loader scans sidecar folders and logs ManifestMissing for every sidecar](#issue-kuestenlogik-bowire-986) | ✅ Done | `area:plugin-sdk` |
@@ -59,6 +54,11 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [1016](https://github.com/Kuestenlogik/Bowire/issues/1016) | Bowire | [bowire scan: accept --schema like the other commands](#issue-kuestenlogik-bowire-1016) | ✅ Done | `area:cli` |
 | [1018](https://github.com/Kuestenlogik/Bowire/issues/1018) | Bowire | [--schema on the command line takes the schema kinds the plugins import](#issue-kuestenlogik-bowire-1018) | ✅ Done |  |
 | [1053](https://github.com/Kuestenlogik/Bowire/issues/1053) | Bowire | [bowire test on a flow: every REST step first sends a GET to its own URL](#issue-kuestenlogik-bowire-1053) | ✅ Done | `area:cli` |
+| [1054](https://github.com/Kuestenlogik/Bowire/issues/1054) | Bowire | [Every workbench start logs a 404 for /api/project when there is no project manifest](#issue-kuestenlogik-bowire-1054) | ✅ Done | `area:workbench` |
+| [1055](https://github.com/Kuestenlogik/Bowire/issues/1055) | Bowire | [Imported REST requests cannot be run: the REST plugin looks the URL up as an OpenAPI operation](#issue-kuestenlogik-bowire-1055) | ✅ Done | `area:workbench` |
+| [1057](https://github.com/Kuestenlogik/Bowire/issues/1057) | Bowire | [Flaky: the embedded gRPC no-wire discovery test asserts on wall-clock time](#issue-kuestenlogik-bowire-1057) | ✅ Done |  |
+| [1060](https://github.com/Kuestenlogik/Bowire/issues/1060) | Bowire | [The workbench's collection runner skips the scripts a saved item carries](#issue-kuestenlogik-bowire-1060) | ✅ Done | `area:workbench` |
+| [1063](https://github.com/Kuestenlogik/Bowire/issues/1063) | Bowire | [gRPC: a server without reflection is sometimes reported as Cancelled](#issue-kuestenlogik-bowire-1063) | ✅ Done |  |
 
 ### v2.12 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
 
@@ -249,20 +249,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-#### <a id="issue-kuestenlogik-bowire-1055"></a>🟡 In progress · [#1055](https://github.com/Kuestenlogik/Bowire/issues/1055) Imported REST requests cannot be run: the REST plugin looks the URL up as an OpenAPI operation
-
-> `area:workbench`
-
-A REST request imported from Postman, Insomnia, Bruno, Yaak or a `.http` file cannot be run. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/1055)
-
-#### <a id="issue-kuestenlogik-bowire-1057"></a>🟡 In progress · [#1057](https://github.com/Kuestenlogik/Bowire/issues/1057) Flaky: the embedded gRPC no-wire discovery test asserts on wall-clock time
-
-`GrpcEmbeddedDescriptorsIntegrationTests.Discovering_Itself_The_Host_Asks_Nothing_Over_The_Wire` fails now and then on a loaded machine (once in eight runs of the integration suite while other builds ran): [[more]](https://github.com/Kuestenlogik/Bowire/issues/1057)
-
-#### <a id="issue-kuestenlogik-bowire-1063"></a>🟡 In progress · [#1063](https://github.com/Kuestenlogik/Bowire/issues/1063) gRPC: a server without reflection is sometimes reported as Cancelled
-
-A call to a server without the gRPC reflection service now and then fails with [[more]](https://github.com/Kuestenlogik/Bowire/issues/1063)
-
 #### <a id="issue-kuestenlogik-bowire-639"></a>⬜ Backlog · [#639](https://github.com/Kuestenlogik/Bowire/issues/639) SCIM: live Okta and Entra ID provisioning round-trips
 
 > `area:workbench`
@@ -275,12 +261,6 @@ Split from #96 so the SCIM surface can ship on its own merits. [[more]](https://
 
 Six credible competitors turned up during the competitive survey **via openalternative.co**. Bowire was not there. That is the whole diagnosis: when a developer — or a language model — asks for "open source Postman alternative", the answer is assembled from these directories, not from bowire.io. [[more]](https://github.com/Kuestenlogik/Bowire/issues/670)
 
-#### <a id="issue-kuestenlogik-bowire-672"></a>⬜ Backlog · [#672](https://github.com/Kuestenlogik/Bowire/issues/672) Server-side script engine so pre/post scripts run in bowire test, not only in the browser
-
-> `area:cli`
-
-Pre- and post-request scripts exist — as `new Function('ctx', …)` **in the browser**: [[more]](https://github.com/Kuestenlogik/Bowire/issues/672)
-
 #### <a id="issue-kuestenlogik-bowire-677"></a>⬜ Backlog · [#677](https://github.com/Kuestenlogik/Bowire/issues/677) Broader code export, and snippets for the protocols no snippet library covers
 
 > `area:workbench`
@@ -292,12 +272,6 @@ Code export offers five to six target languages per protocol. Postman, Hoppscotc
 > `area:cli`
 
 #685 gave every desktop a clickable way into Bowire — a Start-menu entry and desktop icon on Windows, an application-menu entry on Linux, `Bowire.app` on macOS. What it deliberately did **not** do is get rid of the console window Windows opens alongside it, and this issue is why. [[more]](https://github.com/Kuestenlogik/Bowire/issues/687)
-
-#### <a id="issue-kuestenlogik-bowire-688"></a>⬜ Backlog · [#688](https://github.com/Kuestenlogik/Bowire/issues/688) Plurals: the translation layer cannot express a sentence whose shape depends on a number
-
-> `area:workbench`
-
-The translation layer from #117 substitutes `{name}` placeholders and nothing more. That is enough for a count *inside* a sentence: [[more]](https://github.com/Kuestenlogik/Bowire/issues/688)
 
 #### <a id="issue-kuestenlogik-bowire-690"></a>⬜ Backlog · [#690](https://github.com/Kuestenlogik/Bowire/issues/690) Translate the CLI help surface, or decide not to
 
@@ -325,27 +299,11 @@ Bowire's own MCP server (`bowire mcp serve`) answers agents with JSON. Some of w
 
 Once Bowire hosts MCP Apps (#810), the people building them need what Bowire offers for every other protocol: does the UI resource load, does the app behave, and is it safe? An app is third-party HTML running next to a model with tool access, so its CSP and permissions are a security surface that no … [[more]](https://github.com/Kuestenlogik/Bowire/issues/812)
 
-#### <a id="issue-kuestenlogik-bowire-940"></a>⬜ Backlog · [#940](https://github.com/Kuestenlogik/Bowire/issues/940) Verify the collection importers against real Insomnia and Bruno exports
-
-Follow-up of #674. The importers were tested with fixtures written from the formats' specifications and schemas (Insomnia v4/v5, Bru, OpenCollection v1.0.0), not with files exported from the apps. [[more]](https://github.com/Kuestenlogik/Bowire/issues/940)
-
-#### <a id="issue-kuestenlogik-bowire-1054"></a>⬜ Backlog · [#1054](https://github.com/Kuestenlogik/Bowire/issues/1054) Every workbench start logs a 404 for /api/project when there is no project manifest
-
-> `area:workbench`
-
-Every time the workbench loads without a `.bowire/project.json` above the host's working directory (the common case), the browser console shows an error: [[more]](https://github.com/Kuestenlogik/Bowire/issues/1054)
-
 #### <a id="issue-kuestenlogik-bowire-1056"></a>⬜ Backlog · [#1056](https://github.com/Kuestenlogik/Bowire/issues/1056) Importer fixtures from collections built and exported by hand in Insomnia and Bruno
 
 > `area:workbench`
 
 Follow-up of #940, split out because it needs the apps installed and clicked through by a person. [[more]](https://github.com/Kuestenlogik/Bowire/issues/1056)
-
-#### <a id="issue-kuestenlogik-bowire-1060"></a>⬜ Backlog · [#1060](https://github.com/Kuestenlogik/Bowire/issues/1060) The workbench's collection runner skips the scripts a saved item carries
-
-> `area:workbench`
-
-Follow-up of #672. [[more]](https://github.com/Kuestenlogik/Bowire/issues/1060)
 
 #### <a id="issue-kuestenlogik-bowire-1062"></a>⬜ Backlog · [#1062](https://github.com/Kuestenlogik/Bowire/issues/1062) No script runs in the workbench: the CSP refuses the eval scripts.js needs
 
@@ -353,15 +311,31 @@ Follow-up of #672. [[more]](https://github.com/Kuestenlogik/Bowire/issues/1060)
 
 No pre-request or post-response script runs in the workbench. Every script fails before its first statement with: [[more]](https://github.com/Kuestenlogik/Bowire/issues/1062)
 
+#### <a id="issue-kuestenlogik-bowire-672"></a>✅ Done · [#672](https://github.com/Kuestenlogik/Bowire/issues/672) Server-side script engine so pre/post scripts run in bowire test, not only in the browser
+
+> `area:cli`
+
+Pre- and post-request scripts exist — as `new Function('ctx', …)` **in the browser**: [[more]](https://github.com/Kuestenlogik/Bowire/issues/672)
+
 #### <a id="issue-kuestenlogik-bowire-673"></a>✅ Done · [#673](https://github.com/Kuestenlogik/Bowire/issues/673) Export requests as .http — Copy as .http, and bowire export http for a whole collection
 
 > `area:workbench`
 
 For "I am testing my own REST endpoint while developing it", a `.http` file is **better** than Bowire. The file sits next to the code, it is in the repo, there is no second window and no second process. Visual Studio 2022, Rider and the VS Code REST Client all run them natively. Competing with that is a losing framing. [[more]](https://github.com/Kuestenlogik/Bowire/issues/673)
 
+#### <a id="issue-kuestenlogik-bowire-688"></a>✅ Done · [#688](https://github.com/Kuestenlogik/Bowire/issues/688) Plurals: the translation layer cannot express a sentence whose shape depends on a number
+
+> `area:workbench`
+
+The translation layer from #117 substitutes `{name}` placeholders and nothing more. That is enough for a count *inside* a sentence: [[more]](https://github.com/Kuestenlogik/Bowire/issues/688)
+
 #### <a id="issue-kuestenlogik-bowire-939"></a>✅ Done · [#939](https://github.com/Kuestenlogik/Bowire/issues/939) Import Yaak exports
 
 Follow-up of #674, which shipped the Insomnia, Bruno and `.http` importers. Yaak was left out there because it did not fit the "only if small" bar. [[more]](https://github.com/Kuestenlogik/Bowire/issues/939)
+
+#### <a id="issue-kuestenlogik-bowire-940"></a>✅ Done · [#940](https://github.com/Kuestenlogik/Bowire/issues/940) Verify the collection importers against real Insomnia and Bruno exports
+
+Follow-up of #674. The importers were tested with fixtures written from the formats' specifications and schemas (Insomnia v4/v5, Bru, OpenCollection v1.0.0), not with files exported from the apps. [[more]](https://github.com/Kuestenlogik/Bowire/issues/940)
 
 #### <a id="issue-kuestenlogik-bowire-946"></a>✅ Done · [#946](https://github.com/Kuestenlogik/Bowire/issues/946) Data sets for flow runs and bowire test --workspace
 
@@ -470,6 +444,32 @@ Since #994 the workbench imports GraphQL SDL, WSDL, EDMX, OpenRPC and AsyncAPI t
 > `area:cli`
 
 `FlowTestRunner.RunStepAsync` calls `protocol.DiscoverAsync(serverUrl)` before every step (`src/Kuestenlogik.Bowire.Tool/FlowTestRunner.cs`, right before `InvokeAsync`). For REST, discovery tries the step's URL itself as a candidate document, with a GET. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/1053)
+
+#### <a id="issue-kuestenlogik-bowire-1054"></a>✅ Done · [#1054](https://github.com/Kuestenlogik/Bowire/issues/1054) Every workbench start logs a 404 for /api/project when there is no project manifest
+
+> `area:workbench`
+
+Every time the workbench loads without a `.bowire/project.json` above the host's working directory (the common case), the browser console shows an error: [[more]](https://github.com/Kuestenlogik/Bowire/issues/1054)
+
+#### <a id="issue-kuestenlogik-bowire-1055"></a>✅ Done · [#1055](https://github.com/Kuestenlogik/Bowire/issues/1055) Imported REST requests cannot be run: the REST plugin looks the URL up as an OpenAPI operation
+
+> `area:workbench`
+
+A REST request imported from Postman, Insomnia, Bruno, Yaak or a `.http` file cannot be run. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/1055)
+
+#### <a id="issue-kuestenlogik-bowire-1057"></a>✅ Done · [#1057](https://github.com/Kuestenlogik/Bowire/issues/1057) Flaky: the embedded gRPC no-wire discovery test asserts on wall-clock time
+
+`GrpcEmbeddedDescriptorsIntegrationTests.Discovering_Itself_The_Host_Asks_Nothing_Over_The_Wire` fails now and then on a loaded machine (once in eight runs of the integration suite while other builds ran): [[more]](https://github.com/Kuestenlogik/Bowire/issues/1057)
+
+#### <a id="issue-kuestenlogik-bowire-1060"></a>✅ Done · [#1060](https://github.com/Kuestenlogik/Bowire/issues/1060) The workbench's collection runner skips the scripts a saved item carries
+
+> `area:workbench`
+
+Follow-up of #672. [[more]](https://github.com/Kuestenlogik/Bowire/issues/1060)
+
+#### <a id="issue-kuestenlogik-bowire-1063"></a>✅ Done · [#1063](https://github.com/Kuestenlogik/Bowire/issues/1063) gRPC: a server without reflection is sometimes reported as Cancelled
+
+A call to a server without the gRPC reflection service now and then fails with [[more]](https://github.com/Kuestenlogik/Bowire/issues/1063)
 
 ### v2.12 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
 
