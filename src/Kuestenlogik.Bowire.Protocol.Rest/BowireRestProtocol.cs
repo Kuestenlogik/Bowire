@@ -630,10 +630,18 @@ public sealed class BowireRestProtocol
         // a plain HttpClient call against the supplied serverUrl.
         // gRPC / GraphQL / other protocols' freeform flows still need
         // a service+method pair, so the convention is REST-specific.
-        if (string.IsNullOrEmpty(service) && IsAdHocVerb(method))
+        //
+        // #1055 — an imported request (Postman, Insomnia, Bruno, Yaak, .http)
+        // is saved with its URL as the service and again as the server URL.
+        // That is ad hoc as well: a discovered OpenAPI service is a tag
+        // name, never an absolute URL, so the two shapes cannot meet. The
+        // server URL is the one the caller substituted variables into, so it
+        // is the target; the service only when no server URL came along.
+        if (IsAdHocVerb(method) && (string.IsNullOrEmpty(service) || IsAbsoluteHttpUrl(service)))
         {
             var body = jsonMessages.Count > 0 ? jsonMessages[0] : null;
-            return await RestInvoker.InvokeAdHocAsync(_http, serverUrl, method, body, metadata, ct)
+            var target = string.IsNullOrEmpty(serverUrl) ? service : serverUrl;
+            return await RestInvoker.InvokeAdHocAsync(_http, target, method, body, metadata, ct)
                 .ConfigureAwait(false);
         }
 
@@ -730,6 +738,13 @@ public sealed class BowireRestProtocol
     {
         return RestInvoker.InvokeAsync(_http, serverUrl, methodInfo, jsonMessages, metadata, ct);
     }
+
+    // A URL with a scheme, or one that still carries a {{variable}} where
+    // the scheme and host go (an import keeps "{{host}}/api/echo" as written).
+    private static bool IsAbsoluteHttpUrl(string service) =>
+        service.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
+        || service.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
+        || service.StartsWith("{{", StringComparison.Ordinal);
 
     /// <summary>
     /// True when <paramref name="token"/> looks like one of the seven

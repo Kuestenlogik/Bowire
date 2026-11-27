@@ -70,6 +70,10 @@ A Yaak export (*Export Data* in the app, `yaak export` on the CLI) imports throu
 
 ## Fixes along the way
 
+### Imported requests run (#1055)
+
+A request imported from Postman, Insomnia, Bruno, Yaak or a `.http` file is saved with its URL as the service, and the REST plugin looked that URL up as an OpenAPI operation: running the collection failed with "No OpenAPI document found" for every request. An item whose service is a URL and whose method is an HTTP verb is now sent as it was imported, with its headers and body, to the URL with the environment's variables filled in.
+
 ### A clean start leaves the browser console clean (#1054)
 
 Without a `.bowire/project.json` above the host's working directory, the workbench's boot probe got a `404` from `/api/project`, and the browser logged it as a failed request on every start. "No project manifest" now answers `200 {"found": false}`; a malformed manifest still answers `400`.
