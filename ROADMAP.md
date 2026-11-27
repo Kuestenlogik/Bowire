@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**20/36 done** · 16 backlog
+**21/36 done** · 15 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -30,9 +30,9 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [812](https://github.com/Kuestenlogik/Bowire/issues/812) | Bowire | [MCP Apps in testing and security: assert on apps, record their traffic, scan their CSP](#issue-kuestenlogik-bowire-812) | ⬜ Backlog |  |
 | [939](https://github.com/Kuestenlogik/Bowire/issues/939) | Bowire | [Import Yaak exports](#issue-kuestenlogik-bowire-939) | ⬜ Backlog |  |
 | [940](https://github.com/Kuestenlogik/Bowire/issues/940) | Bowire | [Verify the collection importers against real Insomnia and Bruno exports](#issue-kuestenlogik-bowire-940) | ⬜ Backlog |  |
-| [946](https://github.com/Kuestenlogik/Bowire/issues/946) | Bowire | [Data sets for flow runs and bowire test --workspace](#issue-kuestenlogik-bowire-946) | ⬜ Backlog |  |
 | [1053](https://github.com/Kuestenlogik/Bowire/issues/1053) | Bowire | [bowire test on a flow: every REST step first sends a GET to its own URL](#issue-kuestenlogik-bowire-1053) | ⬜ Backlog | `area:cli` |
 | [673](https://github.com/Kuestenlogik/Bowire/issues/673) | Bowire | [Export requests as .http — Copy as .http, and bowire export http for a whole collection](#issue-kuestenlogik-bowire-673) | ✅ Done | `area:workbench` |
+| [946](https://github.com/Kuestenlogik/Bowire/issues/946) | Bowire | [Data sets for flow runs and bowire test --workspace](#issue-kuestenlogik-bowire-946) | ✅ Done |  |
 | [963](https://github.com/Kuestenlogik/Bowire/issues/963) | Bowire | [WebSocketAuthProbe: forged JWT (alg:none, tampered signature) on the upgrade](#issue-kuestenlogik-bowire-963) | ✅ Done | `area:security` |
 | [986](https://github.com/Kuestenlogik/Bowire/issues/986) | Bowire | [The .NET plugin loader scans sidecar folders and logs ManifestMissing for every sidecar](#issue-kuestenlogik-bowire-986) | ✅ Done | `area:plugin-sdk` |
 | [987](https://github.com/Kuestenlogik/Bowire/issues/987) | Bowire | [sidecar-plugins.md: no SDK sends select options, and python3 as the manifest example fails on Windows](#issue-kuestenlogik-bowire-987) | ✅ Done | `area:docs` |
@@ -309,10 +309,6 @@ Follow-up of #674, which shipped the Insomnia, Bruno and `.http` importers. Yaak
 
 Follow-up of #674. The importers were tested with fixtures written from the formats' specifications and schemas (Insomnia v4/v5, Bru, OpenCollection v1.0.0), not with files exported from the apps. [[more]](https://github.com/Kuestenlogik/Bowire/issues/940)
 
-#### <a id="issue-kuestenlogik-bowire-946"></a>⬜ Backlog · [#946](https://github.com/Kuestenlogik/Bowire/issues/946) Data sets for flow runs and bowire test --workspace
-
-Follow-up of #675. `--data` drives a test collection. A flow file, or a `--workspace` run, refuses `--data` today with a clear message. [[more]](https://github.com/Kuestenlogik/Bowire/issues/946)
-
 #### <a id="issue-kuestenlogik-bowire-1053"></a>⬜ Backlog · [#1053](https://github.com/Kuestenlogik/Bowire/issues/1053) bowire test on a flow: every REST step first sends a GET to its own URL
 
 > `area:cli`
@@ -324,6 +320,10 @@ Follow-up of #675. `--data` drives a test collection. A flow file, or a `--works
 > `area:workbench`
 
 For "I am testing my own REST endpoint while developing it", a `.http` file is **better** than Bowire. The file sits next to the code, it is in the repo, there is no second window and no second process. Visual Studio 2022, Rider and the VS Code REST Client all run them natively. Competing with that is a losing framing. [[more]](https://github.com/Kuestenlogik/Bowire/issues/673)
+
+#### <a id="issue-kuestenlogik-bowire-946"></a>✅ Done · [#946](https://github.com/Kuestenlogik/Bowire/issues/946) Data sets for flow runs and bowire test --workspace
+
+Follow-up of #675. `--data` drives a test collection. A flow file, or a `--workspace` run, refuses `--data` today with a clear message. [[more]](https://github.com/Kuestenlogik/Bowire/issues/946)
 
 #### <a id="issue-kuestenlogik-bowire-963"></a>✅ Done · [#963](https://github.com/Kuestenlogik/Bowire/issues/963) WebSocketAuthProbe: forged JWT (alg:none, tampered signature) on the upgrade
 
