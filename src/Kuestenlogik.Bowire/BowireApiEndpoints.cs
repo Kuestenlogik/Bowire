@@ -209,7 +209,7 @@ internal static class BowireApiEndpoints
         // references the interceptor endpoint types directly. The
         // contributions land inside the auth-gated bowireGroup so
         // --token / IBowireAuthProvider gates them automatically.
-        DiscoverAndMapEndpointContributions(bowireGroup, basePath, startupLogger);
+        BowireHtmlGenerator.SetFeatures(DiscoverAndMapEndpointContributions(bowireGroup, basePath, startupLogger));
 
         // Apply the auth gate exactly once when an IBowireAuthProvider
         // is registered (AddBowireAuth resolved it from the
@@ -270,9 +270,11 @@ internal static class BowireApiEndpoints
     /// <c>Kuestenlogik.Bowire.Interceptor</c> since v2.1; Core doesn't
     /// even see those types at build time).
     /// </summary>
-    private static void DiscoverAndMapEndpointContributions(
+    private static List<string> DiscoverAndMapEndpointContributions(
         IEndpointRouteBuilder bowireGroup, string basePath, ILogger startupLogger)
     {
+        // #1065 — the feature ids of the contributions that mapped, for the page.
+        var features = new List<string>();
         foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies()
             .Where(a => a.FullName?.Contains("Bowire", StringComparison.Ordinal) == true))
         {
@@ -302,6 +304,8 @@ internal static class BowireApiEndpoints
                     if (Activator.CreateInstance(type) is IBowireEndpointContribution contribution)
                     {
                         contribution.MapEndpoints(bowireGroup, basePath);
+                        if (!string.IsNullOrEmpty(contribution.FeatureId) && !features.Contains(contribution.FeatureId))
+                            features.Add(contribution.FeatureId);
                     }
                 }
 #pragma warning disable CA1031 // Do not catch general exception types
@@ -313,6 +317,7 @@ internal static class BowireApiEndpoints
                 }
             }
         }
+        return features;
     }
 }
 

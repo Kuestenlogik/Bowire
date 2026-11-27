@@ -30,7 +30,8 @@
         var forms = {};
         var token = '';
         try {
-            for (var page = 0; page < 50; page++) {
+            // #1065 — a host without the ManualEntry package is not asked.
+            for (var page = 0; hasFeature('manual-entry') && page < 50; page++) {
                 var url = config.prefix + '/api/v1/manual-entry-forms?pageSize=200'
                     + (token ? '&pageToken=' + encodeURIComponent(token) : '');
                 var resp = await fetch(url);

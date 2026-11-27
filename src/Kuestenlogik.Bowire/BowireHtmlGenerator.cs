@@ -38,6 +38,13 @@ internal static class BowireHtmlGenerator
         _modules = modules ?? new BowireModuleRegistry();
     }
 
+    // #1065 — the feature ids of the endpoint contributions this host
+    // mapped (IBowireEndpointContribution.FeatureId), for the page.
+    private static IReadOnlyList<string> _features = [];
+
+    internal static void SetFeatures(IReadOnlyList<string> features)
+        => _features = features ?? [];
+
     /// <summary>
     /// The Bowire mark for the tab and the workbench chrome, as base64 data
     /// URLs made once at first access, so the page inlines them without
@@ -266,7 +273,10 @@ internal static class BowireHtmlGenerator
                            // settings.js iterates the same list for the
                            // Rail-modes editor.
                            rails: {{_rails.ToJson()}},
-                           modules: {{_modules.ToJson()}}
+                           modules: {{_modules.ToJson()}},
+                           // #1065 — what the host's packages serve; the page
+                           // asks an optional package only when it is listed.
+                           features: {{System.Text.Json.JsonSerializer.Serialize(_features)}}
                        };
                    </script>
                    <script{{nonceAttr}}>{{js}}</script>

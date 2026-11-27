@@ -51,4 +51,13 @@ public interface IBowireEndpointContribution
     /// <c>/bowire</c> for embedded hosts, empty for the standalone CLI).
     /// </param>
     void MapEndpoints(IEndpointRouteBuilder endpoints, string basePath);
+
+    /// <summary>
+    /// #1065 — the name the workbench page knows this contribution by, or
+    /// <c>null</c>. Every id of a mapped contribution is listed in
+    /// <c>__BOWIRE_CONFIG__.features</c>, so the page asks a package's
+    /// endpoints only when the package is there, instead of probing and
+    /// logging a 404 in every host without it.
+    /// </summary>
+    string? FeatureId => null;
 }

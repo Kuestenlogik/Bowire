@@ -928,7 +928,9 @@
         // Kuestenlogik.Bowire.Help package is installed). When
         // false, Help affordances render disabled with an install
         // hint — see render-env-auth.js topbar overflow.
-        fetch(config.prefix + '/api/help/available')
+        // #1065 — only a host with the Help package is asked; one without
+        // it would answer 404, and the console would call that an error.
+        if (hasFeature('help')) fetch(config.prefix + '/api/help/available')
             .then(function (r) { return r.ok ? r.json() : null; })
             .then(function (data) {
                 if (data && data.available) {

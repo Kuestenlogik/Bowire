@@ -82,6 +82,8 @@ The Code tab offered four or five languages per protocol and nothing for the bro
 
 ## Fixes along the way
 
+- **No 404s at start for absent packages (#1065).** A host without the Help or ManualEntry package logged two 404s in the browser console on every start, because the page probed both to find out. The page now reads which packages the host serves from `__BOWIRE_CONFIG__.features` (an endpoint contribution's new optional `FeatureId`) and asks only those.
+
 - **Scripts run in the workbench again (#1062).** Since the Content-Security-Policy of #625, no pre-request or post-response script ran in the workbench: the runtime compiled each script with `new Function`, the policy refused it, and the error showed only in the script console. Scripts now run in QuickJS compiled to WebAssembly, in a heap of their own with no reach into the page, its storage or the network, under the `Bowire:Scripting:*` time and memory limits. The page's policy gains `'wasm-unsafe-eval'` and still refuses `'unsafe-eval'`. The tab, the collection runner and recording replay all run through it. `Bowire:ContentSecurityPolicy` now reaches the `bowire` tool's workbench as well; a custom policy must allow `'wasm-unsafe-eval'` for scripts to run.
 
 - **The workbench's collection runner runs an item's scripts (#1060).** A request saved to a collection with a pre-request or post-response script ran them from its tab but not as part of its collection. The runner now runs both through the same runtime: the pre-request script changes the request before it goes out (headers, body, query), a failing one stops the item before the call, and a failing post-response script fails the item.

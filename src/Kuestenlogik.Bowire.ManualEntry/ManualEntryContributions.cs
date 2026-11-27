@@ -28,6 +28,9 @@ public sealed class BowireManualEntryServiceContribution : IBowireServiceContrib
 public sealed class BowireManualEntryEndpointContribution : IBowireEndpointContribution
 {
     /// <inheritdoc />
+    public string? FeatureId => "manual-entry";
+
+    /// <inheritdoc />
     public void MapEndpoints(IEndpointRouteBuilder endpoints, string basePath)
     {
         ArgumentNullException.ThrowIfNull(endpoints);

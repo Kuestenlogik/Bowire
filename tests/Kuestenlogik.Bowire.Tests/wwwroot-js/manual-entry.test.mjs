@@ -10,7 +10,8 @@ import assert from 'node:assert/strict';
 import { compileFragment } from './_load-fragment.mjs';
 
 const appended = `
-    var config = { prefix: '/bowire' };
+    var config = { prefix: '/bowire', features: opts.features || ['manual-entry'] };
+    function hasFeature(id) { return config.features.indexOf(id) >= 0; }
     var protocols = opts.protocols || [];
     var fetch = opts.fetch;
     var _renders = 0;
@@ -171,4 +172,17 @@ test('a generic layout is registered for a form with fields, never over a shippe
     assert.deepEqual(m.rbLayouts.kafka.defaults(), {
         kind: 'produce', values: { topic: '', key: '', partition: '' }, body: '{}', metadata: [],
     });
+});
+
+// #1065 — a host without the ManualEntry package is not asked at all: the
+// rpc would answer 404, and the browser would log that as an error on every
+// start. The forms stay empty and every method type is offered, as before.
+test('without the manual-entry feature, the forms are not requested', async () => {
+    const { fn, urls } = pagedFetch([{ forms: [kafka] }]);
+    const me = load({ fetch: fn, features: [], protocols: [{ id: 'kafka' }] });
+    await me.loadManualEntryForms();
+    assert.deepEqual(urls, []);
+    assert.deepEqual(me.forms, {});
+    assert.deepEqual(me.manualEntryMethodTypes('kafka'), ['Unary', 'ServerStreaming', 'ClientStreaming', 'Duplex']);
+    assert.equal(me.renders(), 1);
 });

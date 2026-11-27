@@ -76,6 +76,13 @@
         showInternalServices: false
     };
 
+    // #1065 — is an optional package's endpoint contribution mapped in this
+    // host? The server lists their feature ids in config.features, so the page
+    // asks a package only when it is there instead of probing for a 404.
+    function hasFeature(id) {
+        return ((config && config.features) || []).indexOf(id) >= 0;
+    }
+
     // ---- UI Mode ----
     // Determined once at boot from the host config — never changes at
     // runtime. Controls whether the URL bar is visible and editable.

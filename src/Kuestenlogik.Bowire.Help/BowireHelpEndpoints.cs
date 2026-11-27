@@ -39,6 +39,9 @@ namespace Kuestenlogik.Bowire.Help;
 public sealed class BowireHelpEndpoints : IBowireEndpointContribution
 {
     /// <inheritdoc />
+    public string? FeatureId => "help";
+
+    /// <inheritdoc />
     public void MapEndpoints(IEndpointRouteBuilder endpoints, string basePath)
     {
         ArgumentNullException.ThrowIfNull(endpoints);
