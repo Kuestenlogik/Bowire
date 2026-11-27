@@ -231,6 +231,8 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [1048](https://github.com/Kuestenlogik/Bowire/issues/1048) | Bowire | [Timeline and sequence view for streams: who sent what to whom, in time](#issue-kuestenlogik-bowire-1048) | ⬜ Backlog | `area:workbench` |
 | [1049](https://github.com/Kuestenlogik/Bowire/issues/1049) | Bowire | [Topology view: nodes and connections of a cluster, a broker or a set of sidecars](#issue-kuestenlogik-bowire-1049) | ⬜ Backlog | `area:workbench` |
 | [1050](https://github.com/Kuestenlogik/Bowire/issues/1050) | Bowire | [Flows: expect a frame on a stream within a time, after a step](#issue-kuestenlogik-bowire-1050) | ⬜ Backlog | `area:plugin-sdk` |
+| [1051](https://github.com/Kuestenlogik/Bowire/issues/1051) | Bowire | [Record a message sequence and play it back into a target](#issue-kuestenlogik-bowire-1051) | ⬜ Backlog | `area:plugin-sdk` |
+| [1052](https://github.com/Kuestenlogik/Bowire/issues/1052) | Bowire | [Follow one request across protocols by its trace id](#issue-kuestenlogik-bowire-1052) | ⬜ Backlog | `area:plugin-sdk` |
 
 ## Details
 
@@ -903,6 +905,18 @@ Several plugins describe a topology: an Akka cluster's members, a Kafka or NATS 
 > `area:plugin-sdk`
 
 `bowire test` checks the response of the call a step makes. Many systems answer elsewhere: a Tell to one actor makes another actor receive a message, an HTTP call makes a message appear on an MQTT topic or a Kafka partition. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/1050)
+
+#### <a id="issue-kuestenlogik-bowire-1051"></a>⬜ Backlog · [#1051](https://github.com/Kuestenlogik/Bowire/issues/1051) Record a message sequence and play it back into a target
+
+> `area:plugin-sdk`
+
+Reproducing a bug in a message-driven system often needs the exact sequence of messages that led to it. Bowire records calls and can mock them; it cannot take a captured stream of messages (an Akka tap, an MQTT topic) and play it back into a system. [[more]](https://github.com/Kuestenlogik/Bowire/issues/1051)
+
+#### <a id="issue-kuestenlogik-bowire-1052"></a>⬜ Backlog · [#1052](https://github.com/Kuestenlogik/Bowire/issues/1052) Follow one request across protocols by its trace id
+
+> `area:plugin-sdk`
+
+A request enters through HTTP or gRPC and continues as actor messages, MQTT publishes or Kafka records. Bowire sees each protocol on its own, and already receives OTLP traces. Following one request across all of them by its trace id would show the whole path in one place. [[more]](https://github.com/Kuestenlogik/Bowire/issues/1052)
 
 ---
 
