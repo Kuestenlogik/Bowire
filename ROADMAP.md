@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**32/43 done** · 11 backlog
+**32/44 done** · 12 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -27,6 +27,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [811](https://github.com/Kuestenlogik/Bowire/issues/811) | Bowire | [MCP Apps, server side: Bowire's MCP tools answer with apps (test run first)](#issue-kuestenlogik-bowire-811) | ⬜ Backlog |  |
 | [812](https://github.com/Kuestenlogik/Bowire/issues/812) | Bowire | [MCP Apps in testing and security: assert on apps, record their traffic, scan their CSP](#issue-kuestenlogik-bowire-812) | ⬜ Backlog |  |
 | [1056](https://github.com/Kuestenlogik/Bowire/issues/1056) | Bowire | [Importer fixtures from collections built and exported by hand in Insomnia and Bruno](#issue-kuestenlogik-bowire-1056) | ⬜ Backlog | `area:workbench` |
+| [1065](https://github.com/Kuestenlogik/Bowire/issues/1065) | Bowire | [Every workbench start logs 404s for the Help and ManualEntry probes when the packages are absent](#issue-kuestenlogik-bowire-1065) | ⬜ Backlog | `area:workbench` |
 | [672](https://github.com/Kuestenlogik/Bowire/issues/672) | Bowire | [Server-side script engine so pre/post scripts run in bowire test, not only in the browser](#issue-kuestenlogik-bowire-672) | ✅ Done | `area:cli` |
 | [673](https://github.com/Kuestenlogik/Bowire/issues/673) | Bowire | [Export requests as .http — Copy as .http, and bowire export http for a whole collection](#issue-kuestenlogik-bowire-673) | ✅ Done | `area:workbench` |
 | [688](https://github.com/Kuestenlogik/Bowire/issues/688) | Bowire | [Plurals: the translation layer cannot express a sentence whose shape depends on a number](#issue-kuestenlogik-bowire-688) | ✅ Done | `area:workbench` |
@@ -62,7 +63,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.12 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
 
-**0/6 done** · 6 backlog
+**0/7 done** · 7 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -72,6 +73,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [1058](https://github.com/Kuestenlogik/Bowire/issues/1058) | Bowire | [Scripts on flow steps, in the workbench and bowire test](#issue-kuestenlogik-bowire-1058) | ⬜ Backlog | `area:workbench` |
 | [1059](https://github.com/Kuestenlogik/Bowire/issues/1059) | Bowire | [Scripts in bowire.invoke (MCP) and bowire call](#issue-kuestenlogik-bowire-1059) | ⬜ Backlog | `area:mcp` |
 | [1061](https://github.com/Kuestenlogik/Bowire/issues/1061) | Bowire | [Script ctx: sendRequest, scoped variables, more assertions, a versioned surface](#issue-kuestenlogik-bowire-1061) | ⬜ Backlog | `area:workbench` |
+| [1064](https://github.com/Kuestenlogik/Bowire/issues/1064) | Bowire | [Code export: SOAP snippets with the envelope the plugin sends](#issue-kuestenlogik-bowire-1064) | ⬜ Backlog | `area:workbench` |
 
 ### v2.13 — Benchmark: connections held open, the shape of a run, several targets *(due 2027-06-15)*
 
@@ -305,6 +307,12 @@ Once Bowire hosts MCP Apps (#810), the people building them need what Bowire off
 
 Follow-up of #940, split out because it needs the apps installed and clicked through by a person. [[more]](https://github.com/Kuestenlogik/Bowire/issues/1056)
 
+#### <a id="issue-kuestenlogik-bowire-1065"></a>⬜ Backlog · [#1065](https://github.com/Kuestenlogik/Bowire/issues/1065) Every workbench start logs 404s for the Help and ManualEntry probes when the packages are absent
+
+> `area:workbench`
+
+Every start of a workbench whose host does not reference the optional Help or ManualEntry package logs two errors in the browser console: [[more]](https://github.com/Kuestenlogik/Bowire/issues/1065)
+
 #### <a id="issue-kuestenlogik-bowire-672"></a>✅ Done · [#672](https://github.com/Kuestenlogik/Bowire/issues/672) Server-side script engine so pre/post scripts run in bowire test, not only in the browser
 
 > `area:cli`
@@ -508,6 +516,12 @@ Follow-up of #672. [[more]](https://github.com/Kuestenlogik/Bowire/issues/1059)
 > `area:workbench`
 
 Follow-up of #672, the part of its `ctx` scope that did not ship with it. [[more]](https://github.com/Kuestenlogik/Bowire/issues/1061)
+
+#### <a id="issue-kuestenlogik-bowire-1064"></a>⬜ Backlog · [#1064](https://github.com/Kuestenlogik/Bowire/issues/1064) Code export: SOAP snippets with the envelope the plugin sends
+
+> `area:workbench`
+
+Follow-up of #677, which gave every protocol at least three snippet targets beyond the Bowire CLI — except SOAP, which offers only the CLI. [[more]](https://github.com/Kuestenlogik/Bowire/issues/1064)
 
 ### v2.13 — Benchmark: connections held open, the shape of a run, several targets *(due 2027-06-15)*
 
