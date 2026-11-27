@@ -55,6 +55,7 @@ A test fails the build when a catalogue drifts from English:
 | Same key set | A translation that quietly loses a key falls back to English, and nobody notices until a user reports a half-translated screen. |
 | No empty values | An empty value also falls back &mdash; so it looks like a translation exists when none does. Leave the key out while scaffolding, or fill it. |
 | Same placeholders | A translation that drops `{url}` renders a sentence with a hole in it; one that invents `{name}` renders a literal brace. Neither shows up in a key-set check. |
+| Plural branches your language has | A plural with a branch missing renders the fallback in the wrong form; one with a category your language does not have never shows. A `select` keeps English's values. See [Plurals and choices](#plurals-and-choices). |
 | Keys are `area.thing.part` | What lets you work through one surface at a time, and what keeps a flat file navigable at a thousand entries. |
 | No key declared twice | JSON has no duplicate keys, and `JSON.parse` takes the last one without a word &mdash; so a second entry does not collide, it deletes the first. Twelve keys had drifted into two entries, six carrying different sentences, and six surfaces were showing another surface's text with every other test passing. Parsing cannot find this, so the guard reads the lines. |
 
@@ -73,6 +74,32 @@ Placeholders are single braces: `{url}`, `{count}`, `{protocol}`. Keep them exac
 **Double braces are not placeholders.** `{{token}}` is Bowire's own variable syntax, and some UI strings contain it on purpose &mdash; the header-library value hint reads *"{{token}} resolves against the active environment"*. Leave those alone; the substitution deliberately skips them.
 
 Word order is yours. `"No {protocol} services found"` becomes `"Keine {protocol}-Dienste gefunden"`; the placeholder can sit anywhere in the sentence.
+
+## Plurals and choices
+
+A sentence whose shape depends on a number is a `plural` block, in [ICU MessageFormat](https://unicode-org.github.io/icu/userguide/format_parse/messages/) syntax:
+
+```json
+"settings.network.caCount": "{count, plural, one {# certificate} other {# certificates}}"
+```
+
+- `#` inside a branch is the number, written the way your language writes numbers.
+- The branch names are your language's plural categories, not English's. English and German have `one` and `other`. Polish has four:
+
+  ```json
+  "settings.network.caCount": "{count, plural, one {# certyfikat} few {# certyfikaty} many {# certyfikatów} other {# certyfikatu}}"
+  ```
+
+  1 certyfikat, 2 certyfikaty, 5 certyfikatów, 22 certyfikaty: the workbench picks the branch with the browser's `Intl.PluralRules` for your locale, so a language with three or six forms needs no code change.
+- An exact branch, `=0 {no certificates}`, wins over the category. Keep every exact branch English has.
+- A choice by value is a `select` block: `{kind, select, file {the file} folder {the folder} other {it}}`. Keep English's values; translate only the text in the branches.
+- Translate the text inside the branches, never the keywords (`plural`, `select`, `one`, `other`, …) or the variable name.
+
+Both the locale-parity test and `bowire docs translations <locale> --check <file>` check that every plural has exactly the categories your language has (CLDR), plus English's exact branches. The CLI reads the categories from `src/Kuestenlogik.Bowire.Tool/Cli/plural-categories.json`; regenerate that file from Node's `Intl.PluralRules` when you add a language it does not list:
+
+```bash
+node -e "const ls=['en','de','pl']; const o={}; for (const l of ls) o[l]=new Intl.PluralRules(l).resolvedOptions().pluralCategories; console.log(JSON.stringify(o, null, 2))"
+```
 
 ## How a language is chosen
 

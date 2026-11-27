@@ -42,7 +42,8 @@ internal static class TranslationsCommand
         var checkOpt = new Option<string>("--check")
         {
             Description = "Instead of scaffolding, read this catalogue and report keys it is missing, "
-                        + "keys English does not have, and values left empty. Exits non-zero when "
+                        + "keys English does not have, values left empty, and placeholders or plural/select "
+                        + "branches that differ from what the locale needs. Exits non-zero when "
                         + "anything is off, so CI can run it.",
         };
 
@@ -66,7 +67,7 @@ internal static class TranslationsCommand
             }
 
             return check is { Length: > 0 }
-                ? await CheckAsync(io, english, check, ct).ConfigureAwait(false)
+                ? await CheckAsync(io, english, check, locale, ct).ConfigureAwait(false)
                 : await ScaffoldAsync(io, english, locale, target, ct).ConfigureAwait(false);
         });
 
@@ -75,7 +76,7 @@ internal static class TranslationsCommand
     }
 
     /// <summary>The English catalogue, minus the notes-to-translators keys.</summary>
-    private static SortedDictionary<string, string>? ReadEnglish()
+    internal static SortedDictionary<string, string>? ReadEnglish()
     {
         var assembly = typeof(Kuestenlogik.Bowire.BowireApiEndpoints).Assembly;
         using var stream = assembly.GetManifestResourceStream(EnglishResource);
@@ -174,7 +175,7 @@ internal static class TranslationsCommand
     }
 
     private static async Task<int> CheckAsync(
-        CommandIo io, SortedDictionary<string, string> english, string path, CancellationToken ct)
+        CommandIo io, SortedDictionary<string, string> english, string path, string locale, CancellationToken ct)
     {
         if (!File.Exists(path))
         {
@@ -194,6 +195,13 @@ internal static class TranslationsCommand
         var unknown = candidate.Keys.Where(k => !english.ContainsKey(k)).ToList();
         var empty = candidate.Where(p => english.ContainsKey(p.Key) && string.IsNullOrWhiteSpace(p.Value))
             .Select(p => p.Key).ToList();
+        // #688 - the placeholders, and the plural and select branches the
+        // translation's language needs, the same rules as the parity test.
+        if (string.IsNullOrWhiteSpace(locale)) locale = Path.GetFileNameWithoutExtension(path);
+        var shape = candidate
+            .Where(p => english.ContainsKey(p.Key) && !string.IsNullOrWhiteSpace(p.Value))
+            .SelectMany(p => MessageShape.Problems(english[p.Key], p.Value, locale).Select(problem => p.Key + ": " + problem))
+            .ToList();
 
         async Task ReportAsync(string label, List<string> keys)
         {
@@ -205,8 +213,9 @@ internal static class TranslationsCommand
         await ReportAsync("Missing", missing).ConfigureAwait(false);
         await ReportAsync("Not in English", unknown).ConfigureAwait(false);
         await ReportAsync("Still empty", empty).ConfigureAwait(false);
+        await ReportAsync("Placeholders or plural/select branches differ", shape).ConfigureAwait(false);
 
-        if (missing.Count + unknown.Count + empty.Count == 0)
+        if (missing.Count + unknown.Count + empty.Count + shape.Count == 0)
         {
             io.OutLine($"  {path}: all {english.Count} keys translated.");
             return 0;

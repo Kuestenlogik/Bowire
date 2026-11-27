@@ -82,6 +82,10 @@
     <InternalsVisibleTo Include="Kuestenlogik.Bowire.Protocol.Mcp.Tests" />
   </ItemGroup>
   <ItemGroup>
+    <!-- #688: CLDR plural categories for the translations check of bowire docs. -->
+    <EmbeddedResource Include="Cli\plural-categories.json" LogicalName="Kuestenlogik.Bowire.App.Cli.plural-categories.json" />
+  </ItemGroup>
+  <ItemGroup>
     <!-- NuGet client library used by the `bowire plugin install`
          subcommand. Lets us resolve + download + extract a plugin
          package without shelling out to `dotnet restore` + `dotnet

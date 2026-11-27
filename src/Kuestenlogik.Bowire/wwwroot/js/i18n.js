@@ -158,6 +158,7 @@ function availableLocales() {
  */
 function interpolate(text, params) {
     if (!params) return text;
+    text = formatMessage(String(text), params);
     // The lookaround skips a doubled brace: `{{token}}` is Bowire's own
     // variable syntax and appears literally inside UI strings, so it has to
     // come out the other side untouched even when `params` happens to carry a
@@ -167,6 +168,126 @@ function interpolate(text, params) {
             ? String(params[name])
             : whole;
     });
+}
+
+// ---- plural and select (#688) ----
+//
+// The two pieces of ICU MessageFormat a sentence actually needs:
+//
+//   {count, plural, one {# run} other {# runs}}
+//   {kind, select, file {the file} folder {the folder} other {it}}
+//
+// A plural picks its branch by the active locale's own categories through
+// Intl.PluralRules, so a language with three or six forms works without a
+// code change; `=0`-style exact branches win over the category, and `other`
+// is the fallback. `#` inside a plural branch is the number. A string with
+// no such block takes the plain `{name}` path unchanged, and `{{token}}`
+// stays literal.
+
+var ICU_BLOCK = /\{\s*[A-Za-z0-9_]+\s*,\s*(?:plural|select)\s*,/;
+
+function pluralLocale() {
+    return activeLocale === PSEUDO_LOCALE ? 'en' : activeLocale;
+}
+
+function formatMessage(text, params) {
+    if (!ICU_BLOCK.test(text)) return text;
+    return formatBlocks(text, params, null);
+}
+
+// Index of the brace that closes the one at `open`, counting nesting.
+function closingBrace(text, open) {
+    var depth = 0;
+    for (var i = open; i < text.length; i++) {
+        var ch = text.charAt(i);
+        if (ch === '{') depth++;
+        else if (ch === '}') {
+            depth--;
+            if (depth === 0) return i;
+        }
+    }
+    return -1;
+}
+
+function formatBlocks(text, params, number) {
+    var out = '';
+    var i = 0;
+    while (i < text.length) {
+        var ch = text.charAt(i);
+        if (ch === '{' && text.charAt(i + 1) === '{') {
+            // A Bowire variable: copied as written, braces and all.
+            var end = text.indexOf('}}', i + 2);
+            if (end < 0) { out += text.slice(i); break; }
+            out += text.slice(i, end + 2);
+            i = end + 2;
+            continue;
+        }
+        if (ch === '{') {
+            var close = closingBrace(text, i);
+            if (close < 0) { out += text.slice(i); break; }
+            var inner = text.slice(i + 1, close);
+            var m = /^\s*([A-Za-z0-9_]+)\s*,\s*(plural|select)\s*,([\s\S]*)$/.exec(inner);
+            out += m ? formatBlock(m[1], m[2], m[3], params, number, text.slice(i, close + 1)) : text.slice(i, close + 1);
+            i = close + 1;
+            continue;
+        }
+        if (ch === '#' && number !== null) {
+            out += Number(number).toLocaleString(pluralLocale());
+            i++;
+            continue;
+        }
+        out += ch;
+        i++;
+    }
+    return out;
+}
+
+// The branches of one block as [selector, body] pairs, in order.
+function branchesOf(rest) {
+    var branches = [];
+    var i = 0;
+    while (i < rest.length) {
+        while (i < rest.length && /\s/.test(rest.charAt(i))) i++;
+        var open = rest.indexOf('{', i);
+        if (open < 0) break;
+        var selector = rest.slice(i, open).trim();
+        var close = closingBrace(rest, open);
+        if (close < 0 || !selector) break;
+        branches.push([selector, rest.slice(open + 1, close)]);
+        i = close + 1;
+    }
+    return branches;
+}
+
+function formatBlock(name, type, rest, params, number, whole) {
+    if (!Object.prototype.hasOwnProperty.call(params, name)) return whole;
+    var value = params[name];
+    var branches = branchesOf(rest);
+    var pick = null;
+    if (type === 'plural') {
+        var n = Number(value);
+        for (var b = 0; b < branches.length && pick === null; b++) {
+            if (branches[b][0] === '=' + n) pick = branches[b][1];
+        }
+        if (pick === null) {
+            var category = 'other';
+            try { category = new Intl.PluralRules(pluralLocale()).select(n); } catch { /* unknown locale: other */ }
+            for (var c = 0; c < branches.length && pick === null; c++) {
+                if (branches[c][0] === category) pick = branches[c][1];
+            }
+        }
+        number = n;
+    } else {
+        for (var s = 0; s < branches.length && pick === null; s++) {
+            if (branches[s][0] === String(value)) pick = branches[s][1];
+        }
+    }
+    if (pick === null) {
+        for (var o = 0; o < branches.length && pick === null; o++) {
+            if (branches[o][0] === 'other') pick = branches[o][1];
+        }
+    }
+    return pick === null ? whole : formatBlocks(pick, params, number);
 }
 
 /**
@@ -184,7 +305,8 @@ function t(key, params) {
         // A key with no English entry stays bare, exactly as it would in any
         // other locale: seeing the key itself is the signal that it is missing.
         if (raw === undefined) return key;
-        return interpolate(pseudoise(raw), params);
+        // Plural and select first: accenting their keywords would break them.
+        return interpolate(pseudoise(params ? formatMessage(String(raw), params) : raw), params);
     }
     var fromLocale = localeCatalogues[activeLocale];
     var text = fromLocale ? fromLocale[key] : undefined;

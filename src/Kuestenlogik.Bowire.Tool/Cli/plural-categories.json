@@ -1,0 +1,278 @@
+{
+  "_comment": "CLDR cardinal plural categories per language, as Intl.PluralRules reports them (Node v26.12.1). Read by bowire docs translations --check (#688); regenerate with the snippet in docs/contributing/translations.md.",
+  "af": [
+    "one",
+    "other"
+  ],
+  "ar": [
+    "zero",
+    "one",
+    "two",
+    "few",
+    "many",
+    "other"
+  ],
+  "bg": [
+    "one",
+    "other"
+  ],
+  "bn": [
+    "one",
+    "other"
+  ],
+  "ca": [
+    "one",
+    "many",
+    "other"
+  ],
+  "cs": [
+    "one",
+    "few",
+    "many",
+    "other"
+  ],
+  "cy": [
+    "zero",
+    "one",
+    "two",
+    "few",
+    "many",
+    "other"
+  ],
+  "da": [
+    "one",
+    "other"
+  ],
+  "de": [
+    "one",
+    "other"
+  ],
+  "el": [
+    "one",
+    "other"
+  ],
+  "en": [
+    "one",
+    "other"
+  ],
+  "es": [
+    "one",
+    "many",
+    "other"
+  ],
+  "et": [
+    "one",
+    "other"
+  ],
+  "eu": [
+    "one",
+    "other"
+  ],
+  "fa": [
+    "one",
+    "other"
+  ],
+  "fi": [
+    "one",
+    "other"
+  ],
+  "fil": [
+    "one",
+    "other"
+  ],
+  "fr": [
+    "one",
+    "many",
+    "other"
+  ],
+  "ga": [
+    "one",
+    "two",
+    "few",
+    "many",
+    "other"
+  ],
+  "gl": [
+    "one",
+    "other"
+  ],
+  "he": [
+    "one",
+    "two",
+    "other"
+  ],
+  "hi": [
+    "one",
+    "other"
+  ],
+  "hr": [
+    "one",
+    "few",
+    "other"
+  ],
+  "hu": [
+    "one",
+    "other"
+  ],
+  "hy": [
+    "one",
+    "other"
+  ],
+  "id": [
+    "other"
+  ],
+  "is": [
+    "one",
+    "other"
+  ],
+  "it": [
+    "one",
+    "many",
+    "other"
+  ],
+  "ja": [
+    "other"
+  ],
+  "ka": [
+    "one",
+    "other"
+  ],
+  "kk": [
+    "one",
+    "other"
+  ],
+  "ko": [
+    "other"
+  ],
+  "lt": [
+    "one",
+    "few",
+    "many",
+    "other"
+  ],
+  "lv": [
+    "zero",
+    "one",
+    "other"
+  ],
+  "mk": [
+    "one",
+    "other"
+  ],
+  "ml": [
+    "one",
+    "other"
+  ],
+  "mn": [
+    "one",
+    "other"
+  ],
+  "ms": [
+    "other"
+  ],
+  "mt": [
+    "one",
+    "two",
+    "few",
+    "many",
+    "other"
+  ],
+  "nb": [
+    "one",
+    "other"
+  ],
+  "nl": [
+    "one",
+    "other"
+  ],
+  "no": [
+    "one",
+    "other"
+  ],
+  "pl": [
+    "one",
+    "few",
+    "many",
+    "other"
+  ],
+  "pt": [
+    "one",
+    "many",
+    "other"
+  ],
+  "ro": [
+    "one",
+    "few",
+    "other"
+  ],
+  "ru": [
+    "one",
+    "few",
+    "many",
+    "other"
+  ],
+  "sk": [
+    "one",
+    "few",
+    "many",
+    "other"
+  ],
+  "sl": [
+    "one",
+    "two",
+    "few",
+    "other"
+  ],
+  "sq": [
+    "one",
+    "other"
+  ],
+  "sr": [
+    "one",
+    "few",
+    "other"
+  ],
+  "sv": [
+    "one",
+    "other"
+  ],
+  "sw": [
+    "one",
+    "other"
+  ],
+  "ta": [
+    "one",
+    "other"
+  ],
+  "te": [
+    "one",
+    "other"
+  ],
+  "th": [
+    "other"
+  ],
+  "tr": [
+    "one",
+    "other"
+  ],
+  "uk": [
+    "one",
+    "few",
+    "many",
+    "other"
+  ],
+  "ur": [
+    "one",
+    "other"
+  ],
+  "uz": [
+    "one",
+    "other"
+  ],
+  "vi": [
+    "other"
+  ],
+  "zh": [
+    "other"
+  ]
+}

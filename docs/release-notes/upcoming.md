@@ -68,6 +68,10 @@ The scan's API2 checks sent a JWT re-headed to `alg:none`, and one with a corrup
 
 A Yaak export (*Export Data* in the app, `yaak export` on the CLI) imports through the same entry point as the other formats: the workbench's **Import files…**, `bowire import` and the `bowire.import` MCP tool. Each workspace becomes a collection with its folders; a request carries the headers and the authentication it inherits from its folders and its workspace, as Yaak sends it; `${[ variable ]}` becomes `{{variable}}`, and the UUID and timestamp functions their Bowire counterparts. Sub-environments are laid over their parents and the base environment. gRPC and WebSocket requests, multipart and file bodies and response-chaining functions are named in the import report. The importer is tested against exports the Yaak CLI wrote. See [Migrating from Yaak](../migration/yaak.md).
 
+### Translations can say "one" and "many" the way their language does (#688)
+
+The translation layer only substituted `{name}` placeholders, so a sentence whose form depends on a number read wrong at one ("1 certificate(s)") and could not be written at all in a language with more than two forms. Catalogue strings can now use ICU `plural` and `select` blocks: `{count, plural, one {# certificate} other {# certificates}}`. The workbench picks the branch by the locale's own plural rules, `#` is the number, and a string without such a block works as before. The locale-parity test and `bowire docs translations --check` hold every translation to its language's categories, and `--check` now also compares placeholders. The first strings use it: the certificate and descriptor-set counts, the import summary and the remove-all-assertions confirmation.
+
 ## Fixes along the way
 
 ### Imported requests run (#1055)

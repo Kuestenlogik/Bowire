@@ -52,8 +52,31 @@ const load = (file) => JSON.parse(stripComments(readFileSync(resolve(LOCALES, fi
 
 // `_comment` is the file's own note to translators, not a UI string.
 const keysOf = (obj) => Object.keys(obj).filter((k) => !k.startsWith('_')).sort();
+// Inside a plural or select block only the branches' text counts: a
+// one-word branch (`=0 {nothing}`) is not a {nothing} placeholder (#688).
+function withoutBlockSyntax(text) {
+    let out = '';
+    for (let i = 0; i < text.length; i++) {
+        const head = text[i] === '{' && text[i + 1] !== '{' && text[i - 1] !== '{'
+            ? /^\{\s*[A-Za-z0-9_]+\s*,\s*(?:plural|select)\s*,/.exec(text.slice(i)) : null;
+        if (!head) { out += text[i]; continue; }
+        let depth = 0, end = i;
+        for (; end < text.length; end++) {
+            if (text[end] === '{') depth++;
+            else if (text[end] === '}' && --depth === 0) break;
+        }
+        let d = 0, body = '';
+        for (const ch of text.slice(i + head[0].length, end)) {
+            if (ch === '{' && d++ === 0) continue;
+            if (ch === '}' && --d === 0) { out += withoutBlockSyntax(body) + ' '; body = ''; continue; }
+            if (d > 0) body += ch;
+        }
+        i = end;
+    }
+    return out;
+}
 const placeholders = (text) =>
-    [...String(text).matchAll(/(?<!\{)\{([a-zA-Z0-9_]+)\}(?!\})/g)].map((m) => m[1]).sort();
+    [...withoutBlockSyntax(String(text)).matchAll(/(?<!\{)\{([a-zA-Z0-9_]+)\}(?!\})/g)].map((m) => m[1]).sort();
 
 const files = readdirSync(LOCALES).filter((f) => f.endsWith('.json'));
 const english = load('en.json');
@@ -633,4 +656,131 @@ test('tNodes still finds its slot under the pseudo-locale', () => {
     const parts = api.tNodes('greet', 'name', node);
     assert.equal(parts.length, 3, 'the sentence still splits around the slot');
     assert.equal(parts[1], node);
+});
+
+// ---- plural and select (#688) ----
+
+test('a plural picks the singular for one and the other form for more', () => {
+    const api = withCatalogues({ en: { runs: '{count, plural, one {# run} other {# runs}} in {days} days' } });
+    api.loadLocale();
+    assert.equal(api.t('runs', { count: 1, days: 7 }), '1 run in 7 days');
+    assert.equal(api.t('runs', { count: 2, days: 7 }), '2 runs in 7 days');
+    assert.equal(api.t('runs', { count: '0', days: 7 }), '0 runs in 7 days', 'a number passed as text counts too');
+});
+
+test('an exact branch wins over the category', () => {
+    const api = withCatalogues({ en: { left: '{n, plural, =0 {nothing left} one {# left} other {# left}}' } });
+    api.loadLocale();
+    assert.equal(api.t('left', { n: 0 }), 'nothing left');
+    assert.equal(api.t('left', { n: 1 }), '1 left');
+});
+
+test('a locale with three forms uses its own categories', () => {
+    // Polish: 1 plik, 2 pliki, 5 plików, 22 pliki.
+    const api = withCatalogues({ store: { bowire_locale: 'pl' } });
+    api.registerLocaleCatalogue('pl', { files: '{count, plural, one {# plik} few {# pliki} many {# plików} other {# pliku}}' });
+    api.loadLocale();
+    assert.equal(api.t('files', { count: 1 }), '1 plik');
+    assert.equal(api.t('files', { count: 2 }), '2 pliki');
+    assert.equal(api.t('files', { count: 5 }), '5 plików');
+    assert.equal(api.t('files', { count: 22 }), '22 pliki');
+});
+
+test('select picks by value and falls back to other', () => {
+    const api = withCatalogues({ en: { which: 'Delete {kind, select, file {the file} folder {the folder} other {it}}?' } });
+    api.loadLocale();
+    assert.equal(api.t('which', { kind: 'folder' }), 'Delete the folder?');
+    assert.equal(api.t('which', { kind: 'socket' }), 'Delete it?');
+});
+
+test('a plural leaves Bowire variables and missing parameters alone', () => {
+    const api = withCatalogues({ en: { mix: '{{token}}: {count, plural, one {# call} other {# calls}}' } });
+    api.loadLocale();
+    assert.equal(api.t('mix', { count: 3 }), '{{token}}: 3 calls');
+    // No count: the block stays visible, the same way a missing {name} does.
+    assert.equal(api.t('mix', {}), '{{token}}: {count, plural, one {# call} other {# calls}}');
+});
+
+test('the pseudo-locale renders plurals, not accented keywords', () => {
+    const api = withCatalogues({ en: { runs: '{count, plural, one {# run} other {# runs}}' }, store: { bowire_locale: 'qps' } });
+    api.registerLocaleCatalogue('qps', {});
+    api.loadLocale();
+    const shown = api.t('runs', { count: 2 });
+    assert.match(shown, /^⟦2 /);
+    assert.doesNotMatch(shown, /plural|other/);
+});
+
+// The plural and select blocks of a string, by variable: their type and
+// branch selectors. Nested blocks count too.
+function icuBlocks(text) {
+    const blocks = [];
+    const s = String(text);
+    for (let i = 0; i < s.length; i++) {
+        if (s[i] !== '{' || s[i + 1] === '{' || (i > 0 && s[i - 1] === '{')) continue;
+        const m = /^\{\s*([A-Za-z0-9_]+)\s*,\s*(plural|select)\s*,/.exec(s.slice(i));
+        if (!m) continue;
+        let depth = 0, end = i;
+        for (; end < s.length; end++) {
+            if (s[end] === '{') depth++;
+            else if (s[end] === '}' && --depth === 0) break;
+        }
+        const rest = s.slice(i + m[0].length, end);
+        const selectors = [];
+        let d = 0, token = '';
+        for (const ch of rest) {
+            if (ch === '{') { if (d === 0 && token.trim()) selectors.push(token.trim()); d++; token = ''; }
+            else if (ch === '}') d--;
+            else if (d === 0) token += ch;
+        }
+        blocks.push({ name: m[1], type: m[2], selectors });
+    }
+    return blocks;
+}
+
+for (const file of translations) {
+    const locale = file.replace(/\.json$/, '');
+    const catalogue = load(file);
+    const categories = (loc) => new Intl.PluralRules(loc).resolvedOptions().pluralCategories;
+
+    test(`${locale}: plural and select blocks match English`, () => {
+        // A translation that drops a branch its language needs renders the
+        // fallback in the wrong form; one that invents a category its
+        // language does not have never shows. Exact branches (=0) English
+        // has must stay; a select's values must stay the same.
+        const wrong = [];
+        for (const key of keysOf(english)) {
+            const want = icuBlocks(english[key]);
+            const have = icuBlocks(catalogue[key]);
+            const shape = (bs) => bs.map((b) => b.name + ':' + b.type).sort().join(',');
+            if (shape(want) !== shape(have)) {
+                wrong.push(`${key}: expected blocks ${shape(want) || '(none)'}, got ${shape(have) || '(none)'}`);
+                continue;
+            }
+            for (const b of have) {
+                const en = want.find((w) => w.name === b.name && w.type === b.type);
+                let expected;
+                if (b.type === 'select') {
+                    expected = [...en.selectors];
+                } else {
+                    expected = [...en.selectors.filter((x) => x.startsWith('=')), ...categories(locale)];
+                }
+                const got = [...new Set(b.selectors)].sort().join(' ');
+                if (got !== [...new Set(expected)].sort().join(' ')) {
+                    wrong.push(`${key}: {${b.name}, ${b.type}} needs ${[...new Set(expected)].sort().join(' ')}, has ${got}`);
+                }
+            }
+        }
+        assert.deepEqual(wrong, [], `${file} plural/select mismatch:\n  ${wrong.join('\n  ')}`);
+    });
+}
+
+test('English plurals carry exactly the English categories', () => {
+    const wrong = [];
+    for (const key of keysOf(english)) {
+        for (const b of icuBlocks(english[key]).filter((x) => x.type === 'plural')) {
+            const cats = b.selectors.filter((x) => !x.startsWith('=')).sort().join(' ');
+            if (cats !== 'one other') wrong.push(`${key}: {${b.name}, plural} has ${cats}`);
+        }
+    }
+    assert.deepEqual(wrong, []);
 });

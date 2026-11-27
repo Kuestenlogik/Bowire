@@ -78,8 +78,11 @@ public sealed class TranslationsCommandTests : IDisposable
 
     private async Task<string> WriteCatalogueAsync(string name, Action<Dictionary<string, string>> edit)
     {
+        // The English text: it keeps every placeholder and plural branch the
+        // check holds a translation to (#688), and German has English's
+        // plural categories.
         var entries = new Dictionary<string, string>(StringComparer.Ordinal);
-        foreach (var key in (await EnglishAsync()).Keys) entries[key] = "übersetzt";
+        foreach (var (key, value) in Kuestenlogik.Bowire.App.Cli.TranslationsCommand.ReadEnglish()!) entries[key] = value;
         edit(entries);
 
         var obj = new JsonObject();
