@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**20/35 done** · 15 backlog
+**20/36 done** · 16 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -31,6 +31,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [939](https://github.com/Kuestenlogik/Bowire/issues/939) | Bowire | [Import Yaak exports](#issue-kuestenlogik-bowire-939) | ⬜ Backlog |  |
 | [940](https://github.com/Kuestenlogik/Bowire/issues/940) | Bowire | [Verify the collection importers against real Insomnia and Bruno exports](#issue-kuestenlogik-bowire-940) | ⬜ Backlog |  |
 | [946](https://github.com/Kuestenlogik/Bowire/issues/946) | Bowire | [Data sets for flow runs and bowire test --workspace](#issue-kuestenlogik-bowire-946) | ⬜ Backlog |  |
+| [1053](https://github.com/Kuestenlogik/Bowire/issues/1053) | Bowire | [bowire test on a flow: every REST step first sends a GET to its own URL](#issue-kuestenlogik-bowire-1053) | ⬜ Backlog | `area:cli` |
 | [673](https://github.com/Kuestenlogik/Bowire/issues/673) | Bowire | [Export requests as .http — Copy as .http, and bowire export http for a whole collection](#issue-kuestenlogik-bowire-673) | ✅ Done | `area:workbench` |
 | [963](https://github.com/Kuestenlogik/Bowire/issues/963) | Bowire | [WebSocketAuthProbe: forged JWT (alg:none, tampered signature) on the upgrade](#issue-kuestenlogik-bowire-963) | ✅ Done | `area:security` |
 | [986](https://github.com/Kuestenlogik/Bowire/issues/986) | Bowire | [The .NET plugin loader scans sidecar folders and logs ManifestMissing for every sidecar](#issue-kuestenlogik-bowire-986) | ✅ Done | `area:plugin-sdk` |
@@ -311,6 +312,12 @@ Follow-up of #674. The importers were tested with fixtures written from the form
 #### <a id="issue-kuestenlogik-bowire-946"></a>⬜ Backlog · [#946](https://github.com/Kuestenlogik/Bowire/issues/946) Data sets for flow runs and bowire test --workspace
 
 Follow-up of #675. `--data` drives a test collection. A flow file, or a `--workspace` run, refuses `--data` today with a clear message. [[more]](https://github.com/Kuestenlogik/Bowire/issues/946)
+
+#### <a id="issue-kuestenlogik-bowire-1053"></a>⬜ Backlog · [#1053](https://github.com/Kuestenlogik/Bowire/issues/1053) bowire test on a flow: every REST step first sends a GET to its own URL
+
+> `area:cli`
+
+`FlowTestRunner.RunStepAsync` calls `protocol.DiscoverAsync(serverUrl)` before every step (`src/Kuestenlogik.Bowire.Tool/FlowTestRunner.cs`, right before `InvokeAsync`). For REST, discovery tries the step's URL itself as a candidate document, with a GET. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/1053)
 
 #### <a id="issue-kuestenlogik-bowire-673"></a>✅ Done · [#673](https://github.com/Kuestenlogik/Bowire/issues/673) Export requests as .http — Copy as .http, and bowire export http for a whole collection
 
