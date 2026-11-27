@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**23/40 done** · 2 in progress · 15 backlog
+**23/41 done** · 2 in progress · 16 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -33,6 +33,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [940](https://github.com/Kuestenlogik/Bowire/issues/940) | Bowire | [Verify the collection importers against real Insomnia and Bruno exports](#issue-kuestenlogik-bowire-940) | ⬜ Backlog |  |
 | [1054](https://github.com/Kuestenlogik/Bowire/issues/1054) | Bowire | [Every workbench start logs a 404 for /api/project when there is no project manifest](#issue-kuestenlogik-bowire-1054) | ⬜ Backlog | `area:workbench` |
 | [1056](https://github.com/Kuestenlogik/Bowire/issues/1056) | Bowire | [Importer fixtures from collections built and exported by hand in Insomnia and Bruno](#issue-kuestenlogik-bowire-1056) | ⬜ Backlog | `area:workbench` |
+| [1060](https://github.com/Kuestenlogik/Bowire/issues/1060) | Bowire | [The workbench's collection runner skips the scripts a saved item carries](#issue-kuestenlogik-bowire-1060) | ⬜ Backlog |  |
 | [673](https://github.com/Kuestenlogik/Bowire/issues/673) | Bowire | [Export requests as .http — Copy as .http, and bowire export http for a whole collection](#issue-kuestenlogik-bowire-673) | ✅ Done | `area:workbench` |
 | [939](https://github.com/Kuestenlogik/Bowire/issues/939) | Bowire | [Import Yaak exports](#issue-kuestenlogik-bowire-939) | ✅ Done |  |
 | [946](https://github.com/Kuestenlogik/Bowire/issues/946) | Bowire | [Data sets for flow runs and bowire test --workspace](#issue-kuestenlogik-bowire-946) | ✅ Done |  |
@@ -59,13 +60,15 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.12 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
 
-**0/3 done** · 3 backlog
+**0/5 done** · 5 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [667](https://github.com/Kuestenlogik/Bowire/issues/667) | Bowire | [Hosted playground: a public multi-protocol demo fleet plus a hardened, hosted workbench](#issue-kuestenlogik-bowire-667) | ⬜ Backlog | `area:multi` |
 | [682](https://github.com/Kuestenlogik/Bowire/issues/682) | Bowire | [Secret-manager variable sources: Vault, Azure Key Vault, AWS Secrets Manager, 1Password](#issue-kuestenlogik-bowire-682) | ⬜ Backlog | `area:workbench` |
 | [683](https://github.com/Kuestenlogik/Bowire/issues/683) | Bowire | [Mock with state: data buckets, CRUD routes, request-aware templating, admin API](#issue-kuestenlogik-bowire-683) | ⬜ Backlog | `area:mock` |
+| [1058](https://github.com/Kuestenlogik/Bowire/issues/1058) | Bowire | [Scripts on flow steps, in the workbench and bowire test](#issue-kuestenlogik-bowire-1058) | ⬜ Backlog | `area:workbench` |
+| [1059](https://github.com/Kuestenlogik/Bowire/issues/1059) | Bowire | [Scripts in bowire.invoke (MCP) and bowire call](#issue-kuestenlogik-bowire-1059) | ⬜ Backlog | `area:mcp` |
 
 ### v2.13 — Benchmark: connections held open, the shape of a run, several targets *(due 2027-06-15)*
 
@@ -331,6 +334,10 @@ Every time the workbench loads without a `.bowire/project.json` above the host's
 
 Follow-up of #940, split out because it needs the apps installed and clicked through by a person. [[more]](https://github.com/Kuestenlogik/Bowire/issues/1056)
 
+#### <a id="issue-kuestenlogik-bowire-1060"></a>⬜ Backlog · [#1060](https://github.com/Kuestenlogik/Bowire/issues/1060) The workbench's collection runner skips the scripts a saved item carries
+
+Follow-up of #672. [[more]](https://github.com/Kuestenlogik/Bowire/issues/1060)
+
 #### <a id="issue-kuestenlogik-bowire-673"></a>✅ Done · [#673](https://github.com/Kuestenlogik/Bowire/issues/673) Export requests as .http — Copy as .http, and bowire export http for a whole collection
 
 > `area:workbench`
@@ -468,6 +475,18 @@ Bowire has the keyring — `{{keyring.*}}` resolves a secret from the machine's 
 > `area:mock`
 
 Bowire's mock is **replay-first**: a recording becomes an endpoint, a schema becomes plausible responses, and a sidecar config refines them with field overrides, conditional rules and an auth gate. For contract testing that is better than what Mockoon does. [[more]](https://github.com/Kuestenlogik/Bowire/issues/683)
+
+#### <a id="issue-kuestenlogik-bowire-1058"></a>⬜ Backlog · [#1058](https://github.com/Kuestenlogik/Bowire/issues/1058) Scripts on flow steps, in the workbench and bowire test
+
+> `area:workbench`
+
+Follow-up of #672, which made `bowire test` run the pre/post scripts of a test collection through `Kuestenlogik.Bowire.Scripting`. [[more]](https://github.com/Kuestenlogik/Bowire/issues/1058)
+
+#### <a id="issue-kuestenlogik-bowire-1059"></a>⬜ Backlog · [#1059](https://github.com/Kuestenlogik/Bowire/issues/1059) Scripts in bowire.invoke (MCP) and bowire call
+
+> `area:mcp`
+
+Follow-up of #672. [[more]](https://github.com/Kuestenlogik/Bowire/issues/1059)
 
 ### v2.13 — Benchmark: connections held open, the shape of a run, several targets *(due 2027-06-15)*
 
