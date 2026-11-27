@@ -43,6 +43,8 @@ curl "http://localhost:5188/odata/Products(1)/Default.DiscountedPrice(percent=15
 curl "http://localhost:5188/odata/Products(1)/DiscountedPrice(percent=15)"   # unqualified also works
 ```
 
+In the workbench it is a method of `Products`, `DiscountedPrice`, whose form asks for the product's `Id` and `percent`.
+
 ## Run
 
 ```pwsh

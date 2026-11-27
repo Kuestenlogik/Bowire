@@ -66,6 +66,10 @@ The scan's API2 checks sent a JWT re-headed to `alg:none`, and one with a corrup
 
 ## Fixes along the way
 
+### OData functions and actions can be called (#529)
+
+Discovery listed five CRUD methods per entity set and nothing else, although the plugin's description promised functions and actions. Every function and action bound to an entity type or its collection is now a method of the entity set, and unbound function and action imports form one more service named after the container. A function is called as a GET with its parameters in the URL segment, quoted by their EDM type; an action as a POST with its parameters as the body; an entity-bound one behind the entity's key.
+
 ### A REST step in `bowire test` reaches the server once (#1053)
 
 `bowire test` discovered before every call, and REST's discovery tries the URL as an OpenAPI document. Every REST step therefore sent a GET to its own URL ahead of the call, a `POST /orders` step included, and a data-driven run did so for every row. A plugin now says whether its invoke needs discovery first (`IBowireProtocol.InvokeNeedsDiscovery`, default yes); REST does not, and a plugin that does is discovered once per server URL for the run.

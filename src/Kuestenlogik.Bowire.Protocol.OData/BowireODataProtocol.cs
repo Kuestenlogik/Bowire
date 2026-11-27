@@ -19,8 +19,10 @@ namespace Kuestenlogik.Bowire.Protocol.OData;
 /// services and methods.
 ///
 /// Discovery: GET {baseUrl}/$metadata → parse EDMX → entity sets become
-/// services, CRUD verbs (GET/POST/PATCH/DELETE) become methods, bound
-/// functions/actions become additional methods.
+/// services, CRUD verbs (GET/POST/PATCH/DELETE) become methods, and the
+/// functions and actions bound to an entity type or its collection become
+/// additional methods of its set; unbound function and action imports form
+/// one more service named after the container (#529).
 ///
 /// Auto-discovered by <see cref="BowireProtocolRegistry"/>.
 /// </summary>
@@ -53,6 +55,15 @@ public sealed class BowireODataProtocol : IBowireProtocol, IBowireManualEntry, K
         new(StringComparer.OrdinalIgnoreCase);
 
     private sealed record EntityKey(string Name, bool IsString);
+
+    /// <summary>
+    /// The parameter types of each discovered function and action, by method
+    /// full name (#529): a function writes its parameters into the URL, where
+    /// a string is quoted and a number or GUID is not. A call without a
+    /// discovery first goes by the JSON value instead.
+    /// </summary>
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, ODataOperations.Signature> _operations =
+        new(StringComparer.Ordinal);
 
     public string Name => "OData";
     public string Description => "OData V4 entity-set queries, actions, and metadata-driven discovery.";
@@ -186,6 +197,14 @@ public sealed class BowireODataProtocol : IBowireProtocol, IBowireManualEntry, K
                     Summary = $"Delete a {entitySet.Name} entity"
                 });
 
+                // #529 - the functions and actions bound to the entity type or
+                // to a collection of it.
+                foreach (var (operation, signature) in ODataOperations.BoundTo(model, entityType, entitySet.Name, BuildKeyInput(entityType)))
+                {
+                    _operations[operation.FullName] = signature;
+                    methods.Add(operation);
+                }
+
                 var svc = new BowireServiceInfo(entitySet.Name, "odata", methods)
                 {
                     Source = "odata",
@@ -193,6 +212,24 @@ public sealed class BowireODataProtocol : IBowireProtocol, IBowireManualEntry, K
                     Description = $"OData entity set: {entitySet.Name} ({entityType.FullName()})"
                 };
                 services.Add(svc);
+            }
+
+            // #529 - unbound function and action imports, as one service named
+            // after the container.
+            var imports = new List<BowireMethodInfo>();
+            foreach (var (operation, signature) in ODataOperations.Imports(container))
+            {
+                _operations[operation.FullName] = signature;
+                imports.Add(operation);
+            }
+            if (imports.Count > 0)
+            {
+                services.Add(new BowireServiceInfo(container.Name, "odata", imports)
+                {
+                    Source = "odata",
+                    OriginUrl = odataBase,
+                    Description = $"OData function and action imports of {container.Name}",
+                });
             }
 
             return services;
@@ -303,6 +340,9 @@ public sealed class BowireODataProtocol : IBowireProtocol, IBowireManualEntry, K
         var httpVerb = parts.Length >= 3 ? parts[2] : "GET";
         var entitySet = parts.Length >= 2 ? parts[1] : service;
 
+        if (parts.Length >= 4 && ODataOperations.IsOperationVerb(httpVerb))
+            return await InvokeOperationAsync(baseUrl, method, entitySet, httpVerb, parts[3], payload, metadata, sw, ct).ConfigureAwait(false);
+
         var requestUrl = new Uri($"{baseUrl}/{entitySet}");
 
         // Parse body for key-based operations.
@@ -401,6 +441,34 @@ public sealed class BowireODataProtocol : IBowireProtocol, IBowireManualEntry, K
             {
                 ["httpStatus"] = ((int)resp.StatusCode).ToString(System.Globalization.CultureInfo.InvariantCulture),
                 ["contentType"] = resp.Content.Headers.ContentType?.ToString() ?? ""
+            });
+    }
+
+    /// <summary>A call to a function or an action (#529).</summary>
+    private async Task<InvokeResult> InvokeOperationAsync(
+        string baseUrl, string method, string setOrContainer, string verb, string operationName, string payload,
+        Dictionary<string, string>? metadata, System.Diagnostics.Stopwatch sw, CancellationToken ct)
+    {
+        _entitySetKeys.TryGetValue(setOrContainer, out var key);
+        _operations.TryGetValue(method, out var signature);
+        var (url, body) = ODataOperations.Request(
+            baseUrl, setOrContainer, verb, operationName, payload, key?.Name, key?.IsString ?? false, signature, FormatKey);
+
+        using var req = new HttpRequestMessage(body is null ? HttpMethod.Get : HttpMethod.Post, url);
+        if (body is not null) req.Content = new StringContent(body, System.Text.Encoding.UTF8, "application/json");
+        Kuestenlogik.Bowire.Auth.BowireHttpAuth.ApplyMetadata(req, metadata);
+        using var resp = await _http.SendAsync(req, ct).ConfigureAwait(false);
+        var responseBody = await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
+        sw.Stop();
+
+        return new InvokeResult(
+            responseBody,
+            sw.ElapsedMilliseconds,
+            resp.IsSuccessStatusCode ? "OK" : $"HTTP {(int)resp.StatusCode}",
+            new Dictionary<string, string>
+            {
+                ["httpStatus"] = ((int)resp.StatusCode).ToString(System.Globalization.CultureInfo.InvariantCulture),
+                ["contentType"] = resp.Content.Headers.ContentType?.ToString() ?? "",
             });
     }
 
