@@ -133,13 +133,16 @@ public sealed class McpAppsProbeTests
         public Func<string, InvokeResult>? InvokeResource { get; init; }
 
         public Task<List<BowireServiceInfo>> DiscoverAsync(string serverUrl, bool showInternalServices, CancellationToken ct = default)
-            => Task.FromResult(Discover!(serverUrl, showInternalServices));
+            // Explicit, not `Discover!`: the CLI's plugin scan instantiates every
+            // IBowireProtocol in this assembly and calls it unconfigured.
+            => Discover is null ? throw new InvalidOperationException("Discover not configured") : Task.FromResult(Discover(serverUrl, showInternalServices));
 
         public Task<InvokeResult> InvokeAsync(string serverUrl, string service, string method, List<string> jsonMessages,
             bool showInternalServices, Dictionary<string, string>? metadata = null, CancellationToken ct = default)
         {
+            if (InvokeResource is null) throw new InvalidOperationException("InvokeResource not configured");
             Assert.Equal("Resources", service);
-            return Task.FromResult(InvokeResource!(method));
+            return Task.FromResult(InvokeResource(method));
         }
 
         public async IAsyncEnumerable<string> InvokeStreamAsync(string serverUrl, string service, string method, List<string> jsonMessages,
