@@ -12,19 +12,19 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**46/50 done** · 4 backlog
+**47/50 done** · 3 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [639](https://github.com/Kuestenlogik/Bowire/issues/639) | Bowire | [SCIM: live Okta and Entra ID provisioning round-trips](#issue-kuestenlogik-bowire-639) | ⬜ Backlog | `area:workbench` |
 | [670](https://github.com/Kuestenlogik/Bowire/issues/670) | Bowire | [Get listed where developers and models actually look](#issue-kuestenlogik-bowire-670) | ⬜ Backlog | `area:site` |
-| [690](https://github.com/Kuestenlogik/Bowire/issues/690) | Bowire | [Translate the CLI help surface, or decide not to](#issue-kuestenlogik-bowire-690) | ⬜ Backlog | `area:cli` |
 | [1056](https://github.com/Kuestenlogik/Bowire/issues/1056) | Bowire | [Importer fixtures from collections built and exported by hand in Insomnia and Bruno](#issue-kuestenlogik-bowire-1056) | ⬜ Backlog | `area:workbench` |
 | [672](https://github.com/Kuestenlogik/Bowire/issues/672) | Bowire | [Server-side script engine so pre/post scripts run in bowire test, not only in the browser](#issue-kuestenlogik-bowire-672) | ✅ Done | `area:cli` |
 | [673](https://github.com/Kuestenlogik/Bowire/issues/673) | Bowire | [Export requests as .http — Copy as .http, and bowire export http for a whole collection](#issue-kuestenlogik-bowire-673) | ✅ Done | `area:workbench` |
 | [677](https://github.com/Kuestenlogik/Bowire/issues/677) | Bowire | [Broader code export, and snippets for the protocols no snippet library covers](#issue-kuestenlogik-bowire-677) | ✅ Done | `area:workbench` |
 | [687](https://github.com/Kuestenlogik/Bowire/issues/687) | Bowire | [Tray icon and no console window: give the running workbench a handle of its own](#issue-kuestenlogik-bowire-687) | ✅ Done | `area:cli` |
 | [688](https://github.com/Kuestenlogik/Bowire/issues/688) | Bowire | [Plurals: the translation layer cannot express a sentence whose shape depends on a number](#issue-kuestenlogik-bowire-688) | ✅ Done | `area:workbench` |
+| [690](https://github.com/Kuestenlogik/Bowire/issues/690) | Bowire | [Translate the CLI help surface, or decide not to](#issue-kuestenlogik-bowire-690) | ✅ Done | `area:cli` |
 | [753](https://github.com/Kuestenlogik/Bowire/issues/753) | Bowire | [Detach a pane into a browser window of its own (pop-out)](#issue-kuestenlogik-bowire-753) | ✅ Done |  |
 | [754](https://github.com/Kuestenlogik/Bowire/issues/754) | Bowire | [Scaffolding: more stub languages and protocols (follow-up to #177)](#issue-kuestenlogik-bowire-754) | ✅ Done |  |
 | [810](https://github.com/Kuestenlogik/Bowire/issues/810) | Bowire | [MCP Apps, host side: render and debug MCP Apps of the servers Bowire talks to](#issue-kuestenlogik-bowire-810) | ✅ Done |  |
@@ -273,12 +273,6 @@ Split from #96 so the SCIM surface can ship on its own merits. [[more]](https://
 
 Six credible competitors turned up during the competitive survey **via openalternative.co**. Bowire was not there. That is the whole diagnosis: when a developer — or a language model — asks for "open source Postman alternative", the answer is assembled from these directories, not from bowire.io. [[more]](https://github.com/Kuestenlogik/Bowire/issues/670)
 
-#### <a id="issue-kuestenlogik-bowire-690"></a>⬜ Backlog · [#690](https://github.com/Kuestenlogik/Bowire/issues/690) Translate the CLI help surface, or decide not to
-
-> `area:cli`
-
-`bowire --help` is still English in every locale. The machinery it needs already exists — `BowireLocale` resolves `BOWIRE_LOCALE` / `LC_ALL` / `LANG` / the OS culture and reads the same catalogues the workbench does — but nothing in the help surface calls it yet. [[more]](https://github.com/Kuestenlogik/Bowire/issues/690)
-
 #### <a id="issue-kuestenlogik-bowire-1056"></a>⬜ Backlog · [#1056](https://github.com/Kuestenlogik/Bowire/issues/1056) Importer fixtures from collections built and exported by hand in Insomnia and Bruno
 
 > `area:workbench`
@@ -314,6 +308,12 @@ Code export offers five to six target languages per protocol. Postman, Hoppscotc
 > `area:workbench`
 
 The translation layer from #117 substitutes `{name}` placeholders and nothing more. That is enough for a count *inside* a sentence: [[more]](https://github.com/Kuestenlogik/Bowire/issues/688)
+
+#### <a id="issue-kuestenlogik-bowire-690"></a>✅ Done · [#690](https://github.com/Kuestenlogik/Bowire/issues/690) Translate the CLI help surface, or decide not to
+
+> `area:cli`
+
+`bowire --help` is still English in every locale. The machinery it needs already exists — `BowireLocale` resolves `BOWIRE_LOCALE` / `LC_ALL` / `LANG` / the OS culture and reads the same catalogues the workbench does — but nothing in the help surface calls it yet. [[more]](https://github.com/Kuestenlogik/Bowire/issues/690)
 
 #### <a id="issue-kuestenlogik-bowire-753"></a>✅ Done · [#753](https://github.com/Kuestenlogik/Bowire/issues/753) Detach a pane into a browser window of its own (pop-out)
 
