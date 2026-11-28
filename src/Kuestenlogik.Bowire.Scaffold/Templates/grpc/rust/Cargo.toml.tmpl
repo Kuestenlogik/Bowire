@@ -1,0 +1,16 @@
+[package]
+name = "{{crateName}}"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+prost = "0.13"
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "net"] }
+tokio-stream = { version = "0.1", features = ["net"] }
+tonic = "0.12"
+tonic-reflection = "0.12"
+uuid = { version = "1", features = ["v4"] }
+
+[build-dependencies]
+protoc-bin-vendored = "3"
+tonic-build = "0.12"

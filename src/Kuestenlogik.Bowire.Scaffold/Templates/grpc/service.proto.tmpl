@@ -5,7 +5,8 @@ syntax = "proto3";
 package {{package}};
 
 option csharp_namespace = "{{Namespace}}";
-
+{{#IsGo}}option go_package = "{{goModule}}/gen;pb";
+{{/IsGo}}
 import "google/protobuf/empty.proto";
 
 // CRUD for {{plural}}.

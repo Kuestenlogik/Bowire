@@ -1,0 +1,15 @@
+// Compiles {{protoFile}} with a protoc of its own (protoc-bin-vendored), so
+// the build needs none on the machine, and keeps the descriptor set for
+// server reflection.
+use std::path::PathBuf;
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    std::env::set_var("PROTOC", protoc_bin_vendored::protoc_bin_path()?);
+    let out = PathBuf::from(std::env::var("OUT_DIR")?);
+    let include = protoc_bin_vendored::include_path()?;
+    tonic_build::configure()
+        .file_descriptor_set_path(out.join("descriptor.bin"))
+        .compile_protos(&["{{protoFile}}"], &[PathBuf::from("."), include])?;
+    println!("cargo:rerun-if-changed={{protoFile}}");
+    Ok(())
+}

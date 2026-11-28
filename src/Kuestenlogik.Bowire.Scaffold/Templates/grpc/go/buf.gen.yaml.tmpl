@@ -1,0 +1,13 @@
+# go generate runs buf with this: the Go messages and the gRPC service for
+# {{protoFile}}, into gen/. The plugins run through `go run`, so nothing has
+# to be installed first.
+version: v2
+inputs:
+  - directory: .
+plugins:
+  - local: ["go", "run", "google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.5"]
+    out: gen
+    opt: paths=source_relative
+  - local: ["go", "run", "google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.5.1"]
+    out: gen
+    opt: paths=source_relative

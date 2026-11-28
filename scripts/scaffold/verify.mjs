@@ -48,6 +48,21 @@ const RUN = {
     rust: { tool: ['cargo', '--version'], start: ['cargo', ['run', '--quiet']] },
 };
 
+const PYTHON = process.platform === 'win32' ? 'python' : 'python3';
+const VENV_PYTHON = process.platform === 'win32' ? join('.venv', 'Scripts', 'python.exe') : join('.venv', 'bin', 'python');
+
+// What a gRPC stub needs before it starts: its dependencies, and for Go its
+// generated code. Each step is [command, args]; a failing step fails the
+// combination with its output.
+const PREPARE = {
+    'grpc/node': [['npm install --no-audit --no-fund', null]],
+    'grpc/python': [[PYTHON, ['-m', 'venv', '.venv']], [VENV_PYTHON, ['-m', 'pip', 'install', '--quiet', '-r', 'requirements.txt']]],
+    'grpc/go': [['go', ['generate', './...']], ['go', ['mod', 'tidy']]],
+};
+const START = {
+    'grpc/python': [VENV_PYTHON, ['server.py']],
+};
+
 // A spec that exercises what differs between languages: a required field,
 // numbers, a bool, and a field named like a keyword (type).
 function spec(protocol, language, port) {
@@ -104,7 +119,15 @@ async function verify(protocol, language, port) {
     const gen = bowire(WORK, 'scaffold', '--spec', specFile, '--out', dir, '--force');
     if (gen.status !== 0) return { result: 'FAIL', detail: 'scaffold: ' + (gen.stderr || gen.stdout).trim() };
 
-    const [cmd, cmdArgs] = RUN[language].start;
+    for (const [step, stepArgs] of PREPARE[`${protocol}/${language}`] || []) {
+        // npm is a .cmd on Windows and needs a shell; its line has no input in it.
+        const r = stepArgs === null
+            ? spawnSync(step, { cwd: dir, env, encoding: 'utf8', shell: true })
+            : spawnSync(step, stepArgs, { cwd: dir, env, encoding: 'utf8' });
+        if (r.status !== 0) return { result: 'FAIL', detail: `${step} ${(stepArgs || []).join(' ')}:
+${r.stdout}${r.stderr}` };
+    }
+    const [cmd, cmdArgs] = START[`${protocol}/${language}`] || RUN[language].start;
     const child = spawn(cmd, cmdArgs, { cwd: dir, env });
     const log = [];
     try {

@@ -1,0 +1,148 @@
+// {{Service}} — scaffolded by Bowire from the spec in bowire-scaffold.json.
+// The service keeps {{plural}} in memory, so every restart starts empty:
+// replace the store with your own persistence and keep the RPCs.
+//
+// The code for {{protoFile}} is generated into gen/ by `go generate`, with
+// buf and the protoc-gen-go plugins run through `go run`: no protoc needed.
+package main
+
+//go:generate go run github.com/bufbuild/buf/cmd/buf@v1.50.0 generate
+
+import (
+	"context"
+	"crypto/rand"
+	"encoding/hex"
+	"fmt"
+	"log"
+	"net"
+	"sort"
+	"strings"
+	"sync"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/reflection"
+	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/emptypb"
+
+	pb "{{goModule}}/gen"
+)
+
+type server struct {
+	pb.Unimplemented{{Service}}Server
+	mu    sync.Mutex
+	store map[string]*pb.{{Entity}}
+}
+
+func (s *server) List{{Plural}}(_ context.Context, _ *pb.List{{Plural}}Request) (*pb.List{{Plural}}Response, error) {
+	s.mu.Lock()
+	items := make([]*pb.{{Entity}}, 0, len(s.store))
+	for _, item := range s.store {
+		items = append(items, item)
+	}
+	s.mu.Unlock()
+	sort.Slice(items, func(i, j int) bool { return items[i].Id < items[j].Id })
+	return &pb.List{{Plural}}Response{ {{PluralPascalField}}: items }, nil
+}
+
+func (s *server) Get{{Entity}}(_ context.Context, request *pb.Get{{Entity}}Request) (*pb.{{Entity}}, error) {
+	s.mu.Lock()
+	item, found := s.store[request.Id]
+	s.mu.Unlock()
+	if !found {
+		return nil, notFound(request.Id)
+	}
+	return item, nil
+}
+
+func (s *server) Create{{Entity}}(_ context.Context, input *pb.{{Entity}}Input) (*pb.{{Entity}}, error) {
+	if err := validate(input); err != nil {
+		return nil, err
+	}
+	item := from(newID(), input)
+	s.mu.Lock()
+	s.store[item.Id] = item
+	s.mu.Unlock()
+	return item, nil
+}
+
+func (s *server) Update{{Entity}}(_ context.Context, request *pb.Update{{Entity}}Request) (*pb.{{Entity}}, error) {
+	s.mu.Lock()
+	_, found := s.store[request.Id]
+	s.mu.Unlock()
+	if !found {
+		return nil, notFound(request.Id)
+	}
+	input := request.{{EntityPascalField}}
+	if input == nil {
+		input = &pb.{{Entity}}Input{}
+	}
+	if err := validate(input); err != nil {
+		return nil, err
+	}
+	item := from(request.Id, input)
+	s.mu.Lock()
+	s.store[request.Id] = item
+	s.mu.Unlock()
+	return item, nil
+}
+
+func (s *server) Delete{{Entity}}(_ context.Context, request *pb.Delete{{Entity}}Request) (*emptypb.Empty, error) {
+	s.mu.Lock()
+	_, found := s.store[request.Id]
+	delete(s.store, request.Id)
+	s.mu.Unlock()
+	if !found {
+		return nil, notFound(request.Id)
+	}
+	return &emptypb.Empty{}, nil
+}
+
+func notFound(id string) error {
+	return status.Errorf(codes.NotFound, "no {{entityWords}} with id '%s'", id)
+}
+
+// validate refuses an input without its required fields. A required string
+// must not be empty; a required number or bool must be present (they are
+// optional in the proto for exactly that reason).
+func validate(input *pb.{{Entity}}Input) error {
+	var missing []string
+{{#fields}}{{#Required}}{{#ProtoOptional}}	if input.{{goProtoName}} == nil {
+		missing = append(missing, "{{name}}")
+	}
+{{/ProtoOptional}}{{^ProtoOptional}}	if input.{{goProtoName}} == "" {
+		missing = append(missing, "{{name}}")
+	}
+{{/ProtoOptional}}{{/Required}}{{/fields}}	if len(missing) > 0 {
+		return status.Error(codes.InvalidArgument, "required: "+strings.Join(missing, ", "))
+	}
+	return nil
+}
+
+func from(id string, input *pb.{{Entity}}Input) *pb.{{Entity}} {
+	return &pb.{{Entity}}{
+		Id: id,
+{{#fields}}		{{goProtoName}}: input.{{goProtoName}},
+{{/fields}}	}
+}
+
+func newID() string {
+	b := make([]byte, 16)
+	if _, err := rand.Read(b); err != nil {
+		panic(err)
+	}
+	return hex.EncodeToString(b)
+}
+
+func main() {
+	listener, err := net.Listen("tcp", "{{ListenAddress}}")
+	if err != nil {
+		log.Fatal(err)
+	}
+	s := grpc.NewServer()
+	pb.Register{{Service}}Server(s, &server{store: map[string]*pb.{{Entity}}{}})
+	// Server reflection, which is how Bowire discovers the service.
+	reflection.Register(s)
+	fmt.Println("listening on {{BaseUrl}}")
+	log.Fatal(s.Serve(listener))
+}

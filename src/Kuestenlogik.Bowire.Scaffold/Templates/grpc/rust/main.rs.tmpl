@@ -1,0 +1,109 @@
+// {{Service}} — scaffolded by Bowire from the spec in bowire-scaffold.json.
+// The service keeps {{plural}} in memory, so every restart starts empty:
+// replace the store with your own persistence and keep the RPCs.
+use std::collections::BTreeMap;
+use std::sync::Mutex;
+
+use tokio_stream::wrappers::TcpListenerStream;
+use tonic::{transport::Server, Request, Response, Status};
+
+pub mod pb {
+    tonic::include_proto!("{{package}}");
+    pub const DESCRIPTOR: &[u8] = tonic::include_file_descriptor_set!("descriptor");
+}
+
+use pb::{{serviceSnake}}_server::{ {{Service}}, {{Service}}Server };
+
+#[derive(Default)]
+struct {{Service}}Service {
+    store: Mutex<BTreeMap<String, pb::{{Entity}}>>,
+}
+
+fn not_found(id: &str) -> Status {
+    Status::not_found(format!("no {{entityWords}} with id '{id}'"))
+}
+
+/// A required string must not be empty; a required number or bool must be
+/// present (they are optional in the proto for exactly that reason).
+#[allow(unused_mut)]
+fn validate(input: &pb::{{Entity}}Input) -> Result<(), Status> {
+    let mut missing: Vec<&str> = Vec::new();
+{{#fields}}{{#Required}}{{#ProtoOptional}}    if input.{{rustName}}.is_none() {
+        missing.push("{{name}}");
+    }
+{{/ProtoOptional}}{{^ProtoOptional}}    if input.{{rustName}}.is_empty() {
+        missing.push("{{name}}");
+    }
+{{/ProtoOptional}}{{/Required}}{{/fields}}    if missing.is_empty() {
+        Ok(())
+    } else {
+        Err(Status::invalid_argument(format!("required: {}", missing.join(", "))))
+    }
+}
+
+fn from(id: String, input: pb::{{Entity}}Input) -> pb::{{Entity}} {
+    pb::{{Entity}} {
+        id,
+{{#fields}}        {{rustName}}: input.{{rustName}},
+{{/fields}}    }
+}
+
+#[tonic::async_trait]
+impl {{Service}} for {{Service}}Service {
+    async fn {{listSnake}}(&self, _: Request<pb::List{{Plural}}Request>) -> Result<Response<pb::List{{Plural}}Response>, Status> {
+        let items = self.store.lock().unwrap().values().cloned().collect();
+        Ok(Response::new(pb::List{{Plural}}Response { {{pluralRust}}: items }))
+    }
+
+    async fn {{getSnake}}(&self, request: Request<pb::Get{{Entity}}Request>) -> Result<Response<pb::{{Entity}}>, Status> {
+        let id = request.into_inner().id;
+        match self.store.lock().unwrap().get(&id) {
+            Some(item) => Ok(Response::new(item.clone())),
+            None => Err(not_found(&id)),
+        }
+    }
+
+    async fn {{createSnake}}(&self, request: Request<pb::{{Entity}}Input>) -> Result<Response<pb::{{Entity}}>, Status> {
+        let input = request.into_inner();
+        validate(&input)?;
+        let item = from(uuid::Uuid::new_v4().simple().to_string(), input);
+        self.store.lock().unwrap().insert(item.id.clone(), item.clone());
+        Ok(Response::new(item))
+    }
+
+    async fn {{updateSnake}}(&self, request: Request<pb::Update{{Entity}}Request>) -> Result<Response<pb::{{Entity}}>, Status> {
+        let request = request.into_inner();
+        if !self.store.lock().unwrap().contains_key(&request.id) {
+            return Err(not_found(&request.id));
+        }
+        let input = request.{{entityRust}}.unwrap_or_default();
+        validate(&input)?;
+        let item = from(request.id.clone(), input);
+        self.store.lock().unwrap().insert(request.id, item.clone());
+        Ok(Response::new(item))
+    }
+
+    async fn {{deleteSnake}}(&self, request: Request<pb::Delete{{Entity}}Request>) -> Result<Response<()>, Status> {
+        let id = request.into_inner().id;
+        match self.store.lock().unwrap().remove(&id) {
+            Some(_) => Ok(Response::new(())),
+            None => Err(not_found(&id)),
+        }
+    }
+}
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Server reflection, which is how Bowire discovers the service.
+    let reflection = tonic_reflection::server::Builder::configure()
+        .register_encoded_file_descriptor_set(pb::DESCRIPTOR)
+        .build_v1alpha()?;
+    let listener = tokio::net::TcpListener::bind("{{ListenIp}}:{{Port}}").await?;
+    println!("listening on {{BaseUrl}}");
+    Server::builder()
+        .add_service(reflection)
+        .add_service({{Service}}Server::new({{Service}}Service::default()))
+        .serve_with_incoming(TcpListenerStream::new(listener))
+        .await?;
+    Ok(())
+}

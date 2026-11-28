@@ -1,0 +1,118 @@
+# {{Service}} — scaffolded by Bowire from the spec in bowire-scaffold.json.
+# The service keeps {{plural}} in memory, so every restart starts empty:
+# replace the store with your own persistence and keep the RPCs.
+# The code for the .proto is generated at start-up with grpcio-tools, into
+# _generated/ next to this file: no separate protoc step.
+import importlib.resources
+import secrets
+import sys
+from concurrent import futures
+from pathlib import Path
+from threading import Lock
+
+import grpc
+from grpc_reflection.v1alpha import reflection
+from grpc_tools import protoc
+
+HERE = Path(__file__).parent
+GENERATED = HERE / "_generated"
+
+
+def generate():
+    GENERATED.mkdir(exist_ok=True)
+    include = str(importlib.resources.files("grpc_tools") / "_proto")
+    code = protoc.main(["protoc", f"-I{HERE}", f"-I{include}",
+                        f"--python_out={GENERATED}", f"--grpc_python_out={GENERATED}", str(HERE / "{{protoFile}}")])
+    if code != 0:
+        raise SystemExit("protoc could not compile {{protoFile}}")
+
+
+generate()
+sys.path.insert(0, str(GENERATED))
+from google.protobuf import empty_pb2  # noqa: E402
+
+import {{protoModule}}_pb2 as pb  # noqa: E402
+import {{protoModule}}_pb2_grpc as pb_grpc  # noqa: E402
+
+
+def from_input(item_id, data):
+    item = pb.{{Entity}}(id=item_id)
+{{#fields}}{{#ProtoOptional}}    if data.HasField("{{snake}}"):
+        setattr(item, "{{snake}}", getattr(data, "{{snake}}"))
+{{/ProtoOptional}}{{^ProtoOptional}}    setattr(item, "{{snake}}", getattr(data, "{{snake}}"))
+{{/ProtoOptional}}{{/fields}}    return item
+
+
+def missing(data):
+    # A required string must not be empty; a required number or bool must be
+    # present (they are optional in the proto for exactly that reason).
+    names = []
+{{#fields}}{{#Required}}{{#ProtoOptional}}    if not data.HasField("{{snake}}"):
+        names.append("{{name}}")
+{{/ProtoOptional}}{{^ProtoOptional}}    if not getattr(data, "{{snake}}"):
+        names.append("{{name}}")
+{{/ProtoOptional}}{{/Required}}{{/fields}}    return names
+
+
+class {{Service}}Servicer(pb_grpc.{{Service}}Servicer):
+    def __init__(self):
+        self.store = {}
+        self.lock = Lock()
+
+    def List{{Plural}}(self, request, context):
+        with self.lock:
+            items = [self.store[key] for key in sorted(self.store)]
+        return pb.List{{Plural}}Response({{pluralSnake}}=items)
+
+    def Get{{Entity}}(self, request, context):
+        with self.lock:
+            item = self.store.get(request.id)
+        if item is None:
+            context.abort(grpc.StatusCode.NOT_FOUND, f"no {{entityWords}} with id '{request.id}'")
+        return item
+
+    def Create{{Entity}}(self, request, context):
+        names = missing(request)
+        if names:
+            context.abort(grpc.StatusCode.INVALID_ARGUMENT, "required: " + ", ".join(names))
+        item = from_input(secrets.token_hex(16), request)
+        with self.lock:
+            self.store[item.id] = item
+        return item
+
+    def Update{{Entity}}(self, request, context):
+        with self.lock:
+            exists = request.id in self.store
+        if not exists:
+            context.abort(grpc.StatusCode.NOT_FOUND, f"no {{entityWords}} with id '{request.id}'")
+        data = request.{{entitySnake}}
+        names = missing(data)
+        if names:
+            context.abort(grpc.StatusCode.INVALID_ARGUMENT, "required: " + ", ".join(names))
+        item = from_input(request.id, data)
+        with self.lock:
+            self.store[request.id] = item
+        return item
+
+    def Delete{{Entity}}(self, request, context):
+        with self.lock:
+            found = self.store.pop(request.id, None) is not None
+        if not found:
+            context.abort(grpc.StatusCode.NOT_FOUND, f"no {{entityWords}} with id '{request.id}'")
+        return empty_pb2.Empty()
+
+
+def serve():
+    server = grpc.server(futures.ThreadPoolExecutor(max_workers=8))
+    pb_grpc.add_{{Service}}Servicer_to_server({{Service}}Servicer(), server)
+    # Server reflection, which is how Bowire discovers the service.
+    names = (pb.DESCRIPTOR.services_by_name["{{Service}}"].full_name, reflection.SERVICE_NAME)
+    reflection.enable_server_reflection(names, server)
+    server.add_insecure_port("{{ListenAddress}}")
+    server.start()
+    print("listening on {{BaseUrl}}", flush=True)
+    server.wait_for_termination()
+
+
+if __name__ == "__main__":
+    serve()

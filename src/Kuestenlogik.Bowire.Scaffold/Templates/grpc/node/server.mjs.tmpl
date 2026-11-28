@@ -1,0 +1,75 @@
+// {{Service}} — scaffolded by Bowire from the spec in bowire-scaffold.json.
+// The service keeps {{plural}} in memory, so every restart starts empty:
+// replace the store with your own persistence and keep the RPCs.
+// The .proto is loaded at start-up: no code generation step.
+import grpc from '@grpc/grpc-js';
+import protoLoader from '@grpc/proto-loader';
+import { ReflectionService } from '@grpc/reflection';
+import { randomUUID } from 'node:crypto';
+import { fileURLToPath } from 'node:url';
+
+const definition = protoLoader.loadSync(fileURLToPath(new URL('./{{protoFile}}', import.meta.url)), {
+    keepCase: true, longs: String, enums: String, defaults: false, oneofs: true,
+});
+const proto = grpc.loadPackageDefinition(definition);
+
+const FIELDS = [{{#fields}}'{{snake}}', {{/fields}}];
+const REQUIRED = [{{#fields}}{{#Required}}'{{snake}}', {{/Required}}{{/fields}}];
+const store = new Map();
+
+const notFound = (id) => ({ code: grpc.status.NOT_FOUND, details: `no {{entityWords}} with id '${id}'` });
+
+// A required string must not be empty; a required number or bool must be
+// present (they are optional in the proto for exactly that reason).
+function invalid(input) {
+    const missing = REQUIRED.filter((name) => input[name] === undefined || input[name] === null || input[name] === '');
+    return missing.length > 0 ? { code: grpc.status.INVALID_ARGUMENT, details: 'required: ' + missing.join(', ') } : null;
+}
+
+function from(id, input) {
+    const item = { id };
+    for (const name of FIELDS) {
+        if (input[name] !== undefined && input[name] !== null) item[name] = input[name];
+    }
+    return item;
+}
+
+const server = new grpc.Server();
+server.addService(proto.{{package}}.{{Service}}.service, {
+    List{{Plural}}: (call, callback) => {
+        const items = [...store.values()].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+        callback(null, { {{pluralSnake}}: items });
+    },
+    Get{{Entity}}: (call, callback) => {
+        const item = store.get(call.request.id);
+        return item ? callback(null, item) : callback(notFound(call.request.id));
+    },
+    Create{{Entity}}: (call, callback) => {
+        const error = invalid(call.request);
+        if (error) return callback(error);
+        const item = from(randomUUID().replaceAll('-', ''), call.request);
+        store.set(item.id, item);
+        return callback(null, item);
+    },
+    Update{{Entity}}: (call, callback) => {
+        const id = call.request.id;
+        if (!store.has(id)) return callback(notFound(id));
+        const input = call.request.{{entitySnake}} || {};
+        const error = invalid(input);
+        if (error) return callback(error);
+        const item = from(id, input);
+        store.set(id, item);
+        return callback(null, item);
+    },
+    Delete{{Entity}}: (call, callback) => {
+        return store.delete(call.request.id) ? callback(null, {}) : callback(notFound(call.request.id));
+    },
+});
+
+// Server reflection, which is how Bowire discovers the service.
+new ReflectionService(definition).addToServer(server);
+
+server.bindAsync('{{ListenAddress}}', grpc.ServerCredentials.createInsecure(), (error) => {
+    if (error) throw error;
+    console.log('listening on {{BaseUrl}}');
+});

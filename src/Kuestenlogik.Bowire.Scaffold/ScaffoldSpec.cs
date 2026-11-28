@@ -38,7 +38,7 @@ public sealed record ScaffoldSpec(
         new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal)
         {
             ["rest"] = Languages,
-            ["grpc"] = ["csharp"],
+            ["grpc"] = Languages,
         };
 
     /// <summary>The field types a spec may use.</summary>

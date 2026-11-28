@@ -28,7 +28,17 @@ The smoke test passes against the stub as generated, in every language.
 | Python | `server.py` — `http.server` | `python server.py` | Python 3.10+, standard library only |
 | Rust | `src/main.rs`, `Cargo.toml` — axum | `cargo run` | Rust 1.80+; cargo fetches axum, tokio, serde, uuid |
 
-Every REST stub answers the same: the list sorted by id, `201` with a `Location` on create, `404` for an unknown id, `400` with ASP.NET Core's problem shape for a missing required field, `204` on delete, and the contract at `/openapi.yaml` for discovery. A gRPC stub is C# so far.
+Every REST stub answers the same: the list sorted by id, `201` with a `Location` on create, `404` for an unknown id, `400` with ASP.NET Core's problem shape for a missing required field, `204` on delete, and the contract at `/openapi.yaml` for discovery.
+
+| Language | gRPC stub | Run |
+|---|---|---|
+| C# (default) | `<Service>Service.cs`, `Program.cs`, `<Service>.csproj` — Grpc.AspNetCore | `dotnet run` |
+| Go | `main.go`, `go.mod`, `buf.yaml`, `buf.gen.yaml` — grpc-go; `go generate` runs buf and the protoc-gen-go plugins through `go run`, no protoc needed | `go generate ./...`, `go mod tidy`, `go run .` |
+| Node | `server.mjs`, `package.json` — @grpc/grpc-js, loading the `.proto` at start-up | `npm install`, `node server.mjs` |
+| Python | `server.py`, `requirements.txt` — grpcio, generating its code at start-up with grpcio-tools | `pip install -r requirements.txt`, `python server.py` |
+| Rust | `src/main.rs`, `build.rs`, `Cargo.toml` — tonic; `build.rs` brings its own protoc | `cargo run` |
+
+Every gRPC stub serves reflection (v1alpha, which Bowire uses), answers `NOT_FOUND` for an unknown id and `INVALID_ARGUMENT` for a missing required field, and prints its `listening on` line when it is up.
 
 The language comes from `--language` / `-l`, the dialog's language picker, `"language"` in the spec, or the sentence itself (`… in Go`, `… using Python`); the parameter wins over the sentence.
 
@@ -106,4 +116,4 @@ In the proto, `datetime` and `uuid` are strings (ISO 8601, UUID), and every scal
 
 ## Not yet
 
-gRPC stubs are C# only so far, and REST and gRPC are the only protocols; more are templates next to the existing ones (#754).
+REST and gRPC are the only protocols so far; GraphQL is next (#754).

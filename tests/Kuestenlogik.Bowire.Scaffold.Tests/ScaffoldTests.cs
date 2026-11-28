@@ -424,11 +424,32 @@ public sealed class ScaffoldLanguageTests
         Assert.Null(none.Language);
     }
 
-    [Fact]
-    public void A_gRPC_stub_outside_CSharp_says_it_is_not_there_yet()
+    [Theory]
+    [InlineData("go", new[] { "main.go", "go.mod", "buf.yaml", "buf.gen.yaml" })]
+    [InlineData("node", new[] { "server.mjs", "package.json" })]
+    [InlineData("python", new[] { "server.py", "requirements.txt" })]
+    [InlineData("rust", new[] { "src/main.rs", "build.rs", "Cargo.toml" })]
+    [InlineData("csharp", new[] { "OrdersService.cs", "Program.cs", "Orders.csproj" })]
+    public void A_gRPC_stub_in_each_language_has_its_files_beside_the_proto(string language, string[] stubs)
     {
-        var (spec, errors) = (Orders("go") with { Protocol = "grpc" }).Normalize();
-        Assert.Null(spec);
-        Assert.Contains(errors, e => e.Contains("a grpc stub is not available in go yet", StringComparison.Ordinal));
+        var files = ScaffoldGenerator.Generate(Orders(language) with { Protocol = "grpc" });
+        Assert.Equal("orders.proto", files.Single(f => f.Kind == "schema").Path);
+        Assert.Equal(stubs, files.Where(f => f.Kind == "stub").Select(f => f.Path));
+        Assert.DoesNotContain(files, f => f.Kind == "stub" && f.Content.Contains("{{", StringComparison.Ordinal));
+        // Only Go needs to know where its generated code goes.
+        var proto = files.Single(f => f.Kind == "schema").Content;
+        Assert.Equal(language == "go", proto.Contains("option go_package = \"orders/gen;pb\";", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void The_Rust_gRPC_stub_names_its_methods_and_fields_as_prost_generates_them()
+    {
+        var main = ScaffoldGenerator.Generate(Orders("rust", new ScaffoldField("type", "string")) with { Protocol = "grpc" })
+            .Single(f => f.Path == "src/main.rs").Content;
+        Assert.Contains("use pb::orders_server::{ Orders, OrdersServer };", main, StringComparison.Ordinal);
+        Assert.Contains("async fn list_orders(", main, StringComparison.Ordinal);
+        Assert.Contains("async fn delete_order(", main, StringComparison.Ordinal);
+        Assert.Contains("        r#type: input.r#type,", main, StringComparison.Ordinal);
+        Assert.Contains("TcpListener::bind(\"127.0.0.1:5000\")", main, StringComparison.Ordinal);
     }
 }

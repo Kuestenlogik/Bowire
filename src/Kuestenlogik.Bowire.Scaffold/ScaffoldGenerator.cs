@@ -78,9 +78,33 @@ public static class ScaffoldGenerator
         {
             var proto = (string)model["protoFile"]!;
             files.Add(new(proto, "schema", "protobuf", Render("grpc/service.proto.tmpl", model)));
-            files.Add(new(service + "Service.cs", "stub", "csharp", Render("grpc/service-cs.tmpl", model)));
-            files.Add(new("Program.cs", "stub", "csharp", Render("grpc/program-cs.tmpl", model)));
-            files.Add(new(service + ".csproj", "stub", "xml", Render("grpc/project.csproj.tmpl", model)));
+            switch (spec.Language)
+            {
+                case "go":
+                    files.Add(new("main.go", "stub", "go", Render("grpc/go/main.go.tmpl", model)));
+                    files.Add(new("go.mod", "stub", "go", Render("grpc/go/go.mod.tmpl", model)));
+                    files.Add(new("buf.yaml", "stub", "yaml", Render("grpc/go/buf.yaml.tmpl", model)));
+                    files.Add(new("buf.gen.yaml", "stub", "yaml", Render("grpc/go/buf.gen.yaml.tmpl", model)));
+                    break;
+                case "node":
+                    files.Add(new("server.mjs", "stub", "javascript", Render("grpc/node/server.mjs.tmpl", model)));
+                    files.Add(new("package.json", "stub", "json", Render("grpc/node/package.json.tmpl", model)));
+                    break;
+                case "python":
+                    files.Add(new("server.py", "stub", "python", Render("grpc/python/server.py.tmpl", model)));
+                    files.Add(new("requirements.txt", "stub", "text", Render("grpc/python/requirements.txt.tmpl", model)));
+                    break;
+                case "rust":
+                    files.Add(new("src/main.rs", "stub", "rust", Render("grpc/rust/main.rs.tmpl", model)));
+                    files.Add(new("build.rs", "stub", "rust", Render("grpc/rust/build.rs.tmpl", model)));
+                    files.Add(new("Cargo.toml", "stub", "toml", Render("grpc/rust/Cargo.toml.tmpl", model)));
+                    break;
+                default:
+                    files.Add(new(service + "Service.cs", "stub", "csharp", Render("grpc/service-cs.tmpl", model)));
+                    files.Add(new("Program.cs", "stub", "csharp", Render("grpc/program-cs.tmpl", model)));
+                    files.Add(new(service + ".csproj", "stub", "xml", Render("grpc/project.csproj.tmpl", model)));
+                    break;
+            }
         }
         files.Add(new("bowire/" + (string)model["collectionFile"]!, "collection", "json", Collection(spec, model)));
         files.Add(new("bowire/" + (string)model["testFile"]!, "test", "json", SmokeTest(spec, model)));
@@ -104,11 +128,22 @@ public static class ScaffoldGenerator
         var entitySnake = ScaffoldNames.Snake(ScaffoldSpec.Camel(entity));
         var keeping = "keeping " + ScaffoldSpec.Camel(plural) + " in memory";
         var stubFiles = grpc
-            ? new List<IReadOnlyDictionary<string, object?>>
+            ? spec.Language switch
             {
-                Row(service + "Service.cs", "The service, " + keeping),
-                Row("Program.cs", "Host with gRPC and server reflection"),
-                Row(service + ".csproj", "The project"),
+                "go" => [Row("main.go", "grpc-go server with reflection, " + keeping), Row("go.mod", "The module"),
+                    Row("buf.yaml", "buf's module file"), Row("buf.gen.yaml", "What `go generate` generates into gen/")],
+                "node" => [Row("server.mjs", "@grpc/grpc-js server with reflection, loading the .proto at start-up, " + keeping),
+                    Row("package.json", "The package and its three dependencies")],
+                "python" => [Row("server.py", "grpcio server with reflection, generating its code at start-up, " + keeping),
+                    Row("requirements.txt", "grpcio, grpcio-tools, grpcio-reflection")],
+                "rust" => [Row("src/main.rs", "tonic server with reflection, " + keeping), Row("build.rs", "Compiles the .proto with a vendored protoc"),
+                    Row("Cargo.toml", "The crate")],
+                _ => new List<IReadOnlyDictionary<string, object?>>
+                {
+                    Row(service + "Service.cs", "The service, " + keeping),
+                    Row("Program.cs", "Host with gRPC and server reflection"),
+                    Row(service + ".csproj", "The project"),
+                },
             }
             : spec.Language switch
             {
@@ -118,12 +153,17 @@ public static class ScaffoldGenerator
                 "rust" => [Row("src/main.rs", "axum server with every route, " + keeping), Row("Cargo.toml", "The crate")],
                 _ => [Row("Program.cs", "Minimal API with every route, " + keeping), Row(service + ".csproj", "The project")],
             };
-        var (runCommand, runNote) = spec.Language switch
+        var (runCommand, runNote) = (grpc, spec.Language) switch
         {
-            "go" => ("go run .", "Go 1.22 or later; the standard library only."),
-            "node" => ("node server.mjs", "Node.js 20 or later; no dependencies to install."),
-            "python" => ("python server.py", "Python 3.10 or later; the standard library only."),
-            "rust" => ("cargo run", "Rust 1.80 or later; cargo fetches axum, tokio, serde and uuid on the first build."),
+            (true, "go") => ("go generate ./...\ngo mod tidy\ngo run .", "Go 1.22 or later; go generate fetches buf and the protoc-gen-go plugins on its first run."),
+            (true, "node") => ("npm install\nnode server.mjs", "Node.js 20 or later."),
+            (true, "python") => ("pip install -r requirements.txt\npython server.py", "Python 3.10 or later; a virtual environment is a good idea."),
+            (true, "rust") => ("cargo run", "Rust 1.80 or later; the build brings its own protoc."),
+            (true, _) => ("dotnet run", ".NET 10 SDK."),
+            (_, "go") => ("go run .", "Go 1.22 or later; the standard library only."),
+            (_, "node") => ("node server.mjs", "Node.js 20 or later; no dependencies to install."),
+            (_, "python") => ("python server.py", "Python 3.10 or later; the standard library only."),
+            (_, "rust") => ("cargo run", "Rust 1.80 or later; cargo fetches axum, tokio, serde and uuid on the first build."),
             _ => ("dotnet run", ".NET 10 SDK."),
         };
 
@@ -164,6 +204,17 @@ public static class ScaffoldGenerator
             ["crateName"] = ScaffoldNames.Snake(ScaffoldSpec.Camel(service)),
             ["runCommand"] = runCommand,
             ["runNote"] = runNote,
+            ["ListenIp"] = baseUri.Host == "localhost" ? "127.0.0.1" : baseUri.Host,
+            ["IsGo"] = spec.Language == "go",
+            ["protoModule"] = Path.GetFileNameWithoutExtension(protoFile),
+            ["serviceSnake"] = ScaffoldNames.Snake(ScaffoldSpec.Camel(service)),
+            ["listSnake"] = ScaffoldNames.Snake("list" + plural),
+            ["getSnake"] = ScaffoldNames.Snake("get" + entity),
+            ["createSnake"] = ScaffoldNames.Snake("create" + entity),
+            ["updateSnake"] = ScaffoldNames.Snake("update" + entity),
+            ["deleteSnake"] = ScaffoldNames.Snake("delete" + entity),
+            ["pluralRust"] = RustName(pluralSnake),
+            ["entityRust"] = RustName(entitySnake),
         };
     }
 
@@ -221,8 +272,9 @@ public static class ScaffoldGenerator
             // A field named like a Rust keyword is written as a raw identifier,
             // which serde reads and writes under its own name; self, super and
             // crate cannot be raw, so they get a trailing underscore and a rename.
-            ["rustName"] = snake is "self" or "super" or "crate" ? snake + "_"
-                : ScaffoldNames.RustKeywords.Contains(snake) ? "r#" + snake : snake,
+            ["rustName"] = RustName(snake),
+            // protoc-gen-go's name for the field: CamelCase of its proto name.
+            ["goProtoName"] = ScaffoldSpec.Pascal(snake),
             ["rustRename"] = snake is "self" or "super" or "crate" ? f.Name : "",
             ["name"] = f.Name,
             ["Pascal"] = ScaffoldSpec.Pascal(f.Name),
@@ -242,6 +294,13 @@ public static class ScaffoldGenerator
             ["Last"] = index == count - 1,
         };
     }
+
+    // A snake_case name as Rust writes it (and prost generates it): a keyword
+    // as a raw identifier, self/super/crate (which cannot be raw) with an
+    // underscore.
+    private static string RustName(string snake) =>
+        snake is "self" or "super" or "crate" ? snake + "_"
+            : ScaffoldNames.RustKeywords.Contains(snake) ? "r#" + snake : snake;
 
     private static Dictionary<string, object?> Row(string path, string what) =>
         new(StringComparer.Ordinal) { ["path"] = path, ["what"] = what };
