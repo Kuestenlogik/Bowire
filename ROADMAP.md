@@ -12,10 +12,11 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**41/48 done** · 7 backlog
+**41/49 done** · 1 in progress · 7 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
+| [1072](https://github.com/Kuestenlogik/Bowire/issues/1072) | Bowire | [MCP scan counts Bowire's own Tasks and Apps services as the server's tools](#issue-kuestenlogik-bowire-1072) | 🟡 In progress |  |
 | [639](https://github.com/Kuestenlogik/Bowire/issues/639) | Bowire | [SCIM: live Okta and Entra ID provisioning round-trips](#issue-kuestenlogik-bowire-639) | ⬜ Backlog | `area:workbench` |
 | [670](https://github.com/Kuestenlogik/Bowire/issues/670) | Bowire | [Get listed where developers and models actually look](#issue-kuestenlogik-bowire-670) | ⬜ Backlog | `area:site` |
 | [687](https://github.com/Kuestenlogik/Bowire/issues/687) | Bowire | [Tray icon and no console window: give the running workbench a handle of its own](#issue-kuestenlogik-bowire-687) | ⬜ Backlog | `area:cli` |
@@ -256,6 +257,10 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 ## Details
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
+
+#### <a id="issue-kuestenlogik-bowire-1072"></a>🟡 In progress · [#1072](https://github.com/Kuestenlogik/Bowire/issues/1072) MCP scan counts Bowire's own Tasks and Apps services as the server's tools
+
+`bowire scan --suite protocol` against an MCP server: [[more]](https://github.com/Kuestenlogik/Bowire/issues/1072)
 
 #### <a id="issue-kuestenlogik-bowire-639"></a>⬜ Backlog · [#639](https://github.com/Kuestenlogik/Bowire/issues/639) SCIM: live Okta and Entra ID provisioning round-trips
 
