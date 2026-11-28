@@ -4372,9 +4372,11 @@
                     if (typeof openServiceCompare === 'function') openServiceCompare(null);
                 }
             },
+                // #1075 — icon only, like every button on this row: they are
+                // 26 px squares, and a label ran out over the neighbour. The
+                // title and aria-label carry the name.
                 el('span', { innerHTML: svgIcon('splitHorizontal'),
-                    style: 'width:14px;height:14px;display:flex' }),
-                el('span', { textContent: t('sidebar.compare'), style: 'margin-left:5px' })
+                    style: 'width:14px;height:14px;display:flex' })
             ));
         }
 
