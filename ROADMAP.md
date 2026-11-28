@@ -12,12 +12,10 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**35/48 done** · 2 in progress · 11 backlog
+**37/48 done** · 11 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
-| [1068](https://github.com/Kuestenlogik/Bowire/issues/1068) | Bowire | [gRPC: services behind Node's @grpc/reflection cannot be called ("Available: []")](#issue-kuestenlogik-bowire-1068) | 🟡 In progress |  |
-| [1069](https://github.com/Kuestenlogik/Bowire/issues/1069) | Bowire | [gRPC: calls to tonic (Rust) servers fail — Bowire asks reflection for a file named like the service](#issue-kuestenlogik-bowire-1069) | 🟡 In progress |  |
 | [639](https://github.com/Kuestenlogik/Bowire/issues/639) | Bowire | [SCIM: live Okta and Entra ID provisioning round-trips](#issue-kuestenlogik-bowire-639) | ⬜ Backlog | `area:workbench` |
 | [670](https://github.com/Kuestenlogik/Bowire/issues/670) | Bowire | [Get listed where developers and models actually look](#issue-kuestenlogik-bowire-670) | ⬜ Backlog | `area:site` |
 | [687](https://github.com/Kuestenlogik/Bowire/issues/687) | Bowire | [Tray icon and no console window: give the running workbench a handle of its own](#issue-kuestenlogik-bowire-687) | ⬜ Backlog | `area:cli` |
@@ -64,6 +62,8 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [1063](https://github.com/Kuestenlogik/Bowire/issues/1063) | Bowire | [gRPC: a server without reflection is sometimes reported as Cancelled](#issue-kuestenlogik-bowire-1063) | ✅ Done |  |
 | [1065](https://github.com/Kuestenlogik/Bowire/issues/1065) | Bowire | [Every workbench start logs 404s for the Help and ManualEntry probes when the packages are absent](#issue-kuestenlogik-bowire-1065) | ✅ Done | `area:workbench` |
 | [1066](https://github.com/Kuestenlogik/Bowire/issues/1066) | Bowire | [Flaky: NatsServerFixture sometimes does not come up under load (all NATS E2E tests fail in 0 ms)](#issue-kuestenlogik-bowire-1066) | ✅ Done |  |
+| [1068](https://github.com/Kuestenlogik/Bowire/issues/1068) | Bowire | [gRPC: services behind Node's @grpc/reflection cannot be called ("Available: []")](#issue-kuestenlogik-bowire-1068) | ✅ Done |  |
+| [1069](https://github.com/Kuestenlogik/Bowire/issues/1069) | Bowire | [gRPC: calls to tonic (Rust) servers fail — Bowire asks reflection for a file named like the service](#issue-kuestenlogik-bowire-1069) | ✅ Done |  |
 
 ### v2.12 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
 
@@ -254,14 +254,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 ## Details
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
-
-#### <a id="issue-kuestenlogik-bowire-1068"></a>🟡 In progress · [#1068](https://github.com/Kuestenlogik/Bowire/issues/1068) gRPC: services behind Node's @grpc/reflection cannot be called ("Available: []")
-
-A gRPC server that serves reflection with the official Node library (`@grpc/reflection` 1.0.4 over `@grpc/proto-loader` / protobufjs) is listed by Bowire (`bowire list` shows the service), but every call fails: [[more]](https://github.com/Kuestenlogik/Bowire/issues/1068)
-
-#### <a id="issue-kuestenlogik-bowire-1069"></a>🟡 In progress · [#1069](https://github.com/Kuestenlogik/Bowire/issues/1069) gRPC: calls to tonic (Rust) servers fail — Bowire asks reflection for a file named like the service
-
-Every call to a gRPC server written with tonic (Rust) and tonic-reflection fails: [[more]](https://github.com/Kuestenlogik/Bowire/issues/1069)
 
 #### <a id="issue-kuestenlogik-bowire-639"></a>⬜ Backlog · [#639](https://github.com/Kuestenlogik/Bowire/issues/639) SCIM: live Okta and Entra ID provisioning round-trips
 
@@ -498,6 +490,14 @@ Every start of a workbench whose host does not reference the optional Help or Ma
 #### <a id="issue-kuestenlogik-bowire-1066"></a>✅ Done · [#1066](https://github.com/Kuestenlogik/Bowire/issues/1066) Flaky: NatsServerFixture sometimes does not come up under load (all NATS E2E tests fail in 0 ms)
 
 In one clean-clone run of the integration suite (2026-11-28, HEAD 92472d07, while two other Bowire hosts and a build ran on the machine), all eight `NatsRoundTripE2ETests` failed in 0 ms — the class fixture, `NatsServerFixture`, did not come up. A rerun of the class and the next full suite passed. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/1066)
+
+#### <a id="issue-kuestenlogik-bowire-1068"></a>✅ Done · [#1068](https://github.com/Kuestenlogik/Bowire/issues/1068) gRPC: services behind Node's @grpc/reflection cannot be called ("Available: []")
+
+A gRPC server that serves reflection with the official Node library (`@grpc/reflection` 1.0.4 over `@grpc/proto-loader` / protobufjs) is listed by Bowire (`bowire list` shows the service), but every call fails: [[more]](https://github.com/Kuestenlogik/Bowire/issues/1068)
+
+#### <a id="issue-kuestenlogik-bowire-1069"></a>✅ Done · [#1069](https://github.com/Kuestenlogik/Bowire/issues/1069) gRPC: calls to tonic (Rust) servers fail — Bowire asks reflection for a file named like the service
+
+Every call to a gRPC server written with tonic (Rust) and tonic-reflection fails: [[more]](https://github.com/Kuestenlogik/Bowire/issues/1069)
 
 ### v2.12 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
 
