@@ -85,7 +85,9 @@ public sealed class WorkspaceCommandEdgeCasesTests : IDisposable
         var workspace = WorkspaceCommand.Build();
 
         Assert.Equal("workspace", workspace.Name);
-        Assert.Contains("git-backed", workspace.Description, StringComparison.OrdinalIgnoreCase);
+        // #690: the catalogue's text in the active language; the word is pinned on the English one.
+        Assert.Equal(BowireLocale.T("cli.workspace.workspace.command"), workspace.Description);
+        Assert.Contains("git-backed", BowireLocale.EnglishText("cli.workspace.workspace.command"), StringComparison.OrdinalIgnoreCase);
         var names = workspace.Subcommands.Select(s => s.Name).ToHashSet();
         Assert.Contains("init", names);
         Assert.Contains("migrate-format", names);

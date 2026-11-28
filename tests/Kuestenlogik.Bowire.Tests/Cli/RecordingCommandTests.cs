@@ -45,8 +45,10 @@ public sealed class RecordingCommandTests : IDisposable
         // Pin the help-text intent — operators searching
         // `bowire recording --help` should find the validate command by
         // its purpose words.
-        Assert.Contains("schema-check", validate.Description, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("responseRef", validate.Description, StringComparison.Ordinal);
+        // #690: the catalogue's text in the active language; the words are pinned on the English one.
+        Assert.Equal(BowireLocale.T("cli.recording.validate.command"), validate.Description);
+        Assert.Contains("schema-check", BowireLocale.EnglishText("cli.recording.validate.command"), StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("responseRef", BowireLocale.EnglishText("cli.recording.validate.command"), StringComparison.Ordinal);
     }
 
     // ----------------------------------------------------------------

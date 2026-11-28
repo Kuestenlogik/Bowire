@@ -123,7 +123,7 @@ public sealed partial class CliHelpTranslationTests
         var german = new Dictionary<string, string>(StringComparer.Ordinal);
 
         Assert.Equal("Port to listen on.", BowireLocale.Pick(german, english, "cli.root.port"));
-        german["cli.root.port"] = "Port, auf dem gelauscht wird.";
-        Assert.Equal("Port, auf dem gelauscht wird.", BowireLocale.Pick(german, english, "cli.root.port"));
+        german["cli.root.port"] = "Port, auf dem gelauscht wird.";  // lang-exempt: a German catalogue entry is the test data
+        Assert.Equal(german["cli.root.port"], BowireLocale.Pick(german, english, "cli.root.port"));
     }
 }

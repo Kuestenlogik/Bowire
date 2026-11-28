@@ -43,8 +43,11 @@ public sealed class WorkspaceMigrateFormatTests : IDisposable
         // Locks down the description copy — surfaces "per-entity" so
         // operators searching `bowire workspace --help` find the
         // command by intent, not by name.
-        Assert.Contains("per-entity", migrate!.Description, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Idempotent", migrate.Description, StringComparison.OrdinalIgnoreCase);
+        // #690: the description is the catalogue's, in the active language;
+        // the intent words are pinned on the English text.
+        Assert.Equal(BowireLocale.T("cli.workspace.migrate-format.command"), migrate!.Description);
+        Assert.Contains("per-entity", BowireLocale.EnglishText("cli.workspace.migrate-format.command"), StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Idempotent", BowireLocale.EnglishText("cli.workspace.migrate-format.command"), StringComparison.OrdinalIgnoreCase);
         Assert.Contains(migrate.Arguments, a => a.Name == "path");
     }
 

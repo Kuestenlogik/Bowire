@@ -70,6 +70,9 @@ public static class BowireLocale
     /// then the key. A text the active locale lacks renders in English, so a
     /// partly translated help reads as English in places, never as keys.
     /// </summary>
+    /// <summary>The English text of <paramref name="key"/>, whatever the active locale; for tests that pin wording.</summary>
+    internal static string EnglishText(string key) => Pick(_state.Value.English, _state.Value.English, key);
+
     internal static string Pick(Dictionary<string, string> active, Dictionary<string, string> english, string key)
         => Lookup(active, key) ?? Lookup(english, key) ?? key;
 
