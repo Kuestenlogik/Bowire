@@ -10911,7 +10911,15 @@
             var mcpTaskCard = (typeof renderMcpTaskCard === 'function')
                 ? renderMcpTaskCard(S, svc, method, pid)
                 : null;
-            if (mcpTaskCard) {
+            // #810 - a tool with an MCP App: the app above the frames, below
+            // the task card when the tool ran as a task.
+            var mcpAppPane = (typeof renderMcpAppPane === 'function')
+                ? renderMcpAppPane(S, svc, method, pid)
+                : null;
+            if (mcpAppPane) {
+                respBody.appendChild(el('div', { className: 'bowire-mcp-app-host' },
+                    mcpTaskCard, mcpAppPane, renderStreamingPaneWithWidgets(S)));
+            } else if (mcpTaskCard) {
                 respBody.appendChild(el('div', { className: 'bowire-mcp-task-host' },
                     mcpTaskCard, renderStreamingPaneWithWidgets(S)));
             } else {

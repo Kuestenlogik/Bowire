@@ -54,4 +54,11 @@ public sealed record BowireMethodInfo(
     /// docs/contributing/translations.md).
     /// </remarks>
     public List<BowireMessageInfo>? ErrorTypes { get; init; }
+
+    /// <summary>
+    /// #810 — the <c>ui://</c> resource an MCP tool renders as an MCP App
+    /// (its <c>_meta.ui.resourceUri</c>), or null. The workbench hosts the app
+    /// after the call; everywhere else the tool is a tool.
+    /// </summary>
+    public string? UiResourceUri { get; init; }
 }

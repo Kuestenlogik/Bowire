@@ -967,6 +967,13 @@
                     if (fromEl.classList && fromEl.classList.contains('bowire-pane-divider')) {
                         return false;
                     }
+                    // #810 - a live mount (an MCP App's iframe) belongs to the
+                    // code that filled it; morphing it would reload the app.
+                    // Its id carries the run, so a new run replaces the node.
+                    if (fromEl.classList && fromEl.classList.contains('bowire-live-mount')
+                        && fromEl.id && fromEl.id === toEl.id) {
+                        return false;
+                    }
                     // Fast-path: structurally identical subtree → skip.
                     // Big win for static toolbar/header regions that
                     // haven't changed across renders.

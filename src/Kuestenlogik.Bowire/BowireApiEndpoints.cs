@@ -172,6 +172,7 @@ internal static class BowireApiEndpoints
             // core, where the CLI and the replay pipeline reach them.
             .MapBowireCollectionEndpoints(options, basePath)
             .MapBowireScriptSandboxEndpoints(basePath)
+            .MapBowireMcpAppEndpoints(basePath)
             .MapBowireParallelEndpoints(basePath, options)
             .MapBowirePresetEndpoints(basePath)
             .MapBowireMockConfigEndpoints(basePath, options)

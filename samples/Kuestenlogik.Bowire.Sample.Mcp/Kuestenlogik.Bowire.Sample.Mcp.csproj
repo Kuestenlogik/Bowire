@@ -31,4 +31,7 @@
     <Content Update="mcp-catalogue.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="dock-board.html" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>

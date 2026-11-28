@@ -103,6 +103,10 @@
     <EmbeddedResource Include="wwwroot\vendor\quickjs\quickjs.wasm" LogicalName="Kuestenlogik.Bowire.wwwroot.vendor.quickjs.quickjs.wasm" />
     <EmbeddedResource Include="wwwroot\vendor\quickjs\LICENSE" LogicalName="Kuestenlogik.Bowire.wwwroot.vendor.quickjs.LICENSE" />
     <EmbeddedResource Include="wwwroot\js\scripts.js" LogicalName="Kuestenlogik.Bowire.wwwroot.js.scripts.js" />
+    <!-- #810 - the host side of MCP Apps (scripts/vendor/mcp-app-bridge.mjs), served
+         by BowireMcpAppEndpoints and loaded only when an app is shown. -->
+    <EmbeddedResource Include="wwwroot\vendor\mcp-apps\mcp-app-bridge.js" LogicalName="Kuestenlogik.Bowire.wwwroot.vendor.mcp-apps.mcp-app-bridge.js" />
+    <EmbeddedResource Include="wwwroot\vendor\mcp-apps\LICENSE" LogicalName="Kuestenlogik.Bowire.wwwroot.vendor.mcp-apps.LICENSE" />
     <!--
       Phase 3-R — the MapLibre map widget moved to a separate package
       (Kuestenlogik.Bowire.Map). Its JS bundle + vendor
@@ -335,6 +339,8 @@
          functions and `var` state, so their position is free. -->
     <BowireJsFragment Include="wwwroot\js\mcp-tasks-model.js" />
     <BowireJsFragment Include="wwwroot\js\mcp-tasks.js" />
+    <!-- #810 - hosts an MCP App beside its tool's result (renderMcpAppPane). -->
+    <BowireJsFragment Include="wwwroot\js\mcp-apps.js" />
     <BowireJsFragment Include="wwwroot\js\lint.js" />
     <!-- #587 — the Rollup rail. After lint.js so the two quality surfaces sit
          together; both only declare functions, so relative order is free. -->

@@ -20,6 +20,11 @@
 //                 one (bowire://sample/sensors/{sensorId}/readings).
 //   * Prompts   — summarise_sensor, with one required and one optional
 //                 argument.
+//   * Apps      — dock_board comes with an MCP App (#810): its
+//                 _meta.ui.resourceUri names ui://sample/dock-board.html,
+//                 which Bowire hosts after the call. The app shows the
+//                 tool's input and result, asks the host to call `add`, and
+//                 tries the network its policy does not allow.
 //   * Tasks     — generate_report and confirm_shipment run as MCP tasks
 //                 (the io.modelcontextprotocol/tasks extension, 2026-07-28):
 //                 the call answers with a task at once, the work goes on
@@ -72,7 +77,9 @@ builder.Services
             ctx.MatchedPrimitive is McpServerTool { ProtocolTool.Name: var name } && SampleTaskTools.Names.Contains(name)
                 ? McpTaskExecutionMode.Optional
                 : McpTaskExecutionMode.Synchronous)
+    .WithTools([SampleApp.DockBoardTool()])
     .WithResources<SampleResources>()
+    .WithResources([SampleApp.DockBoardResource()])
     .WithPrompts<SamplePrompts>();
 
 builder.Services.AddBowire();
@@ -84,6 +91,47 @@ app.MapMcp("/mcp");
 app.MapBowire("/bowire");
 app.MapGet("/", () => Results.Redirect("/bowire"));
 await app.RunAsync();
+
+/// <summary>#810 — a tool with an MCP App, and the app's ui:// resource.</summary>
+internal static class SampleApp
+{
+    public const string ResourceUri = "ui://sample/dock-board.html";
+
+    public static McpServerTool DockBoardTool() => McpServerTool.Create(
+        [Description("The last readings of one sensor, with an interactive board (an MCP App).")]
+        (string sensorId) => new CallToolResult
+        {
+            Content = [new TextContentBlock { Text = SampleData.ReadingsJson(sensorId) }],
+            StructuredContent = JsonSerializer.SerializeToElement(new { sensorId, readings = JsonDocument.Parse(SampleData.ReadingsJson(sensorId)).RootElement }),
+        },
+        new McpServerToolCreateOptions
+        {
+            Name = "dock_board",
+            Meta = new System.Text.Json.Nodes.JsonObject
+            {
+                ["ui"] = new System.Text.Json.Nodes.JsonObject { ["resourceUri"] = ResourceUri },
+            },
+        });
+
+    public static McpServerResource DockBoardResource() => McpServerResource.Create(
+        () => new TextResourceContents
+        {
+            Uri = ResourceUri,
+            MimeType = "text/html;profile=mcp-app",
+            Text = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "dock-board.html")),
+            // No network at all: the board's "reach example.com" button must fail.
+            Meta = new System.Text.Json.Nodes.JsonObject
+            {
+                ["ui"] = new System.Text.Json.Nodes.JsonObject { ["csp"] = new System.Text.Json.Nodes.JsonObject { ["connectDomains"] = new System.Text.Json.Nodes.JsonArray() } },
+            },
+        },
+        new McpServerResourceCreateOptions
+        {
+            UriTemplate = ResourceUri,
+            Name = "dock-board",
+            MimeType = "text/html;profile=mcp-app",
+        });
+}
 
 [McpServerToolType]
 internal sealed class SampleTools

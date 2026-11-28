@@ -22,6 +22,7 @@ the sidebar shows one service per category:
 | | `record_readings` | The non-trivial one — see below. |
 | | `generate_report` | Runs as an MCP task: works a few seconds (`seconds`, default 4), then answers. |
 | | `confirm_shipment` | Runs as an MCP task and asks the client to confirm the booking (elicitation) first. |
+| | `dock_board` | Comes with an MCP App (`ui://sample/dock-board.html`): after the call the workbench shows the board and its message traffic. |
 | **Resources** | `bowire://sample/sensors` | Direct resource; the sensor ids the sample knows about. |
 | | `bowire://sample/sensors/{sensorId}/readings` | Templated resource; the last five readings for one sensor. |
 | **Prompts** | `summarise_sensor` | One required argument (`sensorId`) and one optional (`tone`). |

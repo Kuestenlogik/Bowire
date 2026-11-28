@@ -159,11 +159,38 @@ A unary invoke of a tool (`bowire call`, REST) follows the task itself and answe
 - **Sampling** requests (`sampling/createMessage`) inside `inputRequests` are shown in full but not answered. Sampling is deprecated as of MCP 2026-07-28 ([SEP-2577](https://github.com/modelcontextprotocol/modelcontextprotocol/pull/2577)), which asks servers to call model providers directly, and a client that does not answer leaves the task waiting. **Cancel task** ends it. The connection that receives a 2025-11-25 task's questions declares `elicitation` only, not `sampling`, so such a server does not send sampling requests to Bowire.
 - A 2025-11-25 server that binds tasks to its session may refuse `Tasks/get`, `follow` or `cancel` from a new session. The same applies to the `tasks/result` that receives a task's questions, so on such a server the questions do not reach Bowire. Following the tool call's own stream is not affected.
 
+### MCP Apps — a tool's interactive view
+
+A tool can come with an interactive view, an [MCP App](https://github.com/modelcontextprotocol/ext-apps): its `_meta.ui.resourceUri` (or the older flat `_meta["ui/resourceUri"]`) names a `ui://` resource with an HTML document. Bowire announces the `io.modelcontextprotocol/ui` extension with the type `text/html;profile=mcp-app` when it connects, so a server offers the view.
+
+After such a tool is called, the response pane shows its view above the result:
+
+1. The workbench reads the `ui://` resource the way it reads any resource, through `/api/invoke`.
+2. It hosts the document at `/api/ui/mcp-apps/views/{id}`, under a policy built from the resource's `_meta.ui.csp`:
+   - `connectDomains` becomes `connect-src`;
+   - `resourceDomains` is added to scripts, styles, images, fonts and media;
+   - `frameDomains` becomes `frame-src`;
+   - `baseUriDomains` becomes `base-uri`.
+
+   A domain is accepted only as `scheme://host[:port]`, so a resource cannot add directives of its own. Nothing declared means nothing reached. The document runs in a sandbox (`allow-scripts allow-forms`) with an opaque origin, so it cannot read the workbench's cookies or storage.
+3. The workbench talks to the view with the `AppBridge` of `@modelcontextprotocol/ext-apps`. It answers `ui/initialize`, then sends the tool's input and result.
+
+   When the view calls a tool (`tools/call`) or reads a resource (`resources/read`), the call goes through `/api/invoke` with the environment's credentials, the allowlist and the audit, like a call made by hand.
+
+   `ui/open-link` opens `http(s)` links in a new tab. `ui/notifications/size-changed` sizes the frame.
+
+Bowire leaves out the `null` fields the server's SDK objects carry before anything goes to the view. MCP's schemas allow those fields to be absent but never `null`, and a view that validates its messages would reject them. A tool that runs as a [task](#tasks--long-running-tool-calls) shows its view below the task card.
+
+**App traffic** beside the view lists every message in both directions with its time since the start, its method and its id. Expand an entry to read its payload.
+
+**Limits of this release.** Views live in the host's memory for an hour, at most 128 at a time. `ui/message`, `ui/update-model-context` and sampling have no model to go to in a workbench and are not answered. The view shows in the response pane only; display modes (`fullscreen`, `pip`) are not offered.
+
 ### Sample target
 
 [`samples/Kuestenlogik.Bowire.Sample.Mcp`](https://github.com/Kuestenlogik/Bowire/tree/main/samples/Kuestenlogik.Bowire.Sample.Mcp) is a combined sample — one project that both serves MCP over the official C# SDK's streamable-HTTP transport (message endpoint `http://localhost:5190/mcp`) **and** mounts the embedded workbench at `/bowire`. It exposes two tools:
 
 - **Tools** — `echo` (echoes the input text) and `add` (adds two integers)
+- **App tool** — `dock_board` comes with the MCP App `ui://sample/dock-board.html`. The app shows the tool's input and result, asks the workbench to call `add`, and tries a network its policy does not allow.
 - **Task tools** — `generate_report` (works for a few seconds, then answers) and `confirm_shipment` (asks for a confirmation through an input request first). The sample runs only these two as [tasks](#tasks--long-running-tool-calls); every other tool stays synchronous.
 
 Because it plays both roles at once, you can reach it either way:

@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Dock board</title>
+<style>
+  body { font: 14px system-ui, sans-serif; margin: 12px; color: #1f2937; }
+  h1 { font-size: 16px; margin: 0 0 8px; }
+  .row { margin: 6px 0; }
+  code { background: #f3f4f6; padding: 1px 4px; border-radius: 3px; }
+  button { margin-right: 6px; }
+</style>
+</head>
+<body>
+<h1>Dock board</h1>
+<div class="row">Sensor: <code id="sensor">…</code></div>
+<div class="row">Readings: <code id="readings">waiting for the tool result</code></div>
+<div class="row">
+  <button id="add">Ask the host: add 2 + 3</button>
+  <button id="fetch">Try to reach example.com</button>
+</div>
+<div class="row">Host says: <code id="sum">–</code></div>
+<div class="row">Network: <code id="net">–</code></div>
+<script>
+// An MCP App (#810) in plain postMessage JSON-RPC, so it needs nothing from a CDN —
+// its policy allows no network at all, which the fetch button shows.
+const pending = new Map();
+let nextId = 1;
+function request(method, params) {
+  const id = nextId++;
+  window.parent.postMessage({ jsonrpc: '2.0', id, method, params }, '*');
+  return new Promise((resolve, reject) => pending.set(id, { resolve, reject }));
+}
+function notify(method, params) {
+  window.parent.postMessage({ jsonrpc: '2.0', method, params }, '*');
+}
+window.addEventListener('message', (event) => {
+  const msg = event.data;
+  if (!msg || msg.jsonrpc !== '2.0') return;
+  if (msg.id !== undefined && pending.has(msg.id)) {
+    const p = pending.get(msg.id); pending.delete(msg.id);
+    return msg.error ? p.reject(msg.error) : p.resolve(msg.result);
+  }
+  if (msg.method === 'ui/notifications/tool-input') {
+    document.getElementById('sensor').textContent = (msg.params.arguments || {}).sensorId || '(none)';
+  }
+  if (msg.method === 'ui/notifications/tool-result') {
+    const data = msg.params.structuredContent || {};
+    document.getElementById('readings').textContent = JSON.stringify(data.readings || msg.params.content);
+  }
+});
+document.getElementById('add').addEventListener('click', async () => {
+  try {
+    const result = await request('tools/call', { name: 'add', arguments: { a: 2, b: 3 } });
+    document.getElementById('sum').textContent = (result.content || []).map((c) => c.text).join(' ');
+  } catch (err) {
+    document.getElementById('sum').textContent = 'error: ' + (err.message || JSON.stringify(err));
+  }
+});
+document.getElementById('fetch').addEventListener('click', async () => {
+  try {
+    await fetch('https://example.com/');
+    document.getElementById('net').textContent = 'reached';
+  } catch {
+    document.getElementById('net').textContent = 'blocked';
+  }
+});
+request('ui/initialize', {
+  appInfo: { name: 'dock-board', version: '1.0.0' },
+  appCapabilities: {},
+  protocolVersion: '2026-01-26',
+}).then(() => {
+  notify('ui/notifications/initialized', {});
+  // Tell the host the board's height whenever it changes (the readings arrive later).
+  new ResizeObserver(() => notify('ui/notifications/size-changed',
+    { width: document.documentElement.scrollWidth, height: document.documentElement.scrollHeight })).observe(document.body);
+});
+</script>
+</body>
+</html>

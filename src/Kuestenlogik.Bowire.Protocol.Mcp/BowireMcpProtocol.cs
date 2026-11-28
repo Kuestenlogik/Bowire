@@ -138,7 +138,7 @@ public sealed partial class BowireMcpProtocol : IBowireProtocol, IBowireManualEn
         McpClient client;
         try
         {
-            client = await CreateClientAsync(serverUrl, metadata: null, ct).ConfigureAwait(false);
+            client = await CreateClientAsync(serverUrl, metadata: null, ct, DiscoveryClientOptions()).ConfigureAwait(false);
         }
         catch (OperationCanceledException)
         {
@@ -694,6 +694,55 @@ public sealed partial class BowireMcpProtocol : IBowireProtocol, IBowireManualEn
         }
     }
 
+    /// <summary>#810 — the MCP Apps extension's id and the resource type it hosts.</summary>
+    internal const string AppsExtensionId = "io.modelcontextprotocol/ui";
+    internal const string AppsMimeType = "text/html;profile=mcp-app";
+
+    /// <summary>
+    /// What discovery announces: Bowire hosts MCP Apps (#810), so a server
+    /// that lists a tool with and without a UI lists the UI.
+    /// </summary>
+    /// <remarks>
+    /// Only discovery, where <c>tools/list</c> carries the <c>_meta.ui</c> an
+    /// App is found by. A call declares no session extension: one would
+    /// overwrite the per-request Tasks opt-in, and a tool the server runs as a
+    /// task would answer as a plain call (csharp-sdk#1920, #801).
+    /// https://github.com/modelcontextprotocol/csharp-sdk/issues/1920
+    /// </remarks>
+    internal static McpClientOptions DiscoveryClientOptions() => new()
+    {
+        Capabilities = new ClientCapabilities
+        {
+            Extensions = new Dictionary<string, object>(StringComparer.Ordinal)
+            {
+                // A JsonObject, not an anonymous dictionary: the SDK writes the
+                // capabilities with its own source-generated contract, which
+                // knows JSON nodes and refuses arbitrary CLR shapes.
+                [AppsExtensionId] = new System.Text.Json.Nodes.JsonObject
+                {
+                    ["mimeTypes"] = new System.Text.Json.Nodes.JsonArray(AppsMimeType),
+                },
+            },
+        },
+    };
+
+    /// <summary>
+    /// The <c>ui://</c> resource a tool renders as an MCP App: <c>_meta.ui.resourceUri</c>,
+    /// or the older flat <c>_meta["ui/resourceUri"]</c>.
+    /// </summary>
+    internal static string? UiResourceUriOf(System.Text.Json.Nodes.JsonObject? meta)
+    {
+        if (meta is null) return null;
+        if (meta["ui"] is System.Text.Json.Nodes.JsonObject ui
+            && ui["resourceUri"] is System.Text.Json.Nodes.JsonValue nested
+            && nested.TryGetValue<string>(out var uri) && !string.IsNullOrWhiteSpace(uri))
+        {
+            return uri;
+        }
+        return meta["ui/resourceUri"] is System.Text.Json.Nodes.JsonValue flat
+            && flat.TryGetValue<string>(out var legacy) && !string.IsNullOrWhiteSpace(legacy) ? legacy : null;
+    }
+
     // ----- discovery: tools / resources / prompts -----------------------
 
     private async Task AddToolsAsync(
@@ -736,6 +785,7 @@ public sealed partial class BowireMcpProtocol : IBowireProtocol, IBowireManualEn
         {
             Summary = tool.Description,
             Description = tool.Description,
+            UiResourceUri = UiResourceUriOf(tool.ProtocolTool.Meta),
         }).ToList();
 
         // Tasks (#801) are added after Tools in the tree; the legacy shape

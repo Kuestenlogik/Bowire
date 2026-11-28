@@ -84,6 +84,10 @@ The Code tab offered four or five languages per protocol and nothing for the bro
 
 `bowire scaffold` wrote C# stubs only, for REST and gRPC. GraphQL joins as a protocol, schema first (`schema.graphql`, with stubs on Hot Chocolate, graphql-js and graphql-core), and REST and gRPC stubs now come in Go, Node, Python and Rust as well — REST on `net/http`, `node:http` and `http.server` with no dependency at all, and on axum; gRPC on grpc-go, @grpc/grpc-js, grpcio and tonic, each with server reflection and none needing protoc on the machine — chosen with `--language`, the dialog's language picker, `"language"` in the spec or the sentence (`… in Go`). Each answers like the C# one, and `scripts/scaffold/verify.mjs` builds and starts every stub and runs its generated smoke test against it.
 
+### MCP Apps: a tool's interactive view, hosted and traced (#810)
+
+A tool whose `_meta.ui.resourceUri` names a `ui://` resource comes with an interactive view, an [MCP App](https://github.com/modelcontextprotocol/ext-apps). After the call, the workbench shows that view above the result and logs every message between the view and the workbench. The view runs in a sandbox, under the Content-Security-Policy its resource declares, and it can reach no network that the resource does not name. When the view calls a tool or reads a resource, the call goes through `/api/invoke` with the same rights and audit as any other. Bowire announces the `io.modelcontextprotocol/ui` extension, so a server that offers a tool with and without a view offers the view.
+
 ## Fixes along the way
 
 - **gRPC servers written with tonic (Rust) can be called (#1069).** Bowire asked their reflection service for a file named like the service; tonic answers an unknown file by failing the stream, so every call failed with `file '…' not found`. Only file names are asked for by name now.
