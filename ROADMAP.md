@@ -12,10 +12,11 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**45/49 done** · 4 backlog
+**45/50 done** · 1 in progress · 4 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
+| [1075](https://github.com/Kuestenlogik/Bowire/issues/1075) | Bowire | [Sidebar: the Compare button's label overflows the button](#issue-kuestenlogik-bowire-1075) | 🟡 In progress | `area:workbench` |
 | [639](https://github.com/Kuestenlogik/Bowire/issues/639) | Bowire | [SCIM: live Okta and Entra ID provisioning round-trips](#issue-kuestenlogik-bowire-639) | ⬜ Backlog | `area:workbench` |
 | [670](https://github.com/Kuestenlogik/Bowire/issues/670) | Bowire | [Get listed where developers and models actually look](#issue-kuestenlogik-bowire-670) | ⬜ Backlog | `area:site` |
 | [690](https://github.com/Kuestenlogik/Bowire/issues/690) | Bowire | [Translate the CLI help surface, or decide not to](#issue-kuestenlogik-bowire-690) | ⬜ Backlog | `area:cli` |
@@ -259,6 +260,12 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 ## Details
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
+
+#### <a id="issue-kuestenlogik-bowire-1075"></a>🟡 In progress · [#1075](https://github.com/Kuestenlogik/Bowire/issues/1075) Sidebar: the Compare button's label overflows the button
+
+> `area:workbench`
+
+In the Discover sidebar's toolbar row, the **Compare** button shows its icon and the label "Compare". The toolbar buttons are fixed 26×26 icon buttons (`.bowire-sidebar-toolbar-btn`), so the label runs out of the button and over its neighbour (the filter button). [[more]](https://github.com/Kuestenlogik/Bowire/issues/1075)
 
 #### <a id="issue-kuestenlogik-bowire-639"></a>⬜ Backlog · [#639](https://github.com/Kuestenlogik/Bowire/issues/639) SCIM: live Okta and Entra ID provisioning round-trips
 
