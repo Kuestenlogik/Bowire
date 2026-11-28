@@ -12,13 +12,12 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**32/44 done** · 12 backlog
+**34/45 done** · 11 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [639](https://github.com/Kuestenlogik/Bowire/issues/639) | Bowire | [SCIM: live Okta and Entra ID provisioning round-trips](#issue-kuestenlogik-bowire-639) | ⬜ Backlog | `area:workbench` |
 | [670](https://github.com/Kuestenlogik/Bowire/issues/670) | Bowire | [Get listed where developers and models actually look](#issue-kuestenlogik-bowire-670) | ⬜ Backlog | `area:site` |
-| [677](https://github.com/Kuestenlogik/Bowire/issues/677) | Bowire | [Broader code export, and snippets for the protocols no snippet library covers](#issue-kuestenlogik-bowire-677) | ⬜ Backlog | `area:workbench` |
 | [687](https://github.com/Kuestenlogik/Bowire/issues/687) | Bowire | [Tray icon and no console window: give the running workbench a handle of its own](#issue-kuestenlogik-bowire-687) | ⬜ Backlog | `area:cli` |
 | [690](https://github.com/Kuestenlogik/Bowire/issues/690) | Bowire | [Translate the CLI help surface, or decide not to](#issue-kuestenlogik-bowire-690) | ⬜ Backlog | `area:cli` |
 | [753](https://github.com/Kuestenlogik/Bowire/issues/753) | Bowire | [Detach a pane into a browser window of its own (pop-out)](#issue-kuestenlogik-bowire-753) | ⬜ Backlog |  |
@@ -27,9 +26,10 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [811](https://github.com/Kuestenlogik/Bowire/issues/811) | Bowire | [MCP Apps, server side: Bowire's MCP tools answer with apps (test run first)](#issue-kuestenlogik-bowire-811) | ⬜ Backlog |  |
 | [812](https://github.com/Kuestenlogik/Bowire/issues/812) | Bowire | [MCP Apps in testing and security: assert on apps, record their traffic, scan their CSP](#issue-kuestenlogik-bowire-812) | ⬜ Backlog |  |
 | [1056](https://github.com/Kuestenlogik/Bowire/issues/1056) | Bowire | [Importer fixtures from collections built and exported by hand in Insomnia and Bruno](#issue-kuestenlogik-bowire-1056) | ⬜ Backlog | `area:workbench` |
-| [1065](https://github.com/Kuestenlogik/Bowire/issues/1065) | Bowire | [Every workbench start logs 404s for the Help and ManualEntry probes when the packages are absent](#issue-kuestenlogik-bowire-1065) | ⬜ Backlog | `area:workbench` |
+| [1066](https://github.com/Kuestenlogik/Bowire/issues/1066) | Bowire | [Flaky: NatsServerFixture sometimes does not come up under load (all NATS E2E tests fail in 0 ms)](#issue-kuestenlogik-bowire-1066) | ⬜ Backlog |  |
 | [672](https://github.com/Kuestenlogik/Bowire/issues/672) | Bowire | [Server-side script engine so pre/post scripts run in bowire test, not only in the browser](#issue-kuestenlogik-bowire-672) | ✅ Done | `area:cli` |
 | [673](https://github.com/Kuestenlogik/Bowire/issues/673) | Bowire | [Export requests as .http — Copy as .http, and bowire export http for a whole collection](#issue-kuestenlogik-bowire-673) | ✅ Done | `area:workbench` |
+| [677](https://github.com/Kuestenlogik/Bowire/issues/677) | Bowire | [Broader code export, and snippets for the protocols no snippet library covers](#issue-kuestenlogik-bowire-677) | ✅ Done | `area:workbench` |
 | [688](https://github.com/Kuestenlogik/Bowire/issues/688) | Bowire | [Plurals: the translation layer cannot express a sentence whose shape depends on a number](#issue-kuestenlogik-bowire-688) | ✅ Done | `area:workbench` |
 | [939](https://github.com/Kuestenlogik/Bowire/issues/939) | Bowire | [Import Yaak exports](#issue-kuestenlogik-bowire-939) | ✅ Done |  |
 | [940](https://github.com/Kuestenlogik/Bowire/issues/940) | Bowire | [Verify the collection importers against real Insomnia and Bruno exports](#issue-kuestenlogik-bowire-940) | ✅ Done |  |
@@ -60,6 +60,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [1060](https://github.com/Kuestenlogik/Bowire/issues/1060) | Bowire | [The workbench's collection runner skips the scripts a saved item carries](#issue-kuestenlogik-bowire-1060) | ✅ Done | `area:workbench` |
 | [1062](https://github.com/Kuestenlogik/Bowire/issues/1062) | Bowire | [No script runs in the workbench: the CSP refuses the eval scripts.js needs](#issue-kuestenlogik-bowire-1062) | ✅ Done | `area:workbench` |
 | [1063](https://github.com/Kuestenlogik/Bowire/issues/1063) | Bowire | [gRPC: a server without reflection is sometimes reported as Cancelled](#issue-kuestenlogik-bowire-1063) | ✅ Done |  |
+| [1065](https://github.com/Kuestenlogik/Bowire/issues/1065) | Bowire | [Every workbench start logs 404s for the Help and ManualEntry probes when the packages are absent](#issue-kuestenlogik-bowire-1065) | ✅ Done | `area:workbench` |
 
 ### v2.12 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
 
@@ -263,12 +264,6 @@ Split from #96 so the SCIM surface can ship on its own merits. [[more]](https://
 
 Six credible competitors turned up during the competitive survey **via openalternative.co**. Bowire was not there. That is the whole diagnosis: when a developer — or a language model — asks for "open source Postman alternative", the answer is assembled from these directories, not from bowire.io. [[more]](https://github.com/Kuestenlogik/Bowire/issues/670)
 
-#### <a id="issue-kuestenlogik-bowire-677"></a>⬜ Backlog · [#677](https://github.com/Kuestenlogik/Bowire/issues/677) Broader code export, and snippets for the protocols no snippet library covers
-
-> `area:workbench`
-
-Code export offers five to six target languages per protocol. Postman, Hoppscotch and Insomnia each offer twenty-five to forty, all of them via HTTPSnippet. [[more]](https://github.com/Kuestenlogik/Bowire/issues/677)
-
 #### <a id="issue-kuestenlogik-bowire-687"></a>⬜ Backlog · [#687](https://github.com/Kuestenlogik/Bowire/issues/687) Tray icon and no console window: give the running workbench a handle of its own
 
 > `area:cli`
@@ -307,11 +302,9 @@ Once Bowire hosts MCP Apps (#810), the people building them need what Bowire off
 
 Follow-up of #940, split out because it needs the apps installed and clicked through by a person. [[more]](https://github.com/Kuestenlogik/Bowire/issues/1056)
 
-#### <a id="issue-kuestenlogik-bowire-1065"></a>⬜ Backlog · [#1065](https://github.com/Kuestenlogik/Bowire/issues/1065) Every workbench start logs 404s for the Help and ManualEntry probes when the packages are absent
+#### <a id="issue-kuestenlogik-bowire-1066"></a>⬜ Backlog · [#1066](https://github.com/Kuestenlogik/Bowire/issues/1066) Flaky: NatsServerFixture sometimes does not come up under load (all NATS E2E tests fail in 0 ms)
 
-> `area:workbench`
-
-Every start of a workbench whose host does not reference the optional Help or ManualEntry package logs two errors in the browser console: [[more]](https://github.com/Kuestenlogik/Bowire/issues/1065)
+In one clean-clone run of the integration suite (2026-11-28, HEAD 92472d07, while two other Bowire hosts and a build ran on the machine), all eight `NatsRoundTripE2ETests` failed in 0 ms — the class fixture, `NatsServerFixture`, did not come up. A rerun of the class and the next full suite passed. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/1066)
 
 #### <a id="issue-kuestenlogik-bowire-672"></a>✅ Done · [#672](https://github.com/Kuestenlogik/Bowire/issues/672) Server-side script engine so pre/post scripts run in bowire test, not only in the browser
 
@@ -324,6 +317,12 @@ Pre- and post-request scripts exist — as `new Function('ctx', …)` **in the b
 > `area:workbench`
 
 For "I am testing my own REST endpoint while developing it", a `.http` file is **better** than Bowire. The file sits next to the code, it is in the repo, there is no second window and no second process. Visual Studio 2022, Rider and the VS Code REST Client all run them natively. Competing with that is a losing framing. [[more]](https://github.com/Kuestenlogik/Bowire/issues/673)
+
+#### <a id="issue-kuestenlogik-bowire-677"></a>✅ Done · [#677](https://github.com/Kuestenlogik/Bowire/issues/677) Broader code export, and snippets for the protocols no snippet library covers
+
+> `area:workbench`
+
+Code export offers five to six target languages per protocol. Postman, Hoppscotch and Insomnia each offer twenty-five to forty, all of them via HTTPSnippet. [[more]](https://github.com/Kuestenlogik/Bowire/issues/677)
 
 #### <a id="issue-kuestenlogik-bowire-688"></a>✅ Done · [#688](https://github.com/Kuestenlogik/Bowire/issues/688) Plurals: the translation layer cannot express a sentence whose shape depends on a number
 
@@ -478,6 +477,12 @@ No pre-request or post-response script runs in the workbench. Every script fails
 #### <a id="issue-kuestenlogik-bowire-1063"></a>✅ Done · [#1063](https://github.com/Kuestenlogik/Bowire/issues/1063) gRPC: a server without reflection is sometimes reported as Cancelled
 
 A call to a server without the gRPC reflection service now and then fails with [[more]](https://github.com/Kuestenlogik/Bowire/issues/1063)
+
+#### <a id="issue-kuestenlogik-bowire-1065"></a>✅ Done · [#1065](https://github.com/Kuestenlogik/Bowire/issues/1065) Every workbench start logs 404s for the Help and ManualEntry probes when the packages are absent
+
+> `area:workbench`
+
+Every start of a workbench whose host does not reference the optional Help or ManualEntry package logs two errors in the browser console: [[more]](https://github.com/Kuestenlogik/Bowire/issues/1065)
 
 ### v2.12 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
 
@@ -1007,4 +1012,4 @@ A request enters through HTTP or gRPC and continues as actor messages, MQTT publ
 
 ---
 
-*Generated 2026-11-27 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
+*Generated 2026-11-28 from [Project #2](https://github.com/orgs/Kuestenlogik/projects/2).*
