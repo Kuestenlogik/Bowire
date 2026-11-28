@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**37/48 done** · 11 backlog
+**39/48 done** · 9 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -21,16 +21,15 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [687](https://github.com/Kuestenlogik/Bowire/issues/687) | Bowire | [Tray icon and no console window: give the running workbench a handle of its own](#issue-kuestenlogik-bowire-687) | ⬜ Backlog | `area:cli` |
 | [690](https://github.com/Kuestenlogik/Bowire/issues/690) | Bowire | [Translate the CLI help surface, or decide not to](#issue-kuestenlogik-bowire-690) | ⬜ Backlog | `area:cli` |
 | [753](https://github.com/Kuestenlogik/Bowire/issues/753) | Bowire | [Detach a pane into a browser window of its own (pop-out)](#issue-kuestenlogik-bowire-753) | ⬜ Backlog |  |
-| [754](https://github.com/Kuestenlogik/Bowire/issues/754) | Bowire | [Scaffolding: more stub languages and protocols (follow-up to #177)](#issue-kuestenlogik-bowire-754) | ⬜ Backlog |  |
 | [810](https://github.com/Kuestenlogik/Bowire/issues/810) | Bowire | [MCP Apps, host side: render and debug MCP Apps of the servers Bowire talks to](#issue-kuestenlogik-bowire-810) | ⬜ Backlog |  |
 | [811](https://github.com/Kuestenlogik/Bowire/issues/811) | Bowire | [MCP Apps, server side: Bowire's MCP tools answer with apps (test run first)](#issue-kuestenlogik-bowire-811) | ⬜ Backlog |  |
 | [812](https://github.com/Kuestenlogik/Bowire/issues/812) | Bowire | [MCP Apps in testing and security: assert on apps, record their traffic, scan their CSP](#issue-kuestenlogik-bowire-812) | ⬜ Backlog |  |
 | [1056](https://github.com/Kuestenlogik/Bowire/issues/1056) | Bowire | [Importer fixtures from collections built and exported by hand in Insomnia and Bruno](#issue-kuestenlogik-bowire-1056) | ⬜ Backlog | `area:workbench` |
-| [1067](https://github.com/Kuestenlogik/Bowire/issues/1067) | Bowire | [Flaky: the Pulsar test container exits with 126 (testcontainers.sh: Text file busy)](#issue-kuestenlogik-bowire-1067) | ⬜ Backlog |  |
 | [672](https://github.com/Kuestenlogik/Bowire/issues/672) | Bowire | [Server-side script engine so pre/post scripts run in bowire test, not only in the browser](#issue-kuestenlogik-bowire-672) | ✅ Done | `area:cli` |
 | [673](https://github.com/Kuestenlogik/Bowire/issues/673) | Bowire | [Export requests as .http — Copy as .http, and bowire export http for a whole collection](#issue-kuestenlogik-bowire-673) | ✅ Done | `area:workbench` |
 | [677](https://github.com/Kuestenlogik/Bowire/issues/677) | Bowire | [Broader code export, and snippets for the protocols no snippet library covers](#issue-kuestenlogik-bowire-677) | ✅ Done | `area:workbench` |
 | [688](https://github.com/Kuestenlogik/Bowire/issues/688) | Bowire | [Plurals: the translation layer cannot express a sentence whose shape depends on a number](#issue-kuestenlogik-bowire-688) | ✅ Done | `area:workbench` |
+| [754](https://github.com/Kuestenlogik/Bowire/issues/754) | Bowire | [Scaffolding: more stub languages and protocols (follow-up to #177)](#issue-kuestenlogik-bowire-754) | ✅ Done |  |
 | [939](https://github.com/Kuestenlogik/Bowire/issues/939) | Bowire | [Import Yaak exports](#issue-kuestenlogik-bowire-939) | ✅ Done |  |
 | [940](https://github.com/Kuestenlogik/Bowire/issues/940) | Bowire | [Verify the collection importers against real Insomnia and Bruno exports](#issue-kuestenlogik-bowire-940) | ✅ Done |  |
 | [946](https://github.com/Kuestenlogik/Bowire/issues/946) | Bowire | [Data sets for flow runs and bowire test --workspace](#issue-kuestenlogik-bowire-946) | ✅ Done |  |
@@ -62,6 +61,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [1063](https://github.com/Kuestenlogik/Bowire/issues/1063) | Bowire | [gRPC: a server without reflection is sometimes reported as Cancelled](#issue-kuestenlogik-bowire-1063) | ✅ Done |  |
 | [1065](https://github.com/Kuestenlogik/Bowire/issues/1065) | Bowire | [Every workbench start logs 404s for the Help and ManualEntry probes when the packages are absent](#issue-kuestenlogik-bowire-1065) | ✅ Done | `area:workbench` |
 | [1066](https://github.com/Kuestenlogik/Bowire/issues/1066) | Bowire | [Flaky: NatsServerFixture sometimes does not come up under load (all NATS E2E tests fail in 0 ms)](#issue-kuestenlogik-bowire-1066) | ✅ Done |  |
+| [1067](https://github.com/Kuestenlogik/Bowire/issues/1067) | Bowire | [Flaky: the Pulsar test container exits with 126 (testcontainers.sh: Text file busy)](#issue-kuestenlogik-bowire-1067) | ✅ Done |  |
 | [1068](https://github.com/Kuestenlogik/Bowire/issues/1068) | Bowire | [gRPC: services behind Node's @grpc/reflection cannot be called ("Available: []")](#issue-kuestenlogik-bowire-1068) | ✅ Done |  |
 | [1069](https://github.com/Kuestenlogik/Bowire/issues/1069) | Bowire | [gRPC: calls to tonic (Rust) servers fail — Bowire asks reflection for a file named like the service](#issue-kuestenlogik-bowire-1069) | ✅ Done |  |
 
@@ -284,10 +284,6 @@ Six credible competitors turned up during the competitive survey **via openalter
 
 Split out of #250 phase 2, where it already stood as *"long deferred — needs proper inter-window state sync"*. [[more]](https://github.com/Kuestenlogik/Bowire/issues/753)
 
-#### <a id="issue-kuestenlogik-bowire-754"></a>⬜ Backlog · [#754](https://github.com/Kuestenlogik/Bowire/issues/754) Scaffolding: more stub languages and protocols (follow-up to #177)
-
-#177 delivered the first cut: REST (OpenAPI 3) and gRPC (proto3), server stubs in C#. The templates live in `src/Kuestenlogik.Bowire.Scaffold/Templates/<protocol>/`, the spec is language-neutral – a new language is a set of templates plus an entry in the generator. [[more]](https://github.com/Kuestenlogik/Bowire/issues/754)
-
 #### <a id="issue-kuestenlogik-bowire-810"></a>⬜ Backlog · [#810](https://github.com/Kuestenlogik/Bowire/issues/810) MCP Apps, host side: render and debug MCP Apps of the servers Bowire talks to
 
 MCP Apps (`io.modelcontextprotocol/ui`, [overview](https://modelcontextprotocol.io/extensions/apps/overview), [spec 2026-01-26](https://github.com/modelcontextprotocol/ext-apps/blob/main/specification/2026-01-26/apps.mdx)) let an MCP tool come with an interactive UI. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/810)
@@ -305,10 +301,6 @@ Once Bowire hosts MCP Apps (#810), the people building them need what Bowire off
 > `area:workbench`
 
 Follow-up of #940, split out because it needs the apps installed and clicked through by a person. [[more]](https://github.com/Kuestenlogik/Bowire/issues/1056)
-
-#### <a id="issue-kuestenlogik-bowire-1067"></a>⬜ Backlog · [#1067](https://github.com/Kuestenlogik/Bowire/issues/1067) Flaky: the Pulsar test container exits with 126 (testcontainers.sh: Text file busy)
-
-In a clean-clone run of the integration suite (2026-11-28, HEAD fb299a81, next to other builds), all three `PulsarRoundTripE2ETests` failed in 0 ms: the class fixture did not start. [[more]](https://github.com/Kuestenlogik/Bowire/issues/1067)
 
 #### <a id="issue-kuestenlogik-bowire-672"></a>✅ Done · [#672](https://github.com/Kuestenlogik/Bowire/issues/672) Server-side script engine so pre/post scripts run in bowire test, not only in the browser
 
@@ -333,6 +325,10 @@ Code export offers five to six target languages per protocol. Postman, Hoppscotc
 > `area:workbench`
 
 The translation layer from #117 substitutes `{name}` placeholders and nothing more. That is enough for a count *inside* a sentence: [[more]](https://github.com/Kuestenlogik/Bowire/issues/688)
+
+#### <a id="issue-kuestenlogik-bowire-754"></a>✅ Done · [#754](https://github.com/Kuestenlogik/Bowire/issues/754) Scaffolding: more stub languages and protocols (follow-up to #177)
+
+#177 delivered the first cut: REST (OpenAPI 3) and gRPC (proto3), server stubs in C#. The templates live in `src/Kuestenlogik.Bowire.Scaffold/Templates/<protocol>/`, the spec is language-neutral – a new language is a set of templates plus an entry in the generator. [[more]](https://github.com/Kuestenlogik/Bowire/issues/754)
 
 #### <a id="issue-kuestenlogik-bowire-939"></a>✅ Done · [#939](https://github.com/Kuestenlogik/Bowire/issues/939) Import Yaak exports
 
@@ -491,6 +487,10 @@ Every start of a workbench whose host does not reference the optional Help or Ma
 #### <a id="issue-kuestenlogik-bowire-1066"></a>✅ Done · [#1066](https://github.com/Kuestenlogik/Bowire/issues/1066) Flaky: NatsServerFixture sometimes does not come up under load (all NATS E2E tests fail in 0 ms)
 
 In one clean-clone run of the integration suite (2026-11-28, HEAD 92472d07, while two other Bowire hosts and a build ran on the machine), all eight `NatsRoundTripE2ETests` failed in 0 ms — the class fixture, `NatsServerFixture`, did not come up. A rerun of the class and the next full suite passed. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/1066)
+
+#### <a id="issue-kuestenlogik-bowire-1067"></a>✅ Done · [#1067](https://github.com/Kuestenlogik/Bowire/issues/1067) Flaky: the Pulsar test container exits with 126 (testcontainers.sh: Text file busy)
+
+In a clean-clone run of the integration suite (2026-11-28, HEAD fb299a81, next to other builds), all three `PulsarRoundTripE2ETests` failed in 0 ms: the class fixture did not start. [[more]](https://github.com/Kuestenlogik/Bowire/issues/1067)
 
 #### <a id="issue-kuestenlogik-bowire-1068"></a>✅ Done · [#1068](https://github.com/Kuestenlogik/Bowire/issues/1068) gRPC: services behind Node's @grpc/reflection cannot be called ("Available: []")
 
