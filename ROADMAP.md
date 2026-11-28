@@ -68,7 +68,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.12 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
 
-**0/9 done** · 9 backlog
+**0/11 done** · 11 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -81,6 +81,8 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [1064](https://github.com/Kuestenlogik/Bowire/issues/1064) | Bowire | [Code export: SOAP snippets with the envelope the plugin sends](#issue-kuestenlogik-bowire-1064) | ⬜ Backlog | `area:workbench` |
 | [1070](https://github.com/Kuestenlogik/Bowire/issues/1070) | Bowire | [Scaffolding: GraphQL stubs in Go and Rust](#issue-kuestenlogik-bowire-1070) | ⬜ Backlog |  |
 | [1071](https://github.com/Kuestenlogik/Bowire/issues/1071) | Bowire | [MCP Apps: assert on an app's messages, record and replay its traffic](#issue-kuestenlogik-bowire-1071) | ⬜ Backlog |  |
+| [1073](https://github.com/Kuestenlogik/Bowire/issues/1073) | Bowire | [Tray item on Linux: StatusNotifierItem for the running workbench](#issue-kuestenlogik-bowire-1073) | ⬜ Backlog |  |
+| [1074](https://github.com/Kuestenlogik/Bowire/issues/1074) | Bowire | [Tray item on macOS: a menu-bar item for the running workbench](#issue-kuestenlogik-bowire-1074) | ⬜ Backlog |  |
 
 ### v2.13 — Benchmark: connections held open, the shape of a run, several targets *(due 2027-06-15)*
 
@@ -557,6 +559,14 @@ Follow-up of #754, which added GraphQL to `bowire scaffold` with stubs in C# (Ho
 #### <a id="issue-kuestenlogik-bowire-1071"></a>⬜ Backlog · [#1071](https://github.com/Kuestenlogik/Bowire/issues/1071) MCP Apps: assert on an app's messages, record and replay its traffic
 
 Follow-up of #812. #812 shipped what can be checked without running an app: the `Apps/<tool>` check (the tool names an app, the resource loads, it is an MCP App document) for `bowire test` and flows, and the MCP Apps scan. What remains needs the app to actually run, in a browser, next to a bridge Bowire controls. [[more]](https://github.com/Kuestenlogik/Bowire/issues/1071)
+
+#### <a id="issue-kuestenlogik-bowire-1073"></a>⬜ Backlog · [#1073](https://github.com/Kuestenlogik/Bowire/issues/1073) Tray item on Linux: StatusNotifierItem for the running workbench
+
+Follow-up of #687, which shipped the Windows tray (`Kuestenlogik.Bowire.Desktop`, `bowirew.exe`). On Linux a menu launch has no terminal, so nothing shows that Bowire runs and nothing offers to stop it except the browser tab, which is not the process. [[more]](https://github.com/Kuestenlogik/Bowire/issues/1073)
+
+#### <a id="issue-kuestenlogik-bowire-1074"></a>⬜ Backlog · [#1074](https://github.com/Kuestenlogik/Bowire/issues/1074) Tray item on macOS: a menu-bar item for the running workbench
+
+Follow-up of #687, which shipped the Windows tray (`Kuestenlogik.Bowire.Desktop`, `bowirew.exe`). `Bowire.app` (#685) starts the workbench with no window of its own, so nothing shows that it runs and nothing offers to stop it but Activity Monitor. [[more]](https://github.com/Kuestenlogik/Bowire/issues/1074)
 
 ### v2.13 — Benchmark: connections held open, the shape of a run, several targets *(due 2027-06-15)*
 
