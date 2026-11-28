@@ -241,8 +241,10 @@ internal sealed class GrpcReflectionClient : IGrpcDescriptorSource
         string serviceName, CancellationToken ct = default)
     {
         var resolved = new Dictionary<string, FileDescriptorProto>();
+        // File names only (#1069): the service's own files come from
+        // FileContainingSymbol below. Queuing the service name here sent it
+        // as a FileByFilename too, which tonic answers by failing the stream.
         var toResolve = new Queue<string>();
-        toResolve.Enqueue(serviceName);
 
         // First, get file descriptors for the service symbol
         var initial = await GetFileDescriptorsAsync(serviceName, ct);

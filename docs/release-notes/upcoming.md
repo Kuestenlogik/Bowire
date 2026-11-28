@@ -86,6 +86,8 @@ The Code tab offered four or five languages per protocol and nothing for the bro
 
 ## Fixes along the way
 
+- **gRPC servers written with tonic (Rust) can be called (#1069).** Bowire asked their reflection service for a file named like the service; tonic answers an unknown file by failing the stream, so every call failed with `file '…' not found`. Only file names are asked for by name now.
+
 - **gRPC servers behind Node's `@grpc/reflection` can be called (#1068).** Bowire listed their services but every call failed with `Service '…' not found. Available: []`: the descriptors that library serves use relative type names, declare no dependencies, put `google.protobuf.Empty` in a file named `google_protobuf.proto` and leave proto3 `optional` unflagged. Bowire now repairs them before building, and a descriptor that still cannot be built is named in the error.
 
 - **No 404s at start for absent packages (#1065).** A host without the Help or ManualEntry package logged two 404s in the browser console on every start, because the page probed both to find out. The page now reads which packages the host serves from `__BOWIRE_CONFIG__.features` (an endpoint contribution's new optional `FeatureId`) and asks only those.
