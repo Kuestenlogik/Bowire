@@ -51,18 +51,20 @@ public sealed class NatsServerFixture : IAsyncLifetime
         _workDir = SafePath.Combine(Path.GetTempPath(), "bowire-nats-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(_workDir);
         var jsDir = SafePath.Combine(_workDir, "js");
-        var logFile = SafePath.Combine(_workDir, "nats.log");
 
+        // #1066 — the server's log is read as it writes it (stderr, its
+        // default), and its listening line completes the wait: a handshake,
+        // where the log file used to be polled every 100 ms.
         var psi = new ProcessStartInfo
         {
             FileName = exe,
             WorkingDirectory = _workDir,
             UseShellExecute = false,
-            RedirectStandardOutput = false,
-            RedirectStandardError = false,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
         };
         // -js JetStream, bind loopback only, our chosen port, isolated
-        // storage + log to file so stdout stays quiet (no drain needed).
+        // storage; the log goes to stderr.
         psi.ArgumentList.Add("-js");
         psi.ArgumentList.Add("-a"); psi.ArgumentList.Add("127.0.0.1");
         // -1: nats-server picks a free port itself and never lets go of it.
@@ -72,12 +74,8 @@ public sealed class NatsServerFixture : IAsyncLifetime
         // to whatever had taken it.
         psi.ArgumentList.Add("-p"); psi.ArgumentList.Add("-1");
         psi.ArgumentList.Add("-sd"); psi.ArgumentList.Add(jsDir);
-        psi.ArgumentList.Add("-l"); psi.ArgumentList.Add(logFile);
 
-        _process = Process.Start(psi)
-            ?? throw new InvalidOperationException("Process.Start returned null for nats-server.");
-
-        var port = await ReadBoundPortAsync(logFile, TimeSpan.FromSeconds(20)).ConfigureAwait(false);
+        var port = await StartAndAwaitListeningAsync(psi, TimeSpan.FromSeconds(20)).ConfigureAwait(false);
         ServerUrl = $"nats://127.0.0.1:{port}";
     }
 
@@ -210,51 +208,57 @@ public sealed class NatsServerFixture : IAsyncLifetime
     // ---- process readiness ---------------------------------------------
 
     /// <summary>
-    /// The port the server announced in <paramref name="logFile"/>, once it
-    /// has. The announcement is also the readiness signal: it is written
-    /// after the listener is up.
+    /// Start nats-server and wait for the port it announces in its log. The
+    /// announcement is also the readiness signal: it is written after the
+    /// listener is up.
     /// </summary>
     /// <remarks>
-    /// Read from the log rather than probed with a connect. A connect only
-    /// proves that something answers on that port, which is exactly the
-    /// question the old fixture could not answer correctly.
+    /// The log is read from stderr as it is written, so the wait ends the
+    /// moment the line arrives, and a server that exits first fails it with
+    /// its log attached. The limit is only the point at which a server that
+    /// never announces anything counts as failed; its log goes with it.
     /// </remarks>
-    private async Task<int> ReadBoundPortAsync(string logFile, TimeSpan timeout)
+    private async Task<int> StartAndAwaitListeningAsync(ProcessStartInfo psi, TimeSpan limit)
     {
         // "[1234] ... Listening for client connections on 127.0.0.1:54321"
         var listening = new Regex(
             @"Listening for client connections on [^:\s]+:(\d+)",
             RegexOptions.CultureInvariant);
+        var log = new System.Text.StringBuilder();
+        var announced = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        var deadline = DateTime.UtcNow + timeout;
-        while (DateTime.UtcNow < deadline)
+        void OnLine(object sender, DataReceivedEventArgs e)
         {
-            if (_process is { HasExited: true })
-                throw new InvalidOperationException(
-                    $"nats-server exited early (code {_process.ExitCode}). Log: {ReadLog(logFile)}");
-
-            var match = listening.Match(ReadLog(logFile));
-            if (match.Success)
-                return int.Parse(match.Groups[1].Value, CultureInfo.InvariantCulture);
-
-            await Task.Delay(100).ConfigureAwait(false);
+            if (e.Data is null) return;
+            lock (log) log.AppendLine(e.Data);
+            var match = listening.Match(e.Data);
+            if (match.Success) announced.TrySetResult(int.Parse(match.Groups[1].Value, CultureInfo.InvariantCulture));
         }
 
-        throw new TimeoutException(
-            $"nats-server did not report a listening port within {timeout}. Log: {ReadLog(logFile)}");
-    }
+        var process = new Process { StartInfo = psi, EnableRaisingEvents = true };
+        process.ErrorDataReceived += OnLine;
+        process.OutputDataReceived += OnLine;
+        process.Exited += (_, _) =>
+        {
+            string text;
+            lock (log) text = log.ToString();
+            announced.TrySetException(new InvalidOperationException(
+                $"nats-server exited before it listened (code {process.ExitCode}). Log: {text}"));
+        };
+        _process = process;
+        if (!process.Start()) throw new InvalidOperationException("nats-server did not start.");
+        process.BeginErrorReadLine();
+        process.BeginOutputReadLine();
 
-    /// <summary>The log so far; it is being written while we read it.</summary>
-    private static string ReadLog(string logFile)
-    {
         try
         {
-            using var stream = new FileStream(
-                logFile, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
-            using var reader = new StreamReader(stream);
-            return reader.ReadToEnd();
+            return await announced.Task.WaitAsync(limit).ConfigureAwait(false);
         }
-        catch (IOException) { return string.Empty; }
-        catch (UnauthorizedAccessException) { return string.Empty; }
+        catch (TimeoutException)
+        {
+            string text;
+            lock (log) text = log.ToString();
+            throw new TimeoutException($"nats-server did not report a listening port within {limit}. Log: {text}");
+        }
     }
 }
