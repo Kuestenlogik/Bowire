@@ -66,7 +66,7 @@ public sealed class MqttBrokerRoundTripTests : IAsyncLifetime
             // local broker.
             .WithResourceMapping(
                 System.Text.Encoding.UTF8.GetBytes(MosquittoConf),
-                "/mosquitto/config/mosquitto.conf")
+                FilePath.Of("/mosquitto/config/mosquitto.conf"))
             // Wait for the broker to log "mosquitto version 2.x
             // starting" — the closest log line to "ready for
             // connections" Mosquitto emits on a clean boot.
