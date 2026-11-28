@@ -323,7 +323,8 @@ internal sealed class GrpcInvoker : IDisposable
         }
 
         // Build FileDescriptors with proper dependency resolution
-        var fileDescriptors = BuildFileDescriptors(fileDescProtos);
+        var failures = new List<string>();
+        var fileDescriptors = BuildFileDescriptors(fileDescProtos, failures);
 
         if (fileDescriptors.Count == 0)
             throw new InvalidOperationException(
@@ -343,8 +344,11 @@ internal sealed class GrpcInvoker : IDisposable
             var allServices = fileDescriptors
                 .SelectMany(fd => fd.Services)
                 .Select(s => s.FullName);
-            throw new InvalidOperationException(
-                $"Service '{serviceName}' not found. Available: [{string.Join(", ", allServices)}]");
+            // #1068 — a file the server sent but that could not be built is
+            // the likelier reason than a wrong name; say so.
+            throw new InvalidOperationException(failures.Count > 0
+                ? $"Service '{serviceName}' not found: the server's descriptors could not all be built ({string.Join("; ", failures)}). Available: [{string.Join(", ", allServices)}]"
+                : $"Service '{serviceName}' not found. Available: [{string.Join(", ", allServices)}]");
         }
 
         // Find method
@@ -366,8 +370,13 @@ internal sealed class GrpcInvoker : IDisposable
     }
 
     internal static List<FileDescriptor> BuildFileDescriptors(
-        List<FileDescriptorProto> protos)
+        List<FileDescriptorProto> protos, List<string>? failures = null)
     {
+        // #1068 — what a reflection service other than protoc's sends
+        // (relative names, no dependencies, renamed well-known files) is
+        // brought into protoc's shape first.
+        protos = GrpcDescriptorRepair.Repair(protos);
+
         // Fast path: try building everything in one shot. Google.Protobuf
         // resolves cross-references between bytes in the same call, so when
         // reflection delivered all transitive dependencies (the common case)
@@ -453,9 +462,10 @@ internal sealed class GrpcInvoker : IDisposable
                         result.Add(stripped);
                     }
                 }
-                catch
+                catch (Exception ex)
                 {
                     // Even the stripped form failed — give up on this proto
+                    failures?.Add($"{proto.Name}: {ex.Message}");
                 }
                 continue;
             }
@@ -492,8 +502,9 @@ internal sealed class GrpcInvoker : IDisposable
                             fd = FileDescriptor.BuildFromByteStrings(
                                 [ByteString.CopyFrom(clone.ToByteArray())]);
                         }
-                        catch
+                        catch (Exception ex)
                         {
+                            failures?.Add($"{proto.Name}: {ex.Message}");
                             continue;
                         }
                     }
@@ -507,9 +518,10 @@ internal sealed class GrpcInvoker : IDisposable
                     result.Add(ourFd);
                 }
             }
-            catch
+            catch (Exception ex)
             {
                 // Skip this descriptor if building fails
+                failures?.Add($"{proto.Name}: {ex.Message}");
             }
         }
 

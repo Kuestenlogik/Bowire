@@ -24,4 +24,8 @@
   <ItemGroup>
     <Protobuf Include="Protos/*.proto" GrpcServices="Both" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- #1068 - the descriptors Node's @grpc/reflection served for a scaffolded stub. -->
+    <None Include="Fixtures\**\*.pb" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>
