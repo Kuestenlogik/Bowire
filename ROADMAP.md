@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**34/45 done** · 11 backlog
+**34/47 done** · 13 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -27,6 +27,8 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [812](https://github.com/Kuestenlogik/Bowire/issues/812) | Bowire | [MCP Apps in testing and security: assert on apps, record their traffic, scan their CSP](#issue-kuestenlogik-bowire-812) | ⬜ Backlog |  |
 | [1056](https://github.com/Kuestenlogik/Bowire/issues/1056) | Bowire | [Importer fixtures from collections built and exported by hand in Insomnia and Bruno](#issue-kuestenlogik-bowire-1056) | ⬜ Backlog | `area:workbench` |
 | [1066](https://github.com/Kuestenlogik/Bowire/issues/1066) | Bowire | [Flaky: NatsServerFixture sometimes does not come up under load (all NATS E2E tests fail in 0 ms)](#issue-kuestenlogik-bowire-1066) | ⬜ Backlog |  |
+| [1067](https://github.com/Kuestenlogik/Bowire/issues/1067) | Bowire | [Flaky: the Pulsar test container exits with 126 (testcontainers.sh: Text file busy)](#issue-kuestenlogik-bowire-1067) | ⬜ Backlog |  |
+| [1068](https://github.com/Kuestenlogik/Bowire/issues/1068) | Bowire | [gRPC: services behind Node's @grpc/reflection cannot be called ("Available: []")](#issue-kuestenlogik-bowire-1068) | ⬜ Backlog |  |
 | [672](https://github.com/Kuestenlogik/Bowire/issues/672) | Bowire | [Server-side script engine so pre/post scripts run in bowire test, not only in the browser](#issue-kuestenlogik-bowire-672) | ✅ Done | `area:cli` |
 | [673](https://github.com/Kuestenlogik/Bowire/issues/673) | Bowire | [Export requests as .http — Copy as .http, and bowire export http for a whole collection](#issue-kuestenlogik-bowire-673) | ✅ Done | `area:workbench` |
 | [677](https://github.com/Kuestenlogik/Bowire/issues/677) | Bowire | [Broader code export, and snippets for the protocols no snippet library covers](#issue-kuestenlogik-bowire-677) | ✅ Done | `area:workbench` |
@@ -305,6 +307,14 @@ Follow-up of #940, split out because it needs the apps installed and clicked thr
 #### <a id="issue-kuestenlogik-bowire-1066"></a>⬜ Backlog · [#1066](https://github.com/Kuestenlogik/Bowire/issues/1066) Flaky: NatsServerFixture sometimes does not come up under load (all NATS E2E tests fail in 0 ms)
 
 In one clean-clone run of the integration suite (2026-11-28, HEAD 92472d07, while two other Bowire hosts and a build ran on the machine), all eight `NatsRoundTripE2ETests` failed in 0 ms — the class fixture, `NatsServerFixture`, did not come up. A rerun of the class and the next full suite passed. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/1066)
+
+#### <a id="issue-kuestenlogik-bowire-1067"></a>⬜ Backlog · [#1067](https://github.com/Kuestenlogik/Bowire/issues/1067) Flaky: the Pulsar test container exits with 126 (testcontainers.sh: Text file busy)
+
+In a clean-clone run of the integration suite (2026-11-28, HEAD fb299a81, next to other builds), all three `PulsarRoundTripE2ETests` failed in 0 ms: the class fixture did not start. [[more]](https://github.com/Kuestenlogik/Bowire/issues/1067)
+
+#### <a id="issue-kuestenlogik-bowire-1068"></a>⬜ Backlog · [#1068](https://github.com/Kuestenlogik/Bowire/issues/1068) gRPC: services behind Node's @grpc/reflection cannot be called ("Available: []")
+
+A gRPC server that serves reflection with the official Node library (`@grpc/reflection` 1.0.4 over `@grpc/proto-loader` / protobufjs) is listed by Bowire (`bowire list` shows the service), but every call fails: [[more]](https://github.com/Kuestenlogik/Bowire/issues/1068)
 
 #### <a id="issue-kuestenlogik-bowire-672"></a>✅ Done · [#672](https://github.com/Kuestenlogik/Bowire/issues/672) Server-side script engine so pre/post scripts run in bowire test, not only in the browser
 
