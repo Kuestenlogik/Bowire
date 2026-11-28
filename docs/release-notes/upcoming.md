@@ -92,6 +92,10 @@ A tool whose `_meta.ui.resourceUri` names a `ui://` resource comes with an inter
 
 An MCP Apps host now shows two of Bowire's tools as UI. Claude, VS Code Copilot and the Bowire workbench are such hosts. `bowire.test.run` shows every test or flow step with its checks; a failed test can be re-run from there. `bowire.discover` lists the services and methods, and each method can be invoked from the list. Both apps are single HTML documents that load nothing from the network. A client that does not declare the extension sees the same tools and JSON as before. `bowire.test.run` now also answers with the run step by step (`report`) and takes `test`, to run one test of a collection again.
 
+### Test and scan MCP Apps (#812)
+
+An MCP server's apps can now be tested and scanned. Discovery lists an **Apps** service with one check per tool that has an app. The check answers whether the tool still names its app and whether the app loads as an MCP App document, so a `bowire test` collection or a flow asserts on it like on any response. A missing resource fails the step and names the app. `bowire scan` reads every app's declaration and reports a CSP that allows any origin or `unsafe-eval`, camera, microphone or geolocation permissions, scripts the app did not declare, and destructive tools that apps may call. Each finding names the tool and, for the CSP, the directive.
+
 ## Fixes along the way
 
 - **gRPC servers written with tonic (Rust) can be called (#1069).** Bowire asked their reflection service for a file named like the service; tonic answers an unknown file by failing the stream, so every call failed with `file '…' not found`. Only file names are asked for by name now.

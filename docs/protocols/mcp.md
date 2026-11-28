@@ -183,6 +183,19 @@ Bowire leaves out the `null` fields the server's SDK objects carry before anythi
 
 **App traffic** beside the view lists every message in both directions with its time since the start, its method and its id. Expand an entry to read its payload.
 
+#### Testing an MCP App
+
+Discovery lists an **Apps** service with one method per tool that names an app. Invoking `Apps/<tool>` lists the tools again and reads the app's resource. It answers with:
+
+```json
+{ "tool": "dock_board", "resourceUri": "ui://sample/dock-board.html", "mimeType": "text/html;profile=mcp-app",
+  "isMcpApp": true, "isHtml": true, "bytes": 2048, "csp": { "connectDomains": [] }, "permissions": null, "visibility": null }
+```
+
+Assert on it in a `bowire test` collection or a flow like on any response. The check fails with a message that names the problem: the tool is gone, it names no app, or the resource does not load (`names the app ui://…, which the server does not serve`). The listing declares the Apps extension, so a server that shows `_meta.ui` only to app hosts is tested as such a host sees it.
+
+`bowire scan` checks the same apps for what they allow; see [MCP Apps in the OWASP suite](../security/owasp-api/index.md#protocol-specific-probes).
+
 **Limits of this release.** Views live in the host's memory for an hour, at most 128 at a time. `ui/message`, `ui/update-model-context` and sampling have no model to go to in a workbench and are not answered. The view shows in the response pane only; display modes (`fullscreen`, `pip`) are not offered.
 
 ### Sample target

@@ -32,6 +32,52 @@ public sealed class McpAppsDiscoveryTests
         Assert.Equal("ui://test/board.html", tools["board"].UiResourceUri);
         Assert.Equal("ui://test/legacy.html", tools["legacy_board"].UiResourceUri);
         Assert.Null(tools["capabilities"].UiResourceUri);
+
+        // #812: who may call a tool, and whether the server marks it destructive.
+        Assert.Equal(["model"], tools["wipe"].UiVisibility);
+        Assert.True(tools["wipe"].Destructive);
+        Assert.Null(tools["board"].UiVisibility);
+        Assert.False(tools["board"].Destructive);
+    }
+
+    [Fact]
+    public async Task Discovery_Lists_An_Apps_Check_Per_Tool_With_An_App()
+    {
+        await using var server = await AppsServer.StartAsync(Ct);
+
+        var services = await new BowireMcpProtocol().DiscoverAsync(server.Url, showInternalServices: false, Ct);
+
+        var apps = Assert.Single(services, s => s.Name == McpAppCheck.ServiceName);
+        Assert.Equal(["board", "legacy_board"], apps.Methods.Select(m => m.Name).Order(StringComparer.Ordinal));
+        Assert.All(apps.Methods, m => Assert.Equal("Unary", m.MethodType));
+    }
+
+    [Fact]
+    public async Task The_Apps_Check_Answers_What_The_App_Is()
+    {
+        await using var server = await AppsServer.StartAsync(Ct);
+
+        var result = await new BowireMcpProtocol().InvokeAsync(server.Url, McpAppCheck.ServiceName, "board", ["{}"], false, null, Ct);
+
+        Assert.Equal("OK", result.Status);
+        using var doc = JsonDocument.Parse(result.Response!);
+        Assert.Equal("ui://test/board.html", doc.RootElement.GetProperty("resourceUri").GetString());
+        Assert.True(doc.RootElement.GetProperty("isMcpApp").GetBoolean());
+        Assert.True(doc.RootElement.GetProperty("isHtml").GetBoolean());
+    }
+
+    [Theory]
+    [InlineData("legacy_board", "names the app ui://test/legacy.html, which the server does not serve")]
+    [InlineData("capabilities", "names no MCP App")]
+    [InlineData("nope", "lists no tool named 'nope'")]
+    public async Task The_Apps_Check_Fails_With_What_Is_Wrong(string tool, string message)
+    {
+        await using var server = await AppsServer.StartAsync(Ct);
+
+        var result = await new BowireMcpProtocol().InvokeAsync(server.Url, McpAppCheck.ServiceName, tool, ["{}"], false, null, Ct);
+
+        Assert.Null(result.Response);
+        Assert.Contains(message, result.Status, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -107,6 +153,13 @@ public sealed class McpAppsDiscoveryTests
                         Name = "board",
                         Meta = new JsonObject { ["ui"] = new JsonObject { ["resourceUri"] = "ui://test/board.html" } },
                     }),
+                    McpServerTool.Create(() => "wiped", new McpServerToolCreateOptions
+                    {
+                        Name = "wipe",
+                        Destructive = true,
+                        ReadOnly = false,
+                        Meta = new JsonObject { ["ui"] = new JsonObject { ["visibility"] = new JsonArray("model") } },
+                    }),
                     McpServerTool.Create(() => "legacy", new McpServerToolCreateOptions
                     {
                         Name = "legacy_board",
@@ -115,6 +168,12 @@ public sealed class McpAppsDiscoveryTests
                     McpServerTool.Create(
                         (McpServer mcp) => JsonSerializer.Serialize(mcp.ClientCapabilities, McpJsonOptions),
                         new McpServerToolCreateOptions { Name = "capabilities" }),
+                ])
+                .WithResources(
+                [
+                    McpServerResource.Create(
+                        () => new TextResourceContents { Uri = "ui://test/board.html", MimeType = BowireMcpProtocol.AppsMimeType, Text = "<!doctype html><p>board</p>" },
+                        new McpServerResourceCreateOptions { UriTemplate = "ui://test/board.html", Name = "board", MimeType = BowireMcpProtocol.AppsMimeType }),
                 ]);
             var app = builder.Build();
             app.MapMcp();

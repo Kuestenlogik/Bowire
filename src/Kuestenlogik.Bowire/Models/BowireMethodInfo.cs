@@ -61,4 +61,18 @@ public sealed record BowireMethodInfo(
     /// after the call; everywhere else the tool is a tool.
     /// </summary>
     public string? UiResourceUri { get; init; }
+
+    /// <summary>
+    /// #812 — who may call an MCP tool, from its <c>_meta.ui.visibility</c>:
+    /// <c>model</c>, <c>app</c>, or both. Null when the tool does not say,
+    /// which the MCP Apps extension reads as both.
+    /// </summary>
+    public IReadOnlyList<string>? UiVisibility { get; init; }
+
+    /// <summary>
+    /// #812 — an MCP tool the server marks as destructive
+    /// (<c>annotations.destructiveHint</c> true, and not read-only). False
+    /// when it is not marked; the hint is the server's word, not a guarantee.
+    /// </summary>
+    public bool Destructive { get; init; }
 }

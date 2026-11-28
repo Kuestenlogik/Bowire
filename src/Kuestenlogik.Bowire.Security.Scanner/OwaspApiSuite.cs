@@ -147,6 +147,8 @@ internal static class OwaspApiSuite
         new McpDiscoveryProbe(),
         new McpResourceTraversalProbe(),
         new McpToolInjectionProbe(),
+        // #812: reads each MCP App's ui:// resource; never calls a tool.
+        new McpAppsProbe(),
         new WebSocketAuthProbe(),
         // Passive: three handshakes, no frames. Silent without
         // --auth-header-b, because a cross-identity check with one identity

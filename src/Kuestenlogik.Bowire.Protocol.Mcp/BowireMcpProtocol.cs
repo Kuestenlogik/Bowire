@@ -271,7 +271,9 @@ public sealed partial class BowireMcpProtocol : IBowireProtocol, IBowireManualEn
         McpClient? client = null;
         try
         {
-            client = await CreateClientAsync(serverUrl, metadata, ct).ConfigureAwait(false);
+            // #812: an app check lists the tools as an apps host would.
+            client = await CreateClientAsync(serverUrl, metadata, ct,
+                service == McpAppCheck.ServiceName ? DiscoveryClientOptions() : null).ConfigureAwait(false);
 
             await using (client)
             {
@@ -294,10 +296,11 @@ public sealed partial class BowireMcpProtocol : IBowireProtocol, IBowireManualEn
                     "Tools" => await CallToolAsync(client, serverUrl, method, jsonMessages, ct).ConfigureAwait(false),
                     "Resources" => await ReadResourceAsync(client, method, ct).ConfigureAwait(false),
                     "Prompts" => await GetPromptAsync(client, method, jsonMessages, ct).ConfigureAwait(false),
+                    McpAppCheck.ServiceName => await McpAppCheck.RunAsync(client, method, ct).ConfigureAwait(false),
                     McpTaskService.ServiceName => await _tasks.InvokeAsync(client, NormalizeUrl(serverUrl), method, jsonMessages, ct,
                         (options, token) => CreateClientAsync(serverUrl, metadata, token, options)).ConfigureAwait(false),
                     _ => throw new InvalidOperationException(
-                        $"MCP service '{service}' is not supported. Use 'Tools', 'Resources', 'Prompts', or 'Tasks'."),
+                        $"MCP service '{service}' is not supported. Use 'Tools', 'Resources', 'Prompts', 'Apps' or 'Tasks'."),
                 };
 
                 var elapsedMs = (long)(DateTime.UtcNow - startedAt).TotalMilliseconds;
@@ -743,6 +746,17 @@ public sealed partial class BowireMcpProtocol : IBowireProtocol, IBowireManualEn
             && flat.TryGetValue<string>(out var legacy) && !string.IsNullOrWhiteSpace(legacy) ? legacy : null;
     }
 
+    /// <summary>#812 — <c>_meta.ui.visibility</c>, or null when the tool does not say.</summary>
+    internal static IReadOnlyList<string>? UiVisibilityOf(System.Text.Json.Nodes.JsonObject? meta)
+    {
+        if (meta?["ui"] is not System.Text.Json.Nodes.JsonObject ui || ui["visibility"] is not System.Text.Json.Nodes.JsonArray list)
+            return null;
+        var values = list.OfType<System.Text.Json.Nodes.JsonValue>()
+            .Select(v => v.TryGetValue<string>(out var s) ? s : null)
+            .Where(s => !string.IsNullOrWhiteSpace(s)).Select(s => s!).ToList();
+        return values.Count == 0 ? null : values;
+    }
+
     // ----- discovery: tools / resources / prompts -----------------------
 
     private async Task AddToolsAsync(
@@ -786,6 +800,8 @@ public sealed partial class BowireMcpProtocol : IBowireProtocol, IBowireManualEn
             Summary = tool.Description,
             Description = tool.Description,
             UiResourceUri = UiResourceUriOf(tool.ProtocolTool.Meta),
+            UiVisibility = UiVisibilityOf(tool.ProtocolTool.Meta),
+            Destructive = tool.ProtocolTool.Annotations is { DestructiveHint: true, ReadOnlyHint: not true },
         }).ToList();
 
         // Tasks (#801) are added after Tools in the tree; the legacy shape
@@ -812,6 +828,7 @@ public sealed partial class BowireMcpProtocol : IBowireProtocol, IBowireManualEn
                 : "MCP tools — invoke with the form-based UI; progress and log messages the server sends during a call stream in live, the result last.",
         });
         services.AddRange(taskServices);
+        if (McpAppCheck.Describe(methods, serverUrl) is { } apps) services.Add(apps);
     }
 
     private static async Task AddResourcesAsync(
