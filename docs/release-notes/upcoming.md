@@ -80,6 +80,10 @@ A method's scripts ran in the workbench only: an exported test collection left t
 
 The Code tab offered four or five languages per protocol and nothing for the brokers. It now offers the HTTPSnippet set for REST, OData, GraphQL, JSON-RPC and MCP — curl, fetch, axios, requests, httpx, HttpClient, RestSharp, Go, Java HttpClient and OkHttp, Kotlin, PHP, Ruby, Rust, Swift, PowerShell, HTTPie and wget — and, where no snippet library reaches, gRPC in C#, Go, Python, Node and Java, WebSocket, SignalR, SSE, MQTT, NATS, Socket.IO and Pulsar clients. Each snippet sends what the workbench sends: JSON-RPC and MCP carry their envelope, broker snippets their topic, subject, QoS or JetStream publish, gRPC snippets the method's streaming shape. Secrets stay `{{secret.*}}` references in every snippet (until now only the CLI export held them back), and a token fetched at request time is a comment, not a header. The targets are one registry; a plugin adds its own through `window.bowireCodeExport.register`. See [Export / Import](../features/export-import.md#code-export).
 
+### Scaffolding: REST stubs in Go, Node, Python and Rust (#754)
+
+`bowire scaffold` wrote C# stubs only. A REST stub now comes in Go (`net/http`), Node (`node:http`), Python (`http.server`) and Rust (axum) as well — the first three with no dependency at all — chosen with `--language`, the dialog's language picker, `"language"` in the spec or the sentence (`… in Go`). Each answers like the C# one, and `scripts/scaffold/verify.mjs` builds and starts every language's stub and runs its generated smoke test against it.
+
 ## Fixes along the way
 
 - **No 404s at start for absent packages (#1065).** A host without the Help or ManualEntry package logged two 404s in the browser console on every start, because the page probed both to find out. The page now reads which packages the host serves from `__BOWIRE_CONFIG__.features` (an endpoint contribution's new optional `FeatureId`) and asks only those.

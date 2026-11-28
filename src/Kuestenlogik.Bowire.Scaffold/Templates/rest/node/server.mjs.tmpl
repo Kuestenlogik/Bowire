@@ -1,0 +1,88 @@
+// {{Service}} — scaffolded by Bowire from the spec in bowire-scaffold.json.
+// The handlers keep {{plural}} in memory, so every restart starts empty:
+// replace the store with your own persistence and keep the routes.
+// Node's own http module only: `node server.mjs` needs no install.
+import { createServer } from 'node:http';
+import { readFileSync } from 'node:fs';
+import { randomUUID } from 'node:crypto';
+
+// The contract this stub implements, for Bowire to discover it from.
+const openapi = readFileSync(new URL('./openapi.yaml', import.meta.url));
+
+const FIELDS = [{{#fields}}'{{name}}', {{/fields}}];
+const REQUIRED = [{{#fields}}{{#Required}}'{{name}}', {{/Required}}{{/fields}}];
+const store = new Map();
+
+function send(res, status, body, type = 'application/json') {
+    res.writeHead(status, body === undefined ? {} : { 'Content-Type': type });
+    res.end(body === undefined ? undefined : (Buffer.isBuffer(body) ? body : JSON.stringify(body)));
+}
+
+async function readJson(req) {
+    let text = '';
+    for await (const chunk of req) text += chunk;
+    return text ? JSON.parse(text) : {};
+}
+
+// The same problem shape ASP.NET Core answers.
+function missing(input) {
+    const errors = {};
+    for (const name of REQUIRED) {
+        if (input[name] === undefined || input[name] === null) errors[name] = [`${name} is required`];
+    }
+    return Object.keys(errors).length > 0 ? errors : null;
+}
+
+function problem(res, errors) {
+    send(res, 400, { title: 'One or more validation errors occurred.', status: 400, errors }, 'application/problem+json');
+}
+
+function from(id, input) {
+    const item = { id };
+    for (const name of FIELDS) item[name] = input[name] ?? null;
+    return item;
+}
+
+const server = createServer(async (req, res) => {
+    const path = new URL(req.url, 'http://localhost').pathname.replace(/\/+$/, '');
+    const parts = path.split('/').filter(Boolean);
+    try {
+        if (req.method === 'GET' && path === '/openapi.yaml') return send(res, 200, openapi, 'application/yaml');
+        if (parts[0] !== '{{route}}' || parts.length > 2) return send(res, 404);
+        const id = parts[1];
+
+        if (id === undefined && req.method === 'GET') {
+            return send(res, 200, [...store.values()].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0)));
+        }
+        if (id === undefined && req.method === 'POST') {
+            const input = await readJson(req);
+            const errors = missing(input);
+            if (errors) return problem(res, errors);
+            const item = from(randomUUID().replaceAll('-', ''), input);
+            store.set(item.id, item);
+            res.setHeader('Location', `/{{route}}/${item.id}`);
+            return send(res, 201, item);
+        }
+        if (id !== undefined && req.method === 'GET') {
+            return store.has(id) ? send(res, 200, store.get(id)) : send(res, 404);
+        }
+        if (id !== undefined && req.method === 'PUT') {
+            if (!store.has(id)) return send(res, 404);
+            const input = await readJson(req);
+            const errors = missing(input);
+            if (errors) return problem(res, errors);
+            const item = from(id, input);
+            store.set(id, item);
+            return send(res, 200, item);
+        }
+        if (id !== undefined && req.method === 'DELETE') {
+            return store.delete(id) ? send(res, 204) : send(res, 404);
+        }
+        return send(res, 405);
+    } catch (err) {
+        if (err instanceof SyntaxError) return problem(res, { body: [err.message] });
+        throw err;
+    }
+});
+
+server.listen({{Port}}, '{{Host}}', () => console.log('listening on {{BaseUrl}}'));

@@ -1,0 +1,117 @@
+# {{Service}} — scaffolded by Bowire from the spec in bowire-scaffold.json.
+# The handlers keep {{plural}} in memory, so every restart starts empty:
+# replace the store with your own persistence and keep the routes.
+# Python's standard library only: `python server.py` needs no install.
+import json
+import secrets
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
+from threading import Lock
+
+# The contract this stub implements, for Bowire to discover it from.
+OPENAPI = (Path(__file__).parent / "openapi.yaml").read_bytes()
+
+FIELDS = [{{#fields}}"{{name}}", {{/fields}}]
+REQUIRED = [{{#fields}}{{#Required}}"{{name}}", {{/Required}}{{/fields}}]
+store = {}
+lock = Lock()
+
+
+def from_input(item_id, data):
+    return {"id": item_id, **{name: data.get(name) for name in FIELDS}}
+
+
+def missing(data):
+    # The same problem shape ASP.NET Core answers.
+    return {name: [f"{name} is required"] for name in REQUIRED if data.get(name) is None}
+
+
+class Handler(BaseHTTPRequestHandler):
+    def send(self, status, body=None, content_type="application/json", headers=None):
+        payload = body if isinstance(body, bytes) else (None if body is None else json.dumps(body).encode())
+        self.send_response(status)
+        if payload is not None:
+            self.send_header("Content-Type", content_type)
+        self.send_header("Content-Length", str(len(payload or b"")))
+        for name, value in (headers or {}).items():
+            self.send_header(name, value)
+        self.end_headers()
+        if payload:
+            self.wfile.write(payload)
+
+    def problem(self, errors):
+        self.send(400, {"title": "One or more validation errors occurred.", "status": 400, "errors": errors},
+                  "application/problem+json")
+
+    def route(self):
+        parts = [p for p in self.path.split("?")[0].split("/") if p]
+        if not parts or parts[0] != "{{route}}" or len(parts) > 2:
+            return None
+        return parts[1] if len(parts) == 2 else ""
+
+    def read_json(self):
+        length = int(self.headers.get("Content-Length") or 0)
+        return json.loads(self.rfile.read(length) or b"{}")
+
+    def do_GET(self):
+        if self.path.split("?")[0] == "/openapi.yaml":
+            return self.send(200, OPENAPI, "application/yaml")
+        item_id = self.route()
+        if item_id is None:
+            return self.send(404)
+        with lock:
+            if item_id == "":
+                return self.send(200, [store[k] for k in sorted(store)])
+            item = store.get(item_id)
+        return self.send(200, item) if item is not None else self.send(404)
+
+    def do_POST(self):
+        if self.route() != "":
+            return self.send(404)
+        try:
+            data = self.read_json()
+        except json.JSONDecodeError as err:
+            return self.problem({"body": [str(err)]})
+        errors = missing(data)
+        if errors:
+            return self.problem(errors)
+        item = from_input(secrets.token_hex(16), data)
+        with lock:
+            store[item["id"]] = item
+        return self.send(201, item, headers={"Location": f"/{{route}}/{item['id']}"})
+
+    def do_PUT(self):
+        item_id = self.route()
+        if not item_id:
+            return self.send(404)
+        with lock:
+            if item_id not in store:
+                return self.send(404)
+        try:
+            data = self.read_json()
+        except json.JSONDecodeError as err:
+            return self.problem({"body": [str(err)]})
+        errors = missing(data)
+        if errors:
+            return self.problem(errors)
+        item = from_input(item_id, data)
+        with lock:
+            store[item_id] = item
+        return self.send(200, item)
+
+    def do_DELETE(self):
+        item_id = self.route()
+        if not item_id:
+            return self.send(404)
+        with lock:
+            found = store.pop(item_id, None) is not None
+        return self.send(204) if found else self.send(404)
+
+    def log_message(self, format, *args):
+        pass
+
+
+if __name__ == "__main__":
+    server = ThreadingHTTPServer(("{{Host}}", {{Port}}), Handler)
+    print("listening on {{BaseUrl}}", flush=True)
+    server.serve_forever()

@@ -21,7 +21,7 @@
     var scaffoldState = null;
 
     function _scaffoldFresh() {
-        return { step: 'describe', intent: '', protocol: '', busy: false, error: null,
+        return { step: 'describe', intent: '', protocol: '', language: '', busy: false, error: null,
             specText: '', source: null, model: null, notes: [], files: [], selected: 0 };
     }
 
@@ -39,12 +39,14 @@
     // is not installed, and then the parser is the honest fallback.
     async function _scaffoldPropose(useAi) {
         var s = scaffoldState;
-        var body = { intent: s.intent, protocol: s.protocol || null };
+        var body = { intent: s.intent, protocol: s.protocol || null, language: s.language || null };
         var r = useAi ? await _scaffoldPost('/api/ai/scaffold', body) : null;
         if (!r || r.status === 404) r = await _scaffoldPost('/api/scaffold/parse', body);
         if (!r.ok || !r.data || !r.data.spec) {
             throw new Error((r.data && r.data.errors && r.data.errors.join('; ')) || ('HTTP ' + r.status));
         }
+        // #754 — the language picked here wins, whoever wrote the spec.
+        if (s.language) r.data.spec.language = s.language;
         s.specText = JSON.stringify(r.data.spec, null, 2);
         s.source = r.data.source || 'parser';
         s.model = r.data.model || null;
@@ -185,10 +187,25 @@
                     el('option', { value: 'rest', textContent: 'REST (OpenAPI)' }),  // i18n-exempt: protocol and format names
                     el('option', { value: 'grpc', textContent: 'gRPC (proto3)' }));  // i18n-exempt: protocol and format names
                 protocol.value = s.protocol;
+                // #754 — the stub's language.
+                var language = el('select', {
+                    className: 'bowire-scaffold-language',
+                    'aria-label': t('scaffold.languageLabel'),
+                    onChange: function (e) { s.language = e.target.value; }
+                },
+                    el('option', { value: '', textContent: t('scaffold.languageAuto') }),
+                    el('option', { value: 'csharp', textContent: 'C# (.NET)' }),  // i18n-exempt: language names
+                    el('option', { value: 'go', textContent: 'Go' }),  // i18n-exempt: language names
+                    el('option', { value: 'node', textContent: 'Node.js' }),  // i18n-exempt: language names
+                    el('option', { value: 'python', textContent: 'Python' }),  // i18n-exempt: language names
+                    el('option', { value: 'rust', textContent: 'Rust' }));  // i18n-exempt: language names
+                language.value = s.language;
                 body.appendChild(el('label', { className: 'bowire-scaffold-label', textContent: t('scaffold.intentLabel') }));
                 body.appendChild(intent);
                 body.appendChild(el('div', { className: 'bowire-scaffold-row' },
                     el('label', { className: 'bowire-scaffold-label', textContent: t('scaffold.protocolLabel') }), protocol));
+                body.appendChild(el('div', { className: 'bowire-scaffold-row' },
+                    el('label', { className: 'bowire-scaffold-label', textContent: t('scaffold.languageLabel') }), language));
                 body.appendChild(el('p', { className: 'bowire-scaffold-hint', textContent: t('scaffold.describeHint') }));
                 var proposeBtn = button(t('scaffold.propose'), function () { run(function () { return _scaffoldPropose(true); }); }, true);
                 var parseBtn = button(t('scaffold.parseOnly'), function () { run(function () { return _scaffoldPropose(false); }); });

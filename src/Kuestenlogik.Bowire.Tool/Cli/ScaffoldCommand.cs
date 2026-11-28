@@ -34,7 +34,7 @@ internal static class ScaffoldCommand
     {
         var cmd = new Command(
             "scaffold",
-            "Scaffold a CRUD service from a sentence or a spec: schema (OpenAPI or .proto), a runnable C# stub, a workbench collection and a smoke test.");
+            "Scaffold a CRUD service from a sentence or a spec: schema (OpenAPI or .proto), a runnable stub (C#, Go, Node, Python or Rust), a workbench collection and a smoke test.");
 
         var intentArg = new Argument<string?>("intent")
         {
@@ -44,6 +44,10 @@ internal static class ScaffoldCommand
         var protocolOpt = new Option<string?>("--protocol", "-p")
         {
             Description = "rest or grpc. Overrides what the sentence says; REST when neither says.",
+        };
+        var languageOpt = new Option<string?>("--language", "-l")
+        {
+            Description = "The stub's language: csharp (default), go, node, python or rust. Overrides what the sentence or the spec says.",
         };
         var specOpt = new Option<string?>("--spec")
         {
@@ -72,6 +76,7 @@ internal static class ScaffoldCommand
 
         cmd.Add(intentArg);
         cmd.Add(protocolOpt);
+        cmd.Add(languageOpt);
         cmd.Add(specOpt);
         cmd.Add(outOpt);
         cmd.Add(aiOpt);
@@ -81,14 +86,15 @@ internal static class ScaffoldCommand
         cmd.SetAction(async (pr, ct) => await RunAsync(
             pr.GetValue(intentArg), pr.GetValue(protocolOpt), pr.GetValue(specOpt), pr.GetValue(outOpt),
             pr.GetValue(aiOpt), pr.GetValue(printOpt), pr.GetValue(forceOpt), pr.GetValue(baseUrlOpt),
-            pr.InvocationConfiguration.Output, pr.InvocationConfiguration.Error, ct).ConfigureAwait(false));
+            pr.InvocationConfiguration.Output, pr.InvocationConfiguration.Error, ct,
+            language: pr.GetValue(languageOpt)).ConfigureAwait(false));
         return cmd;
     }
 
     internal static async Task<int> RunAsync(
         string? intent, string? protocol, string? specPath, string? outDir, bool ai, bool printSpec, bool force,
         string? baseUrl, TextWriter stdout, TextWriter stderr, CancellationToken ct,
-        Func<CancellationToken, Task<IReadOnlyList<ScaffoldModel>>>? models = null)
+        Func<CancellationToken, Task<IReadOnlyList<ScaffoldModel>>>? models = null, string? language = null)
     {
         ScaffoldSpec spec;
         var notes = new List<string>();
@@ -123,7 +129,7 @@ internal static class ScaffoldCommand
             }
             else
             {
-                var (parsed, parserNotes) = ScaffoldIntentParser.Parse(intent, protocol);
+                var (parsed, parserNotes) = ScaffoldIntentParser.Parse(intent, protocol, language);
                 spec = parsed;
                 notes.AddRange(parserNotes);
             }
@@ -134,6 +140,7 @@ internal static class ScaffoldCommand
             return 2;
         }
         if (!string.IsNullOrWhiteSpace(baseUrl)) spec = spec with { BaseUrl = baseUrl };
+        if (!string.IsNullOrWhiteSpace(language)) spec = spec with { Language = language };
 
         var (normalized, errors) = spec.Normalize();
         foreach (var note in notes) await stderr.WriteLineAsync("note: " + note).ConfigureAwait(false);
@@ -162,7 +169,15 @@ internal static class ScaffoldCommand
             await stdout.WriteLineAsync($"  {file.Kind,-10} {file.Path}").ConfigureAwait(false);
         }
         await stdout.WriteLineAsync($"Scaffolded {normalized.Service} ({normalized.Protocol}) in {target}").ConfigureAwait(false);
-        await stdout.WriteLineAsync("Next: dotnet run there, then bowire test bowire/*.smoke-test.json").ConfigureAwait(false);
+        var run = normalized.Language switch
+        {
+            "go" => "go run .",
+            "node" => "node server.mjs",
+            "python" => "python server.py",
+            "rust" => "cargo run",
+            _ => "dotnet run",
+        };
+        await stdout.WriteLineAsync($"Next: {run} there, then bowire test bowire/*.smoke-test.json").ConfigureAwait(false);
         return 0;
     }
 

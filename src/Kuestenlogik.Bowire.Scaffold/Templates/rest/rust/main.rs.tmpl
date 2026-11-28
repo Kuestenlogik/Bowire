@@ -1,0 +1,111 @@
+// {{Service}} — scaffolded by Bowire from the spec in bowire-scaffold.json.
+// The handlers keep {{plural}} in memory, so every restart starts empty:
+// replace the store with your own persistence and keep the routes.
+use std::collections::BTreeMap;
+use std::sync::{Arc, Mutex};
+
+use axum::extract::{Path, State};
+use axum::http::{header, StatusCode};
+use axum::response::{IntoResponse, Response};
+use axum::routing::get;
+use axum::{Json, Router};
+use serde::{Deserialize, Serialize};
+
+// The contract this stub implements, for Bowire to discover it from.
+const OPENAPI: &str = include_str!("../openapi.yaml");
+
+/// What a client sends to create or replace {{aEntity}}.
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct {{Entity}}Input {
+{{#fields}}    {{#rustRename}}#[serde(rename = "{{rustRename}}")] {{/rustRename}}{{rustName}}: {{rustType}},
+{{/fields}}}
+
+/// A stored {{entityWords}}.
+#[derive(Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+struct {{Entity}} {
+    id: String,
+{{#fields}}    {{#rustRename}}#[serde(rename = "{{rustRename}}")] {{/rustRename}}{{rustName}}: {{rustType}},
+{{/fields}}}
+
+type Store = Arc<Mutex<BTreeMap<String, {{Entity}}>>>;
+
+#[tokio::main]
+async fn main() {
+    let store: Store = Arc::new(Mutex::new(BTreeMap::new()));
+    let app = Router::new()
+        .route("/{{route}}", get(list).post(create))
+        .route("/{{route}}/{id}", get(read).put(update).delete(remove))
+        .route("/openapi.yaml", get(|| async { ([(header::CONTENT_TYPE, "application/yaml")], OPENAPI) }))
+        .with_state(store);
+    let listener = tokio::net::TcpListener::bind("{{ListenAddress}}").await.expect("bind");
+    println!("listening on {{BaseUrl}}");
+    axum::serve(listener, app).await.expect("serve");
+}
+
+async fn list(State(store): State<Store>) -> Json<Vec<{{Entity}}>> {
+    Json(store.lock().unwrap().values().cloned().collect())
+}
+
+async fn create(State(store): State<Store>, Json(input): Json<{{Entity}}Input>) -> Response {
+    if let Some(problem) = validate(&input) {
+        return problem;
+    }
+    let item = from(uuid::Uuid::new_v4().simple().to_string(), input);
+    store.lock().unwrap().insert(item.id.clone(), item.clone());
+    let location = format!("/{{route}}/{}", item.id);
+    (StatusCode::CREATED, [(header::LOCATION, location)], Json(item)).into_response()
+}
+
+async fn read(State(store): State<Store>, Path(id): Path<String>) -> Response {
+    match store.lock().unwrap().get(&id) {
+        Some(item) => Json(item.clone()).into_response(),
+        None => StatusCode::NOT_FOUND.into_response(),
+    }
+}
+
+async fn update(State(store): State<Store>, Path(id): Path<String>, Json(input): Json<{{Entity}}Input>) -> Response {
+    if !store.lock().unwrap().contains_key(&id) {
+        return StatusCode::NOT_FOUND.into_response();
+    }
+    if let Some(problem) = validate(&input) {
+        return problem;
+    }
+    let item = from(id.clone(), input);
+    store.lock().unwrap().insert(id, item.clone());
+    Json(item).into_response()
+}
+
+async fn remove(State(store): State<Store>, Path(id): Path<String>) -> StatusCode {
+    match store.lock().unwrap().remove(&id) {
+        Some(_) => StatusCode::NO_CONTENT,
+        None => StatusCode::NOT_FOUND,
+    }
+}
+
+fn from(id: String, input: {{Entity}}Input) -> {{Entity}} {
+    {{Entity}} {
+        id,
+{{#fields}}        {{rustName}}: input.{{rustName}},
+{{/fields}}    }
+}
+
+/// A body without its required fields is refused, with the same problem
+/// shape ASP.NET Core answers.
+#[allow(unused_mut)]
+fn validate(input: &{{Entity}}Input) -> Option<Response> {
+    let mut errors = serde_json::Map::new();
+{{#fields}}{{#Required}}    if input.{{rustName}}.is_none() {
+        errors.insert("{{name}}".into(), serde_json::json!(["{{name}} is required"]));
+    }
+{{/Required}}{{/fields}}    if errors.is_empty() {
+        return None;
+    }
+    let body = serde_json::json!({
+        "title": "One or more validation errors occurred.",
+        "status": 400,
+        "errors": errors,
+    });
+    Some((StatusCode::BAD_REQUEST, [(header::CONTENT_TYPE, "application/problem+json")], body.to_string()).into_response())
+}

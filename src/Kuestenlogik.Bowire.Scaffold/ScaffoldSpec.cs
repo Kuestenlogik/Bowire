@@ -18,15 +18,28 @@ namespace Kuestenlogik.Bowire.Scaffold;
 /// <param name="Fields">The entity's fields besides <c>id</c>, which every entity gets.</param>
 /// <param name="Service">The service name; defaults to the entity's plural — <c>Users</c>.</param>
 /// <param name="BaseUrl">Where the stub listens; default <c>http://localhost:5000</c>.</param>
+/// <param name="Language">The stub's language (#754): <c>csharp</c> (default), <c>go</c>, <c>node</c>, <c>python</c> or <c>rust</c>.</param>
 public sealed record ScaffoldSpec(
     [property: JsonPropertyName("entity")] string Entity,
     [property: JsonPropertyName("protocol")] string Protocol,
     [property: JsonPropertyName("fields")] IReadOnlyList<ScaffoldField> Fields,
     [property: JsonPropertyName("service")] string? Service = null,
-    [property: JsonPropertyName("baseUrl")] string? BaseUrl = null)
+    [property: JsonPropertyName("baseUrl")] string? BaseUrl = null,
+    [property: JsonPropertyName("language")] string? Language = null)
 {
     /// <summary>The protocols a scaffold can target.</summary>
     public static readonly IReadOnlyList<string> Protocols = ["rest", "grpc"];
+
+    /// <summary>The languages a stub can be written in (#754); the first is the default.</summary>
+    public static readonly IReadOnlyList<string> Languages = ["csharp", "go", "node", "python", "rust"];
+
+    /// <summary>The languages each protocol has stub templates for.</summary>
+    public static readonly IReadOnlyDictionary<string, IReadOnlyList<string>> LanguagesByProtocol =
+        new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal)
+        {
+            ["rest"] = Languages,
+            ["grpc"] = ["csharp"],
+        };
 
     /// <summary>The field types a spec may use.</summary>
     public static readonly IReadOnlyList<string> Types = ["string", "int", "long", "double", "bool", "datetime", "uuid"];
@@ -56,6 +69,16 @@ public sealed record ScaffoldSpec(
         var service = string.IsNullOrWhiteSpace(Service) ? ScaffoldNames.Plural(entity) : Pascal(Service);
         if (!s_identifier.IsMatch(service)) errors.Add($"service '{Service}' is not a usable name");
         if (string.Equals(service, entity, StringComparison.Ordinal)) service += "Service";
+
+        var language = ScaffoldNames.NormalizeLanguage(Language);
+        if (language is null)
+        {
+            errors.Add($"language '{Language}' is not one of {string.Join(", ", Languages)}");
+        }
+        else if (Protocols.Contains(protocol) && !LanguagesByProtocol[protocol].Contains(language))
+        {
+            errors.Add($"a {protocol} stub is not available in {language} yet; it is in {string.Join(", ", LanguagesByProtocol[protocol])}");
+        }
 
         var baseUrl = string.IsNullOrWhiteSpace(BaseUrl) ? "http://localhost:5000" : BaseUrl.Trim().TrimEnd('/');
         if (!Uri.TryCreate(baseUrl, UriKind.Absolute, out var uri) || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
@@ -100,7 +123,7 @@ public sealed record ScaffoldSpec(
 
         return errors.Count > 0
             ? (null, errors)
-            : (new ScaffoldSpec(entity, protocol, fields, service, baseUrl), errors);
+            : (new ScaffoldSpec(entity, protocol, fields, service, baseUrl, language), errors);
     }
 
     internal static string Pascal(string name)
@@ -161,8 +184,33 @@ internal static class ScaffoldNames
         ["uuid"] = "uuid", ["guid"] = "uuid",
     };
 
+    /// <summary>Rust's keywords, which a field name has to be written around (r#type).</summary>
+    public static readonly HashSet<string> RustKeywords = new(StringComparer.Ordinal)
+    {
+        "as", "async", "await", "break", "const", "continue", "dyn", "else", "enum", "extern", "false", "fn", "for",
+        "if", "impl", "in", "let", "loop", "match", "mod", "move", "mut", "pub", "ref", "return", "static", "struct",
+        "trait", "true", "type", "unsafe", "use", "where", "while", "abstract", "become", "box", "do", "final", "gen",
+        "macro", "override", "priv", "try", "typeof", "unsized", "virtual", "yield",
+    };
+
     public static string? NormalizeType(string? type) =>
         string.IsNullOrWhiteSpace(type) ? "string" : s_typeAliases.GetValueOrDefault(type.Trim());
+
+    private static readonly Dictionary<string, string> s_languageAliases = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["csharp"] = "csharp", ["c#"] = "csharp", ["cs"] = "csharp", ["dotnet"] = "csharp", [".net"] = "csharp",
+        ["go"] = "go", ["golang"] = "go",
+        ["node"] = "node", ["nodejs"] = "node", ["node.js"] = "node", ["javascript"] = "node", ["js"] = "node",
+        ["python"] = "python", ["py"] = "python",
+        ["rust"] = "rust", ["rs"] = "rust",
+    };
+
+    /// <summary>A language name or alias as one of <see cref="ScaffoldSpec.Languages"/>; empty is the default, unknown is null.</summary>
+    public static string? NormalizeLanguage(string? language)
+    {
+        if (string.IsNullOrWhiteSpace(language)) return ScaffoldSpec.Languages[0];
+        return s_languageAliases.GetValueOrDefault(language.Trim());
+    }
 
     // Nouns that are the same in singular and plural. Matched on the end of
     // the word, so a PascalCase compound like TvSeries counts too.

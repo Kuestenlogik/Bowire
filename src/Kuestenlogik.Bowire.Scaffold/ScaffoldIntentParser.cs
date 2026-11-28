@@ -40,12 +40,27 @@ public static class ScaffoldIntentParser
         "a", "an", "the", "field", "fields", "as", "of", "type", "ein", "eine", "feld", "felder", "optional",
     };
 
-    /// <summary>Parse <paramref name="intent"/>; <paramref name="protocol"/> wins over the sentence when given.</summary>
-    public static (ScaffoldSpec Spec, IReadOnlyList<string> Notes) Parse(string intent, string? protocol = null)
+    // #754 — "… in Go", "… using Python": the stub's language. Taken out of
+    // the sentence before the fields are read, or "role in Go" would become
+    // a field.
+    private static readonly Regex s_language = new(
+        @"\s*\b(?:in|using|written\s+in)\s+(golang|go|python|node(?:\.?js)?|javascript|rust|c#|csharp|\.net|dotnet)(?=$|[\s,.;)])",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(50));
+
+    /// <summary>
+    /// Parse <paramref name="intent"/>; <paramref name="protocol"/> and
+    /// <paramref name="language"/> win over the sentence when given.
+    /// </summary>
+    public static (ScaffoldSpec Spec, IReadOnlyList<string> Notes) Parse(string intent, string? protocol = null, string? language = null)
     {
         ArgumentNullException.ThrowIfNull(intent);
         var notes = new List<string>();
         var text = intent.Trim();
+
+        var named = s_language.Match(text);
+        if (named.Success) text = text.Remove(named.Index, named.Length).Trim();
+        var lang = !string.IsNullOrWhiteSpace(language) ? language.Trim()
+            : named.Success ? ScaffoldNames.NormalizeLanguage(named.Groups[1].Value) : null;
 
         var proto = (protocol is null ? null : ScaffoldNames.Lower(protocol.Trim()));
         if (string.IsNullOrEmpty(proto))
@@ -69,7 +84,7 @@ public static class ScaffoldIntentParser
             notes.Add("no fields found (\"… with a, b, c\"); assumed a required name");
         }
 
-        return (new ScaffoldSpec(ScaffoldSpec.Pascal(ScaffoldNames.Singular(entity)), proto, fields), notes);
+        return (new ScaffoldSpec(ScaffoldSpec.Pascal(ScaffoldNames.Singular(entity)), proto, fields, Language: lang), notes);
     }
 
     private static string? FindEntity(string text)

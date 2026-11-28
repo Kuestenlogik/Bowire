@@ -4042,6 +4042,8 @@
   "scaffold.intentPlaceholder": "REST CRUD for User with email (required) + role",
   "scaffold.protocolLabel": "Protocol",
   "scaffold.protocolAuto": "As the sentence says (REST if it says nothing)",
+  "scaffold.languageLabel": "Stub language",
+  "scaffold.languageAuto": "As the sentence says (C# if it says nothing)",
   "scaffold.describeHint": "One entity and its fields. The assistant only writes the spec — the files come from fixed templates, so every model gives the same code for the same spec.",
   "scaffold.propose": "Propose",
   "scaffold.parseOnly": "Read without AI",

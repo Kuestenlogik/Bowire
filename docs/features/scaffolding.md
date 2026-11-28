@@ -1,6 +1,6 @@
 ---
 title: Service scaffolding
-summary: 'Describe a service in one sentence and get a schema (OpenAPI or proto3), a runnable C# stub, a workbench collection and a smoke test. The AI assistant writes only the spec; the files come from checked-in templates, so the same spec gives the same code with any model or none.'
+summary: 'Describe a service in one sentence and get a schema (OpenAPI or proto3), a runnable stub in C#, Go, Node, Python or Rust, a workbench collection and a smoke test. The AI assistant writes only the spec; the files come from checked-in templates, so the same spec gives the same code with any model or none.'
 ---
 
 # Service scaffolding
@@ -10,13 +10,29 @@ summary: 'Describe a service in one sentence and get a schema (OpenAPI or proto3
 | File | What it is |
 |---|---|
 | `openapi.yaml` or `<service>.proto` | The contract: list, get, create, update, delete |
-| `Program.cs`, `<Service>.csproj` (+ `<Service>Service.cs` for gRPC) | A runnable C# stub that keeps its data in memory — replace the store, keep the routes |
+| the stub | A runnable stub that keeps its data in memory — replace the store, keep the routes. Its files depend on the language, see below. |
 | `bowire/<entities>.collection.json` | A workbench collection: every operation, plus an unknown id and a create without its required fields |
 | `bowire/<entities>.smoke-test.json` | A smoke test for `bowire test` |
 | `bowire-scaffold.json` | The spec itself, to edit and generate again |
 | `README.md` | How to run and try it |
 
-The stub runs with `dotnet run`, and the smoke test passes against it as generated.
+The smoke test passes against the stub as generated, in every language.
+
+## Languages
+
+| Language | REST stub | Run | Needs |
+|---|---|---|---|
+| C# (default) | `Program.cs`, `<Service>.csproj` — minimal API | `dotnet run` | .NET 10 SDK |
+| Go | `main.go`, `go.mod` — `net/http` | `go run .` | Go 1.22+, standard library only |
+| Node | `server.mjs`, `package.json` — `node:http` | `node server.mjs` | Node.js 20+, no dependencies |
+| Python | `server.py` — `http.server` | `python server.py` | Python 3.10+, standard library only |
+| Rust | `src/main.rs`, `Cargo.toml` — axum | `cargo run` | Rust 1.80+; cargo fetches axum, tokio, serde, uuid |
+
+Every REST stub answers the same: the list sorted by id, `201` with a `Location` on create, `404` for an unknown id, `400` with ASP.NET Core's problem shape for a missing required field, `204` on delete, and the contract at `/openapi.yaml` for discovery. A gRPC stub is C# so far.
+
+The language comes from `--language` / `-l`, the dialog's language picker, `"language"` in the spec, or the sentence itself (`… in Go`, `… using Python`); the parameter wins over the sentence.
+
+`node scripts/scaffold/verify.mjs` generates every language's stub, builds and starts it, and runs its smoke test with `bowire test`; a language whose toolchain is missing is reported, not failed.
 
 ## The model writes the spec, never the code
 
@@ -51,6 +67,7 @@ bowire test bowire/users.smoke-test.json
 | Option | |
 |---|---|
 | `--protocol`, `-p` | `rest` or `grpc`; wins over the sentence |
+| `--language`, `-l` | `csharp` (default), `go`, `node`, `python` or `rust`; wins over the sentence and the spec |
 | `--ai` | Let the assistant write the spec — local model first, then the configured provider (`Bowire__Ai__*`, or what Settings → AI saved). Without it the parser reads the sentence. |
 | `--print-spec` | Print the spec and stop |
 | `--spec <file>` | Generate from a spec file instead of a sentence |
@@ -71,7 +88,8 @@ bowire test bowire/users.smoke-test.json
     { "name": "role", "type": "string" }
   ],
   "service": "Users",
-  "baseUrl": "http://localhost:5000"
+  "baseUrl": "http://localhost:5000",
+  "language": "go"
 }
 ```
 
@@ -82,9 +100,10 @@ bowire test bowire/users.smoke-test.json
 | `fields` | Up to 40; camelCase on the wire. Types: `string`, `int`, `long`, `double`, `bool`, `datetime`, `uuid`. A field called `id` is dropped — every entity gets one. |
 | `service` | Default: the entity's plural |
 | `baseUrl` | Default `http://localhost:5000` |
+| `language` | Default `csharp`; also `go`, `node`, `python`, `rust` (aliases such as `golang`, `js`, `py` are read too) |
 
 In the proto, `datetime` and `uuid` are strings (ISO 8601, UUID), and every scalar other than a string is `optional`, so a required number can be told apart from a zero.
 
 ## Not yet
 
-C# is the only stub language; REST and gRPC the only protocols. More languages and protocols are templates next to the existing ones.
+gRPC stubs are C# only so far, and REST and gRPC are the only protocols; more are templates next to the existing ones (#754).

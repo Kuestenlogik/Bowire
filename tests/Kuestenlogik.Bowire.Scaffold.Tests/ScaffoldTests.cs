@@ -308,3 +308,127 @@ public sealed class ScaffoldTests
         Assert.Equal(HttpStatusCode.BadRequest, bad.StatusCode);
     }
 }
+
+/// <summary>
+/// #754 — a stub in the language the spec asks for. Each language's stub is
+/// built, started and run against its own smoke test by
+/// <c>scripts/scaffold/verify.mjs</c>; these tests hold what decides which
+/// files a language gets and how its names come out.
+/// </summary>
+public sealed class ScaffoldLanguageTests
+{
+    private static ScaffoldSpec Orders(string language, params ScaffoldField[] extra) => new("Order", "rest",
+    [
+        new ScaffoldField("customer", "string", Required: true),
+        new ScaffoldField("quantity", "int"),
+        .. extra,
+    ], Language: language);
+
+    [Theory]
+    [InlineData(null, "csharp")]
+    [InlineData("", "csharp")]
+    [InlineData("C#", "csharp")]
+    [InlineData("dotnet", "csharp")]
+    [InlineData("golang", "go")]
+    [InlineData("Node.js", "node")]
+    [InlineData("javascript", "node")]
+    [InlineData("py", "python")]
+    [InlineData("RS", "rust")]
+    public void A_language_or_its_alias_normalizes(string? given, string expected)
+    {
+        var (spec, errors) = Orders(given!).Normalize();
+        Assert.Empty(errors);
+        Assert.Equal(expected, spec!.Language);
+    }
+
+    [Fact]
+    public void An_unknown_language_says_which_there_are()
+    {
+        var (spec, errors) = Orders("cobol").Normalize();
+        Assert.Null(spec);
+        Assert.Contains(errors, e => e.Contains("language 'cobol' is not one of csharp, go, node, python, rust", StringComparison.Ordinal));
+    }
+
+    [Theory]
+    [InlineData("go", new[] { "main.go", "go.mod" })]
+    [InlineData("node", new[] { "server.mjs", "package.json" })]
+    [InlineData("python", new[] { "server.py" })]
+    [InlineData("rust", new[] { "src/main.rs", "Cargo.toml" })]
+    [InlineData("csharp", new[] { "Program.cs", "Orders.csproj" })]
+    public void Each_language_gets_its_stub_files_and_the_same_bytes_every_time(string language, string[] stubs)
+    {
+        var first = ScaffoldGenerator.Generate(Orders(language));
+        Assert.Equal(first, ScaffoldGenerator.Generate(Orders(language)));
+        Assert.Equal(stubs, first.Where(f => f.Kind == "stub").Select(f => f.Path));
+        Assert.Contains(first, f => f.Path == "openapi.yaml");
+        Assert.DoesNotContain(first, f => f.Kind == "stub" && f.Content.Contains("{{", StringComparison.Ordinal));
+        // The README tells how to run this stub, not the C# one.
+        var readme = first.Single(f => f.Path == "README.md").Content;
+        var run = language switch { "go" => "go run .", "node" => "node server.mjs", "python" => "python server.py", "rust" => "cargo run", _ => "dotnet run" };
+        Assert.Contains("```bash\n" + run + "\n```", readme, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_stub_listens_where_the_spec_says()
+    {
+        var spec = Orders("go") with { BaseUrl = "http://localhost:5321" };
+        var main = ScaffoldGenerator.Generate(spec).Single(f => f.Path == "main.go").Content;
+        Assert.Contains("http.ListenAndServe(\"localhost:5321\", mux)", main, StringComparison.Ordinal);
+        var py = ScaffoldGenerator.Generate(spec with { Language = "python" }).Single(f => f.Path == "server.py").Content;
+        Assert.Contains("ThreadingHTTPServer((\"localhost\", 5321), Handler)", py, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_Rust_field_named_like_a_keyword_is_written_around_it()
+    {
+        var main = ScaffoldGenerator.Generate(Orders("rust",
+            new ScaffoldField("type", "string"), new ScaffoldField("self", "string"))).Single(f => f.Path == "src/main.rs").Content;
+        Assert.Contains("    r#type: Option<String>,", main, StringComparison.Ordinal);
+        Assert.Contains("    #[serde(rename = \"self\")] self_: Option<String>,", main, StringComparison.Ordinal);
+        Assert.Contains("        r#type: input.r#type,", main, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Required_fields_are_checked_in_every_language()
+    {
+        foreach (var (language, path, check) in new[]
+        {
+            ("go", "main.go", "if input.Customer == nil {"),
+            ("node", "server.mjs", "const REQUIRED = ['customer', ];"),
+            ("python", "server.py", "REQUIRED = [\"customer\", ]"),
+            ("rust", "src/main.rs", "if input.customer.is_none() {"),
+        })
+        {
+            var content = ScaffoldGenerator.Generate(Orders(language)).Single(f => f.Path == path).Content;
+            Assert.Contains(check, content, StringComparison.Ordinal);
+            Assert.DoesNotContain("quantity is required", content, StringComparison.Ordinal);
+        }
+    }
+
+    [Fact]
+    public void The_sentence_can_name_the_language_and_it_is_not_read_as_a_field()
+    {
+        var (spec, _) = ScaffoldIntentParser.Parse("REST CRUD for Order with customer (required) and role in Go");
+        Assert.Equal("go", spec.Language);
+        Assert.Equal(["customer", "role"], spec.Fields.Select(f => f.Name));
+
+        var (python, _) = ScaffoldIntentParser.Parse("an API for books with title, using Python");
+        Assert.Equal("python", python.Language);
+
+        // The parameter wins over the sentence, as the protocol does.
+        var (rust, _) = ScaffoldIntentParser.Parse("REST CRUD for Order with customer in Go", language: "rust");
+        Assert.Equal("rust", rust.Language);
+
+        // No language named: the default, decided by Normalize.
+        var (none, _) = ScaffoldIntentParser.Parse("REST CRUD for Order with customer");
+        Assert.Null(none.Language);
+    }
+
+    [Fact]
+    public void A_gRPC_stub_outside_CSharp_says_it_is_not_there_yet()
+    {
+        var (spec, errors) = (Orders("go") with { Protocol = "grpc" }).Normalize();
+        Assert.Null(spec);
+        Assert.Contains(errors, e => e.Contains("a grpc stub is not available in go yet", StringComparison.Ordinal));
+    }
+}

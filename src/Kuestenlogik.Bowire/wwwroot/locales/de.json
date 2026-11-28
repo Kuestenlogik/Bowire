@@ -4041,6 +4041,8 @@
   "scaffold.intentPlaceholder": "REST CRUD for User with email (required) + role",
   "scaffold.protocolLabel": "Protokoll",
   "scaffold.protocolAuto": "Wie im Satz (REST, wenn der Satz nichts sagt)",
+  "scaffold.languageLabel": "Sprache des Stubs",
+  "scaffold.languageAuto": "Wie im Satz (C#, wenn der Satz nichts sagt)",
   "scaffold.describeHint": "Eine Entität und ihre Felder. Der Assistent schreibt nur die Spec — die Dateien kommen aus festen Vorlagen, jedes Modell ergibt für dieselbe Spec denselben Code.",
   "scaffold.propose": "Vorschlagen",
   "scaffold.parseOnly": "Ohne KI lesen",

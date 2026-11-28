@@ -28,7 +28,8 @@ public sealed class BowireScaffoldEndpointContribution : IBowireEndpointContribu
 /// <summary>A sentence to read a spec from.</summary>
 public sealed record ScaffoldParseRequest(
     [property: JsonPropertyName("intent")] string? Intent,
-    [property: JsonPropertyName("protocol")] string? Protocol = null);
+    [property: JsonPropertyName("protocol")] string? Protocol = null,
+    [property: JsonPropertyName("language")] string? Language = null);
 
 /// <summary>A spec to generate from.</summary>
 public sealed record ScaffoldGenerateRequest(
@@ -70,7 +71,7 @@ public static class BowireScaffoldEndpoints
         {
             if (string.IsNullOrWhiteSpace(request?.Intent))
                 return Results.BadRequest(new { errors = s_intentRequired });
-            var (spec, notes) = ScaffoldIntentParser.Parse(request.Intent, request.Protocol);
+            var (spec, notes) = ScaffoldIntentParser.Parse(request.Intent, request.Protocol, request.Language);
             return Results.Ok(new { spec, notes, source = "parser" });
         }).ExcludeFromDescription();
 

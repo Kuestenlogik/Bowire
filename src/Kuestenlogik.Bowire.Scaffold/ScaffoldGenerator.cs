@@ -1,6 +1,7 @@
 // Copyright 2026 Küstenlogik
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Globalization;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -11,7 +12,7 @@ namespace Kuestenlogik.Bowire.Scaffold;
 /// <summary>One generated file.</summary>
 /// <param name="Path">Relative to the scaffold's folder, forward slashes.</param>
 /// <param name="Kind"><c>spec</c>, <c>schema</c>, <c>stub</c>, <c>collection</c>, <c>test</c> or <c>readme</c>.</param>
-/// <param name="Language">For the editor: <c>yaml</c>, <c>protobuf</c>, <c>csharp</c>, <c>xml</c>, <c>json</c>, <c>markdown</c>.</param>
+/// <param name="Language">For the editor: <c>yaml</c>, <c>protobuf</c>, <c>csharp</c>, <c>go</c>, <c>javascript</c>, <c>python</c>, <c>rust</c>, <c>toml</c>, <c>xml</c>, <c>json</c>, <c>markdown</c>.</param>
 /// <param name="Content">The file.</param>
 public sealed record ScaffoldFile(
     [property: JsonPropertyName("path")] string Path,
@@ -50,8 +51,28 @@ public static class ScaffoldGenerator
         if (spec.Protocol == "rest")
         {
             files.Add(new("openapi.yaml", "schema", "yaml", Render("rest/openapi.yaml.tmpl", model)));
-            files.Add(new("Program.cs", "stub", "csharp", Render("rest/program-cs.tmpl", model)));
-            files.Add(new(service + ".csproj", "stub", "xml", Render("rest/project.csproj.tmpl", model)));
+            switch (spec.Language)
+            {
+                case "go":
+                    files.Add(new("main.go", "stub", "go", Render("rest/go/main.go.tmpl", model)));
+                    files.Add(new("go.mod", "stub", "go", Render("rest/go/go.mod.tmpl", model)));
+                    break;
+                case "node":
+                    files.Add(new("server.mjs", "stub", "javascript", Render("rest/node/server.mjs.tmpl", model)));
+                    files.Add(new("package.json", "stub", "json", Render("rest/node/package.json.tmpl", model)));
+                    break;
+                case "python":
+                    files.Add(new("server.py", "stub", "python", Render("rest/python/server.py.tmpl", model)));
+                    break;
+                case "rust":
+                    files.Add(new("src/main.rs", "stub", "rust", Render("rest/rust/main.rs.tmpl", model)));
+                    files.Add(new("Cargo.toml", "stub", "toml", Render("rest/rust/Cargo.toml.tmpl", model)));
+                    break;
+                default:
+                    files.Add(new("Program.cs", "stub", "csharp", Render("rest/program-cs.tmpl", model)));
+                    files.Add(new(service + ".csproj", "stub", "xml", Render("rest/project.csproj.tmpl", model)));
+                    break;
+            }
         }
         else
         {
@@ -72,7 +93,8 @@ public static class ScaffoldGenerator
         var entity = spec.Entity;
         var plural = ScaffoldNames.Plural(entity);
         var service = spec.Service!;
-        var port = new Uri(spec.BaseUrl!).Port;
+        var baseUri = new Uri(spec.BaseUrl!);
+        var port = baseUri.Port;
         var grpc = spec.Protocol == "grpc";
         var fields = spec.Fields.Select((f, i) => (IReadOnlyDictionary<string, object?>)FieldModel(f, i, spec.Fields.Count)).ToList();
         var route = ScaffoldNames.Lower(plural);
@@ -80,14 +102,30 @@ public static class ScaffoldGenerator
         var package = ScaffoldNames.Snake(service) + ".v1";
         var pluralSnake = ScaffoldNames.Snake(ScaffoldSpec.Camel(plural));
         var entitySnake = ScaffoldNames.Snake(ScaffoldSpec.Camel(entity));
+        var keeping = "keeping " + ScaffoldSpec.Camel(plural) + " in memory";
         var stubFiles = grpc
             ? new List<IReadOnlyDictionary<string, object?>>
             {
-                Row(service + "Service.cs", "The service, keeping " + ScaffoldSpec.Camel(plural) + " in memory"),
+                Row(service + "Service.cs", "The service, " + keeping),
                 Row("Program.cs", "Host with gRPC and server reflection"),
                 Row(service + ".csproj", "The project"),
             }
-            : [Row("Program.cs", "Minimal API with every route, keeping " + ScaffoldSpec.Camel(plural) + " in memory"), Row(service + ".csproj", "The project")];
+            : spec.Language switch
+            {
+                "go" => [Row("main.go", "net/http server with every route, " + keeping), Row("go.mod", "The module")],
+                "node" => [Row("server.mjs", "node:http server with every route, " + keeping), Row("package.json", "The package")],
+                "python" => [Row("server.py", "http.server with every route, " + keeping)],
+                "rust" => [Row("src/main.rs", "axum server with every route, " + keeping), Row("Cargo.toml", "The crate")],
+                _ => [Row("Program.cs", "Minimal API with every route, " + keeping), Row(service + ".csproj", "The project")],
+            };
+        var (runCommand, runNote) = spec.Language switch
+        {
+            "go" => ("go run .", "Go 1.22 or later; the standard library only."),
+            "node" => ("node server.mjs", "Node.js 20 or later; no dependencies to install."),
+            "python" => ("python server.py", "Python 3.10 or later; the standard library only."),
+            "rust" => ("cargo run", "Rust 1.80 or later; cargo fetches axum, tokio, serde and uuid on the first build."),
+            _ => ("dotnet run", ".NET 10 SDK."),
+        };
 
         return new Dictionary<string, object?>(StringComparer.Ordinal)
         {
@@ -118,6 +156,14 @@ public static class ScaffoldGenerator
             ["testFile"] = route + ".smoke-test.json",
             ["discoveryUrl"] = DiscoveryUrl(spec),
             ["idVariable"] = IdVariable(spec),
+            // #754 — what the stubs in the other languages need.
+            ["Host"] = baseUri.Host,
+            ["ListenAddress"] = baseUri.Host + ":" + port.ToString(CultureInfo.InvariantCulture),
+            ["goModule"] = ScaffoldNames.Lower(service),
+            ["npmName"] = ScaffoldNames.Snake(ScaffoldSpec.Camel(service)).Replace('_', '-'),
+            ["crateName"] = ScaffoldNames.Snake(ScaffoldSpec.Camel(service)),
+            ["runCommand"] = runCommand,
+            ["runNote"] = runNote,
         };
     }
 
@@ -151,8 +197,33 @@ public static class ScaffoldGenerator
             "bool" => "bool",
             _ => "string",
         };
+        var goType = f.Type switch
+        {
+            "int" => "*int32",
+            "long" => "*int64",
+            "double" => "*float64",
+            "bool" => "*bool",
+            _ => "*string",
+        };
+        var rustType = f.Type switch
+        {
+            "int" => "Option<i32>",
+            "long" => "Option<i64>",
+            "double" => "Option<f64>",
+            "bool" => "Option<bool>",
+            _ => "Option<String>",
+        };
+        var snake = ScaffoldNames.Snake(f.Name);
         return new Dictionary<string, object?>(StringComparer.Ordinal)
         {
+            ["goType"] = goType,
+            ["rustType"] = rustType,
+            // A field named like a Rust keyword is written as a raw identifier,
+            // which serde reads and writes under its own name; self, super and
+            // crate cannot be raw, so they get a trailing underscore and a rename.
+            ["rustName"] = snake is "self" or "super" or "crate" ? snake + "_"
+                : ScaffoldNames.RustKeywords.Contains(snake) ? "r#" + snake : snake,
+            ["rustRename"] = snake is "self" or "super" or "crate" ? f.Name : "",
             ["name"] = f.Name,
             ["Pascal"] = ScaffoldSpec.Pascal(f.Name),
             ["snake"] = ScaffoldNames.Snake(f.Name),

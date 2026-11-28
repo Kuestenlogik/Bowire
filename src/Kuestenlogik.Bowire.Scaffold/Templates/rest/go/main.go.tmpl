@@ -1,0 +1,170 @@
+// {{Service}} — scaffolded by Bowire from the spec in bowire-scaffold.json.
+// The handlers keep {{plural}} in memory, so every restart starts empty:
+// replace the store with your own persistence and keep the routes.
+package main
+
+import (
+	"crypto/rand"
+	_ "embed"
+	"encoding/hex"
+	"encoding/json"
+	"fmt"
+	"log"
+	"net/http"
+	"sort"
+	"sync"
+)
+
+// The contract this stub implements, for Bowire to discover it from.
+//
+//go:embed openapi.yaml
+var openapi []byte
+
+// {{Entity}}Input is what a client sends to create or replace {{aEntity}}.
+type {{Entity}}Input struct {
+{{#fields}}	{{Pascal}} {{goType}} `json:"{{name}}"`
+{{/fields}}}
+
+// {{Entity}} is a stored {{entityWords}}.
+type {{Entity}} struct {
+	ID string `json:"id"`
+{{#fields}}	{{Pascal}} {{goType}} `json:"{{name}}"`
+{{/fields}}}
+
+var (
+	mu    sync.Mutex
+	store = map[string]{{Entity}}{}
+)
+
+func main() {
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /{{route}}", list{{Plural}})
+	mux.HandleFunc("POST /{{route}}", create{{Entity}})
+	mux.HandleFunc("GET /{{route}}/{id}", get{{Entity}})
+	mux.HandleFunc("PUT /{{route}}/{id}", update{{Entity}})
+	mux.HandleFunc("DELETE /{{route}}/{id}", delete{{Entity}})
+	mux.HandleFunc("GET /openapi.yaml", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/yaml")
+		w.Write(openapi)
+	})
+	fmt.Println("listening on {{BaseUrl}}")
+	log.Fatal(http.ListenAndServe("{{ListenAddress}}", mux))
+}
+
+func list{{Plural}}(w http.ResponseWriter, r *http.Request) {
+	mu.Lock()
+	items := make([]{{Entity}}, 0, len(store))
+	for _, item := range store {
+		items = append(items, item)
+	}
+	mu.Unlock()
+	sort.Slice(items, func(i, j int) bool { return items[i].ID < items[j].ID })
+	writeJSON(w, http.StatusOK, items)
+}
+
+func create{{Entity}}(w http.ResponseWriter, r *http.Request) {
+	input, ok := readInput(w, r)
+	if !ok {
+		return
+	}
+	item := from(newID(), input)
+	mu.Lock()
+	store[item.ID] = item
+	mu.Unlock()
+	w.Header().Set("Location", "/{{route}}/"+item.ID)
+	writeJSON(w, http.StatusCreated, item)
+}
+
+func get{{Entity}}(w http.ResponseWriter, r *http.Request) {
+	mu.Lock()
+	item, found := store[r.PathValue("id")]
+	mu.Unlock()
+	if !found {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+	writeJSON(w, http.StatusOK, item)
+}
+
+func update{{Entity}}(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	mu.Lock()
+	_, found := store[id]
+	mu.Unlock()
+	if !found {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+	input, ok := readInput(w, r)
+	if !ok {
+		return
+	}
+	item := from(id, input)
+	mu.Lock()
+	store[id] = item
+	mu.Unlock()
+	writeJSON(w, http.StatusOK, item)
+}
+
+func delete{{Entity}}(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	mu.Lock()
+	_, found := store[id]
+	delete(store, id)
+	mu.Unlock()
+	if !found {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// readInput decodes the body and refuses one without its required fields,
+// with the same problem shape ASP.NET Core answers.
+func readInput(w http.ResponseWriter, r *http.Request) ({{Entity}}Input, bool) {
+	var input {{Entity}}Input
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		problem(w, map[string][]string{"body": {err.Error()}})
+		return input, false
+	}
+	missing := map[string][]string{}
+{{#fields}}{{#Required}}	if input.{{Pascal}} == nil {
+		missing["{{name}}"] = []string{"{{name}} is required"}
+	}
+{{/Required}}{{/fields}}	if len(missing) > 0 {
+		problem(w, missing)
+		return input, false
+	}
+	return input, true
+}
+
+func from(id string, input {{Entity}}Input) {{Entity}} {
+	return {{Entity}}{
+		ID: id,
+{{#fields}}		{{Pascal}}: input.{{Pascal}},
+{{/fields}}	}
+}
+
+func newID() string {
+	b := make([]byte, 16)
+	if _, err := rand.Read(b); err != nil {
+		panic(err)
+	}
+	return hex.EncodeToString(b)
+}
+
+func problem(w http.ResponseWriter, errors map[string][]string) {
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(http.StatusBadRequest)
+	json.NewEncoder(w).Encode(map[string]any{
+		"title":  "One or more validation errors occurred.",
+		"status": http.StatusBadRequest,
+		"errors": errors,
+	})
+}
+
+func writeJSON(w http.ResponseWriter, status int, v any) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	json.NewEncoder(w).Encode(v)
+}
