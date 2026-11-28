@@ -67,7 +67,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.12 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
 
-**0/8 done** · 8 backlog
+**0/9 done** · 9 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -79,6 +79,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [1061](https://github.com/Kuestenlogik/Bowire/issues/1061) | Bowire | [Script ctx: sendRequest, scoped variables, more assertions, a versioned surface](#issue-kuestenlogik-bowire-1061) | ⬜ Backlog | `area:workbench` |
 | [1064](https://github.com/Kuestenlogik/Bowire/issues/1064) | Bowire | [Code export: SOAP snippets with the envelope the plugin sends](#issue-kuestenlogik-bowire-1064) | ⬜ Backlog | `area:workbench` |
 | [1070](https://github.com/Kuestenlogik/Bowire/issues/1070) | Bowire | [Scaffolding: GraphQL stubs in Go and Rust](#issue-kuestenlogik-bowire-1070) | ⬜ Backlog |  |
+| [1071](https://github.com/Kuestenlogik/Bowire/issues/1071) | Bowire | [MCP Apps: assert on an app's messages, record and replay its traffic](#issue-kuestenlogik-bowire-1071) | ⬜ Backlog |  |
 
 ### v2.13 — Benchmark: connections held open, the shape of a run, several targets *(due 2027-06-15)*
 
@@ -547,6 +548,10 @@ Follow-up of #677, which gave every protocol at least three snippet targets beyo
 #### <a id="issue-kuestenlogik-bowire-1070"></a>⬜ Backlog · [#1070](https://github.com/Kuestenlogik/Bowire/issues/1070) Scaffolding: GraphQL stubs in Go and Rust
 
 Follow-up of #754, which added GraphQL to `bowire scaffold` with stubs in C# (Hot Chocolate), Node (graphql-js + graphql-http) and Python (graphql-core). [[more]](https://github.com/Kuestenlogik/Bowire/issues/1070)
+
+#### <a id="issue-kuestenlogik-bowire-1071"></a>⬜ Backlog · [#1071](https://github.com/Kuestenlogik/Bowire/issues/1071) MCP Apps: assert on an app's messages, record and replay its traffic
+
+Follow-up of #812. #812 shipped what can be checked without running an app: the `Apps/<tool>` check (the tool names an app, the resource loads, it is an MCP App document) for `bowire test` and flows, and the MCP Apps scan. What remains needs the app to actually run, in a browser, next to a bridge Bowire controls. [[more]](https://github.com/Kuestenlogik/Bowire/issues/1071)
 
 ### v2.13 — Benchmark: connections held open, the shape of a run, several targets *(due 2027-06-15)*
 
