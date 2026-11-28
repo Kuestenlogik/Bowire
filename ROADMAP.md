@@ -67,7 +67,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.12 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
 
-**0/7 done** · 7 backlog
+**0/8 done** · 8 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -78,6 +78,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [1059](https://github.com/Kuestenlogik/Bowire/issues/1059) | Bowire | [Scripts in bowire.invoke (MCP) and bowire call](#issue-kuestenlogik-bowire-1059) | ⬜ Backlog | `area:mcp` |
 | [1061](https://github.com/Kuestenlogik/Bowire/issues/1061) | Bowire | [Script ctx: sendRequest, scoped variables, more assertions, a versioned surface](#issue-kuestenlogik-bowire-1061) | ⬜ Backlog | `area:workbench` |
 | [1064](https://github.com/Kuestenlogik/Bowire/issues/1064) | Bowire | [Code export: SOAP snippets with the envelope the plugin sends](#issue-kuestenlogik-bowire-1064) | ⬜ Backlog | `area:workbench` |
+| [1070](https://github.com/Kuestenlogik/Bowire/issues/1070) | Bowire | [Scaffolding: GraphQL stubs in Go and Rust](#issue-kuestenlogik-bowire-1070) | ⬜ Backlog |  |
 
 ### v2.13 — Benchmark: connections held open, the shape of a run, several targets *(due 2027-06-15)*
 
@@ -542,6 +543,10 @@ Follow-up of #672, the part of its `ctx` scope that did not ship with it. [[more
 > `area:workbench`
 
 Follow-up of #677, which gave every protocol at least three snippet targets beyond the Bowire CLI — except SOAP, which offers only the CLI. [[more]](https://github.com/Kuestenlogik/Bowire/issues/1064)
+
+#### <a id="issue-kuestenlogik-bowire-1070"></a>⬜ Backlog · [#1070](https://github.com/Kuestenlogik/Bowire/issues/1070) Scaffolding: GraphQL stubs in Go and Rust
+
+Follow-up of #754, which added GraphQL to `bowire scaffold` with stubs in C# (Hot Chocolate), Node (graphql-js + graphql-http) and Python (graphql-core). [[more]](https://github.com/Kuestenlogik/Bowire/issues/1070)
 
 ### v2.13 — Benchmark: connections held open, the shape of a run, several targets *(due 2027-06-15)*
 
