@@ -86,13 +86,17 @@
         </ComponentGroup>
 
         <!-- Start-menu shortcut. Shortcuts need a registry KeyPath
-             because they're not files in the strict MSI sense. -->
+             because they're not files in the strict MSI sense.
+             #687 - both shortcuts start bowirew.exe: the same program as
+             bowire.exe without a console window, with a notification-area
+             icon to open and quit it. bowire.exe stays on PATH for terminals,
+             scripts and CI. -->
         <StandardDirectory Id="ProgramMenuFolder">
             <Component Id="StartMenuShortcut" Guid="3F5BFAE3-7BE4-4E69-8CFE-6CF0C44CFAA8">
                 <Shortcut Id="BowireShortcut"
                           Name="Bowire"
                           Description="The API workbench that embeds in your own service."
-                          Target="[INSTALLFOLDER]bowire.exe"
+                          Target="[INSTALLFOLDER]bowirew.exe"
                           WorkingDirectory="INSTALLFOLDER"
                           Icon="bowire.ico" />
                 <RegistryValue Root="HKCU"
@@ -121,7 +125,7 @@
                 <Shortcut Id="BowireDesktopShortcut"
                           Name="Bowire"
                           Description="The API workbench that embeds in your own service."
-                          Target="[INSTALLFOLDER]bowire.exe"
+                          Target="[INSTALLFOLDER]bowirew.exe"
                           WorkingDirectory="INSTALLFOLDER"
                           Icon="bowire.ico" />
                 <RegistryValue Root="HKCU"

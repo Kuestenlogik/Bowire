@@ -26,6 +26,7 @@
     <Project Path="src/Kuestenlogik.Bowire.Ai.Mcp/Kuestenlogik.Bowire.Ai.Mcp.csproj" />
     <Project Path="src/Kuestenlogik.Bowire.Keyring/Kuestenlogik.Bowire.Keyring.csproj" />
     <Project Path="src/Kuestenlogik.Bowire.Telemetry/Kuestenlogik.Bowire.Telemetry.csproj" />
+    <Project Path="src/Kuestenlogik.Bowire.Desktop/Kuestenlogik.Bowire.Desktop.csproj" />
     <Project Path="src/Kuestenlogik.Bowire.Protocol.Rest.OpenApi2/Kuestenlogik.Bowire.Protocol.Rest.OpenApi2.csproj" />
     <Project Path="src/Kuestenlogik.Bowire.Protocol.Rest.OpenApi3/Kuestenlogik.Bowire.Protocol.Rest.OpenApi3.csproj" />
     <Project Path="tests/Kuestenlogik.Bowire.Protocol.Rest.OpenApi2.Tests/Kuestenlogik.Bowire.Protocol.Rest.OpenApi2.Tests.csproj" />

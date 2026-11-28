@@ -100,6 +100,10 @@ An MCP server's apps can now be tested and scanned. Discovery lists an **Apps** 
 
 **Open in new window** in a tab's menu moves the tab into a browser window of its own, for example onto a second screen. It takes along its request, its response and the frames of a stream so far. A running stream starts again there, and the tab says so. Closing the window brings the tab back. If the main window closes first, the other window becomes a full workbench. Each tab belongs to one window at a time; environments and variables stay shared between the windows.
 
+### No console window on Windows; a tray icon instead (#687)
+
+The Start-menu entry and the desktop icon now start `bowirew.exe`, which opens no console window. A Bowire icon in the notification area shows that the workbench runs and on which port. A click opens the workbench; the menu offers **Open Bowire**, **Start at login** (off by default) and **Quit**, which shuts Bowire down cleanly. `bowire.exe` is unchanged for terminals, scripts and CI. The tray lives in the new `Kuestenlogik.Bowire.Desktop` package, which only the workbench bundle carries. Linux and macOS follow in #1073 and #1074.
+
 ## Fixes along the way
 
 - **gRPC servers written with tonic (Rust) can be called (#1069).** Bowire asked their reflection service for a file named like the service; tonic answers an unknown file by failing the stream, so every call failed with `file '…' not found`. Only file names are asked for by name now.

@@ -31,6 +31,9 @@
   <ItemGroup>
     <!-- Core. -->
     <ProjectReference Include="..\Kuestenlogik.Bowire\Kuestenlogik.Bowire.csproj" />
+    <!-- #687 - the tray item of the windowed launcher (bowirew). Only the
+         workbench bundle carries it; Core and Bundle.Minimal gain nothing. -->
+    <ProjectReference Include="..\Kuestenlogik.Bowire.Desktop\Kuestenlogik.Bowire.Desktop.csproj" />
     <!-- Every built-in rail (#306 Phase G).
          v2.1 (#325): the foundational Home + Discover rails were folded
          into Core — both are descriptor-only (no per-rail JS fragment) so

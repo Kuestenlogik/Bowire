@@ -118,4 +118,64 @@
     <ProjectReference Include="..\Kuestenlogik.Bowire.Cli\Kuestenlogik.Bowire.Cli.csproj" />
     <PackageReference Include="System.CommandLine" />
   </ItemGroup>
+
+  <!--
+    #687 - bowirew.exe: the javaw / pythonw pattern. The same apphost, the
+    same bowire.dll and entry point, with the PE subsystem set to GUI, so a
+    Start-menu or desktop launch opens no console window. It is exactly what
+    the SDK writes for OutputType=WinExe, made from the console apphost
+    rather than by building the tool twice. bowire.exe stays the console
+    program for terminals, scripts and CI. Only where an apphost exists (a
+    Windows build or a win-* publish); a framework-dependent `dotnet tool`
+    install has none and needs none.
+  -->
+  <UsingTask TaskName="WriteWindowedAppHost"
+             TaskFactory="RoslynCodeTaskFactory"
+             AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
+    <ParameterGroup>
+      <Source ParameterType="System.String" Required="true" />
+      <Destination ParameterType="System.String" Required="true" />
+    </ParameterGroup>
+    <Task>
+      <Code Type="Fragment" Language="cs"><![CDATA[
+        var bytes = System.IO.File.ReadAllBytes(Source);
+        // e_lfanew at 0x3C names the PE header; after the 4-byte signature and
+        // the 20-byte COFF header comes the optional header, whose Subsystem
+        // field sits at offset 68 in both PE32 and PE32+.
+        if (bytes.Length < 0x40 || bytes[0] != (byte)'M' || bytes[1] != (byte)'Z')
+        {
+            Log.LogError("WriteWindowedAppHost: " + Source + " is not a PE file.");
+            return false;
+        }
+        var pe = System.BitConverter.ToInt32(bytes, 0x3C);
+        var subsystem = pe + 4 + 20 + 68;
+        if (pe <= 0 || subsystem + 2 > bytes.Length || bytes[pe] != (byte)'P' || bytes[pe + 1] != (byte)'E')
+        {
+            Log.LogError("WriteWindowedAppHost: " + Source + " has no PE header where its DOS header says.");
+            return false;
+        }
+        // 2 = IMAGE_SUBSYSTEM_WINDOWS_GUI, 3 = IMAGE_SUBSYSTEM_WINDOWS_CUI.
+        bytes[subsystem] = 2;
+        bytes[subsystem + 1] = 0;
+        System.IO.File.WriteAllBytes(Destination, bytes);
+      ]]></Code>
+    </Task>
+  </UsingTask>
+
+  <Target Name="WriteBowirew" AfterTargets="Build" Condition="Exists('$(OutDir)$(AssemblyName).exe')"
+          Inputs="$(OutDir)$(AssemblyName).exe" Outputs="$(OutDir)bowirew.exe">
+    <WriteWindowedAppHost Source="$(OutDir)$(AssemblyName).exe" Destination="$(OutDir)bowirew.exe" />
+    <ItemGroup>
+      <FileWrites Include="$(OutDir)bowirew.exe" />
+    </ItemGroup>
+  </Target>
+
+  <!-- Not for a single-file publish: there bowire.exe is the whole tool, a
+       copy would double the archive, and the portable archives have no
+       shortcuts to point at it. The MSI publishes framework files beside a
+       small apphost, which is where bowirew belongs. -->
+  <Target Name="PublishBowirew" AfterTargets="Publish"
+          Condition="Exists('$(PublishDir)$(AssemblyName).exe') And '$(PublishSingleFile)' != 'true'">
+    <WriteWindowedAppHost Source="$(PublishDir)$(AssemblyName).exe" Destination="$(PublishDir)bowirew.exe" />
+  </Target>
 </Project>

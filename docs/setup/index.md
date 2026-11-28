@@ -49,11 +49,11 @@ Every installer puts Bowire in the place your desktop already looks:
 
 Clicking any of those starts the workbench and **opens your browser at it**. There is no separate app window: the browser tab *is* the UI.
 
-On Windows a console window opens alongside it. That window is Bowire &mdash; closing it stops the workbench, and so does <kbd>Ctrl</kbd>+<kbd>C</kbd> in it. ([#687](https://github.com/Kuestenlogik/Bowire/issues/687) replaces it with a tray icon, which is what gives you a way to quit once the window is gone.) On Linux and macOS a menu launch has no terminal at all.
+On Windows the Start-menu entry and the desktop icon start `bowirew.exe`, which opens no console window. A **Bowire icon in the notification area** shows that the workbench runs and on which port. Click it to open the workbench; right-click it for **Open Bowire**, **Start at login** (off until you tick it) and **Quit**, which shuts Bowire down cleanly. `bowire.exe` in a terminal stays a console program: <kbd>Ctrl</kbd>+<kbd>C</kbd> stops it, and it shows no icon. On Linux and macOS a menu launch has no terminal at all.
 
 ### After a reboot
 
-**Nothing is running.** Bowire is not a service and does not start with your machine — it runs only while you have it open. Start it again the same way: Start menu, application menu, Launchpad, desktop icon or `bowire`.
+**Nothing is running.** Bowire is not a service and does not start with your machine — it runs only while you have it open, unless you ticked **Start at login** in its notification-area menu on Windows. Start it again the same way: Start menu, application menu, Launchpad, desktop icon or `bowire`.
 
 Clicking again while it is already running does not start a second copy: Bowire notices the first one and opens your browser at it.
 

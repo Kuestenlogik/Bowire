@@ -67,7 +67,7 @@ MSI and feeds it into the winget manifest (see
 | `<Property Id="ARP*">`          | Apps & Features fields (publisher, help URL, support URL) |
 | `<Icon>`                        | App icon shown in ARP + Start menu |
 | `<ComponentGroup Id="ProductFiles">` | Auto-harvested files from the publish folder |
-| `<StartMenuShortcut>`           | Start-menu entry pointing at `bowire.exe` |
+| `<StartMenuShortcut>`           | Start-menu entry pointing at `bowirew.exe`: the same program without a console window, with a notification-area icon to open and quit it (#687). `bowire.exe` stays on `PATH` for terminals |
 | `<DesktopShortcut>`             | Desktop icon, same target. Conditioned on the public `DESKTOPSHORTCUT` property (default `1`) so a silent install can decline it with `msiexec /i Bowire.msi DESKTOPSHORTCUT=0` &mdash; this MSI ships no wizard, so a property is the only way to offer the choice (#685) |
 | `<PathEntry>`                   | Adds `INSTALLFOLDER` to system `PATH` (append, not prepend, so we don't shadow other tools) |
 | `<Feature Id="MainFeature">`    | Single feature — Bowire is all-or-nothing |

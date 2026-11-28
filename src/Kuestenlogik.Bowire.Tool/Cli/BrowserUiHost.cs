@@ -906,7 +906,13 @@ internal static class BrowserUiHost
 
         await app.StartAsync(ct).ConfigureAwait(false);
 
-        await onListening(BoundUrl(app, ui.Port), ct).ConfigureAwait(false);
+        var boundUrl = BoundUrl(app, ui.Port);
+        await onListening(boundUrl, ct).ConfigureAwait(false);
+
+        // #687 - a windowed launch (bowirew) has no console to show or stop it
+        // by; the tray item is both. Quit ends WaitForShutdownAsync like Ctrl+C.
+        using var tray = DesktopTray.TryStart(boundUrl, app.Lifetime, OpenBrowserAsync,
+            reason => app.Logger.LogWarning("Started as {Launcher} but no tray item: {Reason}. Stop Bowire from the Task Manager.", DesktopTray.WindowedLauncher, reason));
 
         await app.WaitForShutdownAsync(ct).ConfigureAwait(false);
         return 0;

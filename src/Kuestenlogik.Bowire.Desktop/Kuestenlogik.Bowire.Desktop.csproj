@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Bowire desktop handle (#687): a tray item that shows the running workbench, opens it in the browser, quits it cleanly and starts it at login on request. Windows today (Shell_NotifyIcon); on other platforms it does nothing. Referenced by Bundle.Workbench for the standalone tool's windowed launcher (bowirew); an embedded host never starts it.</Description>
+    <PackageId>Kuestenlogik.Bowire.Desktop</PackageId>
+    <PackageTags>bowire;desktop;tray;notification-area;windows;developer-tools</PackageTags>
+    <IsPackable>true</IsPackable>
+    <!-- LibraryImport generates the P/Invoke stubs; the Win32 structs carry
+         fixed-size character buffers, which need unsafe code. -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Kuestenlogik.Bowire.Tests" />
+  </ItemGroup>
+</Project>
