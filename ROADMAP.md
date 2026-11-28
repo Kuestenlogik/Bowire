@@ -12,17 +12,15 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**41/49 done** · 1 in progress · 7 backlog
+**43/49 done** · 6 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
-| [1072](https://github.com/Kuestenlogik/Bowire/issues/1072) | Bowire | [MCP scan counts Bowire's own Tasks and Apps services as the server's tools](#issue-kuestenlogik-bowire-1072) | 🟡 In progress |  |
 | [639](https://github.com/Kuestenlogik/Bowire/issues/639) | Bowire | [SCIM: live Okta and Entra ID provisioning round-trips](#issue-kuestenlogik-bowire-639) | ⬜ Backlog | `area:workbench` |
 | [670](https://github.com/Kuestenlogik/Bowire/issues/670) | Bowire | [Get listed where developers and models actually look](#issue-kuestenlogik-bowire-670) | ⬜ Backlog | `area:site` |
 | [687](https://github.com/Kuestenlogik/Bowire/issues/687) | Bowire | [Tray icon and no console window: give the running workbench a handle of its own](#issue-kuestenlogik-bowire-687) | ⬜ Backlog | `area:cli` |
 | [690](https://github.com/Kuestenlogik/Bowire/issues/690) | Bowire | [Translate the CLI help surface, or decide not to](#issue-kuestenlogik-bowire-690) | ⬜ Backlog | `area:cli` |
 | [753](https://github.com/Kuestenlogik/Bowire/issues/753) | Bowire | [Detach a pane into a browser window of its own (pop-out)](#issue-kuestenlogik-bowire-753) | ⬜ Backlog |  |
-| [812](https://github.com/Kuestenlogik/Bowire/issues/812) | Bowire | [MCP Apps in testing and security: assert on apps, record their traffic, scan their CSP](#issue-kuestenlogik-bowire-812) | ⬜ Backlog |  |
 | [1056](https://github.com/Kuestenlogik/Bowire/issues/1056) | Bowire | [Importer fixtures from collections built and exported by hand in Insomnia and Bruno](#issue-kuestenlogik-bowire-1056) | ⬜ Backlog | `area:workbench` |
 | [672](https://github.com/Kuestenlogik/Bowire/issues/672) | Bowire | [Server-side script engine so pre/post scripts run in bowire test, not only in the browser](#issue-kuestenlogik-bowire-672) | ✅ Done | `area:cli` |
 | [673](https://github.com/Kuestenlogik/Bowire/issues/673) | Bowire | [Export requests as .http — Copy as .http, and bowire export http for a whole collection](#issue-kuestenlogik-bowire-673) | ✅ Done | `area:workbench` |
@@ -31,6 +29,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [754](https://github.com/Kuestenlogik/Bowire/issues/754) | Bowire | [Scaffolding: more stub languages and protocols (follow-up to #177)](#issue-kuestenlogik-bowire-754) | ✅ Done |  |
 | [810](https://github.com/Kuestenlogik/Bowire/issues/810) | Bowire | [MCP Apps, host side: render and debug MCP Apps of the servers Bowire talks to](#issue-kuestenlogik-bowire-810) | ✅ Done |  |
 | [811](https://github.com/Kuestenlogik/Bowire/issues/811) | Bowire | [MCP Apps, server side: Bowire's MCP tools answer with apps (test run first)](#issue-kuestenlogik-bowire-811) | ✅ Done |  |
+| [812](https://github.com/Kuestenlogik/Bowire/issues/812) | Bowire | [MCP Apps in testing and security: assert on apps, record their traffic, scan their CSP](#issue-kuestenlogik-bowire-812) | ✅ Done |  |
 | [939](https://github.com/Kuestenlogik/Bowire/issues/939) | Bowire | [Import Yaak exports](#issue-kuestenlogik-bowire-939) | ✅ Done |  |
 | [940](https://github.com/Kuestenlogik/Bowire/issues/940) | Bowire | [Verify the collection importers against real Insomnia and Bruno exports](#issue-kuestenlogik-bowire-940) | ✅ Done |  |
 | [946](https://github.com/Kuestenlogik/Bowire/issues/946) | Bowire | [Data sets for flow runs and bowire test --workspace](#issue-kuestenlogik-bowire-946) | ✅ Done |  |
@@ -65,6 +64,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [1067](https://github.com/Kuestenlogik/Bowire/issues/1067) | Bowire | [Flaky: the Pulsar test container exits with 126 (testcontainers.sh: Text file busy)](#issue-kuestenlogik-bowire-1067) | ✅ Done |  |
 | [1068](https://github.com/Kuestenlogik/Bowire/issues/1068) | Bowire | [gRPC: services behind Node's @grpc/reflection cannot be called ("Available: []")](#issue-kuestenlogik-bowire-1068) | ✅ Done |  |
 | [1069](https://github.com/Kuestenlogik/Bowire/issues/1069) | Bowire | [gRPC: calls to tonic (Rust) servers fail — Bowire asks reflection for a file named like the service](#issue-kuestenlogik-bowire-1069) | ✅ Done |  |
+| [1072](https://github.com/Kuestenlogik/Bowire/issues/1072) | Bowire | [MCP scan counts Bowire's own Tasks and Apps services as the server's tools](#issue-kuestenlogik-bowire-1072) | ✅ Done |  |
 
 ### v2.12 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
 
@@ -258,10 +258,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-#### <a id="issue-kuestenlogik-bowire-1072"></a>🟡 In progress · [#1072](https://github.com/Kuestenlogik/Bowire/issues/1072) MCP scan counts Bowire's own Tasks and Apps services as the server's tools
-
-`bowire scan --suite protocol` against an MCP server: [[more]](https://github.com/Kuestenlogik/Bowire/issues/1072)
-
 #### <a id="issue-kuestenlogik-bowire-639"></a>⬜ Backlog · [#639](https://github.com/Kuestenlogik/Bowire/issues/639) SCIM: live Okta and Entra ID provisioning round-trips
 
 > `area:workbench`
@@ -289,10 +285,6 @@ Six credible competitors turned up during the competitive survey **via openalter
 #### <a id="issue-kuestenlogik-bowire-753"></a>⬜ Backlog · [#753](https://github.com/Kuestenlogik/Bowire/issues/753) Detach a pane into a browser window of its own (pop-out)
 
 Split out of #250 phase 2, where it already stood as *"long deferred — needs proper inter-window state sync"*. [[more]](https://github.com/Kuestenlogik/Bowire/issues/753)
-
-#### <a id="issue-kuestenlogik-bowire-812"></a>⬜ Backlog · [#812](https://github.com/Kuestenlogik/Bowire/issues/812) MCP Apps in testing and security: assert on apps, record their traffic, scan their CSP
-
-Once Bowire hosts MCP Apps (#810), the people building them need what Bowire offers for every other protocol: does the UI resource load, does the app behave, and is it safe? An app is third-party HTML running next to a model with tool access, so its CSP and permissions are a security surface that no … [[more]](https://github.com/Kuestenlogik/Bowire/issues/812)
 
 #### <a id="issue-kuestenlogik-bowire-1056"></a>⬜ Backlog · [#1056](https://github.com/Kuestenlogik/Bowire/issues/1056) Importer fixtures from collections built and exported by hand in Insomnia and Bruno
 
@@ -335,6 +327,10 @@ MCP Apps (`io.modelcontextprotocol/ui`, [overview](https://modelcontextprotocol.
 #### <a id="issue-kuestenlogik-bowire-811"></a>✅ Done · [#811](https://github.com/Kuestenlogik/Bowire/issues/811) MCP Apps, server side: Bowire's MCP tools answer with apps (test run first)
 
 Bowire's own MCP server (`bowire mcp serve`) answers agents with JSON. Some of what it returns reads far better as UI: a test run with its steps, a security-scan report, the list of services `bowire.discover` found. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/811)
+
+#### <a id="issue-kuestenlogik-bowire-812"></a>✅ Done · [#812](https://github.com/Kuestenlogik/Bowire/issues/812) MCP Apps in testing and security: assert on apps, record their traffic, scan their CSP
+
+Once Bowire hosts MCP Apps (#810), the people building them need what Bowire offers for every other protocol: does the UI resource load, does the app behave, and is it safe? An app is third-party HTML running next to a model with tool access, so its CSP and permissions are a security surface that no … [[more]](https://github.com/Kuestenlogik/Bowire/issues/812)
 
 #### <a id="issue-kuestenlogik-bowire-939"></a>✅ Done · [#939](https://github.com/Kuestenlogik/Bowire/issues/939) Import Yaak exports
 
@@ -505,6 +501,10 @@ A gRPC server that serves reflection with the official Node library (`@grpc/refl
 #### <a id="issue-kuestenlogik-bowire-1069"></a>✅ Done · [#1069](https://github.com/Kuestenlogik/Bowire/issues/1069) gRPC: calls to tonic (Rust) servers fail — Bowire asks reflection for a file named like the service
 
 Every call to a gRPC server written with tonic (Rust) and tonic-reflection fails: [[more]](https://github.com/Kuestenlogik/Bowire/issues/1069)
+
+#### <a id="issue-kuestenlogik-bowire-1072"></a>✅ Done · [#1072](https://github.com/Kuestenlogik/Bowire/issues/1072) MCP scan counts Bowire's own Tasks and Apps services as the server's tools
+
+`bowire scan --suite protocol` against an MCP server: [[more]](https://github.com/Kuestenlogik/Bowire/issues/1072)
 
 ### v2.12 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
 
