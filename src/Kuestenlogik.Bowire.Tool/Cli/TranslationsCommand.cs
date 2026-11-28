@@ -24,27 +24,23 @@ internal static class TranslationsCommand
 
     public static Command Build()
     {
-        var docs = new Command("docs", "Documentation and translation helpers.");
+        var docs = new Command("docs", BowireLocale.T("cli.translations.docs.command"));
 
         var translations = new Command(
             "translations",
-            "Scaffold a UI locale from the English catalogue, or report what a locale is missing.");
+            BowireLocale.T("cli.translations.translations.command"));
 
         var localeArg = new Argument<string>("locale")
         {
-            Description = "BCP-47 tag for the locale, e.g. 'fr' or 'pt-BR'.",
+            Description = BowireLocale.T("cli.translations.locale"),
         };
         var outOpt = new Option<string>("--out")
         {
-            Description = "Where to write the stub. Defaults to <locale>.json in the current directory. "
-                        + "Use '-' for stdout.",
+            Description = BowireLocale.T("cli.translations.out"),
         };
         var checkOpt = new Option<string>("--check")
         {
-            Description = "Instead of scaffolding, read this catalogue and report keys it is missing, "
-                        + "keys English does not have, values left empty, and placeholders or plural/select "
-                        + "branches that differ from what the locale needs. Exits non-zero when "
-                        + "anything is off, so CI can run it.",
+            Description = BowireLocale.T("cli.translations.check"),
         };
 
         translations.Add(localeArg);

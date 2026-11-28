@@ -44,7 +44,7 @@ internal static class CatalogueCommand
     public static Command Build()
     {
         var catalogue = new Command("catalogue",
-            "Inspect and select the URL/service catalogue the workbench browses (#136). 'list' prints the entries the active provider returns, 'providers' shows which provider implementations are installed, 'use' persists a provider override to ~/.bowire/catalogue-config.json (the same file the workbench's Settings → Catalogue providers tab writes), and 'clear' drops it again.");
+            BowireLocale.T("cli.catalogue.catalogue.command"));
         catalogue.Add(BuildListCommand());
         catalogue.Add(BuildProvidersCommand());
         catalogue.Add(BuildUseCommand());
@@ -56,22 +56,22 @@ internal static class CatalogueCommand
 
     private static Option<string?> ProviderOption() => new("--provider")
     {
-        Description = "Provider id: local / http / consul / kubernetes / agent. kubernetes + agent require the matching Kuestenlogik.Bowire.Catalogue.* package (`bowire plugin install …`).",
+        Description = BowireLocale.T("cli.catalogue.description"),
     };
 
     private static Option<string?> PathOption() => new("--path")
     {
-        Description = "Catalogue file for the 'local' provider. Defaults to ~/.bowire/catalogue.json.",
+        Description = BowireLocale.T("cli.catalogue.description-2"),
     };
 
     private static Option<string?> UrlOption() => new("--url")
     {
-        Description = "Catalogue document URL for the 'http' provider.",
+        Description = BowireLocale.T("cli.catalogue.description-3"),
     };
 
     private static Option<string?> ConsulOption() => new("--consul")
     {
-        Description = "Consul agent address for the 'consul' provider (e.g. http://localhost:8500).",
+        Description = BowireLocale.T("cli.catalogue.description-4"),
     };
 
     // ---------- list ----------
@@ -79,14 +79,14 @@ internal static class CatalogueCommand
     private static Command BuildListCommand()
     {
         var list = new Command("list",
-            "Fetch a catalogue and print its entries. With --provider (plus its --path / --url / --consul detail) it reads that provider without persisting anything; with no flags it reads whatever the workbench would — the persisted override from `catalogue use`, or nothing. Exits 1 when no provider is configured so a CI step can gate on it.");
+            BowireLocale.T("cli.catalogue.list.command"));
         var providerOpt = ProviderOption();
         var pathOpt = PathOption();
         var urlOpt = UrlOption();
         var consulOpt = ConsulOption();
         var jsonOpt = new Option<bool>("--json")
         {
-            Description = "Emit the raw snapshot as JSON ({ providerId, providerName, entries: [...] }) instead of the human table.",
+            Description = BowireLocale.T("cli.catalogue.json"),
         };
         list.Add(providerOpt);
         list.Add(pathOpt);
@@ -204,8 +204,8 @@ internal static class CatalogueCommand
     private static Command BuildProvidersCommand()
     {
         var providers = new Command("providers",
-            "List the catalogue provider implementations loaded in this install. local / http / consul ship in the core package; kubernetes and agent only appear after `bowire plugin install Kuestenlogik.Bowire.Catalogue.Kubernetes` / `.Agent`.");
-        var jsonOpt = new Option<bool>("--json") { Description = "Emit [{ id, name }] as JSON." };
+            BowireLocale.T("cli.catalogue.providers.command"));
+        var jsonOpt = new Option<bool>("--json") { Description = BowireLocale.T("cli.catalogue.json-2") };
         providers.Add(jsonOpt);
         providers.SetAction(pr => RunProviders(
             pr.GetValue(jsonOpt), pr.InvocationConfiguration.Output, pr.InvocationConfiguration.Error));
@@ -263,10 +263,10 @@ internal static class CatalogueCommand
     private static Command BuildUseCommand()
     {
         var use = new Command("use",
-            "Persist a catalogue-provider override to ~/.bowire/catalogue-config.json. The workbench reads the same file on boot, so this is the scriptable equivalent of picking a provider in Settings → Catalogue providers. Overrides whatever appsettings.json configures until `catalogue clear` runs.");
+            BowireLocale.T("cli.catalogue.use.command"));
         var providerArg = new Argument<string>("provider")
         {
-            Description = "Provider id to activate: local / http / consul / kubernetes / agent.",
+            Description = BowireLocale.T("cli.catalogue.provider"),
         };
         providerArg.CompletionSources.Add("local", "http", "consul", "kubernetes", "agent");
         var pathOpt = PathOption();
@@ -274,7 +274,7 @@ internal static class CatalogueCommand
         var consulOpt = ConsulOption();
         var tokenOpt = new Option<string?>("--token")
         {
-            Description = "Auth secret for the chosen provider — the Consul ACL token, or the HTTP provider's Authorization header value. Stored in plaintext in ~/.bowire/catalogue-config.json; prefer appsettings + a secret store on shared machines.",
+            Description = BowireLocale.T("cli.catalogue.token"),
         };
         use.Add(providerArg);
         use.Add(pathOpt);
@@ -332,7 +332,7 @@ internal static class CatalogueCommand
     private static Command BuildClearCommand()
     {
         var clear = new Command("clear",
-            "Delete the persisted catalogue override (~/.bowire/catalogue-config.json) so the host falls back to Bowire:Discovery:Catalogue in appsettings.json (or to no catalogue at all).");
+            BowireLocale.T("cli.catalogue.clear.command"));
         clear.SetAction(pr => RunClear(
             pr.InvocationConfiguration.Output, pr.InvocationConfiguration.Error));
         return clear;

@@ -34,44 +34,44 @@ internal static class ScaffoldCommand
     {
         var cmd = new Command(
             "scaffold",
-            "Scaffold a CRUD service from a sentence or a spec: schema (OpenAPI, .proto or GraphQL SDL), a runnable stub (C#, Go, Node, Python or Rust), a workbench collection and a smoke test.");
+            BowireLocale.T("cli.scaffold.scaffold.command"));
 
         var intentArg = new Argument<string?>("intent")
         {
-            Description = "What to build, e.g. \"REST CRUD for User with email (required) + role\". Omit when --spec is given.",
+            Description = BowireLocale.T("cli.scaffold.intent"),
             Arity = ArgumentArity.ZeroOrOne,
         };
         var protocolOpt = new Option<string?>("--protocol", "-p")
         {
-            Description = "rest, grpc or graphql. Overrides what the sentence says; REST when neither says.",
+            Description = BowireLocale.T("cli.scaffold.protocol"),
         };
         var languageOpt = new Option<string?>("--language", "-l")
         {
-            Description = "The stub's language: csharp (default), go, node, python or rust. Overrides what the sentence or the spec says.",
+            Description = BowireLocale.T("cli.scaffold.language"),
         };
         var specOpt = new Option<string?>("--spec")
         {
-            Description = "Generate from this spec file (bowire-scaffold.json) instead of a sentence.",
+            Description = BowireLocale.T("cli.scaffold.spec"),
         };
         var outOpt = new Option<string?>("--out", "-o")
         {
-            Description = "Folder to write into. Default: ./<Service>.",
+            Description = BowireLocale.T("cli.scaffold.out"),
         };
         var aiOpt = new Option<bool>("--ai")
         {
-            Description = "Let the AI assistant write the spec from the sentence — a local model first, the configured provider as fallback. Without it a deterministic parser reads the sentence.",
+            Description = BowireLocale.T("cli.scaffold.ai"),
         };
         var printOpt = new Option<bool>("--print-spec")
         {
-            Description = "Print the spec and stop, so it can be edited and passed back with --spec.",
+            Description = BowireLocale.T("cli.scaffold.print-spec"),
         };
         var forceOpt = new Option<bool>("--force")
         {
-            Description = "Write into a folder that is not empty, replacing files of the same name.",
+            Description = BowireLocale.T("cli.scaffold.force"),
         };
         var baseUrlOpt = new Option<string?>("--base-url")
         {
-            Description = "Where the stub listens. Default http://localhost:5000.",
+            Description = BowireLocale.T("cli.scaffold.base-url"),
         };
 
         cmd.Add(intentArg);

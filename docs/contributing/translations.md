@@ -351,4 +351,4 @@ What remains English is deliberate, and each instance says so on its own line wi
 | Protocol, product and tool names | QoS, Retain, Bearer Token, OpenAPI, curl, grpcurl, MapLibre, Consul, the whole licence table. Covered by the rule above. |
 | Example values and commands | `e.g. baseUrl`, `sk-...`, `dotnet add package …`. A person replaces them or types them; they are not sentences. |
 
-The command line's own `--help` text &mdash; roughly three hundred option and command descriptions &mdash; is tracked separately on #690, which asks first whether it should be translated at all.
+The command line's `--help` is translated too (#690). Every option, argument and command description reads `BowireLocale.T("cli.<command>.<option>")`; command descriptions end in `.command`. That covers the tool's own commands and those the scanner, OAST and monitoring packages add. What stays English there is what a person types: flag and command names, environment variables, configuration keys, paths and example values. A test fails on a help text written as a literal, and on a `cli.*` key without a German text.

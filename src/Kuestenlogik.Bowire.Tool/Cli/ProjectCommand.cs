@@ -28,7 +28,7 @@ internal static class ProjectCommand
     public static Command Build()
     {
         var project = new Command("project",
-            "Work with the checked-in .bowire/project.json manifest (#172) — the version-controlled pointer to a repo's sources, suites, security config, and rules. `show` auto-discovers and prints it; `validate` schema-checks it.");
+            BowireLocale.T("cli.project.project.command"));
         project.Add(BuildShowCommand());
         project.Add(BuildValidateCommand());
         return project;
@@ -37,7 +37,7 @@ internal static class ProjectCommand
     private static Command BuildShowCommand()
     {
         var show = new Command("show",
-            "Auto-discover .bowire/project.json (walking up from the current directory), load it, and print the resolved project. Exit 0 on success, 65 if the manifest is invalid, 66 if none was found.");
+            BowireLocale.T("cli.project.show.command"));
         show.SetAction((pr, _) =>
         {
             var io = CommandIo.Resolve(pr.InvocationConfiguration.Output, pr.InvocationConfiguration.Error);
@@ -74,10 +74,10 @@ internal static class ProjectCommand
     {
         var fileOpt = new Option<string?>("--file")
         {
-            Description = "Validate this specific manifest path instead of auto-discovering .bowire/project.json from the current directory.",
+            Description = BowireLocale.T("cli.project.file"),
         };
         var validate = new Command("validate",
-            "Load + schema-check a .bowire/project.json. Auto-discovers by walking up from the current directory unless --file is given. Exit 0 when valid, 65 when present but invalid, 66 when none was found.");
+            BowireLocale.T("cli.project.validate.command"));
         validate.Add(fileOpt);
         validate.SetAction((pr, _) =>
         {

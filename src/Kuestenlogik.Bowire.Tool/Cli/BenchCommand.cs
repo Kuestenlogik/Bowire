@@ -28,7 +28,7 @@ internal static class BenchCommand
     public static Command Build()
     {
         var bench = new Command("bench",
-            "Load-test a method and gate on latency budgets. `run` measures p50/p95/p99, error rate and throughput and can fail the build on a threshold; `schedule` manages recurring runs.");
+            BowireLocale.T("cli.bench.bench.command"));
         bench.Add(BuildRunCommand());
         bench.Add(BuildScheduleCommand());
         return bench;
@@ -44,7 +44,7 @@ internal static class BenchCommand
     private static Command BuildScheduleCommand()
     {
         var schedule = new Command("schedule",
-            "Manage recurring benchmark runs. Entries are stored under .bowire/benchmark-schedules and fire from the running workbench / host.");
+            BowireLocale.T("cli.bench.schedule.command"));
         schedule.Add(BuildScheduleListCommand());
         schedule.Add(BuildScheduleAddCommand());
         schedule.Add(BuildSchedulePauseCommand(pause: true));
@@ -55,8 +55,8 @@ internal static class BenchCommand
 
     private static Command BuildScheduleListCommand()
     {
-        var cmd = new Command("list", "List stored schedules with their next firing time and last result.");
-        var jsonOpt = new Option<bool>("--json") { Description = "Emit JSON instead of a table." };
+        var cmd = new Command("list", BowireLocale.T("cli.bench.list.command"));
+        var jsonOpt = new Option<bool>("--json") { Description = BowireLocale.T("cli.bench.json") };
         cmd.Add(jsonOpt);
         cmd.SetAction(async (pr, ct) =>
         {
@@ -110,19 +110,19 @@ internal static class BenchCommand
 
     private static Command BuildScheduleAddCommand()
     {
-        var cmd = new Command("add", "Store a recurring benchmark run.");
-        var idArg = new Argument<string>("id") { Description = "Schedule id — the handle for pause / remove." };
-        var cronOpt = new Option<string>("--cron") { Description = "Cron expression (5 fields), e.g. \"0 3 * * *\".", Required = true };
-        var tzOpt = new Option<string?>("--timezone") { Description = "IANA timezone the cron is read in (e.g. Europe/Berlin). Default UTC." };
-        var nameOpt = new Option<string?>("--name") { Description = "Display name." };
-        var targetOpt = new Option<string>("--target") { Description = "service/method to call.", Required = true };
-        var urlOpt = new Option<string>("-url", "--url") { Description = "Target server URL (protocol@url form accepted).", Required = true };
-        var protocolOpt = new Option<string?>("--protocol") { Description = "Protocol plugin id." };
-        var dataOpt = new Option<string?>("-d", "--data") { Description = "JSON request body (or @filename)." };
-        var iterationsOpt = new Option<int>("-n", "--iterations") { Description = "Calls per run.", DefaultValueFactory = _ => 50 };
-        var concurrencyOpt = new Option<int>("-c", "--concurrency") { Description = "Calls in flight at once.", DefaultValueFactory = _ => 1 };
-        var warmupOpt = new Option<int>("--warmup") { Description = "Discarded calls before measuring.", DefaultValueFactory = _ => 0 };
-        var thresholdOpt = new Option<string[]>("--threshold") { Description = "Budget checked after each run. Repeatable.", AllowMultipleArgumentsPerToken = false };
+        var cmd = new Command("add", BowireLocale.T("cli.bench.add.command"));
+        var idArg = new Argument<string>("id") { Description = BowireLocale.T("cli.bench.id") };
+        var cronOpt = new Option<string>("--cron") { Description = BowireLocale.T("cli.bench.cron"), Required = true };
+        var tzOpt = new Option<string?>("--timezone") { Description = BowireLocale.T("cli.bench.timezone") };
+        var nameOpt = new Option<string?>("--name") { Description = BowireLocale.T("cli.bench.name") };
+        var targetOpt = new Option<string>("--target") { Description = BowireLocale.T("cli.bench.target"), Required = true };
+        var urlOpt = new Option<string>("-url", "--url") { Description = BowireLocale.T("cli.bench.url"), Required = true };
+        var protocolOpt = new Option<string?>("--protocol") { Description = BowireLocale.T("cli.bench.protocol") };
+        var dataOpt = new Option<string?>("-d", "--data") { Description = BowireLocale.T("cli.bench.d") };
+        var iterationsOpt = new Option<int>("-n", "--iterations") { Description = BowireLocale.T("cli.bench.n"), DefaultValueFactory = _ => 50 };
+        var concurrencyOpt = new Option<int>("-c", "--concurrency") { Description = BowireLocale.T("cli.bench.c"), DefaultValueFactory = _ => 1 };
+        var warmupOpt = new Option<int>("--warmup") { Description = BowireLocale.T("cli.bench.warmup"), DefaultValueFactory = _ => 0 };
+        var thresholdOpt = new Option<string[]>("--threshold") { Description = BowireLocale.T("cli.bench.threshold"), AllowMultipleArgumentsPerToken = false };
 
         cmd.Add(idArg); cmd.Add(cronOpt); cmd.Add(tzOpt); cmd.Add(nameOpt); cmd.Add(targetOpt);
         cmd.Add(urlOpt); cmd.Add(protocolOpt); cmd.Add(dataOpt);
@@ -194,7 +194,7 @@ internal static class BenchCommand
     {
         var cmd = new Command(pause ? "pause" : "resume",
             pause ? "Stop a schedule from firing (the entry is kept)." : "Let a paused schedule fire again.");
-        var idArg = new Argument<string>("id") { Description = "Schedule id." };
+        var idArg = new Argument<string>("id") { Description = BowireLocale.T("cli.bench.id-2") };
         cmd.Add(idArg);
         cmd.SetAction(async (pr, ct) =>
         {
@@ -217,8 +217,8 @@ internal static class BenchCommand
 
     private static Command BuildScheduleRemoveCommand()
     {
-        var cmd = new Command("remove", "Delete a schedule and its run history.");
-        var idArg = new Argument<string>("id") { Description = "Schedule id." };
+        var cmd = new Command("remove", BowireLocale.T("cli.bench.remove.command"));
+        var idArg = new Argument<string>("id") { Description = BowireLocale.T("cli.bench.id-2") };
         cmd.Add(idArg);
         cmd.SetAction(async (pr, _) =>
         {
@@ -236,57 +236,57 @@ internal static class BenchCommand
 
     private static Command BuildRunCommand()
     {
-        var cmd = new Command("run", "Call a method repeatedly and report latency percentiles, error rate and throughput.");
+        var cmd = new Command("run", BowireLocale.T("cli.bench.run.command"));
 
         var targetArg = new Argument<string>("target")
         {
-            Description = "service/method to call, e.g. Weather/getCurrent.",
+            Description = BowireLocale.T("cli.bench.target-2"),
         };
         var urlOpt = new Option<string>("-url", "--url")
         {
-            Description = "Target server URL. Accepts the `protocol@url` hint form (e.g. rest@http://localhost:6000).",
+            Description = BowireLocale.T("cli.bench.url-2"),
             Required = true,
         };
         var protocolOpt = new Option<string?>("--protocol")
         {
-            Description = "Protocol plugin id (rest, grpc, graphql, …). Overrides a `protocol@url` prefix.",
+            Description = BowireLocale.T("cli.bench.protocol-2"),
         };
         var dataOpt = new Option<string?>("-d", "--data")
         {
-            Description = "JSON request body (or @filename).",
+            Description = BowireLocale.T("cli.bench.d"),
         };
         var iterationsOpt = new Option<int>("-n", "--iterations")
         {
-            Description = "How many calls to make.",
+            Description = BowireLocale.T("cli.bench.n-2"),
             DefaultValueFactory = _ => 50,
         };
         var concurrencyOpt = new Option<int>("-c", "--concurrency")
         {
-            Description = "How many calls may be in flight at once.",
+            Description = BowireLocale.T("cli.bench.c-2"),
             DefaultValueFactory = _ => 1,
         };
         var warmupOpt = new Option<int>("--warmup")
         {
-            Description = "Calls made and discarded before measurement, to shake out JIT / connection setup.",
+            Description = BowireLocale.T("cli.bench.warmup-2"),
             DefaultValueFactory = _ => 0,
         };
         var headerOpt = new Option<string[]>("-H")
         {
-            Description = "Metadata header \"key: value\". Repeatable.",
+            Description = BowireLocale.T("cli.bench.h"),
             AllowMultipleArgumentsPerToken = false,
         };
         var thresholdOpt = new Option<string[]>("--threshold")
         {
-            Description = "Budget the run must satisfy, e.g. \"p95 < 200\", \"error-rate < 0.01\", \"throughput >= 50\". Repeatable. Metrics: p50/p90/p95/p99/avg/min/max/error-rate/throughput.",
+            Description = BowireLocale.T("cli.bench.threshold-2"),
             AllowMultipleArgumentsPerToken = false,
         };
         var failOnThresholdOpt = new Option<bool>("--fail-on-threshold")
         {
-            Description = "Exit non-zero when any threshold is breached (CI gate).",
+            Description = BowireLocale.T("cli.bench.fail-on-threshold"),
         };
         var k6Opt = new Option<string?>("--k6-summary")
         {
-            Description = "Write the run as k6-summary JSON to this path — same shape the workbench exports, thresholds included.",
+            Description = BowireLocale.T("cli.bench.k6-summary"),
         };
 
         cmd.Add(targetArg); cmd.Add(urlOpt); cmd.Add(protocolOpt); cmd.Add(dataOpt);

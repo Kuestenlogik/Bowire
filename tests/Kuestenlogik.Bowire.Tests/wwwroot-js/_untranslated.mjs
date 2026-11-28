@@ -676,6 +676,8 @@ export function frozenTranslations({ file, text, outsideIife }) {
 // but is what a reader would try first. `ProxyNoteKey => "…"` names a
 // plugin's proxy note (#680) the same way.
 const BACKEND_KEY = /(?:LabelKey|DescriptionKey|ProxyNoteKey)\s*(?:=>|=|:)\s*"([^"]+)"/g;
+// #690 — the command line's help reads its text in C#: BowireLocale.T("cli.…").
+const BACKEND_T = /BowireLocale\.T\(\s*"([^"]+)"/g;
 
 /** Every catalogue key declared by a C# source under src/. */
 export function backendDeclaredKeys() {
@@ -690,8 +692,9 @@ export function backendDeclaredKeys() {
                 walk(path);
             } else if (entry.name.endsWith('.cs')) {
                 const text = readFileSync(path, 'utf8');
-                if (!text.includes('Key')) continue;
+                if (!text.includes('Key') && !text.includes('BowireLocale')) continue;
                 for (const [, key] of text.matchAll(BACKEND_KEY)) keys.add(key);
+                for (const [, key] of text.matchAll(BACKEND_T)) keys.add(key);
             }
         }
     };

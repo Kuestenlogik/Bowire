@@ -25,7 +25,7 @@ internal static class CookiesCommand
     public static Command Build()
     {
         var cookies = new Command("cookies",
-            "Show or clear the cookie jars: the cookies each environment's calls send and keep, per workspace.");
+            BowireLocale.T("cli.cookies.cookies.command"));
         cookies.Add(BuildList());
         cookies.Add(BuildClear());
         return cookies;
@@ -33,16 +33,16 @@ internal static class CookiesCommand
 
     private static Option<string?> WorkspaceOption() => new("--workspace-id")
     {
-        Description = "The workspace whose jars to read (see `bowire workspace list`). Without it, the jars kept outside any workspace, as the CLI's own calls do.",
+        Description = BowireLocale.T("cli.cookies.cookies"),
     };
 
     private static Command BuildList()
     {
-        var list = new Command("list", "List the cookies in the jars — values masked unless --show-values.");
+        var list = new Command("list", BowireLocale.T("cli.cookies.list.command"));
         var workspace = WorkspaceOption();
-        var env = new Option<string?>("--env") { Description = "Only this environment's jar." };
-        var showValues = new Option<bool>("--show-values") { Description = "Print cookie values. They are credentials; masked by default." };
-        var json = new Option<bool>("--json") { Description = "Emit JSON." };
+        var env = new Option<string?>("--env") { Description = BowireLocale.T("cli.cookies.env") };
+        var showValues = new Option<bool>("--show-values") { Description = BowireLocale.T("cli.cookies.show-values") };
+        var json = new Option<bool>("--json") { Description = BowireLocale.T("cli.cookies.json") };
         list.Add(workspace); list.Add(env); list.Add(showValues); list.Add(json);
         list.SetAction(async (pr, ct) =>
         {
@@ -97,10 +97,10 @@ internal static class CookiesCommand
 
     private static Command BuildClear()
     {
-        var clear = new Command("clear", "Remove cookies: an environment's whole jar, or one domain in it.");
+        var clear = new Command("clear", BowireLocale.T("cli.cookies.clear.command"));
         var workspace = WorkspaceOption();
-        var env = new Option<string>("--env") { Description = "The environment whose jar to clear.", Required = true };
-        var domain = new Option<string?>("--domain") { Description = "Only this domain's cookies." };
+        var env = new Option<string>("--env") { Description = BowireLocale.T("cli.cookies.env-2"), Required = true };
+        var domain = new Option<string?>("--domain") { Description = BowireLocale.T("cli.cookies.domain") };
         clear.Add(workspace); clear.Add(env); clear.Add(domain);
         clear.SetAction(async (pr, ct) =>
         {

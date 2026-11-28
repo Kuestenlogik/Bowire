@@ -36,58 +36,58 @@ public sealed class ScanCliCommand : IBowireCliCommand
         var nucleiOptions = NucleiOptionsFrom(configuration);
 
         var scan = new Command("scan",
-            "Run vulnerability templates against a target URL. The Tier-1 anchor of the security-testing lane (see docs/architecture/security-testing.md).");
+            BowireLocale.T("cli.scan.scan.command"));
 
-        var targetOpt = new Option<string>("--target") { Description = "Target base URL (e.g. https://api.example.com).", Required = true };
-        var templatesOpt = new Option<string>("--templates") { Description = "Directory of *.json vulnerability templates to run (Bowire format)." };
-        var templateOpt = new Option<string>("--template") { Description = "Single template *.json file to run (combinable with --templates)." };
-        var nucleiOpt = new Option<string>("--nuclei") { Description = "Directory of *.yaml Nuclei templates (projectdiscovery/nuclei-templates). Read alongside --templates; resolved against --target so {{BaseURL}}/{{Hostname}} etc. land on real probes." };
-        var cveDbOpt = new Option<string>("--cve-db") { Description = "Path to a CVE / VulnDb JSON file for the banner CVE-lookup (Server / X-Powered-By version → known CVEs). Runs with the built-in passive checks; defaults to a small built-in seed when omitted." };
-        var oastServerOpt = new Option<string>("--oast-server") { Description = "URL of an interactsh-compatible interaction server for out-of-band detection, e.g. https://oast.example.com. Enables templates that prove a BLIND finding (SSRF / RCE / XXE) by planting a callback host and checking whether the target contacted it — the response itself shows nothing. Points at any instance: your own (`bowire oast serve` / interactsh-server) or a third party's. OFF by default: without it the scanner makes no outbound call beyond the target, and out-of-band templates are skipped rather than reported as clean." };
-        var oastWaitOpt = new Option<int>("--oast-wait") { Description = "Seconds to wait after the probes before polling for callbacks. A target's DNS lookup / fetch arrives asynchronously, so polling immediately would miss it and call the target clean. Default 5." };
-        var oastTokenOpt = new Option<string>("--oast-token") { Description = "Auth token for a gated interaction server (one started with `bowire oast serve --token`). Sent verbatim as the Authorization header. Omit for an open instance." };
-        var authFlowOpt = new Option<string>("--auth-flow") { Description = "Path to a headless auth-flow JSON file (login → token chain). Runs once before the scan; the captured token is injected as an auth header into every probe (refresh on expiry). Secrets are read from {{env.NAME}}, never inlined. Covers scriptable grants (client-credentials, password, refresh) — browser grants (OAuth auth-code/device) are not yet supported." };
-        var outOpt = new Option<string>("--out") { Description = "Write findings as SARIF 2.1.0 JSON to this path (for CI dashboards: GitHub Code Scanning, GitLab, Azure DevOps)." };
-        var suiteOpt = new Option<string>("--suite") { Description = "Run a named suite after the scan. `owasp-api` = OWASP API Top 10 rollup (HTTP + protocol probes) with a per-entry coverage table; `protocol` = only the protocol-specific probes (gRPC/GraphQL/WS/MQTT/SSE/MCP) + the table — use for non-HTTP targets like mqtt:// or ws://; `all` = everything (HTTP OWASP + protocol probes) + the table." };
-        var severityOpt = new Option<string>("--severity") { Description = "Minimum severity to report: low / medium / high / critical. Lower-severity templates still load but are reported as skipped." };
-        var timeoutOpt = new Option<int>("--timeout") { Description = "Per-probe HTTP timeout in seconds. Default 30." };
-        var dnsResolverOpt = new Option<string>("--dns-resolver") { Description = "Nameserver IP for Nuclei `dns:` templates, e.g. 1.1.1.1. Defaults to the machine's resolvers. Worth setting deliberately: a split-horizon or filtering resolver answers differently from the public view a subdomain-takeover template assumes, and the wrong answer reads as 'not vulnerable' rather than as an error." };
-        var allowCodeOpt = new Option<bool>("--allow-code-templates") { Description = "Run Nuclei `code:` templates. OFF by default, and think before turning it on: a code: template is a PROGRAM that executes on this machine with your rights, not a request sent to the target, and the nuclei-templates corpus is community-supplied. Bowire runs it in a child process with an interpreter allow-list, a wall-clock kill and an output cap — that bounds a hang or a crash, it is not a sandbox. Without the flag such templates load and report as skipped. `javascript:` templates never run: they need Nuclei's own embedded JS runtime." };
+        var targetOpt = new Option<string>("--target") { Description = BowireLocale.T("cli.scan.target"), Required = true };
+        var templatesOpt = new Option<string>("--templates") { Description = BowireLocale.T("cli.scan.templates") };
+        var templateOpt = new Option<string>("--template") { Description = BowireLocale.T("cli.scan.template") };
+        var nucleiOpt = new Option<string>("--nuclei") { Description = BowireLocale.T("cli.scan.nuclei") };
+        var cveDbOpt = new Option<string>("--cve-db") { Description = BowireLocale.T("cli.scan.cve-db") };
+        var oastServerOpt = new Option<string>("--oast-server") { Description = BowireLocale.T("cli.scan.oast-server") };
+        var oastWaitOpt = new Option<int>("--oast-wait") { Description = BowireLocale.T("cli.scan.oast-wait") };
+        var oastTokenOpt = new Option<string>("--oast-token") { Description = BowireLocale.T("cli.scan.oast-token") };
+        var authFlowOpt = new Option<string>("--auth-flow") { Description = BowireLocale.T("cli.scan.auth-flow") };
+        var outOpt = new Option<string>("--out") { Description = BowireLocale.T("cli.scan.out") };
+        var suiteOpt = new Option<string>("--suite") { Description = BowireLocale.T("cli.scan.suite") };
+        var severityOpt = new Option<string>("--severity") { Description = BowireLocale.T("cli.scan.severity") };
+        var timeoutOpt = new Option<int>("--timeout") { Description = BowireLocale.T("cli.scan.timeout") };
+        var dnsResolverOpt = new Option<string>("--dns-resolver") { Description = BowireLocale.T("cli.scan.dns-resolver") };
+        var allowCodeOpt = new Option<bool>("--allow-code-templates") { Description = BowireLocale.T("cli.scan.allow-code-templates") };
         var codeInterpretersOpt = new Option<string[]>("--code-template-interpreters")
         {
             AllowMultipleArgumentsPerToken = true,
-            Description = "Interpreters `code:` templates may be launched with, e.g. `deno bun`. REPLACES the default set (sh, bash, zsh, py, python, python3, node, ruby, perl, pwsh, powershell) rather than adding to it, so it narrows as readily as it widens — pass `python3` alone to permit nothing else. Needs --allow-code-templates; on its own it changes nothing, because nothing runs.",
+            Description = BowireLocale.T("cli.scan.code-template-interpreters"),
         };
-        var allowSelfSignedOpt = new Option<bool>("--allow-self-signed-certs") { Description = "Accept self-signed / untrusted TLS certs on the target. Off by default — use only when probing a known dev/staging cert." };
-        var noBuiltinsOpt = new Option<bool>("--no-builtins") { Description = "Skip the built-in passive checks (TLS-version enumeration, version-disclosing headers, verbose-error detection). Built-ins run by default." };
+        var allowSelfSignedOpt = new Option<bool>("--allow-self-signed-certs") { Description = BowireLocale.T("cli.scan.allow-self-signed-certs") };
+        var noBuiltinsOpt = new Option<bool>("--no-builtins") { Description = BowireLocale.T("cli.scan.no-builtins") };
         var scopeOpt = new Option<string[]>("--scope")
         {
-            Description = "In-scope hostname or glob (e.g. `api.example.com` or `*.example.com` — the leading `*.` matches sub-domains but NOT the apex). Repeat or comma-separate. Defaults to the target's own host, so accidental cross-host probes are blocked unless explicitly widened.",
+            Description = BowireLocale.T("cli.scan.scope"),
             AllowMultipleArgumentsPerToken = true,
         };
         var authHeaderOpt = new Option<string[]>("--auth-header")
         {
-            Description = "Add an HTTP header to every probe — typically `Authorization: Bearer <token>` or `X-Api-Key: <key>`. Repeatable for multiple headers (cookies, multi-header auth schemes). Without this flag, scans of authenticated APIs land on the login wall and the scanner reports misleading 'endpoint missing' findings.",
+            Description = BowireLocale.T("cli.scan.auth-header"),
             AllowMultipleArgumentsPerToken = false,
         };
         var authHeaderBOpt = new Option<string[]>("--auth-header-b")
         {
-            Description = "A SECOND identity's auth header(s), same shape as --auth-header. Enables the OWASP API1 BOLA check: the object at --target is read as identity A (--auth-header) and then as identity B; if B can read A's object while anonymous access is blocked, object-level authorization is missing. Repeatable.",
+            Description = BowireLocale.T("cli.scan.auth-header-b"),
             AllowMultipleArgumentsPerToken = false,
         };
         // #1016 — the option the other commands name a schema file with.
         // A scan reads one kind: the compiled descriptor set.
         var schemaOpt = new Option<string[]>("--schema")
         {
-            Description = "Path to a compiled gRPC descriptor set (`protoc --descriptor_set_out=api.protoset --include_imports`; .protoset / .pb / .desc / .binpb). Repeatable. Lets the gRPC checks run against a server with Server Reflection disabled — the recommended production state, which otherwise leaves the transport-authentication check with no method to call. The set names what to test; it is never treated as evidence of what the server exposes, and it is stripped before anything reaches the wire.",
+            Description = BowireLocale.T("cli.scan.schema"),
             AllowMultipleArgumentsPerToken = true,
         };
-        var activeOpt = new Option<bool>("--active") { Description = "Enable the ACTIVE (mutating / aggressive) probe tier (#395–#400) — OFF by default. Active probes may PUBLISH to the target (MQTT retained-message poisoning), hold connections open, or open many streams. Each namespaces + cleans up its side effects, but this deliberately mutates the target: use only against systems you are authorised to test." };
-        var activeDurationOpt = new Option<int>("--active-duration") { Description = "Wall-clock budget in seconds for time-based active probes (slow-loris / slow-consumption). Default 15." };
-        var activeConcurrencyOpt = new Option<int>("--active-concurrency") { Description = "Concurrency budget (N) for fan-out active probes (gRPC concurrent-stream). The verdict is honest about the number reached. Default 100." };
+        var activeOpt = new Option<bool>("--active") { Description = BowireLocale.T("cli.scan.active") };
+        var activeDurationOpt = new Option<int>("--active-duration") { Description = BowireLocale.T("cli.scan.active-duration") };
+        var activeConcurrencyOpt = new Option<int>("--active-concurrency") { Description = BowireLocale.T("cli.scan.active-concurrency") };
         var activeExpectedTopicOpt = new Option<string[]>("--active-expected-topic")
         {
-            Description = "Expected-topic scope for the MQTT wildcard-subscribe active probe (#396) — the topics an authenticated client is meant to reach. Delivered traffic outside this set is flagged. Repeatable / comma-separated.",
+            Description = BowireLocale.T("cli.scan.active-expected-topic"),
             AllowMultipleArgumentsPerToken = true,
         };
 
@@ -197,14 +197,14 @@ public sealed class ScanCliCommand : IBowireCliCommand
     private static Command BuildMutate()
     {
         var mutate = new Command("mutate",
-            "Print the schema-aware mutations (targeted invalid inputs) the engine produces for a field type — type-confusion, boundary, encoding, enum-bypass, structural. Seeded + budgeted for reproducibility.");
+            BowireLocale.T("cli.scan.mutate.command"));
 
-        var typeOpt = new Option<string>("--type") { Description = "Field type: integer / number / string / boolean / enum / array / object.", Required = true };
-        var enumOpt = new Option<string>("--enum") { Description = "Comma-separated allowed values (for --type enum) — adds a case-variant-bypass mutation." };
-        var requiredOpt = new Option<bool>("--required") { Description = "Treat the field as required — adds an omitted/null violation." };
-        var formatOpt = new Option<string>("--format") { Description = "Format hint (email / uuid / date / uri / ipv4) — adds a format-violation mutation." };
-        var seedOpt = new Option<int>("--seed") { Description = "Seed for reproducible mutation selection under a budget. Default 0." };
-        var budgetOpt = new Option<int>("--budget") { Description = "Max mutations to emit for the field (0 = all). Keeps scans bounded." };
+        var typeOpt = new Option<string>("--type") { Description = BowireLocale.T("cli.scan.type"), Required = true };
+        var enumOpt = new Option<string>("--enum") { Description = BowireLocale.T("cli.scan.enum") };
+        var requiredOpt = new Option<bool>("--required") { Description = BowireLocale.T("cli.scan.required") };
+        var formatOpt = new Option<string>("--format") { Description = BowireLocale.T("cli.scan.format") };
+        var seedOpt = new Option<int>("--seed") { Description = BowireLocale.T("cli.scan.seed") };
+        var budgetOpt = new Option<int>("--budget") { Description = BowireLocale.T("cli.scan.budget") };
 
         mutate.Add(typeOpt);
         mutate.Add(enumOpt);
@@ -236,12 +236,12 @@ public sealed class ScanCliCommand : IBowireCliCommand
     private static Command BuildReport()
     {
         var report = new Command("report",
-            "Turn a scan SARIF artifact (bowire scan --out) into a markdown report — findings grouped by severity + OWASP, optionally diffed vs a baseline SARIF. Deterministic; the AI executive-summary layer is POST /api/ai/security-report.");
+            BowireLocale.T("cli.scan.report.command"));
 
-        var inOpt = new Option<string>("--in") { Description = "SARIF file to report on (from `bowire scan --out`).", Required = true };
-        var baselineOpt = new Option<string>("--baseline") { Description = "A previous run's SARIF to diff against — the report adds new / fixed / still-open sections." };
-        var outOpt = new Option<string>("--out") { Description = "Write the markdown report to this path (default: print to stdout)." };
-        var targetOpt = new Option<string>("--target") { Description = "Target name to title the report with (e.g. api.example.com)." };
+        var inOpt = new Option<string>("--in") { Description = BowireLocale.T("cli.scan.in"), Required = true };
+        var baselineOpt = new Option<string>("--baseline") { Description = BowireLocale.T("cli.scan.baseline") };
+        var outOpt = new Option<string>("--out") { Description = BowireLocale.T("cli.scan.out-2") };
+        var targetOpt = new Option<string>("--target") { Description = BowireLocale.T("cli.scan.target-2") };
 
         report.Add(inOpt);
         report.Add(baselineOpt);
@@ -260,16 +260,16 @@ public sealed class ScanCliCommand : IBowireCliCommand
     private static Command BuildSpider()
     {
         var spider = new Command("spider",
-            "Discover candidate endpoints from a base URL (robots.txt, sitemap.xml, an OpenAPI/Swagger document, a common-path HEAD sweep, and same-origin page links). Conservative: same-host/--scope only, honours robots.txt, never authenticates beyond --auth-header.");
+            BowireLocale.T("cli.scan.spider.command"));
 
-        var urlOpt = new Option<string>("--url") { Description = "Base URL to crawl (e.g. https://api.example.com).", Required = true };
-        var scopeOpt = new Option<string[]>("--scope") { Description = "In-scope hostname or `*.`-glob. Repeat / comma-separate. Defaults to the base URL's host.", AllowMultipleArgumentsPerToken = true };
-        var authHeaderOpt = new Option<string[]>("--auth-header") { Description = "Header applied to every request, e.g. `Authorization: Bearer <token>`. Repeatable.", AllowMultipleArgumentsPerToken = false };
-        var timeoutOpt = new Option<int>("--timeout") { Description = "Per-request HTTP timeout in seconds. Default 30." };
-        var noRobotsOpt = new Option<bool>("--no-robots") { Description = "Ignore robots.txt Disallow rules (default: respected)." };
-        var maxOpt = new Option<int>("--max") { Description = "Maximum candidates to collect. Default 500." };
-        var allowSelfSignedOpt = new Option<bool>("--allow-self-signed-certs") { Description = "Accept self-signed / untrusted TLS on the target." };
-        var outOpt = new Option<string>("--out") { Description = "Write the candidate list as JSON to this path." };
+        var urlOpt = new Option<string>("--url") { Description = BowireLocale.T("cli.scan.url"), Required = true };
+        var scopeOpt = new Option<string[]>("--scope") { Description = BowireLocale.T("cli.scan.scope-2"), AllowMultipleArgumentsPerToken = true };
+        var authHeaderOpt = new Option<string[]>("--auth-header") { Description = BowireLocale.T("cli.scan.auth-header-2"), AllowMultipleArgumentsPerToken = false };
+        var timeoutOpt = new Option<int>("--timeout") { Description = BowireLocale.T("cli.scan.timeout-2") };
+        var noRobotsOpt = new Option<bool>("--no-robots") { Description = BowireLocale.T("cli.scan.no-robots") };
+        var maxOpt = new Option<int>("--max") { Description = BowireLocale.T("cli.scan.max") };
+        var allowSelfSignedOpt = new Option<bool>("--allow-self-signed-certs") { Description = BowireLocale.T("cli.scan.allow-self-signed-certs-2") };
+        var outOpt = new Option<string>("--out") { Description = BowireLocale.T("cli.scan.out-3") };
 
         spider.Add(urlOpt);
         spider.Add(scopeOpt);

@@ -52,7 +52,7 @@ internal static class RecordingCommand
     public static Command Build()
     {
         var recording = new Command("recording",
-            "Standalone tooling for .bwr files — workspace-agnostic. Exposes `validate` and `correlate`; `info` / `diff` / `extract` slot in here when needed.");
+            BowireLocale.T("cli.recording.recording.command"));
         recording.Add(BuildValidateCommand());
         recording.Add(BuildCorrelateCommand());
         return recording;
@@ -61,17 +61,17 @@ internal static class RecordingCommand
     private static Command BuildValidateCommand()
     {
         var validate = new Command("validate",
-            "Parse + schema-check a .bwr file. Verifies recordingFormatVersion is supported by this build, at least one step is present, and no step carries a responseRef body-ref (a standalone .bwr inlines every body). Exit 0 on success, 64 bad args, 65 malformed file, 66 file not found.");
+            BowireLocale.T("cli.recording.validate.command"));
 
         var pathArg = new Argument<string>("path")
         {
-            Description = "Path to the .bwr file to validate."
+            Description = BowireLocale.T("cli.recording.path")
         };
         validate.Add(pathArg);
 
         var nameOpt = new Option<string?>("--name")
         {
-            Description = "Disambiguate when the file is a store-wrapped envelope with multiple recordings. Matches against the recording's `name` or `id` field."
+            Description = BowireLocale.T("cli.recording.name")
         };
         validate.Add(nameOpt);
 
@@ -154,29 +154,29 @@ internal static class RecordingCommand
     private static Command BuildCorrelateCommand()
     {
         var correlate = new Command("correlate",
-            "Read a .bwr as one correlated transaction: resolve a correlation signal (a traceparent / x-correlation-id header, else a shared id-shaped payload field), then print every step on a shared time axis with a strong/weak/derived/no-match verdict. A step the key misses is still joined when it shares a distinctive id-shaped value with a step the key matched, and the `via` column names that value. Exit 0 on success, 64 bad args, 65 malformed file, 66 file not found.");
+            BowireLocale.T("cli.recording.correlate.command"));
 
         var pathArg = new Argument<string>("path")
         {
-            Description = "Path to the .bwr file to correlate."
+            Description = BowireLocale.T("cli.recording.path-2")
         };
         correlate.Add(pathArg);
 
         var nameOpt = new Option<string?>("--name")
         {
-            Description = "Disambiguate when the file is a store-wrapped envelope with multiple recordings. Matches against the recording's `name` or `id` field."
+            Description = BowireLocale.T("cli.recording.name")
         };
         correlate.Add(nameOpt);
 
         var keyOpt = new Option<string?>("--key")
         {
-            Description = "Correlate on this key instead of the auto-detected one, as `name=value` (e.g. `--key shipId=101`). Overrides any `correlation` field persisted in the file."
+            Description = BowireLocale.T("cli.recording.key")
         };
         correlate.Add(keyOpt);
 
         var jsonOpt = new Option<bool>("--json")
         {
-            Description = "Emit the full correlation model as JSON instead of the table — the same shape the workbench's /api/recordings/correlate returns."
+            Description = BowireLocale.T("cli.recording.json")
         };
         correlate.Add(jsonOpt);
 

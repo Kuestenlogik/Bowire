@@ -89,6 +89,8 @@ internal static class BowireCli
     {
         ArgumentNullException.ThrowIfNull(plugins);
         var root = BuildRoot(args, cfg, plugins);
+        // #690 - help headings and descriptions in the same language.
+        HelpLocalization.ApplyCulture();
         var invocationConfig = new InvocationConfiguration
         {
             Output = stdout ?? Console.Out,
@@ -113,7 +115,21 @@ internal static class BowireCli
             return CliErrorRenderer.Render(parseResult, invocationConfig.Error, useColor);
         }
 
-        return await parseResult.InvokeAsync(invocationConfig, cancellationToken).ConfigureAwait(false);
+        // #690 - a help invocation writes through a writer that translates the
+        // one heading System.CommandLine leaves in English.
+        var output = invocationConfig.Output;
+        var helpOutput = HelpLocalization.ForHelp(parseResult, output);
+        if (ReferenceEquals(helpOutput, output))
+            return await parseResult.InvokeAsync(invocationConfig, cancellationToken).ConfigureAwait(false);
+        invocationConfig.Output = helpOutput;
+        try
+        {
+            return await parseResult.InvokeAsync(invocationConfig, cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            await helpOutput.FlushAsync(cancellationToken).ConfigureAwait(false);
+        }
     }
 
     private static RootCommand BuildRoot(string[] originalArgs, IConfiguration cfg, IBowirePluginLoader plugins)
@@ -134,8 +150,7 @@ internal static class BowireCli
         // from.
         Kuestenlogik.Bowire.Plugins.BowirePluginRoot.Apply(pluginDir);
         var root = new RootCommand(
-            "Bowire — multi-protocol API workbench. Run without a subcommand to launch the browser UI; " +
-            "run a subcommand (discover / list / describe / call / send / catalogue / mock / mcp / plugin / test) for scripting.");
+            BowireLocale.T("cli.bowire-cli.root.command"));
 
         // Root-level options describe the browser-UI defaults so
         // `bowire --port 6000 --url http://api.local` resolves through
@@ -148,64 +163,58 @@ internal static class BowireCli
         // through BowireConfiguration's switch mappings (Bowire:Network:*).
         root.Add(new Option<string>("--proxy-url")
         {
-            Description = "Proxy for outbound connections (http://host:port), or 'system' / 'none'. "
-                        + "Credentials go in Bowire:Network:ProxyUser / ProxyPasswordRef, never in the URL.",
+            Description = BowireLocale.T("cli.bowire-cli.proxy-url"),
             Recursive = true,
         });
         root.Add(new Option<string>("--no-proxy")
         {
-            Description = "Hosts that bypass the proxy, comma-separated: example.com, .corp.local, 10.0.0.0/8, <local>.",
+            Description = BowireLocale.T("cli.bowire-cli.no-proxy"),
             Recursive = true,
         });
         root.Add(new Option<string>("--ca-bundle")
         {
-            Description = "PEM file with extra trusted CA certificates, e.g. a TLS-inspecting proxy's root.",
+            Description = BowireLocale.T("cli.bowire-cli.ca-bundle"),
             Recursive = true,
         });
         root.Add(new Option<string[]>("--url")
         {
-            Description = "Server URL(s) to connect to. Repeat for multi-URL mode.",
+            Description = BowireLocale.T("cli.bowire-cli.url"),
             AllowMultipleArgumentsPerToken = true
         });
-        root.Add(new Option<string>("--url-file") { Description = "File with server URLs (one per line)." });
+        root.Add(new Option<string>("--url-file") { Description = BowireLocale.T("cli.bowire-cli.url-file") });
         root.Add(new Option<int?>("--port")
         {
-            Description = "Browser UI port. Default 5080. Use 0 to let the OS pick a free port, "
-                        + "which only makes sense together with --port-file (that is how you find out which one).",
+            Description = BowireLocale.T("cli.bowire-cli.port"),
         }.WithPortValidation(allowEphemeral: true));
         root.Add(new Option<string>("--port-file")
         {
-            Description = "Write the bound workbench URL to this file as JSON ({\"version\":1,\"url\":…,\"pid\":…}) "
-                        + "once the server is actually listening, and delete it on shutdown. The handoff for anything "
-                        + "that starts Bowire as a child process — an editor plugin, a CI harness, a test fixture — "
-                        + "because the file appears only after a successful bind, unlike the console banner. "
-                        + "Pairs with --port 0. Equivalent to Bowire:PortFile.",
+            Description = BowireLocale.T("cli.bowire-cli.port-file"),
         });
-        root.Add(new Option<string>("--title") { Description = "Browser tab title. Default \"Bowire\"." });
-        root.Add(new Option<string>("--description") { Description = "Subtitle shown below the title." });
-        root.Add(new Option<bool>("--no-browser") { Description = "Don't auto-open a browser window." });
-        root.Add(new Option<bool>("--enable-mcp-adapter") { Description = "Expose discovered services as MCP tools." });
-        root.Add(new Option<bool>("--auto-create-initial-workspace") { Description = "Seed a default \"Personal\" workspace on first run instead of the empty Home + Create-Workspace CTA. Standalone leaves this off by default so the operator meets the workspace concept up front; embedded hosts seed one automatically. Equivalent to Bowire:AutoCreateInitialWorkspace=true." });
-        root.Add(new Option<bool>("--update-check") { Description = "Opt in to the daily plugin-update check (off by default). Bowire queries nuget.org once per day for newer versions of every installed sibling plugin and surfaces a count badge in the sidebar. Equivalent to Bowire:PluginUpdateCheck:Enabled=true." });
-        root.Add(new Option<string>("--auth-provider") { Description = "Id of the IBowireAuthProvider plugin that should gate workbench access (e.g. 'oidc'). When unset, the workbench stays open — same as today's laptop default. When set, the named plugin must be installed (e.g. `bowire plugin install Kuestenlogik.Bowire.Auth.Oidc`) or Bowire fails fast. Provider-namespaced flags are read from Bowire:Auth:<id>:* — for OIDC: --auth-oidc-authority, --auth-oidc-client-id, etc. (forwarded as Bowire:Auth:Oidc:Authority / ClientId)." });
-        root.Add(new Option<bool>("--lock-server-url") { Description = "Disable URL editing in the UI. Implied by --url; the server then also refuses any other target (403)." });
+        root.Add(new Option<string>("--title") { Description = BowireLocale.T("cli.bowire-cli.title") });
+        root.Add(new Option<string>("--description") { Description = BowireLocale.T("cli.bowire-cli.description") });
+        root.Add(new Option<bool>("--no-browser") { Description = BowireLocale.T("cli.bowire-cli.no-browser") });
+        root.Add(new Option<bool>("--enable-mcp-adapter") { Description = BowireLocale.T("cli.bowire-cli.enable-mcp-adapter") });
+        root.Add(new Option<bool>("--auto-create-initial-workspace") { Description = BowireLocale.T("cli.bowire-cli.auto-create-initial-workspace") });
+        root.Add(new Option<bool>("--update-check") { Description = BowireLocale.T("cli.bowire-cli.update-check") });
+        root.Add(new Option<string>("--auth-provider") { Description = BowireLocale.T("cli.bowire-cli.auth-provider") });
+        root.Add(new Option<bool>("--lock-server-url") { Description = BowireLocale.T("cli.bowire-cli.lock-server-url") });
         root.Add(new Option<string[]>("--allowed-server-url")
         {
-            Description = "Extra server URL the workbench may dial besides --url. Repeat or comma-separate. Any value switches server-side target enforcement on: a target outside --url + this list is refused with 403. Equivalent to Bowire:AllowedServerUrls.",
+            Description = BowireLocale.T("cli.bowire-cli.allowed-server-url"),
             AllowMultipleArgumentsPerToken = true,
         });
         root.Add(new Option<string[]>("--allowed-auth-url")
         {
-            Description = "Identity-provider URL the auth helpers (OAuth token proxies, custom-token proxy, auth-flow capture) may call. Repeat or comma-separate. Needed for a token endpoint outside --url once targets are restricted; on its own it restricts only the auth helpers. Equivalent to Bowire:AllowedAuthUrls.",
+            Description = BowireLocale.T("cli.bowire-cli.allowed-auth-url"),
             AllowMultipleArgumentsPerToken = true,
         });
-        root.Add(new Option<bool>("--telemetry") { Description = "Enable OpenTelemetry self-observability (#29). Bowire emits traces + Bowire-domain metrics (bowire.invoke.count / duration / bowire.discover.count / bowire.plugin.load / bowire.mock.requests) through the canonical 'Kuestenlogik.Bowire' Meter and ActivitySource. Wire endpoint, headers, and protocol come from the standard OTEL_EXPORTER_OTLP_* env vars. Off by default — laptop installs stay quiet." });
-        root.Add(new Option<bool>("--telemetry-strip-method-labels") { Description = "When --telemetry is on, drop the high-cardinality service + method dimensions from emitted metrics. Shared multi-tenant installs (GDPR / HIPAA / SOX) almost always want this; private-network deploys usually leave it off so per-method breakdowns survive." });
-        root.Add(new Option<string>("--ai-provider") { Description = "AI provider id for the workbench's chat / hint surface (#25 Phase 2). Default 'ollama' speaks the local Ollama HTTP API on 127.0.0.1:11434; LM Studio on :1234 works through the same client because the wire shape matches. Cloud connectors slot in via the same Microsoft.Extensions.AI IChatClient seam in Phase 3. Maps to Bowire:Ai:ProviderId." });
-        root.Add(new Option<string>("--ai-endpoint") { Description = "Override the AI provider's HTTP endpoint. Default 'http://localhost:11434' (Ollama). Set to 'http://localhost:1234' for LM Studio, or to a remote Ollama gateway when the model server runs on another host. Maps to Bowire:Ai:Endpoint." });
-        root.Add(new Option<string>("--ai-model") { Description = "Model name passed to the AI provider. Default 'llama3.2:3b' (Ollama's small + free model that runs on a laptop). Use `ollama pull <name>` first; LM Studio uses whatever model is currently loaded. Maps to Bowire:Ai:Model." });
-        root.Add(new Option<string>("--oast-server") { Description = "Interaction-server URL for the Security rail's manual OAST panel (#486) — e.g. https://oast.example.com. Enables generating out-of-band callback payloads and watching the live feed, the interactive counterpart to `bowire scan --oast-server`. Point it at your own `bowire oast serve` instance. Maps to Bowire:Oast:Server." });
-        root.Add(new Option<string>("--oast-token") { Description = "Auth token for a gated interaction server (one started with `bowire oast serve --token`). Maps to Bowire:Oast:Token." });
+        root.Add(new Option<bool>("--telemetry") { Description = BowireLocale.T("cli.bowire-cli.telemetry") });
+        root.Add(new Option<bool>("--telemetry-strip-method-labels") { Description = BowireLocale.T("cli.bowire-cli.telemetry-strip-method-labels") });
+        root.Add(new Option<string>("--ai-provider") { Description = BowireLocale.T("cli.bowire-cli.ai-provider") });
+        root.Add(new Option<string>("--ai-endpoint") { Description = BowireLocale.T("cli.bowire-cli.ai-endpoint") });
+        root.Add(new Option<string>("--ai-model") { Description = BowireLocale.T("cli.bowire-cli.ai-model") });
+        root.Add(new Option<string>("--oast-server") { Description = BowireLocale.T("cli.bowire-cli.oast-server") });
+        root.Add(new Option<string>("--oast-token") { Description = BowireLocale.T("cli.bowire-cli.oast-token") });
         // #537 — catalogue-provider flags. The browser UI's "Browse
         // catalogue" surface is driven entirely by these; without one the
         // workbench keeps its manual-URL-entry behaviour. Values land in
@@ -214,22 +223,22 @@ internal static class BowireCli
         // host's own configuration, not off BrowserUiOptions).
         var catalogueProviderOpt = new Option<string>("--catalogue-provider")
         {
-            Description = "Catalogue provider to read the URL catalogue from: 'local' (a JSON file), 'http' (a remote catalogue document), 'consul', 'kubernetes', or 'agent'. local / http / consul ship in the box; 'kubernetes' needs `bowire plugin install Kuestenlogik.Bowire.Catalogue.Kubernetes` and 'agent' needs `bowire plugin install Kuestenlogik.Bowire.Catalogue.Agent`. Maps to Bowire:Discovery:Catalogue:Provider.",
+            Description = BowireLocale.T("cli.bowire-cli.catalogue-provider"),
         };
         catalogueProviderOpt.CompletionSources.Add("local", "http", "consul", "kubernetes", "agent");
         root.Add(catalogueProviderOpt);
-        root.Add(new Option<string>("--catalogue-path") { Description = "Path to the catalogue JSON document read by the 'local' provider. Defaults to ~/.bowire/catalogue.json. Implies --catalogue-provider local when that flag is absent. Maps to Bowire:Discovery:Catalogue:Local:Path." });
-        root.Add(new Option<string>("--catalogue-url") { Description = "URL the 'http' catalogue provider GETs every refresh interval. Must return the catalogue document shape ({ \"version\": 1, \"entries\": [...] }). Implies --catalogue-provider http when that flag is absent. Maps to Bowire:Discovery:Catalogue:Http:Url." });
-        root.Add(new Option<string>("--catalogue-consul") { Description = "Consul agent address for the 'consul' catalogue provider (e.g. http://localhost:8500). Implies --catalogue-provider consul when that flag is absent. Maps to Bowire:Discovery:Catalogue:Consul:Address." });
+        root.Add(new Option<string>("--catalogue-path") { Description = BowireLocale.T("cli.bowire-cli.catalogue-path") });
+        root.Add(new Option<string>("--catalogue-url") { Description = BowireLocale.T("cli.bowire-cli.catalogue-url") });
+        root.Add(new Option<string>("--catalogue-consul") { Description = BowireLocale.T("cli.bowire-cli.catalogue-consul") });
         // #818 — recursive: the plugin verbs' usage lines and `plugin --help`
         // advertise `--plugin-dir` (`bowire plugin list --plugin-dir ./x`), and
         // as a root-only option the parser refused it after any subcommand.
         // The value itself is read from the bootstrap configuration, which
         // sees the whole argument list wherever the flag stands.
-        root.Add(new Option<string>("--plugin-dir") { Description = "Override the plugin directory.", Recursive = true });
+        root.Add(new Option<string>("--plugin-dir") { Description = BowireLocale.T("cli.bowire-cli.plugin-dir"), Recursive = true });
         var mapBasemapOpt = new Option<string>("--map-basemap")
         {
-            Description = "Map widget basemap: 'osm' / 'satellite' / 'demotiles' / 'none', a tile URL with {z}/{x}/{y}, or a style.json URL. Default: 'demotiles'.",
+            Description = BowireLocale.T("cli.bowire-cli.map-basemap"),
         };
         // Completion sugar (#38): offer the four keyword basemaps to
         // dotnet-suggest without restricting the value — a tile / style URL
@@ -238,12 +247,12 @@ internal static class BowireCli
         root.Add(mapBasemapOpt);
         root.Add(new Option<string[]>("--disable-plugin")
         {
-            Description = "Skip a protocol plugin at startup. Repeat or comma-separate ('--disable-plugin grpc --disable-plugin signalr' or '--disable-plugin grpc,signalr'). Useful when a plugin DLL won't load or its discovery probe is too slow for the current host.",
+            Description = BowireLocale.T("cli.bowire-cli.disable-plugin"),
             AllowMultipleArgumentsPerToken = true,
         });
         var disableCliCommandOpt = new Option<string[]>("--disable-cli-command")
         {
-            Description = "Skip an auto-discovered CLI subcommand at startup. Mirrors --disable-plugin but for IBowireCliCommand contributions (scan / future plugin commands). Repeat or comma-separate.",
+            Description = BowireLocale.T("cli.bowire-cli.disable-cli-command"),
             AllowMultipleArgumentsPerToken = true,
         };
         root.Add(disableCliCommandOpt);
@@ -450,14 +459,14 @@ internal static class BowireCli
     private static Command BuildProxyCommand()
     {
         var proxy = new Command("proxy",
-            "Intercepting HTTP/HTTPS proxy. Tier-3 anchor of the security-testing lane (see docs/architecture/security-testing.md).");
+            BowireLocale.T("cli.bowire-cli.proxy.command"));
 
-        var portOpt = new Option<int>("--port") { Description = "Port the proxy listens on (point browser / client at it). Default 8888." }.WithPortValidation();
-        var apiPortOpt = new Option<int>("--api-port") { Description = "Sidecar API port the workbench's Proxy tab reads captured flows from. Default 8889." }.WithPortValidation();
-        var capacityOpt = new Option<int>("--capacity") { Description = "Maximum number of flows retained in memory (FIFO eviction). Default 1000." };
-        var noMitmOpt = new Option<bool>("--no-mitm") { Description = "Disable HTTPS interception — CONNECT requests are tunneled-and-rejected with 501. Default: MITM enabled." };
-        var caDirOpt = new Option<string?>("--ca-dir") { Description = "Override the CA storage directory. Default: ~/.bowire (PFX + DER cert persisted there)." };
-        var exportCaOpt = new Option<string?>("--export-ca") { Description = "Copy the public CA certificate to this path (.crt) and exit. Install the file into your trust store to suppress client-side warnings during HTTPS interception." };
+        var portOpt = new Option<int>("--port") { Description = BowireLocale.T("cli.bowire-cli.port-2") }.WithPortValidation();
+        var apiPortOpt = new Option<int>("--api-port") { Description = BowireLocale.T("cli.bowire-cli.api-port") }.WithPortValidation();
+        var capacityOpt = new Option<int>("--capacity") { Description = BowireLocale.T("cli.bowire-cli.capacity") };
+        var noMitmOpt = new Option<bool>("--no-mitm") { Description = BowireLocale.T("cli.bowire-cli.no-mitm") };
+        var caDirOpt = new Option<string?>("--ca-dir") { Description = BowireLocale.T("cli.bowire-cli.ca-dir") };
+        var exportCaOpt = new Option<string?>("--export-ca") { Description = BowireLocale.T("cli.bowire-cli.export-ca") };
 
         proxy.Add(portOpt);
         proxy.Add(apiPortOpt);
@@ -490,35 +499,35 @@ internal static class BowireCli
     private static Command BuildInterceptorCommand()
     {
         var interceptor = new Command("interceptor",
-            "Standalone reverse-proxy mode (#307 — Phase C of #153). Fronts an upstream service: clients point at Bowire's listener, every request is forwarded upstream and captured into the same InterceptedFlowStore the embedded middleware (UseBowireInterceptor) uses. The workbench's 'Intercepted' rail reads the sidecar API surface this command exposes.");
+            BowireLocale.T("cli.bowire-cli.interceptor.command"));
 
         var upstreamOpt = new Option<string>("--upstream")
         {
-            Description = "Upstream service URL the listener forwards to (e.g. https://api.example.com). Required.",
+            Description = BowireLocale.T("cli.bowire-cli.upstream"),
             Required = true,
         };
         var listenOpt = new Option<string>("--listen")
         {
-            Description = "host:port the edge listener binds to (e.g. 127.0.0.1:8080, 0.0.0.0:9000, :8080). Default 127.0.0.1:0 (loopback + ephemeral port).",
+            Description = BowireLocale.T("cli.bowire-cli.listen"),
         };
-        var apiPortOpt = new Option<int?>("--api-port") { Description = "Sidecar API port the workbench's Intercepted rail reads from. Default 5089." }.WithPortValidation();
-        var capacityOpt = new Option<int?>("--capacity") { Description = "Maximum number of flows retained in memory (FIFO eviction). Default 1000." };
-        var maxBodyOpt = new Option<int?>("--max-body-bytes") { Description = "Per-side body capture cap. Default 1048576 (1 MiB)." };
+        var apiPortOpt = new Option<int?>("--api-port") { Description = BowireLocale.T("cli.bowire-cli.api-port-2") }.WithPortValidation();
+        var capacityOpt = new Option<int?>("--capacity") { Description = BowireLocale.T("cli.bowire-cli.capacity") };
+        var maxBodyOpt = new Option<int?>("--max-body-bytes") { Description = BowireLocale.T("cli.bowire-cli.max-body-bytes") };
         var allowSelfSignedOpt = new Option<bool>("--allow-self-signed-upstream")
         {
-            Description = "Accept the upstream's TLS cert without chain validation. Useful when fronting a dev-mode service with a self-signed cert. Off by default."
+            Description = BowireLocale.T("cli.bowire-cli.allow-self-signed-upstream")
         };
         var tlsOpt = new Option<bool>("--tls")
         {
-            Description = "Serve HTTPS on the edge listener using a leaf certificate minted from Bowire's MITM CA (reuses #36's CA flow). Install the CA into the client trust store via `bowire proxy --export-ca` to avoid handshake warnings."
+            Description = BowireLocale.T("cli.bowire-cli.tls")
         };
         var tlsHostOpt = new Option<string?>("--tls-host")
         {
-            Description = "Hostname the minted leaf certificate is issued for (SAN). Default: the listen address. Set when clients connect via a custom DNS name (e.g. api.local pointing to 127.0.0.1)."
+            Description = BowireLocale.T("cli.bowire-cli.tls-host")
         };
         var caDirOpt = new Option<string?>("--ca-dir")
         {
-            Description = "Override the CA storage directory (default: ~/.bowire). Same flag as `bowire proxy`."
+            Description = BowireLocale.T("cli.bowire-cli.ca-dir-2")
         };
 
         interceptor.Add(upstreamOpt);
@@ -559,19 +568,19 @@ internal static class BowireCli
     internal static Command BuildFuzzCommand()
     {
         var fuzz = new Command("fuzz",
-            "Schema-aware fuzzing of a single field. Tier-2 anchor of the security-testing lane.");
+            BowireLocale.T("cli.bowire-cli.fuzz.command"));
 
-        var targetOpt = new Option<string>("--target") { Description = "Target base URL.", Required = true };
-        var templateOpt = new Option<string>("--template") { Description = "Recording-style JSON file describing the request shape (httpVerb / httpPath / body).", Required = true };
-        var fieldOpt = new Option<string>("--field") { Description = "JSONPath into the request body identifying the field to fuzz (e.g. $.username or $.filter.id).", Required = true };
-        var categoryOpt = new Option<string>("--payloads") { Description = "Payload category: sqli / xss / pathtrav / cmdinj.", Required = true };
+        var targetOpt = new Option<string>("--target") { Description = BowireLocale.T("cli.bowire-cli.target"), Required = true };
+        var templateOpt = new Option<string>("--template") { Description = BowireLocale.T("cli.bowire-cli.template"), Required = true };
+        var fieldOpt = new Option<string>("--field") { Description = BowireLocale.T("cli.bowire-cli.field"), Required = true };
+        var categoryOpt = new Option<string>("--payloads") { Description = BowireLocale.T("cli.bowire-cli.payloads"), Required = true };
         categoryOpt.CompletionSources.Add("sqli", "xss", "pathtrav", "cmdinj");
-        var forceOpt = new Option<bool>("--force") { Description = "Run even when the field's value-shape doesn't match the payload class (e.g. fuzz a numeric field with string payloads anyway)." };
-        var timeoutOpt = new Option<int>("--timeout") { Description = "Per-payload HTTP timeout in seconds. Default 30." };
-        var allowSelfSignedOpt = new Option<bool>("--allow-self-signed-certs") { Description = "Accept self-signed certs on the target." };
+        var forceOpt = new Option<bool>("--force") { Description = BowireLocale.T("cli.bowire-cli.force") };
+        var timeoutOpt = new Option<int>("--timeout") { Description = BowireLocale.T("cli.bowire-cli.timeout") };
+        var allowSelfSignedOpt = new Option<bool>("--allow-self-signed-certs") { Description = BowireLocale.T("cli.bowire-cli.allow-self-signed-certs") };
         var authHeaderOpt = new Option<string[]>("--auth-header")
         {
-            Description = "Add an HTTP header to every fuzz request (typically Authorization: Bearer …). Repeatable.",
+            Description = BowireLocale.T("cli.bowire-cli.auth-header"),
             AllowMultipleArgumentsPerToken = false,
         };
 
@@ -614,10 +623,10 @@ internal static class BowireCli
     {
         var pluginsOpt = new Option<bool>("--plugins")
         {
-            Description = "Also list the loaded protocol plugins and their versions.",
+            Description = BowireLocale.T("cli.bowire-cli.plugins"),
         };
         var version = new Command("version",
-            "Print the Bowire version and runtime; with --plugins, also the loaded protocol plugins and their versions.");
+            BowireLocale.T("cli.bowire-cli.version.command"));
         version.Add(pluginsOpt);
         version.SetAction(async (pr, _) =>
         {
@@ -637,32 +646,32 @@ internal static class BowireCli
     private static Command BuildJwtCommand()
     {
         var jwt = new Command("jwt",
-            "JWT decode / tamper toolkit. Tier-2 anchor of the security-testing lane (see docs/architecture/security-testing.md).");
+            BowireLocale.T("cli.bowire-cli.jwt.command"));
 
-        var tokenArg = new Argument<string>("token") { Description = "The JWT to operate on (header.payload.signature)." };
+        var tokenArg = new Argument<string>("token") { Description = BowireLocale.T("cli.bowire-cli.token") };
 
-        var decode = new Command("decode", "Decode a JWT and pretty-print the header + payload.");
+        var decode = new Command("decode", BowireLocale.T("cli.bowire-cli.decode.command"));
         decode.Add(tokenArg);
         decode.SetAction(async (pr, ct) =>
             await JwtCommand.RunDecodeAsync(pr.GetValue(tokenArg) ?? "",
                 pr.InvocationConfiguration.Output, pr.InvocationConfiguration.Error, ct).ConfigureAwait(false));
 
-        var analyze = new Command("analyze", "Deterministic JWT security analysis — flags alg=none, symmetric HMAC, missing/expired/long-lived exp, missing nbf, scope creep, audience binding, kid surface.");
-        var audienceOpt = new Option<string>("--audience", "-a") { Description = "Expected audience — cross-checked against the token's aud claim." };
+        var analyze = new Command("analyze", BowireLocale.T("cli.bowire-cli.analyze.command"));
+        var audienceOpt = new Option<string>("--audience", "-a") { Description = BowireLocale.T("cli.bowire-cli.audience") };
         analyze.Add(tokenArg);
         analyze.Add(audienceOpt);
         analyze.SetAction(async (pr, ct) =>
             await JwtCommand.RunAnalyzeAsync(pr.GetValue(tokenArg) ?? "", pr.GetValue(audienceOpt),
                 pr.InvocationConfiguration.Output, pr.InvocationConfiguration.Error, ct).ConfigureAwait(false));
 
-        var tamper = new Command("tamper", "Produce a tampered JWT (alg:none downgrade, claim mutation, optional HS256 re-signing).");
-        var algNoneOpt = new Option<bool>("--alg-none") { Description = "Downgrade the token to alg:none (drops the signature; the classic JWT bypass)." };
+        var tamper = new Command("tamper", BowireLocale.T("cli.bowire-cli.tamper.command"));
+        var algNoneOpt = new Option<bool>("--alg-none") { Description = BowireLocale.T("cli.bowire-cli.alg-none") };
         var setOpt = new Option<string[]>("--set")
         {
-            Description = "Mutate a payload claim: --set claim=value. Repeatable. Values parsed as JSON literals first (so --set exp=9999999999 lands as number) and fall back to string.",
+            Description = BowireLocale.T("cli.bowire-cli.set"),
             AllowMultipleArgumentsPerToken = true,
         };
-        var secretOpt = new Option<string>("--secret") { Description = "Re-sign with HMAC-SHA256 using this secret (overrides --alg-none). Useful when probing weak-secret-based JWT validation." };
+        var secretOpt = new Option<string>("--secret") { Description = BowireLocale.T("cli.bowire-cli.secret") };
         tamper.Add(tokenArg);
         tamper.Add(algNoneOpt);
         tamper.Add(setOpt);
@@ -689,18 +698,17 @@ internal static class BowireCli
 
     private static Command BuildImportCommand()
     {
-        var fileArg = new Argument<string>("file") { Description = "Path to the HAR document." };
+        var fileArg = new Argument<string>("file") { Description = BowireLocale.T("cli.bowire-cli.file") };
         var outOpt = new Option<string?>("--out", "-o")
         {
-            Description = "Output path for the recording. Use \"-\" to stream to stdout. " +
-                          "Default: <har-basename>.bwr next to the input file."
+            Description = BowireLocale.T("cli.bowire-cli.out")
         };
         var nameOpt = new Option<string?>("--name", "-n")
-        { Description = "Recording name. Defaults to the HAR creator name or \"Imported HAR\"." };
+        { Description = BowireLocale.T("cli.bowire-cli.name") };
         var redactOpt = new Option<bool>("--redact-secrets")
-        { Description = "Strip credential-bearing header values (Authorization, Cookie, X-Api-Key, …) before writing the recording — so a HAR captured against production never persists live tokens / session cookies. Detected credential headers are reported either way." };
+        { Description = BowireLocale.T("cli.bowire-cli.redact-secrets") };
 
-        var har = new Command("har", "Convert a HAR 1.2 document into a .bwr recording.");
+        var har = new Command("har", BowireLocale.T("cli.bowire-cli.har.command"));
         har.Add(fileArg); har.Add(outOpt); har.Add(nameOpt); har.Add(redactOpt);
         har.SetAction(async (pr, _) =>
         {
@@ -721,8 +729,7 @@ internal static class BowireCli
         });
 
         var import = new Command("import",
-            "Import an Insomnia or Yaak export, a Bruno collection or .http files as a Bowire workspace (#674, #939); "
-            + "`import har` converts a HAR trace into a recording.");
+            BowireLocale.T("cli.bowire-cli.import.command"));
         import.Add(har);
         InteropCommands.AttachImport(import);
         return import;
@@ -739,30 +746,28 @@ internal static class BowireCli
     {
         var url = new Option<string>("--url", "-url")
         {
-            Description = "Target server URL. Accepts the `protocol@url` hint form "
-                + "(e.g. `grpc@https://localhost:5001`, `mqtt@tcp://broker:1883`) to pin one plugin "
-                + "and skip probing the rest.",
+            Description = BowireLocale.T("cli.bowire-cli.url-2"),
             DefaultValueFactory = _ => cfg["Bowire:Cli:Url"] ?? "https://localhost:5001"
         };
         var plaintext = new Option<bool>("-plaintext", "--plaintext")
         {
-            Description = "Use plaintext (no TLS).",
+            Description = BowireLocale.T("cli.bowire-cli.plaintext"),
             DefaultValueFactory = _ => cfg.GetValue<bool>("Bowire:Cli:Plaintext")
         };
         var verbose = new Option<bool>("-v", "--verbose")
         {
-            Description = "Verbose output (list).",
+            Description = BowireLocale.T("cli.bowire-cli.v"),
             DefaultValueFactory = _ => cfg.GetValue<bool>("Bowire:Cli:Verbose")
         };
         var compact = new Option<bool>("--compact")
         {
-            Description = "One-line JSON output (call, pipe-friendly).",
+            Description = BowireLocale.T("cli.bowire-cli.compact"),
             DefaultValueFactory = _ => cfg.GetValue<bool>("Bowire:Cli:Compact")
         };
         var data = new Option<string[]>("-d", "--data")
-        { Description = "JSON body (or @filename). Repeatable for client-streaming." };
+        { Description = BowireLocale.T("cli.bowire-cli.d") };
         var headers = new Option<string[]>("-H")
-        { Description = "Metadata header \"key: value\". Repeatable." };
+        { Description = BowireLocale.T("cli.bowire-cli.h") };
         return (url, plaintext, verbose, compact, data, headers);
     }
 
@@ -777,11 +782,7 @@ internal static class BowireCli
     /// </remarks>
     private static Option<string?> GrpcDescriptorSetOption() => new("--grpc-descriptor-set")
     {
-        Description = "Path to a compiled gRPC descriptor set "
-            + "(`protoc --descriptor_set_out=api.protoset --include_imports`), for a server that does not "
-            + "answer Server Reflection — the recommended production state. Same input `grpcurl -protoset` takes. "
-            + "Sugar for the metadata marker the plugin reads, so `-H` still works; the marker is stripped "
-            + "before anything reaches the wire.",
+        Description = BowireLocale.T("cli.bowire-cli.description-2"),
     };
 
     /// <summary>
@@ -804,17 +805,15 @@ internal static class BowireCli
     private static (Option<bool> Negotiate, Option<string?> Ntlm, Option<string?> Digest) HttpAuthOptions() => (
         new Option<bool>("--negotiate")
         {
-            Description = "Windows-integrated authentication (Kerberos, falling back to NTLM) as the signed-in "
-                + "account. No password. Windows only.",
+            Description = BowireLocale.T("cli.bowire-cli.negotiate"),
         },
         new Option<string?>("--ntlm")
         {
-            Description = "NTLM with explicit credentials: [DOMAIN\\]user:password. Pass the password from a "
-                + "variable (\"$NTLM_PASSWORD\") rather than typing it.",
+            Description = BowireLocale.T("cli.bowire-cli.ntlm"),
         },
         new Option<string?>("--digest")
         {
-            Description = "HTTP Digest (RFC 7616, MD5 / SHA-256, qop auth / auth-int): user:password.",
+            Description = BowireLocale.T("cli.bowire-cli.digest"),
         });
 
     /// <summary>
@@ -909,13 +908,7 @@ internal static class BowireCli
 
     private static Option<string[]> SchemaOption() => new("--schema")
     {
-        Description = "Read a schema file instead of (or as well as) asking the server, in any format "
-            + "a loaded plugin imports: a compiled gRPC descriptor set (.protoset / .pb / .desc / .binpb, from "
-            + "`protoc --descriptor_set_out=api.protoset --include_imports`), GraphQL SDL, a WSDL, an OData "
-            + "EDMX model, an OpenAPI, AsyncAPI or OpenRPC document, or a .proto (names only, for `discover`). "
-            + "The format is read from the extension, and from the content where the extension does not "
-            + "settle it. Repeatable. "
-            + "The workbench's uploaded schemas are not read by the CLI — name the file here.",
+        Description = BowireLocale.T("cli.bowire-cli.description-3"),
         AllowMultipleArgumentsPerToken = true,
     };
 
@@ -924,8 +917,7 @@ internal static class BowireCli
     {
         var (url, plaintext, verbose, _, _, _) = GrpcCliOptions(cfg);
         var cmd = new Command("discover",
-            "Probe a URL with every loaded protocol plugin and report what each one found — or why it didn't. "
-            + "Accepts the `protocol@url` hint form to pin one plugin.");
+            BowireLocale.T("cli.bowire-cli.discover.command"));
         var descriptorSet = GrpcDescriptorSetOption();
         var schemaFiles = SchemaOption();
         cmd.Add(url); cmd.Add(plaintext); cmd.Add(verbose); cmd.Add(descriptorSet); cmd.Add(schemaFiles);
@@ -956,7 +948,7 @@ internal static class BowireCli
         var (url, plaintext, verbose, _, _, _) = GrpcCliOptions(cfg);
         var descriptorSet = GrpcDescriptorSetOption();
         var schemaFiles = SchemaOption();
-        var cmd = new Command("list", "List discovered gRPC services.");
+        var cmd = new Command("list", BowireLocale.T("cli.bowire-cli.list.command"));
         cmd.Add(url); cmd.Add(plaintext); cmd.Add(verbose); cmd.Add(descriptorSet); cmd.Add(schemaFiles);
         cmd.SetAction(async (pr, _) =>
         {
@@ -981,11 +973,11 @@ internal static class BowireCli
     internal static Command BuildDescribeCommand(IConfiguration cfg)
     {
         var (url, plaintext, verbose, _, _, _) = GrpcCliOptions(cfg);
-        var target = new Argument<string>("target") { Description = "Service name, or service/method." };
+        var target = new Argument<string>("target") { Description = BowireLocale.T("cli.bowire-cli.target-2") };
 
         var descriptorSet = GrpcDescriptorSetOption();
         var schemaFiles = SchemaOption();
-        var cmd = new Command("describe", "Describe a gRPC service or method.");
+        var cmd = new Command("describe", BowireLocale.T("cli.bowire-cli.describe.command"));
         cmd.Add(target); cmd.Add(url); cmd.Add(plaintext); cmd.Add(verbose); cmd.Add(descriptorSet); cmd.Add(schemaFiles);
         cmd.SetAction(async (pr, _) =>
         {
@@ -1024,7 +1016,7 @@ internal static class BowireCli
     internal static Command BuildCallCommand(IConfiguration cfg)
     {
         var (url, plaintext, verbose, compact, data, headers) = GrpcCliOptions(cfg);
-        var target = new Argument<string>("target") { Description = "service/method." };
+        var target = new Argument<string>("target") { Description = BowireLocale.T("cli.bowire-cli.target-3") };
 
         // #538 — the four options that make `call` more than a grpcurl
         // clone. Declared locally rather than on the shared
@@ -1033,38 +1025,29 @@ internal static class BowireCli
         // nothing.
         var protocol = new Option<string?>("--protocol")
         {
-            Description = "Protocol plugin id to invoke through (grpc / rest / graphql / mqtt / …). "
-                + "Overrides a `protocol@url` prefix on --url. Without either, gRPC is assumed unless "
-                + "--stream is set, in which case every loaded plugin is probed and the one that owns "
-                + "the service wins.",
+            Description = BowireLocale.T("cli.bowire-cli.protocol"),
         };
         protocol.CompletionSources.Add("grpc", "rest", "graphql", "mcp", "sse", "websocket",
             "signalr", "mqtt", "nats", "odata", "soap", "jsonrpc", "socketio");
         var stream = new Option<bool>("--stream")
         {
-            Description = "Consume the method as a stream: prints one JSON document per received frame "
-                + "until the server ends the stream or you press Ctrl+C. gRPC server-streaming methods "
-                + "are detected automatically and don't need the flag.",
+            Description = BowireLocale.T("cli.bowire-cli.stream"),
         };
         var vars = new Option<string[]>("--var", "--env")
         {
-            Description = "Variable for the {{name}} / ${name} resolver that runs over -d, -H and --url. "
-                + "KEY=VALUE; repeatable. --env is an alias, matching `bowire test`.",
+            Description = BowireLocale.T("cli.bowire-cli.var"),
             AllowMultipleArgumentsPerToken = false,
         };
         var varFiles = new Option<string[]>("--env-file")
         {
-            Description = "File with one KEY=VALUE per line (dotenv-style; blank lines and # comments "
-                + "ignored) for the resolver. Repeatable; --var repeats win over file entries.",
+            Description = BowireLocale.T("cli.bowire-cli.env-file"),
             AllowMultipleArgumentsPerToken = false,
         };
 
         var grpcDescriptorSet = GrpcDescriptorSetOption();
         var (negotiate, ntlm, digest) = HttpAuthOptions();
         var cmd = new Command("call",
-            "Invoke a method on any loaded protocol plugin (grpcurl-style). "
-            + "Pin the plugin with `--protocol` or the `protocol@url` form; add `--stream` to follow "
-            + "a server-streaming, SSE, WebSocket or broker subscription.");
+            BowireLocale.T("cli.bowire-cli.call.command"));
         cmd.Add(target); cmd.Add(url); cmd.Add(plaintext); cmd.Add(verbose);
         cmd.Add(compact); cmd.Add(data); cmd.Add(headers);
         cmd.Add(protocol); cmd.Add(stream); cmd.Add(vars); cmd.Add(varFiles);
@@ -1119,47 +1102,47 @@ internal static class BowireCli
     {
         var recording = new Option<string?>("--recording", "-r")
         {
-            Description = "Path to a Bowire recording JSON.",
+            Description = BowireLocale.T("cli.bowire-cli.recording"),
             DefaultValueFactory = _ => cfg["Bowire:Mock:RecordingPath"]
         }.WithExistingFileValidation();
         var schema = new Option<string?>("--schema")
         {
-            Description = "Path to an OpenAPI 3 document for schema-only mocks.",
+            Description = BowireLocale.T("cli.bowire-cli.schema"),
             DefaultValueFactory = _ => cfg["Bowire:Mock:SchemaPath"]
         };
         var grpcSchema = new Option<string?>("--grpc-schema")
         {
-            Description = "Path to a protobuf FileDescriptorSet (.pb).",
+            Description = BowireLocale.T("cli.bowire-cli.grpc-schema"),
             DefaultValueFactory = _ => cfg["Bowire:Mock:GrpcSchemaPath"]
         };
         var graphqlSchema = new Option<string?>("--graphql-schema")
         {
-            Description = "Path to a GraphQL SDL file.",
+            Description = BowireLocale.T("cli.bowire-cli.graphql-schema"),
             DefaultValueFactory = _ => cfg["Bowire:Mock:GraphQlSchemaPath"]
         };
         var port = new Option<int>("--port")
         {
-            Description = "Listen port. Default 6000.",
+            Description = BowireLocale.T("cli.bowire-cli.port-3"),
             DefaultValueFactory = _ => cfg.GetValue<int?>("Bowire:Mock:Port") ?? 6000
         }.WithPortValidation();
         var host = new Option<string>("--host")
         {
-            Description = "Listen host. Default 127.0.0.1.",
+            Description = BowireLocale.T("cli.bowire-cli.host"),
             DefaultValueFactory = _ => cfg["Bowire:Mock:Host"] ?? "127.0.0.1"
         };
         var https = new Option<bool>("--https")
         {
-            Description = "Serve over HTTPS (self-signed localhost cert by default; supply --cert for your own).",
+            Description = BowireLocale.T("cli.bowire-cli.https"),
             DefaultValueFactory = _ => cfg.GetValue<bool>("Bowire:Mock:Https")
         };
         var httpsPort = new Option<int?>("--https-port")
         {
-            Description = "Port for the HTTPS listener. Defaults to --port.",
+            Description = BowireLocale.T("cli.bowire-cli.https-port"),
             DefaultValueFactory = _ => cfg.GetValue<int?>("Bowire:Mock:HttpsPort")
         };
         var cert = new Option<string?>("--cert")
         {
-            Description = "Path to a certificate for --https: a .pfx/.p12 (with --cert-password) or a PEM file.",
+            Description = BowireLocale.T("cli.bowire-cli.cert"),
             DefaultValueFactory = _ => cfg["Bowire:Mock:CertPath"]
         };
         cert.Validators.Add(result =>
@@ -1170,42 +1153,42 @@ internal static class BowireCli
         });
         var certPassword = new Option<string?>("--cert-password")
         {
-            Description = "Password for a PKCS#12 (.pfx/.p12) --cert.",
+            Description = BowireLocale.T("cli.bowire-cli.cert-password"),
             DefaultValueFactory = _ => cfg["Bowire:Mock:CertPassword"]
         };
         var proxy = new Option<string?>("--proxy")
         {
-            Description = "Forward unmatched requests to this upstream base URL (partial mocking). e.g. https://api.example.com.",
+            Description = BowireLocale.T("cli.bowire-cli.proxy"),
             DefaultValueFactory = _ => cfg["Bowire:Mock:ProxyBaseUrl"]
         };
         var proxyRecord = new Option<string?>("--proxy-record")
         {
-            Description = "With --proxy: append each proxied response to this recording file (record-through capture).",
+            Description = BowireLocale.T("cli.bowire-cli.proxy-record"),
             DefaultValueFactory = _ => cfg["Bowire:Mock:ProxyRecordPath"]
         };
         var select = new Option<string?>("--select")
         {
-            Description = "Disambiguator when the recording file contains multiple recordings.",
+            Description = BowireLocale.T("cli.bowire-cli.select"),
             DefaultValueFactory = _ => cfg["Bowire:Mock:Select"]
         };
         var noWatch = new Option<bool>("--no-watch")
         {
-            Description = "Disable hot-reload on file changes.",
+            Description = BowireLocale.T("cli.bowire-cli.no-watch"),
             DefaultValueFactory = _ => cfg.GetValue<bool>("Bowire:Mock:NoWatch")
         };
         var stateful = new Option<bool>("--stateful")
         {
-            Description = "Stateful cursor mode (each request advances).",
+            Description = BowireLocale.T("cli.bowire-cli.stateful"),
             DefaultValueFactory = _ => cfg.GetValue<bool>("Bowire:Mock:Stateful")
         };
         var statefulOnce = new Option<bool>("--stateful-once")
         {
-            Description = "Stateful + no wrap-around at the end of the recording.",
+            Description = BowireLocale.T("cli.bowire-cli.stateful-once"),
             DefaultValueFactory = _ => cfg.GetValue<bool>("Bowire:Mock:StatefulOnce")
         };
         var loop = new Option<bool>("--loop")
         {
-            Description = "Loop proactive emitters indefinitely. One cycle lasts as long as the recording (divided by --replay-speed, never under a second), so a loop cannot outpace what was captured; --loop-interval-ms says otherwise.",
+            Description = BowireLocale.T("cli.bowire-cli.loop"),
             DefaultValueFactory = _ => cfg.GetValue<bool>("Bowire:Mock:Loop")
         };
         // #708 — nullable, and no default factory: an unset interval has to
@@ -1214,9 +1197,7 @@ internal static class BowireCli
         // default that nobody chose.
         var loopInterval = new Option<int?>("--loop-interval-ms")
         {
-            Description = "Length of one --loop cycle in milliseconds. "
-                + "Unset paces cycles by the recording's own duration (never under a second); "
-                + "0 removes the pacing entirely and republishes as fast as this machine manages.",
+            Description = BowireLocale.T("cli.bowire-cli.loop-interval-ms"),
             DefaultValueFactory = _ =>
             {
                 var configured = cfg["Bowire:Mock:LoopIntervalMs"];
@@ -1231,17 +1212,17 @@ internal static class BowireCli
         });
         var autoInstall = new Option<bool>("--auto-install")
         {
-            Description = "Auto-install missing protocol plugins.",
+            Description = BowireLocale.T("cli.bowire-cli.auto-install"),
             DefaultValueFactory = _ => cfg.GetValue<bool>("Bowire:Mock:AutoInstall")
         };
         var chaos = new Option<string?>("--chaos")
         {
-            Description = "Chaos injection: e.g. \"latency:100-500,fail-rate:0.05\".",
+            Description = BowireLocale.T("cli.bowire-cli.chaos"),
             DefaultValueFactory = _ => cfg["Bowire:Mock:Chaos"]
         }.WithChaosValidation();
         var faults = new Option<string?>("--faults")
         {
-            Description = "Per-method fault rules from a mock-faults.json sidecar (latency distributions, error rates, partial responses, connection drops).",
+            Description = BowireLocale.T("cli.bowire-cli.faults"),
             DefaultValueFactory = _ => cfg["Bowire:Mock:FaultsPath"]
         };
         faults.Validators.Add(result =>
@@ -1252,12 +1233,12 @@ internal static class BowireCli
         });
         var captureMiss = new Option<string?>("--capture-miss")
         {
-            Description = "Persist unmatched requests to this file.",
+            Description = BowireLocale.T("cli.bowire-cli.capture-miss"),
             DefaultValueFactory = _ => cfg["Bowire:Mock:CaptureMissPath"]
         };
         var mockConfig = new Option<string?>("--mock-config")
         {
-            Description = "Path to a mock-configuration JSON (per-field response overrides refining a schema mock).",
+            Description = BowireLocale.T("cli.bowire-cli.mock-config"),
             DefaultValueFactory = _ => cfg["Bowire:Mock:MockConfigPath"]
         };
         mockConfig.Validators.Add(result =>
@@ -1268,12 +1249,12 @@ internal static class BowireCli
         });
         var controlToken = new Option<string?>("--control-token")
         {
-            Description = "Auth token for the runtime-scenario-switch control endpoint.",
+            Description = BowireLocale.T("cli.bowire-cli.control-token"),
             DefaultValueFactory = _ => cfg["Bowire:Mock:ControlToken"]
         };
         var requireAuth = new Option<string?>("--require-auth")
         {
-            Description = "Require a bearer token equal to this value on every HTTP/WebSocket mocked request (401 otherwise). Plugin transports (MQTT/DIS/…) are not gated.",
+            Description = BowireLocale.T("cli.bowire-cli.require-auth"),
             DefaultValueFactory = _ => cfg["Bowire:Mock:RequireAuth"]
         };
 
@@ -1287,7 +1268,7 @@ internal static class BowireCli
         // 64 EX_USAGE exit so a CI step can branch on the failure mode.
         var positionalPath = new Argument<string?>("path")
         {
-            Description = "Path to a Bowire .bwr recording. Equivalent to --recording <path>; convenient for one-shot replay. See docs/recordings/bwr-format.md for the file format.",
+            Description = BowireLocale.T("cli.bowire-cli.path"),
             Arity = ArgumentArity.ZeroOrOne,
         };
         // Same existence guard as --recording (#38) — the positional
@@ -1301,7 +1282,7 @@ internal static class BowireCli
                 result.AddError($"path: recording file not found: '{path}'.");
         });
 
-        var cmd = new Command("mock", "Replay a recording (or schema) as a local API endpoint. Pass a .bwr file as the positional argument for the common case, or use --schema / --grpc-schema / --graphql-schema for schema-only mocks.");
+        var cmd = new Command("mock", BowireLocale.T("cli.bowire-cli.mock.command"));
         cmd.Add(positionalPath);
         cmd.Add(recording); cmd.Add(schema); cmd.Add(grpcSchema); cmd.Add(graphqlSchema);
         cmd.Add(port); cmd.Add(host); cmd.Add(https); cmd.Add(httpsPort);
@@ -1382,7 +1363,7 @@ internal static class BowireCli
     {
         var bind = new Option<string>("--bind")
         {
-            Description = "Transport for the MCP server.",
+            Description = BowireLocale.T("cli.bowire-cli.bind"),
             DefaultValueFactory = _ => "stdio"
         };
         bind.AcceptOnlyFromAmong("stdio", "http");
@@ -1393,25 +1374,24 @@ internal static class BowireCli
         // root command's --port.
         var port = new Option<int?>("--port")
         {
-            Description = "Port for --bind http. Default 5081. Leave it off to use ASPNETCORE_URLS "
-                        + "or Kestrel:Endpoints, which is also how you serve this over TLS.",
+            Description = BowireLocale.T("cli.bowire-cli.port-4"),
         }.WithPortValidation();
         var allowArbitrary = new Option<bool>("--allow-arbitrary-urls")
-        { Description = "Drop the URL allowlist. Only safe in sandboxed contexts." };
+        { Description = BowireLocale.T("cli.bowire-cli.allow-arbitrary-urls") };
         var noEnvAllowlist = new Option<bool>("--no-env-allowlist")
-        { Description = "Skip seeding the allowlist from ~/.bowire/environments.json." };
+        { Description = BowireLocale.T("cli.bowire-cli.no-env-allowlist") };
         var allowInvoke = new Option<bool>("--allow-invoke")
-        { Description = "Widen the allowlist to every URL the user has typed at least once (~/.bowire/typed-urls.json). Strictly additive with the environments seed." };
+        { Description = BowireLocale.T("cli.bowire-cli.allow-invoke") };
         var noConfirm = new Option<bool>("--no-confirm")
-        { Description = "Skip the two-step pending-confirmation gate on mutator tools (bowire.mock.start, bowire.record.start). Use when the agent host already enforces approvals." };
+        { Description = BowireLocale.T("cli.bowire-cli.no-confirm") };
         var attach = new Option<string?>("--attach")
-        { Description = "Forwarder mode (#286): relay every incoming MCP request to a parent Bowire MCP endpoint. Accepts host:port shorthand — expanded to http://host:port/mcp, where `bowire mcp serve --bind http` listens — or an absolute http(s) URI, which is what an embedded parent needs (those mount Bowire under /bowire/ and serve /bowire/mcp). Mutually exclusive in spirit with --allow-arbitrary-urls / --allow-invoke / --no-confirm — those configure the *local* tool registry, which forwarder mode skips entirely." };
+        { Description = BowireLocale.T("cli.bowire-cli.attach") };
         var attachToken = new Option<string?>("--attach-token")
-        { Description = "Bearer token attached to every outbound request to the parent (Authorization: Bearer <token>). Required when the parent was started with --token <secret>." };
+        { Description = BowireLocale.T("cli.bowire-cli.attach-token") };
         var token = new Option<string?>("--token")
-        { Description = "Require Authorization: Bearer <secret> on every inbound /mcp request (--bind http only). Pair with --attach-token on the child." };
+        { Description = BowireLocale.T("cli.bowire-cli.token-2") };
 
-        var serve = new Command("serve", "Run Bowire as an MCP server (AI-agent bridge).");
+        var serve = new Command("serve", BowireLocale.T("cli.bowire-cli.serve.command"));
         serve.Add(bind); serve.Add(port); serve.Add(allowArbitrary); serve.Add(noEnvAllowlist);
         serve.Add(allowInvoke); serve.Add(noConfirm);
         serve.Add(attach); serve.Add(attachToken); serve.Add(token);
@@ -1429,7 +1409,7 @@ internal static class BowireCli
             attachToken: pr.GetValue(attachToken),
             token: pr.GetValue(token)).ConfigureAwait(false));
 
-        var mcp = new Command("mcp", "Expose Bowire as an MCP server for AI agents.");
+        var mcp = new Command("mcp", BowireLocale.T("cli.bowire-cli.mcp.command"));
         mcp.Add(serve);
         return mcp;
     }
@@ -1440,27 +1420,27 @@ internal static class BowireCli
     {
         var versionOpt = new Option<string?>("--version")
         {
-            Description = "Pin to a specific version.",
+            Description = BowireLocale.T("cli.bowire-cli.version"),
             DefaultValueFactory = _ => cfg["Bowire:Plugin:Version"]
         };
         var sourcesOpt = new Option<string[]>("--source", "-s")
-        { Description = "Custom NuGet feed URL. Repeatable." };
+        { Description = BowireLocale.T("cli.bowire-cli.source") };
         var fileOpt = new Option<string?>("--file")
         {
-            Description = "Install from a local .nupkg, or a sidecar .zip (local path, http(s):// URL, or oci:// registry ref), instead of a feed.",
+            Description = BowireLocale.T("cli.bowire-cli.file-2"),
             DefaultValueFactory = _ => cfg["Bowire:Plugin:File"]
         };
         var outputOpt = new Option<string?>("--output", "-o")
         {
-            Description = "Output directory for downloaded packages.",
+            Description = BowireLocale.T("cli.bowire-cli.output"),
             DefaultValueFactory = _ => cfg["Bowire:Plugin:OutputDir"]
         };
         var verboseOpt = new Option<bool>("-v", "--verbose")
         {
-            Description = "Verbose output.",
+            Description = BowireLocale.T("cli.bowire-cli.v-2"),
             DefaultValueFactory = _ => cfg.GetValue<bool>("Bowire:Plugin:Verbose")
         };
-        var packageIdArg = new Argument<string>("packageId") { Description = "NuGet package id." };
+        var packageIdArg = new Argument<string>("packageId") { Description = BowireLocale.T("cli.bowire-cli.packageid") };
         // Install accepts a packageId OR a --file path (sidecar zip /
         // oci ref / .nupkg). The shared packageIdArg above is required
         // for the download / uninstall / inspect commands; install gets
@@ -1469,15 +1449,15 @@ internal static class BowireCli
         // inventing a dummy package id the action would just ignore.
         var installPackageIdArg = new Argument<string>("packageId")
         {
-            Description = "NuGet package id. Optional when --file points to a sidecar .zip or an oci:// reference; required when resolving from a feed.",
+            Description = BowireLocale.T("cli.bowire-cli.packageid-2"),
             DefaultValueFactory = _ => string.Empty,
         };
         var prereleaseOpt = new Option<bool>("--prerelease")
         {
-            Description = "Allow pre-release versions (1.0.0-rc.1, &c) when resolving the latest. Matches `dotnet add package --prerelease`. Ignored when --version pins an exact version.",
+            Description = BowireLocale.T("cli.bowire-cli.prerelease"),
         };
 
-        var install = new Command("install", "Install a protocol plugin from NuGet, a local .nupkg, or a sidecar .zip.");
+        var install = new Command("install", BowireLocale.T("cli.bowire-cli.install.command"));
         install.Add(installPackageIdArg); install.Add(versionOpt); install.Add(sourcesOpt); install.Add(fileOpt); install.Add(prereleaseOpt);
         install.SetAction(async (pr, _) =>
         {
@@ -1510,7 +1490,7 @@ internal static class BowireCli
                 stdout: ioCfg.Output, stderr: ioCfg.Error).ConfigureAwait(false);
         });
 
-        var download = new Command("download", "Download a plugin + its transitive deps as offline .nupkg files.");
+        var download = new Command("download", BowireLocale.T("cli.bowire-cli.download.command"));
         download.Add(packageIdArg); download.Add(versionOpt); download.Add(sourcesOpt); download.Add(outputOpt);
         download.SetAction(async (pr, _) =>
             await PluginManager.DownloadAsync(
@@ -1520,21 +1500,21 @@ internal static class BowireCli
                 pr.GetValue(sourcesOpt) ?? [],
                 pr.InvocationConfiguration.Output, pr.InvocationConfiguration.Error).ConfigureAwait(false));
 
-        var list = new Command("list", "List installed plugins.");
+        var list = new Command("list", BowireLocale.T("cli.bowire-cli.list.command-2"));
         list.Add(verboseOpt);
         list.SetAction((pr, _) => Task.FromResult(PluginManager.List(
             pluginDir, pr.GetValue(verboseOpt),
             pr.InvocationConfiguration.Output, pr.InvocationConfiguration.Error)));
 
-        var uninstall = new Command("uninstall", "Remove an installed plugin.");
+        var uninstall = new Command("uninstall", BowireLocale.T("cli.bowire-cli.uninstall.command"));
         uninstall.Add(packageIdArg);
         uninstall.SetAction((pr, _) => Task.FromResult(PluginManager.Uninstall(
             pr.GetValue(packageIdArg) ?? "", pluginDir,
             pr.InvocationConfiguration.Output, pr.InvocationConfiguration.Error)));
 
         var updateIdArg = new Argument<string>("packageId")
-        { Description = "Plugin id; omit to update all.", DefaultValueFactory = _ => "" };
-        var update = new Command("update", "Update one plugin (or all if no id given).");
+        { Description = BowireLocale.T("cli.bowire-cli.packageid-3"), DefaultValueFactory = _ => "" };
+        var update = new Command("update", BowireLocale.T("cli.bowire-cli.update.command"));
         update.Add(updateIdArg); update.Add(versionOpt); update.Add(sourcesOpt); update.Add(prereleaseOpt);
         update.SetAction(async (pr, _) =>
         {
@@ -1550,13 +1530,13 @@ internal static class BowireCli
                     stdout: ioCfg.Output, stderr: ioCfg.Error).ConfigureAwait(false);
         });
 
-        var inspect = new Command("inspect", "Inspect a plugin's metadata + protocol contributions.");
+        var inspect = new Command("inspect", BowireLocale.T("cli.bowire-cli.inspect.command"));
         inspect.Add(packageIdArg);
         inspect.SetAction((pr, _) => Task.FromResult(PluginManager.Inspect(
             pr.GetValue(packageIdArg) ?? "", pluginDir,
             pr.InvocationConfiguration.Output, pr.InvocationConfiguration.Error)));
 
-        var plugin = new Command("plugin", "Manage protocol plugins.");
+        var plugin = new Command("plugin", BowireLocale.T("cli.bowire-cli.plugin.command"));
         plugin.Add(install); plugin.Add(download); plugin.Add(list);
         plugin.Add(uninstall); plugin.Add(update); plugin.Add(inspect);
         return plugin;
@@ -1572,38 +1552,38 @@ internal static class BowireCli
         // operators don't have to pick a flag. Positional arg therefore
         // describes both formats.
         var collectionPath = new Argument<string?>("file")
-        { Description = "Path to a recording (v2.1) or Flow JSON file (v2.2). Format is auto-detected by JSON shape.", DefaultValueFactory = _ => cfg["Bowire:Test:CollectionPath"] };
+        { Description = BowireLocale.T("cli.bowire-cli.file-3"), DefaultValueFactory = _ => cfg["Bowire:Test:CollectionPath"] };
         var url = new Option<string?>("--url")
         {
-            Description = "Override the recording's serverUrl.",
+            Description = BowireLocale.T("cli.bowire-cli.url-3"),
             DefaultValueFactory = _ => cfg["Bowire:Test:Url"]
         };
         var report = new Option<string?>("--report")
         {
-            Description = "Write an HTML report to this path.",
+            Description = BowireLocale.T("cli.bowire-cli.report"),
             DefaultValueFactory = _ => cfg["Bowire:Test:ReportPath"]
         };
         var junit = new Option<string?>("--junit")
         {
-            Description = "Write a JUnit XML report to this path.",
+            Description = BowireLocale.T("cli.bowire-cli.junit"),
             DefaultValueFactory = _ => cfg["Bowire:Test:JUnitPath"]
         };
         var sarif = new Option<string?>("--sarif")
         {
-            Description = "Write a SARIF 2.1.0 report to this path (GitHub Code Scanning, GitLab, Azure DevOps).",
+            Description = BowireLocale.T("cli.bowire-cli.sarif"),
             DefaultValueFactory = _ => cfg["Bowire:Test:SarifPath"]
         };
         var annotations = new Option<bool>("--annotations")
         {
-            Description = "Emit GitHub Actions ::error annotations for every failure (inline PR annotations without a reporter action).",
+            Description = BowireLocale.T("cli.bowire-cli.annotations"),
         };
         var updateSnapshots = new Option<bool>("--update-snapshots")
         {
-            Description = "Re-capture every snapshot baseline from the actual responses instead of diffing (Flow files only).",
+            Description = BowireLocale.T("cli.bowire-cli.update-snapshots"),
         };
         var failOn = new Option<string>("--fail-on")
         {
-            Description = "Exit-code threshold: 'any' (default — non-zero on any failed check) or 'never' (run + report but always exit 0; a step error still exits 2). With --suite lint also a severity — 'info', 'low', 'medium' or 'high' — as in `bowire lint --fail-on`.",
+            Description = BowireLocale.T("cli.bowire-cli.fail-on"),
             DefaultValueFactory = _ => cfg["Bowire:Test:FailOn"] ?? "any",
         };
         // #583 — the severities only mean something to --suite lint; the
@@ -1611,71 +1591,71 @@ internal static class BowireCli
         failOn.AcceptOnlyFromAmong("any", "never", "info", "low", "medium", "high");
         var workspaceDir = new Option<string?>("--workspace")
         {
-            Description = "Run every Flow JSON under a git-native workspace directory (its flows/ folder, or the directory itself). Aggregates pass/fail across all flows; the positional file is ignored.",
+            Description = BowireLocale.T("cli.bowire-cli.workspace"),
         };
         // #583 — the lint rules through the test runner's report sinks.
         var suite = new Option<string?>("--suite")
         {
-            Description = "What to run: 'tests' (default) or 'lint'. With 'lint' the positional argument is a snapshot file or a live URL, and the design-time rules run over it; --fail-on also takes a severity (info, low, medium, high), and --junit / --sarif / --annotations report the findings.",
+            Description = BowireLocale.T("cli.bowire-cli.suite"),
         };
         var lintBaseline = new Option<string?>("--baseline")
         {
-            Description = "With --suite lint: a snapshot file or URL to compare against; breaking changes since it are reported as BWR-LINT-BREAKING-CHANGE, as `bowire lint --baseline` does.",
+            Description = BowireLocale.T("cli.bowire-cli.baseline"),
         };
         var workspaceId = new Option<string?>("--workspace-id")
         {
-            Description = "Run the suite of a workspace the workbench saved, addressed by its id. Resolves through the workspace inventory, so a git-native workspace is found in its checkout. Use `bowire workspace list` to see the ids; the positional file is ignored.",
+            Description = BowireLocale.T("cli.bowire-cli.workspace-id"),
         };
         // v2.2 T2 — Flow-runner specific. Ignored for the recording
         // codepath which already carries serverUrl + environment per
         // test-collection.
         var baseUrl = new Option<string?>("--base-url")
         {
-            Description = "Fallback server URL for Flow steps that don't set their own serverUrl. Flow JSON files only; ignored for recordings.",
+            Description = BowireLocale.T("cli.bowire-cli.base-url"),
             DefaultValueFactory = _ => cfg["Bowire:Test:BaseUrl"]
         };
         var env = new Option<string[]>("--env", "--vars")
         {
-            Description = "Variable for the Flow {{name}} / ${name} resolver. KEY=VALUE; repeatable. --vars is an alias.",
+            Description = BowireLocale.T("cli.bowire-cli.env"),
             AllowMultipleArgumentsPerToken = false,
         };
         var envFile = new Option<string[]>("--env-file")
         {
-            Description = "File with one KEY=VALUE per line (dotenv-style; blank lines and # comments ignored) for the Flow resolver. Repeatable; --env repeats win over file entries.",
+            Description = BowireLocale.T("cli.bowire-cli.env-file-2"),
             AllowMultipleArgumentsPerToken = false,
             DefaultValueFactory = _ => cfg["Bowire:Test:EnvFile"] is { Length: > 0 } p ? [p] : [],
         };
         var keyring = new Option<bool>("--keyring")
         {
-            Description = "Resolve {{keyring.service/account}} refs from the runner's OS credential store (Windows Credential Manager / macOS Keychain / libsecret) instead of an --env-file, so CI secrets never touch the flow file. Requires the Kuestenlogik.Bowire.Keyring package (bundled in the CLI). Flow files only. Maps to Bowire:Test:Keyring.",
+            Description = BowireLocale.T("cli.bowire-cli.keyring"),
             DefaultValueFactory = _ => cfg.GetValue<bool>("Bowire:Test:Keyring"),
         };
         var aiSeed = new Option<string?>("--ai-seed")
         {
-            Description = "Deterministic seed for {{ai.*}} refs. In the workbench ai refs resolve via a model; the CLI has none, so a seed pins each ref to a stable value derived from the seed + ref name (no model call), making CI runs byte-reproducible. Unset leaves ai refs unresolved. Flow files only. Maps to Bowire:Test:AiSeed.",
+            Description = BowireLocale.T("cli.bowire-cli.ai-seed"),
             DefaultValueFactory = _ => cfg["Bowire:Test:AiSeed"],
         };
         var secret = new Option<string[]>("--secret")
         {
-            Description = "Name of a variable whose resolved value must be redacted from all CI outputs (TTY, JUnit, SARIF, ::error annotations). The variable resolves normally; only its value is masked. Repeatable.",
+            Description = BowireLocale.T("cli.bowire-cli.secret-2"),
             AllowMultipleArgumentsPerToken = false,
         };
         var data = new Option<string?>("--data")
         {
-            Description = "A CSV (header row names the columns) or JSON (array of objects) data set: the collection or flow runs once per row, the row's columns bound as variables over the environment. {{iteration}} and {{iterationCount}} are set in every run. With --workspace or --workspace-id every flow runs once per row.",
+            Description = BowireLocale.T("cli.bowire-cli.data"),
             DefaultValueFactory = _ => cfg["Bowire:Test:Data"],
         };
         var failFast = new Option<bool>("--fail-fast")
         {
-            Description = "With --data: stop after the first iteration that has a failure.",
+            Description = BowireLocale.T("cli.bowire-cli.fail-fast"),
         };
         var secretFile = new Option<string?>("--secret-file")
         {
-            Description = "File listing one secret variable name per line (blank lines and # comments ignored). Same effect as repeating --secret; keeps a long secret list off the command line. Names only — values resolve from the run's variable scope, never from this file.",
+            Description = BowireLocale.T("cli.bowire-cli.secret-file"),
             DefaultValueFactory = _ => cfg["Bowire:Test:SecretFile"],
         };
 
-        var cmd = new Command("test", "Run an assertion-based test suite. Accepts a recording JSON (v2.1 test-collection format) or a Flow JSON document (v2.2 — the T2 CI runner). Format auto-detected.");
+        var cmd = new Command("test", BowireLocale.T("cli.bowire-cli.test.command"));
         cmd.Add(collectionPath); cmd.Add(url); cmd.Add(report); cmd.Add(junit);
         cmd.Add(sarif); cmd.Add(annotations); cmd.Add(updateSnapshots);
         cmd.Add(failOn); cmd.Add(workspaceDir); cmd.Add(workspaceId); cmd.Add(suite); cmd.Add(lintBaseline);

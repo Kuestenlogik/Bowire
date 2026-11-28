@@ -20,7 +20,7 @@ public sealed class MonitorCliCommand : IBowireCliCommand
     public Command Build()
     {
         var monitor = new Command("monitor",
-            "Passive monitoring — run saved recordings as scheduled health probes, record every outcome, and alert on pass↔fail transitions (Postman Monitors / AWS Synthetics analog).");
+            BowireLocale.T("cli.monitor.monitor.command"));
         monitor.Add(BuildRun());
         return monitor;
     }
@@ -28,24 +28,24 @@ public sealed class MonitorCliCommand : IBowireCliCommand
     private static Command BuildRun()
     {
         var run = new Command("run",
-            "Load probe file(s) and run them on their schedule, writing every outcome to the ledger and signalling on transitions. Ctrl+C stops.");
+            BowireLocale.T("cli.monitor.run.command"));
 
         var filesArg = new Argument<string[]>("probe-files")
         {
-            Description = "One or more probe definition files (JSON: { name, schedule, severity, assertions, recording }).",
+            Description = BowireLocale.T("cli.monitor.probe-files"),
             Arity = ArgumentArity.OneOrMore,
         };
         var ledgerOpt = new Option<string>("--ledger-root")
         {
-            Description = "Directory for the append-only outcome ledgers. Default ~/.bowire/monitoring.",
+            Description = BowireLocale.T("cli.monitor.ledger-root"),
         };
         var onceOpt = new Option<bool>("--once")
         {
-            Description = "Run each probe exactly once and exit instead of looping — for CI / smoke tests. Exit code 2 when any probe fails or errors.",
+            Description = BowireLocale.T("cli.monitor.once"),
         };
         var signalOpt = new Option<string[]>("--signal")
         {
-            Description = "Outbound alert channel as '<scheme>:<arg>' — e.g. 'slack:https://hooks.slack.com/...' or 'pagerduty:<routing-key>'. Repeatable. Each scheme is served by an opt-in signaler package; an unknown scheme is reported and skipped. The console channel is always on.",
+            Description = BowireLocale.T("cli.monitor.signal"),
             AllowMultipleArgumentsPerToken = false,
         };
 

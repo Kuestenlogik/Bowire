@@ -39,36 +39,36 @@ internal static class DiffCommand
     {
         var diff = new Command(
             "diff",
-            "Diff two API schema snapshots (base -> head): services/methods added, removed, or signature-changed. The schema half of the PR bot.");
+            BowireLocale.T("cli.diff.diff.command"));
 
         var baseOpt = new Option<string?>("--base")
         {
-            Description = "Base side: a .json snapshot file (from `bowire diff snapshot`) or a live URL to discover.",
+            Description = BowireLocale.T("cli.diff.base"),
         };
         var headOpt = new Option<string?>("--head")
         {
-            Description = "Head side: a .json snapshot file or a live URL to discover.",
+            Description = BowireLocale.T("cli.diff.head"),
         };
         var formatOpt = new Option<string?>("--format", "-f")
         {
-            Description = "Output format: 'json' (default) or 'markdown'.",
+            Description = BowireLocale.T("cli.diff.format"),
         };
         var outputOpt = new Option<string?>("--output", "-o")
         {
-            Description = "Write the result to this file. When unset, it goes to stdout.",
+            Description = BowireLocale.T("cli.diff.output"),
         };
         var failOnOpt = new Option<string>("--fail-on")
         {
-            Description = "Exit non-zero on: 'none' (default), 'breaking' (a removed service/method or signature change), or 'any' (any callable-surface change).",
+            Description = BowireLocale.T("cli.diff.fail-on"),
             DefaultValueFactory = _ => "none",
         };
         var descriptorSetOpt = new Option<string?>("--grpc-descriptor-set")
         {
-            Description = "Path to a compiled gRPC descriptor set (`protoc --descriptor_set_out=api.protoset --include_imports`), for a server that does not answer Server Reflection — the recommended production state. Ignored by every other protocol."
+            Description = BowireLocale.T("cli.diff.grpc-descriptor-set")
         };
         var protocolOpt = new Option<string?>("--protocol")
         {
-            Description = "Protocol plugin id for live-URL discovery (rest, grpc, graphql, websocket, mqtt, ...). Ignored for snapshot files. Guessed from the URL scheme when unset.",
+            Description = BowireLocale.T("cli.diff.protocol"),
         };
 
         diff.Add(baseOpt);
@@ -100,11 +100,11 @@ internal static class DiffCommand
     {
         var snapshot = new Command(
             "snapshot",
-            "Discover a live URL and write the service list as a .json snapshot — the input `bowire diff` consumes.");
+            BowireLocale.T("cli.diff.snapshot.command"));
 
         var urlArg = new Argument<string>("url")
         {
-            Description = "URL to discover (http(s)://, ws://, mqtt://, nats://, ...).",
+            Description = BowireLocale.T("cli.diff.url"),
         };
 
         snapshot.Add(urlArg);

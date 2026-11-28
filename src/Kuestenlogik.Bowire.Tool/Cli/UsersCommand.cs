@@ -30,7 +30,7 @@ internal static class UsersCommand
     public static Command Build()
     {
         var users = new Command("users",
-            "Inspect and migrate per-identity storage (#97). Multi-tenant installs give each authenticated identity its own slot under <storage root>/users/; these commands show what is there and move a single-user install's data into one.");
+            BowireLocale.T("cli.users.users.command"));
         users.Add(BuildListCommand());
         users.Add(BuildMigrateCommand());
         return users;
@@ -41,7 +41,7 @@ internal static class UsersCommand
     private static Command BuildListCommand()
     {
         var list = new Command("list",
-            "Show the identity slots that exist on disk, with whatever migration each one has on record.");
+            BowireLocale.T("cli.users.list.command"));
         list.SetAction((pr, _) => Task.FromResult(
             RunList(pr.InvocationConfiguration.Output)));
         return list;
@@ -97,17 +97,17 @@ internal static class UsersCommand
     {
         var subject = new Argument<string>("subject")
         {
-            Description = "The authenticated subject, exactly as the identity provider issues it (the sub claim) — e.g. ada@example.com or auth0|5f3c9a.",
+            Description = BowireLocale.T("cli.users.subject"),
         };
         var apply = new Option<bool>("--apply")
-        { Description = "Copy the legacy single-user state into this subject's slot." };
+        { Description = BowireLocale.T("cli.users.apply") };
         var decline = new Option<bool>("--decline")
-        { Description = "Record that this subject does not want it, so the workbench stops offering." };
+        { Description = BowireLocale.T("cli.users.decline") };
         var undo = new Option<bool>("--undo")
-        { Description = "Take back a decision. An accepted migration's slot is moved aside, not deleted; a declined one just loses its record." };
+        { Description = BowireLocale.T("cli.users.undo") };
 
         var migrate = new Command("migrate",
-            "Show what migrating the single-user state into a subject's slot would do, and carry it out. Without a flag it only reports — nothing on disk changes.");
+            BowireLocale.T("cli.users.migrate.command"));
         migrate.Add(subject);
         migrate.Add(apply);
         migrate.Add(decline);

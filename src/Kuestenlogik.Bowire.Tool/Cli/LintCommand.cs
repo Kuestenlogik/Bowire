@@ -30,36 +30,36 @@ internal static class LintCommand
     {
         var lint = new Command(
             "lint",
-            "Run design-time rules over an API surface (secrets in responses, unbounded lists, missing versioning, ...). Reads a snapshot file or a live URL.");
+            BowireLocale.T("cli.lint.lint.command"));
 
         var sourceArg = new Argument<string>("source")
         {
-            Description = "A .json snapshot file (from `bowire diff snapshot`) or a live URL to discover.",
+            Description = BowireLocale.T("cli.lint.source"),
         };
         var formatOpt = new Option<string?>("--format", "-f")
         {
-            Description = "Output format: 'text' (default), 'json', or 'markdown'.",
+            Description = BowireLocale.T("cli.lint.format"),
         };
         var outputOpt = new Option<string?>("--output", "-o")
         {
-            Description = "Write the result to this file. When unset, it goes to stdout.",
+            Description = BowireLocale.T("cli.lint.output"),
         };
         var failOnOpt = new Option<string>("--fail-on")
         {
-            Description = "Exit non-zero when a finding is at or above this severity: 'none' (default), 'info', 'low', 'medium', or 'high'.",
+            Description = BowireLocale.T("cli.lint.fail-on"),
             DefaultValueFactory = _ => "none",
         };
         var protocolOpt = new Option<string?>("--protocol")
         {
-            Description = "Protocol plugin id for live-URL discovery (rest, grpc, graphql, ...). Ignored for snapshot files. Guessed from the URL scheme when unset.",
+            Description = BowireLocale.T("cli.lint.protocol"),
         };
         var baselineOpt = new Option<string?>("--baseline")
         {
-            Description = "A snapshot file or URL to compare against. Every breaking change since it — a removed service or method, a changed signature — is reported as BWR-LINT-BREAKING-CHANGE (High), the same classification `bowire diff --fail-on breaking` uses.",
+            Description = BowireLocale.T("cli.lint.baseline"),
         };
         var rulesOpt = new Option<string?>("--rules")
         {
-            Description = "Path to a .bowire/rules.json config (rule on/off + severity overrides). Auto-discovered by walking up from the current directory when unset.",
+            Description = BowireLocale.T("cli.lint.rules"),
         };
 
         lint.Add(sourceArg);

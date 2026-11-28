@@ -41,7 +41,7 @@ internal static class ContractCommand
     public static Command Build()
     {
         var contract = new Command("contract",
-            "Pact-style consumer contract testing. `publish` builds a contract from a recording (+ optional broker push); `verify` replays it against a live provider; `matrix` rolls stored results up into a consumer x provider grid.");
+            BowireLocale.T("cli.contract.contract.command"));
         contract.Add(BuildPublishCommand());
         contract.Add(BuildVerifyCommand());
         contract.Add(BuildMatrixCommand());
@@ -58,14 +58,14 @@ internal static class ContractCommand
     private static Command BuildMatrixCommand()
     {
         var cmd = new Command("matrix",
-            "Roll stored contract-verification results up into a consumer x provider matrix.");
+            BowireLocale.T("cli.contract.matrix.command"));
         var jsonOpt = new Option<bool>("--json")
         {
-            Description = "Emit the matrix as JSON instead of a text grid.",
+            Description = BowireLocale.T("cli.contract.json"),
         };
         var failOnMissingOpt = new Option<bool>("--fail-on-failures")
         {
-            Description = "Exit non-zero when any cell is failing (CI gate).",
+            Description = BowireLocale.T("cli.contract.fail-on-failures"),
         };
         cmd.Add(jsonOpt);
         cmd.Add(failOnMissingOpt);
@@ -152,22 +152,22 @@ internal static class ContractCommand
     private static Command BuildPublishCommand()
     {
         var cmd = new Command("publish",
-            "Build a consumer contract from a recording and write it to a file (and, with --broker-url, push it to a Pact Broker).");
+            BowireLocale.T("cli.contract.publish.command"));
 
         var recordingArg = new Argument<string>("recording")
-        { Description = "Path to a recording / .bwr file captured on the consumer side." };
+        { Description = BowireLocale.T("cli.contract.recording") };
         var provider = new Option<string?>("--provider")
-        { Description = "Provider name the contract is against (required)." };
+        { Description = BowireLocale.T("cli.contract.provider") };
         var consumer = new Option<string?>("--consumer")
-        { Description = "Consumer name. Defaults to the recording's name." };
+        { Description = BowireLocale.T("cli.contract.consumer") };
         var outPath = new Option<string?>("--out")
-        { Description = "Output contract file path. Defaults to <consumer>-<provider>.pact.json." };
+        { Description = BowireLocale.T("cli.contract.out") };
         var brokerUrl = new Option<string?>("--broker-url")
-        { Description = "Pact Broker base URL to PUT the contract to (outbound — opt-in). Omit to only write the file." };
+        { Description = BowireLocale.T("cli.contract.broker-url") };
         var version = new Option<string?>("--consumer-version")
-        { Description = "Consumer version for the broker publish. Defaults to a timestamp." };
+        { Description = BowireLocale.T("cli.contract.consumer-version") };
         var tag = new Option<string?>("--tag")
-        { Description = "Tag the published consumer version on the broker (e.g. a branch name)." };
+        { Description = BowireLocale.T("cli.contract.tag") };
 
         cmd.Add(recordingArg); cmd.Add(provider); cmd.Add(consumer); cmd.Add(outPath);
         cmd.Add(brokerUrl); cmd.Add(version); cmd.Add(tag);
@@ -262,22 +262,22 @@ internal static class ContractCommand
     private static Command BuildVerifyCommand()
     {
         var cmd = new Command("verify",
-            "Replay a consumer contract against a live provider and fail on any mismatch. Exit 0 = all held, 1 = a mismatch, 2 = a request errored.");
+            BowireLocale.T("cli.contract.verify.command"));
 
         var contractArg = new Argument<string?>("contract")
-        { Description = "Path to a contract file. Omit and use --broker-url + --provider to pull the latest from a broker." };
+        { Description = BowireLocale.T("cli.contract.contract") };
         var providerUrl = new Option<string?>("--provider-url")
-        { Description = "Base URL of the live provider to replay against (required)." };
+        { Description = BowireLocale.T("cli.contract.provider-url") };
         var brokerUrl = new Option<string?>("--broker-url")
-        { Description = "Pact Broker base URL to pull the latest contract from (outbound — opt-in). Requires --provider." };
+        { Description = BowireLocale.T("cli.contract.broker-url-2") };
         var provider = new Option<string?>("--provider")
-        { Description = "Provider name to pull from the broker (with --broker-url)." };
+        { Description = BowireLocale.T("cli.contract.provider-2") };
         var tag = new Option<string?>("--tag")
-        { Description = "Pull the latest contract carrying this tag (with --broker-url)." };
+        { Description = BowireLocale.T("cli.contract.tag-2") };
         var junit = new Option<string?>("--junit")
-        { Description = "Write a JUnit XML report to this path." };
+        { Description = BowireLocale.T("cli.contract.junit") };
         var sarif = new Option<string?>("--sarif")
-        { Description = "Write a SARIF 2.1.0 report to this path." };
+        { Description = BowireLocale.T("cli.contract.sarif") };
 
         cmd.Add(contractArg); cmd.Add(providerUrl); cmd.Add(brokerUrl); cmd.Add(provider);
         cmd.Add(tag); cmd.Add(junit); cmd.Add(sarif);

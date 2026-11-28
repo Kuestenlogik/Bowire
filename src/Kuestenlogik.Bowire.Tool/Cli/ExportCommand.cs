@@ -44,41 +44,41 @@ internal static class ExportCommand
     {
         var export = new Command(
             "export",
-            "Emit a portable schema (OpenAPI / AsyncAPI) from a live target's discovery result.");
+            BowireLocale.T("cli.export.export.command"));
 
         var urlArg = new Argument<string>("url")
         {
-            Description = "URL to run discovery against (http(s)://, mqtt://, nats://, kafka://, ws://, amqp://, ...)."
+            Description = BowireLocale.T("cli.export.url")
         };
         var outputOpt = new Option<string?>("--output", "-o")
         {
-            Description = "Write the document to this file. When unset, the document is written to stdout."
+            Description = BowireLocale.T("cli.export.output")
         };
         var formatOpt = new Option<string?>("--format", "-f")
         {
-            Description = "Output format: 'yaml' (default) or 'json'."
+            Description = BowireLocale.T("cli.export.format")
         };
         var recordingOpt = new Option<string?>("--recording")
         {
-            Description = "Path to a .bwr recording. Each operation is stamped with an x-bowire-coverage extension reporting whether the recording carries replay steps for it. When unset, no coverage block is emitted."
+            Description = BowireLocale.T("cli.export.recording")
         };
         var titleOpt = new Option<string?>("--title")
         {
-            Description = "Override the info.title field. Defaults to the host name."
+            Description = BowireLocale.T("cli.export.title")
         };
         var versionOpt = new Option<string?>("--version-info")
         {
-            Description = "Override the info.version field. Defaults to '1.0.0' or the first service.Version found."
+            Description = BowireLocale.T("cli.export.version-info")
         };
 
         var descriptorSetOpt = new Option<string?>("--grpc-descriptor-set")
         {
-            Description = "Path to a compiled gRPC descriptor set (`protoc --descriptor_set_out=api.protoset --include_imports`), for a server that does not answer Server Reflection — the recommended production state. Ignored by every other protocol."
+            Description = BowireLocale.T("cli.export.grpc-descriptor-set")
         };
 
         // ----- openapi subcommand --------------------------------
         var openapi = new Command("openapi",
-            "Run REST discovery against <url> and emit an OpenAPI 3.0 document.");
+            BowireLocale.T("cli.export.openapi.command"));
         openapi.Add(urlArg);
         openapi.Add(outputOpt); openapi.Add(formatOpt); openapi.Add(recordingOpt);
         openapi.Add(titleOpt); openapi.Add(versionOpt); openapi.Add(descriptorSetOpt);
@@ -97,7 +97,7 @@ internal static class ExportCommand
 
         // ----- asyncapi subcommand --------------------------------
         var asyncapi = new Command("asyncapi",
-            "Run messaging discovery against <url> and emit an AsyncAPI 3.0 document.");
+            BowireLocale.T("cli.export.asyncapi.command"));
         asyncapi.Add(urlArg);
         asyncapi.Add(outputOpt); asyncapi.Add(formatOpt); asyncapi.Add(recordingOpt);
         asyncapi.Add(titleOpt); asyncapi.Add(versionOpt); asyncapi.Add(descriptorSetOpt);

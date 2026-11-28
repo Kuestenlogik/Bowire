@@ -5,10 +5,11 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
-namespace Kuestenlogik.Bowire.App.Cli;
+namespace Kuestenlogik.Bowire;
 
 /// <summary>
-/// The command line's half of the translation layer (#117).
+/// The command line's half of the translation layer (#117): the CLI's help
+/// (#690) and every plugin's command reads its text through here.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -30,7 +31,7 @@ namespace Kuestenlogik.Bowire.App.Cli;
 /// anything.
 /// </para>
 /// </remarks>
-internal static class BowireLocale
+public static class BowireLocale
 {
     private const string Prefix = "Kuestenlogik.Bowire.wwwroot.locales.";
 
@@ -60,10 +61,17 @@ internal static class BowireLocale
     public static string T(string key, params (string Name, object? Value)[] args)
     {
         var state = _state.Value;
-        var text = Lookup(state.Active, key) ?? Lookup(state.English, key);
-        if (text is null) return key;
-        return args.Length == 0 ? text : Interpolate(text, args);
+        var text = Pick(state.Active, state.English, key);
+        return args.Length == 0 || ReferenceEquals(text, key) ? text : Interpolate(text, args);
     }
+
+    /// <summary>
+    /// The fallback chain on its own: the active catalogue, then English,
+    /// then the key. A text the active locale lacks renders in English, so a
+    /// partly translated help reads as English in places, never as keys.
+    /// </summary>
+    internal static string Pick(Dictionary<string, string> active, Dictionary<string, string> english, string key)
+        => Lookup(active, key) ?? Lookup(english, key) ?? key;
 
     /// <summary>Re-read the environment. For tests, and for nothing else.</summary>
     internal static void Reset() => _state = new Lazy<Resolved>(Load, isThreadSafe: true);
@@ -147,7 +155,7 @@ internal static class BowireLocale
     private static readonly Lazy<Dictionary<string, string>> Catalogues = new(() =>
     {
         var map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        var assembly = typeof(Kuestenlogik.Bowire.BowireApiEndpoints).Assembly;
+        var assembly = typeof(BowireLocale).Assembly;
         foreach (var name in assembly.GetManifestResourceNames())
         {
             if (!name.StartsWith(Prefix, StringComparison.Ordinal)) continue;
@@ -175,7 +183,7 @@ internal static class BowireLocale
 
     private static Dictionary<string, string>? Read(string locale)
     {
-        var assembly = typeof(Kuestenlogik.Bowire.BowireApiEndpoints).Assembly;
+        var assembly = typeof(BowireLocale).Assembly;
         using var stream = assembly.GetManifestResourceStream(Prefix + locale + ".json");
         if (stream is null) return null;
 

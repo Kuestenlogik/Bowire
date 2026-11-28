@@ -21,7 +21,7 @@ public sealed class VulnDbCliCommand : IBowireCliCommand
     public Command Build()
     {
         var vulndb = new Command("vulndb",
-            "Manage the local vulnerability-template cache (~/.bowire/vulndb) that `bowire scan` reads by default. See docs/architecture/security-testing.md.");
+            BowireLocale.T("cli.vuln-db.vulndb.command"));
         vulndb.Add(BuildUpdate());
         vulndb.Add(BuildList());
         return vulndb;
@@ -30,11 +30,11 @@ public sealed class VulnDbCliCommand : IBowireCliCommand
     private static Command BuildUpdate()
     {
         var update = new Command("update",
-            "Fetch / refresh the curated Bowire.VulnDb template set into ~/.bowire/vulndb. With no --source this pulls the latest GitHub release (the only outbound call, and only because you asked). Point --source at a repo checkout, a .tar.gz, or a URL for air-gapped / pinned installs.");
+            BowireLocale.T("cli.vuln-db.update.command"));
 
-        var sourceOpt = new Option<string>("--source") { Description = "Template source: a directory (repo checkout / mirror), a .tar.gz file, or an http(s) URL to a tarball. Omit to fetch the latest Kuestenlogik/Bowire.VulnDb GitHub release." };
-        var destOpt = new Option<string>("--dest") { Description = "Cache directory to write into. Default: ~/.bowire/vulndb." };
-        var refOpt = new Option<string>("--ref") { Description = "Release tag to pin when fetching from GitHub (e.g. v0.1.0). Ignored for --source directory/file/URL. Default: the latest release." };
+        var sourceOpt = new Option<string>("--source") { Description = BowireLocale.T("cli.vuln-db.source") };
+        var destOpt = new Option<string>("--dest") { Description = BowireLocale.T("cli.vuln-db.dest") };
+        var refOpt = new Option<string>("--ref") { Description = BowireLocale.T("cli.vuln-db.ref") };
 
         update.Add(sourceOpt);
         update.Add(destOpt);
@@ -58,10 +58,10 @@ public sealed class VulnDbCliCommand : IBowireCliCommand
     private static Command BuildList()
     {
         var list = new Command("list",
-            "List the templates in the local cache (~/.bowire/vulndb) — protocol, severity, id, and name, plus a total. Reads the templates-index.json sidecar when present, else walks the tree.");
+            BowireLocale.T("cli.vuln-db.list.command"));
 
-        var destOpt = new Option<string>("--dest") { Description = "Cache directory to read. Default: ~/.bowire/vulndb." };
-        var protocolOpt = new Option<string>("--protocol") { Description = "Only list templates under this protocol folder (grpc / graphql / rest / odata / …)." };
+        var destOpt = new Option<string>("--dest") { Description = BowireLocale.T("cli.vuln-db.dest-2") };
+        var protocolOpt = new Option<string>("--protocol") { Description = BowireLocale.T("cli.vuln-db.protocol") };
 
         list.Add(destOpt);
         list.Add(protocolOpt);

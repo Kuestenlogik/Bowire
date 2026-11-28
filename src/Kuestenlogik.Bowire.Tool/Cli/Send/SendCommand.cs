@@ -21,22 +21,22 @@ internal static class SendCommand
         public static SharedOptions Create(IConfiguration cfg) => new(
             new Option<string[]>("--var", "--env")
             {
-                Description = "Variable for {{name}} / ${name} in the URL and the items. KEY=VALUE; repeatable.",
+                Description = BowireLocale.T("cli.send.var"),
                 AllowMultipleArgumentsPerToken = false,
             },
             new Option<string[]>("--env-file")
             {
-                Description = "File with one KEY=VALUE per line (dotenv-style) for the variables. Repeatable; --var wins.",
+                Description = BowireLocale.T("cli.send.env-file"),
                 AllowMultipleArgumentsPerToken = false,
             },
             new Option<bool>("--compact")
             {
-                Description = "Print a JSON response on one line.",
+                Description = BowireLocale.T("cli.send.compact"),
                 DefaultValueFactory = _ => cfg.GetValue<bool>("Bowire:Cli:Compact"),
             },
             new Option<bool>("--offline")
             {
-                Description = "Build the request and print it, variables resolved, without sending anything.",
+                Description = BowireLocale.T("cli.send.offline"),
             });
 
         public void AddTo(Command command)
@@ -52,9 +52,7 @@ internal static class SendCommand
     public static Command Build(IConfiguration cfg)
     {
         var send = new Command("send",
-            "Send a request you spell out, directly: no discovery, no schema. "
-            + "The protocol comes next and decides the arguments. Proxy and CA bundle come from "
-            + "--proxy-url / --no-proxy / --ca-bundle, as for every command.");
+            BowireLocale.T("cli.send.send.command"));
         send.Add(BuildHttp(cfg));
         return send;
     }
@@ -65,47 +63,38 @@ internal static class SendCommand
         var shared = SharedOptions.Create(cfg);
         var request = new Argument<string[]>("request")
         {
-            Description = "[METHOD] URL [ITEM…]. METHOD is optional and case-insensitive: GET, or POST when "
-                + "body items are given; any token works (PROPFIND). The URL may leave out the scheme "
-                + "(Bowire:Cli:Send:DefaultScheme, http by default) and :3000/x means http://localhost:3000/x. "
-                + "Items: Header:value, param==value (query), field=value (JSON string), field:=json (raw JSON), "
-                + "field@file (multipart file upload). A backslash keeps a separator in the name: a\\=b=c.",
+            Description = BowireLocale.T("cli.send.request"),
             Arity = ArgumentArity.OneOrMore,
         };
         var data = new Option<string?>("-d", "--data")
         {
-            Description = "A raw body instead of body items, sent as application/json unless a Content-Type:… "
-                + "item says otherwise. @file reads it from a file.",
+            Description = BowireLocale.T("cli.send.d"),
             HelpName = "body|@file",
         };
         var include = new Option<bool>("--include", "-i")
         {
-            Description = "Print the status line and the response headers to stdout before the body.",
+            Description = BowireLocale.T("cli.send.include"),
         };
         var output = new Option<string?>("--output", "-o")
         {
-            Description = "Write the body to this file as the server sent it, whatever its type, and print it "
-                + "nowhere else. - writes the raw bytes to stdout, for a pipe.",
+            Description = BowireLocale.T("cli.send.output"),
             HelpName = "file|-",
         };
         var negotiate = new Option<bool>("--negotiate")
         {
-            Description = "Windows-integrated authentication (Kerberos, falling back to NTLM) as the signed-in account. Windows only.",
+            Description = BowireLocale.T("cli.send.negotiate"),
         };
         var ntlm = new Option<string?>("--ntlm")
         {
-            Description = "NTLM with explicit credentials: [DOMAIN\\]user:password. Pass the password from a variable.",
+            Description = BowireLocale.T("cli.send.ntlm"),
         };
         var digest = new Option<string?>("--digest")
         {
-            Description = "HTTP Digest (RFC 7616, MD5 / SHA-256, qop auth / auth-int): user:password.",
+            Description = BowireLocale.T("cli.send.digest"),
         };
 
         var cmd = new Command("http",
-            "Send one HTTP request, URL first, in HTTPie's item notation: "
-            + "`bowire send http post api.example.com/pets name=ada age:=3 Authorization:\"Bearer {{token}}\"`. "
-            + "The body goes to stdout, the status line and time to stderr; exit 0 for 2xx and 3xx, 2 for 4xx "
-            + "and 5xx, 1 when the request could not be sent.");
+            BowireLocale.T("cli.send.http.command"));
         cmd.Add(request);
         cmd.Add(data);
         cmd.Add(include);

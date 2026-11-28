@@ -29,7 +29,7 @@ internal static class ReportCommand
     public static Command Build()
     {
         var report = new Command("report",
-            "Roll the reports Bowire writes up into one view across services.");
+            BowireLocale.T("cli.report.report.command"));
         report.Add(BuildRollupCommand());
         return report;
     }
@@ -37,26 +37,26 @@ internal static class ReportCommand
     private static Command BuildRollupCommand()
     {
         var cmd = new Command("rollup",
-            "Read lint / contract / benchmark / scan / test reports under the given paths and print one row per service.");
+            BowireLocale.T("cli.report.rollup.command"));
 
         var fromOpt = new Option<string[]>("--from")
         {
-            Description = "File or directory to read. Repeatable. Directories are walked recursively.",
+            Description = BowireLocale.T("cli.report.from"),
             Required = true,
             AllowMultipleArgumentsPerToken = true,
         };
         var jsonOpt = new Option<bool>("--json")
         {
-            Description = "Emit the rollup as JSON instead of a table.",
+            Description = BowireLocale.T("cli.report.json"),
         };
         var failOnOpt = new Option<string>("--fail-on")
         {
-            Description = "Exit non-zero when a service is at or above this severity: 'none' (default), 'info', 'low', 'medium' or 'high'.",
+            Description = BowireLocale.T("cli.report.fail-on"),
             DefaultValueFactory = _ => "none",
         };
         var serviceOpt = new Option<string?>("--service")
         {
-            Description = "Attribute every report to this service, instead of inferring it from the report and its path.",
+            Description = BowireLocale.T("cli.report.service"),
         };
 
         cmd.Add(fromOpt); cmd.Add(jsonOpt); cmd.Add(failOnOpt); cmd.Add(serviceOpt);

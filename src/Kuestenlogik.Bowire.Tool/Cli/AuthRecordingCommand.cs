@@ -24,7 +24,7 @@ internal static class AuthRecordingCommand
     public static Command Build()
     {
         var cmd = new Command("auth-recording",
-            "Manage captured auth recordings — the credentials a mock's auth requirement resolves by id. capture / list / remove; the same store the workbench picker and the MCP tools use.");
+            BowireLocale.T("cli.auth-recording.auth-recording.command"));
         cmd.Add(BuildCaptureCommand());
         cmd.Add(BuildListCommand());
         cmd.Add(BuildRemoveCommand());
@@ -33,28 +33,28 @@ internal static class AuthRecordingCommand
 
     private static Option<string?> WorkspaceOption() => new("--workspace")
     {
-        Description = "Workspace to scope the recording to (default: the shared, unscoped store)."
+        Description = BowireLocale.T("cli.auth-recording.auth-recording")
     };
 
     private static Command BuildCaptureCommand()
     {
-        var idOpt = new Option<string>("--id") { Description = "Recording id, referenced by a mock's auth.authRecordingId." };
+        var idOpt = new Option<string>("--id") { Description = BowireLocale.T("cli.auth-recording.id") };
         var credEnvOpt = new Option<string?>("--credential-env")
         {
-            Description = "Static capture: name of the environment variable holding the credential to store. Read from the environment so the secret never lands in shell history or process args.",
+            Description = BowireLocale.T("cli.auth-recording.credential-env"),
         };
         var flowOpt = new Option<string?>("--flow")
         {
-            Description = "Flow capture: path to an auth-flow definition JSON (a scriptable login → token chain). Bowire RUNS it (outbound HTTP) and stores the captured token. Secrets in the flow come from {{env.NAME}}. Mutually exclusive with --credential-env.",
+            Description = BowireLocale.T("cli.auth-recording.flow"),
         };
-        var nameOpt = new Option<string?>("--name") { Description = "Human label shown in the picker (default: the id)." };
-        var schemeOpt = new Option<string>("--scheme") { Description = "Credential scheme for static capture: bearer / basic / apikey (flow capture derives it from the flow).", DefaultValueFactory = _ => "bearer" };
+        var nameOpt = new Option<string?>("--name") { Description = BowireLocale.T("cli.auth-recording.name") };
+        var schemeOpt = new Option<string>("--scheme") { Description = BowireLocale.T("cli.auth-recording.scheme"), DefaultValueFactory = _ => "bearer" };
         schemeOpt.CompletionSources.Add("bearer", "basic", "apikey");
-        var headerOpt = new Option<string?>("--header") { Description = "Header the credential is presented in (default: Authorization)." };
+        var headerOpt = new Option<string?>("--header") { Description = BowireLocale.T("cli.auth-recording.header") };
         var wsOpt = WorkspaceOption();
 
         var capture = new Command("capture",
-            "Store a credential as a named auth recording — statically from --credential-env, or by running an auth flow with --flow. Exit 0 ok, 64 bad args, 65 store/flow error, 66 flow file not found.");
+            BowireLocale.T("cli.auth-recording.capture.command"));
         capture.Add(idOpt);
         capture.Add(credEnvOpt);
         capture.Add(flowOpt);
@@ -153,7 +153,7 @@ internal static class AuthRecordingCommand
     private static Command BuildListCommand()
     {
         var wsOpt = WorkspaceOption();
-        var list = new Command("list", "List captured auth recordings — credential-free (ids, names, schemes).");
+        var list = new Command("list", BowireLocale.T("cli.auth-recording.list.command"));
         list.Add(wsOpt);
         list.SetAction((pr, _) =>
         {
@@ -181,9 +181,9 @@ internal static class AuthRecordingCommand
 
     private static Command BuildRemoveCommand()
     {
-        var idArg = new Argument<string>("id") { Description = "Recording id to remove." };
+        var idArg = new Argument<string>("id") { Description = BowireLocale.T("cli.auth-recording.id-2") };
         var wsOpt = WorkspaceOption();
-        var remove = new Command("remove", "Delete a captured auth recording.");
+        var remove = new Command("remove", BowireLocale.T("cli.auth-recording.remove.command"));
         remove.Add(idArg);
         remove.Add(wsOpt);
         remove.SetAction((pr, _) =>

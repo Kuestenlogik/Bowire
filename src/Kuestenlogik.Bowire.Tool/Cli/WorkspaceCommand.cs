@@ -73,7 +73,7 @@ internal static class WorkspaceCommand
     public static Command Build()
     {
         var workspace = new Command("workspace",
-            "Manage Bowire workspaces — init a git-backed workspace directory (#147 / #149), migrate a legacy bundle-shaped workspace to the per-entity file layout (#196 Phase 2.2), migrate a workspace to a checked-in .bowire/project.json manifest (#172), or export/import the workspace state as a single JSON file (#149).");
+            BowireLocale.T("cli.workspace.workspace.command"));
         workspace.Add(BuildListCommand());
         workspace.Add(BuildInitCommand());
         workspace.Add(BuildMigrateFormatCommand());
@@ -131,11 +131,11 @@ internal static class WorkspaceCommand
     private static Command BuildListCommand()
     {
         var list = new Command("list",
-            "List the workspaces saved in this identity's inventory — the ids `bowire test --workspace-id` takes, with the checkout each git-native one lives in.");
+            BowireLocale.T("cli.workspace.list.command"));
 
         var jsonOpt = new Option<bool>("--json")
         {
-            Description = "Emit the list as JSON instead of a table, for scripts that pick an id out of it.",
+            Description = BowireLocale.T("cli.workspace.json"),
         };
         list.Add(jsonOpt);
 
@@ -200,15 +200,15 @@ internal static class WorkspaceCommand
     private static Command BuildExportCommand()
     {
         var export = new Command("export",
-            "Read every entity from a per-entity workspace directory and write a single self-contained JSON file. Round-trips through 'workspace import' without touching ~/.bowire/. Useful for CI / scripted setup, archiving, or shipping a workspace snapshot.");
+            BowireLocale.T("cli.workspace.export.command"));
 
         var fromOpt = new Option<string?>("--from")
         {
-            Description = "Workspace storage root to read from. When omitted, the current directory is used. The directory must contain at least one of the per-entity buckets (environments/, collections/, recordings/, scripts/, flows/)."
+            Description = BowireLocale.T("cli.workspace.from")
         };
         var outputArg = new Argument<string>("path")
         {
-            Description = "Output file path. The exporter writes a single indented JSON document with workspaceFormatVersion + one array per entity kind."
+            Description = BowireLocale.T("cli.workspace.path")
         };
         export.Add(fromOpt);
         export.Add(outputArg);
@@ -230,15 +230,15 @@ internal static class WorkspaceCommand
     private static Command BuildImportCommand()
     {
         var import = new Command("import",
-            "Materialise a workspace export (the single-JSON shape 'workspace export' produces) into a target directory as the per-entity layout. Existing entries with the same id are overwritten; entries the export doesn't carry are left alone.");
+            BowireLocale.T("cli.workspace.import.command"));
 
         var toOpt = new Option<string?>("--to")
         {
-            Description = "Target workspace directory to write into. When omitted, the current directory is used. Created if missing."
+            Description = BowireLocale.T("cli.workspace.to")
         };
         var inputArg = new Argument<string>("path")
         {
-            Description = "Path to the .json export file produced by 'workspace export'."
+            Description = BowireLocale.T("cli.workspace.path-2")
         };
         import.Add(toOpt);
         import.Add(inputArg);
@@ -668,11 +668,11 @@ internal static class WorkspaceCommand
     private static Command BuildMigrateFormatCommand()
     {
         var migrate = new Command("migrate-format",
-            "Convert a workspace from the legacy bundle layout (one <entityKind>.json per kind) into the per-entity file layout the git-backed runtime reads through. Idempotent: re-running on an already-migrated workspace is a no-op. The original bundle files are renamed to .legacy so an operator can verify the per-entity files before deleting them.");
+            BowireLocale.T("cli.workspace.migrate-format.command"));
 
         var pathArg = new Argument<string>("path")
         {
-            Description = "Directory containing the workspace to migrate. Existing per-entity files are preserved; only legacy <entityKind>.json bundles are converted."
+            Description = BowireLocale.T("cli.workspace.path-3")
         };
         migrate.Add(pathArg);
 
@@ -757,23 +757,23 @@ internal static class WorkspaceCommand
     private static Command BuildMigrateToProjectCommand()
     {
         var migrate = new Command("migrate",
-            "Convert an existing per-user workspace (~/.bowire/workspaces/<id>) into a checked-in .bowire/project.json manifest (#172). Captures what maps cleanly from the workspace onto the version-controlled convention: sources (distinct server URLs seen across recordings), suites (one per saved collection), and security.auth (the workspace's captured auth recording). Fields with no clean workspace source (a rules file, scan profiles) are reported and omitted rather than invented.");
+            BowireLocale.T("cli.workspace.migrate.command"));
 
         var toProjectOpt = new Option<bool>("--to-project")
         {
-            Description = "Required verb-flag selecting the project-manifest migration (mirrors the issue's `workspace migrate --to-project`). Present for forward-compatibility with future migrate targets.",
+            Description = BowireLocale.T("cli.workspace.to-project"),
         };
         var workspaceOpt = new Option<string?>("--workspace")
         {
-            Description = "Workspace id under ~/.bowire/workspaces/ to migrate. Defaults to the only workspace when exactly one exists; required when several do.",
+            Description = BowireLocale.T("cli.workspace.workspace"),
         };
         var outOpt = new Option<string?>("--out")
         {
-            Description = "Directory to write the manifest into (as <out>/.bowire/project.json). Defaults to the current directory.",
+            Description = BowireLocale.T("cli.workspace.out"),
         };
         var forceOpt = new Option<bool>("--force")
         {
-            Description = "Overwrite an existing <out>/.bowire/project.json. Without it, migrate refuses to clobber and exits 73.",
+            Description = BowireLocale.T("cli.workspace.force"),
         };
         migrate.Add(toProjectOpt);
         migrate.Add(workspaceOpt);
@@ -1068,23 +1068,23 @@ internal static class WorkspaceCommand
     private static Command BuildInitCommand()
     {
         var init = new Command("init",
-            "Materialise a fresh git-backed workspace directory at the given path. Drops the canonical folder skeleton (environments / collections / recordings / scripts / flows / secrets), a workspace.json manifest, and a default .gitignore that excludes secrets + cache files. Runs `git init` unless --no-git is passed.");
+            BowireLocale.T("cli.workspace.init.command"));
 
         var pathArg = new Argument<string>("path")
         {
-            Description = "Directory to initialise. Created if it doesn't exist; required to be empty so the init never clobbers existing content."
+            Description = BowireLocale.T("cli.workspace.path-4")
         };
         var nameOpt = new Option<string?>("--name")
         {
-            Description = "Workspace display name written into workspace.json. Defaults to the directory's basename."
+            Description = BowireLocale.T("cli.workspace.name")
         };
         var colorOpt = new Option<string?>("--color")
         {
-            Description = "Workspace accent color (hex like '#22c55e'). Defaults to '#6366f1'."
+            Description = BowireLocale.T("cli.workspace.color")
         };
         var noGitOpt = new Option<bool>("--no-git")
         {
-            Description = "Skip the trailing `git init`. Useful when initialising inside an existing repository."
+            Description = BowireLocale.T("cli.workspace.no-git")
         };
 
         init.Add(pathArg);

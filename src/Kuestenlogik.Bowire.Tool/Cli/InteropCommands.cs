@@ -21,16 +21,14 @@ internal static class InteropCommands
     {
         var pathArg = new Argument<string?>("path")
         {
-            Description = "An Insomnia export (v4 JSON/YAML or v5 YAML), a Yaak export (JSON), a Bruno collection directory (.bru files or OpenCollection YAML) or a bundled OpenCollection file, "
-                + "or a .http file or a directory of them with http-client.env.json.",
+            Description = BowireLocale.T("cli.interop-commands.path"),
             Arity = ArgumentArity.ZeroOrOne,
         };
-        var formatOpt = new Option<string?>("--format") { Description = "Skip sniffing: insomnia, bruno, opencollection or http." };
-        var nameOpt = new Option<string?>("--name", "-n") { Description = "The collection name when the source has none." };
+        var formatOpt = new Option<string?>("--format") { Description = BowireLocale.T("cli.interop-commands.format") };
+        var nameOpt = new Option<string?>("--name", "-n") { Description = BowireLocale.T("cli.interop-commands.name") };
         var outOpt = new Option<string?>("--out", "-o")
         {
-            Description = "Where to write the .bww workspace file. \"-\" writes it to stdout. "
-                + "Default: <name>.bww next to the input. Import it with the workbench or `bowire workspace import`.",
+            Description = BowireLocale.T("cli.interop-commands.out"),
         };
         import.Add(pathArg); import.Add(formatOpt); import.Add(nameOpt); import.Add(outOpt);
         import.SetAction(async (pr, ct) =>
@@ -96,12 +94,12 @@ internal static class InteropCommands
     {
         var fileArg = new Argument<string>("file")
         {
-            Description = "A .bww workspace file, a workspace's collections.json, or an array of collections.",
+            Description = BowireLocale.T("cli.interop-commands.file"),
         };
-        var outOpt = new Option<string?>("--output", "-o") { Description = "The .http file to write. Default: <file>.http next to the input; \"-\" for stdout." };
-        var envOpt = new Option<string?>("--env-output") { Description = "Where to write http-client.env.json. Default: next to the .http file." };
-        var dialectOpt = new Option<string?>("--dialect") { Description = "jetbrains (default: Rider, IntelliJ, Visual Studio 2022) or vscode (REST Client)." };
-        var export = new Command("http", "Write collections as a .http file (and environments as http-client.env.json) the IDEs run.");
+        var outOpt = new Option<string?>("--output", "-o") { Description = BowireLocale.T("cli.interop-commands.output") };
+        var envOpt = new Option<string?>("--env-output") { Description = BowireLocale.T("cli.interop-commands.env-output") };
+        var dialectOpt = new Option<string?>("--dialect") { Description = BowireLocale.T("cli.interop-commands.dialect") };
+        var export = new Command("http", BowireLocale.T("cli.interop-commands.http.command"));
         export.Add(fileArg); export.Add(outOpt); export.Add(envOpt); export.Add(dialectOpt);
         export.SetAction(async (pr, ct) =>
         {
