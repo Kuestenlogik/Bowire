@@ -12,11 +12,10 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**45/50 done** · 1 in progress · 4 backlog
+**46/50 done** · 4 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
-| [1075](https://github.com/Kuestenlogik/Bowire/issues/1075) | Bowire | [Sidebar: the Compare button's label overflows the button](#issue-kuestenlogik-bowire-1075) | 🟡 In progress | `area:workbench` |
 | [639](https://github.com/Kuestenlogik/Bowire/issues/639) | Bowire | [SCIM: live Okta and Entra ID provisioning round-trips](#issue-kuestenlogik-bowire-639) | ⬜ Backlog | `area:workbench` |
 | [670](https://github.com/Kuestenlogik/Bowire/issues/670) | Bowire | [Get listed where developers and models actually look](#issue-kuestenlogik-bowire-670) | ⬜ Backlog | `area:site` |
 | [690](https://github.com/Kuestenlogik/Bowire/issues/690) | Bowire | [Translate the CLI help surface, or decide not to](#issue-kuestenlogik-bowire-690) | ⬜ Backlog | `area:cli` |
@@ -66,6 +65,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [1068](https://github.com/Kuestenlogik/Bowire/issues/1068) | Bowire | [gRPC: services behind Node's @grpc/reflection cannot be called ("Available: []")](#issue-kuestenlogik-bowire-1068) | ✅ Done |  |
 | [1069](https://github.com/Kuestenlogik/Bowire/issues/1069) | Bowire | [gRPC: calls to tonic (Rust) servers fail — Bowire asks reflection for a file named like the service](#issue-kuestenlogik-bowire-1069) | ✅ Done |  |
 | [1072](https://github.com/Kuestenlogik/Bowire/issues/1072) | Bowire | [MCP scan counts Bowire's own Tasks and Apps services as the server's tools](#issue-kuestenlogik-bowire-1072) | ✅ Done |  |
+| [1075](https://github.com/Kuestenlogik/Bowire/issues/1075) | Bowire | [Sidebar: the Compare button's label overflows the button](#issue-kuestenlogik-bowire-1075) | ✅ Done | `area:workbench` |
 
 ### v2.12 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
 
@@ -260,12 +260,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 ## Details
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
-
-#### <a id="issue-kuestenlogik-bowire-1075"></a>🟡 In progress · [#1075](https://github.com/Kuestenlogik/Bowire/issues/1075) Sidebar: the Compare button's label overflows the button
-
-> `area:workbench`
-
-In the Discover sidebar's toolbar row, the **Compare** button shows its icon and the label "Compare". The toolbar buttons are fixed 26×26 icon buttons (`.bowire-sidebar-toolbar-btn`), so the label runs out of the button and over its neighbour (the filter button). [[more]](https://github.com/Kuestenlogik/Bowire/issues/1075)
 
 #### <a id="issue-kuestenlogik-bowire-639"></a>⬜ Backlog · [#639](https://github.com/Kuestenlogik/Bowire/issues/639) SCIM: live Okta and Entra ID provisioning round-trips
 
@@ -514,6 +508,12 @@ Every call to a gRPC server written with tonic (Rust) and tonic-reflection fails
 #### <a id="issue-kuestenlogik-bowire-1072"></a>✅ Done · [#1072](https://github.com/Kuestenlogik/Bowire/issues/1072) MCP scan counts Bowire's own Tasks and Apps services as the server's tools
 
 `bowire scan --suite protocol` against an MCP server: [[more]](https://github.com/Kuestenlogik/Bowire/issues/1072)
+
+#### <a id="issue-kuestenlogik-bowire-1075"></a>✅ Done · [#1075](https://github.com/Kuestenlogik/Bowire/issues/1075) Sidebar: the Compare button's label overflows the button
+
+> `area:workbench`
+
+In the Discover sidebar's toolbar row, the **Compare** button shows its icon and the label "Compare". The toolbar buttons are fixed 26×26 icon buttons (`.bowire-sidebar-toolbar-btn`), so the label runs out of the button and over its neighbour (the filter button). [[more]](https://github.com/Kuestenlogik/Bowire/issues/1075)
 
 ### v2.12 — Mock as a backend stand-in, secrets, playground *(due 2027-05-11)*
 
