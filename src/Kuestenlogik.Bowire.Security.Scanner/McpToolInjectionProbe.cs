@@ -60,7 +60,10 @@ internal sealed class McpToolInjectionProbe : IOwaspProtocolProbe
                 $"Anonymous MCP discovery could not be attempted ({ex.GetType().Name}) — target may not be an MCP server or gates the handshake.")];
         }
 
-        var tools = surfaces.SelectMany(s => s.Methods.Select(m => m.Name))
+        // #1072: the server's tools only. The MCP plugin also lists resources,
+        // prompts, and services it derives itself (Tasks, Apps), whose method
+        // names (run, update, …) are Bowire's, not the server's.
+        var tools = surfaces.Where(s => s.Name == "Tools").SelectMany(s => s.Methods.Select(m => m.Name))
             .Where(n => !string.IsNullOrWhiteSpace(n))
             .Distinct(StringComparer.Ordinal)
             .ToArray();

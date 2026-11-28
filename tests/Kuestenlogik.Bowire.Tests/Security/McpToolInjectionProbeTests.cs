@@ -24,6 +24,19 @@ public sealed class McpToolInjectionProbeTests
             new BowireMethodInfo(n, n, false, false, new BowireMessageInfo("In", "In", []), new BowireMessageInfo("Out", "Out", []), "Unary")).ToList());
 
     [Fact]
+    public async Task Only_The_Servers_Tools_Are_Judged()
+    {
+        // #1072: Tasks/run and Tasks/update are Bowire's task operations, and
+        // a resource or prompt name is not a tool.
+        var others = new BowireServiceInfo("Tasks", "", [.. Tools("run", "update").Methods]);
+        var resources = new BowireServiceInfo("Resources", "", [.. Tools("delete-me.txt").Methods]);
+        var proto = new McpFake { Discover = () => [Tools("search"), others, resources] };
+
+        var f = Assert.Single(await new McpToolInjectionProbe().RunAsync("http://x/mcp", proto, s_noAuth, Ct));
+        Assert.NotEqual(ScanFindingStatus.Vulnerable, f.Status);
+    }
+
+    [Fact]
     public async Task DestructiveTools_FlagsInjection()
     {
         var proto = new McpFake { Discover = () => [Tools("search", "delete_file", "runShell", "get_user")] };

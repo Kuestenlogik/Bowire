@@ -44,6 +44,9 @@ internal sealed class McpDiscoveryProbe : IOwaspProtocolProbe
                 $"Anonymous MCP discovery could not be attempted ({ex.GetType().Name}).")];
         }
 
+        // #1072: what the server lists. Tasks and Apps are services the MCP
+        // plugin derives from the listing (task operations, app checks).
+        surfaces = [.. surfaces.Where(s => s.Name is not ("Tasks" or "Apps"))];
         var itemCount = surfaces.Sum(s => s.Methods.Count);
         if (surfaces.Count == 0 || itemCount == 0)
         {

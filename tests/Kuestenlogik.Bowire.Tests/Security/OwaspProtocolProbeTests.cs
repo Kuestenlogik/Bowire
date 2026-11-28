@@ -46,6 +46,17 @@ public sealed class OwaspProtocolProbeTests
     }
 
     [Fact]
+    public async Task Mcp_CountsWhatTheServerLists_NotTheServicesBowireDerives()
+    {
+        // #1072: Tasks and Apps are the MCP plugin's own services.
+        var probe = new McpDiscoveryProbe();
+        var proto = new FakeProtocol { Id = "mcp", Discover = (_, _) => [Service("Tools", "search"), Service("Tasks", "run", "update"), Service("Apps", "search")] };
+
+        var f = Assert.Single(await probe.RunAsync("http://x/mcp", proto, s_noAuth, Ct));
+        Assert.Contains("enumerated 1 item(s) across 1 surface(s) (Tools (1))", f.Detail, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task Mcp_EmptyListing_Skips()
     {
         var probe = new McpDiscoveryProbe();
