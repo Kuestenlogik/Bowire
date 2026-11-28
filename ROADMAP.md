@@ -12,10 +12,11 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**34/47 done** · 13 backlog
+**34/47 done** · 1 in progress · 12 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
+| [1068](https://github.com/Kuestenlogik/Bowire/issues/1068) | Bowire | [gRPC: services behind Node's @grpc/reflection cannot be called ("Available: []")](#issue-kuestenlogik-bowire-1068) | 🟡 In progress |  |
 | [639](https://github.com/Kuestenlogik/Bowire/issues/639) | Bowire | [SCIM: live Okta and Entra ID provisioning round-trips](#issue-kuestenlogik-bowire-639) | ⬜ Backlog | `area:workbench` |
 | [670](https://github.com/Kuestenlogik/Bowire/issues/670) | Bowire | [Get listed where developers and models actually look](#issue-kuestenlogik-bowire-670) | ⬜ Backlog | `area:site` |
 | [687](https://github.com/Kuestenlogik/Bowire/issues/687) | Bowire | [Tray icon and no console window: give the running workbench a handle of its own](#issue-kuestenlogik-bowire-687) | ⬜ Backlog | `area:cli` |
@@ -28,7 +29,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [1056](https://github.com/Kuestenlogik/Bowire/issues/1056) | Bowire | [Importer fixtures from collections built and exported by hand in Insomnia and Bruno](#issue-kuestenlogik-bowire-1056) | ⬜ Backlog | `area:workbench` |
 | [1066](https://github.com/Kuestenlogik/Bowire/issues/1066) | Bowire | [Flaky: NatsServerFixture sometimes does not come up under load (all NATS E2E tests fail in 0 ms)](#issue-kuestenlogik-bowire-1066) | ⬜ Backlog |  |
 | [1067](https://github.com/Kuestenlogik/Bowire/issues/1067) | Bowire | [Flaky: the Pulsar test container exits with 126 (testcontainers.sh: Text file busy)](#issue-kuestenlogik-bowire-1067) | ⬜ Backlog |  |
-| [1068](https://github.com/Kuestenlogik/Bowire/issues/1068) | Bowire | [gRPC: services behind Node's @grpc/reflection cannot be called ("Available: []")](#issue-kuestenlogik-bowire-1068) | ⬜ Backlog |  |
 | [672](https://github.com/Kuestenlogik/Bowire/issues/672) | Bowire | [Server-side script engine so pre/post scripts run in bowire test, not only in the browser](#issue-kuestenlogik-bowire-672) | ✅ Done | `area:cli` |
 | [673](https://github.com/Kuestenlogik/Bowire/issues/673) | Bowire | [Export requests as .http — Copy as .http, and bowire export http for a whole collection](#issue-kuestenlogik-bowire-673) | ✅ Done | `area:workbench` |
 | [677](https://github.com/Kuestenlogik/Bowire/issues/677) | Bowire | [Broader code export, and snippets for the protocols no snippet library covers](#issue-kuestenlogik-bowire-677) | ✅ Done | `area:workbench` |
@@ -254,6 +254,10 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
+#### <a id="issue-kuestenlogik-bowire-1068"></a>🟡 In progress · [#1068](https://github.com/Kuestenlogik/Bowire/issues/1068) gRPC: services behind Node's @grpc/reflection cannot be called ("Available: []")
+
+A gRPC server that serves reflection with the official Node library (`@grpc/reflection` 1.0.4 over `@grpc/proto-loader` / protobufjs) is listed by Bowire (`bowire list` shows the service), but every call fails: [[more]](https://github.com/Kuestenlogik/Bowire/issues/1068)
+
 #### <a id="issue-kuestenlogik-bowire-639"></a>⬜ Backlog · [#639](https://github.com/Kuestenlogik/Bowire/issues/639) SCIM: live Okta and Entra ID provisioning round-trips
 
 > `area:workbench`
@@ -311,10 +315,6 @@ In one clean-clone run of the integration suite (2026-11-28, HEAD 92472d07, whil
 #### <a id="issue-kuestenlogik-bowire-1067"></a>⬜ Backlog · [#1067](https://github.com/Kuestenlogik/Bowire/issues/1067) Flaky: the Pulsar test container exits with 126 (testcontainers.sh: Text file busy)
 
 In a clean-clone run of the integration suite (2026-11-28, HEAD fb299a81, next to other builds), all three `PulsarRoundTripE2ETests` failed in 0 ms: the class fixture did not start. [[more]](https://github.com/Kuestenlogik/Bowire/issues/1067)
-
-#### <a id="issue-kuestenlogik-bowire-1068"></a>⬜ Backlog · [#1068](https://github.com/Kuestenlogik/Bowire/issues/1068) gRPC: services behind Node's @grpc/reflection cannot be called ("Available: []")
-
-A gRPC server that serves reflection with the official Node library (`@grpc/reflection` 1.0.4 over `@grpc/proto-loader` / protobufjs) is listed by Bowire (`bowire list` shows the service), but every call fails: [[more]](https://github.com/Kuestenlogik/Bowire/issues/1068)
 
 #### <a id="issue-kuestenlogik-bowire-672"></a>✅ Done · [#672](https://github.com/Kuestenlogik/Bowire/issues/672) Server-side script engine so pre/post scripts run in bowire test, not only in the browser
 
