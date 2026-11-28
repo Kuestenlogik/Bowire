@@ -453,6 +453,9 @@
          BEFORE init.js so the rail fragments wire their globals
          before DOMContentLoaded fires. -->
     <BowireJsFragment Include="wwwroot\js\_rail-fragments-marker.js" />
+    <!-- #753 - a tab in a browser window of its own; before init so its
+         boot (taking the tab from the main window) runs before the first render. -->
+    <BowireJsFragment Include="wwwroot\js\popout.js" />
     <BowireJsFragment Include="wwwroot\js\init.js" />
     <Watch Include="wwwroot\js\**\*.js" />
   </ItemGroup>

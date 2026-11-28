@@ -5895,9 +5895,13 @@
     // discovered) are dropped silently — opening the same workbench
     // against a different schema shouldn't surface phantom tabs.
     function persistRequestTabs() {
+        // #753 — one writer for the strip: the main window. A pop-out holds
+        // one tab of it and writes nothing; a tab that is away in a pop-out
+        // is left out, so a reload does not give it a second owner.
+        if (typeof popoutMode !== 'undefined' && popoutMode) return;
         try {
             var data = {
-                tabs: requestTabs.map(function (tab) {
+                tabs: requestTabs.filter(function (tab) { return !tab.poppedOut; }).map(function (tab) {
                     return {
                         id: tab.id, serviceKey: tab.serviceKey, methodKey: tab.methodKey,
                         empty: tab.empty || undefined,
@@ -5958,6 +5962,8 @@
     // resurrect tabs the user just closed on the next render.
     let requestTabsRehydrated = false;
     function rehydrateRequestTabs() {
+        // #753 — a pop-out builds its one tab from what the main window handed over.
+        if (typeof popoutMode !== 'undefined' && popoutMode) { popoutTryAdopt(); return; }
         if (requestTabsRehydrated) return;
         if (requestTabs.length > 0) { requestTabsRehydrated = true; return; }
         if (!Array.isArray(services) || services.length === 0) return;

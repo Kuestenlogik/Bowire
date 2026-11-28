@@ -6362,8 +6362,11 @@
                     // listener was attached when this slot rendered B.
                     var tabEl = el('div', {
                         id: pid('bowire-request-tab-') + tab.id,
-                        className: 'bowire-request-tab' + (isActive ? ' active' : ''),
-                        title: tab.serviceKey + ' / ' + tab.methodKey,
+                        className: 'bowire-request-tab' + (isActive ? ' active' : '')
+                            + (tab.poppedOut ? ' is-popped-out' : ''),
+                        title: tab.poppedOut
+                            ? t('popout.tabTitle', { name: tab.serviceKey + ' / ' + tab.methodKey })
+                            : tab.serviceKey + ' / ' + tab.methodKey,
                         'data-tab-id': tab.id,
                         'data-protocol': proto,
                         'data-direction': dir,
@@ -6438,7 +6441,8 @@
                                     }
                                 },
                                 { separator: true }
-                            ].concat(paneMenuEntries(id)));
+                            // #753 — a pop-out holds one pane: no splitting there.
+                            ].concat(popoutMenuEntries(id), popoutMode ? [] : paneMenuEntries(id)));
                         }
                     },
                         el('span', {
@@ -6484,7 +6488,7 @@
             // Phase 2: the button says what it will do — split along the row
             // while there is room and something to split from, otherwise
             // move the tab on to the next pane.
-            if (tab) {
+            if (tab && !popoutMode) {
                 var willSplit = canSplitTab(tab.id);
                 var canMove = requestPanes.length > 1;
                 var splitLabel = !willSplit
@@ -6515,7 +6519,8 @@
                     innerHTML: svgIcon(toStack ? 'rows' : 'columns')
                 }));
             }
-            tabScroll.appendChild(el('button', {
+            // #753 — a pop-out holds the one tab it was given; new tabs belong to the main window.
+            if (!popoutMode) tabScroll.appendChild(el('button', {
                 className: 'bowire-request-tab-new',
                 title: method && svc
                     ? t('main.tab.pinCurrent')
@@ -6635,6 +6640,12 @@
             return main;
         }
 
+        // #753 — the tab is in a window of its own: say so, and offer it back.
+        if (tab && tab.poppedOut) {
+            main.appendChild(renderPoppedOutPlaceholder(tab));
+            return main;
+        }
+
         if (!method) {
             // Context-sensitive empty-state landing page — see landing.js for
             // the seven states (first-run / loading / discovery-failed /
@@ -6676,6 +6687,9 @@
         content.appendChild(reqPane);
         content.appendChild(divider);
         content.appendChild(resPane);
+        // #753 — what happened to a stream or call when the tab moved windows.
+        var movedNotice = renderMovedNotice(tabState(tab));
+        if (movedNotice) main.appendChild(movedNotice);
         main.appendChild(content);
 
         // Initialize resizable pane divider after DOM attachment. Re-

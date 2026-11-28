@@ -96,6 +96,10 @@ An MCP Apps host now shows two of Bowire's tools as UI. Claude, VS Code Copilot 
 
 An MCP server's apps can now be tested and scanned. Discovery lists an **Apps** service with one check per tool that has an app. The check answers whether the tool still names its app and whether the app loads as an MCP App document, so a `bowire test` collection or a flow asserts on it like on any response. A missing resource fails the step and names the app. `bowire scan` reads every app's declaration and reports a CSP that allows any origin or `unsafe-eval`, camera, microphone or geolocation permissions, scripts the app did not declare, and destructive tools that apps may call. Each finding names the tool and, for the CSP, the directive.
 
+### A tab in a window of its own (#753)
+
+**Open in new window** in a tab's menu moves the tab into a browser window of its own, for example onto a second screen. It takes along its request, its response and the frames of a stream so far. A running stream starts again there, and the tab says so. Closing the window brings the tab back. If the main window closes first, the other window becomes a full workbench. Each tab belongs to one window at a time; environments and variables stay shared between the windows.
+
 ## Fixes along the way
 
 - **gRPC servers written with tonic (Rust) can be called (#1069).** Bowire asked their reflection service for a file named like the service; tonic answers an unknown file by failing the stream, so every call failed with `file '…' not found`. Only file names are asked for by name now.

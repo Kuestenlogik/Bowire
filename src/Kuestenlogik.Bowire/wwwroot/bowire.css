@@ -6550,6 +6550,54 @@ only an accent-coloured underline under the active tab. The whole
     background: var(--bowire-surface-hover);
 }
 
+/* ---------- Pop-out (#753) ----------
+   A tab that lives in a window of its own: dimmed and marked in the main
+   window's strip, a placeholder where its content was, and the note a moved
+   tab carries about what was running. */
+.bowire-request-tab.is-popped-out {
+    opacity: 0.6;
+    font-style: italic;
+}
+.bowire-popout-placeholder {
+    margin: 48px auto;
+    max-width: 460px;
+    text-align: center;
+    color: var(--bowire-text-secondary);
+}
+.bowire-popout-placeholder-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--bowire-text);
+    margin-bottom: 6px;
+}
+.bowire-popout-placeholder-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    margin-top: 14px;
+}
+.bowire-popout-notice {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 6px 12px 0;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    background: var(--bowire-warning-bg, rgba(234, 179, 8, 0.12));
+    color: var(--bowire-text);
+}
+.bowire-popout-notice > span { flex: 1; }
+.bowire-popout-notice-close {
+    border: 0;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    width: 18px;
+    height: 18px;
+    padding: 0;
+}
+
 .bowire-request-tab.active {
     color: var(--bowire-text);
     border-top-color: var(--bowire-accent);

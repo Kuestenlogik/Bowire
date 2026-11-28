@@ -736,7 +736,8 @@
 
         // #133 — activity rail. Sits at the very leftmost edge of the
         // workbench body, before the mode sidebar.
-        body.appendChild(renderActivityRail());
+        // #753 — a pop-out is one tab: no rail, no sidebar.
+        if (!popoutMode) body.appendChild(renderActivityRail());
 
         // #137 — sidebar visibility driven by the rail-mode
         // catalogue. Modes that declare sidebar.kind === 'none' skip
@@ -744,7 +745,7 @@
         // edge to edge. Home / Benchmarks / Parallel today; new
         // modes only need to set sidebar: { kind: 'none' } to
         // opt out.
-        var modeHasSidebar = currentRailSidebarSpec().kind !== 'none';
+        var modeHasSidebar = !popoutMode && currentRailSidebarSpec().kind !== 'none';
         if (!modeHasSidebar && !isMobile()) {
             // Rails that opt out of the sidebar (Home / Compose /
             // sometimes Benchmarks) used to start the main pane

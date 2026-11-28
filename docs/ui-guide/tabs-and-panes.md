@@ -39,6 +39,19 @@ Drag the divider between the panes to change their widths; double-click it for a
 
 Closing the last tab of a pane folds the split — the remaining pane takes the whole width. Moving a pane's only tab over does the same.
 
+## A tab in a window of its own
+
+Right-click a tab and choose **Open in new window** to move it into a browser window of its own, for example onto a second screen. The tab takes along what it holds: the request, the response, and the frames of a stream so far. The window shows the one tab, without the rail and the sidebar.
+
+- **A running stream** starts again in the new window. The tab says so: frames from before the move are kept, frames sent during the move are lost. A channel closes and can be connected again. A unary call still running is not repeated, because it may change something. Run it again to see an answer.
+- **The main window** keeps the tab in its strip, dimmed. Its pane says where the tab is, with **Show the window** and **Bring back to the main window**.
+- **Closing the window** brings the tab back to the main window, with what it held. **Bring back** in the tab menu of either window does the same.
+- **Closing the main window first** turns the other window into a full workbench, with the tabs the main window had.
+
+Each tab belongs to one window at a time, and only that window changes it. Environments, variables and the workspace are shared: a change in one window shows in the others. Shortcuts act in the window they are pressed in.
+
+The browser has to allow pop-ups for the workbench's page. If it blocks the window, the tab stays where it is.
+
 ## Shortcuts
 
 | Shortcut | Action |
