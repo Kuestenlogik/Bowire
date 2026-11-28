@@ -12,7 +12,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**39/48 done** · 9 backlog
+**40/48 done** · 8 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
@@ -21,7 +21,6 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [687](https://github.com/Kuestenlogik/Bowire/issues/687) | Bowire | [Tray icon and no console window: give the running workbench a handle of its own](#issue-kuestenlogik-bowire-687) | ⬜ Backlog | `area:cli` |
 | [690](https://github.com/Kuestenlogik/Bowire/issues/690) | Bowire | [Translate the CLI help surface, or decide not to](#issue-kuestenlogik-bowire-690) | ⬜ Backlog | `area:cli` |
 | [753](https://github.com/Kuestenlogik/Bowire/issues/753) | Bowire | [Detach a pane into a browser window of its own (pop-out)](#issue-kuestenlogik-bowire-753) | ⬜ Backlog |  |
-| [810](https://github.com/Kuestenlogik/Bowire/issues/810) | Bowire | [MCP Apps, host side: render and debug MCP Apps of the servers Bowire talks to](#issue-kuestenlogik-bowire-810) | ⬜ Backlog |  |
 | [811](https://github.com/Kuestenlogik/Bowire/issues/811) | Bowire | [MCP Apps, server side: Bowire's MCP tools answer with apps (test run first)](#issue-kuestenlogik-bowire-811) | ⬜ Backlog |  |
 | [812](https://github.com/Kuestenlogik/Bowire/issues/812) | Bowire | [MCP Apps in testing and security: assert on apps, record their traffic, scan their CSP](#issue-kuestenlogik-bowire-812) | ⬜ Backlog |  |
 | [1056](https://github.com/Kuestenlogik/Bowire/issues/1056) | Bowire | [Importer fixtures from collections built and exported by hand in Insomnia and Bruno](#issue-kuestenlogik-bowire-1056) | ⬜ Backlog | `area:workbench` |
@@ -30,6 +29,7 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 | [677](https://github.com/Kuestenlogik/Bowire/issues/677) | Bowire | [Broader code export, and snippets for the protocols no snippet library covers](#issue-kuestenlogik-bowire-677) | ✅ Done | `area:workbench` |
 | [688](https://github.com/Kuestenlogik/Bowire/issues/688) | Bowire | [Plurals: the translation layer cannot express a sentence whose shape depends on a number](#issue-kuestenlogik-bowire-688) | ✅ Done | `area:workbench` |
 | [754](https://github.com/Kuestenlogik/Bowire/issues/754) | Bowire | [Scaffolding: more stub languages and protocols (follow-up to #177)](#issue-kuestenlogik-bowire-754) | ✅ Done |  |
+| [810](https://github.com/Kuestenlogik/Bowire/issues/810) | Bowire | [MCP Apps, host side: render and debug MCP Apps of the servers Bowire talks to](#issue-kuestenlogik-bowire-810) | ✅ Done |  |
 | [939](https://github.com/Kuestenlogik/Bowire/issues/939) | Bowire | [Import Yaak exports](#issue-kuestenlogik-bowire-939) | ✅ Done |  |
 | [940](https://github.com/Kuestenlogik/Bowire/issues/940) | Bowire | [Verify the collection importers against real Insomnia and Bruno exports](#issue-kuestenlogik-bowire-940) | ✅ Done |  |
 | [946](https://github.com/Kuestenlogik/Bowire/issues/946) | Bowire | [Data sets for flow runs and bowire test --workspace](#issue-kuestenlogik-bowire-946) | ✅ Done |  |
@@ -284,10 +284,6 @@ Six credible competitors turned up during the competitive survey **via openalter
 
 Split out of #250 phase 2, where it already stood as *"long deferred — needs proper inter-window state sync"*. [[more]](https://github.com/Kuestenlogik/Bowire/issues/753)
 
-#### <a id="issue-kuestenlogik-bowire-810"></a>⬜ Backlog · [#810](https://github.com/Kuestenlogik/Bowire/issues/810) MCP Apps, host side: render and debug MCP Apps of the servers Bowire talks to
-
-MCP Apps (`io.modelcontextprotocol/ui`, [overview](https://modelcontextprotocol.io/extensions/apps/overview), [spec 2026-01-26](https://github.com/modelcontextprotocol/ext-apps/blob/main/specification/2026-01-26/apps.mdx)) let an MCP tool come with an interactive UI. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/810)
-
 #### <a id="issue-kuestenlogik-bowire-811"></a>⬜ Backlog · [#811](https://github.com/Kuestenlogik/Bowire/issues/811) MCP Apps, server side: Bowire's MCP tools answer with apps (test run first)
 
 Bowire's own MCP server (`bowire mcp serve`) answers agents with JSON. Some of what it returns reads far better as UI: a test run with its steps, a security-scan report, the list of services `bowire.discover` found. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/811)
@@ -329,6 +325,10 @@ The translation layer from #117 substitutes `{name}` placeholders and nothing mo
 #### <a id="issue-kuestenlogik-bowire-754"></a>✅ Done · [#754](https://github.com/Kuestenlogik/Bowire/issues/754) Scaffolding: more stub languages and protocols (follow-up to #177)
 
 #177 delivered the first cut: REST (OpenAPI 3) and gRPC (proto3), server stubs in C#. The templates live in `src/Kuestenlogik.Bowire.Scaffold/Templates/<protocol>/`, the spec is language-neutral – a new language is a set of templates plus an entry in the generator. [[more]](https://github.com/Kuestenlogik/Bowire/issues/754)
+
+#### <a id="issue-kuestenlogik-bowire-810"></a>✅ Done · [#810](https://github.com/Kuestenlogik/Bowire/issues/810) MCP Apps, host side: render and debug MCP Apps of the servers Bowire talks to
+
+MCP Apps (`io.modelcontextprotocol/ui`, [overview](https://modelcontextprotocol.io/extensions/apps/overview), [spec 2026-01-26](https://github.com/modelcontextprotocol/ext-apps/blob/main/specification/2026-01-26/apps.mdx)) let an MCP tool come with an interactive UI. … [[more]](https://github.com/Kuestenlogik/Bowire/issues/810)
 
 #### <a id="issue-kuestenlogik-bowire-939"></a>✅ Done · [#939](https://github.com/Kuestenlogik/Bowire/issues/939) Import Yaak exports
 
