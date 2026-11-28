@@ -12,11 +12,12 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 
 ### v2.11 — Interop and migration *(due 2027-03-30)*
 
-**35/47 done** · 1 in progress · 11 backlog
+**35/48 done** · 2 in progress · 11 backlog
 
 | # | Project | Title | Status | Tags |
 |---|---|---|---|---|
 | [1068](https://github.com/Kuestenlogik/Bowire/issues/1068) | Bowire | [gRPC: services behind Node's @grpc/reflection cannot be called ("Available: []")](#issue-kuestenlogik-bowire-1068) | 🟡 In progress |  |
+| [1069](https://github.com/Kuestenlogik/Bowire/issues/1069) | Bowire | [gRPC: calls to tonic (Rust) servers fail — Bowire asks reflection for a file named like the service](#issue-kuestenlogik-bowire-1069) | 🟡 In progress |  |
 | [639](https://github.com/Kuestenlogik/Bowire/issues/639) | Bowire | [SCIM: live Okta and Entra ID provisioning round-trips](#issue-kuestenlogik-bowire-639) | ⬜ Backlog | `area:workbench` |
 | [670](https://github.com/Kuestenlogik/Bowire/issues/670) | Bowire | [Get listed where developers and models actually look](#issue-kuestenlogik-bowire-670) | ⬜ Backlog | `area:site` |
 | [687](https://github.com/Kuestenlogik/Bowire/issues/687) | Bowire | [Tray icon and no console window: give the running workbench a handle of its own](#issue-kuestenlogik-bowire-687) | ⬜ Backlog | `area:cli` |
@@ -257,6 +258,10 @@ Field conventions live in [`docs/contributing/project-board.md`](docs/contributi
 #### <a id="issue-kuestenlogik-bowire-1068"></a>🟡 In progress · [#1068](https://github.com/Kuestenlogik/Bowire/issues/1068) gRPC: services behind Node's @grpc/reflection cannot be called ("Available: []")
 
 A gRPC server that serves reflection with the official Node library (`@grpc/reflection` 1.0.4 over `@grpc/proto-loader` / protobufjs) is listed by Bowire (`bowire list` shows the service), but every call fails: [[more]](https://github.com/Kuestenlogik/Bowire/issues/1068)
+
+#### <a id="issue-kuestenlogik-bowire-1069"></a>🟡 In progress · [#1069](https://github.com/Kuestenlogik/Bowire/issues/1069) gRPC: calls to tonic (Rust) servers fail — Bowire asks reflection for a file named like the service
+
+Every call to a gRPC server written with tonic (Rust) and tonic-reflection fails: [[more]](https://github.com/Kuestenlogik/Bowire/issues/1069)
 
 #### <a id="issue-kuestenlogik-bowire-639"></a>⬜ Backlog · [#639](https://github.com/Kuestenlogik/Bowire/issues/639) SCIM: live Okta and Entra ID provisioning round-trips
 
