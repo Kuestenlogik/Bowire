@@ -14,7 +14,7 @@ namespace Kuestenlogik.Bowire.Scaffold;
 /// by <see cref="ScaffoldIntentParser"/> without a model, or by hand.
 /// </summary>
 /// <param name="Entity">The entity, singular — <c>User</c>.</param>
-/// <param name="Protocol"><c>rest</c> (OpenAPI 3 + minimal API) or <c>grpc</c> (proto3 + Grpc.AspNetCore).</param>
+/// <param name="Protocol"><c>rest</c> (OpenAPI 3), <c>grpc</c> (proto3) or <c>graphql</c> (SDL).</param>
 /// <param name="Fields">The entity's fields besides <c>id</c>, which every entity gets.</param>
 /// <param name="Service">The service name; defaults to the entity's plural — <c>Users</c>.</param>
 /// <param name="BaseUrl">Where the stub listens; default <c>http://localhost:5000</c>.</param>
@@ -28,7 +28,7 @@ public sealed record ScaffoldSpec(
     [property: JsonPropertyName("language")] string? Language = null)
 {
     /// <summary>The protocols a scaffold can target.</summary>
-    public static readonly IReadOnlyList<string> Protocols = ["rest", "grpc"];
+    public static readonly IReadOnlyList<string> Protocols = ["rest", "grpc", "graphql"];
 
     /// <summary>The languages a stub can be written in (#754); the first is the default.</summary>
     public static readonly IReadOnlyList<string> Languages = ["csharp", "go", "node", "python", "rust"];
@@ -39,6 +39,7 @@ public sealed record ScaffoldSpec(
         {
             ["rest"] = Languages,
             ["grpc"] = Languages,
+            ["graphql"] = ["csharp", "node", "python"],
         };
 
     /// <summary>The field types a spec may use.</summary>

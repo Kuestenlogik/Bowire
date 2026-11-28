@@ -49,9 +49,22 @@ class Handler(BaseHTTPRequestHandler):
             return None
         return parts[1] if len(parts) == 2 else ""
 
+    def read_body(self):
+        # A client may send the body chunked (no Content-Length), as .NET's
+        # JsonContent does; http.server does not undo that by itself.
+        if "chunked" in (self.headers.get("Transfer-Encoding") or "").lower():
+            data = b""
+            while True:
+                size = int(self.rfile.readline().split(b";")[0].strip() or b"0", 16)
+                if size == 0:
+                    self.rfile.readline()
+                    return data
+                data += self.rfile.read(size)
+                self.rfile.readline()
+        return self.rfile.read(int(self.headers.get("Content-Length") or 0))
+
     def read_json(self):
-        length = int(self.headers.get("Content-Length") or 0)
-        return json.loads(self.rfile.read(length) or b"{}")
+        return json.loads(self.read_body() or b"{}")
 
     def do_GET(self):
         if self.path.split("?")[0] == "/openapi.yaml":

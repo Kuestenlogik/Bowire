@@ -1,6 +1,6 @@
 ---
 title: Service scaffolding
-summary: 'Describe a service in one sentence and get a schema (OpenAPI or proto3), a runnable stub in C#, Go, Node, Python or Rust, a workbench collection and a smoke test. The AI assistant writes only the spec; the files come from checked-in templates, so the same spec gives the same code with any model or none.'
+summary: 'Describe a service in one sentence and get a schema (OpenAPI, proto3 or GraphQL SDL), a runnable stub in C#, Go, Node, Python or Rust, a workbench collection and a smoke test. The AI assistant writes only the spec; the files come from checked-in templates, so the same spec gives the same code with any model or none.'
 ---
 
 # Service scaffolding
@@ -9,7 +9,7 @@ summary: 'Describe a service in one sentence and get a schema (OpenAPI or proto3
 
 | File | What it is |
 |---|---|
-| `openapi.yaml` or `<service>.proto` | The contract: list, get, create, update, delete |
+| `openapi.yaml`, `<service>.proto` or `schema.graphql` | The contract: list, get, create, update, delete |
 | the stub | A runnable stub that keeps its data in memory — replace the store, keep the routes. Its files depend on the language, see below. |
 | `bowire/<entities>.collection.json` | A workbench collection: every operation, plus an unknown id and a create without its required fields |
 | `bowire/<entities>.smoke-test.json` | A smoke test for `bowire test` |
@@ -40,6 +40,14 @@ Every REST stub answers the same: the list sorted by id, `201` with a `Location`
 
 Every gRPC stub serves reflection (v1alpha, which Bowire uses), answers `NOT_FOUND` for an unknown id and `INVALID_ARGUMENT` for a missing required field, and prints its `listening on` line when it is up.
 
+| Language | GraphQL stub | Run |
+|---|---|---|
+| C# (default) | `Program.cs`, `<Service>.csproj` — Hot Chocolate, schema-first, introspection allowed outside Development | `dotnet run` |
+| Node | `server.mjs`, `package.json` — graphql-js with graphql-http | `npm install`, `node server.mjs` |
+| Python | `server.py`, `requirements.txt` — graphql-core on `http.server` | `pip install -r requirements.txt`, `python server.py` |
+
+A GraphQL scaffold is schema first: `schema.graphql` has the entity type, `Query` with the list (`orders`) and a get by id (`order`), and `Mutation` with create, update and delete, their arguments flat and a required field non-null — so GraphQL itself refuses a create without it. The stub serves `/graphql`. GraphQL answers 200 for every operation, so its smoke test reads the body: the list is there, a create comes back with an id and the values sent, an unknown id is `null`, a create without its required arguments has `errors`. Go and Rust GraphQL stubs are not there yet (#1070).
+
 The language comes from `--language` / `-l`, the dialog's language picker, `"language"` in the spec, or the sentence itself (`… in Go`, `… using Python`); the parameter wins over the sentence.
 
 `node scripts/scaffold/verify.mjs` generates every language's stub, builds and starts it, and runs its smoke test with `bowire test`; a language whose toolchain is missing is reported, not failed.
@@ -54,7 +62,7 @@ Which model is asked:
 2. When the configured provider is a cloud one, a local Ollama or LM Studio that answers first, and the cloud provider only when the local one fails. `Bowire:Ai:Scaffold:PreferLocal=false` asks the configured provider only.
 3. When no model gives a usable spec — none configured, none reachable, or an answer that is not a spec — a deterministic parser reads the sentence. The dialog and the CLI say which one wrote the spec, and why the others did not.
 
-The parser understands the shape above: the protocol from `rest` / `grpc`, the entity from the word after `for`, the fields from the list after `with`, split on commas, `+` and `and`. A type word next to a field sets its type (`total: double`, `paid bool`, `year int`), and `required`, `(required)` or a trailing `*` makes it required. German works too: `für`, `mit`, `und`, `Pflicht`. <!-- lang-exempt: the German words the parser recognises -->
+The parser understands the shape above: the protocol from `rest` / `grpc` / `graphql`, the language from `in Go` / `using Python`, the entity from the word after `for`, the fields from the list after `with`, split on commas, `+` and `and`. A type word next to a field sets its type (`total: double`, `paid bool`, `year int`), and `required`, `(required)` or a trailing `*` makes it required. German works too: `für`, `mit`, `und`, `Pflicht`. <!-- lang-exempt: the German words the parser recognises -->
 
 ## In the workbench
 
@@ -76,7 +84,7 @@ bowire test bowire/users.smoke-test.json
 
 | Option | |
 |---|---|
-| `--protocol`, `-p` | `rest` or `grpc`; wins over the sentence |
+| `--protocol`, `-p` | `rest`, `grpc` or `graphql`; wins over the sentence |
 | `--language`, `-l` | `csharp` (default), `go`, `node`, `python` or `rust`; wins over the sentence and the spec |
 | `--ai` | Let the assistant write the spec — local model first, then the configured provider (`Bowire__Ai__*`, or what Settings → AI saved). Without it the parser reads the sentence. |
 | `--print-spec` | Print the spec and stop |
@@ -106,7 +114,7 @@ bowire test bowire/users.smoke-test.json
 | Field | |
 |---|---|
 | `entity` | Singular; brought into PascalCase |
-| `protocol` | `rest` (OpenAPI 3 + minimal API) or `grpc` (proto3 + Grpc.AspNetCore with server reflection) |
+| `protocol` | `rest` (OpenAPI 3), `grpc` (proto3 with server reflection) or `graphql` (SDL) |
 | `fields` | Up to 40; camelCase on the wire. Types: `string`, `int`, `long`, `double`, `bool`, `datetime`, `uuid`. A field called `id` is dropped — every entity gets one. |
 | `service` | Default: the entity's plural |
 | `baseUrl` | Default `http://localhost:5000` |
@@ -116,4 +124,4 @@ In the proto, `datetime` and `uuid` are strings (ISO 8601, UUID), and every scal
 
 ## Not yet
 
-REST and gRPC are the only protocols so far; GraphQL is next (#754).
+GraphQL stubs in Go and Rust (#1070).

@@ -1,0 +1,24 @@
+# {{Service}} — scaffolded by Bowire from the spec in bowire-scaffold.json.
+# Edit freely; the stub resolves the fields below.
+
+"A stored {{entityWords}}."
+type {{Entity}} {
+  id: ID!
+{{#fields}}  {{name}}: {{gqlType}}{{#protoNote}} # {{protoNote}}{{/protoNote}}
+{{/fields}}}
+
+type Query {
+  "Every {{entityWords}}, by id."
+  {{gqlList}}: [{{Entity}}!]!
+  "One {{entityWords}}, or null when there is none with that id."
+  {{entity}}(id: ID!): {{Entity}}
+}
+
+type Mutation {
+  "Create {{aEntity}}; a required field left out is refused."
+  create{{Entity}}({{gqlArgs}}): {{Entity}}!
+  "Replace {{aEntity}}; null when there is none with that id."
+  update{{Entity}}(id: ID!, {{gqlArgs}}): {{Entity}}
+  "Delete {{aEntity}}; false when there was none with that id."
+  delete{{Entity}}(id: ID!): Boolean!
+}

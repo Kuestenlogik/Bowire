@@ -1,0 +1,48 @@
+// {{Service}} — scaffolded by Bowire from the spec in bowire-scaffold.json.
+// The resolvers keep {{plural}} in memory, so every restart starts empty:
+// replace the store with your own persistence and keep the schema.
+using System.Collections.Concurrent;
+using HotChocolate.Resolvers;
+
+var builder = WebApplication.CreateBuilder(args);
+builder.WebHost.UseUrls("{{BaseUrl}}");
+
+var store = new ConcurrentDictionary<string, {{Entity}}>();
+
+// schema.graphql is the contract; the resolvers below fill in each field of
+// Query and Mutation. A required argument is declared non-null there, so
+// GraphQL itself refuses an operation without it.
+builder.Services
+    .AddGraphQLServer()
+    // Introspection is how Bowire discovers the schema; Hot Chocolate allows
+    // it only in Development unless told otherwise.
+    .DisableIntrospection(false)
+    .AddDocumentFromString(File.ReadAllText(System.IO.Path.Combine(AppContext.BaseDirectory, "schema.graphql")))
+    .BindRuntimeType<{{Entity}}>()
+    .AddResolver("Query", "{{gqlList}}", _ => store.Values.OrderBy(x => x.Id, StringComparer.Ordinal).ToList())
+    .AddResolver("Query", "{{entity}}", ctx => store.TryGetValue(ctx.ArgumentValue<string>("id"), out var item) ? item : null)
+    .AddResolver("Mutation", "create{{Entity}}", ctx =>
+    {
+        var item = From(Guid.NewGuid().ToString("n"), ctx);
+        store[item.Id] = item;
+        return item;
+    })
+    .AddResolver("Mutation", "update{{Entity}}", ctx =>
+    {
+        var id = ctx.ArgumentValue<string>("id");
+        if (!store.ContainsKey(id)) return null;
+        var item = From(id, ctx);
+        store[id] = item;
+        return item;
+    })
+    .AddResolver("Mutation", "delete{{Entity}}", ctx => store.TryRemove(ctx.ArgumentValue<string>("id"), out _));
+
+var app = builder.Build();
+app.MapGraphQL();
+app.Run();
+
+static {{Entity}} From(string id, IResolverContext ctx) =>
+    new(id{{#fields}}, ctx.ArgumentValue<{{gqlCsType}}>("{{name}}"){{/fields}});
+
+/// <summary>A stored {{entityWords}}.</summary>
+public sealed record {{Entity}}(string Id{{#fields}}, {{gqlCsType}} {{Pascal}}{{/fields}});

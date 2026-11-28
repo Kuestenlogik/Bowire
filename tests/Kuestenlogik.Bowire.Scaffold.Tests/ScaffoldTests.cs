@@ -453,3 +453,69 @@ public sealed class ScaffoldLanguageTests
         Assert.Contains("TcpListener::bind(\"127.0.0.1:5000\")", main, StringComparison.Ordinal);
     }
 }
+
+/// <summary>
+/// #754 — GraphQL, SDL first: schema.graphql is the contract, the stub
+/// resolves it; the smoke test reads the body, since GraphQL answers 200.
+/// </summary>
+public sealed class ScaffoldGraphQLTests
+{
+    private static ScaffoldSpec Orders(string language = "csharp") => new("Order", "graphql",
+    [
+        new ScaffoldField("customer", "string", Required: true),
+        new ScaffoldField("quantity", "int"),
+        new ScaffoldField("total", "long"),
+    ], Language: language);
+
+    [Theory]
+    [InlineData("csharp", new[] { "Program.cs", "Orders.csproj" })]
+    [InlineData("node", new[] { "server.mjs", "package.json" })]
+    [InlineData("python", new[] { "server.py", "requirements.txt" })]
+    public void A_GraphQL_scaffold_has_the_schema_and_its_stub(string language, string[] stubs)
+    {
+        var files = ScaffoldGenerator.Generate(Orders(language));
+        Assert.Equal("schema.graphql", files.Single(f => f.Kind == "schema").Path);
+        Assert.Equal(stubs, files.Where(f => f.Kind == "stub").Select(f => f.Path));
+        Assert.DoesNotContain(files, f => f.Kind is "stub" or "schema" && f.Content.Contains("{{", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void The_schema_declares_required_arguments_non_null_and_a_long_as_Float()
+    {
+        var sdl = ScaffoldGenerator.Generate(Orders()).Single(f => f.Path == "schema.graphql").Content;
+        Assert.Contains("  orders: [Order!]!", sdl, StringComparison.Ordinal);
+        Assert.Contains("  order(id: ID!): Order", sdl, StringComparison.Ordinal);
+        Assert.Contains("  createOrder(customer: String!, quantity: Int, total: Float): Order!", sdl, StringComparison.Ordinal);
+        Assert.Contains("  deleteOrder(id: ID!): Boolean!", sdl, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void The_smoke_test_reads_the_body_and_names_Query_and_Mutation()
+    {
+        using var doc = JsonDocument.Parse(ScaffoldGenerator.Generate(Orders()).Single(f => f.Kind == "test").Content);
+        Assert.Equal("http://localhost:5000/graphql", doc.RootElement.GetProperty("serverUrl").GetString());
+        var tests = doc.RootElement.GetProperty("tests").EnumerateArray().ToList();
+        Assert.Equal(["Query", "Mutation", "Query", "Mutation"], tests.Select(t => t.GetProperty("service").GetString()));
+        Assert.Equal(["orders", "createOrder", "order", "createOrder"], tests.Select(t => t.GetProperty("method").GetString()));
+        var paths = tests.SelectMany(t => t.GetProperty("assert").EnumerateArray()).Select(a => a.GetProperty("path").GetString()).ToList();
+        Assert.Contains("response.data.createOrder.id", paths);
+        Assert.Contains("response.errors", paths);
+    }
+
+    [Fact]
+    public void The_sentence_can_ask_for_GraphQL()
+    {
+        var (spec, _) = ScaffoldIntentParser.Parse("GraphQL API for books with title (required) in Python");
+        Assert.Equal("graphql", spec.Protocol);
+        Assert.Equal("python", spec.Language);
+        Assert.Equal(["title"], spec.Fields.Select(f => f.Name));
+    }
+
+    [Fact]
+    public void GraphQL_in_Go_or_Rust_says_it_is_not_there_yet()
+    {
+        var (spec, errors) = Orders("rust").Normalize();
+        Assert.Null(spec);
+        Assert.Contains(errors, e => e.Contains("a graphql stub is not available in rust yet; it is in csharp, node, python", StringComparison.Ordinal));
+    }
+}

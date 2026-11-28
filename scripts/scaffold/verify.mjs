@@ -6,7 +6,7 @@
  *
  * Run (after building the tool):
  *   node scripts/scaffold/verify.mjs
- *   node scripts/scaffold/verify.mjs --languages go,python --protocols rest
+ *   node scripts/scaffold/verify.mjs --languages go,python --protocols rest,grpc,graphql
  *   node scripts/scaffold/verify.mjs --work C:/Projekte/_tmp/scaffold-verify
  *
  * Needs the toolchain of each language it runs: the .NET SDK, Go 1.22+,
@@ -58,10 +58,15 @@ const PREPARE = {
     'grpc/node': [['npm install --no-audit --no-fund', null]],
     'grpc/python': [[PYTHON, ['-m', 'venv', '.venv']], [VENV_PYTHON, ['-m', 'pip', 'install', '--quiet', '-r', 'requirements.txt']]],
     'grpc/go': [['go', ['generate', './...']], ['go', ['mod', 'tidy']]],
+    'graphql/node': [['npm install --no-audit --no-fund', null]],
+    'graphql/python': [[PYTHON, ['-m', 'venv', '.venv']], [VENV_PYTHON, ['-m', 'pip', 'install', '--quiet', '-r', 'requirements.txt']]],
 };
 const START = {
     'grpc/python': [VENV_PYTHON, ['server.py']],
+    'graphql/python': [VENV_PYTHON, ['server.py']],
 };
+// The languages each protocol has stubs in; the others are skipped.
+const AVAILABLE = { rest: ['csharp', 'go', 'node', 'python', 'rust'], grpc: ['csharp', 'go', 'node', 'python', 'rust'], graphql: ['csharp', 'node', 'python'] };
 
 // A spec that exercises what differs between languages: a required field,
 // numbers, a bool, and a field named like a keyword (type).
@@ -154,6 +159,7 @@ for (const protocol of PROTOCOLS) {
     for (const language of LANGUAGES) {
         port++;
         if (!RUN[language]) { rows.push([protocol, language, 'UNKNOWN', 'no such language']); continue; }
+        if (!(AVAILABLE[protocol] || []).includes(language)) continue;
         if (!has(RUN[language].tool)) { rows.push([protocol, language, 'NO TOOLCHAIN', RUN[language].tool[0] + ' not found']); continue; }
         process.stdout.write(`${protocol} / ${language} … `);
         const r = await verify(protocol, language, port);

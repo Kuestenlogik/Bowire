@@ -27,7 +27,7 @@ public static class ScaffoldIntentParser
 
     private static readonly HashSet<string> s_notEntity = new(StringComparer.OrdinalIgnoreCase)
     {
-        "a", "an", "the", "ein", "eine", "einen", "crud", "rest", "grpc", "api", "service", "simple", "basic", "new", // lang-exempt: German articles the parser skips
+        "a", "an", "the", "ein", "eine", "einen", "crud", "rest", "grpc", "graphql", "api", "service", "simple", "basic", "new", // lang-exempt: German articles the parser skips
     };
 
     private static readonly HashSet<string> s_requiredWords = new(StringComparer.OrdinalIgnoreCase)
@@ -65,8 +65,9 @@ public static class ScaffoldIntentParser
         var proto = (protocol is null ? null : ScaffoldNames.Lower(protocol.Trim()));
         if (string.IsNullOrEmpty(proto))
         {
-            proto = Regex.IsMatch(text, @"\b(grpc|proto(buf)?)\b", RegexOptions.IgnoreCase, s_timeout) ? "grpc" : "rest";
-            if (!Regex.IsMatch(text, @"\b(grpc|proto(buf)?|rest|http|openapi)\b", RegexOptions.IgnoreCase, s_timeout))
+            proto = Regex.IsMatch(text, @"\bgraphql\b", RegexOptions.IgnoreCase, s_timeout) ? "graphql"
+                : Regex.IsMatch(text, @"\b(grpc|proto(buf)?)\b", RegexOptions.IgnoreCase, s_timeout) ? "grpc" : "rest";
+            if (!Regex.IsMatch(text, @"\b(grpc|proto(buf)?|graphql|rest|http|openapi)\b", RegexOptions.IgnoreCase, s_timeout))
                 notes.Add("no protocol named; assumed REST");
         }
 

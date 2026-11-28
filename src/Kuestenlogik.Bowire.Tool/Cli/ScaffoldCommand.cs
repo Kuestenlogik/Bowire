@@ -34,7 +34,7 @@ internal static class ScaffoldCommand
     {
         var cmd = new Command(
             "scaffold",
-            "Scaffold a CRUD service from a sentence or a spec: schema (OpenAPI or .proto), a runnable stub (C#, Go, Node, Python or Rust), a workbench collection and a smoke test.");
+            "Scaffold a CRUD service from a sentence or a spec: schema (OpenAPI, .proto or GraphQL SDL), a runnable stub (C#, Go, Node, Python or Rust), a workbench collection and a smoke test.");
 
         var intentArg = new Argument<string?>("intent")
         {
@@ -43,7 +43,7 @@ internal static class ScaffoldCommand
         };
         var protocolOpt = new Option<string?>("--protocol", "-p")
         {
-            Description = "rest or grpc. Overrides what the sentence says; REST when neither says.",
+            Description = "rest, grpc or graphql. Overrides what the sentence says; REST when neither says.",
         };
         var languageOpt = new Option<string?>("--language", "-l")
         {
@@ -169,13 +169,19 @@ internal static class ScaffoldCommand
             await stdout.WriteLineAsync($"  {file.Kind,-10} {file.Path}").ConfigureAwait(false);
         }
         await stdout.WriteLineAsync($"Scaffolded {normalized.Service} ({normalized.Protocol}) in {target}").ConfigureAwait(false);
-        var run = normalized.Language switch
+        var run = (normalized.Protocol, normalized.Language) switch
         {
-            "go" => "go run .",
-            "node" => "node server.mjs",
-            "python" => "python server.py",
-            "rust" => "cargo run",
-            _ => "dotnet run",
+            ("graphql" or "grpc", "node") => "npm install && node server.mjs",
+            ("graphql" or "grpc", "python") => "pip install -r requirements.txt && python server.py",
+            ("grpc", "go") => "go generate ./... && go mod tidy && go run .",
+            (_, var lang) => lang switch
+            {
+                "go" => "go run .",
+                "node" => "node server.mjs",
+                "python" => "python server.py",
+                "rust" => "cargo run",
+                _ => "dotnet run",
+            },
         };
         await stdout.WriteLineAsync($"Next: {run} there, then bowire test bowire/*.smoke-test.json").ConfigureAwait(false);
         return 0;

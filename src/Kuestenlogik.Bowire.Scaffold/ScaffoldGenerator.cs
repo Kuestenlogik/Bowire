@@ -48,7 +48,27 @@ public static class ScaffoldGenerator
             new("bowire-scaffold.json", "spec", "json", JsonSerializer.Serialize(spec, s_json) + "\n"),
         };
         var service = spec.Service!;
-        if (spec.Protocol == "rest")
+        if (spec.Protocol == "graphql")
+        {
+            // #754 — SDL first: schema.graphql is the contract, the stub resolves it.
+            files.Add(new("schema.graphql", "schema", "graphql", Render("graphql/schema.graphql.tmpl", model)));
+            switch (spec.Language)
+            {
+                case "node":
+                    files.Add(new("server.mjs", "stub", "javascript", Render("graphql/node/server.mjs.tmpl", model)));
+                    files.Add(new("package.json", "stub", "json", Render("graphql/node/package.json.tmpl", model)));
+                    break;
+                case "python":
+                    files.Add(new("server.py", "stub", "python", Render("graphql/python/server.py.tmpl", model)));
+                    files.Add(new("requirements.txt", "stub", "text", Render("graphql/python/requirements.txt.tmpl", model)));
+                    break;
+                default:
+                    files.Add(new("Program.cs", "stub", "csharp", Render("graphql/csharp/program-cs.tmpl", model)));
+                    files.Add(new(service + ".csproj", "stub", "xml", Render("graphql/csharp/project.csproj.tmpl", model)));
+                    break;
+            }
+        }
+        else if (spec.Protocol == "rest")
         {
             files.Add(new("openapi.yaml", "schema", "yaml", Render("rest/openapi.yaml.tmpl", model)));
             switch (spec.Language)
@@ -120,6 +140,7 @@ public static class ScaffoldGenerator
         var baseUri = new Uri(spec.BaseUrl!);
         var port = baseUri.Port;
         var grpc = spec.Protocol == "grpc";
+        var graphql = spec.Protocol == "graphql";
         var fields = spec.Fields.Select((f, i) => (IReadOnlyDictionary<string, object?>)FieldModel(f, i, spec.Fields.Count)).ToList();
         var route = ScaffoldNames.Lower(plural);
         var protoFile = ScaffoldNames.Snake(service) + ".proto";
@@ -127,7 +148,18 @@ public static class ScaffoldGenerator
         var pluralSnake = ScaffoldNames.Snake(ScaffoldSpec.Camel(plural));
         var entitySnake = ScaffoldNames.Snake(ScaffoldSpec.Camel(entity));
         var keeping = "keeping " + ScaffoldSpec.Camel(plural) + " in memory";
-        var stubFiles = grpc
+        var stubFiles = graphql
+            ? spec.Language switch
+            {
+                "node" => [Row("server.mjs", "graphql-http server resolving the schema, " + keeping), Row("package.json", "The package: graphql, graphql-http")],
+                "python" => [Row("server.py", "graphql-core on http.server, resolving the schema, " + keeping), Row("requirements.txt", "graphql-core")],
+                _ => new List<IReadOnlyDictionary<string, object?>>
+                {
+                    Row("Program.cs", "Hot Chocolate server resolving the schema, " + keeping),
+                    Row(service + ".csproj", "The project"),
+                },
+            }
+            : grpc
             ? spec.Language switch
             {
                 "go" => [Row("main.go", "grpc-go server with reflection, " + keeping), Row("go.mod", "The module"),
@@ -153,8 +185,11 @@ public static class ScaffoldGenerator
                 "rust" => [Row("src/main.rs", "axum server with every route, " + keeping), Row("Cargo.toml", "The crate")],
                 _ => [Row("Program.cs", "Minimal API with every route, " + keeping), Row(service + ".csproj", "The project")],
             };
-        var (runCommand, runNote) = (grpc, spec.Language) switch
+        var (runCommand, runNote) = (grpc || graphql, spec.Language) switch
         {
+            (true, "node") when graphql => ("npm install\nnode server.mjs", "Node.js 20 or later."),
+            (true, "python") when graphql => ("pip install -r requirements.txt\npython server.py", "Python 3.10 or later; a virtual environment is a good idea."),
+            (true, _) when graphql => ("dotnet run", ".NET 10 SDK; Hot Chocolate comes from NuGet."),
             (true, "go") => ("go generate ./...\ngo mod tidy\ngo run .", "Go 1.22 or later; go generate fetches buf and the protoc-gen-go plugins on its first run."),
             (true, "node") => ("npm install\nnode server.mjs", "Node.js 20 or later."),
             (true, "python") => ("pip install -r requirements.txt\npython server.py", "Python 3.10 or later; a virtual environment is a good idea."),
@@ -189,8 +224,8 @@ public static class ScaffoldGenerator
             ["Port"] = port,
             ["HasRequired"] = spec.Fields.Any(f => f.Required),
             ["fields"] = fields,
-            ["protocolName"] = grpc ? "gRPC" : "REST",
-            ["schemaFile"] = grpc ? protoFile : "openapi.yaml",
+            ["protocolName"] = graphql ? "GraphQL" : grpc ? "gRPC" : "REST",
+            ["schemaFile"] = graphql ? "schema.graphql" : grpc ? protoFile : "openapi.yaml",
             ["stubFiles"] = stubFiles,
             ["collectionFile"] = route + ".collection.json",
             ["testFile"] = route + ".smoke-test.json",
@@ -214,6 +249,10 @@ public static class ScaffoldGenerator
             ["updateSnake"] = ScaffoldNames.Snake("update" + entity),
             ["deleteSnake"] = ScaffoldNames.Snake("delete" + entity),
             ["pluralRust"] = RustName(pluralSnake),
+            // GraphQL: the list field is the plural, unless the plural is the
+            // singular (series), where it would clash with the get field.
+            ["gqlList"] = GraphQLListField(entity, plural),
+            ["gqlArgs"] = string.Join(", ", spec.Fields.Select(f => f.Name + ": " + GraphQLType(f.Type) + (f.Required ? "!" : ""))),
             ["entityRust"] = RustName(entitySnake),
         };
     }
@@ -275,6 +314,9 @@ public static class ScaffoldGenerator
             ["rustName"] = RustName(snake),
             // protoc-gen-go's name for the field: CamelCase of its proto name.
             ["goProtoName"] = ScaffoldSpec.Pascal(snake),
+            ["gqlType"] = GraphQLType(f.Type),
+            // A long is a GraphQL Float: Int is 32-bit.
+            ["gqlCsType"] = f.Type switch { "int" => "int?", "long" or "double" => "double?", "bool" => "bool?", _ => "string?" },
             ["rustRename"] = snake is "self" or "super" or "crate" ? f.Name : "",
             ["name"] = f.Name,
             ["Pascal"] = ScaffoldSpec.Pascal(f.Name),
@@ -302,6 +344,17 @@ public static class ScaffoldGenerator
         snake is "self" or "super" or "crate" ? snake + "_"
             : ScaffoldNames.RustKeywords.Contains(snake) ? "r#" + snake : snake;
 
+    private static string GraphQLType(string type) => type switch
+    {
+        "int" => "Int",
+        "long" or "double" => "Float",
+        "bool" => "Boolean",
+        _ => "String",
+    };
+
+    private static string GraphQLListField(string entity, string plural) =>
+        string.Equals(plural, entity, StringComparison.Ordinal) ? ScaffoldSpec.Camel(plural) + "List" : ScaffoldSpec.Camel(plural);
+
     private static Dictionary<string, object?> Row(string path, string what) =>
         new(StringComparer.Ordinal) { ["path"] = path, ["what"] = what };
 
@@ -319,8 +372,12 @@ public static class ScaffoldGenerator
 
     private static string Words(string pascal) => ScaffoldNames.Snake(ScaffoldSpec.Camel(pascal)).Replace('_', ' ');
 
-    private static string DiscoveryUrl(ScaffoldSpec spec) =>
-        spec.Protocol == "rest" ? spec.BaseUrl + "/openapi.yaml" : spec.BaseUrl!;
+    private static string DiscoveryUrl(ScaffoldSpec spec) => spec.Protocol switch
+    {
+        "rest" => spec.BaseUrl + "/openapi.yaml",
+        "graphql" => spec.BaseUrl + "/graphql",
+        _ => spec.BaseUrl!,
+    };
 
     private static string IdVariable(ScaffoldSpec spec) => ScaffoldSpec.Camel(spec.Entity) + "Id";
 
@@ -365,6 +422,7 @@ public static class ScaffoldGenerator
     /// </summary>
     private static string Collection(ScaffoldSpec spec, Dictionary<string, object?> model)
     {
+        if (spec.Protocol == "graphql") return GraphQLCollection(spec, model);
         var grpc = spec.Protocol == "grpc";
         var entity = spec.Entity;
         var plural = (string)model["Plural"]!;
@@ -429,8 +487,122 @@ public static class ScaffoldGenerator
     /// found, and a create without its required fields is refused. Status
     /// names are Bowire's, not HTTP codes — 2xx is <c>OK</c>.
     /// </summary>
+    // #754 — GraphQL's calls: Query and Mutation fields, flat arguments.
+    private static List<(string Suffix, string Service, string Method, JsonObject Body)> GraphQLCalls(
+        ScaffoldSpec spec, Dictionary<string, object?> model, string id)
+    {
+        var entity = spec.Entity;
+        var get = ScaffoldSpec.Camel(entity);
+        JsonObject WithId(JsonObject? input)
+        {
+            var o = new JsonObject { ["id"] = id };
+            if (input is not null) foreach (var (k, v) in input) o[k] = v?.DeepClone();
+            return o;
+        }
+        return
+        [
+            ("list", "Query", (string)model["gqlList"]!, new JsonObject()),
+            ("create", "Mutation", "create" + entity, SampleInput(spec)),
+            ("get", "Query", get, WithId(null)),
+            ("update", "Mutation", "update" + entity, WithId(SampleInput(spec))),
+            ("delete", "Mutation", "delete" + entity, WithId(null)),
+        ];
+    }
+
+    private static string GraphQLCollection(ScaffoldSpec spec, Dictionary<string, object?> model)
+    {
+        var route = (string)model["route"]!;
+        var items = GraphQLCalls(spec, model, "{{" + IdVariable(spec) + "}}");
+        items.Add(("get-missing", "Query", ScaffoldSpec.Camel(spec.Entity), new JsonObject { ["id"] = "does-not-exist" }));
+        if (spec.Fields.Any(f => f.Required))
+        {
+            var partial = SampleInput(spec);
+            foreach (var f in spec.Fields.Where(f => f.Required)) partial.Remove(f.Name);
+            items.Add(("create-missing-required", "Mutation", "create" + spec.Entity, partial));
+        }
+        var collection = new JsonObject
+        {
+            ["id"] = "col_scaffold_" + route,
+            ["name"] = spec.Service + " (scaffolded)",
+            ["createdAt"] = 0,
+            ["items"] = new JsonArray([.. items.Select(item =>
+            {
+                var body = Message(item.Body);
+                return (JsonNode)new JsonObject
+                {
+                    ["id"] = "ci_scaffold_" + route + "_" + item.Suffix,
+                    ["protocol"] = "graphql",
+                    ["service"] = item.Service,
+                    ["method"] = item.Method,
+                    ["methodType"] = "Unary",
+                    ["body"] = body,
+                    ["messages"] = new JsonArray(body),
+                    ["metadata"] = null,
+                    ["serverUrl"] = DiscoveryUrl(spec),
+                };
+            })]),
+        };
+        return collection.ToJsonString(s_json) + "\n";
+    }
+
+    /// <summary>
+    /// GraphQL answers 200 for every operation, so its smoke test reads the
+    /// body: the list is there, a create comes back with an id and the
+    /// values sent, an unknown id is null, and a create without its required
+    /// arguments comes back with errors.
+    /// </summary>
+    private static string GraphQLSmokeTest(ScaffoldSpec spec, Dictionary<string, object?> model)
+    {
+        var entity = spec.Entity;
+        var create = "create" + entity;
+        var get = ScaffoldSpec.Camel(entity);
+        var list = (string)model["gqlList"]!;
+        var createAsserts = new JsonArray
+        {
+            Assert("status", "eq", "OK"),
+            Assert("response.data." + create + ".id", "exists", null),
+        };
+        foreach (var f in spec.Fields.Where(f => f.Type is "string" or "int" or "bool").Take(3))
+        {
+            createAsserts.Add(Assert("response.data." + create + "." + f.Name, "eq", Sample(f).ToJsonString().Trim('"')));
+        }
+        var tests = new JsonArray
+        {
+            Test($"list {Words((string)model["Plural"]!)}", "Query", list, new JsonObject(), [Assert("response.data." + list, "exists", null)]),
+            Test($"create {WithArticle(Words(entity))}", "Mutation", create, SampleInput(spec), createAsserts),
+            // A JSON null is there (exists) and equals nothing (eq, no value).
+            Test("an unknown id is null", "Query", get, new JsonObject { ["id"] = "does-not-exist" },
+                [Assert("response.data." + get, "exists", null), Assert("response.data." + get, "eq", null)]),
+        };
+        if (spec.Fields.Any(f => f.Required))
+        {
+            var partial = SampleInput(spec);
+            foreach (var f in spec.Fields.Where(f => f.Required)) partial.Remove(f.Name);
+            tests.Add(Test($"{WithArticle(Words(entity))} without its required fields is refused", "Mutation", create, partial,
+                [Assert("response.errors", "exists", null)]));
+        }
+        var doc = new JsonObject
+        {
+            ["name"] = spec.Service + " smoke test",
+            ["serverUrl"] = DiscoveryUrl(spec),
+            ["protocol"] = "graphql",
+            ["tests"] = tests,
+        };
+        return doc.ToJsonString(s_json) + "\n";
+
+        static JsonNode Test(string name, string service, string method, JsonObject message, JsonArray asserts) => new JsonObject
+        {
+            ["name"] = name,
+            ["service"] = service,
+            ["method"] = method,
+            ["messages"] = new JsonArray(Message(message)),
+            ["assert"] = asserts,
+        };
+    }
+
     private static string SmokeTest(ScaffoldSpec spec, Dictionary<string, object?> model)
     {
+        if (spec.Protocol == "graphql") return GraphQLSmokeTest(spec, model);
         var grpc = spec.Protocol == "grpc";
         var entity = spec.Entity;
         var plural = (string)model["Plural"]!;

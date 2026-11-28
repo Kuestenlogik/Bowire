@@ -185,7 +185,8 @@
                 },
                     el('option', { value: '', textContent: t('scaffold.protocolAuto') }),
                     el('option', { value: 'rest', textContent: 'REST (OpenAPI)' }),  // i18n-exempt: protocol and format names
-                    el('option', { value: 'grpc', textContent: 'gRPC (proto3)' }));  // i18n-exempt: protocol and format names
+                    el('option', { value: 'grpc', textContent: 'gRPC (proto3)' }),  // i18n-exempt: protocol and format names
+                    el('option', { value: 'graphql', textContent: 'GraphQL (SDL)' }));  // i18n-exempt: protocol and format names
                 protocol.value = s.protocol;
                 // #754 — the stub's language.
                 var language = el('select', {

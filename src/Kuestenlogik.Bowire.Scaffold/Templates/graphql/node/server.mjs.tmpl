@@ -1,0 +1,45 @@
+// {{Service}} — scaffolded by Bowire from the spec in bowire-scaffold.json.
+// The resolvers keep {{plural}} in memory, so every restart starts empty:
+// replace the store with your own persistence and keep the schema.
+import { createServer } from 'node:http';
+import { readFileSync } from 'node:fs';
+import { randomUUID } from 'node:crypto';
+import { buildSchema } from 'graphql';
+import { createHandler } from 'graphql-http/lib/use/http';
+
+const schema = buildSchema(readFileSync(new URL('./schema.graphql', import.meta.url), 'utf8'));
+const FIELDS = [{{#fields}}'{{name}}', {{/fields}}];
+const store = new Map();
+
+function from(id, args) {
+    const item = { id };
+    for (const name of FIELDS) item[name] = args[name] ?? null;
+    return item;
+}
+
+// The root resolvers, one per field of Query and Mutation. A required
+// argument is declared non-null in the schema, so GraphQL itself refuses an
+// operation without it.
+const root = {
+    {{gqlList}}: () => [...store.values()].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0)),
+    {{entity}}: ({ id }) => store.get(id) ?? null,
+    create{{Entity}}: (args) => {
+        const item = from(randomUUID().replaceAll('-', ''), args);
+        store.set(item.id, item);
+        return item;
+    },
+    update{{Entity}}: ({ id, ...args }) => {
+        if (!store.has(id)) return null;
+        const item = from(id, args);
+        store.set(id, item);
+        return item;
+    },
+    delete{{Entity}}: ({ id }) => store.delete(id),
+};
+
+const handler = createHandler({ schema, rootValue: root });
+
+createServer((req, res) => {
+    if (new URL(req.url, 'http://localhost').pathname === '/graphql') return handler(req, res);
+    res.writeHead(404).end();
+}).listen({{Port}}, '{{Host}}', () => console.log('listening on {{BaseUrl}}'));
