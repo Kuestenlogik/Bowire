@@ -13,11 +13,17 @@ using Microsoft.AspNetCore.Routing;
 namespace Kuestenlogik.Bowire.Endpoints;
 
 /// <summary>The domains an MCP App's resource asks for (<c>_meta.ui.csp</c>, #810).</summary>
+/// <remarks>
+/// The spec names the base-URI list <c>baseUriDomains</c>; the C# SDK's
+/// <c>ModelContextProtocol.Extensions.Apps</c> 2.4 writes <c>baseUris</c>.
+/// Both are read, so an app from either side gets its base URI.
+/// </remarks>
 public sealed record McpAppCsp(
     [property: JsonPropertyName("connectDomains")] IReadOnlyList<string>? ConnectDomains = null,
     [property: JsonPropertyName("resourceDomains")] IReadOnlyList<string>? ResourceDomains = null,
     [property: JsonPropertyName("frameDomains")] IReadOnlyList<string>? FrameDomains = null,
-    [property: JsonPropertyName("baseUriDomains")] IReadOnlyList<string>? BaseUriDomains = null);
+    [property: JsonPropertyName("baseUriDomains")] IReadOnlyList<string>? BaseUriDomains = null,
+    [property: JsonPropertyName("baseUris")] IReadOnlyList<string>? BaseUris = null);
 
 /// <summary>An MCP App's document, to be hosted.</summary>
 public sealed record McpAppViewRequest(
@@ -124,7 +130,7 @@ public static class BowireMcpAppEndpoints
             With("media-src data: blob:"),
             "connect-src " + Sources(csp?.ConnectDomains, "'none'"),
             "frame-src " + Sources(csp?.FrameDomains, "'none'"),
-            "base-uri " + Sources(csp?.BaseUriDomains, "'none'"),
+            "base-uri " + Sources([.. csp?.BaseUriDomains ?? [], .. csp?.BaseUris ?? []], "'none'"),
             "form-action 'none'",
             "frame-ancestors 'self'");
     }

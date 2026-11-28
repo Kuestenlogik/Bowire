@@ -32,7 +32,8 @@ public sealed class BowireMcpTestTools
     private static readonly JsonSerializerOptions s_json = new() { WriteIndented = true, PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
 
     [McpServerTool(Name = TestRunName)]
-    [Description("Run a Bowire test collection or flow, as `bowire test` does: invoke every test, evaluate its assertions, and report what passed and failed. With `data` (a CSV or JSON file), the collection runs once per row, with the row's columns as variables; failures name the iteration and the source row. Runs as an MCP task for clients that declare the tasks extension (status messages report each step; tasks/cancel stops before the next step). Returns { exitCode, passed, output, errors } — exitCode 0 when everything passed, 1 when a test failed, 2 when the input was refused.")]
+    [ModelContextProtocol.Extensions.Apps.McpAppUi(ResourceUri = Apps.BowireMcpApps.TestRunUri)]
+    [Description("Run a Bowire test collection or flow, as `bowire test` does: invoke every test, evaluate its assertions, and report what passed and failed. With `data` (a CSV or JSON file), the collection runs once per row, with the row's columns as variables; failures name the iteration and the source row. Runs as an MCP task for clients that declare the tasks extension (status messages report each step; tasks/cancel stops before the next step). With `test`, only the collection's test of that name runs. Returns { exitCode, passed, path, output, errors, report } — exitCode 0 when everything passed, 1 when a test failed, 2 when the input was refused; report lists every test or flow step with its checks.")]
     public static async Task<string> TestRun(
         McpServer server,
         IServiceProvider services,
@@ -41,6 +42,7 @@ public sealed class BowireMcpTestTools
         [Description("Optional, with data: stop after the first iteration that fails.")] bool failFast = false,
         [Description("Optional: write a JUnit XML report here.")] string? junitPath = null,
         [Description("Optional: write an HTML report here.")] string? reportPath = null,
+        [Description("Optional: run only the collection's test of this name, e.g. to re-run one that failed. Not for flows.")] string? test = null,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(services);
@@ -77,14 +79,18 @@ public sealed class BowireMcpTestTools
         }
 
         var outcome = await runner.RunAsync(
-            new BowireTestRunRequest(path, data, failFast, junitPath, reportPath), Progress, cancellationToken).ConfigureAwait(false);
+            new BowireTestRunRequest(path, data, failFast, junitPath, reportPath, test), Progress, cancellationToken).ConfigureAwait(false);
 
+        // #811: the run step by step (`report`) is what the test-run app
+        // draws; `path` lets it re-run one test through this same tool.
         return JsonSerializer.Serialize(new
         {
             exitCode = outcome.ExitCode,
             passed = outcome.ExitCode == 0,
+            path,
             output = outcome.Output,
             errors = outcome.Errors,
+            report = outcome.Report,
         }, s_json);
     }
 }

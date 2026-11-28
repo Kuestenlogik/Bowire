@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bowire discovery</title>
+<style>
+  :root {
+    --bg: #ffffff; --fg: #1f2937; --muted: #6b7280; --line: #e5e7eb; --chip: #f3f4f6; --accent: #4f46e5; --fail: #b91c1c;
+    color-scheme: light dark;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --bg: #111827; --fg: #e5e7eb; --muted: #9ca3af; --line: #374151; --chip: #1f2937; --accent: #818cf8; --fail: #f87171; }
+  }
+  :root[data-theme="dark"] { --bg: #111827; --fg: #e5e7eb; --muted: #9ca3af; --line: #374151; --chip: #1f2937; --accent: #818cf8; --fail: #f87171; }
+  body { margin: 0; padding: 12px 14px; font: 13px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; background: var(--bg); color: var(--fg); }
+  header { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+  h1 { font-size: 15px; margin: 0; }
+  .muted { color: var(--muted); }
+  input[type=search] { font: inherit; padding: 3px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--fg); min-width: 200px; }
+  details.service { border-top: 1px solid var(--line); padding: 4px 0; }
+  details.service > summary { cursor: pointer; font-weight: 600; }
+  ul { list-style: none; margin: 4px 0 4px 14px; padding: 0; }
+  li.method { padding: 3px 0; }
+  .row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  code { font: 12px ui-monospace, SFMono-Regular, Consolas, monospace; background: var(--chip); padding: 0 4px; border-radius: 3px; }
+  .spacer { flex: 1; }
+  button { font: inherit; font-size: 12px; padding: 2px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--chip); color: var(--fg); cursor: pointer; }
+  button:hover:not(:disabled) { border-color: var(--accent); }
+  button:disabled { opacity: .6; cursor: default; }
+  textarea { width: 100%; box-sizing: border-box; font: 12px ui-monospace, Consolas, monospace; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--fg); padding: 6px; }
+  .form { margin: 4px 0 6px; }
+  pre { white-space: pre-wrap; font: 12px ui-monospace, Consolas, monospace; background: var(--chip); padding: 8px; border-radius: 6px; max-height: 240px; overflow: auto; margin: 4px 0; }
+  .error { color: var(--fail); }
+  .attempts { margin-top: 8px; }
+</style>
+<!-- bowire-app-view -->
+</head>
+<body>
+<header>
+  <h1>Discovery</h1>
+  <code id="url"></code>
+  <span id="summary" class="muted">Waiting for the result…</span>
+  <span class="spacer"></span>
+  <input id="filter" type="search" placeholder="Filter methods" aria-label="Filter methods">
+</header>
+<div id="services"></div>
+<div id="attempts" class="attempts muted"></div>
+<script>
+  // #811 — bowire.discover's result, browsable; a unary method can be
+  // invoked through bowire.invoke. Text goes in with textContent only: the
+  // names come from the discovered server and are not markup.
+  const { App } = BowireMcpAppView;
+  const app = new App({ name: 'bowire-discover', version: '1' }, {});
+  let found = null;
+  let protocolArg = null;
+
+  const $ = (id) => document.getElementById(id);
+  function el(tag, props, ...children) {
+    const node = document.createElement(tag);
+    Object.assign(node, props || {});
+    for (const c of children) if (c != null) node.append(c);
+    return node;
+  }
+  const textOf = (result) => (result && result.content || []).filter((c) => c.type === 'text').map((c) => c.text).join('');
+
+  function render() {
+    const host = $('services');
+    host.replaceChildren();
+    if (!found || !Array.isArray(found.services)) {
+      $('summary').textContent = found ? 'No services.' : 'Waiting for the result…';
+      return;
+    }
+    $('url').textContent = found.url || '';
+    const query = $('filter').value.trim().toLowerCase();
+    const methods = found.services.reduce((n, s) => n + (s.methods || []).length, 0);
+    $('summary').textContent = `${found.services.length} service(s), ${methods} method(s)`;
+    for (const svc of found.services) {
+      const shown = (svc.methods || []).filter((m) => !query || (svc.service + '/' + m.name).toLowerCase().includes(query));
+      if (query && shown.length === 0) continue;
+      const list = el('ul');
+      for (const m of shown) list.append(method(svc, m));
+      host.append(el('details', { className: 'service', open: !!query || found.services.length === 1 },
+        el('summary', {}, svc.service + ' ', el('span', { className: 'muted', textContent: `${svc.protocol} · ${(svc.methods || []).length}` })),
+        list));
+    }
+    const attempts = (found.attempts || []).filter((a) => a.outcome && a.outcome !== 'ok');
+    $('attempts').textContent = attempts.length
+      ? 'Other plugins: ' + attempts.map((a) => `${a.plugin || a.pluginId} ${a.outcome}`).join(', ')
+      : '';
+  }
+
+  // A message type arrives as an object (its name, full name, fields).
+  const typeName = (t) => (t && typeof t === 'object') ? (t.name || t.fullName || '') : (t || '');
+
+  function method(svc, m) {
+    const item = el('li', { className: 'method' });
+    const input = typeName(m.input), output = typeName(m.output);
+    const row = el('div', { className: 'row' },
+      el('code', { textContent: m.name }),
+      el('span', { className: 'muted', textContent: m.type }),
+      input || output ? el('span', { className: 'muted', textContent: input + ' → ' + output }) : null,
+      el('span', { className: 'spacer' }));
+    item.append(row);
+    // bowire.invoke sends one request and answers with one response. A
+    // method that takes a stream of requests has no such call.
+    if (m.type !== 'ClientStreaming' && m.type !== 'Duplex') {
+      const open = el('button', { textContent: 'Invoke…' });
+      open.addEventListener('click', () => {
+        open.hidden = true;
+        item.append(form(svc, m));
+      });
+      row.append(open);
+    }
+    return item;
+  }
+
+  // bowire.invoke answers with the call's response as a JSON string inside
+  // its own JSON; shown with both levels unfolded.
+  function readable(text) {
+    try {
+      const answer = JSON.parse(text);
+      if (answer && typeof answer.response === 'string') {
+        try { answer.response = JSON.parse(answer.response); } catch { /* not JSON: keep the text */ }
+      }
+      return JSON.stringify(answer, null, 2);
+    } catch {
+      return text;
+    }
+  }
+
+  function form(svc, m) {
+    const body = el('textarea', { rows: 4, value: '{}', ariaLabel: 'Request body (JSON)' });
+    const send = el('button', { textContent: 'Invoke' });
+    const out = el('pre', { hidden: true });
+    send.addEventListener('click', async () => {
+      send.disabled = true;
+      out.hidden = false;
+      out.className = '';
+      out.textContent = 'Invoking…';
+      try {
+        const params = { url: found.url, service: svc.service, method: m.name, body: body.value || '{}' };
+        if (svc.protocol || protocolArg) params.protocol = svc.protocol || protocolArg;
+        const result = await app.callServerTool({ name: 'bowire.invoke', arguments: params });
+        out.className = result.isError ? 'error' : '';
+        out.textContent = readable(textOf(result)) || '(empty answer)';
+      } catch (err) {
+        out.className = 'error';
+        out.textContent = 'The call failed: ' + (err && err.message || err);
+      } finally {
+        send.disabled = false;
+      }
+    });
+    return el('div', { className: 'form' }, body, el('div', { className: 'row' }, send), out);
+  }
+
+  function applyTheme(context) {
+    if (context && (context.theme === 'dark' || context.theme === 'light')) document.documentElement.dataset.theme = context.theme;
+  }
+  $('filter').addEventListener('input', render);
+  app.ontoolinput = (params) => { protocolArg = (params && params.arguments && params.arguments.protocol) || null; };
+  app.ontoolresult = (result) => {
+    try { found = JSON.parse(textOf(result)); } catch { found = { services: [], url: '', attempts: [] }; $('summary').textContent = textOf(result); return; }
+    render();
+  };
+  app.onhostcontextchanged = applyTheme;
+  app.connect().then(() => applyTheme(app.getHostContext()));
+</script>
+</body>
+</html>

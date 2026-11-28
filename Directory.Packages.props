@@ -199,6 +199,10 @@
          cancel on the client, WithTasks on a server (#801). Pinned to the
          SDK's version — the package depends on exactly [2.2.0]. -->
     <PackageVersion Include="ModelContextProtocol.Extensions.Tasks" Version="2.4.0" />
+    <!-- MCP Apps (io.modelcontextprotocol/ui) on the server side (#811): the
+         [McpAppUi] tool metadata, SetResourceUi and the client capability
+         check. Pinned to the SDK's version, like the Tasks extension. -->
+    <PackageVersion Include="ModelContextProtocol.Extensions.Apps" Version="2.4.0" />
     <!-- System.CommandLine 2.0.7 — stable after the beta-to-stable
          API rework. Used by Kuestenlogik.Bowire.Tool to declare the CLI's
          subcommand tree (list/describe/call/mock/mcp/plugin/test) and

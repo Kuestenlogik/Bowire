@@ -485,6 +485,7 @@ internal static class FlowTestRunner
         //   0 — every step invoked AND every expectation passed.
         var exitCode = anyError ? 2 : (anyExpectationFailed ? 1 : 0);
         report.ExitCode = exitCode;
+        cli.OnReport?.Invoke(McpTestReports.From(report, redactor));
 
         if (!string.IsNullOrEmpty(cli.ReportPath))
         {
@@ -926,6 +927,9 @@ internal sealed class FlowTestCliOptions
 {
     /// <summary>#802 — called before each step with a short line; see <c>TestCliOptions.Progress</c>.</summary>
     public Func<string, Task>? Progress { get; set; }
+
+    /// <summary>#811 — receives the finished run; see <c>TestCliOptions.OnReport</c>.</summary>
+    public Action<Kuestenlogik.Bowire.Mcp.Tasks.BowireTestRunReport>? OnReport { get; set; }
 
     /// <summary>Path to the flow JSON file (positional arg).</summary>
     public string? FlowPath { get; set; }

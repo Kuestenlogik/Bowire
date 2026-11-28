@@ -415,6 +415,21 @@ Bowire's MCP server advertises the tasks extension (`io.modelcontextprotocol/tas
 - **Confirmations.** `bowire.mock.start` and `bowire.record.start` run as tasks too. Inside a task, their confirmation is an elicitation rather than a second call. The task turns `input_required` with a yes/no question that names the plan; the client answers through `tasks/update`; the run then goes on, or ends with `{ "confirmed": false, "action": "decline" }`. `confirm: true` or a confirmation token still skips the question. A client that cannot answer an elicitation gets the token, as before.
 - **Other clients.** A client without the extension, and every other tool, keeps getting the synchronous answer, the two-step token included.
 
+### MCP Apps (roles 3 + 4)
+
+To a client that declares the `io.modelcontextprotocol/ui` extension, two tools name an [MCP App](#mcp-apps--a-tools-interactive-view) in their `_meta.ui.resourceUri`:
+
+| Tool | App | What it shows |
+|------|-----|---------------|
+| `bowire.test.run` | `ui://bowire/test-run.html` | Every test or flow step with its checks. **Re-run** for one test of a collection, **Run again** for the whole run. |
+| `bowire.discover` | `ui://bowire/discover.html` | The services and methods, with a filter. **Invoke** calls a method through `bowire.invoke`. |
+
+Each app is a single HTML document. The view side of the ext-apps bridge is inlined, so the app loads nothing from anywhere. Its `_meta.ui.csp` names no origin and it asks for no permission. A button in an app calls the same tool through the host, so the host's approval and Bowire's allowlist apply.
+
+A client without the extension sees neither `_meta.ui` nor the `ui://` resources. `bowire.test.run` answers it with the same JSON as before, extended by `path` and `report`. `report` lists each test or flow step with its checks. With `test`, only the collection's test of that name runs.
+
+An embedded host that serves Bowire's MCP tools adds the apps with `.WithBowireMcpApps()` after its `WithTools<…>()` calls.
+
 ### Resource surface (roles 3 + 4)
 
 Tools *do* things; resources are things an agent can read. Call `resources/list` on the running server for the live set.

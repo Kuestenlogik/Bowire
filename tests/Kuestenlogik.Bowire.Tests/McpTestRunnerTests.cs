@@ -57,6 +57,50 @@ public sealed class McpTestRunnerTests : IDisposable
     }
 
     [Fact]
+    public async Task The_Run_Comes_Back_Step_By_Step_Under_Each_Tests_Own_Name()
+    {
+        // #811 — what the test-run app draws.
+        var data = Path.Combine(_dir, "rows.csv");
+        await File.WriteAllTextAsync(data, "id\n7\n8\n", TestContext.Current.CancellationToken);
+
+        var outcome = await new McpTestRunner().RunAsync(
+            new BowireTestRunRequest(await SuiteAsync(), data, false, null, null), _ => Task.CompletedTask, TestContext.Current.CancellationToken);
+
+        var report = Assert.IsType<BowireTestRunReport>(outcome.Report);
+        Assert.Equal(("collection", "echo-suite", 2), (report.Kind, report.Name, report.Iterations));
+        Assert.Equal([("first", 1), ("second", 1), ("first", 2), ("second", 2)], report.Steps.Select(s => (s.Name, s.Iteration)));
+        Assert.All(report.Steps, s => Assert.True(s.Passed));
+        Assert.Equal("rows.csv line 3", report.Steps[2].Source);
+        var check = Assert.Single(report.Steps[2].Checks);
+        Assert.Equal(("echo", "eq", "8", true), (check.Subject, check.Operator, check.Expected, check.Passed));
+    }
+
+    [Fact]
+    public async Task One_Test_Re_Runs_On_Its_Own_By_Name()
+    {
+        var lines = new List<string>();
+
+        var outcome = await new McpTestRunner().RunAsync(
+            new BowireTestRunRequest(await SuiteAsync(), null, false, null, null, Test: "second"),
+            line => { lines.Add(line); return Task.CompletedTask; }, TestContext.Current.CancellationToken);
+
+        Assert.Equal(0, outcome.ExitCode);
+        Assert.Equal(["step 1/1 · second"], lines);
+        Assert.Equal("second", Assert.Single(outcome.Report!.Steps).Name);
+    }
+
+    [Fact]
+    public async Task A_Test_The_Collection_Does_Not_Have_Is_Refused()
+    {
+        var outcome = await new McpTestRunner().RunAsync(
+            new BowireTestRunRequest(await SuiteAsync(), null, false, null, null, Test: "third"), _ => Task.CompletedTask, TestContext.Current.CancellationToken);
+
+        Assert.Equal(2, outcome.ExitCode);
+        Assert.Contains("no test named 'third'", outcome.Errors, StringComparison.Ordinal);
+        Assert.Null(outcome.Report);
+    }
+
+    [Fact]
     public async Task Cancelling_Stops_Before_The_Next_Step()
     {
         using var cts = new CancellationTokenSource();

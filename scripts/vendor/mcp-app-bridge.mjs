@@ -16,6 +16,9 @@
  *                      getToolUiResourceUri, RESOURCE_MIME_TYPE }), with zod in
  *                      jitless mode, so nothing is compiled from strings
  *                      under the workbench's Content-Security-Policy.
+ *   mcp-app-view.js    the other end (#811): `BowireMcpAppView` ({ App,
+ *                      PostMessageTransport }), inlined into the apps Bowire's
+ *                      own MCP server ships, whose policy allows no eval either.
  *   LICENSE            the licences of what is bundled.
  *
  * Run:
@@ -53,29 +56,35 @@ try {
         + `esbuild@${ESBUILD_VERSION}`,
     { cwd: work, stdio: ['ignore', 'inherit', 'inherit'] });
 
-    writeFileSync(join(work, 'entry.mjs'), [
-        "import { config } from 'zod/v4';",
-        '// No schema compiled from a string: the workbench refuses eval.',
-        'config({ jitless: true });',
+    // No schema compiled from a string: neither the workbench nor an app's policy allows eval.
+    const jitless = ["import { config } from 'zod/v4';", 'config({ jitless: true });'];
+    writeFileSync(join(work, 'entry.mjs'), [...jitless,
         "export { AppBridge, PostMessageTransport, buildAllowAttribute, getToolUiResourceUri, RESOURCE_MIME_TYPE } from '@modelcontextprotocol/ext-apps/app-bridge';",
-        '',
-    ].join('\n'));
+        ''].join('\n'));
+    writeFileSync(join(work, 'view.mjs'), [...jitless,
+        "export { App, PostMessageTransport } from '@modelcontextprotocol/ext-apps';",
+        ''].join('\n'));
 
     esbuild = (await import('file://' + join(work, 'node_modules', 'esbuild', 'lib', 'main.js').replace(/\\/g, '/'))).default;
-    const built = await esbuild.build({
-        entryPoints: [join(work, 'entry.mjs')],
-        bundle: true,
-        format: 'iife',
-        globalName: 'BowireMcpAppBridge',
-        platform: 'browser',
-        target: 'es2020',
-        minify: true,
-        write: false,
-        logLevel: 'error',
-        legalComments: 'none',
-    });
-    const bundle = built.outputFiles[0].text;
-    if (/[^.\w]Function\(|[^.\w]eval\(/.test(bundle)) throw new Error('the bundle evaluates strings; the workbench policy would refuse it');
+    const build = async (entry, globalName) => {
+        const built = await esbuild.build({
+            entryPoints: [join(work, entry)],
+            bundle: true,
+            format: 'iife',
+            globalName,
+            platform: 'browser',
+            target: 'es2020',
+            minify: true,
+            write: false,
+            logLevel: 'error',
+            legalComments: 'none',
+        });
+        const text = built.outputFiles[0].text;
+        if (/[^.\w]Function\(|[^.\w]eval\(/.test(text)) throw new Error(`${entry}: the bundle evaluates strings; the policy would refuse it`);
+        return text;
+    };
+    const bundle = await build('entry.mjs', 'BowireMcpAppBridge');
+    const view = await build('view.mjs', 'BowireMcpAppView');
 
     const pkg = (name) => join(work, 'node_modules', ...name.split('/'));
     const licence = (name) => {
@@ -88,9 +97,10 @@ try {
  * bundled for Bowire by scripts/vendor/mcp-app-bridge.mjs. Licences: LICENSE next to this file. */\n`;
     mkdirSync(OUT_DIR, { recursive: true });
     writeFileSync(join(OUT_DIR, 'mcp-app-bridge.js'), notice + bundle);
+    writeFileSync(join(OUT_DIR, 'mcp-app-view.js'), notice.replace('app-bridge', 'App (the view side)') + view);
     writeFileSync(join(OUT_DIR, 'LICENSE'), ['@modelcontextprotocol/ext-apps', '@modelcontextprotocol/client',
         '@modelcontextprotocol/core', 'zod'].map(licence).join('\n'));
-    log(`Wrote ${OUT_DIR}: mcp-app-bridge.js ${(bundle.length / 1024).toFixed(0)} KB`);
+    log(`Wrote ${OUT_DIR}: mcp-app-bridge.js ${(bundle.length / 1024).toFixed(0)} KB, mcp-app-view.js ${(view.length / 1024).toFixed(0)} KB`);
 } finally {
     if (esbuild) await esbuild.stop();
     try { rmSync(work, { recursive: true, force: true, maxRetries: 3 }); }

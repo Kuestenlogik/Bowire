@@ -159,4 +159,16 @@ internal sealed class TestCliOptions
     /// the MCP tool <c>bowire.test.run</c> turns it into task status. Null on the command line.
     /// </summary>
     public Func<string, Task>? Progress { get; set; }
+
+    /// <summary>
+    /// #811 — run only the collection's test of this name, the re-run the
+    /// test-run app offers. Null on the command line.
+    /// </summary>
+    public string? OnlyTest { get; set; }
+
+    /// <summary>
+    /// #811 — receives the finished run, step by step, secrets masked, for
+    /// <c>bowire.test.run</c>'s structured answer. Null on the command line.
+    /// </summary>
+    public Action<Kuestenlogik.Bowire.Mcp.Tasks.BowireTestRunReport>? OnReport { get; set; }
 }

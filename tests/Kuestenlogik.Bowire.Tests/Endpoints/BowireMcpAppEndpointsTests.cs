@@ -93,6 +93,13 @@ public sealed class BowireMcpAppEndpointsTests
         Assert.DoesNotContain("x.test", policy, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void The_Base_Uri_List_Is_Read_Under_The_Spec_Name_And_The_Csharp_Sdk_Name()
+    {
+        Assert.Contains("base-uri https://a.example.test;", BowireMcpAppEndpoints.PolicyFor(new McpAppCsp(BaseUriDomains: ["https://a.example.test"])), StringComparison.Ordinal);
+        Assert.Contains("base-uri https://b.example.test;", BowireMcpAppEndpoints.PolicyFor(new McpAppCsp(BaseUris: ["https://b.example.test"])), StringComparison.Ordinal);
+    }
+
     private sealed record Host(WebApplication App, HttpClient Http) : IAsyncDisposable
     {
         public static async Task<Host> StartAsync(CancellationToken ct)

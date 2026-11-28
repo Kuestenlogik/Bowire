@@ -316,7 +316,14 @@ internal static class TestRunner
                 Progress = cli.Progress,
                 DataPath = cli.DataPath,
                 FailFast = cli.FailFast,
+                OnReport = cli.OnReport,
             };
+            if (!string.IsNullOrEmpty(cli.OnlyTest))
+            {
+                // A flow step depends on the steps before it; it re-runs with its flow.
+                await WriteErrorAsync(stderr, "A single test can be re-run from a collection, not from a flow; run the flow again.").ConfigureAwait(false);
+                return 2;
+            }
             return await FlowTestRunner.RunAsync(flowCli, stdout, stderr, ct).ConfigureAwait(false);
         }
 
@@ -335,6 +342,16 @@ internal static class TestRunner
         {
             await WriteErrorAsync(stderr, "Collection has no tests.").ConfigureAwait(false);
             return 2;
+        }
+
+        if (!string.IsNullOrEmpty(cli.OnlyTest))
+        {
+            collection.Tests = collection.Tests.Where(t => string.Equals(TestNameOf(t), cli.OnlyTest, StringComparison.Ordinal)).ToList();
+            if (collection.Tests.Count == 0)
+            {
+                await WriteErrorAsync(stderr, $"The collection has no test named '{cli.OnlyTest}'.").ConfigureAwait(false);
+                return 2;
+            }
         }
 
         // #361 — resolve the run-scoped secret redactor. The named
@@ -426,6 +443,7 @@ internal static class TestRunner
                         + (dataSet is null ? "" : $" (iteration {row.Iteration}/{rows.Count})")).ConfigureAwait(false);
                 }
                 var result = await RunTestAsync(test, collection, registry, discovery, scripts, iterationVars);
+                result.TestName = TestNameOf(test);
                 if (dataSet is not null)
                 {
                     result.Iteration = row.Iteration;
@@ -465,6 +483,7 @@ internal static class TestRunner
         report.PassedAssertions = passedAssertions;
         report.TotalAssertions = totalAssertions;
         report.FailedTests = failedTests;
+        cli.OnReport?.Invoke(McpTestReports.From(report, redactor));
 
         await stdout.WriteLineAsync().ConfigureAwait(false);
         var summaryText = $"  {report.Tests.Count - failedTests}/{report.Tests.Count} tests passed   "
@@ -531,6 +550,9 @@ internal static class TestRunner
 
     // "line 4" for a CSV row, "item 4" for a JSON one: where to look in the file.
     /// <summary>Where a row came from: <c>line N</c> of a CSV, <c>item N</c> of a JSON array.</summary>
+    /// <summary>#811: how a test is addressed for a re-run: its name, or <c>service/method</c> when it has none.</summary>
+    internal static string TestNameOf(TestEntry test) => test.Name ?? $"{test.Service}/{test.Method}";
+
     internal static string SourceLabel(ParseDataSetResponse dataSet, DataRow row) =>
         (dataSet.Format == "json" ? "item " : "line ") + row.SourceLine.ToString(CultureInfo.InvariantCulture);
 
@@ -1088,6 +1110,9 @@ internal sealed class RunReport
 internal sealed class TestResult
 {
     public string Name { get; set; } = "";
+
+    /// <summary>#811: the test's own name (<see cref="TestRunner.TestNameOf"/>), without the iteration a data-driven run appends to <see cref="Name"/>.</summary>
+    public string TestName { get; set; } = "";
     public string Service { get; set; } = "";
     public string Method { get; set; } = "";
     public long DurationMs { get; set; }

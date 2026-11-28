@@ -27,8 +27,11 @@ internal sealed class McpTestRunner : IBowireTestRunner
             JUnitPath = request.JUnitPath,
             ReportPath = request.ReportPath,
             Progress = progress,
+            OnlyTest = string.IsNullOrWhiteSpace(request.Test) ? null : request.Test,
         };
+        BowireTestRunReport? report = null;
+        options.OnReport = r => report = r;
         var code = await TestRunner.RunAsync(options, output, errors, cancellationToken).ConfigureAwait(false);
-        return new BowireTestRunOutcome(code, output.ToString().Trim(), errors.ToString().Trim());
+        return new BowireTestRunOutcome(code, output.ToString().Trim(), errors.ToString().Trim(), report);
     }
 }

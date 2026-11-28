@@ -3,6 +3,7 @@
 
 using Kuestenlogik.Bowire.App.Cli;
 using Kuestenlogik.Bowire.Mcp;
+using Kuestenlogik.Bowire.Mcp.Apps;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
@@ -196,7 +197,9 @@ internal static class McpServeCommand
                 .WithTools<BowireMcpTools>()
                 .WithTools<Kuestenlogik.Bowire.Mcp.Tasks.BowireMcpTestTools>()
                 .WithResources<BowireMcpResources>()
-                .WithPrompts<BowireMcpPrompts>();
+                .WithPrompts<BowireMcpPrompts>()
+                // #811 - after the tools: their [McpAppUi] become _meta.ui here.
+                .WithBowireMcpApps();
 
             if (cfg.AllowArbitraryUrls)
                 await cfg.Io.Err.WriteLineAsync("[bowire-mcp] WARNING: --allow-arbitrary-urls set; bowire.invoke / bowire.subscribe accept any URL the agent supplies.").ConfigureAwait(false);
@@ -250,7 +253,9 @@ internal static class McpServeCommand
                 .WithTools<BowireMcpTools>()
                 .WithTools<Kuestenlogik.Bowire.Mcp.Tasks.BowireMcpTestTools>()
                 .WithResources<BowireMcpResources>()
-                .WithPrompts<BowireMcpPrompts>();
+                .WithPrompts<BowireMcpPrompts>()
+                // #811 - after the tools: their [McpAppUi] become _meta.ui here.
+                .WithBowireMcpApps();
         }
 
         var app = builder.Build();

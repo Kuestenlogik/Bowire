@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bowire test run</title>
+<style>
+  :root {
+    --bg: #ffffff; --fg: #1f2937; --muted: #6b7280; --line: #e5e7eb; --chip: #f3f4f6;
+    --pass: #15803d; --pass-bg: #dcfce7; --fail: #b91c1c; --fail-bg: #fee2e2; --skip: #6b7280; --accent: #4f46e5;
+    color-scheme: light dark;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #111827; --fg: #e5e7eb; --muted: #9ca3af; --line: #374151; --chip: #1f2937;
+      --pass: #4ade80; --pass-bg: #14532d; --fail: #f87171; --fail-bg: #7f1d1d; --skip: #9ca3af; --accent: #818cf8;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #111827; --fg: #e5e7eb; --muted: #9ca3af; --line: #374151; --chip: #1f2937;
+    --pass: #4ade80; --pass-bg: #14532d; --fail: #f87171; --fail-bg: #7f1d1d; --skip: #9ca3af; --accent: #818cf8;
+  }
+  body { margin: 0; padding: 12px 14px; font: 13px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; background: var(--bg); color: var(--fg); }
+  header { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+  h1 { font-size: 15px; margin: 0; }
+  .muted { color: var(--muted); }
+  .chip { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+  .chip.pass { color: var(--pass); background: var(--pass-bg); }
+  .chip.fail { color: var(--fail); background: var(--fail-bg); }
+  .chip.skip { color: var(--skip); background: var(--chip); }
+  ol { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+  li.step { border-bottom: 1px solid var(--line); padding: 6px 0; }
+  .row { display: flex; align-items: center; gap: 8px; }
+  .name { font-weight: 600; }
+  code { font: 12px ui-monospace, SFMono-Regular, Consolas, monospace; background: var(--chip); padding: 0 4px; border-radius: 3px; }
+  .spacer { flex: 1; }
+  button { font: inherit; font-size: 12px; padding: 2px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--chip); color: var(--fg); cursor: pointer; }
+  button:hover:not(:disabled) { border-color: var(--accent); }
+  button:disabled { opacity: .6; cursor: default; }
+  .error { color: var(--fail); margin: 4px 0 0 22px; white-space: pre-wrap; }
+  table { border-collapse: collapse; margin: 4px 0 0 22px; font-size: 12px; }
+  td, th { text-align: left; padding: 1px 8px 1px 0; vertical-align: top; }
+  th { color: var(--muted); font-weight: 500; }
+  td.ok { color: var(--pass); } td.no { color: var(--fail); }
+  .empty, .note { color: var(--muted); padding: 8px 0; }
+  pre { white-space: pre-wrap; font: 12px ui-monospace, Consolas, monospace; background: var(--chip); padding: 8px; border-radius: 6px; max-height: 260px; overflow: auto; }
+</style>
+<!-- bowire-app-view -->
+</head>
+<body>
+<header>
+  <h1 id="title">Test run</h1>
+  <span id="summary" class="muted">Waiting for the result…</span>
+  <span class="spacer"></span>
+  <button id="again" hidden>Run again</button>
+</header>
+<ol id="steps"></ol>
+<p id="note" class="note" hidden></p>
+<details id="raw" hidden><summary class="muted">Console output</summary><pre id="output"></pre></details>
+<script>
+  // #811 — bowire.test.run's result, drawn. Text goes in with textContent
+  // only: names, values and errors come from the tested system and are not
+  // markup.
+  const { App } = BowireMcpAppView;
+  const app = new App({ name: 'bowire-test-run', version: '1' }, {});
+  let args = {};
+  let run = null;
+
+  const $ = (id) => document.getElementById(id);
+  function el(tag, props, ...children) {
+    const node = document.createElement(tag);
+    Object.assign(node, props || {});
+    for (const c of children) if (c != null) node.append(c);
+    return node;
+  }
+  function chip(step) {
+    if (step.skipped) return el('span', { className: 'chip skip', textContent: 'skipped' });
+    return el('span', { className: 'chip ' + (step.passed ? 'pass' : 'fail'), textContent: step.passed ? 'passed' : 'failed' });
+  }
+  const textOf = (result) => (result && result.content || []).filter((c) => c.type === 'text').map((c) => c.text).join('');
+  function parse(result) {
+    try { return JSON.parse(textOf(result)); } catch { return null; }
+  }
+  const keyOf = (step) => step.name + '\u0000' + step.iteration;
+
+  function render() {
+    const report = run && run.report;
+    $('title').textContent = report ? report.name : 'Test run';
+    $('again').hidden = !run || !run.path;
+    $('raw').hidden = !run || !run.output;
+    $('output').textContent = run ? (run.output || '') + (run.errors ? '\n' + run.errors : '') : '';
+    const list = $('steps');
+    list.replaceChildren();
+    if (!report) {
+      $('summary').textContent = run ? (run.errors || 'The run reported no steps.') : 'Waiting for the result…';
+      return;
+    }
+    const steps = report.steps || [];
+    const passed = steps.filter((s) => s.passed).length;
+    const ran = steps.filter((s) => !s.skipped).length;
+    $('summary').textContent = `${passed}/${ran} passed · ${report.durationMs} ms`
+      + (report.iterations > 1 ? ` · ${report.iterations} iterations` : '') + ` · ${report.kind}`;
+    if (steps.length === 0) list.append(el('li', { className: 'empty', textContent: 'No steps.' }));
+    for (const step of steps) {
+      const row = el('div', { className: 'row' },
+        chip(step),
+        el('span', { className: 'name', textContent: step.name }),
+        el('code', { textContent: step.service + '/' + step.method }),
+        step.status ? el('span', { className: 'muted', textContent: step.status }) : null,
+        el('span', { className: 'muted', textContent: step.durationMs + ' ms' }),
+        step.source ? el('span', { className: 'muted', textContent: step.source }) : null,
+        el('span', { className: 'spacer' }));
+      // A collection's test re-runs on its own; a flow step depends on the
+      // steps before it, so a flow runs again as a whole (the header button).
+      if (report.kind === 'collection' && !step.skipped) {
+        const again = el('button', { textContent: 'Re-run', title: 'Run this test again' });
+        again.addEventListener('click', () => rerun(step, again));
+        row.append(again);
+      }
+      const item = el('li', { className: 'step' }, row);
+      if (step.error) item.append(el('div', { className: 'error', textContent: step.error }));
+      if (step.checks && step.checks.length) {
+        const table = el('table', {}, el('tr', {},
+          el('th', { textContent: '' }), el('th', { textContent: 'check' }), el('th', { textContent: 'expected' }), el('th', { textContent: 'actual' })));
+        for (const c of step.checks) {
+          table.append(el('tr', {},
+            el('td', { className: c.passed ? 'ok' : 'no', textContent: c.passed ? '✓' : '✗' }),
+            el('td', {}, el('code', { textContent: c.subject }), ' ' + c.operator),
+            el('td', { textContent: c.expected ?? '' }),
+            el('td', { textContent: (c.actual ?? '') + (c.message && !c.passed ? ' — ' + c.message : '') })));
+        }
+        item.append(table);
+      }
+      list.append(item);
+    }
+  }
+
+  function note(text) {
+    $('note').hidden = !text;
+    $('note').textContent = text || '';
+  }
+
+  async function call(extra) {
+    const params = { path: run.path };
+    if (args.data) params.data = args.data;
+    if (args.failFast) params.failFast = args.failFast;
+    return parse(await app.callServerTool({ name: 'bowire.test.run', arguments: Object.assign(params, extra) }));
+  }
+
+  async function rerun(step, button) {
+    button.disabled = true;
+    note('');
+    try {
+      const fresh = await call({ test: step.name });
+      if (!fresh || !fresh.report) { note(fresh ? (fresh.errors || 'The re-run reported nothing.') : 'The re-run answered no result.'); return; }
+      // Replace this test's rows (one per iteration) with the fresh ones.
+      const freshByKey = new Map(fresh.report.steps.map((s) => [keyOf(s), s]));
+      run.report.steps = run.report.steps.map((s) => freshByKey.get(keyOf(s)) || s);
+      render();
+      note(`Re-ran ${step.name}.`);
+    } catch (err) {
+      note('The re-run failed: ' + (err && err.message || err));
+    } finally {
+      button.disabled = false;
+    }
+  }
+
+  $('again').addEventListener('click', async () => {
+    const button = $('again');
+    button.disabled = true;
+    note('');
+    try {
+      const fresh = await call({});
+      if (fresh) { run = fresh; render(); note('Ran again.'); }
+    } catch (err) {
+      note('The run failed: ' + (err && err.message || err));
+    } finally {
+      button.disabled = false;
+    }
+  });
+
+  function applyTheme(context) {
+    if (context && (context.theme === 'dark' || context.theme === 'light')) document.documentElement.dataset.theme = context.theme;
+  }
+  app.ontoolinput = (params) => { args = (params && params.arguments) || {}; };
+  app.ontoolresult = (result) => { run = parse(result) || { errors: textOf(result) }; render(); };
+  app.onhostcontextchanged = applyTheme;
+  app.connect().then(() => applyTheme(app.getHostContext()));
+</script>
+</body>
+</html>

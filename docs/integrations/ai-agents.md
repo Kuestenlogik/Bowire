@@ -37,12 +37,25 @@ A test run takes minutes, longer than an agent host or a proxy keeps a call open
 
 1. `bowire.test.run` answers with a task id and keeps running in the server.
 2. The task's status message names the current step, for example `step 3/12 · Get user (iteration 2/5)`. The client reads it with `tasks/get` or receives it through `notifications/tasks`.
-3. When the run ends, `tasks/get` returns the result: `{ exitCode, passed, output, errors }`, with every failure naming its test and, in a data-driven run, its row.
+3. When the run ends, `tasks/get` returns the result: `{ exitCode, passed, path, output, errors, report }`. Every failure names its test and, in a data-driven run, its row. `report` lists each test or flow step with its checks.
+
+To run one test of a collection again, pass its name as `test`.
 4. `tasks/cancel` stops the run before its next step.
 
 The task is kept for 24 hours in `~/.bowire/mcp-tasks/`. An agent that disconnects or restarts gets the result with the same task id. A task that was still running when the server stopped is reported as failed, with that reason.
 
 A client without the extension calls `bowire.test.run` as an ordinary tool and waits for the answer.
+
+## Results as UI: MCP Apps
+
+An agent host that supports [MCP Apps](https://github.com/modelcontextprotocol/ext-apps) can show some answers as UI inside the conversation. Claude and VS Code Copilot are such hosts, and so is the Bowire workbench. Bowire's server offers two apps:
+
+- **`bowire.test.run`.** The app shows every test or flow step, passed or failed, with its checks: what was expected and what came back. **Re-run** runs one test of a collection again, and **Run again** runs the whole collection or flow. Both call `bowire.test.run` through the host, so the host's approval applies.
+- **`bowire.discover`.** The app lists the services and methods. You can filter them, and **Invoke** calls a method through `bowire.invoke`.
+
+The apps load nothing from the network. Each is a single HTML document with no external origin and no permission.
+
+A host gets them only when its client declares the `io.modelcontextprotocol/ui` extension. Every other client sees the tools and the JSON answers as before.
 
 ## Confirmations
 

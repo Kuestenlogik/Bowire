@@ -88,6 +88,10 @@ The Code tab offered four or five languages per protocol and nothing for the bro
 
 A tool whose `_meta.ui.resourceUri` names a `ui://` resource comes with an interactive view, an [MCP App](https://github.com/modelcontextprotocol/ext-apps). After the call, the workbench shows that view above the result and logs every message between the view and the workbench. The view runs in a sandbox, under the Content-Security-Policy its resource declares, and it can reach no network that the resource does not name. When the view calls a tool or reads a resource, the call goes through `/api/invoke` with the same rights and audit as any other. Bowire announces the `io.modelcontextprotocol/ui` extension, so a server that offers a tool with and without a view offers the view.
 
+### Bowire's MCP tools answer with apps (#811)
+
+An MCP Apps host now shows two of Bowire's tools as UI. Claude, VS Code Copilot and the Bowire workbench are such hosts. `bowire.test.run` shows every test or flow step with its checks; a failed test can be re-run from there. `bowire.discover` lists the services and methods, and each method can be invoked from the list. Both apps are single HTML documents that load nothing from the network. A client that does not declare the extension sees the same tools and JSON as before. `bowire.test.run` now also answers with the run step by step (`report`) and takes `test`, to run one test of a collection again.
+
 ## Fixes along the way
 
 - **gRPC servers written with tonic (Rust) can be called (#1069).** Bowire asked their reflection service for a file named like the service; tonic answers an unknown file by failing the stream, so every call failed with `file '…' not found`. Only file names are asked for by name now.
